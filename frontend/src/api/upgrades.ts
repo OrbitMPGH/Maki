@@ -3,6 +3,7 @@ import { i18n } from '@lingui/core'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api } from './client'
+import { useSaveSettingsRecord } from './settingsRecord'
 import type { ChapterFileQualityDto } from './types'
 import type { SourceOrderMode } from './hooks'
 
@@ -778,18 +779,13 @@ export function useUpgradeSettings(enabled = true) {
 
 export function useSaveUpgradeSettings() {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (value: UpgradeSettings) =>
-      api<UpgradeSettings>('/settings/upgrades', { method: 'PUT', body: JSON.stringify(value) }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'upgrades'] })
-      // The default profile applies to every series that has no profile of its own, so changing it
-      // can flip cutoffMet/score for most of the library, not just one series.
-      void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
-      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
-      void queryClient.invalidateQueries({ queryKey: ['series-files'] })
-      void queryClient.invalidateQueries({ queryKey: ['source-order'] })
-    },
+  return useSaveSettingsRecord<UpgradeSettings>(['settings', 'upgrades'], '/settings/upgrades', () => {
+    // The default profile applies to every series that has no profile of its own, so changing it
+    // can flip cutoffMet/score for most of the library, not just one series.
+    void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+    void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    void queryClient.invalidateQueries({ queryKey: ['series-files'] })
+    void queryClient.invalidateQueries({ queryKey: ['source-order'] })
   })
 }
 

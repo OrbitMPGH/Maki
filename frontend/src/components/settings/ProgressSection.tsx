@@ -115,7 +115,7 @@ export function ProgressSection() {
           checked={settings.enabled}
           onChange={(e) => patch({ enabled: e.currentTarget.checked })}
           label={t`Track progress and achievements`}
-          description={t`Off hides the Home section, the all-time tab on Stats, and unlock notifications.`}
+          description={t`Off hides the Home section, the all-time tab on Stats, unlock notifications, and removes you from the leaderboard.`}
         />
 
         <Switch

@@ -117,6 +117,9 @@ public class AccountController(
         return Ok(new
         {
             enabled = user.TwoFactorEnabled,
+            // Separate from available: actions that confirm the password demand it whenever one is
+            // stored, even when auth.oidconly stops it signing in.
+            hasPassword = await userManager.HasPasswordAsync(user),
             hasAuthenticator = await userManager.GetAuthenticatorKeyAsync(user) is { Length: > 0 },
             recoveryCodesLeft = await userManager.CountRecoveryCodesAsync(user),
             available,

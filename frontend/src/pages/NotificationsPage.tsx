@@ -146,7 +146,7 @@ export default function NotificationsPage() {
             <Tooltip label={t`Notification settings`} withArrow>
               <ActionIcon
                 component={Link}
-                to="/settings?tab=account&s=notification-prefs"
+                to="/settings?tab=preferences&s=notification-prefs"
                 variant="subtle"
                 color="var(--neutral)"
                 aria-label={t`Notification settings`}

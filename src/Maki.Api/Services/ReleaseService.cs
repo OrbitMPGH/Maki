@@ -152,7 +152,7 @@ public partial class ReleaseService(
         var apiKey = await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new InvalidOperationException("Prowlarr is not configured (Settings → Prowlarr)");
+            throw new InvalidOperationException("Prowlarr is not configured (Settings → Downloads → Prowlarr)");
         }
 
         return (url, apiKey);
@@ -163,7 +163,7 @@ public partial class ReleaseService(
         var url = await settings.GetAsync(SettingKeys.QBittorrentUrl, ct);
         if (string.IsNullOrWhiteSpace(url))
         {
-            throw new InvalidOperationException("qBittorrent is not configured (Settings → qBittorrent)");
+            throw new InvalidOperationException("qBittorrent is not configured (Settings → Downloads → qBittorrent)");
         }
 
         return (

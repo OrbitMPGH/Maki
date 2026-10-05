@@ -17,6 +17,7 @@ export interface ConnectionField {
   key: string
   label: string
   placeholder?: string
+  description?: string
   secret?: boolean
 }
 
@@ -143,6 +144,7 @@ function ConnectionFields({
           <PasswordInput
             key={f.key}
             label={f.label}
+            description={f.description}
             placeholder={f.placeholder}
             value={form.values[f.key] ?? ''}
             onChange={(e) => form.setValue(f.key, e.currentTarget.value)}
@@ -152,6 +154,7 @@ function ConnectionFields({
           <TextInput
             key={f.key}
             label={f.label}
+            description={f.description}
             placeholder={f.placeholder}
             value={form.values[f.key] ?? ''}
             onChange={(e) => form.setValue(f.key, e.currentTarget.value)}

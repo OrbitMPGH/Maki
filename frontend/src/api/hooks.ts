@@ -9,6 +9,7 @@ import {
 import { msg, t } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api, getInitialize, xsrfHeader } from './client'
+import { useSaveSettingsRecord } from './settingsRecord'
 import { useAuth } from '../auth/AuthProvider'
 import type { AnimeResume } from './animeResume'
 import { affectedKeys } from './recommendationFeedback'
@@ -3249,16 +3250,8 @@ export function useDownloadSettings() {
 
 export function useSaveDownloadSettings() {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (value: DownloadSettings) =>
-      api<DownloadSettings>('/settings/download', {
-        method: 'PUT',
-        body: JSON.stringify(value),
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'download'] })
-      void queryClient.invalidateQueries({ queryKey: ['source-order'] })
-    },
+  return useSaveSettingsRecord<DownloadSettings>(['settings', 'download'], '/settings/download', () => {
+    void queryClient.invalidateQueries({ queryKey: ['source-order'] })
   })
 }
 
@@ -3621,13 +3614,8 @@ export function useScrobbleSettings() {
 
 export function useSaveScrobbleSettings() {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (value: ScrobbleSettings) =>
-      api<ScrobbleSettings>('/settings/scrobble', { method: 'PUT', body: JSON.stringify(value) }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'scrobble'] })
-      void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
-    },
+  return useSaveSettingsRecord<ScrobbleSettings>(['settings', 'scrobble'], '/settings/scrobble', () => {
+    void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
   })
 }
 

@@ -94,7 +94,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
       <Panel p="md" edge="info" edgeSide="left">
         <Text fw={700}>{label}</Text>
         <Text size="sm" c="var(--ink-3)" mt={4}>
-          <Trans>Connect {label} under Scrobbling to import from it.</Trans>
+          <Trans>Connect {label} on the Scrobble page to import from it.</Trans>
         </Text>
       </Panel>
     )
@@ -163,6 +163,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
 
             <Select
               label={t`New chapters`}
+              description={t`All: every chapter. Smart: only the next few ahead of your reading. Main only: skips specials.`}
               data={MONITOR_OPTIONS.map((o) => ({ value: o.value, label: renderLabel(o.label) }))}
               value={prefs.monitorNewItems}
               onChange={(value) => value && save({ monitorNewItems: value })}

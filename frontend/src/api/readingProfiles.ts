@@ -15,7 +15,7 @@ export const SERIES_TYPE_LABELS: Record<string, MessageDescriptor> = {
   manga: msg`Manga`,
   manhwa: msg`Manhwa`,
   manhua: msg`Manhua`,
-  oel: msg`OEL / western`,
+  oel: msg`Western (OEL)`,
   other: msg`Other`,
 }
 

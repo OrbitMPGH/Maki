@@ -533,7 +533,7 @@ export function SourceMappingsSection({
                 </Table.Td>
                 <Table.Td>
                   <Tooltip
-                    label={t`${sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on.`}
+                    label={t`${sourceName} is switched off in Settings → Downloads → Sources. This series' setting is kept and applies again once it's back on.`}
                     withArrow
                     multiline
                     w={260}
@@ -1087,7 +1087,7 @@ const LANGUAGE_LABELS: Record<string, MessageDescriptor> = {
   en: msg`English`,
   es: msg`Spanish`,
   'es-la': msg`Spanish (LATAM)`,
-  'pt-br': msg`Portuguese (Br)`,
+  'pt-br': msg`Portuguese (Brazil)`,
   fr: msg`French`,
   de: msg`German`,
   it: msg`Italian`,

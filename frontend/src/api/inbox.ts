@@ -161,6 +161,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
  * module loaded. Only event types that need more than their label carry an entry.
  */
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
+  sourceMatchFinished: msg`A newly added series was linked to its download sources.`,
   importListFinished: msg`A tracker list sync added or requested series.`,
   followedCreatorRelease: msg`Checked after each nightly catalogue update. Follow someone from their creator page.`,
   chapterUpgraded: msg`A better release replaced a downloaded chapter's file.`,

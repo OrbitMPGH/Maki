@@ -1080,7 +1080,7 @@ export default function ActivityPage() {
                       <Trans>
                         Nothing here has a quality profile of its own or an instance default to fall back
                         to, so nothing can be judged against a cutoff. Set one up in{' '}
-                        <Anchor component={Link} to="/settings?tab=library&s=profiles">
+                        <Anchor component={Link} to="/settings?tab=downloads&s=profiles">
                           Settings - Quality profiles
                         </Anchor>
                         .

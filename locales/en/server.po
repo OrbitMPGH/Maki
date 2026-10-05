@@ -601,14 +601,14 @@ msgstr "The Kavita import failed. An administrator can see the details."
 msgid "error.reader.kavitaImportForbidden"
 msgstr "Only the user bound to Kavita or an administrator can run the Kavita import"
 
-#. The Kavita read-status import found no user bound in Settings → Reader → Kavita user.
+#. The Kavita read-status import found no user bound in Settings → Integrations → Kavita.
 #: src/Maki.Api/Services/KavitaReadImportService.cs
 msgid "error.reader.kavitaNoBoundUser"
-msgstr "No Maki user is bound to Kavita (Settings → Reader → Kavita user)"
+msgstr "No Maki user is bound to Kavita (Settings → Integrations → Kavita)"
 
 #: src/Maki.Api/Services/KavitaReadImportService.cs
 msgid "error.reader.kavitaNotConfigured"
-msgstr "Kavita is not configured (Settings → Kavita)"
+msgstr "Kavita is not configured (Settings → Integrations → Kavita)"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.nothingToRead"
@@ -651,7 +651,7 @@ msgstr "No such creator"
 #. see LocalCatalogueUnavailableException.
 #: src/Maki.Api/Services/DiscoverService.cs
 msgid "error.recommendation.discoverNeedsLocalDb"
-msgstr "Discover needs the local MangaBaka database (Settings → Metadata → local DB)"
+msgstr "Discover needs the local MangaBaka database (Settings → Library → Metadata database)"
 
 #: src/Maki.Api/Controllers/RecommendationController.cs
 msgid "error.recommendation.localDbUnavailable"
@@ -665,17 +665,17 @@ msgstr "Name is required"
 #. LocalCatalogueUnavailableException.
 #: src/Maki.Api/Services/RecommendationService.cs
 msgid "error.recommendation.needsLocalDb"
-msgstr "Recommendations need the local MangaBaka database (Settings → Metadata → local DB)"
+msgstr "Recommendations need the local MangaBaka database (Settings → Library → Metadata database)"
 
 #. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
 #. sections that still work with no local database.
 #: src/Maki.Api/Controllers/RecommendationController.cs
 msgid "error.recommendation.tasteInsightsNeedsLocalDb"
-msgstr "Needs the local MangaBaka database (Settings → Metadata → local DB)"
+msgstr "Needs the local MangaBaka database (Settings → Library → Metadata database)"
 
 #: src/Maki.Api/Controllers/RecommendationController.cs
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
-msgstr "Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)"
+msgstr "Your taste profile needs the local MangaBaka database (Settings → Library → Metadata database)"
 
 #. Auto-resolution note when an admin approves a request but somebody else already added the
 #. series first: stored on SeriesRequest.ResolutionNote and shown verbatim next to the admin's own
@@ -1056,7 +1056,7 @@ msgstr "Some chapter snapshots could not be refreshed"
 #. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 msgid "error.sourceMapping.sourceDisabled"
-msgstr "{name} is switched off in Settings → Source priority"
+msgstr "{name} is switched off in Settings → Downloads → Sources"
 
 #. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
 #: src/Maki.Api/Controllers/SourceMappingController.cs

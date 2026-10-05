@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
+import { useSaveSettingsRecord } from './settingsRecord'
 
 type SetupDoneHandler = () => void
 let onSetupDone: SetupDoneHandler | null = null
@@ -183,6 +184,7 @@ export function useTwoFactorStatus() {
         hasAuthenticator: boolean
         recoveryCodesLeft: number
         available: boolean
+        hasPassword: boolean
         ssoDelegated: boolean
       }>('/account/2fa'),
   })
@@ -395,12 +397,7 @@ export function useSecuritySettings() {
 }
 
 export function useSaveSecuritySettings() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (body: SecuritySettings) =>
-      api<SecuritySettings>('/settings/security', { method: 'PUT', body: JSON.stringify(body) }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['settings', 'security'] }),
-  })
+  return useSaveSettingsRecord<SecuritySettings>(['settings', 'security'], '/settings/security')
 }
 
 export interface OidcSettings {

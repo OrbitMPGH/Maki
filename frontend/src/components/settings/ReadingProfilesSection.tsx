@@ -76,13 +76,12 @@ export function ReadingProfilesSection() {
   return (
     <SettingsSection
       id="reader"
-      title={<Trans>Reader</Trans>}
+      title={<Trans>Reader profiles</Trans>}
       description={
         <Trans>
           How the built-in reader opens a series. A profile applies automatically to the series
-          types it covers; everything else uses Default, including series whose metadata hasn't
-          been refreshed since upgrading. You can pin a profile or override settings from inside
-          the reader.
+          types it covers; everything else uses Default. You can also pin a profile to a series, or
+          change settings from inside the reader.
         </Trans>
       }
       actions={
@@ -313,7 +312,7 @@ function ProfileEditor({
 
           <MultiSelect
             label={t`Applies automatically to`}
-            description={t`Leave empty to use this profile only where you pin it to a series.`}
+            description={t`Leave empty to use this profile only on series you pin it to.`}
             value={types}
             onChange={setTypes}
             data={SERIES_TYPES.map((type) => {
@@ -398,7 +397,7 @@ function ProfileEditor({
         />
         <NumberInput
           label={t`Preload`}
-          description={t`Pages fetched ahead.`}
+          description={t`Pages fetched ahead. Not used in Continuous layout.`}
           min={0}
           max={10}
           value={prefs.preload}
@@ -414,7 +413,7 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
-        label={t`Tap zones (click the page edges to turn)`}
+        label={t`Tap zones (click the page edges to turn), paged layouts only`}
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}
       />
@@ -430,12 +429,6 @@ function ProfileEditor({
         description={t`Credit pages and the next chapter's first pages often look alike, so this marks the turn.`}
         checked={prefs.chapterBanner}
         onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
-      />
-      <Switch
-        size="sm"
-        label={t`Split double-width pages`}
-        checked={prefs.splitWidePages}
-        onChange={(e) => set({ splitWidePages: e.currentTarget.checked })}
       />
 
       <Group justify="flex-end" gap="xs">

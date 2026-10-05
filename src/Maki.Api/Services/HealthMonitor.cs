@@ -111,7 +111,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     latest < DateTime.UtcNow.AddDays(-options.BackupDays) ? "warning" : "healthy",
                     latest == DateTime.MinValue ? "health.check.noBackup" : "health.check.lastBackup",
                     latest == DateTime.MinValue ? null : new { at = latest },
-                    "/settings?tab=system&s=backups");
+                    "/settings?tab=system&s=backup");
             }
             catch { Add("backup", "system", "unavailable", "health.check.backupUnreadable"); }
             var failed = await db.DownloadQueue.CountAsync(q => q.Status == QueueStatus.Failed, ct);
@@ -219,18 +219,21 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
 
             async Task Probe(string name, string urlKey, string? secretKey, bool required, Func<string, string?, CancellationToken, Task<bool>> ping)
             {
+                var link = name == "Kavita"
+                    ? "/settings?tab=integrations&s=kavita"
+                    : $"/settings?tab=downloads&s={name.ToLowerInvariant()}";
                 var url = await settings.GetAsync(urlKey, ct);
                 var secret = secretKey == null ? null : await settings.GetAsync(secretKey, ct);
                 if (string.IsNullOrWhiteSpace(url))
                 {
                     Add(name, "connections", required || !string.IsNullOrWhiteSpace(secret) ? "warning" : "disabled",
-                        "health.check.notConfigured", new { service = name }, "/settings?tab=connections");
+                        "health.check.notConfigured", new { service = name }, link);
                     return;
                 }
                 if (secretKey != null && string.IsNullOrWhiteSpace(secret))
                 {
                     Add(name, "connections", "warning", "health.check.incompleteConfig",
-                        new { service = name }, "/settings?tab=connections");
+                        new { service = name }, link);
                     return;
                 }
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -239,7 +242,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 try { ok = await ping(url, secret, timeout.Token).WaitAsync(timeout.Token); } catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } catch { }
                 Add(name, "connections", ok ? "healthy" : "error",
                     ok ? "health.check.connected" : "health.check.connectionFailed",
-                    new { service = name }, "/settings?tab=connections", true);
+                    new { service = name }, link, true);
             }
         }
         finally { Gate.Release(); }

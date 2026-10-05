@@ -859,15 +859,15 @@ msgstr "Kavita からのインポートに失敗しました。管理者は詳�
 msgid "error.reader.kavitaImportForbidden"
 msgstr "Kavita に紐づいたユーザーまたは管理者のみ、Kavita からインポートできます"
 
-#. The Kavita read-status import found no user bound in Settings → Reader → Kavita user.
+#. The Kavita read-status import found no user bound in Settings → Integrations → Kavita.
 #: src/Maki.Api/Services/KavitaReadImportService.cs
-#. English: No Maki user is bound to Kavita (Settings → Reader → Kavita user)
+#. English: No Maki user is bound to Kavita (Settings → Integrations → Kavita)
 #, fuzzy
 msgid "error.reader.kavitaNoBoundUser"
 msgstr "Kavitaに紐付けられたMakiユーザーがありません（設定→リーダー→Kavitaユーザー）"
 
 #: src/Maki.Api/Services/KavitaReadImportService.cs
-#. English: Kavita is not configured (Settings → Kavita)
+#. English: Kavita is not configured (Settings → Integrations → Kavita)
 #, fuzzy
 msgid "error.reader.kavitaNotConfigured"
 msgstr "Kavitaが設定されていません（設定→Kavita）"
@@ -930,7 +930,7 @@ msgstr "その作成者はありません"
 #. Thrown by DiscoverService.EnsureAvailableAsync, a singleton with no request locale of its own;
 #. see LocalCatalogueUnavailableException.
 #: src/Maki.Api/Services/DiscoverService.cs
-#. English: Discover needs the local MangaBaka database (Settings → Metadata → local DB)
+#. English: Discover needs the local MangaBaka database (Settings → Library → Metadata database)
 #, fuzzy
 msgid "error.recommendation.discoverNeedsLocalDb"
 msgstr "「見つける」にはMangaBakaのローカルデータベースが必要です（設定→メタデータ→ローカルDB）"
@@ -950,7 +950,7 @@ msgstr "名前は必須です"
 #. Thrown by RecommendationService.GetAsync, a singleton with no request locale of its own; see
 #. LocalCatalogueUnavailableException.
 #: src/Maki.Api/Services/RecommendationService.cs
-#. English: Recommendations need the local MangaBaka database (Settings → Metadata → local DB)
+#. English: Recommendations need the local MangaBaka database (Settings → Library → Metadata database)
 #, fuzzy
 msgid "error.recommendation.needsLocalDb"
 msgstr "おすすめにはMangaBakaのローカルデータベースが必要です（設定→メタデータ→ローカルDB）"
@@ -958,13 +958,13 @@ msgstr "おすすめにはMangaBakaのローカルデータベースが必要で
 #. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
 #. sections that still work with no local database.
 #: src/Maki.Api/Controllers/RecommendationController.cs
-#. English: Needs the local MangaBaka database (Settings → Metadata → local DB)
+#. English: Needs the local MangaBaka database (Settings → Library → Metadata database)
 #, fuzzy
 msgid "error.recommendation.tasteInsightsNeedsLocalDb"
 msgstr "MangaBakaのローカルデータベースが必要です（設定→メタデータ→ローカルDB）"
 
 #: src/Maki.Api/Controllers/RecommendationController.cs
-#. English: Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)
+#. English: Your taste profile needs the local MangaBaka database (Settings → Library → Metadata database)
 #, fuzzy
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr "あなたのテイストプロファイルにはローカルMangaBakaデータベースが必要です（Settings → Metadata → local DB）"
@@ -1515,7 +1515,7 @@ msgstr "一部の章のスナップショットを更新できませんでした
 
 #. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
 #: src/Maki.Api/Controllers/SourceMappingController.cs
-#. English: {name} is switched off in Settings → Source priority
+#. English: {name} is switched off in Settings → Downloads → Sources
 #, fuzzy
 msgid "error.sourceMapping.sourceDisabled"
 msgstr "{name}はSettings → Source priorityで無効になっています"

@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import {
   Alert,
+  Button,
   Code,
   Group,
   NumberInput,
   Stack,
   Switch,
+  Text,
   TextInput,
 } from '@mantine/core'
+import { IconCheck, IconCopy } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
   useOidcSettings,
@@ -20,6 +23,8 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { useCopyText } from '../ui/useCopyText'
+import { useSliceSync } from '../../pages/settings/sharedRecord'
 
 /**
  * Instance security settings. Admin-only.
@@ -28,93 +33,125 @@ import { SettingsSection } from '../../pages/settings/SettingsSection'
  * flag, HSTS, the trusted-proxy list, the lockout thresholds. A change needs a restart. The card
  * says so rather than pretending otherwise: silently requiring a restart is how someone concludes the
  * setting does nothing.
+ *
+ * One record backs two cards, Sign-in policy and Network. Each saves only its own fields, so saving
+ * one never reverts the other.
  */
-export function SecuritySection() {
-  const { t } = useLingui()
+type LockoutSlice = Pick<SecuritySettings, 'lockoutMaxAttempts' | 'lockoutMinutes' | 'sessionDays'>
+type NetworkSlice = Pick<SecuritySettings, 'requireHttps' | 'trustedProxies'>
+
+function useSecuritySlice<S extends object>(pick: (s: SecuritySettings) => S) {
   const { data } = useSecuritySettings()
   const save = useSaveSecuritySettings()
-  const [draft, setDraft] = useState<SecuritySettings | null>(null)
+  const [draft, setDraft] = useState<S | null>(null)
+  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+  const slice = data && pick(data)
 
-  useEffect(() => {
-    if (data) setDraft(data)
-  }, [data])
+  useSliceSync(slice, setDraft, discarded)
+
+  const dirty = slice !== undefined && draft !== null && JSON.stringify(draft) !== JSON.stringify(slice)
+  const commit = () => {
+    if (!draft) return
+    save.mutate(
+      draft,
+      {
+        onSuccess: () =>
+          notifications.show({
+            message: now`Security settings saved. Restart Maki to apply them.`,
+            color: 'var(--ok)',
+          }),
+        onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+      },
+    )
+  }
+  return { draft, setDraft, dirty, saving: save.isPending, discard, commit }
+}
+
+export function SecuritySection() {
+  const { t } = useLingui()
+  const { draft, setDraft, dirty, saving, discard, commit } = useSecuritySlice<LockoutSlice>((s) => ({
+    lockoutMaxAttempts: s.lockoutMaxAttempts,
+    lockoutMinutes: s.lockoutMinutes,
+    sessionDays: s.sessionDays,
+  }))
 
   if (!draft) return null
-
-  const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
 
   return (
     <SettingsSection
       id="security"
-      title={<Trans>Security</Trans>}
-      description={<Trans>Changes take effect after Maki restarts.</Trans>}
+      title={<Trans>Sign-in policy</Trans>}
+      description={<Trans>Lockout and session rules for password sign-in. Changes take effect after Maki restarts.</Trans>}
       dirty={dirty}
-      saving={save.isPending}
-      onDiscard={() => data && setDraft(data)}
-      onSave={() =>
-        save.mutate(draft, {
-          onSuccess: () =>
-            notifications.show({
-              message: now`Security settings saved. Restart Maki to apply them.`,
-              color: 'var(--ok)',
-            }),
-          onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-        })
-      }
+      saving={saving}
+      onDiscard={discard}
+      onSave={commit}
       panelProps={{ id: 'security' }}
+    >
+      <Group grow align="flex-start">
+        <NumberInput
+          label={t`Failed sign-ins before lockout`}
+          description={<Trans>Set to <Code>0</Code> to disable lockout.</Trans>}
+          min={0}
+          max={1000}
+          value={draft.lockoutMaxAttempts}
+          onChange={(v) => setDraft({ ...draft, lockoutMaxAttempts: Number(v) || 0 })}
+        />
+        <NumberInput
+          label={t`Lockout duration (minutes)`}
+          description={t`Counted from the moment the limit is hit.`}
+          min={1}
+          max={10080}
+          value={draft.lockoutMinutes}
+          onChange={(v) => setDraft({ ...draft, lockoutMinutes: Number(v) || 1 })}
+        />
+        <NumberInput
+          label={t`Session lifetime (days)`}
+          description={t`Sliding: activity extends it.`}
+          min={1}
+          max={3650}
+          value={draft.sessionDays}
+          onChange={(v) => setDraft({ ...draft, sessionDays: Number(v) || 1 })}
+        />
+      </Group>
+    </SettingsSection>
+  )
+}
+
+export function NetworkSection() {
+  const { t } = useLingui()
+  const { draft, setDraft, dirty, saving, discard, commit } = useSecuritySlice<NetworkSlice>((s) => ({
+    requireHttps: s.requireHttps,
+    trustedProxies: s.trustedProxies,
+  }))
+
+  if (!draft) return null
+
+  return (
+    <SettingsSection
+      id="network"
+      title={<Trans>Network</Trans>}
+      description={<Trans>How Maki is reached. Changes take effect after Maki restarts.</Trans>}
+      dirty={dirty}
+      saving={saving}
+      onDiscard={discard}
+      onSave={commit}
     >
       <Stack gap="md">
         <Switch
           label={t`Require HTTPS`}
-          description={t`Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS: over plain HTTP, sign-in fails without saying why.`}
+          description={t`Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS; over plain HTTP, sign-in is refused with a message saying so.`}
           checked={draft.requireHttps}
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
 
         <TextInput
           label={t`Trusted proxies`}
-          description={t`Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly.`}
+          description={t`Comma-separated IPs or CIDR networks allowed to set X-Forwarded-For. Needed behind a reverse proxy so lockout sees the real client. Leave empty if Maki is reached directly.`}
           placeholder="172.18.0.0/16, 10.0.0.5"
           value={draft.trustedProxies}
           onChange={(e) => setDraft({ ...draft, trustedProxies: e.currentTarget.value })}
         />
-
-        {!draft.trustedProxies.trim() && (
-          <Alert color="var(--warn)" variant="light">
-            <Trans>
-              With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every
-              failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see
-              the real client.
-            </Trans>
-          </Alert>
-        )}
-
-        <Group grow align="flex-start">
-          <NumberInput
-            label={t`Failed sign-ins before lockout`}
-            description={<Trans>Set to <Code>0</Code> to disable lockout.</Trans>}
-            min={0}
-            max={1000}
-            value={draft.lockoutMaxAttempts}
-            onChange={(v) => setDraft({ ...draft, lockoutMaxAttempts: Number(v) || 0 })}
-          />
-          <NumberInput
-            label={t`Lockout duration (minutes)`}
-            description={t`Sliding: a failed sign-in resets the timer.`}
-            min={1}
-            max={10080}
-            value={draft.lockoutMinutes}
-            onChange={(v) => setDraft({ ...draft, lockoutMinutes: Number(v) || 1 })}
-          />
-          <NumberInput
-            label={t`Session lifetime (days)`}
-            description={t`Sliding: activity extends it.`}
-            min={1}
-            max={3650}
-            value={draft.sessionDays}
-            onChange={(v) => setDraft({ ...draft, sessionDays: Number(v) || 1 })}
-          />
-        </Group>
       </Stack>
     </SettingsSection>
   )
@@ -129,6 +166,7 @@ export function OidcSection() {
   const { t } = useLingui()
   const { data } = useOidcSettings()
   const save = useSaveOidcSettings()
+  const redirectCopy = useCopyText()
   const [draft, setDraft] = useState<OidcSettings | null>(null)
 
   useEffect(() => {
@@ -148,10 +186,7 @@ export function OidcSection() {
       description={
         <Trans>
           Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
-          take effect after Maki restarts. Register{' '}
-          <Code>{redirectUrl}</Code> as this client&apos;s redirect URI.
-          If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path),
-          register that host&apos;s variant as well.
+          take effect after Maki restarts.
         </Trans>
       }
       dirty={dirty}
@@ -170,6 +205,26 @@ export function OidcSection() {
       panelProps={{ id: 'oidc' }}
     >
       <Stack gap="md">
+        <Stack gap={6}>
+          <Group gap="xs">
+            <Code>{redirectUrl}</Code>
+            <Button
+              size="xs"
+              variant="default"
+              onClick={() => void redirectCopy.copy(redirectUrl)}
+              leftSection={redirectCopy.copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+            >
+              {redirectCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
+            </Button>
+          </Group>
+          <Text size="xs" c="dimmed">
+            <Trans>
+              Register this as the client&apos;s redirect URI. If Maki is reached at another host too,
+              register that host&apos;s variant as well.
+            </Trans>
+          </Text>
+        </Stack>
+
         <Switch
           label={t`Enable single sign-on`}
           description={t`Adds a button to the login page. Local passwords keep working unless you restrict them below.`}
@@ -202,6 +257,7 @@ export function OidcSection() {
         <Group grow align="flex-start">
           <TextInput
             label={t`Scopes`}
+            description={t`Space-separated. openid is always added. Keep email so existing accounts can be matched by their verified address.`}
             placeholder="profile email"
             value={draft.scopes}
             onChange={(e) => setDraft({ ...draft, scopes: e.currentTarget.value })}
@@ -233,7 +289,7 @@ export function OidcSection() {
 
         <Switch
           label={t`Create accounts on first sign-in`}
-          description={t`Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder.`}
+          description={t`Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches.`}
           checked={draft.autoProvision}
           onChange={(e) => setDraft({ ...draft, autoProvision: e.currentTarget.checked })}
         />

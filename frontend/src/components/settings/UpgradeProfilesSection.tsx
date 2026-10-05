@@ -45,6 +45,7 @@ import {
   useUpdateQualityFormat,
   useUpdateUpgradeProfile,
   useUpgradeProfiles,
+  useUpgradeSettings,
   type FormatConditionDto,
   type FormatConditionType,
   type FormatScoreDto,
@@ -146,9 +147,9 @@ export function UpgradeProfilesSection() {
       title={<Trans>Quality profiles</Trans>}
       description={
         <Trans>
-          A profile picks which release tier Maki prefers for a series, and how far it goes to
-          replace what's already downloaded. Pin one to a series from its Quality profile menu, or
-          set a default for every series below under Downloads.
+          A profile picks which release tier Maki prefers for a series and how far it goes to
+          replace what's already downloaded. Pin one to a series from its Quality profile menu.
+          The default for every other series is set under Upgrade scan below.
         </Trans>
       }
       actions={
@@ -202,8 +203,15 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
   const [open, setOpen] = useState(false)
   const update = useUpdateUpgradeProfile()
   const remove = useDeleteUpgradeProfile()
+  const { data: upgradeSettings } = useUpgradeSettings()
   const [confirming, setConfirming] = useState(false)
   const { name, seriesCount, upgradeUntilScore } = profile
+  const deleteBlocker =
+    seriesCount > 0
+      ? t`Unpin it from every series first`
+      : upgradeSettings?.defaultProfileId === profile.id
+        ? t`Pick another default profile first`
+        : null
 
   return (
     <Card withBorder radius="sm" padding="xs">
@@ -231,16 +239,19 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
           </Text>
         </div>
         <Group gap={4} wrap="nowrap">
-          <Tooltip label={t`Delete profile`} withArrow>
-            <ActionIcon
-              variant="subtle"
-              color="var(--danger)"
-              loading={remove.isPending}
-              onClick={() => setConfirming(true)}
-              aria-label={t`Delete profile`}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
+          <Tooltip label={deleteBlocker ?? t`Delete profile`} withArrow>
+            <span>
+              <ActionIcon
+                variant="subtle"
+                color="var(--danger)"
+                loading={remove.isPending}
+                disabled={deleteBlocker !== null}
+                onClick={() => setConfirming(true)}
+                aria-label={t`Delete profile`}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            </span>
           </Tooltip>
           <ActionIcon
             variant="subtle"
@@ -284,9 +295,7 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
           })
         }
       >
-        <Trans>
-          Series pinned to this profile fall back to the instance default. This can't be undone.
-        </Trans>
+        <Trans>The profile is removed. This can't be undone.</Trans>
       </ConfirmDialog>
     </Card>
   )
@@ -452,7 +461,9 @@ function ProfileEditor({
         <SettingsHelp mb="xs">
           <Trans>
             Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so
-            the better scoring copy wins between them.
+            the better scoring copy wins between them. Volume is a digital volume release, Official the
+            publisher's own site, Scanlator a translation group, Aggregator a site that reposts others'
+            releases.
           </Trans>
         </SettingsHelp>
         <Stack gap={4}>
@@ -485,7 +496,7 @@ function ProfileEditor({
       />
 
       <Switch
-        label={t`Upgrades enabled`}
+        label={t`Let the daily scan upgrade this profile's series`}
         description={t`When the instance switch is on, the daily scan may replace files of series on this profile with better copies.`}
         checked={upgradesEnabled}
         onChange={(e) => setUpgradesEnabled(e.currentTarget.checked)}
@@ -494,7 +505,7 @@ function ProfileEditor({
       <Group grow align="flex-start">
         <NumberInput
           label={t`Minimum score gain`}
-          description={t`A candidate must beat the current file's score by at least this much.`}
+          description={t`Within the same tier, a candidate must beat the current file's score by at least this much. A higher tier is governed by the next field.`}
           min={0}
           value={minScoreDelta}
           onChange={setMinScoreDelta}
@@ -637,9 +648,10 @@ export function QualityFormatsSection() {
       title={<Trans>Quality formats</Trans>}
       description={
         <Trans>
-          A format matches a file by its source, its group or release name, its resolution, or its
-          image codec. Every required condition has to match, plus at least one condition that isn't
-          marked required.
+          A format matches a file by its source, kind, release group or name, resolution, image
+          codec, size per page, page count or language. Every required condition must match; when a
+          format also has optional conditions, at least one of those must match too. Scores for a
+          format are set inside each profile.
         </Trans>
       }
       actions={

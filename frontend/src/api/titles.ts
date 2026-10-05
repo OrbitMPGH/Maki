@@ -21,7 +21,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   de: 'German',
   it: 'Italian',
   pt: 'Portuguese',
-  'pt-br': 'Portuguese (Br)',
+  'pt-br': 'Portuguese (Brazil)',
   ru: 'Russian',
   ar: 'Arabic',
   id: 'Indonesian',

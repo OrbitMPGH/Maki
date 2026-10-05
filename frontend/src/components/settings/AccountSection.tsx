@@ -41,16 +41,26 @@ import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useCopyText } from '../ui/useCopyText'
 
 /**
- * Self-service account management: password, two-factor, API keys, sessions.
+ * Self-service account management: password, two-factor, single sign-on, sessions.
  *
  * Needs no permission: it only ever acts on the caller's own account, and the server takes the user
- * id from the session rather than from the request.
+ * id from the session rather than from the request. The same holds for API keys below.
  */
-export function AccountSection() {
+export function SignInSection() {
   const { me } = useAuth()
 
   return (
-    <SettingsSection id="account" title={<Trans>My account</Trans>} panelProps={{ id: 'account' }}>
+    <SettingsSection
+      id="sign-in"
+      title={<Trans>Sign-in</Trans>}
+      panelProps={{ id: 'account' }}
+      description={
+        <Trans>
+          Your password, two-factor code and single sign-on link. Changing your password signs out
+          your other devices.
+        </Trans>
+      }
+    >
       <Group gap="xs" mb="md">
         <Text size="sm" c="var(--ink-3)">
           <Trans>Signed in as</Trans>
@@ -70,10 +80,25 @@ export function AccountSection() {
         <Divider />
         <SsoCard />
         <Divider />
-        <ApiKeysCard />
-        <Divider />
         <SessionsCard />
       </Stack>
+    </SettingsSection>
+  )
+}
+
+export function ApiKeysSection() {
+  return (
+    <SettingsSection
+      id="api-keys"
+      title={<Trans>API keys</Trans>}
+      description={
+        <Trans>
+          Keys for scripts and third-party apps. A key acts as you, sent in the{' '}
+          <Code>X-Api-Key</Code> header. Your OPDS feed has its own URL under Reading.
+        </Trans>
+      }
+    >
+      <ApiKeysCard />
     </SettingsSection>
   )
 }
@@ -153,7 +178,10 @@ function SsoCard() {
       ) : (
         <Stack gap="xs">
           <Text size="xs" c="var(--ink-3)">
-            <Trans>Not linked yet. Sign in with {displayName} once to enable it for this account.</Trans>
+            <Trans>
+              Not linked yet. Confirm your password, then sign in with {displayName} to link it to
+              this account.
+            </Trans>
           </Text>
           <Group
             component="form"
@@ -450,6 +478,8 @@ function ApiKeysCard() {
   const { data: keys } = useApiKeys()
   const create = useCreateApiKey()
   const revoke = useRevokeApiKey()
+  const { data: status } = useTwoFactorStatus()
+  const needsPassword = status?.hasPassword ?? true
 
   const [name, setName] = useState('')
   const [keyPassword, setKeyPassword] = useState('')
@@ -463,16 +493,6 @@ function ApiKeysCard() {
 
   return (
     <Stack gap="xs">
-      <Text fw={600} size="sm">
-        <Trans>API keys</Trans>
-      </Text>
-      <Text size="xs" c="var(--ink-3)">
-        <Trans>
-          For scripts and third-party clients. A key acts as you through the{' '}
-          <Code>X-Api-Key</Code> header. Your OPDS feed URL is managed on the OPDS card.
-        </Trans>
-      </Text>
-
       <Group
         component="form"
         align="flex-end"
@@ -500,13 +520,15 @@ function ApiKeysCard() {
           onChange={(e) => setName(e.currentTarget.value)}
           w={200}
         />
-        <PasswordInput
-          label={t`Your password`}
-          autoComplete="current-password"
-          value={keyPassword}
-          onChange={(e) => setKeyPassword(e.currentTarget.value)}
-          w={200}
-        />
+        {needsPassword && (
+          <PasswordInput
+            label={t`Your password`}
+            autoComplete="current-password"
+            value={keyPassword}
+            onChange={(e) => setKeyPassword(e.currentTarget.value)}
+            w={200}
+          />
+        )}
         <Button type="submit" loading={create.isPending} disabled={!name.trim()}>
           <Trans>Create</Trans>
         </Button>

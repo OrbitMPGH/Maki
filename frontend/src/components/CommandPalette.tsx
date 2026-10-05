@@ -5,13 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
-import {
-  SETTINGS_ENTRIES,
-  SETTINGS_TABS,
-  entryVisible,
-  matchesSettingsQuery,
-  settingsPath,
-} from '../pages/settings/registry'
+import { SETTINGS_TABS, matchesSettingsQuery, settingsPath } from '../pages/settings/registry'
+import { useVisibleSettingsEntries } from '../pages/settings/useVisibleSettingsEntries'
 import { useLingui } from '@lingui/react'
 import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
@@ -38,13 +33,13 @@ export default function CommandPalette({ navItems }: Props) {
   const [selected, setSelected] = useState(0)
   const navigate = useNavigate()
   const { data: series } = useSeries()
-  const { me, can } = useAuth()
+  const { can } = useAuth()
   const { _, i18n } = useLingui()
   const { t } = useLinguiMacro()
   const renderLabel = useLabel()
-  const isAdmin = me?.isAdmin ?? false
   const canAdd = can('AddSeries')
   const listRef = useRef<HTMLDivElement>(null)
+  const visibleSettings = useVisibleSettingsEntries()
 
   useHotkeys([['mod+K', open]])
 
@@ -84,15 +79,15 @@ export default function CommandPalette({ navItems }: Props) {
     // which tab it sits under, and searching is the answer to that. Filtered by what the caller may
     // actually see, so a non-admin is never sent to a tab that doesn't exist for them.
     const settingMatches = q
-      ? SETTINGS_ENTRIES.filter(
-          (e) => entryVisible(e, isAdmin, can) && matchesSettingsQuery(e, q, _),
-        ).map((e) => ({
-          kind: 'setting' as const,
-          key: `setting-${e.id}`,
-          label: _(e.title),
-          sub: settingsCrumb(e.tab),
-          path: settingsPath(e),
-        }))
+      ? visibleSettings
+          .filter((e) => matchesSettingsQuery(e, q, _))
+          .map((e) => ({
+            kind: 'setting' as const,
+            key: `setting-${e.id}`,
+            label: _(e.title),
+            sub: settingsCrumb(e.tab),
+            path: settingsPath(e),
+          }))
       : []
 
     const seriesMatches = q
@@ -135,7 +130,7 @@ export default function CommandPalette({ navItems }: Props) {
       : []
 
     return [...navMatches, ...settingMatches, ...seriesMatches, ...searchFallback]
-  }, [query, navItems, series, isAdmin, can, canAdd, renderLabel, _, i18n.locale])
+  }, [query, navItems, series, visibleSettings, canAdd, renderLabel, _, i18n.locale])
 
   useEffect(() => {
     setSelected(0)

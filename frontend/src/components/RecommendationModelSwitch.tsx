@@ -67,10 +67,12 @@ export function RecommendationModelSwitch({
   status,
   onSelect,
   busy,
+  description,
 }: {
   status: RecommendationIndexStatus | undefined
   onSelect: (kind: string) => void
   busy: boolean
+  description?: string
 }) {
   const selected = status?.embeddingModel ?? ON_MODEL
   const running = status?.running ?? false
@@ -93,7 +95,7 @@ export function RecommendationModelSwitch({
     <>
       <Switch
         label={t`Semantic search and recommendations`}
-        description={t`Uses about 240 MB of RAM.`}
+        description={description ?? t`Uses about 240 MB of RAM.`}
         checked={selected !== 'off'}
         disabled={disabled}
         onChange={(e) => onSelect(e.currentTarget.checked ? ON_MODEL : 'off')}

@@ -20,7 +20,6 @@ public record ReaderPrefsSpec(
     int Preload = 3,
     bool TapZones = true,
     bool ShowPageNumber = true,
-    bool SplitWidePages = false,
     bool AutoNextChapter = true,
     string Background = "#0a0a0b",
     /// <summary>

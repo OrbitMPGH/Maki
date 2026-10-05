@@ -45,7 +45,7 @@ export function TrackerSyncControls({
 
   return (
     <Stack gap={6} mt={4}>
-      <Group gap="lg">
+      <Group gap="lg" align="flex-start">
         <Switch
           size="xs"
           label={t`Scrobble reading`}
@@ -64,6 +64,7 @@ export function TrackerSyncControls({
           <Switch
             size="xs"
             label={t`Use anime for recommendation taste`}
+            description={t`Lets Discover learn from your anime list as well as your manga list.`}
             checked={anime}
             disabled={prefs.isPending || !connection}
             onChange={(e) => setPref({ anime: e.currentTarget.checked })}

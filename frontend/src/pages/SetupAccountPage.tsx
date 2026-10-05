@@ -50,7 +50,7 @@ export function SetupAccountPage() {
           </Text>
           <List fz="sm" c="var(--ink-3)" spacing={4}>
             <List.Item>
-              <Trans>Put it behind HTTPS, then turn on Settings → Security → Require HTTPS.</Trans>
+              <Trans>Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS.</Trans>
             </List.Item>
             <List.Item>
               <Trans>
@@ -59,7 +59,7 @@ export function SetupAccountPage() {
               </Trans>
             </List.Item>
             <List.Item>
-              <Trans>Add two-factor authentication under Settings → My account.</Trans>
+              <Trans>Add two-factor authentication under Settings → Account → Sign-in.</Trans>
             </List.Item>
           </List>
         </div>

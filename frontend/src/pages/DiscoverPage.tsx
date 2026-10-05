@@ -1479,7 +1479,7 @@ function DiscoverBrowseTab({
           ) : (
             <EmptyState
               title={t`Nothing to browse yet`}
-              description={t`The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB).`}
+              description={t`The catalogue rails need the local MangaBaka database (Settings → Library → Metadata database).`}
             />
           ))}
       </div>

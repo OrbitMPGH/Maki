@@ -30,6 +30,7 @@ import type { Permission } from '../../api/auth'
 
 export type SettingsTabKey =
   | 'account'
+  | 'preferences'
   | 'reading'
   | 'library'
   | 'downloads'
@@ -59,63 +60,69 @@ export interface SettingsEntry {
 export const SETTINGS_TABS: SettingsTab[] = [
   {
     key: 'account',
-    label: msg`My account`,
-    description: msg`Your login, your API keys, and how Maki looks and opens for you.`,
+    label: msg`Account`,
+    description: msg`Your password, two-factor code, single sign-on link and API keys.`,
+  },
+  {
+    key: 'preferences',
+    label: msg`Preferences`,
+    description: msg`How Maki looks and behaves for you: colours, language, start page, content rating and what reaches your bell.`,
   },
   {
     key: 'reading',
     label: msg`Reading`,
-    description: msg`The built-in reader, the OPDS catalogue and what search is allowed to show you.`,
+    description: msg`The built-in reader, progress and achievements, the OPDS catalogue and read sync with Kavita.`,
   },
   {
     key: 'library',
     label: msg`Library`,
-    description: msg`Where files live, how they are named, and where metadata comes from.`,
+    description: msg`Where files live, how they are named, what new series start with, and where metadata comes from.`,
   },
   {
     key: 'downloads',
     label: msg`Downloads`,
-    description: msg`Scraper sources, download behaviour and the torrent path.`,
+    description: msg`The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced.`,
   },
   {
     key: 'integrations',
     label: msg`Integrations`,
-    description: msg`Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts.`,
+    description: msg`Kavita, tracker accounts and import lists, and alerts to chat and push apps.`,
   },
   {
     key: 'users',
     label: msg`Users & security`,
-    description: msg`Accounts, permissions, sign-in policy and single sign-on.`,
+    description: msg`Accounts, permissions, lockout and session rules, and single sign-on.`,
   },
   {
     key: 'system',
     label: msg`System`,
-    description: msg`Backups, the image cache and updates.`,
+    description: msg`HTTPS and proxies, backups, the image cache and updates.`,
   },
 ]
 
 export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
-    id: 'account',
+    id: 'sign-in',
     tab: 'account',
-    title: msg`My account`,
+    title: msg`Sign-in`,
     keywords: msg({
-      message: `password, change password, display name, username, email, api key, token, sessions, sign out, log out, two-factor authentication, 2fa, totp, authenticator, link single sign-on`,
+      message: `password, change password, sessions, sign out, log out, two-factor authentication, 2fa, totp, authenticator, link single sign-on`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
-    id: 'notification-prefs',
+    id: 'api-keys',
     tab: 'account',
-    title: msg`Notifications`,
+    title: msg`API keys`,
     keywords: msg({
-      message: `bell, inbox, alerts, toast, in-app notifications, new chapters, achievements, level up`,
+      message: `api key, token`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
+
   {
     id: 'appearance',
-    tab: 'account',
+    tab: 'preferences',
     title: msg`Appearance`,
     keywords: msg({
       message: `theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system`,
@@ -124,18 +131,18 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   },
   {
     id: 'language',
-    tab: 'account',
+    tab: 'preferences',
     title: msg`Language`,
     // Deliberately overlaps 'title-language' below on the bare word "language": somebody typing it
     // could mean either, and showing both cards is the answer to that rather than guessing.
     keywords: msg({
-      message: `language, translation, translate, locale, interface language, ui language, english, swedish, svenska`,
+      message: `language, translation, translate, locale, interface language, ui language, english`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
     id: 'title-language',
-    tab: 'account',
+    tab: 'preferences',
     title: msg`Title language`,
     keywords: msg({
       message: `language, title language, japanese titles, romaji, native title, original title, localised, localized`,
@@ -143,9 +150,19 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'discover-rating',
+    tab: 'preferences',
+    title: msg`Content rating`,
+    permission: 'ChangeContentRating',
+    keywords: msg({
+      message: `content rating, nsfw, erotica, mature, safe, adult`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'home-screen',
-    tab: 'account',
-    title: msg`Home & start page`,
+    tab: 'preferences',
+    title: msg`Start page & Home`,
     keywords: msg({
       message: `home sections, rails, continue reading, recently added, section order, edit layout, drag, reorder, hero, glance, discover layout, disable home, start page, landing page, opens on, default page`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
@@ -153,10 +170,19 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   },
   {
     id: 'series-page',
-    tab: 'account',
+    tab: 'preferences',
     title: msg`Series page`,
     keywords: msg({
       message: `related series, more like this, similar, recommendations, rails, sequels, spin-offs`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'notification-prefs',
+    tab: 'preferences',
+    title: msg`Notifications`,
+    keywords: msg({
+      message: `bell, inbox, alerts, toast, in-app notifications, new chapters, achievements, level up`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -164,7 +190,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'reader',
     tab: 'reading',
-    title: msg`Reader`,
+    title: msg`Reader profiles`,
     keywords: msg({
       message: `reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, reader defaults, reading profiles, profile, manga, manhwa, manhua, oel, series type, auto select, per series`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
@@ -182,7 +208,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'opds',
     tab: 'reading',
-    title: msg`OPDS`,
+    title: msg`OPDS catalogue`,
     permission: 'UseOpds',
     keywords: msg({
       message: `feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress`,
@@ -190,19 +216,9 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
-    id: 'discover-rating',
-    tab: 'reading',
-    title: msg`Content rating`,
-    permission: 'ChangeContentRating',
-    keywords: msg({
-      message: `content rating, nsfw, erotica, mature, safe, adult`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
     id: 'kavita-sync',
     tab: 'reading',
-    title: msg`Kavita sync`,
+    title: msg`Kavita read sync`,
     keywords: msg({
       message: `mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
@@ -212,7 +228,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'root-folders',
     tab: 'library',
-    title: msg`Root Folders`,
+    title: msg`Root folders`,
     admin: true,
     keywords: msg({
       message: `library path, storage, disk, free space, folder`,
@@ -220,22 +236,22 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
-    id: 'library-files',
+    id: 'naming',
     tab: 'library',
-    title: msg`Files`,
+    title: msg`Folder & file naming`,
     admin: true,
     keywords: msg({
-      message: `comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga`,
+      message: `folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
-    id: 'naming',
+    id: 'library-files',
     tab: 'library',
-    title: msg`Naming`,
+    title: msg`ComicInfo & covers`,
     admin: true,
     keywords: msg({
-      message: `folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all`,
+      message: `comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -252,7 +268,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'metadata',
     tab: 'library',
-    title: msg`Metadata`,
+    title: msg`Metadata database`,
     admin: true,
     keywords: msg({
       message: `mangabaka, local database, dump, snapshot, refresh metadata`,
@@ -262,30 +278,10 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'recommendations',
     tab: 'library',
-    title: msg`Recommendations`,
+    title: msg`Semantic search & recommendations`,
     admin: true,
     keywords: msg({
       message: `embeddings, embedding model, semantic search, vectors, discover search`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
-    id: 'profiles',
-    tab: 'library',
-    title: msg`Quality profiles`,
-    admin: true,
-    keywords: msg({
-      message: `upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, maximum score loss, allow replacing unknown, resolution weight, compression weight, measured quality`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
-    id: 'formats',
-    tab: 'library',
-    title: msg`Quality formats`,
-    admin: true,
-    keywords: msg({
-      message: `quality format, condition, high resolution, format score, regex, group matches, release name matches, image format, minimum width`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -293,10 +289,30 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'downloads',
     tab: 'downloads',
-    title: msg`Downloads`,
+    title: msg`Download queue`,
     admin: true,
     keywords: msg({
-      message: `concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality`,
+      message: `concurrent, workers, retry, max attempts, backoff`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'smart-download',
+    tab: 'downloads',
+    title: msg`Smart Download`,
+    admin: true,
+    keywords: msg({
+      message: `smart download, unread trigger`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'languages',
+    tab: 'downloads',
+    title: msg`Languages`,
+    admin: true,
+    keywords: msg({
+      message: `language, languages, download language, language priority, preferred language`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -306,17 +322,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Sources`,
     admin: true,
     keywords: msg({
-      message: `scrapers, manage sources, priority, source priority, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
-    id: 'upgrades',
-    tab: 'downloads',
-    title: msg`Upgrades`,
-    admin: true,
-    keywords: msg({
-      message: `upgrade, quality profile, default profile, automatic upgrades`,
+      message: `scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -350,6 +356,46 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
+  {
+    id: 'profiles',
+    tab: 'downloads',
+    title: msg`Quality profiles`,
+    admin: true,
+    keywords: msg({
+      message: `upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, maximum score loss, allow replacing unknown, resolution weight, compression weight, measured quality`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'formats',
+    tab: 'downloads',
+    title: msg`Quality formats`,
+    admin: true,
+    keywords: msg({
+      message: `quality format, condition, high resolution, format score, regex, group matches, release name matches, image format, minimum width`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'upgrades',
+    tab: 'downloads',
+    title: msg`Upgrade scan`,
+    admin: true,
+    keywords: msg({
+      message: `upgrade, quality profile, default profile, automatic upgrades`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'volume-releases',
+    tab: 'downloads',
+    title: msg`Volume releases`,
+    admin: true,
+    keywords: msg({
+      message: `volume, volume packs, volume search, auto-grab, proposals, torrent`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
 
   {
     id: 'kavita',
@@ -357,17 +403,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Kavita`,
     admin: true,
     keywords: msg({
-      message: `scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner`,
+      message: `scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner, kavita libraries`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
     id: 'scrobbling',
     tab: 'integrations',
-    title: msg`Scrobbling`,
+    title: msg`Trackers`,
     permission: 'UseTrackers',
     keywords: msg({
-      message: `anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read, kavita libraries`,
+      message: `anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -384,7 +430,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'notifications',
     tab: 'integrations',
-    title: msg`Outbound notifications`,
+    title: msg`Notification connections`,
     admin: true,
     keywords: msg({
       message: `discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerts, events, notifications, outbound, tags, requests, series added, series removed, manual match`,
@@ -398,17 +444,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Users`,
     admin: true,
     keywords: msg({
-      message: `accounts, permissions, invite, disable user, add user, admin`,
+      message: `accounts, permissions, disable user, add user, admin`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
     id: 'security',
     tab: 'users',
-    title: msg`Security`,
+    title: msg`Sign-in policy`,
     admin: true,
     keywords: msg({
-      message: `https, require https, trusted proxies, lockout, failed attempts, hsts, auth log`,
+      message: `lockout, failed attempts, session lifetime`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -424,9 +470,19 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   },
 
   {
+    id: 'network',
+    tab: 'system',
+    title: msg`Network`,
+    admin: true,
+    keywords: msg({
+      message: `https, require https, trusted proxies, hsts`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'backup',
     tab: 'system',
-    title: msg`Backup & Restore`,
+    title: msg`Backup & restore`,
     admin: true,
     keywords: msg({
       message: `backup, restore, zip, retention, database, export`,
@@ -454,6 +510,18 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
 ]
+
+/** Old `s` ids that were renamed or split, so bookmarks and stored links still land on a card. */
+export const SETTINGS_ENTRY_ALIASES: Record<string, string> = {
+  account: 'sign-in',
+  'source-languages': 'languages',
+  backups: 'backup',
+}
+
+/** Old `tab` values. `connections` is still emitted by stored health notifications. */
+export const SETTINGS_TAB_ALIASES: Record<string, string> = {
+  connections: 'downloads',
+}
 
 /** True when the signed-in caller may see this card at all. */
 export function entryVisible(

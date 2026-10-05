@@ -359,14 +359,14 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
         />
 
         <Switch
-          label={t`Access all libraries`}
+          label={t`Access all root folders`}
           description={t`Including root folders added later.`}
           checked={allRootFolders}
           onChange={(e) => setAllRootFolders(e.currentTarget.checked)}
         />
         {!allRootFolders && (
           <MultiSelect
-            label={t`Libraries`}
+            label={t`Root folders`}
             description={t`With none selected this account sees an empty library: access is granted, never assumed.`}
             data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
             value={folderIds}

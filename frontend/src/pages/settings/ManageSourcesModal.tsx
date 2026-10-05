@@ -550,7 +550,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
           </Text>
         </Group>
         <Text size="xs" c="var(--ink-3)" mt={4}>
-          <Trans>Top source wins when several carry the same series.</Trans>
+          <Trans>Top source is tried first when several carry the same series.</Trans>
         </Text>
       </div>
       <div className="source-rail-list">

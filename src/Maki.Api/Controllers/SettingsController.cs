@@ -160,7 +160,8 @@ public class SettingsController(
     /// <param name="UserId">
     /// Which Maki user Kavita's reading belongs to. Null means "the lowest-numbered admin", which is
     /// what a single-user install wants and needs no configuration. See
-    /// <see cref="SettingKeys.KavitaUserId"/> for why this has to be exactly one user.
+    /// <see cref="SettingKeys.KavitaUserId"/> for why this has to be exactly one user. Read-only on
+    /// <c>PUT settings/kavita</c>; <c>PUT settings/kavita/user</c> writes it.
     /// </param>
     /// <param name="ResolvedUserId">
     /// Read-only: who the null default actually resolved to, so the UI can say whose reading is being
@@ -310,7 +311,7 @@ public class SettingsController(
     /// The caller's own reader defaults. No admin policy: these land in their <c>UserSettings</c> rows.
     /// <para>
     /// <c>KavitaUserId</c> on the response is read-only here — it is an instance setting (Kavita is one
-    /// external account) and is set through <c>PUT settings/kavita</c>. It rides along because the
+    /// external account) and is set through <c>PUT settings/kavita/user</c>. It rides along because the
     /// reader card is where "push my reads to Kavita" lives, and that toggle only does anything for the
     /// bound user.
     /// </para>
@@ -1356,16 +1357,8 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.KavitaPathMapFrom, request.PathMapFrom, ct);
         await settings.SetAsync(SettingKeys.KavitaPathMapTo, request.PathMapTo, ct);
 
-        if (request.UserId is { } bound &&
-            !await db.Users.AnyAsync(u => u.Id == bound && !u.Disabled && !u.PendingSetup, ct))
-        {
-            return this.Fail(localizer, "error.settings.userCannotSignIn");
-        }
-
-        await settings.SetAsync(SettingKeys.KavitaUserId, request.UserId?.ToString(), ct);
-
-        // The resolver caches for a minute; without this the change appears not to have taken.
-        kavitaUser.Invalidate();
+        // The attributed user is not written here: the connection form never sends it, so a null
+        // would read as "clear". PUT kavita/user is its only writer.
         kavitaLive.Nudge();
         return await GetKavita(ct);
     }

@@ -47,7 +47,12 @@ export function NotificationPrefsSection() {
     <SettingsSection
       id="notification-prefs"
       title={<Trans>Notifications</Trans>}
-      description={<Trans>What lands in your bell. These settings only affect you.</Trans>}
+      description={
+        <Trans>
+          What lands in your bell. Only affects you. Alerts to Discord and other apps are set up by
+          an admin under Integrations.
+        </Trans>
+      }
     >
       <Switch
         label={t`Show a popup when a notification arrives`}
@@ -59,12 +64,12 @@ export function NotificationPrefsSection() {
       <Divider my="md" />
 
       <Text size="sm" fw={500}>
-        <Trans>Tell me about new chapters for</Trans>
+        <Trans>Which series notify me</Trans>
       </Text>
       <Text size="xs" c="var(--ink-3)" mb="xs">
         <Trans>
-          The starting point for every series. Any series can be set to something else from its own
-          page, or for a whole selection at once from the Library's Select mode.
+          The default for every series event: new chapters, downloads, upgrades. Any series can be
+          set differently from its own page, or many at once from the Library's Select mode.
         </Trans>
       </Text>
       <SegmentedControl

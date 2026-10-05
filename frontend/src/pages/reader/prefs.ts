@@ -17,8 +17,6 @@ export interface ReaderPrefs {
   preload: number
   tapZones: boolean
   showPageNumber: boolean
-  /** Split a double-width page into two in single-page mode. */
-  splitWidePages: boolean
   autoNextChapter: boolean
   /** Flash the chapter name over the page on entering it. */
   chapterBanner: boolean
@@ -46,7 +44,6 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   preload: 3,
   tapZones: true,
   showPageNumber: true,
-  splitWidePages: false,
   autoNextChapter: true,
   chapterBanner: true,
   background: BACKGROUNDS.dark,

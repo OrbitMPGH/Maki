@@ -43,7 +43,7 @@ msgstr "（未设置时留空）"
 msgid "(cannot be undone)"
 msgstr "（无法撤销）"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "(inaccessible)"
 msgstr "（无法访问）"
@@ -440,12 +440,12 @@ msgstr "{chaptersCount, plural, other {# 个受影响的章节}}"
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, other {已下载章节}}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
 msgstr "{chaptersMarked, plural, other {已在 {seriesMatched} 个系列中标记 # 个章节为已读}}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series, {seriesUnmatched} Kavita series unmatched"
 msgstr "{chaptersMarked, plural, other {已在 {seriesMatched} 个系列中标记 # 个章节为已读，{seriesUnmatched} 个 Kavita 系列未匹配}}"
@@ -787,7 +787,7 @@ msgstr "{label}：必需"
 msgid "{languageCount, plural, one {# language} other {# languages}}"
 msgstr "{languageCount, plural, other {# 种语言}}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "{languageCount, plural, one {Covers # language} other {Covers # languages}}"
 msgstr "{languageCount, plural, other {涵盖 # 种语言}}"
@@ -893,7 +893,7 @@ msgstr "{missingWanted, plural, other {# 个想要，未获取}}"
 msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "缺少 {missingWanted} 个想要的章节"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
 msgstr "{moreCount, plural, other {还有 +# 个}}"
@@ -923,7 +923,7 @@ msgstr "{n} 分钟"
 msgid "{n}s"
 msgstr "{n} 秒"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "{name} (disabled in Prowlarr)"
 msgstr "{name}（已在 Prowlarr 中禁用）"
@@ -1100,7 +1100,7 @@ msgstr "{reasonText} - {measurement}"
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
 msgstr "{remaining, plural, other {队列中还有 # 个}}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, other {已重命名 # 个系列}}"
@@ -1248,9 +1248,13 @@ msgid "{sourceName} enabled"
 msgstr "已启用 {sourceName}"
 
 #: src/components/SourceMappingsSection.tsx
+msgid "{sourceName} is switched off in Settings → Downloads → Sources. This series' setting is kept and applies again once it's back on."
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
 #, fuzzy
-msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
-msgstr "{sourceName}已在“设置 → 来源”中关闭。此系列的设置会保留，重新启用来源后将再次生效。"
+#~ msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+#~ msgstr "{sourceName}已在“设置 → 来源”中关闭。此系列的设置会保留，重新启用来源后将再次生效。"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1619,13 +1623,13 @@ msgid "{zone} (this browser)"
 msgstr "{zone}（此浏览器）"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "/downloads (optional)"
 msgstr "/downloads（可选）"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "/manga (optional)"
 msgstr "/manga（可选）"
@@ -1670,12 +1674,12 @@ msgstr "{days, plural, other {持续 # 天，阅读}}<0>{chapters, plural, other
 msgid "<0>{chapters, plural, one {# chapter} other {# chapters}}</0> across {days, plural, one {# reading day} other {# reading days}}<1>, most of it after <2>{hour}</2></1>. {trend}"
 msgstr "{days, plural, other {持续 # 天，阅读}}<0>{chapters, plural, other {# 章}}</0><1>，其中大多在 <2>{hour}</2> 之后</1>。{trend}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
 msgstr "<0>{deleting}</0> 将从磁盘中删除。此操作无法撤销。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "<0>{enabledCount}</0> of {total, plural, one {# source} other {# sources}} enabled"
 msgstr "已启用 <0>{enabledCount}</0> / {total, plural, other {# 个来源}}"
@@ -1758,10 +1762,10 @@ msgstr "👍 已喜欢"
 msgid "👎 Disliked"
 msgstr "👎 不喜欢"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "0 means no cap."
-msgstr "0 表示不设上限。"
+#~ msgid "0 means no cap."
+#~ msgstr "0 表示不设上限。"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -1840,8 +1844,8 @@ msgstr "更好的版本替换了一个已下载章节的文件。"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
-msgid "A candidate must beat the current file's score by at least this much."
-msgstr "候选文件的分数必须至少比当前文件高出这么多。"
+#~ msgid "A candidate must beat the current file's score by at least this much."
+#~ msgstr "候选文件的分数必须至少比当前文件高出这么多。"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -1853,7 +1857,7 @@ msgstr "章节下载失败。"
 msgid "A chapter finished downloading and imported."
 msgstr "章节下载并导入完成。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit."
 msgstr "未能完成的章节会占用工作线程，可能导致整个队列停滞。超过此分钟数后，章节会被标记为失败，并像其他失败任务一样重试。0 表示不限制。"
@@ -1890,13 +1894,21 @@ msgstr "有活动下载的系列无法移动文件。"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
-msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
-msgstr "格式可以通过文件的来源、发布组或资源名称、分辨率或图片编码来匹配。所有标为必需的条件都要匹配，另外至少还要匹配一个未标为必需的条件。"
+#~ msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
+#~ msgstr "格式可以通过文件的来源、发布组或资源名称、分辨率或图片编码来匹配。所有标为必需的条件都要匹配，另外至少还要匹配一个未标为必需的条件。"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A format matches a file by its source, kind, release group or name, resolution, image codec, size per page, page count or language. Every required condition must match; when a format also has optional conditions, at least one of those must match too. Scores for a format are set inside each profile."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
 msgid "A health review is active for this series"
 msgstr "此系列正在进行健康审核"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "A helper that gets past Cloudflare for sources like MangaFire. Point this at a running FlareSolverr instance. Sources that need it are tagged in Manage sources."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -1913,7 +1925,7 @@ msgstr "选择内容较多时可能需要一段时间。"
 msgid "A library import folder finished."
 msgstr "一个资料库导入文件夹已完成。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "A local embedding model lets Discover recommend by feel and search by description. The vectors download prebuilt, so this normally needs no attention. While it's off or still downloading, search falls back to titles and recommendations to genres."
 msgstr "本地嵌入模型可让“发现”按内容氛围推荐作品，也可按描述搜索。向量会以预构建版本下载，通常无需你处理。模型关闭或仍在下载时，搜索会退回到按标题搜索，推荐也会退回到按类型推荐。"
@@ -1933,15 +1945,23 @@ msgstr "Maki 发布了更新版本。"
 msgid "A newer upgrade has replaced this file since"
 msgstr "此后有更新的升级替换了此文件"
 
+#: src/api/inbox.ts
+msgid "A newly added series was linked to its download sources."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "A page the source sent is not a readable image"
 msgstr "来源发送的某一页不是可读取的图片"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A profile picks which release tier Maki prefers for a series and how far it goes to replace what's already downloaded. Pin one to a series from its Quality profile menu. The default for every other series is set under Upgrade scan below."
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
-msgid "A profile picks which release tier Maki prefers for a series, and how far it goes to replace what's already downloaded. Pin one to a series from its Quality profile menu, or set a default for every series below under Downloads."
-msgstr "配置决定 Maki 为某个系列优先选择哪个资源层级，以及在多大程度上替换已下载的内容。可以在系列的“质量配置”菜单中为其指定一个配置，也可以在下方“下载”中为所有系列设置默认配置。"
+#~ msgid "A profile picks which release tier Maki prefers for a series, and how far it goes to replace what's already downloaded. Pin one to a series from its Quality profile menu, or set a default for every series below under Downloads."
+#~ msgstr "配置决定 Maki 为某个系列优先选择哪个资源层级，以及在多大程度上替换已下载的内容。可以在系列的“质量配置”菜单中为其指定一个配置，也可以在下方“下载”中为所有系列设置默认配置。"
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -1953,7 +1973,7 @@ msgstr "这是对已完结且所有卷文件都在磁盘上的系列所作的按
 msgid "A proposal is already waiting for this series"
 msgstr "此系列已有一个提议在等待处理"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "A proposal nobody answers is dropped after this long."
 msgstr "无人回应的提议会在这段时间后被丢弃。"
@@ -1963,7 +1983,7 @@ msgstr "无人回应的提议会在这段时间后被丢弃。"
 msgid "A refresh found new chapters for a series."
 msgstr "刷新发现了某个系列的新章节。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "A refresh is already running"
 msgstr "刷新已在运行"
@@ -1985,7 +2005,7 @@ msgstr "一行数据概览：资料库中的作品、阅读进度和待阅读内
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "A scan is already running"
 msgstr "已有扫描正在运行"
@@ -2050,10 +2070,14 @@ msgstr "一个卷资源替换了某个系列中的多个章节文件。"
 msgid "A watched anime counts for as much as a manga you rated yourself."
 msgstr "看过的动画与自己评分的漫画权重相同。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
+msgid "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. There is no schedule, so take one yourself before big changes."
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
-msgid "A zip of your database and <0>config.json</0>: the library and every setting. Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken automatically before every upgrade migration."
-msgstr "包含数据库和 <0>config.json</0> 的 ZIP 文件：资料库和所有设置。可重新下载的数据（例如 MangaBaka 数据库和封面）不会包含在内。每次升级迁移前都会自动创建一份备份。"
+#~ msgid "A zip of your database and <0>config.json</0>: the library and every setting. Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken automatically before every upgrade migration."
+#~ msgstr "包含数据库和 <0>config.json</0> 的 ZIP 文件：资料库和所有设置。可重新下载的数据（例如 MangaBaka 数据库和封面）不会包含在内。每次升级迁移前都会自动创建一份备份。"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -2087,13 +2111,21 @@ msgstr "强调色"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
-msgid "Access all libraries"
-msgstr "访问所有资料库"
+#~ msgid "Access all libraries"
+#~ msgstr "访问所有资料库"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Access all root folders"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Access token"
 msgstr "访问令牌"
+
+#: src/pages/settings/registry.ts
+msgid "Account"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -2102,14 +2134,23 @@ msgstr "账户安全"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "accounts, permissions, disable user, add user, admin"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 #, fuzzy
-msgid "accounts, permissions, invite, disable user, add user, admin"
-msgstr "账户，权限，邀请，禁用用户，添加用户，管理员"
+#~ msgid "accounts, permissions, invite, disable user, add user, admin"
+#~ msgstr "账户，权限，邀请，禁用用户，添加用户，管理员"
+
+#: src/pages/settings/registry.ts
+msgid "Accounts, permissions, lockout and session rules, and single sign-on."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Accounts, permissions, sign-in policy and single sign-on."
-msgstr "账户、权限、登录策略和单点登录。"
+#~ msgid "Accounts, permissions, sign-in policy and single sign-on."
+#~ msgstr "账户、权限、登录策略和单点登录。"
 
 #: src/api/inbox.ts
 #: src/pages/reader/ReaderPage.tsx
@@ -2172,7 +2213,7 @@ msgstr "改编"
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Add"
 msgstr "添加"
@@ -2219,10 +2260,14 @@ msgstr "添加连接"
 msgid "Add folder"
 msgstr "添加文件夹"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
+msgid "Add it to your reading app as an OPDS catalogue. From outside your network, replace the host with the address you use there."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
-msgid "Add it to your reading app as an OPDS catalogue. From outside your network, swap the host for the address you use there."
-msgstr "在阅读应用中将它添加为 OPDS 目录。在网络外访问时，请将主机地址替换为你在外部使用的地址。"
+#~ msgid "Add it to your reading app as an OPDS catalogue. From outside your network, swap the host for the address you use there."
+#~ msgstr "在阅读应用中将它添加为 OPDS 目录。在网络外访问时，请将主机地址替换为你在外部使用的地址。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -2271,11 +2316,15 @@ msgid "Add to library"
 msgstr "添加到资料库"
 
 #: src/pages/SetupAccountPage.tsx
-#, fuzzy
-msgid "Add two-factor authentication under Settings → My account."
-msgstr "在设置 → 我的账户中添加双重身份验证。"
+msgid "Add two-factor authentication under Settings → Account → Sign-in."
+msgstr ""
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/SetupAccountPage.tsx
+#, fuzzy
+#~ msgid "Add two-factor authentication under Settings → My account."
+#~ msgstr "在设置 → 我的账户中添加双重身份验证。"
+
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Add unread series as plan-to-read"
 msgstr "将未读系列添加为待读"
@@ -2398,7 +2447,7 @@ msgstr "全部 {total}"
 msgid "All {total} chapters wanted"
 msgstr "共想要 {total} 个章节"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "All categories"
 msgstr "所有类别"
@@ -2431,7 +2480,7 @@ msgstr "所有已下载章节均已读"
 msgid "All findings"
 msgstr "所有发现"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "All libraries"
 msgstr "所有图书馆"
@@ -2492,6 +2541,10 @@ msgstr "全部时间"
 msgid "All time"
 msgstr "全部时间"
 
+#: src/components/ImportListsSection.tsx
+msgid "All: every chapter. Smart: only the next few ahead of your reading. Main only: skips specials."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Allow replacing unknown-tier files"
@@ -2548,12 +2601,12 @@ msgstr "已在队列中"
 msgid "Already read or seen, taste unchanged"
 msgstr "已读或看过，品味不变"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Already running"
 msgstr "已在运行"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Already up to date"
 msgstr "已经是最新"
@@ -2592,6 +2645,10 @@ msgstr "同时将此设为我的默认顺序"
 #, fuzzy
 msgid "Also match every tag filed under this one"
 msgstr "同时匹配归在此项下的所有标签"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Also needs the daily scan on."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2650,9 +2707,14 @@ msgstr "AniList"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 #, fuzzy
-msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read, kavita libraries"
-msgstr "anilist, myanimelist, mal, mangabaka, kitsu, 跟踪服务, OAuth, 客户端 ID, 客户端密钥, 同步间隔, 计划阅读, kavita 图书馆"
+#~ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read, kavita libraries"
+#~ msgstr "anilist, myanimelist, mal, mangabaka, kitsu, 跟踪服务, OAuth, 客户端 ID, 客户端密钥, 同步间隔, 计划阅读, kavita 图书馆"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -2706,10 +2768,14 @@ msgstr "任意"
 msgid "Any"
 msgstr "任意"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
+msgid "Anyone with the feed URL can read everything your account can. Regenerating the URL breaks the apps using it and nothing else."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
-msgid "Anyone with the feed URL can read the whole library. Regenerating it breaks the apps using it and nothing else."
-msgstr "任何拥有订阅源 URL 的人都能阅读整个资料库。重新生成 URL 会导致使用它的应用无法继续访问，除此之外不会有影响。"
+#~ msgid "Anyone with the feed URL can read the whole library. Regenerating it breaks the apps using it and nothing else."
+#~ msgstr "任何拥有订阅源 URL 的人都能阅读整个资料库。重新生成 URL 会导致使用它的应用无法继续访问，除此之外不会有影响。"
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -2728,12 +2794,19 @@ msgstr "管理员需要了解的任何信息"
 
 #: src/components/NotificationsSection.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "API key"
 msgstr "API 密钥"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "api key, token"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "API keys"
 msgstr "API 密钥"
@@ -2744,8 +2817,8 @@ msgid "API only"
 msgstr "仅 API"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Appearance"
 msgstr "外观"
@@ -2760,15 +2833,23 @@ msgstr "应用令牌"
 msgid "Applies automatically to"
 msgstr "自动应用于"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Applies the series folder format and chapter file format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Applies the Series Folder Format and Chapter Format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
-msgstr "将上面的系列文件夹格式和章节格式应用于资料库中的全部 {seriesCount} 个系列，并重命名磁盘上的文件夹和文件使其匹配。已经符合格式的系列保持不变。资料库较大时可能需要一段时间。"
+#~ msgid "Applies the Series Folder Format and Chapter Format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+#~ msgstr "将上面的系列文件夹格式和章节格式应用于资料库中的全部 {seriesCount} 个系列，并重命名磁盘上的文件夹和文件使其匹配。已经符合格式的系列保持不变。资料库较大时可能需要一段时间。"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Applies to chapters released later."
 msgstr "适用于之后发布的章节。"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Applies to torrent grabs and reviewed imports. Off keeps the release's own file name, which often says more than the format can. Series imported from disk keep their file names either way."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
@@ -2838,10 +2919,10 @@ msgstr "归档"
 msgid "Archives inventoried"
 msgstr "已盘点归档"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
-msgstr "在“首页”和“发现”页面上调整布局：选择要显示的区块、拖动以排序，并添加自己的推荐栏。如果你不在 Maki 中阅读，可以关闭“首页”：该标签页会消失，“资料库”将成为起始页。"
+#~ msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
+#~ msgstr "在“首页”和“发现”页面上调整布局：选择要显示的区块、拖动以排序，并添加自己的推荐栏。如果你不在 Maki 中阅读，可以关闭“首页”：该标签页会消失，“资料库”将成为起始页。"
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -2888,12 +2969,16 @@ msgid "At least one enabled"
 msgstr "至少启用一个"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "At least one language must stay enabled."
 msgstr "必须至少启用一种语言。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+msgid "At this many or fewer downloaded chapters ahead of where you are, Maki fetches more."
+msgstr ""
+
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Attribute Kavita's reading to"
 msgstr "将 Kavita 的阅读归属于"
@@ -2923,12 +3008,12 @@ msgstr "自动前进到下一章"
 msgid "Auto-grab"
 msgstr "自动抓取"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Auto-grab only when a volume adds this many chapters or fewer that you don't have."
 msgstr "只有当卷包含的你没有的章节不超过这个数量时，才自动抓取。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Auto-grab size limit (MB)"
 msgstr "自动抓取大小上限（MB）"
@@ -2953,6 +3038,10 @@ msgstr "自动匹配已在运行。"
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "自动匹配仍在运行。很快就会空闲。"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Automatic"
+msgstr ""
 
 #: src/components/ui/language.ts
 #, fuzzy
@@ -3024,7 +3113,7 @@ msgstr "返回系列"
 msgid "Back to the series"
 msgstr "返回系列"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Back up now"
 msgstr "立即备份"
@@ -3041,23 +3130,32 @@ msgstr "背景"
 msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. To keep the old look, pick Night. You can change this any time under Settings, Appearance."
 msgstr "背景色和强调色现在可以分别选择，并新增了多种背景可选。带色调的黑色成为新的默认背景。想保留旧的外观，请选择夜色。你可以随时在“设置 → 外观”中更改。"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Background and accent colour. Remembered on this device only; everything else under Preferences follows you to every device."
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Backlog"
 msgstr "待读积压"
 
 #: src/pages/settings/registry.ts
+#: src/pages/settings/SystemCards.tsx
+msgid "Backup & restore"
+msgstr ""
+
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Backup & Restore"
-msgstr "备份与恢复"
+#~ msgid "Backup & Restore"
+#~ msgstr "备份与恢复"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Backup and cache tools"
 msgstr "备份和缓存工具"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Backup created"
 msgstr "备份已创建"
@@ -3078,20 +3176,24 @@ msgstr "已完成备份"
 msgid "backup, restore, zip, retention, database, export"
 msgstr "备份，恢复，ZIP，保留，数据库，导出"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Backups hold API keys and passwords in plain text. Treat a downloaded one like a password."
 msgstr "备份中包含明文存储的 API 密钥和密码。请像保护密码一样保管下载的备份。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
+msgid "Backups to keep"
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
-msgid "Backups to keep (per kind)"
-msgstr "要保留的备份（按类型）"
+#~ msgid "Backups to keep (per kind)"
+#~ msgstr "要保留的备份（按类型）"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Backups, the image cache and updates."
-msgstr "备份、图像缓存和更新。"
+#~ msgid "Backups, the image cache and updates."
+#~ msgstr "备份、图像缓存和更新。"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -3179,8 +3281,11 @@ msgstr "铃铛，收件箱，提醒，提示，应用内通知，新章节，成
 msgid "Below the series' upgrade cutoff"
 msgstr "低于该系列的升级截止线"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Best measured quality"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Best quality first"
 msgstr "最佳质量优先"
@@ -3306,7 +3411,7 @@ msgstr "正在浏览目录"
 msgid "Building metadata search indexes"
 msgstr "正在建立元数据搜索索引"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Bulk new chapters"
 msgstr "批量新章节"
@@ -3347,18 +3452,18 @@ msgid "Byte-identical to the linked file. Importing gains nothing; delete one of
 msgstr "与已关联文件逐字节相同。导入不会带来任何变化，请删除其中一个。"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "C:\\Manga (optional)"
 msgstr "C:\\Manga（可选）"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga 或 /library"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
 msgstr "目前无法连接到 Kavita。Maki 会持续重试，scrobble 同步之后仍会补上。"
@@ -3391,8 +3496,10 @@ msgstr "无法读取此下载"
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Cancel"
 msgstr "取消"
@@ -3466,12 +3573,12 @@ msgstr "目录标题 {id}"
 msgid "Catalogue unavailable"
 msgstr "目录不可用"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Categories"
 msgstr "类别"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Category"
 msgstr "类别"
@@ -3701,8 +3808,8 @@ msgstr "更改会重新调整“{inForceName}”，因此也会影响所有使�
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
-msgid "Changes take effect after Maki restarts."
-msgstr "更改会在 Maki 重启后生效。"
+#~ msgid "Changes take effect after Maki restarts."
+#~ msgstr "更改会在 Maki 重启后生效。"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3765,10 +3872,14 @@ msgstr "第 {resumeAt} 章尚未下载"
 msgid "Chapter downloaded"
 msgstr "章节已下载"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Chapter file format"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Chapter Format"
-msgstr "章节格式"
+#~ msgid "Chapter Format"
+#~ msgstr "章节格式"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -3839,10 +3950,10 @@ msgstr "{winnerDisplayName} 没有的章节会保持不变，从磁盘导入的�
 msgid "Chapters already listed keep whatever you set on them."
 msgstr "已经列出的章节会保留你为它们设置的内容。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected."
-msgstr "抓取来源同时下载的章节数。数量越多不一定越快：触发网站速率限制会暂停所有下载。种子下载不受影响。"
+#~ msgid "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected."
+#~ msgstr "抓取来源同时下载的章节数。数量越多不一定越快：触发网站速率限制会暂停所有下载。种子下载不受影响。"
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -3883,15 +3994,19 @@ msgstr "此系列中已读章节"
 msgid "Chapters that share a volume archive will also lose their file."
 msgstr "共用同一卷压缩包的章节也会失去对应文件。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Chapters to download at once"
-msgstr "一次下载的章节数"
+#~ msgid "Chapters to download at once"
+#~ msgstr "一次下载的章节数"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+msgid "Chapters to fetch each time"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Chapters unread before trigger"
-msgstr "触发前的未读章节数"
+#~ msgid "Chapters unread before trigger"
+#~ msgstr "触发前的未读章节数"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -3918,13 +4033,13 @@ msgstr "聊天 ID"
 msgid "Check for prebuilt now"
 msgstr "立即检查预构建版本"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Check for updates"
 msgstr "检查更新"
 
 #: src/pages/HealthPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Check now"
 msgstr "立即检查"
@@ -3939,13 +4054,13 @@ msgstr "每晚目录更新后检查。在创作者页面上即可关注对方。
 msgid "Checking for a new metadata snapshot"
 msgstr "正在检查新的元数据快照"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Checks GitHub daily for a new release and shows a card in the sidebar and a notification when there is one. Updating is manual: {howToUpdate}."
 msgstr "每天检查 GitHub 是否发布新版本；有新版本时，会在侧边栏显示卡片并发送通知。需要手动更新：{howToUpdate}。"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Chinese"
 msgstr "中文"
@@ -4050,15 +4165,15 @@ msgstr "清除点赞"
 msgid "Clear your saved default"
 msgstr "清除已保存的默认设置"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Clearing cached images..."
 msgstr "正在清除缓存图像……"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
-msgid "Clears reader thumbnails and source-comparison samples, removes posters of deleted series, and re-downloads posters. Thumbnails regenerate the next time a chapter opens."
-msgstr "清除阅读器缩略图和来源比较样本，删除已移除作品的海报，并重新下载海报。下次打开章节时会重新生成缩略图。"
+#~ msgid "Clears reader thumbnails and source-comparison samples, removes posters of deleted series, and re-downloads posters. Thumbnails regenerate the next time a chapter opens."
+#~ msgstr "清除阅读器缩略图和来源比较样本，删除已移除作品的海报，并重新下载海报。下次打开章节时会重新生成缩略图。"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -4081,13 +4196,13 @@ msgid "click one to keep it where it is"
 msgstr "点击某个章节，将其保留在当前位置"
 
 #: src/components/settings/SecuritySection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Client ID"
 msgstr "客户端 ID"
 
 #: src/components/settings/SecuritySection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Client secret"
 msgstr "客户端密钥"
@@ -4178,6 +4293,11 @@ msgstr "喜剧"
 msgid "Comfortable"
 msgstr "舒适"
 
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "ComicInfo & covers"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -4190,9 +4310,13 @@ msgid "Comma separated Apprise URLs, used when there is no config key."
 msgstr "没有配置密钥时使用的 Apprise URL，多个 URL 用逗号分隔。"
 
 #: src/components/settings/SecuritySection.tsx
+msgid "Comma-separated IPs or CIDR networks allowed to set X-Forwarded-For. Needed behind a reverse proxy so lockout sees the real client. Leave empty if Maki is reached directly."
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
 #, fuzzy
-msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
-msgstr "用逗号分隔的 IP 或 CIDR 网络。只有这些来源可信，其 X-Forwarded-For 才会被采信。如果 Maki 可直接访问，请留空。"
+#~ msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
+#~ msgstr "用逗号分隔的 IP 或 CIDR 网络。只有这些来源可信，其 X-Forwarded-For 才会被采信。如果 Maki 可直接访问，请留空。"
 
 #: src/components/ui/viewPrefs.tsx
 #, fuzzy
@@ -4258,16 +4382,21 @@ msgstr "构成"
 msgid "Compression weight"
 msgstr "压缩权重"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Concurrent chapter downloads"
 msgstr "并行章节下载数"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "concurrent, workers, retry, max attempts, backoff"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 #, fuzzy
-msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
-msgstr "并发，工作线程，重试，最大尝试次数，退避，Smart Download，未读触发，来源顺序，来源优先级，最佳质量，concurrent，workers，retry"
+#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
+#~ msgstr "并发，工作线程，重试，最大尝试次数，退避，Smart Download，未读触发，来源顺序，来源优先级，最佳质量，concurrent，workers，retry"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -4310,9 +4439,13 @@ msgid "Connect"
 msgstr "连接"
 
 #: src/components/ImportListsSection.tsx
+msgid "Connect {label} on the Scrobble page to import from it."
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Connect {label} under Scrobbling to import from it."
-msgstr "在阅读记录中连接{label}，即可从中导入。"
+#~ msgid "Connect {label} under Scrobbling to import from it."
+#~ msgstr "在阅读记录中连接{label}，即可从中导入。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -4363,7 +4496,7 @@ msgstr "已连接"
 msgid "Connected"
 msgstr "已连接"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Connected to Kavita."
 msgstr "已连接到 Kavita。"
@@ -4373,7 +4506,7 @@ msgstr "已连接到 Kavita。"
 msgid "Connected: {connectedList}"
 msgstr "已连接：{connectedList}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Connecting to Kavita…"
 msgstr "正在连接到 Kavita…"
@@ -4412,8 +4545,8 @@ msgstr "内容"
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Content rating"
@@ -4481,11 +4614,13 @@ msgid "Continuous vertical (webtoon)"
 msgstr "连续垂直（条漫）"
 
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Copied"
 msgstr "已复制"
 
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Copy"
 msgstr "复制"
@@ -4495,12 +4630,12 @@ msgstr "复制"
 msgid "Copy codes"
 msgstr "复制代码"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Copy feed URL"
 msgstr "复制订阅源 URL"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Copy this now. It can't be shown again; if you lose it, regenerate."
 msgstr "请立即复制。之后无法再次查看；如果丢失，请重新生成。"
@@ -4552,12 +4687,12 @@ msgstr "无法复制到剪贴板。请选中文本后手动复制。"
 msgid "Could not load anime signals: {0}"
 msgstr "无法加载动画信号：{0}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 msgstr "无法从 Prowlarr 加载索引器：{indexersErrorMessage}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Could not load libraries from Kavita: {kavitaLibrariesErrorMessage}"
 msgstr "无法从 Kavita 加载图书馆：{kavitaLibrariesErrorMessage}"
@@ -4587,12 +4722,12 @@ msgstr "无法将该资源加入队列"
 msgid "Could not reach the source"
 msgstr "无法连接到来源"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
 msgstr "无法读取 {seriesFailed, plural, other {# 个系列}} 的阅读进度"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 msgstr "无法读取 {seriesFailed, plural, other {# 个系列}} 的阅读进度：{titles}"
@@ -4669,7 +4804,7 @@ msgstr "无法采样"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Couldn't start the scan"
 msgstr "无法启动扫描"
@@ -4679,6 +4814,14 @@ msgstr "无法启动扫描"
 #, fuzzy
 msgid "Couldn't start the volume search"
 msgstr "无法启动卷搜索"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Counted from the moment the limit is hit."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Counted per UTC day. 0 means no cap."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4724,12 +4867,12 @@ msgstr "创建账户"
 msgid "Create accounts on first sign-in"
 msgstr "首次登录时创建账户"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Create an API client at anilist.co/settings/developer with redirect URL <0>{origin}/api/v1/scrobble/oauth/anilist</0>"
 msgstr "在 anilist.co/settings/developer 创建 API 客户端，重定向 URL 为 <0>{origin}/api/v1/scrobble/oauth/anilist</0>"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0>{origin}/api/v1/scrobble/oauth/mal</0>. If connecting ends in <1>invalid_client</1>, re-copy the Client ID (not the secret) and check the App Type is set."
 msgstr "在 myanimelist.net/apiconfig 创建 API 客户端（应用类型：web），并设置重定向 URL：<0>{origin}/api/v1/scrobble/oauth/mal</0>。如果连接时出现 <1>invalid_client</1>，请重新复制 Client ID（不是密钥），并确认应用类型已设置正确。"
@@ -4754,7 +4897,7 @@ msgstr "创建你的账户"
 msgid "Create, rename and assign library tags"
 msgstr "创建、重命名和分配资料库标签"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Created"
 msgstr "已创建"
@@ -4880,6 +5023,10 @@ msgstr "未达截止线（{cutoffUnmetFilterCount}）"
 msgid "Cutoff: {cutoffLabel}"
 msgstr "截止线：{cutoffLabel}"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Daily scan hour"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Daily scan hour (0-23)"
@@ -4930,10 +5077,10 @@ msgstr "决定阅读日何时结束，连续记录和每日目标都以此为准
 msgid "Decides which copies of these series get upgraded and, in best-quality source order, which source their downloads try first. Instance default clears each series' own choice."
 msgstr "决定这些系列的哪些副本会被升级，并在按最佳质量排序来源时，决定下载优先尝试哪个来源。选择“实例默认”会清除各系列自己的选择。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
-msgstr "小数编号的章节（10.5、x.1）仍会列出，但不会下载，也不会计入章节总数。这也包括之后发布的特别篇。"
+#~ msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
+#~ msgstr "小数编号的章节（10.5、x.1）仍会列出，但不会下载，也不会计入章节总数。这也包括之后发布的特别篇。"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/ui/seriesNotifications.ts
@@ -4963,7 +5110,7 @@ msgstr "默认大小写"
 msgid "Default cleared"
 msgstr "默认设置已清除"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Default profile"
 msgstr "默认配置"
@@ -4989,6 +5136,7 @@ msgstr "定义中"
 msgid "Delete"
 msgstr "删除"
 
+#: src/components/NotificationsSection.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Delete {deletingName}?"
@@ -5015,7 +5163,7 @@ msgstr "删除 {name}？"
 msgid "Delete {selectedCount} series?"
 msgstr "删除 {selectedCount} 个系列？"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Delete backup"
 msgstr "删除备份"
@@ -5068,7 +5216,7 @@ msgid "Delete request"
 msgstr "删除请求"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Delete root folder"
 msgstr "删除根文件夹"
@@ -5261,7 +5409,7 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Discover"
 msgstr "发现"
@@ -5319,15 +5467,19 @@ msgstr "显示名称"
 msgid "Documentation"
 msgstr "文档"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Don't auto-queue more than (chapters)"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Don't want"
 msgstr "不想要"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Don't want specials"
-msgstr "不需要特别篇"
+#~ msgid "Don't want specials"
+#~ msgstr "不需要特别篇"
 
 #: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/LanguageAnnouncementModal.tsx
@@ -5391,7 +5543,7 @@ msgstr "下载想要的 {missingWanted} 个章节？"
 msgid "Download all wanted"
 msgstr "下载所有想要的章节"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Download backup"
 msgstr "下载备份"
@@ -5406,7 +5558,7 @@ msgstr "下载候选项以供审核"
 msgid "Download chapters"
 msgstr "下载章节"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
 msgstr "用于下载已抓取的资源。种子下载完成后会自动导入资料库。只有 qBittorrent 报告的路径 Maki 无法访问时，才需要填写路径映射，例如 Docker 中的 /downloads，而 Maki 看到的是 Z:\\downloads。"
@@ -5426,10 +5578,15 @@ msgstr "下载后续章节"
 msgid "Download order"
 msgstr "下载顺序"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
-msgstr "某个系列匹配到多个来源时的下载顺序，排名最高的优先。上方的语言排名优先级更高。此设置适用于新的自动匹配和手动运行的自动匹配；其他系列保留各自的顺序。停用来源会暂停所有系列使用它，但不会更改系列各自的开关。"
+#~ msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
+#~ msgstr "某个系列匹配到多个来源时的下载顺序，排名最高的优先。上方的语言排名优先级更高。此设置适用于新的自动匹配和手动运行的自动匹配；其他系列保留各自的顺序。停用来源会暂停所有系列使用它，但不会更改系列各自的开关。"
+
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Download queue"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5510,7 +5667,6 @@ msgstr "下载中……"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Downloads"
 msgstr "下载"
@@ -5520,7 +5676,7 @@ msgstr "下载"
 msgid "Downloads now try {bestName} first."
 msgstr "现在下载会优先尝试 {bestName}。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
 msgstr "当你只剩少量未读章节时，自动下载作品的后续章节。每五分钟检查一次 Kavita 或内置阅读器的阅读进度。可在每部作品的监控选项中单独启用。"
@@ -5598,7 +5754,7 @@ msgstr "编辑 {editName}"
 msgid "Edit connection"
 msgstr "编辑连接"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Edit Discover layout"
 msgstr "编辑“发现”布局"
@@ -5608,7 +5764,7 @@ msgstr "编辑“发现”布局"
 msgid "Edit format"
 msgstr "编辑格式"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Edit Home layout"
 msgstr "编辑“首页”布局"
@@ -5650,7 +5806,7 @@ msgstr "编辑 {title} 的请求"
 msgid "Editing layout"
 msgstr "编辑布局"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Email"
 msgstr "电子邮件"
@@ -5676,7 +5832,7 @@ msgstr "为空"
 msgid "Empty."
 msgstr "为空。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Enable"
 msgstr "启用"
@@ -5687,12 +5843,12 @@ msgid "Enable {label}"
 msgstr "启用 {label}"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Enable {name}"
 msgstr "启用 {name}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Enable import lists for everyone"
 msgstr "为所有人启用列表导入"
@@ -5702,12 +5858,12 @@ msgstr "为所有人启用列表导入"
 msgid "Enable single sign-on"
 msgstr "启用单点登录"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "Enable the Home screen"
-msgstr "启用首页"
+#~ msgid "Enable the Home screen"
+#~ msgstr "启用首页"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Enable the OPDS catalogue"
 msgstr "启用 OPDS 目录"
@@ -5715,12 +5871,11 @@ msgstr "启用 OPDS 目录"
 #: src/components/NotificationsSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enabled"
 msgstr "已启用"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
 msgstr "启用后会生成订阅源 URL。请确认密码以继续。"
@@ -5745,10 +5900,14 @@ msgstr "结束于第 {num} 章"
 msgid "English"
 msgstr "英语"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
+msgid "English (MangaBaka default)"
+msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "English (provider default)"
-msgstr "英语（提供方默认）"
+#~ msgid "English (provider default)"
+#~ msgstr "英语（提供方默认）"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -6006,6 +6165,10 @@ msgstr "展开"
 msgid "Expand {spanLabel}"
 msgstr "展开 {spanLabel}"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Extra files Maki writes next to the chapters so Kavita and Komga name and group them the way Maki does."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -6015,7 +6178,7 @@ msgstr "展开 {spanLabel}"
 msgid "Failed"
 msgstr "失败"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry off. Manual retries from Activity don't count."
 msgstr "下载失败后会按逐渐延长的间隔重试（5 分钟、10 分钟、20 分钟……）。设为 0 可关闭自动重试。手动重试不计入此设置。"
@@ -6086,12 +6249,12 @@ msgstr "下降意味着你发生了变化。"
 msgid "Fantasy"
 msgstr "奇幻"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Feed URL"
 msgstr "订阅源 URL"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Feed URL copied"
 msgstr "订阅源 URL 已复制"
@@ -6121,6 +6284,10 @@ msgstr "感觉像你的种子"
 #, fuzzy
 msgid "Fetch a sample of the same chapter from each source and rank them by scan quality."
 msgstr "从每个来源获取同一章节的样本，并按扫描质量排序。"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Fetch more when unread chapters drop to"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -6167,7 +6334,7 @@ msgstr "文件"
 msgid "File name"
 msgstr "文件名"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "File naming on import"
 msgstr "导入时的文件命名"
@@ -6183,8 +6350,6 @@ msgstr "磁盘上未关联的文件"
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
 msgid "Files"
@@ -6305,7 +6470,7 @@ msgstr "完成设置"
 msgid "Finished"
 msgstr "已完成"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Finished chapters show up as read within seconds, marked the same way the import marks them. Without this they wait for the next scrobble sync."
 msgstr "读完的章节会在几秒内显示为已读，标记方式与导入时相同。不开启的话，它们要等到下一次 scrobble 同步。"
@@ -6315,7 +6480,11 @@ msgstr "读完的章节会在几秒内显示为已读，标记方式与导入时
 msgid "Finished in a rush"
 msgstr "快速读完"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+msgid "Finished torrents"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Finishing a chapter in Maki's reader also marks it read in Kavita. Only for series matched to a Kavita series. Stats never count a chapter twice."
 msgstr "在 Maki 阅读器中读完章节后，也会在 Kavita 中标记为已读。仅适用于已匹配到 Kavita 作品的系列。统计数据不会重复计算章节。"
@@ -6335,7 +6504,7 @@ msgstr "第一章"
 msgid "First chapter ready"
 msgstr "第一章已就绪"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "First download in progress"
 msgstr "首次下载进行中"
@@ -6413,7 +6582,12 @@ msgstr "换章时闪现章节名称"
 msgid "Folder"
 msgstr "文件夹"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Folder & file naming"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Folder naming on import"
 msgstr "导入时的文件夹命名"
@@ -6433,6 +6607,10 @@ msgstr "文件夹路径"
 #, fuzzy
 msgid "Folders are renamed to the English title and their comic files are linked to chapters."
 msgstr "文件夹会重命名为英文标题，漫画文件会关联到对应章节。"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Folders where series are stored. Point Kavita at the same folders. Which users can see each folder is set per user under Users & security."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -6454,15 +6632,15 @@ msgstr "遵循通知设置中的默认值。"
 msgid "For readers like Komga and Kavita that pick up a poster from the folder."
 msgstr "供 Komga、Kavita 等会从文件夹读取海报的阅读器使用。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
 msgstr "供 Komga、Kavita 等会从文件夹读取海报的阅读器使用。启用后会立即执行。"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
-msgid "For scripts and third-party clients. A key acts as you through the <0>X-Api-Key</0> header. Your OPDS feed URL is managed on the OPDS card."
-msgstr "供脚本和第三方客户端使用。通过 <0>X-Api-Key</0> 请求头，此密钥可让程序以你的身份操作。OPDS 订阅源 URL 在 OPDS 卡片中管理。"
+#~ msgid "For scripts and third-party clients. A key acts as you through the <0>X-Api-Key</0> header. Your OPDS feed URL is managed on the OPDS card."
+#~ msgstr "供脚本和第三方客户端使用。通过 <0>X-Api-Key</0> 请求头，此密钥可让程序以你的身份操作。OPDS 订阅源 URL 在 OPDS 卡片中管理。"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -6489,13 +6667,13 @@ msgstr "格式"
 msgid "Found"
 msgstr "已找到"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Free space"
 msgstr "可用空间"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "French"
 msgstr "法语"
@@ -6547,7 +6725,7 @@ msgstr "根据文件名"
 msgid "From your library"
 msgstr "来自你的资料库"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "From your MangaBaka settings. No OAuth needed."
 msgstr "可在 MangaBaka 设置中找到。不需要 OAuth。"
@@ -6620,7 +6798,7 @@ msgid "Genres in the library"
 msgstr "资料库中的类型"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "German"
 msgstr "德语"
@@ -6651,7 +6829,7 @@ msgstr "给它起个名字"
 msgid "Give others their own account, library access and reading history."
 msgstr "为其他人创建账户，并设置资料库访问权限和阅读历史。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Give up on a chapter after (minutes)"
 msgstr "在（分钟）后放弃章节"
@@ -6768,7 +6946,7 @@ msgstr "阅读习惯数据"
 msgid "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
 msgstr "相当于该漫画评分的一半。你喜欢的动画会将其类型和标签提供给你的个人资料，但不会压过你实际阅读过的书籍。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Hardlink imported torrents when possible"
 msgstr "可能时对导入的种子使用硬链接"
@@ -6967,8 +7145,12 @@ msgstr "数值越大，通知越频繁。"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
-msgid "Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so the better scoring copy wins between them."
-msgstr "优先级从高到低排列。关闭某个层级后，将不再优先选择或接受它。合并的层级排名相同，因此其中分数更高的副本胜出。"
+#~ msgid "Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so the better scoring copy wins between them."
+#~ msgstr "优先级从高到低排列。关闭某个层级后，将不再优先选择或接受它。合并的层级排名相同，因此其中分数更高的副本胜出。"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so the better scoring copy wins between them. Volume is a digital volume release, Official the publisher's own site, Scanlator a translation group, Aggregator a site that reposts others' releases."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6986,16 +7168,16 @@ msgstr "历史记录"
 msgid "Hold a feed token and read through an OPDS app"
 msgstr "持有订阅源令牌并通过 OPDS 应用阅读"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Hold back more than (chapters)"
-msgstr "保留阈值（章）"
+#~ msgid "Hold back more than (chapters)"
+#~ msgstr "保留阈值（章）"
 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
 #: src/pages/reader/ShortcutSheet.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Home"
 msgstr "首页"
@@ -7003,8 +7185,8 @@ msgstr "首页"
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Home & start page"
-msgstr "首页和起始页"
+#~ msgid "Home & start page"
+#~ msgstr "首页和起始页"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -7042,6 +7224,10 @@ msgstr "小时"
 msgid "Hover a cell for its number."
 msgstr "将鼠标悬停在单元格上可查看章节编号。"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "How chapters from scraper sources move through the queue. Torrents are handled by qBittorrent below."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "How close each quarter sat to where you started."
@@ -7057,7 +7243,15 @@ msgstr "系列阅读停滞时，你读到了哪里。"
 msgid "How far through a series you were when it stalled. Median {stopPointPct}."
 msgstr "系列阅读停滞时，你读到了哪里。中位数：{stopPointPct}。"
 
-#: src/pages/SettingsPage.tsx
+#: src/components/settings/SecuritySection.tsx
+msgid "How Maki is reached. Changes take effect after Maki restarts."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "How Maki looks and behaves for you: colours, language, start page, content rating and what reaches your bell."
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "How Maki names series folders and the chapter files it downloads. The \"?\" button lists every token. Changes apply to new series and downloads; files already on disk stay put until you rename them from a series' page or with the button below."
 msgstr "Maki 如何命名作品文件夹和下载的章节文件。“？”按钮会列出所有命名标记。更改会应用于新作品和新下载；磁盘上的现有文件保持不变，除非你从作品页面或下方按钮重命名。"
@@ -7066,6 +7260,10 @@ msgstr "Maki 如何命名作品文件夹和下载的章节文件。“？”按�
 #, fuzzy
 msgid "How many"
 msgstr "数量"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "How many candidate releases one scan may inspect before it stops."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -7077,6 +7275,14 @@ msgstr "候选文件的页数最多可以比当前文件少多少，仍算作升
 msgid "How much they count"
 msgstr "它们的权重"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "How often every user's lists are checked."
+msgstr ""
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "How often progress and ratings are pushed, from both Kavita and the built-in reader."
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "How signals work"
@@ -7084,19 +7290,32 @@ msgstr "信号的工作方式"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
-msgid "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default, including series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
-msgstr "内置阅读器打开作品的方式。配置会自动应用于其支持的作品类型；其他所有内容（包括升级后尚未刷新元数据的作品）都会使用“默认”配置。你可以固定某个配置，也可以在阅读器中覆盖设置。"
+#~ msgid "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default, including series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
+#~ msgstr "内置阅读器打开作品的方式。配置会自动应用于其支持的作品类型；其他所有内容（包括升级后尚未刷新元数据的作品）都会使用“默认”配置。你可以固定某个配置，也可以在阅读器中覆盖设置。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default. You can also pin a profile to a series, or change settings from inside the reader."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "How you read"
 msgstr "你的阅读方式"
 
+#: src/pages/settings/registry.ts
+msgid "HTTPS and proxies, backups, the image cache and updates."
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "https, require https, trusted proxies, hsts"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "https, require https, trusted proxies, lockout, failed attempts, hsts, auth log"
-msgstr "HTTPS，要求 HTTPS，受信任代理，锁定，失败尝试，HSTS，身份验证日志"
+#~ msgid "https, require https, trusted proxies, lockout, failed attempts, hsts, auth log"
+#~ msgstr "HTTPS，要求 HTTPS，受信任代理，锁定，失败尝试，HSTS，身份验证日志"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7139,7 +7358,7 @@ msgid "Ignored"
 msgstr "已忽略"
 
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Image cache"
 msgstr "图像缓存"
@@ -7213,8 +7432,8 @@ msgstr "列表导入已完成"
 msgid "import list, anilist, mal, kitsu, tracker, auto add"
 msgstr "列表导入, anilist, mal, kitsu, 追踪器, 自动添加"
 
+#: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Import lists"
 msgstr "列表导入"
@@ -7249,12 +7468,12 @@ msgstr "导入评分"
 msgid "Import ratings from {label}"
 msgstr "从 {label} 导入评分"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Import read status"
 msgstr "导入阅读状态"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Import read status from Kavita"
 msgstr "从 Kavita 导入阅读状态"
@@ -7368,12 +7587,12 @@ msgstr "隐身"
 msgid "Incognito (don't record this session)"
 msgstr "隐身（不记录此会话）"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Incognito by content rating"
 msgstr "按内容分级使用隐身模式"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Incognito for {ratingLabel}"
 msgstr "对 {ratingLabel} 启用隐身"
@@ -7482,7 +7701,7 @@ msgid "It needs a quality profile and downloaded chapters."
 msgstr "它需要质量配置和已下载的章节。"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Italian"
 msgstr "意大利语"
@@ -7498,7 +7717,7 @@ msgid "Its volumes aren't mapped to your chapters yet"
 msgstr "它的卷尚未与你的章节对应"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Japanese"
 msgstr "日语"
@@ -7550,36 +7769,53 @@ msgstr "仅此系列"
 msgid "Kavita"
 msgstr "Kavita"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
-msgid "Kavita libraries"
-msgstr "Kavita 图书馆"
+#~ msgid "Kavita libraries"
+#~ msgstr "Kavita 图书馆"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Kavita only sends reading updates to admin accounts. Use an API key from a Kavita admin under Settings → Integrations → Kavita."
-msgstr "Kavita 只会向管理员账户发送阅读更新。请使用 Kavita 管理员在“设置 → 集成 → Kavita”下的 API 密钥。"
+#: src/pages/settings/ReadingCards.tsx
+msgid "Kavita only sends reading updates to admin accounts. Use an API key from a Kavita admin under Integrations."
+msgstr ""
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
-msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
-msgstr "尚未开始阅读的 Kavita 作品会被添加为“计划阅读”。列表中已有的条目不会更改。"
+#~ msgid "Kavita only sends reading updates to admin accounts. Use an API key from a Kavita admin under Settings → Integrations → Kavita."
+#~ msgstr "Kavita 只会向管理员账户发送阅读更新。请使用 Kavita 管理员在“设置 → 集成 → Kavita”下的 API 密钥。"
+
+#: src/pages/settings/ReadingCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Kavita read sync"
+msgstr ""
+
+#: src/pages/settings/IntegrationCards.tsx
+#, fuzzy
+#~ msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
+#~ msgstr "尚未开始阅读的 Kavita 作品会被添加为“计划阅读”。列表中已有的条目不会更改。"
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Kavita sync"
-msgstr "Kavita 同步"
+#~ msgid "Kavita sync"
+#~ msgstr "Kavita 同步"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts."
-msgstr "Kavita、Maki 同步阅读进度的服务，以及 Discord 和 webhook 通知。"
+#~ msgid "Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts."
+#~ msgstr "Kavita、Maki 同步阅读进度的服务，以及 Discord 和 webhook 通知。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/registry.ts
+msgid "Kavita, tracker accounts and import lists, and alerts to chat and push apps."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Kavita's reading belongs to another Maki account. An admin can change that under Integrations."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
-msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita."
-msgstr "Kavita 的阅读进度归属于一个 Maki 账户，而这个账户不是你的。管理员可以在“设置”→“集成”→“Kavita”中更改归属。"
+#~ msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita."
+#~ msgstr "Kavita 的阅读进度归属于一个 Maki 账户，而这个账户不是你的。管理员可以在“设置”→“集成”→“Kavita”中更改归属。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -7596,15 +7832,15 @@ msgstr "保持不变"
 msgid "Keep editing"
 msgstr "继续编辑"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Keep folder name, and put new downloads there too"
-msgstr "保留文件夹名称，新下载内容也放在那里"
+#~ msgid "Keep folder name, and put new downloads there too"
+#~ msgstr "保留文件夹名称，新下载内容也放在那里"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Keep folder name, but put new downloads in a Maki standard folder"
-msgstr "保留文件夹名称，但将新下载内容放入 Maki 标准文件夹"
+#~ msgid "Keep folder name, but put new downloads in a Maki standard folder"
+#~ msgstr "保留文件夹名称，但将新下载内容放入 Maki 标准文件夹"
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -7616,6 +7852,14 @@ msgstr "保留手动优先级，但按实测顺序重新编号。"
 msgid "Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop."
 msgstr "达到截止线后继续接受分数更高的副本，直到文件分数达到该值。0 表示在截止线处停止。设得很高则永不停止。"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Keep the folder name, and put new downloads there too"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Keep the folder name, but put new downloads in a folder named by the format"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Keep the name, download into a new standard folder"
@@ -7625,6 +7869,10 @@ msgstr "保留名称，下载到新的标准文件夹"
 #, fuzzy
 msgid "Keep the name, download into it too"
 msgstr "保留名称，也下载到该文件夹"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Keeps chapters read in Maki and in Kavita in step. Kavita's reading belongs to one Maki account, chosen by an admin under Integrations."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -7657,7 +7905,11 @@ msgstr "键盘快捷键"
 msgid "Keyboard shortcuts (?)"
 msgstr "键盘快捷键 (?)"
 
-#: src/pages/SettingsPage.tsx
+#: src/components/settings/AccountSection.tsx
+msgid "Keys for scripts and third-party apps. A key acts as you, sent in the <0>X-Api-Key</0> header. Your OPDS feed has its own URL under Reading."
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Kind"
 msgstr "类型"
@@ -7668,7 +7920,7 @@ msgid "Kinds"
 msgstr "类型"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Korean"
 msgstr "韩语"
@@ -7676,8 +7928,8 @@ msgstr "韩语"
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Language"
 msgstr "语言"
@@ -7699,18 +7951,29 @@ msgstr "语言为"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "language, languages, download language, language priority, preferred language"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "language, title language, japanese titles, romaji, native title, original title, localised, localized"
 msgstr "语言，标题语言，日文标题，罗马字，本地标题，原始标题，本地化"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "language, translation, translate, locale, interface language, ui language, english"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 #, fuzzy
-msgid "language, translation, translate, locale, interface language, ui language, english, swedish, svenska"
-msgstr "语言，翻译，翻译内容，区域设置，界面语言，UI 语言，英语，瑞典语，Svenska"
+#~ msgid "language, translation, translate, locale, interface language, ui language, english, swedish, svenska"
+#~ msgstr "语言，翻译，翻译内容，区域设置，界面语言，UI 语言，英语，瑞典语，Svenska"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Languages"
 msgstr "语言"
@@ -7720,7 +7983,7 @@ msgstr "语言"
 msgid "Languages to download"
 msgstr "下载语言"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Languages to download, most preferred first. Auto-match tries sources that publish your top language first and skips sources that publish none of these. New auto-matched sources get these languages; existing mappings are never changed. Drag to reorder."
 msgstr "按偏好从高到低排列要下载的语言。自动匹配会优先尝试发布首选语言的来源，并跳过不支持这些语言的来源。新自动匹配的来源会使用这些语言；现有映射不会更改。拖动即可重新排序。"
@@ -7735,7 +7998,7 @@ msgstr "大尺寸卡片"
 msgid "Large tiles for the first three"
 msgstr "前三个使用大尺寸卡片"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
 msgstr "更大的资源会变成提议，由你手动批准。"
@@ -7760,7 +8023,7 @@ msgstr "磁盘上的最后一章"
 msgid "Last chapter to mark watched"
 msgstr "要标记为已看过的最后一章"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Last download failed: {lastError}. The next scheduled run retries."
 msgstr "上次下载失败：{lastError}。下次计划运行时会重试。"
@@ -7790,7 +8053,7 @@ msgstr "最后一页"
 msgid "Last partial scan: {partialScanError}"
 msgstr "上次部分扫描：{partialScanError}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
 msgstr "上次运行 {finishedAtLabel}：下载了 {downloadedCount} 张海报，{failedCount} 个失败，清除了 {thumbnailsClearedCount} 个缓存图像"
@@ -7815,7 +8078,7 @@ msgstr "上次运行{when}：添加{added}个，申请{requested}个，跳过{sk
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 msgstr "上次运行于 {when}：已跳过，尚未下载本地 MangaBaka 数据库"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Last run failed: {lastError}"
 msgstr "上次运行失败：{lastError}"
@@ -7908,15 +8171,23 @@ msgstr "留空以保留当前值"
 msgid "Leave both boxes empty to ignore."
 msgstr "两个输入框都留空即可忽略。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
-msgid "Leave empty to scrobble every library."
-msgstr "留空则同步所有图书馆。"
+#~ msgid "Leave empty to scrobble every library."
+#~ msgstr "留空则同步所有图书馆。"
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Leave empty to scrobble reading from every Kavita library. Reading in Maki's own reader is always scrobbled."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "Leave empty to send for every series. Events without a series, like health, updates and imports, ignore this."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
-msgid "Leave empty to send for every series. Instance events like health and updates ignore this."
-msgstr "留空则向所有系列发送通知。健康检查和更新等实例事件不受此设置影响。"
+#~ msgid "Leave empty to send for every series. Instance events like health and updates ignore this."
+#~ msgstr "留空则向所有系列发送通知。健康检查和更新等实例事件不受此设置影响。"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -7924,9 +8195,13 @@ msgid "Leave empty to send to every device."
 msgstr "留空则发送到所有设备。"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+msgid "Leave empty to use this profile only on series you pin it to."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
-msgid "Leave empty to use this profile only where you pin it to a series."
-msgstr "留空表示仅在将此配置固定到系列时使用。"
+#~ msgid "Leave empty to use this profile only where you pin it to a series."
+#~ msgstr "留空表示仅在将此配置固定到系列时使用。"
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -7951,10 +8226,22 @@ msgstr "从左到右"
 msgid "Less"
 msgstr "更少"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Let the daily scan upgrade this profile's series"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "Let's look back at what you read."
 msgstr "回顾你读过的内容。"
+
+#: src/components/TrackerSyncControls.tsx
+msgid "Lets Discover learn from your anime list as well as your manga list."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Lets reading apps like Panels, Chunky, KOReader and Mihon browse your library and download or stream chapters. The feed only ever serves what your account can see."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -7989,8 +8276,8 @@ msgstr "等级、徽章和连续记录都根据你的阅读历史计算得出。
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
-msgid "Libraries"
-msgstr "资料库"
+#~ msgid "Libraries"
+#~ msgstr "资料库"
 
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
@@ -7998,8 +8285,8 @@ msgstr "资料库"
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #: src/pages/stats/sectionList.ts
 #, fuzzy
 msgid "Library"
@@ -8015,10 +8302,10 @@ msgstr "资料库统计"
 msgid "Library folders"
 msgstr "资料库文件夹"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Library folders where series are stored (point Kavita at the same location)."
-msgstr "存放系列的资料库文件夹（将 Kavita 指向相同位置）。"
+#~ msgid "Library folders where series are stored (point Kavita at the same location)."
+#~ msgstr "存放系列的资料库文件夹（将 Kavita 指向相同位置）。"
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -8211,15 +8498,24 @@ msgstr "完成设置后开始下载本地 MangaBaka 数据库"
 msgid "Local MangaBaka database ready"
 msgstr "本地 MangaBaka 数据库已就绪"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Local time, 0-23."
-msgstr "本地时间，0-23。"
+#~ msgid "Local time, 0-23."
+#~ msgstr "本地时间，0-23。"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Lockout and session rules for password sign-in. Changes take effect after Maki restarts."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Lockout duration (minutes)"
 msgstr "锁定时长（分钟）"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "lockout, failed attempts, session lifetime"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -8241,10 +8537,14 @@ msgstr "正在查询 {total} 项中的 {looked} 项"
 msgid "Looking up chapters…"
 msgstr "正在查找章节……"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the daily scan."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Looks for volume packs that could replace single-chapter files when a series' profile aims for volumes. Needs Prowlarr."
-msgstr "当系列的配置以卷为目标时，查找可以替换单章文件的卷合集包。需要 Prowlarr。"
+#~ msgid "Looks for volume packs that could replace single-chapter files when a series' profile aims for volumes. Needs Prowlarr."
+#~ msgstr "当系列的配置以卷为目标时，查找可以替换单章文件的卷合集包。需要 Prowlarr。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8291,7 +8591,7 @@ msgstr "对像你一样的读者更低"
 msgid "Lower number = tried first when downloading"
 msgstr "数字越小，下载时越先尝试"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Lowest-numbered admin"
 msgstr "编号最小的管理员"
@@ -8330,7 +8630,7 @@ msgstr "{relatedTo} 的正篇"
 msgid "mainstream"
 msgstr "主流"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Maki {checkedVersion} is available"
 msgstr "Maki {checkedVersion} 可用"
@@ -8350,10 +8650,14 @@ msgstr "Maki {version}"
 msgid "Maki asks Kavita to scan a series after its files change and sends it posters, links and status. The API key is under User Settings, 3rd Party Clients. Fill the path mapping only if Kavita sees the library under another path."
 msgstr "文件更改后，Maki 会让 Kavita 扫描作品，并向其发送海报、链接和状态。API 密钥位于 Kavita 的“用户设置”>“第三方客户端”中。只有 Kavita 看到的资料库路径与 Maki 不同时，才需要填写路径映射。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
-msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings → 3rd Party Clients in Kavita. Fill the path mapping only if Kavita sees the library under a different path, e.g. in Docker."
-msgstr "文件更改后，Maki 会让 Kavita 扫描作品，并发送作品海报、链接和状态。已在 Kavita 中设置的封面会保留。API 密钥位于 Kavita 的“用户设置”→“第三方客户端”中。只有 Kavita 看到的资料库路径与 Maki 不同时（例如在 Docker 中），才需要填写路径映射。"
+#~ msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings → 3rd Party Clients in Kavita. Fill the path mapping only if Kavita sees the library under a different path, e.g. in Docker."
+#~ msgstr "文件更改后，Maki 会让 Kavita 扫描作品，并发送作品海报、链接和状态。已在 Kavita 中设置的封面会保留。API 密钥位于 Kavita 的“用户设置”→“第三方客户端”中。只有 Kavita 看到的资料库路径与 Maki 不同时（例如在 Docker 中），才需要填写路径映射。"
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings, 3rd Party Clients in Kavita."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8365,7 +8669,7 @@ msgstr "Maki 无法访问此文件夹"
 msgid "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
 msgstr "Maki 已将文件夹与章节列表进行比对。勾选要信任的文件，并查看映射结果。按下“重新关联”前不会更改任何内容。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki 正在重启以应用更改。稍后重新加载。"
@@ -8397,8 +8701,8 @@ msgid "Manage signals"
 msgstr "管理信号"
 
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Manage sources"
 msgstr "管理来源"
@@ -8453,6 +8757,7 @@ msgid "Manhwa"
 msgstr "韩漫"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/settings/SystemCards.tsx
 #: src/sourceLabels.ts
 #, fuzzy
 msgid "Manual"
@@ -8464,7 +8769,6 @@ msgid "Manual match needed"
 msgstr "需要手动匹配"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Manual priority"
 msgstr "手动优先级"
@@ -8486,12 +8790,12 @@ msgstr "全部标记为已读"
 msgid "Mark ch. 1 to {coveredTo} watched"
 msgstr "将第 1 到 {coveredTo} 章标记为已看过"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Mark chapters read here as soon as they're read in Kavita"
 msgstr "在 Kavita 中读完后立即在此标为已读"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Mark chapters read in Kavita too"
 msgstr "同时在 Kavita 中将章节标记为已读"
@@ -8538,7 +8842,7 @@ msgstr "已将第 1 到 {to} 章标记为已看过"
 msgid "Marked watched, not read. Doesn't count toward reading stats"
 msgstr "已标记为看过，未标记为已读。不计入阅读统计"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Marks chapters you finished in Kavita as read here, so progress doesn't start from zero. Safe to rerun; it never unmarks anything. These reads stay out of Rewind because Kavita doesn't record when they happened."
 msgstr "将你已在 Kavita 中读完的章节标记为已读，这样阅读进度就不会从头开始。可以安全重复运行；不会取消任何已读状态。由于 Kavita 不会记录阅读时间，这些记录不会计入 Rewind。"
@@ -8593,12 +8897,12 @@ msgstr "最大"
 msgid "Max per run"
 msgstr "每次运行上限"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Max probes per scan"
-msgstr "每次扫描的最大探测次数"
+#~ msgid "Max probes per scan"
+#~ msgstr "每次扫描的最大探测次数"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Max upgrades per day"
 msgstr "每日最大升级数"
@@ -8628,7 +8932,7 @@ msgstr "也许明年"
 msgid "Measure"
 msgstr "测量"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Measure sources when a series is added"
 msgstr "添加系列时测量来源"
@@ -8685,8 +8989,6 @@ msgstr "正在合并文件夹"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Metadata"
 msgstr "元数据"
@@ -8702,6 +9004,8 @@ msgid "Metadata and poster refreshed"
 msgstr "元数据和海报已刷新"
 
 #: src/components/MetadataDumpProgress.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Metadata database"
 msgstr "元数据数据库"
@@ -8795,7 +9099,7 @@ msgstr "缺失"
 msgid "Missing ({missingFilterCount})"
 msgstr "缺失（{missingFilterCount}）"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Missing chapters allowed per volume"
 msgstr "每卷允许缺失的章节数"
@@ -8888,10 +9192,14 @@ msgstr "更多下载选项"
 msgid "More feedback options"
 msgstr "更多反馈选项"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "More isn't always faster: tripping a site's rate limit pauses that source for a while."
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/SimilarSeriesSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "More like this"
 msgstr "更多类似内容"
@@ -9036,9 +9344,7 @@ msgstr "已静音"
 msgid "Muted means nothing from this series at all."
 msgstr "静音表示完全不接收此系列的任何内容。"
 
-#: src/components/settings/AccountSection.tsx
 #: src/components/UserMenu.tsx
-#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "My account"
 msgstr "我的账户"
@@ -9097,18 +9403,18 @@ msgstr "在受信任代理中为你的反向代理命名，否则限流和审计
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Naming"
-msgstr "命名"
+#~ msgid "Naming"
+#~ msgstr "命名"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Naming tokens"
 msgstr "命名令牌"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Needed for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance."
-msgstr "MangaFire 等受 Cloudflare 保护的来源需要此服务。请填写正在运行的 FlareSolverr 实例地址。"
+#~ msgid "Needed for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance."
+#~ msgstr "MangaFire 等受 Cloudflare 保护的来源需要此服务。请填写正在运行的 FlareSolverr 实例地址。"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -9138,6 +9444,11 @@ msgstr "需要本地 MangaBaka 数据库"
 #, fuzzy
 msgid "Negate"
 msgstr "取反"
+
+#: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/registry.ts
+msgid "Network"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -9219,7 +9530,7 @@ msgstr "新建格式"
 msgid "New from creators you follow"
 msgstr "关注创作者的新作"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
 msgstr "已生成新的 OPDS 订阅源 URL"
@@ -9245,8 +9556,8 @@ msgstr "新推荐栏"
 msgid "New series"
 msgstr "新系列"
 
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "New series defaults"
 msgstr "新作品默认设置"
@@ -9255,6 +9566,10 @@ msgstr "新作品默认设置"
 #, fuzzy
 msgid "New series from creators you follow"
 msgstr "你关注的创作者有新系列"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "New series start without decimal chapters (10.5, x.1): they stay listed but are never downloaded or counted. Also applies to Smart-monitored series when a special appears later."
+msgstr ""
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -9434,7 +9749,7 @@ msgstr "暂无历史记录"
 msgid "No index yet, the prebuilt vectors download automatically."
 msgstr "尚无索引，预构建向量会自动下载。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarr 中未配置索引器。"
@@ -9619,7 +9934,7 @@ msgstr "没有系列匹配当前筛选条件。请尝试清除搜索或状态筛
 msgid "No shows match."
 msgstr "没有匹配的动画。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "No snapshot downloaded yet"
 msgstr "尚未下载快照"
@@ -9728,7 +10043,7 @@ msgstr "无"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "None"
 msgstr "无"
@@ -9753,7 +10068,7 @@ msgstr "{total} 个章节中没有想要的章节"
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "该创作者的标题都不符合这些筛选条件。请尝试放宽其中一个条件。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "none yet"
 msgstr "暂无"
@@ -9783,7 +10098,7 @@ msgstr "不是升级：{reason}"
 msgid "Not analyzed"
 msgstr "未分析"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
 msgstr "尚未检查"
@@ -9842,9 +10157,13 @@ msgid "Not linked to any chapter"
 msgstr "未与任何章节关联"
 
 #: src/components/settings/AccountSection.tsx
+msgid "Not linked yet. Confirm your password, then sign in with {displayName} to link it to this account."
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
 #, fuzzy
-msgid "Not linked yet. Sign in with {displayName} once to enable it for this account."
-msgstr "尚未关联。使用 {displayName} 登录一次即可为此账户启用。"
+#~ msgid "Not linked yet. Sign in with {displayName} once to enable it for this account."
+#~ msgstr "尚未关联。使用 {displayName} 登录一次即可为此账户启用。"
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -9878,7 +10197,7 @@ msgstr "未评分"
 msgid "Not recommended again"
 msgstr "不再推荐"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not run yet"
 msgstr "尚未运行"
@@ -10021,6 +10340,10 @@ msgstr "你的资料库中暂无内容"
 msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "不会重命名任何内容，所有文件仍留在原文件夹中。"
 
+#: src/components/NotificationsSection.tsx
+msgid "Nothing is sent to it any more. This can't be undone."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Nothing left to queue. Every wanted chapter is on disk or already queued."
@@ -10157,6 +10480,11 @@ msgstr "暂时没有"
 msgid "Notifiarr posts here through its Discord bot."
 msgstr "Notifiarr 通过其 Discord 机器人向此处发送消息。"
 
+#: src/components/NotificationsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Notification connections"
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Notification settings"
@@ -10230,8 +10558,8 @@ msgstr "OEL"
 
 #: src/api/readingProfiles.ts
 #, fuzzy
-msgid "OEL / western"
-msgstr "OEL / 西方漫画"
+#~ msgid "OEL / western"
+#~ msgstr "OEL / 西方漫画"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -10244,25 +10572,45 @@ msgstr "阅读时间的"
 msgid "Off"
 msgstr "关闭"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Off answers from the API instead and turns Discover off. The copy on disk is kept and still refreshed."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
-msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder."
-msgstr "默认关闭：开启后，提供方验证通过的任何人都会获得 Maki 账户。新账户在获得根文件夹授权前没有资料库访问权限。"
+#~ msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder."
+#~ msgstr "默认关闭：开启后，提供方验证通过的任何人都会获得 Maki 账户。新账户在获得根文件夹授权前没有资料库访问权限。"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
-msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
-msgstr "关闭后会隐藏首页部分、统计中的全部时间标签页和解锁通知。"
+#~ msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
+#~ msgstr "关闭后会隐藏首页部分、统计中的全部时间标签页和解锁通知。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
-msgstr "关闭后会保留资源发布方的文件名，这些名称通常比格式规则包含更多信息。Maki 自己下载的文件始终按格式命名；从作品页面重命名作品时，其中所有文件仍会重命名。"
+#: src/components/settings/ProgressSection.tsx
+msgid "Off hides the Home section, the all-time tab on Stats, unlock notifications, and removes you from the leaderboard."
+msgstr ""
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Off skips any series set to Scrobble-only or Full incognito; on scans them too."
-msgstr "关闭时会跳过所有设为“仅 Scrobble”或“完整”隐身模式的系列，开启时也会扫描它们。"
+#~ msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
+#~ msgstr "关闭后会保留资源发布方的文件名，这些名称通常比格式规则包含更多信息。Maki 自己下载的文件始终按格式命名；从作品页面重命名作品时，其中所有文件仍会重命名。"
+
+#: src/pages/settings/DownloadCards.tsx
+#, fuzzy
+#~ msgid "Off skips any series set to Scrobble-only or Full incognito; on scans them too."
+#~ msgstr "关闭时会跳过所有设为“仅 Scrobble”或“完整”隐身模式的系列，开启时也会扫描它们。"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Off skips series set to No scrobble or Full incognito."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Off stops the daily scan and the daily volume search. Scan now and per-series scans still work."
+msgstr ""
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -10315,6 +10663,10 @@ msgstr "在另一个文件中"
 msgid "On disk"
 msgstr "在磁盘上"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On hold"
@@ -10330,12 +10682,16 @@ msgstr "在书架上"
 msgid "On your shelf, not used for ranking"
 msgstr "在你的书架上，不用于排名"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Once a day. Check now works either way."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise). A grouped tier's cutoff is its whole group."
 msgstr "文件的层级一旦达到此处，升级就会停止（除非“升级至分数”另有设置）。合并层级的截止线是其整个分组。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Once a new series is matched, sample a few pages from three chapters on each linked source, so its first downloads already come from the best one. Downloads a little from every source for every series you add."
 msgstr "新系列匹配成功后，从每个已关联来源的三个章节中各采样几页，让首批下载就来自最佳来源。你每添加一个系列，都会从每个来源下载少量内容。"
@@ -10384,6 +10740,10 @@ msgstr "只有 Maki 阅读器会记录你的阅读时间。通过 Kavita 或 OPD
 msgid "Only needed for protected topics."
 msgstr "仅受保护的主题需要此项。"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Only needed when Kavita sees the library under a different path, e.g. in Docker."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Only notify services with this tag."
@@ -10393,6 +10753,10 @@ msgstr "仅通知带有此标签的服务。"
 #, fuzzy
 msgid "Only safe titles"
 msgstr "仅安全标题"
+
+#: src/components/ui/seriesNotifications.ts
+msgid "Only series I'm reading"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10421,8 +10785,13 @@ msgstr "只有你能看到此内容。"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "OPDS"
-msgstr "OPDS"
+#~ msgid "OPDS"
+#~ msgstr "OPDS"
+
+#: src/pages/settings/ReadingCards.tsx
+#: src/pages/settings/registry.ts
+msgid "OPDS catalogue"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10542,7 +10911,7 @@ msgstr "或"
 msgid "Order changed"
 msgstr "顺序已更改"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Original script"
 msgstr "原始文字"
@@ -10578,8 +10947,8 @@ msgstr "其他会话已退出登录"
 #: src/components/NotificationsSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Outbound notifications"
-msgstr "发出的通知"
+#~ msgid "Outbound notifications"
+#~ msgstr "发出的通知"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -10669,7 +11038,7 @@ msgstr "分页阅读速度 · 剩余 {remainingChapters} 个章节 · 根据 {sa
 msgid "Pages"
 msgstr "页面"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Pages a streaming app fetches count as read, so OPDS reading reaches your library, Rewind and trackers. Turn it off if an app reports progress you didn't make; some fetch pages ahead."
 msgstr "流媒体应用请求的页面会标记为已读，因此 OPDS 阅读进度会同步到资料库、Rewind 和跟踪服务。如果应用报告了你没有读过的进度，请关闭此项；有些应用会提前请求页面。"
@@ -10681,8 +11050,12 @@ msgstr "一次解码的页面数（0 = 自动）"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
-msgid "Pages fetched ahead."
-msgstr "已提前获取页面。"
+#~ msgid "Pages fetched ahead."
+#~ msgstr "已提前获取页面。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Pages fetched ahead. Not used in Continuous layout."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -10713,7 +11086,8 @@ msgstr "已跳过：{reasons}"
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Password"
@@ -10732,8 +11106,13 @@ msgstr "此实例仅允许管理员使用密码登录。"
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "password, change password, display name, username, email, api key, token, sessions, sign out, log out, two-factor authentication, 2fa, totp, authenticator, link single sign-on"
-msgstr "密码，更改密码，显示名称，用户名，电子邮件，API 密钥，令牌，会话，退出登录，双重身份验证，2FA，TOTP，身份验证器，关联单点登录"
+#~ msgid "password, change password, display name, username, email, api key, token, sessions, sign out, log out, two-factor authentication, 2fa, totp, authenticator, link single sign-on"
+#~ msgstr "密码，更改密码，显示名称，用户名，电子邮件，API 密钥，令牌，会话，退出登录，双重身份验证，2FA，TOTP，身份验证器，关联单点登录"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "password, change password, sessions, sign out, log out, two-factor authentication, 2fa, totp, authenticator, link single sign-on"
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -10751,25 +11130,35 @@ msgid "Paste series URL or numeric id…"
 msgstr "粘贴系列 URL 或数字 ID……"
 
 #: src/pages/HealthPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Path"
 msgstr "路径"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Path as Kavita sees it"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Path as Maki sees it"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Path as qBittorrent reports it"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Path mapping - Kavita side"
 msgstr "路径映射 - Kavita 端"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Path mapping - Maki side"
 msgstr "路径映射 - Maki 端"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Path mapping - qBittorrent side"
 msgstr "路径映射 - qBittorrent 端"
@@ -10795,6 +11184,10 @@ msgstr "待处理的下载将被移除。已经开始的下载将被取消。"
 msgid "per chapter"
 msgstr "每章"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Per kind: the newest N automatic and the newest N manual backups stay. Older ones are removed when a new backup is taken."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Period (.)"
@@ -10815,7 +11208,7 @@ msgstr "权限声明"
 msgid "Permissions"
 msgstr "权限"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Personal Access Token"
 msgstr "个人访问令牌"
@@ -10830,16 +11223,24 @@ msgstr "此实例已禁用个人添加权重。"
 msgid "Phone reader"
 msgstr "手机阅读器"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
-msgstr "选择背景色和强调色。背景也可以是浅色主题或跟随系统。只在此设备上记住。"
+#~ msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+#~ msgstr "选择背景色和强调色。背景也可以是浅色主题或跟随系统。只在此设备上记住。"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Pick a root folder"
 msgstr "选择根文件夹"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Pick a source by"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Pick another default profile first"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -10929,10 +11330,15 @@ msgid "Pornographic"
 msgstr "色情"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "Portuguese (Br)"
-msgstr "葡萄牙语（巴西）"
+#~ msgid "Portuguese (Br)"
+#~ msgstr "葡萄牙语（巴西）"
+
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Portuguese (Brazil)"
+msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -10949,12 +11355,16 @@ msgstr "正向"
 msgid "Posters"
 msgstr "海报"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
+msgid "Posters, reader thumbnails and the page samples used to compare sources. Both buttons clear thumbnails and samples and remove posters of deleted series. Rebuild missing then re-downloads posters that are missing or broken; Rebuild all re-downloads every poster."
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Posters: {coverFilesLabel} files, {coverBytesLabel} - {coversMissingLabel} of {seriesTotalLabel} series have no usable poster"
 msgstr "海报：{coverFilesLabel} 个文件，{coverBytesLabel} - {seriesTotalLabel} 个系列中有 {coversMissingLabel} 个没有可用海报"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Posters: {coverFilesLabel} files, {coverBytesLabel} - every series has one"
 msgstr "海报：{coverFilesLabel} 个文件，{coverBytesLabel} - 每个系列都有海报"
@@ -10964,10 +11374,18 @@ msgstr "海报：{coverFilesLabel} 个文件，{coverBytesLabel} - 每个系列�
 msgid "Posts into one topic of a forum group."
 msgstr "发布到论坛群组的某个主题中。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Pre-filled on the add form, where any single add can change it. \"No scrobble\" keeps a series off your trackers; \"Full\" also keeps it out of stats and history."
-msgstr "添加表单会预先填入此设置，单次添加时可以修改。“不追踪”会让作品不再同步到跟踪服务；“完整”还会将其排除在统计和历史记录之外。"
+#~ msgid "Pre-filled on the add form, where any single add can change it. \"No scrobble\" keeps a series off your trackers; \"Full\" also keeps it out of stats and history."
+#~ msgstr "添加表单会预先填入此设置，单次添加时可以修改。“不追踪”会让作品不再同步到跟踪服务；“完整”还会将其排除在统计和历史记录之外。"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Pre-filled on the add form, where any single add can change it. \"No scrobble\" keeps a series off your trackers; \"Full\" also keeps it out of stats and history. Series imported from disk start with incognito off."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Preferences"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -11088,7 +11506,7 @@ msgstr "已创建提议"
 msgid "Proposal dismissed"
 msgstr "已忽略提议"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Proposal expiry (days)"
 msgstr "提议有效期（天）"
@@ -11145,20 +11563,24 @@ msgstr "出版方"
 msgid "Publishers"
 msgstr "出版方"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "pull the latest code and rebuild"
 msgstr "拉取最新代码并重新构建"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "pull the new image and recreate the container"
 msgstr "拉取新镜像并重新创建容器"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
+msgstr ""
+
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
-msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you cannot add series yourself. Connect trackers under Scrobbling first."
-msgstr "按计划获取你的追踪器列表，并将匹配的系列添加到资料库；如果你无权自行添加系列，则提交申请。请先在“阅读记录”中连接追踪器。"
+#~ msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you cannot add series yourself. Connect trackers under Scrobbling first."
+#~ msgstr "按计划获取你的追踪器列表，并将匹配的系列添加到资料库；如果你无权自行添加系列，则提交申请。请先在“阅读记录”中连接追踪器。"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -11170,15 +11592,23 @@ msgstr "降低相近标题的排名"
 msgid "Pushes down titles close to this one"
 msgstr "降低与此标题相近的标题排名"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka and Kitsu. Connect and disconnect accounts, and review matches, on the Scrobble page."
+msgstr ""
+
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
-msgid "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
-msgstr "将阅读进度推送到跟踪服务。连接账户后，可在“记录”页面检查匹配结果。"
+#~ msgid "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
+#~ msgstr "将阅读进度推送到跟踪服务。连接账户后，可在“记录”页面检查匹配结果。"
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
-msgid "Put it behind HTTPS, then turn on Settings → Security → Require HTTPS."
-msgstr "将其置于 HTTPS 后，然后开启设置 → 安全 → 要求 HTTPS。"
+#~ msgid "Put it behind HTTPS, then turn on Settings → Security → Require HTTPS."
+#~ msgstr "将其置于 HTTPS 后，然后开启设置 → 安全 → 要求 HTTPS。"
+
+#: src/pages/SetupAccountPage.tsx
+msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -11278,7 +11708,7 @@ msgstr "已加入下载队列"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "已将来自 {winnerSource} 的升级加入队列"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Quiet period (days)"
 msgstr "静默期（天）"
@@ -11459,8 +11889,6 @@ msgstr "立即阅读"
 msgid "Read slowly over a long span"
 msgstr "长期慢慢阅读"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/settings/registry.ts
 #: src/pages/stats/sections/ProgressSection.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy
@@ -11472,12 +11900,17 @@ msgstr "阅读器"
 msgid "Reader counts replace it once that data is installed."
 msgstr "安装该数据后，阅读器计数会取代它。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Reader profiles"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Reader settings"
 msgstr "阅读器设置"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Reader thumbnails: {thumbnailFilesLabel} files, {thumbnailBytesLabel}"
 msgstr "阅读器缩略图：{thumbnailFilesLabel} 个文件，{thumbnailBytesLabel}"
@@ -11546,7 +11979,7 @@ msgstr "阅读进度"
 msgid "Reading progress and bookmarks for removed chapter rows will also be deleted."
 msgstr "已移除章节行的阅读进度和书签也会被删除。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Reading progress from Kavita…"
 msgstr "正在读取 Kavita 的阅读进度……"
@@ -11589,7 +12022,7 @@ msgstr "从 Kavita 读取阅读进度，并每 {intervalMinutes, plural, other {
 msgid "Reason (optional)"
 msgstr "原因（可选）"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Rebuild all"
 msgstr "全部重建"
@@ -11599,12 +12032,12 @@ msgstr "全部重建"
 msgid "Rebuild chapter links from the folder, volumes first"
 msgstr "根据文件夹重建章节关联，优先处理卷文件"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Rebuild every poster"
 msgstr "重建所有海报"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Rebuild missing"
 msgstr "重建缺失项"
@@ -11614,12 +12047,12 @@ msgstr "重建缺失项"
 msgid "Rebuild missing images"
 msgstr "重建缺失图像"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Rebuilding image cache"
 msgstr "正在重建图像缓存"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "正在重建海报，{processedCount} / {totalCount}"
@@ -11668,8 +12101,6 @@ msgid "Recommend from this"
 msgstr "根据此内容推荐"
 
 #: src/api/customRails.ts
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Recommendations"
 msgstr "推荐"
@@ -11705,9 +12136,13 @@ msgid "Recurrent"
 msgstr "重复"
 
 #: src/components/settings/SecuritySection.tsx
+msgid "Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS; over plain HTTP, sign-in is refused with a message saying so."
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
 #, fuzzy
-msgid "Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS: over plain HTTP, sign-in fails without saying why."
-msgstr "将 HTTP 重定向到 HTTPS，发送 HSTS，并将会话 cookie 标记为 Secure。只有在 Maki 已启用 TLS 后才打开此项：通过普通 HTTP 访问时，登录会无故失败。"
+#~ msgid "Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS: over plain HTTP, sign-in fails without saying why."
+#~ msgstr "将 HTTP 重定向到 HTTPS，发送 HSTS，并将会话 cookie 标记为 Secure。只有在 Maki 已启用 TLS 后才打开此项：通过普通 HTTP 访问时，登录会无故失败。"
 
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/DiscoverPage.tsx
@@ -11742,12 +12177,12 @@ msgstr "刷新元数据以获取一个。"
 msgid "Refresh metadata, rewrite ComicInfo, change monitoring"
 msgstr "刷新元数据，重写 ComicInfo，更改监控"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Refresh now"
 msgstr "立即刷新"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Refresh started, downloading in the background if a new snapshot is available"
 msgstr "刷新已开始，如有新快照会在后台下载"
@@ -11777,12 +12212,12 @@ msgstr "正在刷新 {done}/{total}"
 msgid "Refuses password sign-in for everyone except administrators, who keep it so a provider outage can never lock you out of your own library."
 msgstr "拒绝除管理员之外所有人的密码登录。管理员保留密码登录，这样提供方中断时也不会让你无法访问自己的资料库。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Regenerate"
 msgstr "重新生成"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Regenerate OPDS token"
 msgstr "重新生成 OPDS 令牌"
@@ -11791,6 +12226,10 @@ msgstr "重新生成 OPDS 令牌"
 #, fuzzy
 msgid "Regex"
 msgstr "正则表达式"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Register this as the client's redirect URI. If Maki is reached at another host too, register that host's variant as well."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -11818,7 +12257,7 @@ msgid "Rejected by {resolvedBy}"
 msgstr "由 {resolvedBy} 拒绝"
 
 #: src/components/RelatedSeriesSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Related series"
 msgstr "相关系列"
@@ -11838,6 +12277,10 @@ msgstr "与你的资料库相关"
 #, fuzzy
 msgid "Related to your seeds"
 msgstr "与你的种子相关"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Release checks per scan"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -12036,17 +12479,17 @@ msgstr "重命名"
 msgid "Rename {label}"
 msgstr "重命名 {label}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Rename all"
 msgstr "全部重命名"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Rename every series"
 msgstr "重命名所有系列"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Rename every series to current format"
 msgstr "将所有系列重命名为当前格式"
@@ -12057,15 +12500,23 @@ msgstr "将所有系列重命名为当前格式"
 msgid "Rename files"
 msgstr "重命名文件"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Rename folder to Maki standard"
-msgstr "将文件夹重命名为 Maki 标准"
+#~ msgid "Rename folder to Maki standard"
+#~ msgstr "将文件夹重命名为 Maki 标准"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Rename imported files to the chapter file format"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Rename imported files to the Chapter Format"
-msgstr "将导入文件重命名为上面的章节格式"
+#~ msgid "Rename imported files to the Chapter Format"
+#~ msgstr "将导入文件重命名为上面的章节格式"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Rename the folder to the series folder format"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -12077,7 +12528,7 @@ msgstr "按 Maki 规范重命名"
 msgid "Renamed"
 msgstr "已重命名"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Renamed {renamed}, {failed} failed"
 msgstr "已重命名 {renamed} 个，{failed} 个失败"
@@ -12112,7 +12563,7 @@ msgstr "修复"
 msgid "Replace"
 msgstr "替换"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
 msgstr "被替换的文件会保留这么长时间，之后才会被清除。0 表示在下次定期清理时清除。"
@@ -12131,6 +12582,10 @@ msgstr "替换 #{opId}"
 #, fuzzy
 msgid "replaces {replacedFileName}"
 msgstr "替换 {replacedFileName}"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Replaces downloaded files with better releases, judged against each series' quality profile. The daily scan runs after the chosen hour. Scan now and scans started from a series page run regardless of the switch."
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -12294,12 +12749,12 @@ msgid "Resolved using ID. High accuracy"
 msgstr "使用 ID 解决。高准确度"
 
 #: src/pages/discover/ManageSignalsModal.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore"
 msgstr "恢复"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore & restart"
 msgstr "恢复并重启"
@@ -12309,17 +12764,17 @@ msgstr "恢复并重启"
 msgid "Restore any of them from Manage signals."
 msgstr "可在“管理信号”中恢复其中任何内容。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore backup"
 msgstr "恢复备份"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore failed"
 msgstr "恢复失败"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore from file…"
 msgstr "从文件恢复……"
@@ -12329,7 +12784,7 @@ msgstr "从文件恢复……"
 msgid "Restore hidden or dismissed title"
 msgstr "恢复已隐藏或忽略的标题"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore staged"
 msgstr "恢复已暂存内容"
@@ -12344,10 +12799,14 @@ msgstr "恢复此标题"
 msgid "Restored"
 msgstr "已恢复"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Restrict release searches to specific indexers and Torznab categories. With nothing selected, every indexer and category is searched."
-msgstr "将发布内容搜索限制为指定的索引器和 Torznab 类别。未选择任何内容时，会搜索所有索引器和类别。"
+#~ msgid "Restrict release searches to specific indexers and Torznab categories. With nothing selected, every indexer and category is searched."
+#~ msgstr "将发布内容搜索限制为指定的索引器和 Torznab 类别。未选择任何内容时，会搜索所有索引器和类别。"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
@@ -12371,6 +12830,10 @@ msgstr "已重试 {retryCount} 次"
 msgid "Retried {retryCount}x - next attempt {nextAttemptTime}"
 msgstr "已重试 {retryCount} 次 - 下次尝试时间 {nextAttemptTime}"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Retries"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/NotificationsSection.tsx
@@ -12386,7 +12849,7 @@ msgstr "已重试 {retryCount} 次 - 下次尝试时间 {nextAttemptTime}"
 msgid "Retry"
 msgstr "重试"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Retry a failed download up to (attempts)"
 msgstr "失败下载最多重试次数"
@@ -12401,10 +12864,10 @@ msgstr "重试和取消排队的下载"
 msgid "Retry download"
 msgstr "重试下载"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Retry Handling"
-msgstr "重试处理"
+#~ msgid "Retry Handling"
+#~ msgstr "重试处理"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12533,11 +12996,17 @@ msgstr "恋爱"
 msgid "Root folder"
 msgstr "根文件夹"
 
+#: src/components/settings/UsersSection.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Root folders"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Root Folders"
-msgstr "根文件夹"
+#~ msgid "Root Folders"
+#~ msgstr "根文件夹"
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -12569,18 +13038,22 @@ msgstr "立即运行"
 msgid "Run setup guide"
 msgstr "运行设置指南"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Run the daily scan"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Running"
 msgstr "正在运行"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Runs the daily scan and lets a series-level scan enqueue upgrades too."
-msgstr "运行每日扫描，并允许系列级别的扫描也将升级加入队列。"
+#~ msgid "Runs the daily scan and lets a series-level scan enqueue upgrades too."
+#~ msgstr "运行每日扫描，并允许系列级别的扫描也将升级加入队列。"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Russian"
 msgstr "俄语"
@@ -12635,7 +13108,7 @@ msgstr "保存"
 msgid "Save a cover.jpg into each series folder"
 msgstr "在每个作品文件夹中保存 cover.jpg"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "将 cover.jpg 保存到每个系列的资料库文件夹"
@@ -12706,8 +13179,13 @@ msgstr "保存你的恢复代码"
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
+#: src/pages/settings/sharedRecord.ts
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Saved"
 msgstr "已保存"
@@ -12750,10 +13228,10 @@ msgstr "缩放（{scale}%）"
 msgid "Scan"
 msgstr "扫描"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Scan after hour"
-msgstr "在此时刻之后扫描"
+#~ msgid "Scan after hour"
+#~ msgstr "在此时刻之后扫描"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12765,13 +13243,13 @@ msgstr "扫描文件"
 msgid "Scan for upgrades"
 msgstr "扫描升级"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Scan incognito series"
 msgstr "扫描隐身系列"
 
 #: src/pages/ActivityPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Scan now"
 msgstr "立即扫描"
@@ -12788,7 +13266,7 @@ msgstr "扫描进行中…"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Scan started"
 msgstr "扫描已开始"
@@ -12801,8 +13279,13 @@ msgstr "使用身份验证器应用扫描此内容，或手动输入密钥，然
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
-msgstr "scan, API 密钥, 路径映射, 封面, 图书馆服务器, 阅读归属, kavita 用户, 进度归属"
+#~ msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
+#~ msgstr "scan, API 密钥, 路径映射, 封面, 图书馆服务器, 阅读归属, kavita 用户, 进度归属"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner, kavita libraries"
+msgstr ""
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -12903,14 +13386,19 @@ msgstr "爬虫"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Scraper sources, download behaviour and the torrent path."
-msgstr "抓取来源、下载行为和种子路径。"
+#~ msgid "Scraper sources, download behaviour and the torrent path."
+#~ msgstr "抓取来源、下载行为和种子路径。"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "scrapers, manage sources, priority, source priority, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
-msgstr "爬虫工具, 管理来源, 优先级, 来源优先级, 18+, 成人来源, mangadex, mangafire, webtoons, asura, tcb, flame comics, 来源顺序, 停用来源, 自动匹配, 重新排序, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
+#~ msgid "scrapers, manage sources, priority, source priority, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
+#~ msgstr "爬虫工具, 管理来源, 优先级, 来源优先级, 18+, 成人来源, mangadex, mangafire, webtoons, asura, tcb, flame comics, 来源顺序, 停用来源, 自动匹配, 重新排序, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "scrapers, manage sources, priority, source priority, source order, best quality, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -12933,9 +13421,11 @@ msgstr "仅跳过向跟踪器推送记录。"
 msgid "Scrobble reading"
 msgstr "记录阅读"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Scrobble reading from these libraries"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Scrobbling"
 msgstr "阅读记录"
@@ -13112,7 +13602,7 @@ msgstr "再次在剩余来源中搜索此标题。已经关联的来源保持不
 msgid "Search titles"
 msgstr "搜索标题"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Search torrents for volume releases"
 msgstr "搜索种子中的卷资源"
@@ -13132,15 +13622,19 @@ msgstr "立即搜索卷"
 msgid "searched as “{cleanedTitle}”"
 msgstr "已按“{cleanedTitle}”搜索"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Searches your indexers for manga releases through Prowlarr's search API. No app sync needed."
-msgstr "通过 Prowlarr 的搜索 API 在索引器中搜索可下载的漫画资源。不需要同步应用。"
+#~ msgid "Searches your indexers for manga releases through Prowlarr's search API. No app sync needed."
+#~ msgstr "通过 Prowlarr 的搜索 API 在索引器中搜索可下载的漫画资源。不需要同步应用。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Searches your indexers for manga releases to download as torrents."
 msgstr "在你的索引器中搜索可通过种子下载的漫画资源。"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. No app sync needed."
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -13162,11 +13656,15 @@ msgstr "季"
 msgid "Sections on this tab"
 msgstr "此标签页上的分区"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Sections, their order and your own rails are arranged on the pages themselves."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Security"
-msgstr "安全"
+#~ msgid "Security"
+#~ msgstr "安全"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -13188,7 +13686,7 @@ msgstr "种子来源"
 msgid "Seeded from"
 msgstr "推荐起始作品"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Seeding torrents stay in the download folder, so imports are linked or copied, never moved. A hardlink stores the files once but needs the download folder and library on the same filesystem; otherwise Maki copies. Hardlinked files are left as released, without Maki's ComicInfo.xml, so Kavita may group them apart from Maki's own downloads."
 msgstr "正在做种的种子会保留在下载文件夹中，因此导入时只会链接或复制文件，不会移动。硬链接只存储一份文件，但下载文件夹和资料库必须位于同一文件系统；否则 Maki 会复制文件。硬链接文件会保留发布时的原样，不含 Maki 写入的 ComicInfo.xml，因此 Kavita 可能会将它们与 Maki 自己下载的文件分开分组。"
@@ -13287,6 +13785,11 @@ msgstr "已选择"
 msgid "Self-hosted manga library and downloader."
 msgstr "自托管的漫画资料库和下载器。"
 
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Semantic search & recommendations"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Semantic search and recommendations"
@@ -13328,7 +13831,7 @@ msgstr "已发送到 qBittorrent：{title}"
 msgid "Sequel to {relatedTo}"
 msgstr "{relatedTo} 的续篇"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "MangaBaka 与此内容关联的续作、前传、衍生作和外传。"
@@ -13360,6 +13863,10 @@ msgstr "目标根文件夹中已有的系列会跳过。"
 msgid "Series and chapters you have asked an admin for."
 msgstr "你向管理员请求的系列和章节。"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Series checked per daily run. Each series is searched at most once a week."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Series details come from MangaBaka. Choose how much of it Maki keeps at hand, and what it may show you."
@@ -13370,20 +13877,32 @@ msgstr "作品详情来自 MangaBaka。选择 Maki 要在本地保留多少数�
 msgid "series finished"
 msgstr "已完成系列"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Series folder format"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Series Folder Format"
-msgstr "系列文件夹格式"
+#~ msgid "Series Folder Format"
+#~ msgstr "系列文件夹格式"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
-msgid "Series I'm reading"
-msgstr "我正在阅读的系列"
+#~ msgid "Series I'm reading"
+#~ msgstr "我正在阅读的系列"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Series metadata comes from MangaBaka. A local copy, about 3.5 GB and refreshed from the nightly dump, lets search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Series metadata comes from MangaBaka. The local database keeps a nightly snapshot on disk (~3 GB) so search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
-msgstr "作品元数据来自 MangaBaka。本地数据库每晚会保存一份快照（约 3 GB），让搜索和导入不受 API 速率限制，“发现”也需要它。首次下载完成前会使用 API。"
+#~ msgid "Series metadata comes from MangaBaka. The local database keeps a nightly snapshot on disk (~3 GB) so search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
+#~ msgstr "作品元数据来自 MangaBaka。本地数据库每晚会保存一份快照（约 3 GB），让搜索和导入不受 API 速率限制，“发现”也需要它。首次下载完成前会使用 API。"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13396,16 +13915,16 @@ msgstr "系列已移动"
 msgid "Series not found"
 msgstr "未找到系列"
 
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Series page"
 msgstr "系列页面"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
-msgid "Series pinned to this profile fall back to the instance default. This can't be undone."
-msgstr "指定使用此配置的系列将回退到实例默认配置。此操作无法撤销。"
+#~ msgid "Series pinned to this profile fall back to the instance default. This can't be undone."
+#~ msgstr "指定使用此配置的系列将回退到实例默认配置。此操作无法撤销。"
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -13443,15 +13962,19 @@ msgstr "资料库中符合这些筛选条件的作品。"
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "已读完一个章节但还有内容待读的作品。"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Server local time, 0 to 23."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Server URL"
 msgstr "服务器 URL"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
-msgid "Serves the library as an OPDS catalogue for reading apps like Panels, Chunky, KOReader and Mihon. Chapters download whole or stream a page at a time."
-msgstr "通过 OPDS 目录向 Panels、Chunky、KOReader 和 Mihon 等阅读应用提供资料库。章节可一次性下载，也可逐页串流。"
+#~ msgid "Serves the library as an OPDS catalogue for reading apps like Panels, Chunky, KOReader and Mihon. Chapters download whole or stream a page at a time."
+#~ msgstr "通过 OPDS 目录向 Panels、Chunky、KOReader 和 Mihon 等阅读应用提供资料库。章节可一次性下载，也可逐页串流。"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -13503,7 +14026,7 @@ msgstr "设置为 <0>0</0> 以禁用锁定。"
 msgid "Set up"
 msgstr "设置"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Set up the Kavita connection above to pick libraries."
 msgstr "先在上方设置 Kavita 连接，然后选择图书馆。"
@@ -13584,7 +14107,7 @@ msgstr "少年向"
 msgid "Show a popup when a notification arrives"
 msgstr "通知到达时显示弹窗"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Show again"
 msgstr "再次显示"
@@ -13652,6 +14175,10 @@ msgstr "显示被替换的文件"
 msgid "Show source text"
 msgstr "显示来源文本"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Show the Home page"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Show their newest titles in a rail on Home and Discover"
@@ -13662,7 +14189,7 @@ msgstr "在“首页”和“发现”的推荐栏中显示其最新作品"
 msgid "Show this section"
 msgstr "显示此区块"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
 msgstr "当前显示 {currentLocaleLabel}。非英语翻译由机器生成并持续改进；尚未翻译的内容会显示为英文。"
@@ -13713,9 +14240,13 @@ msgid "Sign in"
 msgstr "登录"
 
 #: src/components/settings/SecuritySection.tsx
+msgid "Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes take effect after Maki restarts."
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
 #, fuzzy
-msgid "Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes take effect after Maki restarts. Register <0>{redirectUrl}</0> as this client's redirect URI. If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path), register that host's variant as well."
-msgstr "通过 OpenID Connect 提供方（Authelia、Keycloak、Authentik、Entra ID）登录。更改会在 Maki 重启后生效。将 <0>{redirectUrl}</0> 注册为此客户端的重定向 URI。如果也通过其他主机访问 Maki（不同域名、局域网 IP 或反向代理路径），也请注册该主机对应的 URI。"
+#~ msgid "Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes take effect after Maki restarts. Register <0>{redirectUrl}</0> as this client's redirect URI. If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path), register that host's variant as well."
+#~ msgstr "通过 OpenID Connect 提供方（Authelia、Keycloak、Authentik、Entra ID）登录。更改会在 Maki 重启后生效。将 <0>{redirectUrl}</0> 注册为此客户端的重定向 URI。如果也通过其他主机访问 Maki（不同域名、局域网 IP 或反向代理路径），也请注册该主机对应的 URI。"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -13731,6 +14262,16 @@ msgstr "退出登录"
 #, fuzzy
 msgid "Sign out everywhere else"
 msgstr "退出其他所有设备"
+
+#: src/components/settings/AccountSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Sign-in"
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
+#: src/pages/settings/registry.ts
+msgid "Sign-in policy"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -13824,7 +14365,7 @@ msgstr "每周阅读次数"
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
 msgid "Size"
@@ -13840,7 +14381,7 @@ msgstr "大小不匹配"
 msgid "Skip {latestVersion}"
 msgstr "跳过 {latestVersion}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Skip a chapter this long after it was added or last upgraded."
 msgstr "章节在添加或上次升级后的这段时间内会被跳过。"
@@ -13855,6 +14396,10 @@ msgstr "跳过仅作为次要元素出现的作品"
 msgid "Skip setup"
 msgstr "跳过设置"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Skip specials"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Skip specials on new series"
@@ -13865,7 +14410,7 @@ msgstr "新作品跳过特别篇"
 msgid "Skip this file"
 msgstr "跳过此文件"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Skipped {latestVersion}"
 msgstr "已跳过 {latestVersion}"
@@ -13877,8 +14422,8 @@ msgstr "日常"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
-msgid "Sliding: a failed sign-in resets the timer."
-msgstr "滑动：失败的登录会重置计时器。"
+#~ msgid "Sliding: a failed sign-in resets the timer."
+#~ msgstr "滑动：失败的登录会重置计时器。"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -13897,7 +14442,8 @@ msgstr "智能"
 msgid "Smart"
 msgstr "Smart"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Smart Download"
 msgstr "Smart Download"
@@ -13907,12 +14453,17 @@ msgstr "Smart Download"
 msgid "Smart Download queued chapters"
 msgstr "Smart Download 已将章节加入队列"
 
-#: src/pages/SettingsPage.tsx
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "smart download, unread trigger"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
 msgstr "磁盘上的快照：{snapshotSize}，刷新于 {refreshedAtLabel}"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "磁盘上的快照：{snapshotSize}，刷新时间未知"
@@ -13988,10 +14539,10 @@ msgstr "来源匹配完成"
 msgid "Source off"
 msgstr "来源已关闭"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Source order"
-msgstr "来源顺序"
+#~ msgid "Source order"
+#~ msgstr "来源顺序"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -14011,8 +14562,8 @@ msgstr "来源状态"
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Sources"
@@ -14043,8 +14594,12 @@ msgstr "空格"
 msgid "Space ( )"
 msgstr "空格（ ）"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Space-separated. openid is always added. Keep email so existing accounts can be matched by their verified address."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Spanish"
 msgstr "西班牙语"
@@ -14082,8 +14637,8 @@ msgstr "{relatedTo} 的衍生作品"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
-msgid "Split double-width pages"
-msgstr "拆分双倍宽度页面"
+#~ msgid "Split double-width pages"
+#~ msgstr "拆分双倍宽度页面"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -14130,6 +14685,10 @@ msgstr "停滞在第 {maxChapter} 章"
 msgid "Stalled without finishing"
 msgstr "阅读停滞，尚未读完"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Standardises the ComicInfo.xml in CBZ files that arrive by torrent or import. Maki's own downloads always get one, hardlinked torrents are left as released, and PDFs never get one. A series page's \"Update ComicInfo\" action does one series later."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
@@ -14160,10 +14719,15 @@ msgstr "开始阅读本章"
 msgid "Start over"
 msgstr "重新开始"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Start page"
 msgstr "起始页"
+
+#: src/pages/settings/PreferenceCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Start page & Home"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -14258,8 +14822,8 @@ msgstr "读完前停下"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Storage, metadata, download clients and integrations for your Maki instance."
-msgstr "Maki 实例的存储、元数据、下载客户端和集成。"
+#~ msgid "Storage, metadata, download clients and integrations for your Maki instance."
+#~ msgstr "Maki 实例的存储、元数据、下载客户端和集成。"
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -14273,7 +14837,7 @@ msgstr "故事"
 msgid "Streak"
 msgstr "连续记录"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Stuck downloads"
 msgstr "卡住的下载"
@@ -14319,7 +14883,7 @@ msgstr "切换阅读方向"
 msgid "Switching model… downloading the model and its index."
 msgstr "正在切换模型……下载模型及其索引。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Switching to {kind}: downloading the model and index…"
 msgstr "正在切换到 {kind}：下载模型和索引……"
@@ -14334,7 +14898,7 @@ msgstr "全部同步"
 msgid "Sync everything from {label}?"
 msgstr "要同步{label}中的全部内容吗？"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Sync interval (minutes)"
 msgstr "同步间隔（分钟）"
@@ -14415,6 +14979,10 @@ msgstr "标签"
 msgid "Tag {selectedCount} series"
 msgstr "为 {selectedCount} 个系列添加标签"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Tag given to torrents Maki adds. Defaults to maki."
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
@@ -14452,8 +15020,12 @@ msgstr "点击区域"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
-msgid "Tap zones (click the page edges to turn)"
-msgstr "点击区域（点击页面边缘翻页）"
+#~ msgid "Tap zones (click the page edges to turn)"
+#~ msgstr "点击区域（点击页面边缘翻页）"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Tap zones (click the page edges to turn), paged layouts only"
+msgstr ""
 
 #: src/pages/stats/sectionList.ts
 #, fuzzy
@@ -14472,8 +15044,8 @@ msgstr "青少年浪漫喜剧"
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
-msgid "Tell me about new chapters for"
-msgstr "通知我这些内容的新章节"
+#~ msgid "Tell me about new chapters for"
+#~ msgstr "通知我这些内容的新章节"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -14547,9 +15119,13 @@ msgid "The approved source no longer has these pages"
 msgstr "批准的来源不再有这些页面"
 
 #: src/pages/settings/registry.ts
+msgid "The built-in reader, progress and achievements, the OPDS catalogue and read sync with Kavita."
+msgstr ""
+
+#: src/pages/settings/registry.ts
 #, fuzzy
-msgid "The built-in reader, the OPDS catalogue and what search is allowed to show you."
-msgstr "内置阅读器、OPDS 目录，以及搜索可以向你显示的内容。"
+#~ msgid "The built-in reader, the OPDS catalogue and what search is allowed to show you."
+#~ msgstr "内置阅读器、OPDS 目录，以及搜索可以向你显示的内容。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -14567,16 +15143,20 @@ msgid "The catalogue needs the local MangaBaka database (Settings, then Metadata
 msgstr "目录需要本地 MangaBaka 数据库（设置，然后选择元数据）。"
 
 #: src/pages/DiscoverPage.tsx
+msgid "The catalogue rails need the local MangaBaka database (Settings → Library → Metadata database)."
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
-msgstr "目录横栏需要本地 MangaBaka 数据库（设置 → 元数据 → 本地数据库）。"
+#~ msgid "The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+#~ msgstr "目录横栏需要本地 MangaBaka 数据库（设置 → 元数据 → 本地数据库）。"
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "The chapter numbers are in the archive's page file names. Certain."
 msgstr "压缩包内的页面文件名包含章节编号，这个判断很确定。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr "当前订阅源 URL 会立即失效。所有正在使用它的应用都需要更新为新 URL。"
@@ -14585,6 +15165,14 @@ msgstr "当前订阅源 URL 会立即失效。所有正在使用它的应用都�
 #, fuzzy
 msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
 msgstr "当前文件会移入回收站而不是直接删除，因此如果新副本更差，可以在“活动”中撤销。"
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14626,10 +15214,14 @@ msgstr "完整明细就在此幻灯片之后。"
 msgid "The language of Maki's interface, on every device you sign in on."
 msgstr "在你登录的所有设备上使用的 Maki 界面语言。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "The language of Maki's interface, on every device. Title language below is separate: it sets the language of series titles."
-msgstr "所有设备上的 Maki 界面语言。下方的标题语言是单独设置，用于指定作品标题的语言。"
+#~ msgid "The language of Maki's interface, on every device. Title language below is separate: it sets the language of series titles."
+#~ msgstr "所有设备上的 Maki 界面语言。下方的标题语言是单独设置，用于指定作品标题的语言。"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "The language of Maki's menus and text, on every device. Series titles have their own setting below."
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
@@ -14671,10 +15263,14 @@ msgstr "关联文件尚未盘点，因此无法显示其页面。运行“扫描
 msgid "The most explicit rating shown in search, Discover and recommendations. Everything up to it is allowed."
 msgstr "搜索、“发现”和推荐内容中显示的最高内容分级。该级别及以下均可显示。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
-msgstr "搜索、“发现”和推荐内容中向你显示的最高内容分级。该级别及以下均可显示。"
+#~ msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
+#~ msgstr "搜索、“发现”和推荐内容中向你显示的最高内容分级。该级别及以下均可显示。"
+
+#: src/pages/settings/PreferenceCards.tsx
+msgid "The most explicit rating shown to you in search, Discover, recommendations and the rails on a series page. Everything up to and including it is allowed. Your own library is never filtered."
+msgstr ""
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
@@ -14706,6 +15302,10 @@ msgstr "预览已过期，请重试。"
 #, fuzzy
 msgid "The profile and its reader settings are removed. This can't be undone."
 msgstr "配置及其阅读器设置将被删除。此操作无法撤销。"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "The profile is removed. This can't be undone."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -14784,8 +15384,8 @@ msgstr "资料库中反复出现的具体内容，每项旁边都有更多同类
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
-msgid "The starting point for every series. Any series can be set to something else from its own page, or for a whole selection at once from the Library's Select mode."
-msgstr "每个系列的起始设置。任何系列都可以从自己的页面设置为其他值，也可以在资料库的选择模式中一次为整个选择设置。"
+#~ msgid "The starting point for every series. Any series can be set to something else from its own page, or for a whole selection at once from the Library's Select mode."
+#~ msgstr "每个系列的起始设置。任何系列都可以从自己的页面设置为其他值，也可以在资料库的选择模式中一次为整个选择设置。"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -14991,7 +15591,7 @@ msgstr "此队列项目没有可查找来源的章节"
 msgid "This rail needs the local MangaBaka database, which is switched off or still downloading."
 msgstr "此推荐栏需要本地 MangaBaka 数据库，但数据库已关闭或仍在下载。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load."
 msgstr "这会为全部 {seriesTotalLabel} 个系列重新下载海报，每个系列查询一次元数据并下载一张图像。资料库较大时会运行几分钟。如果你只是修复无法加载的封面，请改用“重建缺失项”。"
@@ -15011,7 +15611,7 @@ msgstr "这只会移除来源映射。现有章节行和文件会完全保持不
 msgid "This repair needs a source chosen by hand"
 msgstr "此修复需要手动选择来源"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "这会使用 <0>{backupName}</0> 替换当前资料库和设置，然后重启 Maki。当前数据不会保留；如果需要恢复，请先备份。Docker 和 systemd 会自动重新启动 Maki；否则请手动重新启动。"
@@ -15226,8 +15826,8 @@ msgstr "标题"
 msgid "Title A–Z"
 msgstr "标题 A–Z"
 
+#: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Title language"
 msgstr "标题语言"
@@ -15267,10 +15867,14 @@ msgstr "作品来源"
 msgid "titles on the shelf"
 msgstr "书架上的标题"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Titles that read alike, matched on feel rather than a declared relation. Needs semantic search, which an admin turns on under Library."
+msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
-msgstr "阅读体验相似的标题，按感觉而不是明确关系进行匹配。需要推荐索引。"
+#~ msgid "Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index."
+#~ msgstr "阅读体验相似的标题，按感觉而不是明确关系进行匹配。需要推荐索引。"
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
@@ -15342,9 +15946,13 @@ msgid "Top rated"
 msgstr "评分最高"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+msgid "Top source is tried first when several carry the same series."
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
-msgid "Top source wins when several carry the same series."
-msgstr "如果多个来源都有同一系列，则优先尝试排名最高的来源。"
+#~ msgid "Top source wins when several carry the same series."
+#~ msgstr "如果多个来源都有同一系列，则优先尝试排名最高的来源。"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -15371,8 +15979,8 @@ msgstr "种子客户端，类别，路径映射，下载客户端"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Torrent imports"
-msgstr "种子导入"
+#~ msgid "Torrent imports"
+#~ msgstr "种子导入"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -15390,7 +15998,7 @@ msgstr "所显示页面的总字节数。它还会根据相同页面记录来源
 msgid "Track progress and achievements"
 msgstr "跟踪进度和成就"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Track reading progress from OPDS"
 msgstr "跟踪来自 OPDS 的阅读进度"
@@ -15399,6 +16007,11 @@ msgstr "跟踪来自 OPDS 的阅读进度"
 #, fuzzy
 msgid "Tracker"
 msgstr "跟踪器"
+
+#: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Trackers"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -15415,7 +16028,7 @@ msgstr "悲剧"
 msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr "英语以外的翻译由机器生成，会随着时间修正；仍未翻译的内容会退回英语。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Trash retention (days)"
 msgstr "回收站保留时间（天）"
@@ -15476,6 +16089,10 @@ msgstr "重新预览"
 msgid "Turkish"
 msgstr "土耳其语"
 
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Turn it off if you don't read in Maki: the tab disappears and Library becomes the start page."
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Turn on anime signals on the Taste tab to use this."
@@ -15491,7 +16108,7 @@ msgstr "在左侧启用或停用来源。拖动右侧列表，设置 Maki 优先
 msgid "Turn this off to only see them in the bell."
 msgstr "关闭此选项后，只能在铃铛中看到它们。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Turning embeddings off…"
 msgstr "正在关闭嵌入……"
@@ -15668,10 +16285,14 @@ msgstr "未监控"
 msgid "Unofficial build (not a tagged release)"
 msgstr "非官方构建（非正式标签版本）"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Unofficial build, update checks are skipped."
 msgstr "非官方构建，跳过更新检查。"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Unpin it from every series first"
+msgstr ""
 
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -15724,7 +16345,7 @@ msgstr "未保存"
 msgid "Unsaved changes"
 msgstr "未保存的更改"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back."
 msgstr "未设置时会使用 ID 最小的管理员，适合单用户实例。只有此账户可以从 Kavita 导入阅读进度或向其推送阅读记录。"
@@ -15779,7 +16400,7 @@ msgstr "直到第 {end} 章"
 msgid "Up to ch. {end}"
 msgstr "直到第 {end} 章"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Up to date, last checked {checkedAtLabel}"
 msgstr "已是最新，上次检查时间为 {checkedAtLabel}"
@@ -15795,7 +16416,7 @@ msgstr "有可用更新 {latestVersion}"
 msgid "Update available"
 msgstr "有可用更新"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Update available: {latestVersion}"
 msgstr "有可用更新：{latestVersion}"
@@ -15811,7 +16432,7 @@ msgid "Updated. This title stays out of recommendations."
 msgstr "已更新。此标题仍不会出现在推荐中。"
 
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Updates"
 msgstr "更新"
@@ -15844,6 +16465,11 @@ msgstr "升级配置，质量配置，截止线，层级，聚合站，汉化组
 msgid "Upgrade restore failed"
 msgstr "升级后还原失败"
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Upgrade scan"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Upgrade scan finished with nothing to check"
@@ -15861,8 +16487,6 @@ msgid "upgrade, quality profile, default profile, automatic upgrades"
 msgstr "升级，质量配置，默认配置，自动升级"
 
 #: src/pages/ActivityPage.tsx
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Upgrades"
 msgstr "升级"
@@ -15879,8 +16503,8 @@ msgstr "此系列的配置已关闭升级"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
-msgid "Upgrades enabled"
-msgstr "已启用升级"
+#~ msgid "Upgrades enabled"
+#~ msgstr "已启用升级"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -15919,7 +16543,8 @@ msgstr "大写"
 
 #: src/components/NotificationsSection.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "URL"
 msgstr "URL"
@@ -15955,15 +16580,19 @@ msgstr "使用最佳质量优先"
 msgid "Use for taste"
 msgstr "用于品味"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Use local MangaBaka database"
-msgstr "使用本地 MangaBaka 数据库"
+#~ msgid "Use local MangaBaka database"
+#~ msgstr "使用本地 MangaBaka 数据库"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Use OPDS"
 msgstr "使用 OPDS"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Use the local MangaBaka database"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15990,17 +16619,21 @@ msgstr "使用跟踪器"
 msgid "Use your authenticator app"
 msgstr "使用你的身份验证器应用"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Used by any series that hasn't been pinned to a profile of its own."
 msgstr "所有没有指定自有配置的系列都会使用它。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Used for chapters Maki downloads, and for imported files unless you keep their original names below"
-msgstr "用于 Maki 下载的章节，以及导入文件，除非你在下方保留其原始名称"
+#~ msgid "Used for chapters Maki downloads, and for imported files unless you keep their original names below"
+#~ msgstr "用于 Maki 下载的章节，以及导入文件，除非你在下方保留其原始名称"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Used for chapters Maki downloads, and for torrent imports unless you keep their file names below."
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Used when adding a series, importing one, or renaming its folder"
 msgstr "添加系列、导入系列或重命名其文件夹时使用"
@@ -16043,7 +16676,7 @@ msgstr "用户、群组或频道 ID。公开频道可使用 @name。"
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Username"
@@ -16074,6 +16707,10 @@ msgstr "使用保存在 Apprise 服务器上的配置。"
 #, fuzzy
 msgid "Uses about 240 MB of RAM."
 msgstr "占用约 240 MB 内存。"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -16131,7 +16768,7 @@ msgstr "验证扫描 {scanId}：{scanStatus}"
 msgid "Verify this file"
 msgstr "验证此文件"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Version"
 msgstr "版本"
@@ -16231,6 +16868,11 @@ msgstr "第 {range} 卷"
 msgid "Volume release proposed"
 msgstr "已提议卷资源"
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Volume releases"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Volume releases waiting for you"
@@ -16247,7 +16889,7 @@ msgstr "卷搜索已关闭"
 msgid "Volume search started"
 msgstr "卷搜索已开始"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Volume searches per run"
 msgstr "每次运行的卷搜索数"
@@ -16256,6 +16898,11 @@ msgstr "每次运行的卷搜索数"
 #, fuzzy
 msgid "Volume upgraded"
 msgstr "卷已升级"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "volume, volume packs, volume search, auto-grab, proposals, torrent"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -16390,10 +17037,18 @@ msgstr "欢迎"
 msgid "Welcome to Maki"
 msgstr "欢迎使用 Maki"
 
-#: src/pages/SettingsPage.tsx
+#: src/api/readingProfiles.ts
+msgid "Western (OEL)"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "What a series starts with when it is added or imported. Changing these never touches series already in the library."
-msgstr "添加或导入作品时使用的初始设置。更改不会影响资料库中已有的作品。"
+#~ msgid "What a series starts with when it is added or imported. Changing these never touches series already in the library."
+#~ msgstr "添加或导入作品时使用的初始设置。更改不会影响资料库中已有的作品。"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "What a series starts with when it is added or imported. Series already in the library keep their own settings."
+msgstr ""
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -16411,9 +17066,13 @@ msgid "What happens to chapters released later"
 msgstr "之后发布的章节会怎样"
 
 #: src/components/settings/NotificationPrefsSection.tsx
+msgid "What lands in your bell. Only affects you. Alerts to Discord and other apps are set up by an admin under Integrations."
+msgstr ""
+
+#: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
-msgid "What lands in your bell. These settings only affect you."
-msgstr "你的通知铃会收到哪些通知。此设置仅影响你。"
+#~ msgid "What lands in your bell. These settings only affect you."
+#~ msgstr "你的通知铃会收到哪些通知。此设置仅影响你。"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -16471,15 +17130,19 @@ msgstr "v{version} 版本更新内容"
 msgid "When"
 msgstr "时间"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "When a refresh finds more new chapters for a series than this, none of them are queued. That usually means a source renumbered or backfilled its list, not a real release. They stay wanted, so you can download them from the series page. 0 means always queue."
 msgstr "如果刷新时为某个系列发现的新章节数量超过此值，将不会加入下载队列。这通常意味着源重新编号或补全了列表，而不是真正的新发布。章节仍保持“想要”状态，你可以从系列页面下载它们。0 表示始终加入队列。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
-msgstr "从磁盘导入现有作品时，可将其文件夹重命名为“作品文件夹格式”，或保留原样。"
+#~ msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
+#~ msgstr "从磁盘导入现有作品时，可将其文件夹重命名为“作品文件夹格式”，或保留原样。"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -16488,8 +17151,12 @@ msgstr "实例开关开启后，每日扫描可以用更好的副本替换使用
 
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Where files live, how they are named, and where metadata comes from."
-msgstr "文件存放位置、命名方式和元数据来源。"
+#~ msgid "Where files live, how they are named, and where metadata comes from."
+#~ msgstr "文件存放位置、命名方式和元数据来源。"
+
+#: src/pages/settings/registry.ts
+msgid "Where files live, how they are named, what new series start with, and where metadata comes from."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -16531,37 +17198,53 @@ msgstr "漫画存放位置"
 msgid "Where your taste has moved"
 msgstr "你的品味发生了怎样的变化"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Whether an existing file should be replaced once a better release shows up, judged against a series' quality profile. The daily scan runs after the chosen hour and only replaces files a profile actually marks as upgradable."
-msgstr "出现更好的资源时，是否替换现有文件，按系列的质量配置来判断。每日扫描在所选时刻之后运行，并且只会替换配置确实标为可升级的文件。"
+#~ msgid "Whether an existing file should be replaced once a better release shows up, judged against a series' quality profile. The daily scan runs after the chosen hour and only replaces files a profile actually marks as upgradable."
+#~ msgstr "出现更好的资源时，是否替换现有文件，按系列的质量配置来判断。每日扫描在所选时刻之后运行，并且只会替换配置确实标为可升级的文件。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Which language series titles are shown in, when MangaBaka has one. Display only: folders, file names and sorting keep the English title."
+msgstr ""
+
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
-msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
-msgstr "系列标题显示时使用的语言，前提是元数据提供方有该语言。仅影响显示：文件夹和文件名保留英文标题，排序也使用英文标题。"
+#~ msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
+#~ msgstr "系列标题显示时使用的语言，前提是元数据提供方有该语言。仅影响显示：文件夹和文件名保留英文标题，排序也使用英文标题。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Which languages Maki looks for, and which chapters it leaves alone."
 msgstr "Maki 要查找哪些语言的章节，以及要跳过哪些章节。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Which page Maki opens on, on every device."
-msgstr "在所有设备上设置 Maki 打开时显示的页面。"
+#: src/pages/settings/PreferenceCards.tsx
+msgid "Which page Maki opens on, and whether the Home page exists at all."
+msgstr ""
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/PreferenceCards.tsx
+#, fuzzy
+#~ msgid "Which page Maki opens on, on every device."
+#~ msgstr "在所有设备上设置 Maki 打开时显示的页面。"
+
+#: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
 msgstr "章节列表下方显示哪些横栏。关闭某个横栏也会停止获取它。"
+
+#: src/components/settings/NotificationPrefsSection.tsx
+msgid "Which series notify me"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Which sites Maki downloads from, and which it tries first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties."
 msgstr "章节优先从哪个来源下载。最佳质量会根据此系列的质量配置和各来源最近章节的实测结果为来源排序，分数相同时按优先级决定。"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Which source a chapter is downloaded from first when several have it. Best quality ranks sources by the series' quality profile and what their recent chapters measured, and uses the priority you set to break ties. A series can override this on its Sources tab."
 msgstr "多个来源都有某章节时，优先从哪个来源下载。最佳质量会根据系列的质量配置和各来源最近章节的实测结果为来源排序，分数相同时按你设置的优先级决定。系列可以在其“来源”标签页中覆盖此设置。"
@@ -16619,13 +17302,17 @@ msgstr "关闭所有面板后，此区块将保持空白。"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
-msgid "With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see the real client."
-msgstr "未设置信任的代理时，转发标头会被忽略，因此通过反向代理访问时，所有登录失败都会归因于代理。请在上方填写代理地址，以便锁定机制和审计日志识别实际客户端。"
+#~ msgid "With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see the real client."
+#~ msgstr "未设置信任的代理时，转发标头会被忽略，因此通过反向代理访问时，所有登录失败都会归因于代理。请在上方填写代理地址，以便锁定机制和审计日志识别实际客户端。"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "With none selected this account sees an empty library: access is granted, never assumed."
 msgstr "未选择任何内容时，此账户会看到空资料库：访问权限必须明确授予，不会默认拥有。"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Within the same tier, a candidate must beat the current file's score by at least this much. A higher tier is governed by the next field."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16638,15 +17325,15 @@ msgid "Won't suggest resuming from this anime again."
 msgstr "不再建议从这部动画继续阅读。"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Write ComicInfo.xml into imported files"
 msgstr "将 ComicInfo.xml 写入导入的文件"
 
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Writes a standard <0>ComicInfo.xml</0> into imported CBZs so Kavita groups and names chapters consistently. Off leaves torrent grabs and manual imports untouched. Maki's own downloads always get one, and PDFs never do. A series page's \"Update ComicInfo\" action standardizes one series later."
-msgstr "将标准 <0>ComicInfo.xml</0> 写入导入的 CBZ 文件，以便 Kavita 对章节进行统一分组和命名。关闭后，种子下载和手动导入的文件不会受影响。Maki 自己下载的文件始终会写入，PDF 则不会。从作品页面的“更新 ComicInfo”操作可稍后统一单部作品。"
+#~ msgid "Writes a standard <0>ComicInfo.xml</0> into imported CBZs so Kavita groups and names chapters consistently. Off leaves torrent grabs and manual imports untouched. Maki's own downloads always get one, and PDFs never do. A series page's \"Update ComicInfo\" action standardizes one series later."
+#~ msgstr "将标准 <0>ComicInfo.xml</0> 写入导入的 CBZ 文件，以便 Kavita 对章节进行统一分组和命名。关闭后，种子下载和手动导入的文件不会受影响。Maki 自己下载的文件始终会写入，PDF 则不会。从作品页面的“更新 ComicInfo”操作可稍后统一单部作品。"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -16832,6 +17519,10 @@ msgstr "你的 {label}"
 msgid "Your account and how Maki looks."
 msgstr "你的账户和 Maki 的外观。"
 
+#: src/pages/SettingsPage.tsx
+msgid "Your account and preferences, then everything about this Maki instance."
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "Your busiest month"
@@ -16859,8 +17550,8 @@ msgstr "你的资料库为空"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Your login, your API keys, and how Maki looks and opens for you."
-msgstr "你的登录信息、API 密钥，以及 Maki 对你显示的外观和打开方式。"
+#~ msgid "Your login, your API keys, and how Maki looks and opens for you."
+#~ msgstr "你的登录信息、API 密钥，以及 Maki 对你显示的外观和打开方式。"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -16878,10 +17569,22 @@ msgid "Your next read"
 msgstr "你的下一篇阅读"
 
 #: src/components/settings/AccountSection.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Your password"
 msgstr "你的密码"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Your password, two-factor code and single sign-on link. Changing your password signs out your other devices."
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Your password, two-factor code, single sign-on link and API keys."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Your priority order"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy
@@ -16951,7 +17654,7 @@ msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr "仅你可见 - 这会改变出现在你铃铛中的内容，不会影响其他人。"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads（可选）"
