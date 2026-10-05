@@ -166,8 +166,9 @@ msgstr "Geçersiz veya eksik sahtecilik önleme belirteci"
 #. discard the Secure session cookie and every request after sign-in would 401.
 #: src/Maki.Api/Controllers/AuthController.cs
 #. English: This server requires HTTPS, so your browser would drop the sign-in. Open Maki through its https:// address, or turn off Require HTTPS in Settings (it can be reached from http://localhost on the server).
+#, fuzzy
 msgid "error.auth.httpsRequired"
-msgstr ""
+msgstr "Bu sunucu HTTPS gerektiriyor, bu yüzden tarayıcınız oturum açmayı reddeder. Maki'yi https:// adresinden açın veya Ayarlar'da HTTPS zorunlu kıl seçeneğini kapatın (sunucuda http://localhost üzerinden erişilebilir)."
 
 #. Also shared across several distinct two-factor failures (missing code, expired 2FA cookie,
 #. wrong code, locked out at 2FA) for the same enumeration-safety reason as error.auth.signInFailed.

@@ -166,8 +166,9 @@ msgstr "反伪造令牌无效或缺失"
 #. discard the Secure session cookie and every request after sign-in would 401.
 #: src/Maki.Api/Controllers/AuthController.cs
 #. English: This server requires HTTPS, so your browser would drop the sign-in. Open Maki through its https:// address, or turn off Require HTTPS in Settings (it can be reached from http://localhost on the server).
+#, fuzzy
 msgid "error.auth.httpsRequired"
-msgstr ""
+msgstr "此服务器要求使用 HTTPS，因此浏览器会丢弃登录状态。请通过 https:// 地址打开 Maki，或在设置中关闭“要求 HTTPS”（可在服务器上通过 http://localhost 访问）。"
 
 #. Also shared across several distinct two-factor failures (missing code, expired 2FA cookie,
 #. wrong code, locked out at 2FA) for the same enumeration-safety reason as error.auth.signInFailed.
