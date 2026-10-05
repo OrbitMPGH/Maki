@@ -213,7 +213,7 @@ public class OpdsKeyRotationTests : IDisposable
             readerCohortCache: null!, tasteVectorInstaller: null!, vectorIndexCache: null!,
             modelSwitcher: null!, db: db, updateCheck: null!, currentUser: new TestCurrentUser(userId),
             userSettings: new UserSettingsService(db, new TestCurrentUser(userId)),
-            kavitaUser: null!, schedulerFactory: null!, scopeFactory: null!,
+            kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!, scopeFactory: null!,
             logger: NullLogger<SettingsController>.Instance);
 
     private MakiDbContext ScopedContext(int userId, DbContextOptions<MakiDbContext>? options = null)
@@ -230,8 +230,8 @@ public class OpdsKeyRotationTests : IDisposable
         using var db = ScopedContext(1);
         var controller = Controller(1, db);
 
-        Assert.IsType<OkObjectResult>(await controller.RotateOpdsToken(CancellationToken.None));
-        Assert.IsType<OkObjectResult>(await controller.RotateOpdsToken(CancellationToken.None));
+        Assert.IsType<OkObjectResult>(await controller.RotateOpdsToken(null, IdentityTestKit.UserManager(db), null!, CancellationToken.None));
+        Assert.IsType<OkObjectResult>(await controller.RotateOpdsToken(null, IdentityTestKit.UserManager(db), null!, CancellationToken.None));
 
         Assert.Single(LiveOpdsKeyIds(1));
     }
@@ -282,7 +282,7 @@ public class OpdsKeyRotationTests : IDisposable
 
         try
         {
-            await controller.RotateOpdsToken(CancellationToken.None);
+            await controller.RotateOpdsToken(null, IdentityTestKit.UserManager(db), null!, CancellationToken.None);
         }
         catch (DbUpdateException)
         {

@@ -91,7 +91,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
 
   if (!connected) {
     return (
-      <Panel p="md">
+      <Panel p="md" edge="info" edgeSide="left">
         <Text fw={700}>{label}</Text>
         <Text size="sm" c="var(--ink-3)" mt={4}>
           <Trans>Connect {label} under Scrobbling to import from it.</Trans>
@@ -104,7 +104,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
   const runningFull = runList.isPending && runList.variables?.service === service && runList.variables?.full
 
   return (
-    <Panel p="md">
+    <Panel p="md" edge="info" edgeSide="left">
       <Group justify="space-between" wrap="nowrap" align="flex-start">
         <Text fw={700}>{label}</Text>
         <Switch

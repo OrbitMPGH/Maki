@@ -192,7 +192,9 @@ public class MangaDeniziSourceTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public async Task ProcessPage_throws_when_grid_is_not_positive(int grid)
+    [InlineData(17)]
+    [InlineData(100000)]
+    public async Task ProcessPage_throws_when_grid_is_out_of_range(int grid)
     {
         using var doc = JsonDocument.Parse(
             "{\"image_url\":\"https://img.mangadenizi.net/page.webp\",\"scramble\":{\"method\":\"tiled-v1\",\"grid\":" + grid + ",\"seed\":1}}");

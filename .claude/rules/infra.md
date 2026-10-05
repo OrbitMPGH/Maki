@@ -15,6 +15,7 @@ paths:
   - "src/Maki.Data/Migrations/**"
   - "src/Maki.Data/Identity/**"
   - "src/Maki.Core/Security/AdminGuard*.cs"
+  - "src/Maki.Api/Services/UserScopedQuery.cs"
 ---
 
 # Infra: logging, backup, scoping, settings, migration

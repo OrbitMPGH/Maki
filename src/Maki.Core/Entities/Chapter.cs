@@ -74,9 +74,13 @@ public class Chapter
     /// can't ORDER BY it. One-shots have no number to sort on and go last.
     /// </para>
     /// </summary>
-    public static List<int> NextWanted(IEnumerable<Chapter> chapters, int count) =>
+    /// <param name="skip">
+    /// Chapters to leave out before counting, so they free their place in the window rather than
+    /// holding it. Smart passes the ones whose last download failed and is not yet due a retry.
+    /// </param>
+    public static List<int> NextWanted(IEnumerable<Chapter> chapters, int count, IReadOnlySet<int>? skip = null) =>
         chapters
-            .Where(c => c.Wanted && c.ChapterFileId == null)
+            .Where(c => c.Wanted && c.ChapterFileId == null && (skip is null || !skip.Contains(c.Id)))
             .OrderBy(c => c.Number ?? decimal.MaxValue)
             .ThenBy(c => c.Id)
             .Take(count)

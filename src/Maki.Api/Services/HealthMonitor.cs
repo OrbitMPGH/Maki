@@ -26,6 +26,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     IUserLocaleResolver locales, ISchedulerFactory schedulerFactory)
 {
     private static readonly SemaphoreSlim Gate = new(1);
+    private const string UnmeasuredFilesId = "unmeasured-files";
+    private const string UpgradeTrashId = "upgrade-trash";
     public async Task RefreshAsync(CancellationToken ct)
     {
         if (!await Gate.WaitAsync(0, ct)) return;
@@ -55,6 +57,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
             catch { Add("library-check", "library", "unavailable", "health.check.libraryUnavailable"); }
             var roots = await db.RootFolders.ToListAsync(ct);
+            var rootDiskLow = false;
             var drives = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             foreach (var (id, directory) in roots.Select(r => ($"root:{r.Id}", r.Path)).Append(("config", paths.ConfigDir)))
             {
@@ -80,6 +83,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     var gib = drive.AvailableFreeSpace / Math.Pow(1024, 3);
                     var percent = 100.0 * drive.AvailableFreeSpace / drive.TotalSize;
                     var status = gib < options.ErrorGiB || percent < options.ErrorPercent ? "error" : gib < options.WarningGiB || percent < options.WarningPercent ? "warning" : "healthy";
+                    if (id.StartsWith("root:", StringComparison.Ordinal) && status != "healthy") rootDiskLow = true;
                     Add($"disk:{drive.Name}", "storage", status, "health.check.diskFree", new
                     {
                         drive = drive.Name,
@@ -130,6 +134,34 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
             Add("downloads", "downloads", failed > 0 ? "warning" : "healthy",
                 "health.check.failedDownloads", new { count = failed }, "/activity");
+            try
+            {
+                // Pending rather than a warning: the measurement job works through these on its own
+                // and there is nothing for anyone to do about them.
+                var unmeasured = await ChapterFileMeasureService.CountPendingAsync(db, ct);
+                if (unmeasured > 0)
+                    Add(UnmeasuredFilesId, "library", "pending", "health.check.unmeasuredFiles", new { count = unmeasured });
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch { }
+            try
+            {
+                // Replaced files count against the same disk as the library, so they only matter
+                // once a root folder's drive is already running low.
+                var (trashBytes, trashFiles) = await UpgradeTrashService.SizeAsync(db, ct);
+                if (trashFiles > 0)
+                {
+                    var upgradeOptions = await UpgradeOptions.LoadAsync(settings, ct);
+                    Add(UpgradeTrashId, "storage", rootDiskLow ? "warning" : "healthy", "health.check.upgradeTrash", new
+                    {
+                        gib = Math.Round(trashBytes / Math.Pow(1024, 3), 2),
+                        files = trashFiles,
+                        days = upgradeOptions.TrashRetentionDays,
+                    }, "/activity?tab=upgrades");
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch { }
             var queue = services.GetRequiredService<DownloadQueueService>();
             foreach (var source in sources.All)
                 Add($"cooldown:{source.Name}", "downloads",
@@ -167,6 +199,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
                     await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
             }
+            if (!checks.Any(c => c.Id == UnmeasuredFilesId) && old.FirstOrDefault(r => r.Id == UnmeasuredFilesId) is { } measuredRow)
+                db.HealthChecks.Remove(measuredRow);
+            if (!checks.Any(c => c.Id == UpgradeTrashId) && old.FirstOrDefault(r => r.Id == UpgradeTrashId) is { } trashRow)
+                db.HealthChecks.Remove(trashRow);
             if (!checks.Any(c => c.Id == "library-check"))
                 foreach (var row in old.Where(r => r.Id.StartsWith("legacy:") && !checks.Any(c => c.Id == r.Id) && r.Status != "healthy"))
                 {

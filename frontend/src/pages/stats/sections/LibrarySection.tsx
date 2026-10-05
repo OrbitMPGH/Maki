@@ -3,14 +3,6 @@ import { SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
 import { AreaChart } from '@mantine/charts'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
-import {
-  IconBooks,
-  IconChecks,
-  IconDatabase,
-  IconDownload,
-  IconEye,
-  IconFileZip,
-} from '@tabler/icons-react'
 import { useLibraryComposition } from '../../../api/hooks'
 import type { LibraryCompositionTotals } from '../../../api/hooks'
 import { EmptyState } from '../../../components/ui/EmptyState'
@@ -37,34 +29,26 @@ function TotalsTiles({ totals }: { totals?: LibraryCompositionTotals }) {
   const count = (n: number | undefined) => formatNumber(n ?? 0)
   return (
     <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
-      <StatTile label={t`Series`} value={count(totals?.seriesCount)} icon={IconBooks} loading={loading} />
+      <StatTile label={t`Series`} value={count(totals?.seriesCount)} loading={loading} />
       <StatTile
         label={t`Chapters`}
         value={count(totals?.chapterCount)}
-        icon={IconFileZip}
-        accent="info"
         loading={loading}
       />
       <StatTile
         label={t`Downloaded`}
         value={count(totals?.downloadedChapterCount)}
-        icon={IconDownload}
-        accent="info"
         loading={loading}
       />
       <StatTile
         label={t`Disk used`}
         value={formatBytes(totals?.totalBytes ?? 0)}
-        icon={IconDatabase}
-        accent="warn"
         loading={loading}
       />
-      <StatTile label={t`Monitored`} value={count(totals?.monitoredCount)} icon={IconEye} accent="ok" loading={loading} />
+      <StatTile label={t`Monitored`} value={count(totals?.monitoredCount)} loading={loading} />
       <StatTile
         label={t`Completed`}
         value={count(totals?.completedCount)}
-        icon={IconChecks}
-        accent="ok"
         loading={loading}
       />
     </SimpleGrid>

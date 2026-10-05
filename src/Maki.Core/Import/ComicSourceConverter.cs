@@ -2,6 +2,7 @@ using System.IO.Compression;
 using Maki.Core.Reading;
 using Maki.Core.Storage;
 using SharpCompress.Archives;
+using SharpCompress.Common;
 
 namespace Maki.Core.Import;
 
@@ -29,9 +30,98 @@ public static class ComicSourceConverter
             return FileLinker.Place(source.Path, targetPath, useHardlinks);
         }
 
+        if (source.Entry is null && IsSameFile(source.Path, targetPath))
+        {
+            RepackOverOwnName(source, targetPath);
+            return FilePlacement.Copied;
+        }
+
         Pack(source, targetPath);
         return FilePlacement.Copied;
     }
+
+    /// <summary>
+    /// Rebuilds a 7z, RAR or tar shipped under a ".cbz" name into a real CBZ under that name.
+    /// Returns false when the file already is a zip, or is nothing this can name. Every reader in
+    /// Maki opens a CBZ as a zip, so such a file links and then reads as having no pages.
+    /// </summary>
+    public static bool RepackMislabelled(string cbzPath)
+    {
+        if (ComicExtensionOf(cbzPath) is null)
+        {
+            return false;
+        }
+
+        var source = new ComicSource(
+            Path.GetFileName(cbzPath), ComicSourceKind.Repack, cbzPath, new FileInfo(cbzPath).Length, []);
+        RepackOverOwnName(source, cbzPath);
+        return true;
+    }
+
+    /// <summary>
+    /// The original keeps its bytes under the extension that says what it is (".cb7", ".cbr",
+    /// ".cbt"), and its name goes to the CBZ built from it. Put back if the build fails.
+    /// </summary>
+    private static void RepackOverOwnName(ComicSource source, string targetPath)
+    {
+        var extension = ComicExtensionOf(source.Path)
+            ?? throw new InvalidDataException($"{Path.GetFileName(source.Path)} is not an archive that can be repacked");
+        var aside = Path.ChangeExtension(source.Path, extension);
+        if (File.Exists(aside))
+        {
+            throw new IOException($"{Path.GetFileName(aside)} already exists");
+        }
+
+        File.Move(source.Path, aside);
+        try
+        {
+            Pack(source with { Path = aside }, targetPath);
+        }
+        catch
+        {
+            if (!File.Exists(source.Path))
+            {
+                File.Move(aside, source.Path);
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Off the leading bytes where there are any; an old-style tar has none, so SharpCompress's
+    /// own autodetect, the one the scanner read it with, decides the rest.
+    /// </summary>
+    private static string? ComicExtensionOf(string path)
+    {
+        var format = ArchiveSignature.Detect(path);
+        if (format != ArchiveSignature.Format.Unknown)
+        {
+            return ArchiveSignature.ComicExtension(format);
+        }
+
+        try
+        {
+            using var archive = ArchiveFactory.OpenArchive(path);
+            return archive.Type switch
+            {
+                ArchiveType.SevenZip => ".cb7",
+                ArchiveType.Rar => ".cbr",
+                ArchiveType.Tar => ".cbt",
+                _ => null
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public static bool IsSameFile(string a, string b) =>
+        string.Equals(Path.GetFullPath(a), Path.GetFullPath(b),
+            OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal);
 
     /// <summary>
     /// Page names are carried over exactly, never renumbered: a compilation's chapter markers live

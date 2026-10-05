@@ -29,10 +29,10 @@ public class DownloadQueueService(
     // inside ClaimNextAsync/ResolveAndActivateAsync rather than by the caller, and *before* the
     // status flip, so there is no window for SweepOrphanedAsync to see the row unowned.
     //
-    // _inFlight counts owners rather than just recording one: ChapterDownloadProcessor's 404 fallback
-    // parks the row back in Queued while the worker is still recursing on it, so a second worker can
-    // legitimately claim the same id. With a presence set, whichever finished first un-owned the row
-    // for the other, and the next sweep re-queued a download that was still running.
+    // _inFlight counts owners rather than just recording one: ClaimNextAsync registers before its
+    // conditional flip, so two workers racing on one candidate both hold a registration until the
+    // loser hands its back. With a presence set, that hand-back un-owned the row for the winner, and
+    // the next sweep re-queued a download that was still running.
     private readonly ConcurrentDictionary<int, int> _inFlight = new();
     private readonly ConcurrentDictionary<int, byte> _resolving = new();
 
@@ -278,6 +278,135 @@ public class DownloadQueueService(
         await SignalAsync(item.Id, ct);
     }
 
+    /// <param name="Queued">New rows, in the order their chapters were given.</param>
+    /// <param name="Error">
+    /// A catalogue key for why some chapters were not queued (a series with no enabled mapping, or
+    /// under a health review, or a chapter that no longer exists). The rest are still queued.
+    /// </param>
+    public sealed record BulkEnqueueResult(IReadOnlyList<DownloadQueueItem> Queued, string? Error);
+
+    /// <summary>
+    /// Queues many chapters at once with the same rules as <see cref="EnqueueChapterAsync"/>, minus the
+    /// pin: one context, one query per check over the whole set and one save, rather than a scope, a
+    /// handful of queries, a MAX(SortOrder) scan and a commit per chapter. Queue order follows
+    /// <paramref name="chapterIds"/>. Chapters already active are skipped.
+    /// </summary>
+    public async Task<BulkEnqueueResult> EnqueueChaptersAsync(
+        IReadOnlyList<int> chapterIds,
+        DownloadOrigin origin,
+        int? queuedByUserId,
+        CancellationToken ct = default)
+    {
+        var ids = chapterIds.Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return new BulkEnqueueResult([], null);
+        }
+
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var seriesOf = await db.Chapters
+            .Where(c => ids.Contains(c.Id))
+            .Select(c => new { c.Id, c.SeriesId })
+            .ToDictionaryAsync(c => c.Id, c => c.SeriesId, ct);
+
+        string? error = null;
+        var missing = ids.Where(id => !seriesOf.ContainsKey(id)).ToList();
+        if (missing.Count > 0)
+        {
+            error = EnqueueRefusedException.ChapterGone;
+        }
+
+        var seriesIds = seriesOf.Values.Distinct().ToList();
+        var reviewed = await db.HealthFiles
+            .Where(f => f.SeriesId != null && seriesIds.Contains(f.SeriesId.Value) &&
+                        db.HealthOperations.Any(o => o.FileId == f.Id && o.Status != "completed" &&
+                                                     o.Status != "failed" && o.Status != "cancelled"))
+            .Select(f => f.SeriesId!.Value)
+            .Distinct()
+            .ToListAsync(ct);
+        if (reviewed.Count > 0)
+        {
+            error = EnqueueRefusedException.HealthReview;
+        }
+
+        var mapped = await sourceResolver.SeriesWithEnabledMappingAsync(db, seriesIds, ct);
+        if (seriesIds.Any(id => !mapped.Contains(id)))
+        {
+            error = EnqueueRefusedException.NoMapping;
+        }
+
+        var active = (await db.DownloadQueue
+                .Where(q => q.ActiveChapterId != null && ids.Contains(q.ActiveChapterId.Value))
+                .Select(q => q.ActiveChapterId!.Value)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        var toQueue = ids
+            .Where(id => seriesOf.TryGetValue(id, out var seriesId) && !reviewed.Contains(seriesId) &&
+                         mapped.Contains(seriesId) && !active.Contains(id))
+            .ToList();
+        if (toQueue.Count == 0)
+        {
+            return new BulkEnqueueResult([], error);
+        }
+
+        var now = time.GetUtcNow().UtcDateTime;
+        var sortOrder = await NextSortOrderAsync(db, ct);
+        var items = toQueue.Select((chapterId, i) => new DownloadQueueItem
+        {
+            SeriesId = seriesOf[chapterId],
+            ChapterId = chapterId,
+            Protocol = AcquisitionProtocol.Scraper,
+            Status = QueueStatus.Resolving,
+            QueuedAt = now,
+            SortOrder = sortOrder + i,
+            Origin = origin,
+            QueuedByUserId = queuedByUserId
+        }).ToList();
+
+        db.DownloadQueue.AddRange(items);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        {
+            // Something else queued one of these between the check and the insert. Rare enough that
+            // falling back to the per-chapter path, which settles each race on its own, is fine.
+            foreach (var item in items)
+            {
+                db.Entry(item).State = EntityState.Detached;
+            }
+
+            var queued = new List<DownloadQueueItem>();
+            foreach (var chapterId in toQueue)
+            {
+                try
+                {
+                    if (await EnqueueChapterAsync(chapterId, ct, origin, queuedByUserId) is { } item)
+                    {
+                        queued.Add(item);
+                    }
+                }
+                catch (EnqueueRefusedException ex)
+                {
+                    error = ex.Key;
+                }
+            }
+
+            return new BulkEnqueueResult(queued, error);
+        }
+
+        foreach (var item in items)
+        {
+            _ = ResolveAndActivateAsync(item.Id, item.ChapterId!.Value, CancellationToken.None);
+        }
+
+        return new BulkEnqueueResult(items, error);
+    }
+
     // On a queue insert only the unique index on ActiveChapterId can raise this.
     private static bool IsUniqueViolation(DbUpdateException e) =>
         e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
@@ -297,21 +426,27 @@ public class DownloadQueueService(
     /// returned unchanged instead.
     /// </para>
     /// </param>
+    /// <param name="replaceInfo">
+    /// The chapter's existing file is to be replaced through the upgrade gate rather than overwritten.
+    /// Stored on the new row, and on an existing row the pin is applied to.
+    /// </param>
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(
         int chapterId,
         CancellationToken ct = default,
         DownloadOrigin origin = DownloadOrigin.Unknown,
         int? queuedByUserId = null,
-        int? preferMappingId = null)
+        int? preferMappingId = null,
+        Maki.Core.Quality.UpgradeInfo? replaceInfo = null)
     {
+        var replaceJson = replaceInfo?.Serialize();
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
         var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId, ct)
-            ?? throw new InvalidOperationException($"Chapter {chapterId} not found");
+            ?? throw new EnqueueRefusedException(EnqueueRefusedException.ChapterGone, $"Chapter {chapterId} not found");
         if (await db.HealthOperations.AnyAsync(o => db.HealthFiles.Any(f => f.Id == o.FileId && f.SeriesId == chapter.SeriesId)
             && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
-            throw new InvalidOperationException("A health review is active for this series");
+            throw new EnqueueRefusedException(EnqueueRefusedException.HealthReview, "A health review is active for this series");
 
         var existing = await db.DownloadQueue.FirstOrDefaultAsync(q => q.ActiveChapterId == chapterId, ct);
         if (existing is not null)
@@ -323,7 +458,7 @@ public class DownloadQueueService(
         // synchronously (same as before), without waiting on the per-chapter network lookup below.
         if (!await sourceResolver.HasEnabledMappingAsync(db, chapter.SeriesId, ct))
         {
-            throw new InvalidOperationException("Series has no enabled source mappings");
+            throw new EnqueueRefusedException(EnqueueRefusedException.NoMapping, "Series has no enabled source mappings");
         }
 
         var item = new DownloadQueueItem
@@ -336,7 +471,8 @@ public class DownloadQueueService(
             SortOrder = await NextSortOrderAsync(db, ct),
             Origin = origin,
             QueuedByUserId = queuedByUserId,
-            PreferredMappingId = preferMappingId
+            PreferredMappingId = preferMappingId,
+            UpgradeInfoJson = replaceJson
         };
         db.DownloadQueue.Add(item);
         try
@@ -372,7 +508,10 @@ public class DownloadQueueService(
             // Conditional, because a worker can claim the row between the read above and this write,
             // and a plain save would drag an active download back to Resolving. Already fetching or
             // downloading means the pin is not applied: the caller sees the row's own
-            // PreferredMappingId still differs from what it asked for.
+            // PreferredMappingId still differs from what it asked for. A replacement also makes the row the
+            // caller's own, so an automatic upgrade the user overrides stops being automatic.
+            var replacing = replaceJson is not null;
+            var replaced = replacing ? Maki.Core.Quality.UpgradeInfo.Parse(active.UpgradeInfoJson) : null;
             var repinned = await db.DownloadQueue
                 .Where(q => q.Id == active.Id &&
                             (q.Status == QueueStatus.Resolving || q.Status == QueueStatus.Queued ||
@@ -384,8 +523,18 @@ public class DownloadQueueService(
                     .SetProperty(q => q.Status, QueueStatus.Resolving)
                     .SetProperty(q => q.ErrorKey, (string?)null)
                     .SetProperty(q => q.ErrorParamsJson, (string?)null)
-                    .SetProperty(q => q.ErrorMessage, (string?)null), ct);
+                    .SetProperty(q => q.ErrorMessage, (string?)null)
+                    .SetProperty(q => q.UpgradeInfoJson, q => replaceJson ?? q.UpgradeInfoJson)
+                    .SetProperty(q => q.Origin, q => replacing ? origin : q.Origin)
+                    .SetProperty(q => q.QueuedByUserId, q => replacing ? queuedByUserId : q.QueuedByUserId), ct);
             await db.Entry(active).ReloadAsync(ct);
+
+            // The scan's `enqueued` memo would otherwise keep that candidate closed after the user
+            // dropped it for another source.
+            if (repinned > 0 && replaced is { Force: false, AttemptId: > 0 } automatic)
+            {
+                await db.UpgradeAttempts.Where(a => a.Id == automatic.AttemptId).ExecuteDeleteAsync(ct);
+            }
 
             if (repinned > 0)
             {
@@ -394,6 +543,58 @@ public class DownloadQueueService(
             }
             return active;
         }
+    }
+
+    /// <summary>
+    /// Queues a replacement for a chapter's existing file, pinned to the mapping and source chapter the
+    /// upgrade scan probed. Unlike <see cref="EnqueueChapterAsync"/> it never touches an existing row:
+    /// null when the chapter has any live queue row, no longer has the file the scan judged, or its
+    /// series is under a health review. Sorted after everything already queued, so an upgrade never
+    /// jumps ahead of a missing chapter.
+    /// </summary>
+    public async Task<DownloadQueueItem?> EnqueueUpgradeAsync(int chapterId, int mappingId, string sourceChapterId,
+        Maki.Core.Quality.UpgradeInfo info, int? queuedByUserId, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var chapter = await db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == chapterId, ct);
+        if (chapter?.ChapterFileId is not { } fileId || fileId != info.ChapterFileId)
+        {
+            return null;
+        }
+
+        if (await db.DownloadQueue.AnyAsync(q => q.ChapterId == chapterId &&
+                q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct))
+        {
+            return null;
+        }
+
+        if (await db.HealthOperations.AnyAsync(o => db.HealthFiles.Any(f => f.Id == o.FileId && f.SeriesId == chapter.SeriesId)
+            && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
+        {
+            return null;
+        }
+
+        var item = new DownloadQueueItem
+        {
+            SeriesId = chapter.SeriesId,
+            ChapterId = chapterId,
+            Protocol = AcquisitionProtocol.Scraper,
+            Status = QueueStatus.Queued,
+            QueuedAt = time.GetUtcNow().UtcDateTime,
+            SortOrder = await NextSortOrderAsync(db, ct),
+            Origin = DownloadOrigin.Upgrade,
+            QueuedByUserId = queuedByUserId,
+            SourceMappingId = mappingId,
+            PreferredMappingId = mappingId,
+            SourceChapterId = sourceChapterId,
+            UpgradeInfoJson = info.Serialize()
+        };
+        db.DownloadQueue.Add(item);
+        await db.SaveChangesAsync(ct);
+        await SignalAsync(item.Id, ct);
+        return item;
     }
 
     /// <summary>
@@ -494,6 +695,7 @@ public class DownloadQueueService(
             item.RetryCount++;
             item.NextAttempt = NextRetryAttempt(item.RetryCount);
             await db.SaveChangesAsync();
+            await ReportFailureAsync(scope, item, key);
 
             // Same as every other settle path: without this the queue page keeps rendering the row
             // as Resolving until something unrelated repaints it, so the failure reads as a hang.
@@ -548,6 +750,7 @@ public class DownloadQueueService(
                 return;
             }
 
+            await ReportFailureAsync(scope, item, "error.download.chapterGone");
             if (item.Series is { } gone)
             {
                 await events.QueueUpdated(QueueItemDto.FromEntity(item, null, gone, "?"));
@@ -561,13 +764,20 @@ public class DownloadQueueService(
         while (true)
         {
             ResolvedChapterSource? resolved = null;
+            SourceRateLimitedException? rateLimited = null;
+            Exception? resolveError = null;
             try
             {
                 resolved = await sourceResolver.ResolveAsync(db, chapter, pin, ct, onlyPreferred: pin != null);
             }
+            catch (SourceRateLimitedException ex)
+            {
+                rateLimited = ex;
+            }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogWarning(ex, "Resolving queue item {Id} failed", itemId);
+                resolveError = ex;
             }
 
             // A pick can land while this resolve is already running, and the enqueue then leaves the
@@ -602,10 +812,26 @@ public class DownloadQueueService(
                 }
                 sourceNameForBroadcast = resolved.Mapping.SourceName;
             }
+            else if (rateLimited is not null)
+            {
+                // The same handling as a rate limit mid-download: back the source off and park the row
+                // without spending an attempt. With no mapping set it is claimable once NextAttempt
+                // passes, and the processor resolves it again then.
+                var until = EnterRateLimitCooldown(rateLimited.SourceName, rateLimited.RetryAfter);
+                item.Status = QueueStatus.RateLimited;
+                item.NextAttempt = until;
+                item.SetError("error.download.rateLimited", new { source = rateLimited.SourceName });
+                sourceNameForBroadcast = rateLimited.SourceName;
+                logger.LogWarning("Rate limited by {Source} resolving queue item {Id}; backing off until {Until:o}",
+                    rateLimited.SourceName, itemId, until);
+            }
             else
             {
                 item.Status = QueueStatus.Failed;
-                item.SetError(pin is null ? "error.download.unexpected" : "error.download.pickedSourceUnavailable");
+                var (key, detail) = pin is not null ? ("error.download.pickedSourceUnavailable", null)
+                    : resolveError is not null ? DownloadFailureReason.Classify(resolveError)
+                    : (DownloadFailureReason.Unexpected, (string?)null);
+                item.SetError(key, detail: detail);
                 item.RetryCount++;
                 item.NextAttempt = NextRetryAttempt(item.RetryCount);
                 sourceNameForBroadcast = "?";
@@ -628,10 +854,28 @@ public class DownloadQueueService(
         {
             await _channel.Writer.WriteAsync(item.Id, ct);
         }
+        else if (item.Status == QueueStatus.Failed && item.ErrorKey is { } failedKey)
+        {
+            await ReportFailureAsync(scope, item, failedKey);
+        }
 
         if (item.Series is { } series)
         {
             await events.QueueUpdated(QueueItemDto.FromEntity(item, chapter, series, sourceNameForBroadcast));
+        }
+    }
+
+    /// <summary>
+    /// Counts a resolve failure into the series' open download batch, the way the processor does for
+    /// its own failures. Unreported, the id stays pending until the stale sweep and the summary comes
+    /// an hour late with the failure listed as unfinished. Resolved from the scope rather than the
+    /// constructor so the tests that build this service by hand need not supply one.
+    /// </summary>
+    private static async Task ReportFailureAsync(IServiceScope scope, DownloadQueueItem item, string key)
+    {
+        if (scope.ServiceProvider.GetService<DownloadBatchNotifier>() is { } batches)
+        {
+            await batches.FailedAsync(item.SeriesId, item.Id, key);
         }
     }
 
@@ -898,6 +1142,9 @@ public class DownloadQueueService(
         return time.GetUtcNow().UtcDateTime.AddSeconds(seconds);
     }
 
+    /// <summary>Failures no retry can change, which <see cref="RequeueEligibleFailuresAsync"/> never picks up.</summary>
+    public static readonly string[] PermanentErrorKeys = ["error.download.upgradeTargetGone"];
+
     /// <summary>
     /// Re-queues Failed scraper items whose backoff has elapsed and whose attempt count is still
     /// under <paramref name="maxAttempts"/>. Torrent items are excluded — they're tracked
@@ -919,6 +1166,7 @@ public class DownloadQueueService(
                         q.Status == QueueStatus.Failed &&
                         q.HealthOperationId == null &&
                         q.RetryCount < maxAttempts &&
+                        (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
                         (q.NextAttempt == null || q.NextAttempt <= now) &&
                         (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)))
             .ToListAsync(ct);
@@ -960,4 +1208,14 @@ public class DownloadQueueService(
 
         return eligible.Count;
     }
+}
+
+/// <summary>An enqueue refused for a reason the caller can show, with its catalogue key.</summary>
+public sealed class EnqueueRefusedException(string key, string message) : InvalidOperationException(message)
+{
+    public const string ChapterGone = "error.download.chapterGone";
+    public const string HealthReview = "error.download.healthReviewActive";
+    public const string NoMapping = "error.download.noEnabledMapping";
+
+    public string Key { get; } = key;
 }

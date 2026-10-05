@@ -158,9 +158,9 @@ public sealed class ActivityStatsTests : IDisposable
         Assert.Equal(20, marks.MaxChapter);
         Assert.Equal(2, marks.MaxVolume);
 
-        // Only the native read is recorded — adoption itself emits nothing.
+        // Only the native read is recorded, and it is one chapter: adoption itself emits nothing.
         var e = Assert.Single(Events());
-        Assert.Equal(5, e.Value);
+        Assert.Equal(1, e.Value);
 
         using var db = _db.NewContext();
         var state = Assert.Single(db.ReadingStates.ToList());
@@ -190,7 +190,7 @@ public sealed class ActivityStatsTests : IDisposable
         await Progress().TrackKavitaAsync(TestUser, 11, "Echo", seriesId, 7, 0, CancellationToken.None);
 
         var e = Assert.Single(Events());
-        Assert.Equal(7, e.Value);
+        Assert.Equal(1, e.Value);
     }
 
     [Fact]
@@ -204,8 +204,9 @@ public sealed class ActivityStatsTests : IDisposable
         await Progress().TrackNativeAsync(TestUser, seriesId, "Ongoing", 25, 0, CancellationToken.None);
         var marks = await Progress().TrackKavitaAsync(TestUser, 4, "Ongoing", seriesId, 20, 0, CancellationToken.None);
 
+        // Skipping from 20 to 25 is one chapter read, not five.
         var e = Assert.Single(Events());
-        Assert.Equal(5, e.Value);
+        Assert.Equal(1, e.Value);
         Assert.Equal(4, e.KavitaSeriesId);
         Assert.Equal(25, marks.MaxChapter);
     }
@@ -294,7 +295,7 @@ public sealed class ActivityStatsTests : IDisposable
 
         var events = Events();
         Assert.Single(events, e => e.Type == StatsEventType.SeriesFinished);
-        Assert.Single(events, e => e.Type == StatsEventType.ChaptersRead && e.Value == 2);
+        Assert.Single(events, e => e.Type == StatsEventType.ChaptersRead && e.Value == 1);
     }
 
     private int SeedCompleted(string title, params decimal[] chapterNumbers)

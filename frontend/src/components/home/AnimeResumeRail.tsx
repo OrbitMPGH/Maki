@@ -4,11 +4,12 @@ import { IconPlus } from '@tabler/icons-react'
 import type { HomeAnimeResumeItem } from '../../api/animeResume'
 import type { RecommendationItem } from '../../api/hooks'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { Rail } from '../ui/Rail'
 
 /**
  * Horizontal rail of series whose anime the reader finished but the manga hasn't caught up to.
- * Same card markup as {@link RecentlyAddedRail}, but the corner badge names the resume chapter
- * instead of a chapter count, and there is no Read button: the resume chapter may not even be
+ * Same card markup as {@link RecentlyAddedRail}, but the chapter chip names the resume chapter
+ * instead of the newest one, and there is no Read button: the resume chapter may not even be
  * downloaded yet, so a library card only ever opens the series page.
  *
  * A card with no library copy opens the Discover modal instead, whose Add can tick the anime's
@@ -22,13 +23,13 @@ export function AnimeResumeRail({
   onOpen: (item: RecommendationItem) => void
 }) {
   return (
-    <div className="discover-rail">
+    <Rail>
       {items.map((item) => (
         <div key={item.seriesId ?? `mb-${item.catalogue?.providerId}`} className="discover-rail-item">
           <AnimeResumeCard item={item} onOpen={onOpen} />
         </div>
       ))}
-    </div>
+    </Rail>
   )
 }
 
@@ -83,8 +84,8 @@ function AnimeResumePoster({ item, children }: { item: HomeAnimeResumeItem; chil
 
       <div className="cover-corners">
         <div className="cover-corner cover-corner-left">
-          <span className="cover-badge home-chapter-badge" data-tip={item.animeTitle}>
-            {item.resumeChapterLabel ?? <Trans>ch. {next}</Trans>}
+          <span className="cover-chapter" data-tip={item.animeTitle}>
+            <span>{item.resumeChapterLabel ?? <Trans>ch. {next}</Trans>}</span>
           </span>
         </div>
       </div>
@@ -94,9 +95,11 @@ function AnimeResumePoster({ item, children }: { item: HomeAnimeResumeItem; chil
         <span className="cover-title" title={item.seriesTitle}>
           {item.seriesTitle}
         </span>
-        <span className="home-chapter-label">
-          <Trans>Anime ends at ch. {item.coveredTo}</Trans>
-        </span>
+        <div className="cover-row">
+          <span>
+            <Trans>Anime ends at ch. {item.coveredTo}</Trans>
+          </span>
+        </div>
       </div>
     </div>
   )

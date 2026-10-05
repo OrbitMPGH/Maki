@@ -69,6 +69,7 @@
   --radius-2xs: 2px;
   --radius-chip: 7px;
   --radius-thumb: 8px;
+  --radius-card: 10px;
   --radius-hero: 12px;
   /* Bars, badges and anything whose ends should be fully round, whatever its height. */
   --radius-pill: 999px;
@@ -122,6 +123,7 @@
 .series-hero-title,
 .page-header .mantine-Title-root,
 .auth-panel-title,
+.empty-state--page .empty-state-title,
 .brand-wordmark {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
@@ -145,7 +147,34 @@
 
 /* --- Selectable accents -------------------------------------------------- */
 /* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
-   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide. */
+   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide.
+   Indigo is the default and lives in :root. */
+:root[data-accent='blush'] {
+  --brand: #ee7fa4;
+  --brand-hover: #e86d96;
+  --brand-on: #2a1219;
+  --brand-glow: rgba(238, 127, 164, 0.3);
+  --brand-fg: #f5b6c8;
+}
+:root[data-theme='light'][data-accent='blush'] {
+  --brand: #c4476e;
+  --brand-hover: #b8436a;
+  --brand-on: #ffffff;
+  --brand-fg: #b8496b;
+  --brand-fg-on-art: #f5b6c8;
+}
+:root[data-theme='light'][data-accent='rose'] {
+  --brand-fg: #c0164f;
+  --brand-fg-on-art: #ff9fbd;
+}
+:root[data-theme='light'][data-accent='emerald'] {
+  --brand-fg: #127a4c;
+  --brand-fg-on-art: #96efc4;
+}
+:root[data-theme='light'][data-accent='amber'] {
+  --brand-fg: #8a5a00;
+  --brand-fg-on-art: #ffdf85;
+}
 :root[data-accent='rose'] {
   --brand: #f52069;
   --brand-hover: #e0175c;
@@ -166,6 +195,59 @@
   --brand-on: #1f1600;
   --brand-glow: rgba(240, 173, 20, 0.3);
   --brand-fg: #ffdf85;
+}
+
+/* --- Selectable backgrounds ---------------------------------------------- */
+/* The surface ramp under everything, chosen separately from the accent. Night (blue-black) lives in
+   :root; the Mantine dark scale is swapped alongside in theme-context so component surfaces follow.
+   The light theme block below outranks these by order, so a light scheme ignores them. */
+:root[data-ground='charcoal'] {
+  --app-bg: #0f0f0f;
+  --surface: #181818;
+  --surface-2: #1e1e1e;
+  --surface-hover: #242424;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
+  --ink-hi: #f4f2ee;
+  --ink: #e3e1dc;
+  --ink-2: #c6c4bf;
+  --ink-3: #a3a19c;
+  --ink-4: #888681;
+  --neutral: #a3a19c;
+}
+[data-ground='charcoal'] .app-header {
+  background: rgba(15, 15, 15, 0.72);
+}
+:root[data-ground='moss'] {
+  --app-bg: #0e100e;
+  --surface: #1b1e1b;
+  --surface-2: #222622;
+  --surface-hover: #282d28;
+  --border: #2e332e;
+  --border-strong: #3e453e;
+}
+[data-ground='moss'] .app-header {
+  background: rgba(14, 16, 14, 0.72);
+}
+/* Every surface is charcoal mixed 4% toward the accent, so the black belongs to whichever accent
+   is active. The neutral ramp under the mix is wider than charcoal's (16 units from body to card
+   against 9): the mix lifts the body more than the cards in relative terms, so an equal ramp reads
+   flat. The wash is a touch under the default strength for the same reason. */
+:root[data-ground='tinted'] {
+  --app-bg: color-mix(in srgb, #0b0b0b 96%, var(--brand));
+  --surface: color-mix(in srgb, #1b1b1b 96%, var(--brand));
+  --surface-2: color-mix(in srgb, #222222 96%, var(--brand));
+  --surface-hover: color-mix(in srgb, #282828 96%, var(--brand));
+  --border: color-mix(in srgb, #303030 96%, var(--brand));
+  --border-strong: color-mix(in srgb, #3e3e3e 96%, var(--brand));
+}
+[data-ground='tinted'] body {
+  background-image:
+    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
+    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
+}
+[data-ground='tinted'] .app-header {
+  background: color-mix(in srgb, rgba(11, 11, 11, 0.72) 96%, var(--brand));
 }
 
 /* --- Light theme --------------------------------------------------------- */
@@ -208,12 +290,11 @@
 }
 [data-theme='light'] body {
   background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.1), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(120, 110, 220, 0.08), transparent 55%);
+    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
+    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
 }
-[data-theme='light'] .app-navbar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 248, 252, 0.75));
-  border-right: 1px solid var(--border);
+[data-theme='light'] body::before {
+  opacity: 0.03;
 }
 [data-theme='light'] .app-header {
   background: rgba(255, 255, 255, 0.78);
@@ -221,11 +302,11 @@
 }
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {
-  color: #4a5162;
+  color: var(--ink-3);
 }
 [data-theme='light'] .nav-link:hover,
 [data-theme='light'] .nav-link[data-active='true'] {
-  color: #111420;
+  color: var(--ink-hi);
 }
 /* The exclusions live in :where() so they add no specificity. Written as a plain
    :not() chain this selector quietly beats every later override, including the
@@ -245,15 +326,34 @@ body,
   height: 100%;
 }
 
+/* The ambient wash follows the accent on every background, so the page keeps a temperature
+   whatever ground sits under it. */
 body {
+  isolation: isolate;
   background-color: var(--app-bg);
   background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.12), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(63, 46, 128, 0.1), transparent 55%);
+    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
+    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 8%, transparent), transparent 55%);
   background-attachment: fixed;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+/* Paper grain: fixed and under the app (body is isolated), never on a scrolling element. No blend
+   mode, which would push the whole page into an offscreen blend group for no visible change. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-reduced-transparency: reduce) {
+  body::before {
+    display: none;
+  }
 }
 
 :root[data-mantine-color-scheme='dark'],
@@ -329,6 +429,14 @@ body {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
+/* Headline numbers: figure strips, stat tiles, the hero figures, the level. Sizes stay per call site. */
+.figure {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
 
 /* --- Scrollbars ---------------------------------------------------------- */
 * {
@@ -355,12 +463,10 @@ body {
 }
 
 /* --- App shell ----------------------------------------------------------- */
-/* No backdrop-filter here on purpose: AppShell offsets the main column, so nothing ever scrolls
-   under the navbar: the blur only ever sampled a flat background (no visual effect) while
-   costing a full-height composited layer on every scrolled frame. The header keeps its blur;
-   there content genuinely passes underneath. */
+/* The sidebar has no ground of its own on desktop: the body (ground, wash and grain) shows through,
+   and only the hairline separates it from the page. No backdrop-filter: nothing scrolls under it. */
 .app-navbar {
-  background: linear-gradient(180deg, rgba(22, 25, 34, 0.6), rgba(11, 13, 19, 0.6));
+  background: transparent;
   border-right: 1px solid var(--border);
 }
 .app-header {
@@ -391,8 +497,8 @@ body {
    - Mantine sets --app-shell-navbar-width to 100%, so the drawer covers the page edge to edge and
      there is nothing left to tap to dismiss it. Narrowed to a real drawer, with a scrim (rendered
      in App.tsx) taking the rest.
-   - The translucent background only worked because nothing ever sat behind the navbar. Here the
-     page does, and reading the nav through the library grid is the whole complaint. Opaque. */
+   - The see-through desktop sidebar only works because nothing ever sits behind it. Here the page
+     does, and reading the nav through the library grid is the whole complaint. Opaque. */
 @media (max-width: 47.9375em) {
   .mantine-AppShell-root {
     --app-shell-navbar-width: min(272px, 82vw);
@@ -430,23 +536,25 @@ body {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-hero);
-  background: color-mix(in srgb, var(--brand) 16%, var(--surface-2));
-  border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--border));
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--border));
 }
 .brand-mark svg {
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
 }
 
 /* Sidebar nav link */
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 8px 11px;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
   border-radius: var(--radius-control);
   color: var(--ink-2);
   font-size: var(--type-body);
@@ -460,32 +568,29 @@ body {
 }
 .nav-link:hover {
   background: var(--surface-hover);
-  color: #fff;
+  color: var(--ink-hi);
 }
 .nav-link[data-active='true'] {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--brand) 20%, transparent),
-    color-mix(in srgb, var(--brand) 6%, transparent)
-  );
-  color: #fff;
+  background: color-mix(in srgb, var(--brand) 13%, transparent);
+  color: var(--ink-hi);
 }
 .nav-link[data-active='true']::before {
   content: '';
   position: absolute;
-  left: -5px;
+  left: -6px;
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  height: 18px;
-  border-radius: var(--radius-pill);
+  height: 16px;
+  border-radius: 2px;
   background: var(--brand);
-  box-shadow: 0 0 10px var(--brand-glow);
 }
 .nav-link .nav-icon {
-  opacity: 0.75;
+  flex-shrink: 0;
+  opacity: 0.8;
 }
 .nav-link[data-active='true'] .nav-icon {
+  color: var(--brand-fg);
   opacity: 1;
 }
 
@@ -501,27 +606,133 @@ body {
 .nav-footer {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   border-top: 1px solid var(--border);
   padding-top: 10px;
   margin-top: 8px;
 }
 .nav-footer .nav-footer-help {
   width: 100%;
-  padding: 8px 11px;
-  font-size: 12.5px;
+  padding: 0 10px;
+  font-size: var(--type-body);
   font-weight: var(--fw-semibold);
 }
 .nav-footer-chevron {
   margin-left: auto;
   opacity: 0.5;
 }
+.nav-footer .nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px 6px 4px;
+  border-radius: var(--radius-control);
+  transition: background-color var(--dur-base) var(--ease);
+}
+.nav-footer .nav-user:hover,
+.nav-footer .nav-user[data-expanded] {
+  background: var(--surface-hover);
+}
+.nav-user-avatar {
+  flex-shrink: 0;
+}
+.nav-user-avatar .mantine-Avatar-placeholder {
+  background: var(--brand);
+  color: var(--brand-on);
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+}
+.nav-user-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.nav-user-name {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-user-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-4);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.nav-user-xp {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+.nav-user-xp > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+.nav-user-chevron {
+  flex-shrink: 0;
+  color: var(--ink-4);
+}
+.nav-footer-notice {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.nav-footer-link {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 28px 0 10px;
+  border-radius: var(--radius-control);
+  color: var(--brand-fg);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--dur-base) var(--ease);
+}
+.nav-footer-link:hover {
+  background: var(--surface-hover);
+}
+.nav-footer-star {
+  flex-shrink: 0;
+  margin-right: 2px;
+  color: var(--rating);
+}
+.nav-footer .nav-footer-dismiss {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  color: var(--ink-4);
+}
+.nav-footer .nav-footer-dismiss:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
+}
 .nav-footer-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 4px;
+  padding: 4px 10px 0;
 }
 .nav-footer-version {
   display: inline-flex;
@@ -529,9 +740,9 @@ body {
   gap: 6px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--ink-3);
+  color: var(--ink-4);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
@@ -554,104 +765,24 @@ body {
   height: 6px;
   border-radius: 50%;
   background: var(--warn);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--warn) 50%, transparent);
   flex-shrink: 0;
-}
-.nav-card-wrap {
-  position: relative;
-}
-.nav-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 10px 11px;
-  margin-bottom: 4px;
-  border-radius: var(--radius-surface);
-  border: 1px solid var(--border);
-  color: inherit;
-  text-decoration: none;
-}
-.nav-card-update {
-  background: color-mix(in srgb, var(--brand) 10%, var(--surface-2));
-  border-color: color-mix(in srgb, var(--brand) 32%, var(--border));
-}
-.nav-card-update .nav-card-icon {
-  color: var(--brand-fg);
-}
-.nav-card-star {
-  padding-right: 26px;
-  background: color-mix(in srgb, var(--rating) 9%, var(--surface-2));
-  border-color: color-mix(in srgb, var(--rating) 28%, var(--border));
-  transition: border-color var(--dur-base) var(--ease);
-}
-.nav-card-star:hover {
-  border-color: color-mix(in srgb, var(--rating) 50%, var(--border));
-}
-.nav-card-star .nav-card-icon {
-  color: var(--rating);
-}
-.nav-card-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.nav-card-body {
-  min-width: 0;
-  flex: 1;
-}
-.nav-card-title {
-  font-size: 12.5px;
-  font-weight: var(--fw-semibold);
-  color: var(--ink-hi);
-  line-height: 1.3;
-}
-.nav-card-sub {
-  font-size: 11.5px;
-  color: var(--ink-3);
-  line-height: 1.35;
-  margin-top: 2px;
-}
-.nav-card-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
-}
-.nav-footer .nav-card-link {
-  font-size: 11.5px;
-  color: var(--ink-3);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.nav-card-link:hover {
-  color: var(--ink-hi);
-}
-.nav-footer .nav-card-dismiss {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  color: var(--ink-4);
-}
-.nav-card-dismiss:hover {
-  color: var(--ink-hi);
-  background: var(--surface-hover);
 }
 
 /* Command palette */
 .command-palette-trigger {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 6px 10px;
-  border-radius: var(--radius-control);
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--surface-2);
-  color: var(--ink-2);
+  color: var(--ink-4);
+  font: inherit;
   font-size: var(--type-meta);
   cursor: pointer;
   transition: background-color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
@@ -663,23 +794,35 @@ body {
 .command-palette-trigger-label {
   display: none;
 }
-@media (min-width: 48em) {
-  .command-palette-trigger-label {
-    display: inline;
-  }
-}
 .command-palette-trigger-kbd {
   display: none;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-3);
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
-  color: var(--ink-4);
-  border: 1px solid var(--border);
-  border-radius: var(--mantine-radius-xs);
-  padding: 1px 5px;
 }
 @media (min-width: 48em) {
-  .command-palette-trigger-kbd {
+  .command-palette-trigger {
+    justify-content: flex-start;
+    width: min(320px, 36vw);
+    margin-right: 8px;
+    padding: 0 6px 0 12px;
+  }
+  .command-palette-trigger-label {
     display: inline;
+    flex: 1;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .command-palette-trigger-kbd {
+    display: inline-flex;
   }
 }
 .command-palette-item[data-active='true'] {
@@ -748,19 +891,42 @@ body {
   }
 }
 .nav-section-label {
-  font-size: var(--type-label);
+  font-size: 10.5px;
   font-weight: var(--fw-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  line-height: 16px;
   color: var(--ink-4);
-  padding: 0 11px;
+  padding: 0 10px;
+}
+.nav-count {
+  min-width: 18px;
+  height: 18px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  color: var(--brand-on);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+  line-height: 18px;
+  text-align: center;
+}
+.count-indicator > .mantine-Indicator-indicator {
+  background-image: none;
+  box-shadow: none;
+  font-variant-numeric: tabular-nums;
+}
+.count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
+  background: var(--brand);
+  color: var(--brand-on);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
 .cover-card {
   position: relative;
   display: block;
-  border-radius: var(--mantine-radius-lg);
+  border-radius: var(--radius-card);
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -788,7 +954,22 @@ body {
 }
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
-  box-shadow: 0 0 0 1px var(--brand), 0 12px 30px -10px var(--brand-glow);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+.library-add-cell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 2 / 3;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--mantine-radius-lg);
+  background: transparent;
+  color: var(--ink-4);
+  text-decoration: none;
+  transition: background-color var(--dur-base) var(--ease);
+}
+.library-add-cell:hover,
+.library-add-cell:focus-visible {
+  background: var(--surface-hover);
 }
 .cover-poster {
   position: relative;
@@ -823,7 +1004,7 @@ body {
 .cover-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 4%, rgba(6, 7, 11, 0.35) 34%, transparent 60%);
+  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 0, rgba(6, 7, 11, 0.4) 40%, transparent 62%);
   pointer-events: none;
 }
 .cover-placeholder {
@@ -838,13 +1019,8 @@ body {
 }
 
 /* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
-   Mantine Badge/Tooltip/RingProgress, and why nothing here uses backdrop-filter.
-
-   The two corners share one flex row instead of each being independently absolutely
-   positioned: fixed-anchored corners have no way to notice the other one's content and
-   collide on narrow cards (a wide "Downloading N" + eye + "Completed" outgrows a Compact-
-   density card). `space-between` keeps them apart when there's room; `flex-wrap` drops the
-   right corner to its own line, still pinned to the card's top edge, when there isn't. */
+   Mantine Badge/Tooltip/RingProgress, and why the chips skip backdrop-filter.
+   The two corners share one flex row so they can never overlap on a narrow card. */
 .cover-corners {
   position: absolute;
   top: 8px;
@@ -894,6 +1070,27 @@ body {
   background: #000;
   opacity: 0.7;
 }
+.cover-corner-right > .cover-badge-circle {
+  width: 26px;
+  height: 26px;
+  background: rgba(6, 7, 11, 0.6);
+}
+/* Monitor eye and mute bell on a poster: revealed on hover or keyboard focus with a pointer,
+   always shown on touch. Only the two small chips fade, never the card. */
+@media (hover: hover) and (pointer: fine) {
+  .cover-corner-right > .cover-badge-circle {
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease);
+  }
+  .cover-card:hover .cover-corner-right > .cover-badge-circle,
+  .cover-card:focus-within .cover-corner-right > .cover-badge-circle {
+    opacity: 0.9;
+  }
+  .cover-card:hover .cover-corner-right > .cover-badge-circle[data-dim],
+  .cover-card:focus-within .cover-corner-right > .cover-badge-circle[data-dim] {
+    opacity: 0.7;
+  }
+}
 /* Unread count / all-read marker. The progress ring beside these is easy to miss at grid
    density; a number is not, and it is the one thing you scan a library for. */
 .cover-badge-unread {
@@ -913,13 +1110,9 @@ body {
 /* `.discover-rating` is exempt: it is the only badge on a catalogue poster's top-left and has
    nothing to collide with, and collapsing it to the 20px dot dropped its star (the svg is the
    flex item that shrinks) and left a bare number. Rail cards are exactly 150px, so every rail
-   lost the star while the grid kept it. The home rails' Read pill and anime chapter badge are
-   exempt for the same reason: nothing beside them to collide with, and at 20px the text spills
-   out of the dot. */
+   lost the star while the grid kept it. */
 @container (max-width: 150px) {
-  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread):not(.discover-rating):not(
-      .home-read-badge
-    ):not(.home-chapter-badge) {
+  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread):not(.discover-rating) {
     width: 20px;
     padding: 0;
     justify-content: center;
@@ -931,9 +1124,6 @@ body {
   .discover-rating svg {
     flex-shrink: 0;
   }
-  .cover-badge-label {
-    display: none;
-  }
 }
 /* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
    The blur lives on the disc and the ring is masked onto a pseudo-element above it: masking the
@@ -944,14 +1134,13 @@ body {
    three on every poster. */
 .cover-ring {
   position: relative;
-  width: 26px;
-  height: 26px;
+  flex: none;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  /* A dark disc under the blur. Without it the ring rode directly on the cover art and vanished
-     over a pale one: the unfilled track was white at 20%, i.e. nothing at all on white. Tinting
-     the backdrop instead of just recolouring the track keeps the glass look and makes the ring
-     read the same over any cover, which is the same trick the status badges use. */
-  background: rgba(6, 7, 11, 0.55);
+  /* A dark disc under the blur, so the ring reads the same over a pale cover as a dark one. */
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(4px);
 }
 .cover-ring::before {
@@ -959,20 +1148,50 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(var(--info) var(--ring-pct), rgba(255, 255, 255, 0.3) 0);
-  -webkit-mask: radial-gradient(circle, transparent 8px, #000 8.5px);
-  mask: radial-gradient(circle, transparent 8px, #000 8.5px);
+  background: conic-gradient(var(--brand) var(--ring-pct), rgba(255, 255, 255, 0.22) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
 }
-/* All downloaded chapters read: the ring completes and turns green instead of a separate
-   "Read" pill (which was the thing overlapping the status badge on narrow cards). */
 .cover-ring[data-complete]::before {
   background: var(--ok);
 }
 .cover-ring-check {
+  --tone: var(--ok);
   position: absolute;
   inset: 0;
   margin: auto;
-  color: var(--ok);
+  color: var(--tone);
+}
+/* Icon chip on a cover: download state beside the ring, publication status top-right. */
+.cover-state {
+  --tone: var(--neutral);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  color: var(--tone);
+}
+.cover-state[data-tone='info'] {
+  --tone: var(--info);
+}
+/* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). */
+.cover-state[data-tone='status'] {
+  width: 24px;
+  height: 24px;
+  background: var(--tone);
+  box-shadow:
+    0 0 0 1.5px rgba(6, 7, 11, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+/* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
+[data-theme='light'] .cover-state:not([data-tone='status']),
+[data-theme='light'] .cover-ring-check {
+  color: color-mix(in srgb, var(--tone) 55%, white);
 }
 /* Selection tick in bulk mode, purely decorative: the whole card is the hit target. */
 .cover-check {
@@ -988,8 +1207,17 @@ body {
 }
 .cover-check[data-checked] {
   border-color: var(--brand);
-  background: var(--brand) 50% / 12px 12px no-repeat
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+  background: var(--brand);
+}
+.cover-check[data-checked]::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: var(--brand-on);
+  -webkit-mask: 50% / 12px 12px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+  mask: 50% / 12px 12px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
 }
 .cover-meta {
   position: absolute;
@@ -1003,23 +1231,97 @@ body {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: var(--type-body);
+  font-size: var(--type-meta);
   font-weight: var(--fw-strong);
   line-height: 1.25;
+  text-wrap: pretty;
   color: #fff;
 }
-.cover-progress-row {
+.cover-bar {
+  height: 3px;
+  margin: 7px 0 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+/* "47 of 106" on the left, the "N new" pill on the right. */
+.cover-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  margin-top: 7px;
+  min-height: 16px;
+  font-size: var(--type-label);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.7);
 }
-.cover-bar {
-  flex: 1;
-  height: 4px;
+.cover-title + .cover-row {
+  margin-top: 5px;
+}
+.cover-row > [data-nothing-wanted] {
+  color: rgba(255, 255, 255, 0.5);
+}
+.cover-new {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, white 16%, transparent);
+  background: var(--brand);
+  color: var(--brand-on);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+/* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
+.cover-new-quiet {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+/* A chapter chip: top-left on Continue, Resume and Recently added cards. */
+.cover-chapter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  height: 20px;
+  margin-bottom: 7px;
+  padding: 0 8px 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  color: var(--brand-on);
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cover-corner-left > .cover-chapter {
+  margin-bottom: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+/* Clears the card menu or add cue in the other corner, and lets a long label ellipsize. */
+.cover-corners:has(> .cover-corner-left > .cover-chapter) {
+  right: 40px;
+}
+.cover-corner-left:has(> .cover-chapter) {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.cover-chapter > svg {
+  flex: none;
+}
+.cover-chapter:not(:has(> svg)) {
+  padding-left: 8px;
+}
+.cover-chapter > span {
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cover-bar-fill {
   height: 100%;
@@ -1098,15 +1400,19 @@ body {
    is an ordinary block in the page's vertical flow, which is the axis worth skipping. The Discover
    tab stacks a dozen rails, so at any scroll position all but two are off screen; with the
    containment on the cards it was switched off (the old rule here) and every one of the ~240
-   posters stayed laid out, painted and image-decoded for as long as the tab was open. */
+   posters stayed laid out, painted and image-decoded for as long as the tab was open.
+   No scroll-snap: WebKit re-snaps after layout, and a contained rail coming on screen (or posters
+   replacing skeletons) left iOS Safari's rails parked mid-row on first load. */
 .discover-rail {
+  --rail-fade-start: 0px;
+  --rail-fade-end: 0px;
   display: flex;
-  gap: var(--mantine-spacing-md);
+  gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 8px;
-  scroll-snap-type: x proximity;
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
   content-visibility: auto;
   /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the scrollbar
      gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
@@ -1116,12 +1422,39 @@ body {
 .discover-rail-item {
   flex: 0 0 auto;
   width: var(--rail-item-w, 150px);
-  scroll-snap-align: start;
 }
 /* Undoes .cover-card's own containment: it is redundant inside a contained rail, and a
    size-contained flex item is exactly what the rule above avoids. */
 .discover-rail-item .cover-card {
   content-visibility: visible;
+}
+/* `Rail` sets these while the scroller overflows: each edge fades only when there is more to
+   scroll to on that side, so a rail that fits, or sits at its start, is never masked. */
+.discover-rail:hover {
+  scrollbar-color: var(--border-strong) transparent;
+}
+.discover-rail[data-fade-start] {
+  --rail-fade-start: 24px;
+}
+.discover-rail[data-fade-end] {
+  --rail-fade-end: 24px;
+}
+.discover-rail[data-fade-start],
+.discover-rail[data-fade-end] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--rail-fade-start),
+    #000 calc(100% - var(--rail-fade-end)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--rail-fade-start),
+    #000 calc(100% - var(--rail-fade-end)),
+    transparent
+  );
 }
 .discover-card:has(.discover-card-action:focus-visible) {
   outline: 2px solid var(--brand);
@@ -1160,6 +1493,18 @@ body {
   gap: var(--mantine-spacing-md);
   color: inherit;
   text-decoration: none;
+}
+.home-glance-xp {
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+.home-glance-xp > div {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
 }
 /* Tighter than the series band's, where the same figures have a whole band to spread across. */
 .home-glance .hero-stats {
@@ -1222,26 +1567,62 @@ body {
   }
 }
 
-/* --- Home dashboard rails ------------------------------------------------ */
-/* The chapter line under the title on a Home card, where the library grid carries have/total. */
-.home-chapter-label {
-  display: block;
-  margin-top: 3px;
-  font-size: var(--type-micro);
-  font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, white 82%, transparent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* --- Import review ------------------------------------------------------- */
+/* The choices are full sentences with a count in them, so on a phone they wrap rather than
+   losing their ending to Mantine's single-line label. */
+.import-review-actions .mantine-Button-root {
+  height: auto;
+  min-height: var(--button-height);
+  padding-block: 6px;
 }
+.import-review-actions .mantine-Button-inner,
+.import-review-actions .mantine-Button-label {
+  height: auto;
+  white-space: normal;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* --- Home downloading strip --------------------------------------------- */
+/* Title and release label share a line on wider screens, the label capped at half of it. On a
+   phone the badge leaves too little room for both, so the label drops under the title. */
+.downloading-strip-name {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--mantine-spacing-sm);
+}
+.downloading-strip-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.downloading-strip-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
+}
+@media (max-width: 47.99em) {
+  .downloading-strip-name {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .downloading-strip-label {
+    max-width: none;
+    font-size: var(--mantine-font-size-xs);
+  }
+}
+
+/* --- Home dashboard rails ------------------------------------------------ */
 /* How far into the current chapter you are. Same geometry as .cover-bar so a Continue-reading
    card and a library card line up, but its own class: this measures pages within one chapter,
    not chapters within a series, and conflating the two would be a lie at a glance. */
 .home-resume-bar {
-  height: 4px;
-  margin-top: 7px;
+  height: 3px;
+  margin: 7px 0 6px;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, white 16%, transparent);
+  background: rgba(255, 255, 255, 0.2);
   overflow: hidden;
 }
 .home-resume-fill {
@@ -1249,61 +1630,58 @@ body {
   border-radius: var(--radius-pill);
   background: var(--brand);
 }
-.home-read-badge {
-  background: #000;
-  opacity: 0.92;
-  cursor: pointer;
+/* Recently added's jump-to-reader button, top-right. It sits inside the corners row, so the row
+   keeps its full width instead of clearing room for an outside menu. */
+.cover-corners:has(> .cover-corner-right > .home-read-button) {
+  right: 8px;
 }
-.home-read-badge:hover {
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
-  opacity: 1;
+.home-read-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+}
+.home-read-button:hover {
+  color: var(--brand-on);
+  background: var(--brand);
+  transform: translateY(-1px);
+}
+.home-read-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 /* Quick-add / owned cue, top-right of the poster. The poster's full-card button owns the action,
-   so this is a visual cue without a second focus stop. It stays large enough to communicate the
-   action clearly on touch screens, where there is no hover reveal. */
+   so this is a visual cue without a second focus stop. */
 .discover-corner {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  top: 8px;
+  right: 8px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   pointer-events: none;
   color: var(--ok-on);
   background: var(--ok);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 .discover-corner[data-add='true'] {
-  color: var(--mantine-primary-color-contrast);
-  background: var(--mantine-color-brand-filled);
-  opacity: 0;
-  transform: scale(0.85);
-  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
-}
-.discover-corner[data-add='true']:hover {
-  background: var(--mantine-color-brand-filled-hover);
-}
-/* The reading rails open the reader directly, so the cue is a play glyph and it stays visible:
-   a poster with nothing on it reads as a link to the series page. */
-.discover-corner[data-play='true'] {
-  width: 36px;
-  height: 36px;
-  background: var(--brand);
   color: var(--brand-on);
-  opacity: 0.92;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
-}
-.cover-card:hover .discover-corner[data-play='true'],
-.reading-card:hover .discover-corner[data-play='true'] {
-  opacity: 1;
-  transform: scale(1.08);
+  background: var(--brand);
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease);
 }
 /* A reading-rail card is its link plus a menu button beside it, not inside it. The wrapper owns
    the hover lift so pointing at the button doesn't drop the card out from under it. */
@@ -1328,10 +1706,9 @@ body {
 .continue-tile-menu:hover {
   background: rgba(6, 7, 11, 0.85);
 }
-/* Left of the play cue, centred on it. */
 .reading-card-menu {
-  top: 11px;
-  right: 49px;
+  top: 8px;
+  right: 8px;
 }
 .reading-card:hover > .reading-card-menu {
   transform: translateY(-4px);
@@ -1354,41 +1731,28 @@ body {
     opacity: 1;
   }
 }
-.home-chapter-label[data-action] {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: var(--fw-semibold);
-  color: var(--brand-fg-on-art);
-}
-.home-chapter-label[data-action] > svg {
-  flex: none;
-}
-.home-chapter-sep {
-  color: color-mix(in srgb, white 55%, transparent);
-  font-weight: var(--fw-regular);
-}
 .discover-card:hover .discover-corner[data-add='true'],
 .discover-card:focus-within .discover-corner[data-add='true'] {
   opacity: 1;
-  transform: scale(1);
 }
 @media (hover: none), (pointer: coarse) {
   .discover-corner[data-add='true'] {
     opacity: 1;
-    transform: scale(1);
   }
 }
-/* MangaBaka's 0-100 score, shown out of 10. Top-left, where the library card puts its
-   download badge — a catalogue item has no download state to compete with it. */
+/* MangaBaka's 0-100 score, shown out of 10, top-left. */
 .discover-rating {
   position: absolute;
   top: 8px;
   left: 8px;
   z-index: 1;
+  gap: 3px;
+  padding: 0 6px 0 5px;
+  border-radius: var(--radius-chip);
+  letter-spacing: 0;
   text-transform: none;
   font-variant-numeric: tabular-nums;
-  background: #000;
+  background: rgba(6, 7, 11, 0.62);
 }
 .discover-meta {
   position: absolute;
@@ -1397,29 +1761,29 @@ body {
   bottom: 9px;
   z-index: 1;
 }
-/* Year · status · chapter count under the title; the chapter count is the one that ellipsizes on a narrow card. */
+/* "2017, Completed" on the left, the chapter count right-aligned. The left side ellipsizes. */
 .discover-sub {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 16px;
   margin-top: 5px;
-  flex-wrap: nowrap;
   white-space: nowrap;
+  font-size: var(--type-label);
+  font-weight: var(--fw-medium);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+}
+.discover-sub-status {
+  min-width: 0;
   overflow: hidden;
-  font-size: var(--type-micro);
-  color: color-mix(in srgb, white 82%, transparent);
-}
-.discover-sub > .tnum,
-.discover-sub-status {
-  flex-shrink: 0;
-}
-.discover-sub-status {
+  text-overflow: ellipsis;
   text-transform: capitalize;
 }
 .discover-sub-chapters {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+  flex: none;
 }
 /* --- Engine rails: the rows the recommender produced ---------------------- */
 /* Wider items than a catalogue rail, and a footer under the poster instead of the scrim's single
@@ -2555,6 +2919,30 @@ body {
   box-shadow: 0 0 0 1px var(--brand);
   color: var(--ink-hi);
 }
+.setup-swatch-hint {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.setup-swatch-hint[data-muted] {
+  background: color-mix(in srgb, var(--ink-3) 14%, transparent);
+  color: var(--ink-3);
+}
+.appearance-picker {
+  display: grid;
+  gap: 14px;
+}
+.appearance-picker-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+}
 .setup-swatch-dot {
   width: 16px;
   height: 16px;
@@ -3086,7 +3474,7 @@ body {
   color: var(--ink-4);
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.09em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -3463,12 +3851,19 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: var(--mantine-spacing-xl);
-  margin-bottom: var(--mantine-spacing-sm);
+  min-height: 30px;
+  margin-top: 44px;
+  margin-bottom: 14px;
   min-width: 0;
 }
 .section-header-icon {
+  display: grid;
   flex-shrink: 0;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand-fg);
 }
 .section-header-title {
@@ -3486,25 +3881,89 @@ body {
 }
 .section-header-count {
   flex-shrink: 0;
-  padding: 1px 8px;
-  border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--brand) 14%, transparent);
-  color: var(--brand-fg);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-strong);
+  margin-left: -2px;
+  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
 }
 .section-header-rule {
   flex: 1;
   min-width: 24px;
   height: 1px;
-  background: linear-gradient(
-    to right,
-    color-mix(in srgb, var(--brand) 32%, transparent),
-    var(--hairline) 60%
-  );
+  background: var(--border);
 }
 .section-header-action {
+  display: flex;
   flex-shrink: 0;
+  align-items: center;
+}
+.section-header-action .mantine-Button-root[data-variant='subtle'] {
+  color: var(--ink-2);
+  font-weight: var(--fw-semibold);
+}
+.section-header-action .mantine-Button-root[data-variant='subtle']:hover {
+  background-color: var(--surface-hover);
+  color: var(--ink-hi);
+}
+/* Drawn inside the button so it shares the hit area, whatever element the caller passed. */
+.section-header-action[data-chevron] .mantine-Button-inner::after {
+  content: '';
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l6 6l-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* The slot `Rail` portals its prev/next buttons into. Empty for a rail that fits, or a header with
+   no rail under it, and then it takes no room. */
+.section-header-arrows {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+.section-header-arrows:empty {
+  display: none;
+}
+.section-header-arrows[data-hover],
+.section-header-arrows:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .section-header-arrows {
+    opacity: 1;
+  }
+}
+.rail-arrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--ink-2);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    color 0.12s var(--ease),
+    border-color 0.12s var(--ease);
+}
+.rail-arrow:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--ink-hi);
+}
+.rail-arrow:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.rail-arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the rule drops out and the row wraps naturally. */
@@ -3516,7 +3975,8 @@ body {
   .section-header-rule {
     display: none;
   }
-  .section-header-action {
+  .section-header-action,
+  .section-header-rule + .section-header-arrows {
     margin-left: auto;
   }
 }
@@ -3532,6 +3992,175 @@ body {
   color: var(--ink-2);
   font-size: var(--type-body);
   font-weight: var(--fw-semibold);
+}
+.empty-state-mark {
+  display: flex;
+  flex: none;
+}
+
+/* The whole page is empty: centred in what's left of the viewport, over a picture of covers. */
+.empty-state--page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(26rem, 64vh, 40rem);
+  padding: var(--mantine-spacing-xl) var(--mantine-spacing-md);
+  text-align: center;
+}
+.empty-state--page .empty-state-title {
+  margin-top: var(--mantine-spacing-xl);
+  font-size: var(--type-feature);
+  line-height: 1.15;
+}
+.empty-state--page .empty-state-description {
+  max-width: 28rem;
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: var(--type-body);
+  line-height: 1.55;
+}
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-lg);
+}
+
+.empty-shelf {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.empty-shelf-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.empty-shelf-slot[data-depth='2'] {
+  opacity: 0.3;
+}
+.empty-shelf-slot[data-depth='1'] {
+  opacity: 0.6;
+}
+.empty-shelf-slot[data-depth='0'] {
+  transform: translateY(-10px);
+}
+.empty-shelf-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 104px;
+  aspect-ratio: 2 / 3;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-overlay);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.empty-shelf-slot[data-depth='1'] .empty-shelf-cover {
+  width: 112px;
+}
+.empty-shelf-slot[data-depth='0'] .empty-shelf-cover {
+  width: 132px;
+  border-color: color-mix(in srgb, var(--brand) 65%, transparent);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 6%, transparent);
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+}
+a.empty-shelf-slot:hover .empty-shelf-cover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+.empty-shelf-plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  color: var(--brand-fg);
+}
+.empty-shelf-line {
+  width: 76%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+.empty-shelf-line + .empty-shelf-line {
+  width: 50%;
+}
+.empty-shelf-slot[data-depth='0'] .empty-shelf-line {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.empty-shelf-slot[data-depth='0'] .empty-shelf-line + .empty-shelf-line {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+@media (max-width: 36em) {
+  .empty-shelf {
+    gap: 12px;
+  }
+  .empty-shelf-slot[data-depth='2'] {
+    display: none;
+  }
+  .empty-shelf-slot[data-depth='1'] .empty-shelf-cover {
+    width: 88px;
+  }
+  .empty-shelf-slot[data-depth='0'] .empty-shelf-cover {
+    width: 108px;
+  }
+}
+
+.empty-missing {
+  position: relative;
+  width: 220px;
+  height: 240px;
+}
+.empty-missing-cover {
+  position: absolute;
+  top: 12px;
+  left: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  box-sizing: border-box;
+  width: 144px;
+  aspect-ratio: 2 / 3;
+  border: 1.5px dashed color-mix(in srgb, var(--ink-4) 55%, transparent);
+  border-radius: var(--radius-overlay);
+  background: var(--surface);
+  transform: rotate(-4deg);
+}
+.empty-missing-cover[data-back] {
+  top: 10px;
+  left: 44px;
+  border-color: var(--border-strong);
+  opacity: 0.45;
+  transform: rotate(7deg);
+}
+.empty-missing-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink-4);
+}
+.empty-missing-code {
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--ink-4);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--type-micro);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Series detail panels -------------------------------------------------- */
@@ -3813,9 +4442,9 @@ body {
   box-shadow: inset 3px 0 0 var(--brand);
 }
 
-/* The desktop chapter table becomes stacked, compact rows on narrow screens. Keeping the same
-   cells preserves every chapter action while removing the minimum-width table and page-level
-   horizontal scroll. */
+/* On narrow screens each chapter is a two-line list row inside the panel: switch, number, title
+   and actions on top, then date, source and status wrapping underneath. The cells stay the same so
+   every action survives; `order` plus a full-width ::before is what forces the line break. */
 @media (max-width: 47.99em) {
   .chapter-table,
   .chapter-table tbody {
@@ -3825,61 +4454,92 @@ body {
   .chapter-table thead {
     display: none;
   }
-  .chapter-table tbody {
-    display: grid;
-    gap: var(--mantine-spacing-xs);
-  }
   .chapter-table tbody tr {
-    display: grid;
-    grid-template-columns: 38px minmax(0, 1fr) auto;
+    --chapter-lead: 34px;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    border: 1px solid var(--border);
-    border-radius: var(--mantine-radius-md);
-    overflow: hidden;
-    background-color: var(--surface);
+    gap: 4px 8px;
+    /* The switch hangs out into this padding, so every wrapped line lines up under the number. */
+    padding: 8px 6px 8px calc(10px + var(--chapter-lead) + 8px);
+    border-bottom: 1px solid var(--hairline);
+    box-shadow: inset 3px 0 0 var(--chapter-accent, transparent);
+  }
+  [data-mantine-color-scheme='dark'] .chapter-table tbody tr:hover {
+    background-image: linear-gradient(color-mix(in srgb, white 2%, transparent), color-mix(in srgb, white 2%, transparent));
+  }
+  [data-mantine-color-scheme='dark'] .chapter-table tbody tr:hover > td {
+    background-color: transparent;
+  }
+  .chapter-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .chapter-table tbody tr::before {
+    content: '';
+    order: 2;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .chapter-table tbody tr.chapter-row-selected {
+    --chapter-accent: var(--brand);
   }
   .chapter-table tbody td {
+    display: block;
     width: auto !important;
+    height: auto;
     min-width: 0;
-    padding: 5px 7px !important;
+    padding: 0 !important;
     border: 0 !important;
+    box-shadow: none !important;
   }
   .chapter-table tbody td:nth-child(1) {
-    grid-column: 1;
-    grid-row: 1;
+    order: 1;
+    flex: 0 0 var(--chapter-lead);
+    margin-inline-start: calc(-1 * (var(--chapter-lead) + 8px));
   }
   .chapter-table tbody td:nth-child(2) {
-    grid-column: 2;
-    grid-row: 1;
+    order: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .chapter-table tbody td:nth-child(3) {
-    grid-column: 2 / 4;
-    grid-row: 2;
-  }
-  .chapter-table tbody td:nth-child(4) {
-    grid-column: 2;
-    grid-row: 3;
-  }
-  .chapter-table tbody td:nth-child(5) {
-    grid-column: 3;
-    grid-row: 3;
-    justify-self: end;
-  }
-  .chapter-table tbody td:nth-child(6) {
-    grid-column: 2 / 4;
-    grid-row: 4;
+    order: 1;
+    flex: 1 1 0;
   }
   .chapter-table tbody td:nth-child(7) {
-    grid-column: 3;
-    grid-row: 1;
+    order: 1;
+    margin-inline-start: auto;
+  }
+  .chapter-table tbody td:nth-child(4),
+  .chapter-table tbody td:nth-child(5),
+  .chapter-table tbody td:nth-child(6) {
+    order: 3;
+  }
+  .chapter-table .chapter-source-empty {
+    display: none;
+  }
+  .chapter-table tbody td:nth-child(5) > div {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  /* A folded span's summary and progress bar need the full second line, and its two empty
+     cells would otherwise add gaps to it. */
+  .chapter-table tbody tr.chapter-span-row td:empty {
+    display: none;
+  }
+  .chapter-table tbody tr.chapter-span-row td:nth-child(3),
+  .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
+    order: 3;
+    flex: 1 1 100%;
   }
   .chapter-table .chapter-cell {
-    padding-inline-end: 7px !important;
+    padding-inline-end: 0 !important;
   }
   .chapter-table .chapter-span-markers {
     position: static;
     min-width: 0;
-    margin-inline-start: auto;
   }
   .chapter-span-overlay {
     display: none;
@@ -3890,13 +4550,6 @@ body {
 .stat-tile {
   position: relative;
   overflow: hidden;
-}
-.stat-accent {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
 }
 
 /* --- Misc ---------------------------------------------------------------- */
@@ -3913,18 +4566,18 @@ body {
   height: 8px;
   border-radius: 50%;
   background: var(--ok);
-  box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.5);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
   animation: pulse 1.8s infinite;
 }
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.45);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 7px rgba(63, 185, 80, 0);
+    box-shadow: 0 0 0 3px transparent;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0);
+    box-shadow: 0 0 0 1px transparent;
   }
 }
 
@@ -4041,7 +4694,7 @@ body {
   color: var(--ink-4);
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.09em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -4886,6 +5539,16 @@ body.reader-open {
   color: #fff;
   background: #0a0a0b;
 }
+/* The Discover preview opens over the detail modal (z-index 1000), and keeps its top bar up, so
+   the pages sit below it rather than under it. */
+.reader-root[data-preview] {
+  z-index: 1100;
+}
+.reader-preview-body {
+  position: absolute;
+  inset: 56px 0 0;
+  overflow: auto;
+}
 /* A page's outline while the chapter loads. Its own colours: the reader is always dark, and the
    theme's skeleton grey is a light-mode grey on a light theme. */
 .reader-page-skeleton {
@@ -5463,7 +6126,7 @@ body.reader-open {
 }
 .series-row[data-selected='true'] {
   border-color: var(--brand);
-  box-shadow: 0 0 0 1px var(--brand), 0 6px 16px -6px var(--brand-glow);
+  box-shadow: 0 0 0 1px var(--brand);
 }
 
 .row-check {
@@ -5486,7 +6149,7 @@ body.reader-open {
   content: '';
   position: absolute;
   inset: 3px;
-  background: white;
+  background: var(--brand-on);
   clip-path: polygon(14% 48%, 0 65%, 40% 100%, 100% 20%, 84% 4%, 38% 65%);
 }
 
@@ -5598,8 +6261,14 @@ body.reader-open {
 /* And the ring's blur is pure compositor cost here: it exists to let cover art show through the
    glass, and there is no art under a row. */
 .series-row .cover-ring {
+  width: 26px;
+  height: 26px;
   backdrop-filter: none;
   background: var(--surface-2);
+  box-shadow: none;
+}
+.series-row .cover-ring::before {
+  background: conic-gradient(var(--brand) var(--ring-pct), var(--border-strong) 0);
 }
 
 /* --- Health workspace ------------------------------------------------------ */
@@ -6033,7 +6702,7 @@ body.reader-open {
   color: var(--ink-4);
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -6059,10 +6728,10 @@ body.reader-open {
 }
 @keyframes status-dot-pulse {
   0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dot) 60%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--dot) 40%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 6px transparent;
+    box-shadow: 0 0 0 3px transparent;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -6198,11 +6867,49 @@ body.reader-open {
 
 .settings-content {
   width: 100%;
-  max-width: 51.25rem;
+}
+.settings-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  min-height: 30px;
+  padding-block: 6px;
+  margin-top: -6px;
+}
+.settings-section[data-dirty] .settings-section-head {
+  position: sticky;
+  top: var(--app-shell-header-height, 58px);
+  z-index: 3;
+  background: var(--app-bg);
+}
+.settings-section-title {
+  margin: 0;
+  min-width: 0;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+.settings-section-actions {
+  margin-left: auto;
+}
+.settings-section-actions .mantine-Button-root[data-variant='subtle'] {
+  color: var(--ink-2);
+}
+.settings-section-actions .mantine-Button-root[data-variant='subtle']:hover {
+  background-color: var(--surface-hover);
+}
+.settings-section-desc {
+  max-width: 68ch;
+  margin: -2px 0 10px;
 }
 .settings-layout {
   display: grid;
-  grid-template-columns: minmax(0, 51.25rem) 13rem;
+  grid-template-columns: minmax(0, 1fr) 13rem;
   gap: clamp(1.5rem, 3vw, 3rem);
   align-items: start;
 }
@@ -6270,18 +6977,20 @@ body.reader-open {
   .health-filter-rail .mantine-InputWrapper-root {
     min-width: 0;
   }
-  .settings-content {
-    max-width: none;
-  }
 }
 
 /* --- library page (ported from redesignv2) --- */
 
 /* --- Library index: ruled, overflow-clipped block merging stats + toolbar --- */
 .library-index {
-  margin-bottom: var(--mantine-spacing-lg);
+  margin-bottom: var(--mantine-spacing-md);
   /* Clips the metric grid's cell borders back to the rounded edge. */
   overflow: hidden;
+  /* Pins under the app header while the grid scrolls. The strip slides away under the header so only
+     the toolbar stays; its height is measured into --library-strip-h. */
+  position: sticky;
+  top: calc(var(--app-shell-header-height, 58px) - var(--library-strip-h, 0px));
+  z-index: 20;
 }
 .figure-strip.library-index-metrics {
   padding: 0;
@@ -6291,7 +7000,7 @@ body.reader-open {
   padding: 0.875rem 1.125rem;
 }
 .library-toolbar-row {
-  align-items: flex-end;
+  align-items: center;
 }
 .library-toolbar-row .library-search {
   flex: 1 1 15rem;
@@ -6300,9 +7009,62 @@ body.reader-open {
 .library-toolbar-row .library-sort {
   flex: 0 0 10.625rem;
 }
+.library-toolbar-row > .tnum {
+  flex: none;
+  margin-inline: 0.25rem 0;
+  font-size: 0.8125rem;
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+.library-view-controls {
+  flex: none;
+}
+.library-view-toggle {
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: transparent;
+}
+.library-view-toggle .mantine-SegmentedControl-indicator {
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  box-shadow: none;
+}
+.library-view-toggle .mantine-SegmentedControl-label {
+  padding: 0;
+  color: var(--ink-3);
+}
+.library-view-toggle .mantine-SegmentedControl-label:hover {
+  color: var(--ink-hi);
+}
+.library-view-toggle .mantine-SegmentedControl-label[data-active] {
+  color: var(--brand-fg);
+}
+.library-view-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+}
+.library-density-button {
+  flex: none;
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--ink-2);
+}
 .library-saved-filters {
-  min-height: 1.5rem;
-  padding-top: 0.15rem;
+  min-height: 1.75rem;
+  margin: 0 0 var(--mantine-spacing-lg);
+}
+.library-saved-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-right: 0.125rem;
+  font-size: 0.75rem;
+  color: var(--ink-4);
 }
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
@@ -6324,6 +7086,10 @@ body.reader-open {
     border-width: 0 0 1px;
     border-radius: 0;
     box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+  }
+  /* A brand rule along the top of a sticky bar reads as a progress bar. */
+  .mantine-Paper-root.library-index.panel[data-edge] {
+    border-top-width: 0;
   }
   .library-toolbar,
   .library-selection-bar {
@@ -6353,9 +7119,6 @@ body.reader-open {
   .library-saved-filters > * {
     flex-shrink: 0;
   }
-  .library-saved-filters[data-tools-only] {
-    display: none;
-  }
   .library-selection-bar > .mantine-Group-root:last-child {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -6368,9 +7131,6 @@ body.reader-open {
 
 /* --- series page (ported from redesignv2) --- */
 
-/* Series detail page: accent-edge panel grammar, ported from redesignv2.
-   Append into frontend/src/theme.css (not touched directly by this agent). */
-
 .series-detail-surface .series-detail-synopsis,
 .series-detail-surface .series-detail-source-panel,
 .series-detail-surface .series-detail-metadata-panel,
@@ -6381,7 +7141,7 @@ body.reader-open {
 /* --- Panel: shared accent-edge panel grammar (components/ui/Panel.tsx) --- */
 
 .panel {
-  box-shadow: none;
+  box-shadow: var(--shadow-card);
 }
 .panel[data-edge] {
   --panel-edge: var(--border-strong);
@@ -6409,18 +7169,56 @@ body.reader-open {
   border-right: 0;
 }
 
+/* Scheme prefix out-specifies the blanket Paper surface rule, like the layer-* classes. */
+[data-mantine-color-scheme] .discover-recommended-customize {
+  border-top-color: var(--border-strong);
+  border-bottom-color: var(--border-strong);
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+
 .series-detail-chapter-toolbar {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
-.series-detail-chapter-selection {
+/* Long chapter lists: Select (and then the selection actions) stay pinned under the header so
+   picking rows far down never means scrolling back up. Only one of the two is sticky at a time. */
+.series-detail-chapter-toolbar[data-sticky] {
+  position: sticky;
+  top: var(--app-shell-header-height, 58px);
+  z-index: 20;
+  padding-top: 12px;
+  margin-top: -12px;
+  background: var(--app-bg);
+}
+/* Scheme prefix so the tint outranks the blanket Paper surface rule. The tint is layered over the
+   page ground so rows don't show through while it is pinned. */
+[data-mantine-color-scheme] .series-detail-chapter-selection {
+  position: sticky;
+  top: var(--app-shell-header-height, 58px);
+  z-index: 20;
   border-left: 2px solid var(--brand);
   border-right: 0;
   border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  background:
+    linear-gradient(color-mix(in srgb, var(--surface-2) 72%, transparent), color-mix(in srgb, var(--surface-2) 72%, transparent)),
+    var(--app-bg);
+  box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
 }
-.series-detail-chapter-hint,
-.series-files-hint {
+/* Wrapped, the actions stack four rows deep on a phone and the pinned bar eats a third of the
+   screen. One line that scrolls sideways instead, like the library's selection bar. */
+@media (max-width: 47.9375em) {
+  .series-detail-chapter-selection > .mantine-Group-root > .mantine-Group-root:last-child {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .series-detail-chapter-selection > .mantine-Group-root > .mantine-Group-root:last-child > * {
+    flex-shrink: 0;
+  }
+}
+[data-mantine-color-scheme] .series-detail-chapter-hint,
+[data-mantine-color-scheme] .series-files-hint {
   border-left: 2px solid var(--warn);
   border-right: 0;
   border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
@@ -6599,6 +7397,16 @@ body.reader-open {
 .inbox-record[data-read='false'] {
   background: color-mix(in srgb, var(--brand-glow) 24%, transparent);
 }
+/* The bell's row has no record around it, so it carries the edge itself. The dropdown skips the
+   unread wash: on a short list, colour on most rows reads as an error state. */
+.inbox-record,
+.inbox-row[data-read] {
+  border-left: 2px solid transparent;
+}
+.inbox-record[data-read='false'],
+.inbox-row[data-read='false'] {
+  border-left-color: var(--brand);
+}
 .inbox-row:focus-visible {
   position: relative;
   z-index: 1;
@@ -6673,7 +7481,7 @@ body.reader-open {
   min-height: 188px;
   align-items: stretch;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-overlay);
   background: var(--surface-raised);
 }
 .continue-tile .series-hero-art {
@@ -6727,7 +7535,7 @@ body.reader-open {
 }
 .continue-tile-poster:hover {
   border-color: var(--brand);
-  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85), 0 0 12px var(--brand-glow);
+  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
 }
 .continue-tile-poster:hover img {
   transform: scale(1.04);
@@ -6753,18 +7561,16 @@ body.reader-open {
 .continue-tile-meta {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 10px;
   color: var(--ink-3);
   font-size: var(--type-badge);
   font-weight: var(--fw-bold);
   letter-spacing: 0.075em;
   text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
-.continue-tile-dot {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: currentColor;
+.continue-tile-unread {
+  color: var(--brand-fg);
 }
 .continue-tile-title {
   display: -webkit-box;
@@ -6772,10 +7578,11 @@ body.reader-open {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   color: var(--ink-hi);
+  font-family: var(--font-display);
   font-size: var(--type-section);
   font-weight: var(--fw-strong);
-  letter-spacing: -0.02em;
-  line-height: 1.12;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
   text-decoration: none;
 }
 .continue-tile-title:hover {
@@ -6834,25 +7641,6 @@ body.reader-open {
   .continue-lead-grid > :nth-child(3) .continue-tile-motion img {
     animation-delay: 0ms;
   }
-}
-
-/* ── Home: Continue reading spill-over carousel ───────────────────────────── */
-
-.reading-rail-shell--carousel {
-  position: relative;
-}
-.reading-rail-controls {
-  min-height: 2rem;
-  margin-bottom: 0.35rem;
-}
-.reading-rail-controls .mantine-ActionIcon-root {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--surface-raised);
-}
-.reading-rail-controls .mantine-ActionIcon-root:hover {
-  border-color: var(--brand);
-  background: var(--surface-sunken);
 }
 
 /* --- Utility modal tier --------------------------------------------------- */
@@ -7378,6 +8166,32 @@ body.reader-open {
   background: var(--surface-hover);
 }
 
+/* The preview button doubles as its own progress bar while the chapter downloads behind the card. */
+.preview-chapter-button[data-working] {
+  position: relative;
+  overflow: hidden;
+  cursor: progress;
+}
+.preview-chapter-button[data-working]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--preview-progress, 0%);
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  transition: width var(--dur-base) var(--ease);
+}
+.preview-chapter-button[data-indeterminate]::before {
+  width: 40%;
+  animation: preview-chapter-sweep 1.4s var(--ease) infinite;
+}
+.preview-chapter-button[data-working] .mantine-Button-inner {
+  position: relative;
+}
+@keyframes preview-chapter-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
 /* --- Sources: icon tiles, the Settings summary and the Manage sources modal --- */
 .source-icon {
   display: inline-grid;
@@ -7572,6 +8386,25 @@ body.reader-open {
 .source-tag[data-tone='flare'] {
   background: var(--warn-soft);
   color: var(--warn);
+}
+.source-tag[data-tone='quality-high'] {
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-weight: var(--fw-semibold);
+}
+.source-tag[data-tone='quality-good'] {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--ok) 50%, transparent);
+  color: var(--ok);
+}
+.source-tag[data-tone='quality-fair'] {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--warn) 50%, transparent);
+  color: var(--warn);
+}
+.source-tag[data-tone='quality-low'] {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 .source-tag[data-tone='filter'] {
   background: var(--info-soft);

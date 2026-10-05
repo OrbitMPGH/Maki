@@ -1,3 +1,4 @@
+using Maki.Metadata.MangaBaka;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Metadata.Embedding;
@@ -92,6 +93,18 @@ public class EmbeddingModelStore(
         }
     }
 
+    /// <summary>
+    /// Deletes the model graph and weights so the next <see cref="EnsureAsync"/> fetches them again.
+    /// Presence is only a size check, so a corrupt file of plausible size is otherwise never replaced.
+    /// </summary>
+    /// <returns>False when either file is still there, for example held open by another process.</returns>
+    public bool DeleteModelFiles()
+    {
+        TryDelete(options.ModelPath);
+        TryDelete(options.ModelDataPath);
+        return !File.Exists(options.ModelPath) && !File.Exists(options.ModelDataPath);
+    }
+
     private async Task DownloadAsync(
         HttpClient client, string url, string destination, long minBytes, string label, CancellationToken ct)
     {
@@ -102,7 +115,7 @@ public class EmbeddingModelStore(
             using (var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct))
             {
                 response.EnsureSuccessStatusCode();
-                await using var source = await response.Content.ReadAsStreamAsync(ct);
+                await using var source = new StallTimeoutStream(await response.Content.ReadAsStreamAsync(ct));
                 await using var output = File.Create(staging);
                 await source.CopyToAsync(output, ct);
             }
@@ -133,7 +146,7 @@ public class EmbeddingModelStore(
         {
             File.Delete(path);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
         }
     }

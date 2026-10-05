@@ -1,4 +1,6 @@
 using Maki.Api.Auth;
+using Maki.Api.Controllers;
+using Maki.Api.Dtos;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +12,11 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Routing;
+using Maki.Data.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace Maki.Api.Tests;
@@ -283,7 +289,7 @@ public class AuthorizationTests
     // ---- CSRF ----
 
     private static async Task<IActionResult?> RunAntiforgeryFilter(
-        string method, string? authenticationType, bool tokenValid = false)
+        string method, string? authenticationType, bool tokenValid = false, bool header = true)
     {
         var services = new ServiceCollection();
         services.AddAntiforgery();
@@ -293,6 +299,10 @@ public class AuthorizationTests
 
         var http = new DefaultHttpContext { RequestServices = provider };
         http.Request.Method = method;
+        if (header)
+        {
+            http.Request.Headers[AntiforgeryCookieFilter.HeaderName] = "token";
+        }
         http.User = authenticationType is null
             ? new ClaimsPrincipal(new ClaimsIdentity())
             : new ClaimsPrincipal(new ClaimsIdentity([], authenticationType));
@@ -349,11 +359,22 @@ public class AuthorizationTests
     }
 
     [Fact]
+    public async Task ATokenThatDidNotArriveInTheHeaderIsRefused()
+    {
+        // A sibling app on the same host is same-site: it can read XSRF-TOKEN and post it back in a
+        // plain HTML form field, which needs no CORS preflight. Only the header proves the SPA sent it.
+        var result = await RunAntiforgeryFilter(
+            "POST", IdentityConstants.ApplicationScheme, tokenValid: true, header: false);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
     public async Task ApiKeyAuthenticatedMutationsNeedNoAntiforgeryToken()
     {
         // A header credential is never sent ambiently by a browser, so there is nothing to forge —
         // and demanding a token here would break every script and third-party client for no gain.
-        Assert.Null(await RunAntiforgeryFilter("POST", AuthSchemes.ApiKey));
+        Assert.Null(await RunAntiforgeryFilter("POST", AuthSchemes.ApiKey, header: false));
     }
 
     [Fact]
@@ -361,7 +382,7 @@ public class AuthorizationTests
     {
         // The OAuth callback and first-run setup are anonymous; they hold no ambient credential to
         // ride on, so CSRF does not apply and the filter must not block them.
-        Assert.Null(await RunAntiforgeryFilter("POST", authenticationType: null));
+        Assert.Null(await RunAntiforgeryFilter("POST", authenticationType: null, header: false));
     }
 
     // ---- auth.* settings ----
@@ -421,6 +442,110 @@ public class AuthorizationTests
     }
 
     [Fact]
+    public async Task ZeroLockoutAttemptsNeverLocksAnAccountThatAlreadyHadLockoutOn()
+    {
+        using var db = new TestDb();
+        db.SetConfig((SettingKeys.AuthLockoutMaxAttempts, "0"));
+        var auth = new AuthRuntimeOptions();
+        await auth.LoadAsync(db.NewContext());
+
+        var identity = new IdentityOptions();
+        AuthServiceCollectionExtensions.ApplyLockout(identity, auth);
+
+        // Every account created while lockout was on keeps LockoutEnabled = true; switching the
+        // setting to zero must still mean no lockout for them, not "locked on the first failure".
+        var userId = db.SeedUser("veteran", configure: u => u.LockoutEnabled = true);
+        using var context = db.NewContext();
+        var users = new UserManager<MakiUser>(
+            new UserStore<MakiUser, IdentityRole<int>, Maki.Data.MakiDbContext, int>(context),
+            Options.Create(identity), new PasswordHasher<MakiUser>(), [], [],
+            new UpperInvariantLookupNormalizer(), new IdentityErrorDescriber(), null!,
+            NullLogger<UserManager<MakiUser>>.Instance);
+        var user = (await users.FindByIdAsync(userId.ToString()))!;
+
+        for (var i = 0; i < 10; i++)
+        {
+            await users.AccessFailedAsync(user);
+        }
+
+        Assert.False(await users.IsLockedOutAsync(user));
+    }
+
+    [Fact]
+    public async Task AnAccountCreatedWhileLockoutWasOffStillLocksOnceItIsBackOn()
+    {
+        using var db = new TestDb();
+        db.SetConfig((SettingKeys.AuthLockoutMaxAttempts, "0"));
+        var off = new AuthRuntimeOptions();
+        await off.LoadAsync(db.NewContext());
+        var identity = new IdentityOptions();
+        AuthServiceCollectionExtensions.ApplyLockout(identity, off);
+
+        // The threshold alone says "off"; the per-account flag must not, or it outlives the setting.
+        Assert.True(identity.Lockout.AllowedForNewUsers);
+    }
+
+    [Fact]
+    public async Task StartupReEnablesLockoutOnAccountsAnOlderBuildCreatedWithItOff()
+    {
+        using var db = new TestDb();
+        var userId = db.SeedUser("created-while-off", configure: u => u.LockoutEnabled = false);
+        db.SetConfig((SettingKeys.AuthLockoutMaxAttempts, "3"));
+
+        await new AuthRuntimeOptions().LoadAsync(db.NewContext());
+
+        using var check = db.NewContext();
+        Assert.True(check.Users.Single(u => u.Id == userId).LockoutEnabled);
+    }
+
+    [Fact]
+    public async Task TheSecurityCardReadsStoredValuesThroughTheStartupClamp()
+    {
+        using var db = new TestDb();
+        db.SetConfig(
+            (SettingKeys.AuthLockoutMaxAttempts, "99999999"),
+            (SettingKeys.AuthLockoutMinutes, "0"),
+            (SettingKeys.AuthSessionDays, "99999999"));
+        var controller = new Maki.Api.Controllers.SettingsController(
+            localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
+            settings: new Maki.Api.Services.SettingsService(db.ScopeFactory()), naming: null!, flareSolverr: null!,
+            prowlarr: null!, qbittorrent: null!, kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
+            mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
+            embeddingIndexer: null!, prebuiltIndex: null!, recoGraph: null!,
+            recoGraphCache: null!, coReadInstaller: null!, coReadCache: null!, readerCohortInstaller: null!,
+            readerCohortCache: null!, tasteVectorInstaller: null!, vectorIndexCache: null!,
+            modelSwitcher: null!, db: db.NewContext(), updateCheck: null!, currentUser: new TestCurrentUser(1),
+            userSettings: null!, kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!,
+            scopeFactory: null!, logger: NullLogger<Maki.Api.Controllers.SettingsController>.Instance);
+
+        var result = await controller.GetSecurity(default);
+
+        // Out of range on disk, so the card used to show values its own save would then refuse.
+        var body = Assert.IsType<Maki.Api.Controllers.SettingsController.SecuritySettings>(
+            Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(AuthRuntimeOptions.MaxLockoutMaxAttempts, body.LockoutMaxAttempts);
+        Assert.Equal(AuthRuntimeOptions.DefaultLockoutMinutes, body.LockoutMinutes);
+        Assert.Equal(AuthRuntimeOptions.MaxSessionDays, body.SessionDays);
+    }
+
+    [Fact]
+    public async Task OversizedSecuritySettingsAreClampedSoStartupSurvives()
+    {
+        using var db = new TestDb();
+        db.SetConfig(
+            (SettingKeys.AuthLockoutMaxAttempts, "99999999"),
+            (SettingKeys.AuthLockoutMinutes, "99999999"),
+            (SettingKeys.AuthSessionDays, "99999999"));
+
+        var options = new AuthRuntimeOptions();
+        await options.LoadAsync(db.NewContext());
+
+        Assert.Equal(AuthRuntimeOptions.MaxLockoutMaxAttempts, options.LockoutMaxAttempts);
+        Assert.Equal(TimeSpan.FromMinutes(AuthRuntimeOptions.MaxLockoutMinutes), options.LockoutDuration);
+        Assert.Equal(TimeSpan.FromDays(AuthRuntimeOptions.MaxSessionDays), options.SessionLifetime);
+    }
+
+    [Fact]
     public async Task NonsenseSecuritySettingsFallBackRatherThanThrow()
     {
         using var db = new TestDb();
@@ -434,5 +559,40 @@ public class AuthorizationTests
         // Startup reads these; throwing here would make the app unbootable over a typo in a setting.
         Assert.Equal(TimeSpan.FromMinutes(AuthRuntimeOptions.DefaultLockoutMinutes), options.LockoutDuration);
         Assert.Equal(TimeSpan.FromDays(AuthRuntimeOptions.DefaultSessionDays), options.SessionLifetime);
+    }
+
+    [Theory]
+    [InlineData("http://192.168.1.129:8990", true)]
+    [InlineData("http://maki.lan", true)]
+    [InlineData("https://maki.example.com", false)]
+    [InlineData("http://localhost:5173", false)]
+    [InlineData("http://127.0.0.1:8990", false)]
+    [InlineData("http://[::1]:8990", false)]
+    [InlineData("http://maki.localhost", false)]
+    [InlineData(null, false)]
+    [InlineData("null", false)]
+    public void OnlyAPlainHttpNonLoopbackOriginDropsTheSecureCookie(string? origin, bool insecure) =>
+        Assert.Equal(insecure, AuthRuntimeOptions.IsInsecureOrigin(origin));
+
+    [Fact]
+    public async Task LoginOverPlainHttpIsRefusedWhenHttpsIsRequired()
+    {
+        using var db = new TestDb();
+        db.SetConfig((SettingKeys.AuthRequireHttps, "true"));
+        var options = new AuthRuntimeOptions();
+        await options.LoadAsync(db.NewContext());
+
+        var controller = new AuthController(
+            new TestLocalizer(), db.NewContext(), null!, null!, null!, null!, null!,
+            null!, null!, null!, TimeProvider.System, NullLogger<AuthController>.Instance, null!)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
+        controller.Request.Headers.Origin = "http://192.168.1.129:8990";
+
+        var result = await controller.Login(new LoginRequest("admin", "pw"), options, CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("error.auth.httpsRequired", System.Text.Json.JsonSerializer.Serialize(bad.Value));
     }
 }

@@ -1,4 +1,5 @@
 using Maki.Api.Configuration;
+using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,8 @@ namespace Maki.Api.Jobs;
 
 /// <summary>Daily cleanup: orphaned page caches, old finished queue rows, WAL checkpoint, SQLite pool.</summary>
 [DisallowConcurrentExecution]
-public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<HousekeepingJob> logger) : IJob
+public class HousekeepingJob(
+    MakiDbContext db, AppPaths paths, UpgradeTrashService upgradeTrash, ILogger<HousekeepingJob> logger) : IJob
 {
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
@@ -36,6 +38,13 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
                     // Shutdown mid-sweep. Every section here is independent and idempotent,
                     // so the next run picks up whatever this one did not get to.
                     return;
+                }
+
+                // Upgrade probes scratch under here and clean up after themselves; one still running
+                // must not lose its folder mid-download.
+                if (Path.GetFileName(dir) == "probe" && Directory.GetLastWriteTimeUtc(dir) > DateTime.UtcNow.AddHours(-1))
+                {
+                    continue;
                 }
 
                 if (!activeIds.Contains(Path.GetFileName(dir)))
@@ -97,12 +106,12 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
             }
         }
 
-        // Source-comparison samples. A job wipes its own series folder before refilling it, so
-        // anything still here belongs to a comparison somebody looked at and closed.
-        if (Directory.Exists(paths.SourcePreviewDir))
+        // Source-comparison samples and Discover previews. Each job clears its own folder when it
+        // is superseded, so anything still here belongs to one somebody looked at and closed.
+        foreach (var previewRoot in new[] { paths.SourcePreviewDir, paths.SeriesPreviewDir }.Where(Directory.Exists))
         {
             var stale = DateTime.UtcNow.AddDays(-1);
-            foreach (var dir in Directory.GetDirectories(paths.SourcePreviewDir))
+            foreach (var dir in Directory.GetDirectories(previewRoot))
             {
                 if (ct.IsCancellationRequested)
                 {
@@ -120,9 +129,22 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
                 }
                 catch (Exception ex)
                 {
-                    logger.LogDebug(ex, "Could not clean source preview dir {Dir}", dir);
+                    logger.LogDebug(ex, "Could not clean preview dir {Dir}", dir);
                 }
             }
+        }
+
+        try
+        {
+            var purged = await upgradeTrash.PurgeAsync(ct);
+            if (purged > 0)
+            {
+                logger.LogInformation("Purged {Count} replaced chapter file(s) from upgrade trash", purged);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Upgrade trash purge failed");
         }
 
         // Completed/cancelled queue rows older than 30 days.
@@ -134,6 +156,8 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
 
         await PruneInboxAsync(ct);
 
+        // 0x10002: consider every table, not only the ones this pooled connection happened to query.
+        await db.Database.ExecuteSqlRawAsync("PRAGMA optimize=0x10002;", ct);
         await db.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);", ct);
 
         // Microsoft.Data.Sqlite pools native handles per connection string with no upper bound, and

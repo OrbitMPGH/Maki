@@ -17,7 +17,6 @@ import { BarChart, DonutChart } from '@mantine/charts'
 import {
   IconAlertCircle,
   IconArrowsShuffle,
-  IconCalendar,
   IconChartPie,
   IconClock,
   IconCompass,
@@ -94,10 +93,10 @@ function TasteSkeleton() {
       <SignalsCard />
       <SectionHeader icon={IconClock} title={t`How you read`} />
       <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
-        <StatTile label={t`You finish`} value="" icon={IconChartPie} loading />
-        <StatTile label={t`Typical chapter`} value="" icon={IconClock} accent="info" loading />
-        <StatTile label={t`You bail around`} value="" icon={IconArrowsShuffle} accent="warn" loading />
-        <StatTile label={t`Biggest day`} value="" icon={IconCalendar} accent="ok" loading />
+        <StatTile label={t`You finish`} value="" loading />
+        <StatTile label={t`Typical chapter`} value="" loading />
+        <StatTile label={t`You bail around`} value="" loading />
+        <StatTile label={t`Biggest day`} value="" loading />
       </SimpleGrid>
       <SectionHeader icon={IconCompass} title={t`What you read, grouped`} />
       {[0, 1, 2].map((i) => (
@@ -252,19 +251,14 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
         <StatTile
           label={t`You finish`}
           value={behaviour.finishRate === null ? '-' : percent(behaviour.finishRate)}
-          icon={IconChartPie}
         />
         <StatTile
           label={t`Typical chapter`}
           value={pace === null ? '-' : formatReadingTime(pace)}
-          icon={IconClock}
-          accent="info"
         />
         <StatTile
           label={t`You bail around`}
           value={stopPercent === null ? '-' : t`${stopPercent} in`}
-          icon={IconArrowsShuffle}
-          accent="warn"
         />
         <StatTile
           label={t`Biggest day`}
@@ -273,8 +267,6 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
               ? '-'
               : plural(biggestDayCount, { one: '# chapter', other: '# chapters' })
           }
-          icon={IconCalendar}
-          accent="ok"
         />
       </SimpleGrid>
 

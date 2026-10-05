@@ -109,7 +109,8 @@ public class ManhwaWebSource(IHttpClientFactory httpClientFactory) : ISource
 
         if (!root.TryGetProperty("chapters", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException(
+                $"ManhwaWeb manhwa/see/{sourceSeriesId} has a missing or non-array 'chapters'");
         }
 
         var chapters = new List<SourceChapter>();

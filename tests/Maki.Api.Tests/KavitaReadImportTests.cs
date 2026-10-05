@@ -37,17 +37,21 @@ public sealed class KavitaReadImportTests : IDisposable
     private static List<KavitaProgress.KavitaVolumeDto> Volume(params KavitaProgress.KavitaChapterDto[] chapters) =>
         [new(1, 1, chapters.Sum(c => c.Pages), chapters.Sum(c => c.PagesRead), chapters.ToList())];
 
+    /// <summary>Kavita reporting exactly these chapter numbers as fully read.</summary>
+    private static KavitaProgress.SeriesProgress Read(params decimal[] numbers) =>
+        KavitaProgress.Compute(Volume(numbers.Select(n => Chapter((double)n, 20, 20)).ToArray()));
+
     // ---- which Kavita chapters count as read ----
 
     [Fact]
     public void OnlyFullyReadChaptersCount()
     {
-        var numbers = ExternalReadSyncService.ReadChapterNumbers(Volume(
+        var progress = KavitaProgress.Compute(Volume(
             Chapter(1, 20, 20),
             Chapter(2, 20, 19),
             Chapter(3, 20, 0)));
 
-        Assert.Equal([1m], numbers);
+        Assert.Equal([(1m, 1m)], progress.Chapters);
     }
 
     [Fact]
@@ -55,19 +59,19 @@ public sealed class KavitaReadImportTests : IDisposable
     {
         // Kavita tags uncounted entries with huge sentinel numbers; matching one against a real
         // local chapter number would mark the wrong thing read.
-        var numbers = ExternalReadSyncService.ReadChapterNumbers(Volume(
+        var progress = KavitaProgress.Compute(Volume(
             Chapter(5, 10, 10),
             Chapter(6, 10, 10, special: true),
             Chapter(100_000, 10, 10)));
 
-        Assert.Equal([5m], numbers);
+        Assert.Equal([(5m, 5m)], progress.Chapters);
     }
 
     [Fact]
     public void ZeroPageChaptersAreNotRead()
     {
         // pagesRead >= pages is trivially true at 0/0 — that's an empty entry, not a read one.
-        Assert.Empty(ExternalReadSyncService.ReadChapterNumbers(Volume(Chapter(1, 0, 0))));
+        Assert.Empty(KavitaProgress.Compute(Volume(Chapter(1, 0, 0))).Chapters);
     }
 
     // ---- which local chapters get marked ----
@@ -81,7 +85,7 @@ public sealed class KavitaReadImportTests : IDisposable
             (3m, false), // known but not downloaded — nothing to read
             (4m, true)); // not in Kavita's read set
 
-        var marked = await Service().MarkAsync(TestUser, seriesId, [1m, 2m, 3m], CancellationToken.None);
+        var marked = await Service().MarkAsync(TestUser, seriesId, Read(1m, 2m, 3m), CancellationToken.None);
 
         Assert.Equal(2, marked);
         using var db = _db.NewContext();
@@ -98,8 +102,8 @@ public sealed class KavitaReadImportTests : IDisposable
     {
         var seriesId = Seed((1m, true), (2m, true));
 
-        Assert.Equal(2, await Service().MarkAsync(TestUser, seriesId, [1m, 2m], CancellationToken.None));
-        Assert.Equal(0, await Service().MarkAsync(TestUser, seriesId, [1m, 2m], CancellationToken.None));
+        Assert.Equal(2, await Service().MarkAsync(TestUser, seriesId, Read(1m, 2m), CancellationToken.None));
+        Assert.Equal(0, await Service().MarkAsync(TestUser, seriesId, Read(1m, 2m), CancellationToken.None));
 
         using var db = _db.NewContext();
         Assert.Equal(2, db.ChapterProgress.Count());
@@ -125,7 +129,7 @@ public sealed class KavitaReadImportTests : IDisposable
             db.SaveChanges();
         }
 
-        await Service().MarkAsync(TestUser, seriesId, [1m], CancellationToken.None);
+        await Service().MarkAsync(TestUser, seriesId, Read(1m), CancellationToken.None);
 
         using var after = _db.NewContext();
         var row = after.ChapterProgress.Single();
@@ -159,10 +163,58 @@ public sealed class KavitaReadImportTests : IDisposable
             db.SaveChanges();
         }
 
-        Assert.Equal(0, await Service().MarkAsync(TestUser, seriesId, [1m], CancellationToken.None));
+        Assert.Equal(0, await Service().MarkAsync(TestUser, seriesId, Read(1m), CancellationToken.None));
 
         using var after = _db.NewContext();
         Assert.False(after.ChapterProgress.Single().Completed);
+    }
+
+    [Fact]
+    public async Task A_fully_read_volume_marks_every_chapter_in_its_archive()
+    {
+        // The discussion #109 case: chapters 1-3 live in one "Vol. 01" archive, which Kavita sees as
+        // volume 1 with no chapter number. Chapter 4 is its own file and was not read.
+        var seriesId = SeedFiles(("Series/Series Vol. 01.cbz", [1m, 2m, 3m]), ("Series/Series Ch. 004.cbz", [4m]));
+        var read = KavitaProgress.Compute(
+        [
+            new KavitaProgress.KavitaVolumeDto(1, 1, 60, 60, [new(-100000, -100000, 60, 60, false)]),
+            new KavitaProgress.KavitaVolumeDto(2, 2, 20, 0, [new(4, 4, 20, 0, false)]),
+        ]);
+
+        Assert.Equal(3, await Service().MarkAsync(TestUser, seriesId, read, CancellationToken.None));
+
+        using var db = _db.NewContext();
+        var markedIds = db.ChapterProgress.Select(p => p.ChapterId).ToList();
+        var marked = db.Chapters.Where(c => markedIds.Contains(c.Id)).Select(c => c.Number).OrderBy(n => n).ToList();
+        Assert.Equal([1m, 2m, 3m], marked);
+    }
+
+    [Fact]
+    public void A_half_read_volume_archive_counts_the_chapters_already_finished()
+    {
+        // 25 of 60 pages into volume 1, whose chapters start at pages 0, 20 and 40: chapter 1 done.
+        var boundaries = new Dictionary<int, Maki.Core.Scrobbling.VolumeChapterProgress.ChapterFileBoundaries>
+        {
+            [1] = new(60, [(1m, 0), (2m, 20), (3m, 40)]),
+        };
+        var read = KavitaProgress.Compute(
+            [new KavitaProgress.KavitaVolumeDto(1, 1, 60, 25, [new(-100000, -100000, 60, 25, false)])],
+            boundaries);
+
+        Assert.True(read.CoversChapter(1m));
+        Assert.False(read.CoversChapter(2m));
+        Assert.Empty(read.Volumes);
+        // The tracker push reads the same result, so Maki and MAL agree on chapter 1.
+        Assert.Equal(1, read.MaxChapter);
+    }
+
+    [Fact]
+    public async Task A_fully_read_chapter_range_marks_every_chapter_in_it()
+    {
+        var seriesId = Seed((1m, true), (2m, true), (2.5m, true), (3m, true), (4m, true));
+        var read = KavitaProgress.Compute(Volume(new KavitaProgress.KavitaChapterDto(1, 3, 60, 60, false)));
+
+        Assert.Equal(4, await Service().MarkAsync(TestUser, seriesId, read, CancellationToken.None));
     }
 
     // ---- RunAsync: a series whose volume fetch fails ----
@@ -213,6 +265,7 @@ public sealed class KavitaReadImportTests : IDisposable
             settings,
             kavita,
             new ExternalReadSyncService(scopeFactory),
+            new VolumeBoundaryService(scopeFactory),
             new KavitaUserResolver(scopeFactory, settings),
             NullLogger<KavitaReadImportService>.Instance);
     }
@@ -275,6 +328,35 @@ public sealed class KavitaReadImportTests : IDisposable
             Language = "en",
             ChapterFileId = c.Downloaded ? file.Id : null,
         }));
+        db.SaveChanges();
+        return seriesId;
+    }
+
+    private int SeedFiles(params (string Path, decimal[] Chapters)[] files)
+    {
+        var seriesId = _db.SeedSeries("Series");
+        using var db = _db.NewContext();
+        foreach (var (path, numbers) in files)
+        {
+            var file = new ChapterFile
+            {
+                SeriesId = seriesId,
+                RelativePath = path,
+                SourceName = "Test",
+                DateAdded = DateTime.UtcNow,
+            };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+
+            db.Chapters.AddRange(numbers.Select(n => new Chapter
+            {
+                SeriesId = seriesId,
+                Number = n,
+                Language = "en",
+                ChapterFileId = file.Id,
+            }));
+        }
+
         db.SaveChanges();
         return seriesId;
     }

@@ -30,7 +30,7 @@ public class SourceMappingControllerTests : IDisposable
             new SourceRegistry(sources.Length > 0 ? sources : [new FakeSource { Name = "fake" }]),
             appSettings, availability ?? Sources.AllEnabled, _queue,
             // Every compare path exercised here is rejected before the preview service is reached.
-            null!, null!, null!, new TestCurrentUser(1));
+            null!, null!, null!, null!, null!, new TestCurrentUser(1));
 
     /// <summary>Everything the worker was handed, in order.</summary>
     private List<int> Queued()
@@ -70,6 +70,28 @@ public class SourceMappingControllerTests : IDisposable
 
         var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(result).Value);
         Assert.Equal(2, mapping.Priority);
+    }
+
+    [Fact]
+    public async Task A_mapping_stores_the_registry_casing_so_a_second_casing_is_a_duplicate()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var controller = BuildController(null, new FakeSource { Name = "MangaDex" });
+
+        var first = await controller.Create(new(seriesId, "mangadex", "sid", "https://md.test/s"), default);
+        var second = await controller.Create(new(seriesId, "MANGADEX", "sid", "https://md.test/s"), default);
+
+        var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(first).Value);
+        Assert.Equal("MangaDex", mapping.SourceName);
+        Assert.IsType<ConflictObjectResult>(second);
+    }
+
+    [Fact]
+    public async Task A_mapping_for_a_series_the_caller_cannot_see_is_not_found()
+    {
+        var result = await BuildController().Create(new(424242, "fake", "sid", "https://fake.test/s"), default);
+
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -178,6 +200,8 @@ public class SourceMappingControllerTests : IDisposable
             null!,
             null!,
             null!,
+            null!,
+            null!,
             new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
 
         var result = await controller.RemoveWithCleanup(
@@ -217,6 +241,8 @@ public class SourceMappingControllerTests : IDisposable
             _queue,
             null!,
             sync,
+            null!,
+            null!,
             null!,
             new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
 
@@ -272,6 +298,8 @@ public class SourceMappingControllerTests : IDisposable
             _queue,
             null!,
             sync,
+            null!,
+            null!,
             null!,
             new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
 

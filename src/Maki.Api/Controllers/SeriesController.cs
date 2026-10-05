@@ -22,6 +22,7 @@ using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Maki.Api.Controllers;
 
@@ -179,26 +180,12 @@ public class SeriesController(
     private async Task<IActionResult> QueueChaptersAsync(
         int seriesId, string title, IReadOnlyList<int> chapterIds, CancellationToken ct)
     {
-        var queuedItemIds = new List<int>();
-        foreach (var chapterId in chapterIds)
-        {
-            try
-            {
-                if (await downloadQueue.EnqueueChapterAsync(
-                        chapterId, ct, DownloadOrigin.Manual, currentUser.UserId) is { } item)
-                {
-                    queuedItemIds.Add(item.Id);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
-                return BadRequest(new { error = ex.Message, queued = queuedItemIds.Count });
-            }
-        }
-
+        var result = await downloadQueue.EnqueueChaptersAsync(chapterIds, DownloadOrigin.Manual, currentUser.UserId, ct);
+        var queuedItemIds = result.Queued.Select(item => item.Id).ToList();
         await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
-        return Ok(new { queued = queuedItemIds.Count });
+        return result.Error is not null
+            ? BadRequest(new { error = localizer.Get(result.Error), queued = queuedItemIds.Count })
+            : Ok(new { queued = queuedItemIds.Count });
     }
 
     [Authorize(Policy = Policies.EditMetadata)]
@@ -246,7 +233,7 @@ public class SeriesController(
         }
 
         var result = await cbzLinkService.RescanSeriesAsync(series, ct);
-        return Ok(result);
+        return result.RootUnavailable ? this.Fail(localizer, "error.series.rootUnavailable") : Ok(result);
     }
 
     /// <summary>
@@ -368,9 +355,10 @@ public class SeriesController(
             .GroupBy(m => m.SeriesId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        // Grouped in SQL to one row per (series, source) before crossing the wire, scoped to these series for the same reason as the tag read above.
+        // Grouped in SQL to one row per (series, source) before crossing the wire. The ChapterFile
+        // query filter already scopes this to visible series, so no explicit Series check here.
         var fileSourcesBySeries = (await db.ChapterFiles
-                .Where(f => f.SourceName != "" && db.Series.Any(s => s.Id == f.SeriesId))
+                .Where(f => f.SourceName != "")
                 .GroupBy(f => new { f.SeriesId, f.SourceName })
                 .Select(g => g.Key)
                 .ToListAsync(ct))
@@ -477,7 +465,8 @@ public class SeriesController(
     /// visible and volume compilations show the chapters they were mapped to.
     /// </summary>
     [HttpGet("{id:int}/files")]
-    public async Task<IActionResult> Files(int id, CancellationToken ct)
+    public async Task<IActionResult> Files(int id, [FromServices] UpgradeEvaluationService upgrades,
+        [FromServices] IMemoryCache cache, CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
@@ -493,8 +482,12 @@ public class SeriesController(
         var records = await db.ChapterFiles.Where(f => f.SeriesId == id).ToListAsync(ct);
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == id && c.ChapterFileId != null)
-            .Select(c => new { c.ChapterFileId, c.Number })
+            .Select(c => new { c.ChapterFileId, c.Number, c.Language })
             .ToListAsync(ct);
+        var evaluator = await upgrades.ForSeriesAsync(id, ct);
+        var languageByFile = chapters
+            .GroupBy(c => c.ChapterFileId!.Value)
+            .ToDictionary(g => g.Key, g => g.OrderBy(c => c.Number is null).ThenBy(c => c.Number).First().Language);
 
         // chapter numbers linked to each ChapterFile, ascending
         var chaptersByFile = chapters
@@ -510,7 +503,8 @@ public class SeriesController(
         // finds its file. Case-sensitive filesystems allow two files whose paths differ only in
         // case; they collapse to one entry here, so keep the first and don't throw.
         var diskByRelPath = new Dictionary<string, (string RelPath, string AbsPath)>(StringComparer.OrdinalIgnoreCase);
-        foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
+        var folders = await SeriesFolders.ForAsync(db, series, ct);
+        foreach (var folder in folders)
         {
             var seriesDir = Path.Combine(series.RootFolder.Path, folder);
             if (!Directory.Exists(seriesDir))
@@ -525,6 +519,9 @@ public class SeriesController(
                 diskByRelPath.TryAdd(LibraryPaths.ComparisonKey(relPath), (relPath, f));
             }
         }
+
+        SeriesFilesSummary.Remember(cache, id, series.RootFolder.Path, folders,
+            records.Select(r => new SeriesFilesSummary.FileRecord(r.Id, r.RelativePath)), diskByRelPath.Keys);
 
         var files = new List<SeriesFileDto>();
         var seenRelPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -554,7 +551,8 @@ public class SeriesController(
                 ParsedLabel(parsed),
                 parsed.IsVolume,
                 mapped,
-                parsed.Number ?? (decimal?)parsed.Volume));
+                parsed.Number ?? (decimal?)parsed.Volume,
+                evaluator?.Quality(record, languageByFile.GetValueOrDefault(record.Id)) ?? ChapterFileQualityDto.From(record)));
         }
 
         // 2. Files on disk with no record yet (never imported — a rescan would adopt them).
@@ -576,13 +574,30 @@ public class SeriesController(
                 ParsedLabel(parsed),
                 parsed.IsVolume,
                 [],
-                parsed.Number ?? (decimal?)parsed.Volume));
+                parsed.Number ?? (decimal?)parsed.Volume,
+                null));
         }
 
         return Ok(files
             .OrderBy(f => f.SortKey is null)
             .ThenBy(f => f.SortKey)
             .ThenBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// The Files tab count and the unlinked-files banner, so opening a series does not need the full
+    /// listing above. See <see cref="SeriesFilesSummary"/> for how its folder walk is cached.
+    /// </summary>
+    [HttpGet("{id:int}/files/summary")]
+    public async Task<IActionResult> FilesSummary(int id, [FromServices] IMemoryCache cache, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var summary = await SeriesFilesSummary.ForAsync(db, cache, id, ct);
+        return summary is null ? this.Fail(localizer, "error.series.noRootFolder") : Ok(summary);
     }
 
     /// <summary>
@@ -603,12 +618,19 @@ public class SeriesController(
         if (series.RootFolder is null)
             return this.Fail(localizer, "error.series.noRootFolder");
 
+        // A rescan or import holding the lock would otherwise link to, or save over, a row removed here.
+        using var seriesLock = await SeriesLocks.SeriesAsync(id, ct);
         var files = await db.ChapterFiles
             .Where(f => f.SeriesId == id && relativePaths.Contains(f.RelativePath))
             .ToListAsync(ct);
 
+        // The Files tab also lists comics on disk that have no record (never adopted), and those
+        // are what this dialog is most often used to clean up.
+        var (strayDeleted, strayFailed) = await DeleteStrayFilesAsync(
+            series, relativePaths.Except(files.Select(f => f.RelativePath), StringComparer.Ordinal).ToList(), ct);
+
         if (files.Count == 0)
-            return Ok(new { deleted = 0 });
+            return Ok(new { deleted = strayDeleted, failed = strayFailed });
 
         var fileIds = files.Select(f => f.Id).ToList();
         var linkedByFileId = (await db.Chapters
@@ -616,8 +638,8 @@ public class SeriesController(
                 .ToListAsync(ct))
             .ToLookup(c => c.ChapterFileId!.Value);
 
-        var deleted = 0;
-        var failed = 0;
+        var deleted = strayDeleted;
+        var failed = strayFailed;
         foreach (var file in files)
         {
             // Resolve, never a bare Combine: RelativePath is stored data, and a row that escapes the
@@ -658,6 +680,63 @@ public class SeriesController(
 
         await db.SaveChangesAsync(ct);
         return Ok(new { deleted, failed });
+    }
+
+    /// <summary>
+    /// Deletes requested paths that have no record: only a comic, only inside one of this series'
+    /// folders, never through a link, and never a path another series has a record for.
+    /// </summary>
+    private async Task<(int Deleted, int Failed)> DeleteStrayFilesAsync(
+        Series series, List<string> relativePaths, CancellationToken ct)
+    {
+        if (relativePaths.Count == 0)
+        {
+            return (0, 0);
+        }
+
+        var rootPath = series.RootFolder!.Path;
+        var folders = await SeriesFolders.ForAsync(db, series, ct);
+        var spellings = relativePaths
+            .SelectMany(p => new[] { p, p.Replace('\\', '/'), p.Replace('/', '\\') })
+            .Distinct()
+            .ToList();
+        var recorded = (await db.ChapterFiles
+                .Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == series.RootFolderId) &&
+                            spellings.Contains(f.RelativePath))
+                .Select(f => f.RelativePath)
+                .ToListAsync(ct))
+            .Select(LibraryPaths.ComparisonKey)
+            .ToHashSet(LibraryPaths.FolderComparer);
+
+        var deleted = 0;
+        var failed = 0;
+        foreach (var path in relativePaths)
+        {
+            var key = LibraryPaths.ComparisonKey(path);
+            var absolute = LibraryPaths.ResolveForDelete(rootPath, key);
+            if (recorded.Contains(key) || absolute is null || !ComicFile.IsComic(absolute) ||
+                LibraryPaths.TopFolder(key) is not { } top || !folders.Contains(top, LibraryPaths.FolderComparer) ||
+                !System.IO.File.Exists(absolute))
+            {
+                logger.LogWarning("Refusing to delete {File}: not an unrecorded comic in the folders of series {SeriesId}",
+                    path, series.Id);
+                failed++;
+                continue;
+            }
+
+            try
+            {
+                System.IO.File.Delete(absolute);
+                deleted++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogWarning(ex, "Could not delete {File}, skipping", path);
+                failed++;
+            }
+        }
+
+        return (deleted, failed);
     }
 
     private static string? ParsedLabel(ParsedReleaseFile parsed)
@@ -887,12 +966,18 @@ public class SeriesController(
             id, estimateTotal, readRows, estimateMode, ct);
 
         var userState = await UserStateForAsync(id, ct);
+        var pendingProposalId = await db.TorrentProposals
+            .Where(p => p.SeriesId == id && p.Status == TorrentProposalStatus.Pending)
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .Select(p => (int?)p.Id)
+            .FirstOrDefaultAsync(ct);
         var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
             rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
             notificationMode: userState.NotificationMode,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
+            PendingProposalId = pendingProposalId,
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(
@@ -917,6 +1002,8 @@ public class SeriesController(
         // write in SeriesCreationService, so a retried request is a second series.
         if (request.ClientMutationId is not { } clientMutationId || clientMutationId == Guid.Empty)
             return this.Fail(localizer, "error.series.mutationIdRequired");
+        if (request.UpgradeProfileId is { } profileId && !await db.UpgradeProfiles.AnyAsync(p => p.Id == profileId, ct))
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
         // deferSourceMatching: the button is the whole point here. Matching every source and pulling
         // the first chapter list is tens of seconds of network; the caller gets the series row and
         // the Sources card shows a spinner until the background worker is done.
@@ -924,7 +1011,7 @@ public class SeriesController(
             request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
             deferSourceMatching: true, incognito: request.Incognito,
             attributedUserId: currentUser.UserId, addedFrom: request.AddedFrom,
-            clientMutationId: clientMutationId);
+            clientMutationId: clientMutationId, upgradeProfileId: request.UpgradeProfileId);
 
         if (result.Series is null)
         {
@@ -968,57 +1055,19 @@ public class SeriesController(
             return NotFound();
         }
 
-        if (series.RootFolder != null)
+        using var seriesLock = await SeriesLocks.SeriesAsync(id, ct);
+
+        // A worker holding one of its downloads would recreate the folder and drop a file into it
+        // after the row is gone.
+        if (await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.SeriesId == id, ct))
         {
-            var folder = LibraryPaths.ResolveNoLinks(series.RootFolder.Path, series.FolderName);
-            if (folder is null && LibraryPaths.Resolve(series.RootFolder.Path, series.FolderName) is { } linked
-                && Directory.Exists(linked))
-            {
-                logger.LogWarning("Leaving {Folder} on disk: it is or sits under a symbolic link or junction", linked);
-            }
-
-            if (folder is not null && Directory.Exists(folder))
-            {
-                if (deleteFiles)
-                {
-                    Directory.Delete(folder, recursive: true);
-                }
-                else if (!Directory.EnumerateFileSystemEntries(folder).Any())
-                {
-                    Directory.Delete(folder, recursive: false);
-                }
-            }
-
-            // Folders this series only has some files in (a keep-new-standard import's original
-            // folder). Only the files it tracks go, never the whole folder.
-            var extraFolders = (await SeriesFolders.ForAsync(db, series, ct)).Skip(1).ToList();
-            if (extraFolders.Count > 0)
-            {
-                if (deleteFiles)
-                {
-                    var paths = await db.ChapterFiles.Where(f => f.SeriesId == id)
-                        .Select(f => f.RelativePath).ToListAsync(ct);
-                    foreach (var path in paths)
-                    {
-                        if (LibraryPaths.TopFolder(path) is { } top && extraFolders.Contains(top, LibraryPaths.FolderComparer)
-                            && LibraryPaths.ResolveForDelete(series.RootFolder.Path, LibraryPaths.ComparisonKey(path)) is { } absolute
-                            && System.IO.File.Exists(absolute))
-                        {
-                            System.IO.File.Delete(absolute);
-                        }
-                    }
-                }
-
-                foreach (var extra in extraFolders)
-                {
-                    var extraPath = LibraryPaths.ResolveNoLinks(series.RootFolder.Path, extra);
-                    if (extraPath is not null && Directory.Exists(extraPath) && !Directory.EnumerateFileSystemEntries(extraPath).Any())
-                    {
-                        Directory.Delete(extraPath, recursive: false);
-                    }
-                }
-            }
+            return this.Conflict(localizer, "error.series.activeDownloadDelete");
         }
+
+        // Worked out while the rows that say what to delete still exist, and carried out after the
+        // row is gone: a locked file must not leave half a folder deleted behind a series that is
+        // still listed.
+        var diskPlan = series.RootFolder is null ? null : await PlanSeriesDiskDeleteAsync(series, deleteFiles, ct);
 
         // Snapshot before the hard delete: the event row must outlive the series (FK is severed
         // to NULL), so it carries the title, the genre/tag lists the aggregation needs later, and
@@ -1062,6 +1111,11 @@ public class SeriesController(
         }
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
+        if (diskPlan is not null)
+        {
+            DeleteSeriesFromDisk(diskPlan, id);
+        }
+
         // Still on somebody's tracker list, so an import list would add it straight back otherwise.
         if (series.MangaBakaId is int removedMangaBakaId)
         {
@@ -1084,6 +1138,131 @@ public class SeriesController(
             SeriesTitle: title,
             SeriesTagIds: tagIds));
         return NoContent();
+    }
+
+    /// <param name="Folder">The series' own folder, when it resolves without passing a link.</param>
+    /// <param name="RemoveFolderWhole">Delete <paramref name="Folder"/> recursively.</param>
+    /// <param name="Files">Single files to delete, for folders the series does not own outright.</param>
+    /// <param name="PruneIfEmpty">Folders removed only if nothing is left in them.</param>
+    private sealed record SeriesDiskPlan(
+        string? Folder, bool RemoveFolderWhole, List<string> Files, List<string> PruneIfEmpty, string? Trash);
+
+    private async Task<SeriesDiskPlan> PlanSeriesDiskDeleteAsync(Series series, bool deleteFiles, CancellationToken ct)
+    {
+        var rootPath = series.RootFolder!.Path;
+        var folder = LibraryPaths.ResolveNoLinks(rootPath, series.FolderName);
+        if (folder is null && LibraryPaths.Resolve(rootPath, series.FolderName) is { } linked
+            && Directory.Exists(linked))
+        {
+            logger.LogWarning("Leaving {Folder} on disk: it is or sits under a symbolic link or junction", linked);
+        }
+
+        // Older data can give two series one folder. A recursive delete of it would take the other
+        // series' files too, so then only the files this series tracks go. Case is ignored on every
+        // host, since a case-insensitive share under Docker holds "One Piece" and "one piece" as one.
+        var shared = (await SeriesCreationService.SeriesFoldersInRootAsync(db, series.RootFolderId, series.Id, ct))
+            .Contains(series.FolderName);
+        if (!shared)
+        {
+            var pattern = series.FolderName.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_") + "%";
+            shared = (await db.ChapterFiles
+                    .Where(f => f.SeriesId != series.Id &&
+                                db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == series.RootFolderId) &&
+                                EF.Functions.Like(f.RelativePath, pattern, @"\"))
+                    .Select(f => f.RelativePath)
+                    .ToListAsync(ct))
+                .Any(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), series.FolderName));
+        }
+
+        if (shared)
+        {
+            logger.LogWarning("Folder {Folder} is shared with another series; deleting only the files series {SeriesId} tracks",
+                series.FolderName, series.Id);
+        }
+
+        // Folders this series only has some files in (a keep-new-standard import's original
+        // folder). Only the files it tracks go, never the whole folder.
+        var extraFolders = (await SeriesFolders.ForAsync(db, series, ct)).Skip(1).ToList();
+        var partialFolders = shared ? extraFolders.Append(series.FolderName).ToList() : extraFolders;
+        var files = new List<string>();
+        if (deleteFiles)
+        {
+            var paths = await db.ChapterFiles.Where(f => f.SeriesId == series.Id)
+                .Select(f => f.RelativePath).ToListAsync(ct);
+            files.AddRange(paths
+                .Where(p => LibraryPaths.TopFolder(p) is { } top && partialFolders.Contains(top, LibraryPaths.FolderComparer))
+                .Select(p => LibraryPaths.ResolveForDelete(rootPath, LibraryPaths.ComparisonKey(p)))
+                .OfType<string>());
+        }
+
+        var removeWhole = deleteFiles && !shared && folder is not null;
+        var prune = extraFolders
+            .Select(extra => LibraryPaths.ResolveNoLinks(rootPath, extra))
+            .OfType<string>()
+            .ToList();
+        if (!removeWhole && folder is not null)
+        {
+            prune.Add(folder);
+        }
+
+        // Replaced copies from upgrades, and a volume import's superseded originals. Their history
+        // rows go with the series, so nothing could restore them afterwards; but they are still the
+        // user's files, so "keep files" leaves them for the trash purge to age out.
+        var trash = UpgradeTrash.SeriesFolder(rootPath, series.Id);
+        if (!deleteFiles)
+        {
+            prune.Add(trash);
+        }
+
+        return new SeriesDiskPlan(folder, removeWhole, files, prune, deleteFiles ? trash : null);
+    }
+
+    /// <summary>
+    /// Best effort: the row is already gone, so a file that is locked or a folder that cannot be
+    /// read is logged and left for Health's unlinked scan rather than failing the request.
+    /// </summary>
+    private void DeleteSeriesFromDisk(SeriesDiskPlan plan, int seriesId)
+    {
+        void Attempt(string path, Action delete)
+        {
+            try
+            {
+                delete();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogWarning(ex, "Could not delete {Path} for removed series {SeriesId}", path, seriesId);
+            }
+        }
+
+        if (plan is { RemoveFolderWhole: true, Folder: { } folder } && Directory.Exists(folder))
+        {
+            Attempt(folder, () => Directory.Delete(folder, recursive: true));
+        }
+
+        foreach (var file in plan.Files)
+        {
+            if (System.IO.File.Exists(file))
+            {
+                Attempt(file, () => System.IO.File.Delete(file));
+            }
+        }
+
+        foreach (var dir in plan.PruneIfEmpty)
+        {
+            Attempt(dir, () =>
+            {
+                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
+                {
+                    Directory.Delete(dir, recursive: false);
+                }
+            });
+        }
+
+        if (plan.Trash is { } trash && Directory.Exists(trash))
+        {
+            Attempt(trash, () => Directory.Delete(trash, recursive: true));
+        }
     }
 
     /// <param name="MoveFiles">
@@ -1120,6 +1299,8 @@ public class SeriesController(
         {
             return this.Fail(localizer, "error.series.alreadyInRootFolder");
         }
+
+        using var seriesLock = await SeriesLocks.SeriesAsync(id, ct);
 
         var destination = await db.RootFolders.FindAsync([request.RootFolderId], ct);
         if (destination is null)
@@ -1534,6 +1715,54 @@ public class SeriesController(
         series.MonitorNewItems = mode;
         await db.SaveChangesAsync(ct);
         return Ok(new { mode = mode.ToString() });
+    }
+
+    /// <param name="UpgradeProfileId">Null clears the pin so the series follows the instance default.</param>
+    public record UpgradeProfileRequest(int? UpgradeProfileId);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{id:int}/upgradeprofile")]
+    public async Task<IActionResult> SetUpgradeProfile(int id, [FromBody] UpgradeProfileRequest request, CancellationToken ct)
+    {
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (request.UpgradeProfileId is { } profileId && !await db.UpgradeProfiles.AnyAsync(p => p.Id == profileId, ct))
+        {
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
+        }
+
+        series.UpgradeProfileId = request.UpgradeProfileId;
+        await db.SaveChangesAsync(ct);
+        return Ok(new { upgradeProfileId = series.UpgradeProfileId });
+    }
+
+    /// <param name="UpgradeProfileId">Null clears every pin so the series follow the instance default.</param>
+    public record BulkUpgradeProfileRequest(List<int>? SeriesIds, int? UpgradeProfileId);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("upgradeprofile/bulk")]
+    public async Task<IActionResult> SetUpgradeProfileBulk([FromBody] BulkUpgradeProfileRequest request, CancellationToken ct)
+    {
+        if (request.UpgradeProfileId is { } profileId && !await db.UpgradeProfiles.AnyAsync(p => p.Id == profileId, ct))
+        {
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
+        }
+
+        // Resolved through db.Series, like the notification bulk: ids outside the caller's root
+        // folders are dropped by the query filter instead of written.
+        var wanted = (request.SeriesIds ?? []).Distinct().ToList();
+        var series = await db.Series.Where(s => wanted.Contains(s.Id)).ToListAsync(ct);
+        foreach (var s in series)
+        {
+            s.UpgradeProfileId = request.UpgradeProfileId;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new { updated = series.Count });
     }
 
     public record IncognitoRequest(string Mode);

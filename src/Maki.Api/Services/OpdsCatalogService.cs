@@ -272,6 +272,7 @@ public class OpdsCatalogService(
     {
         var recent = await db.ChapterProgress
             .AsNoTracking()
+            .OwnedByScopeUser(db)
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.UpdatedAt })

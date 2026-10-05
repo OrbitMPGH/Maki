@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Maki.Core.Http;
 using Maki.Core.Sources;
 using Microsoft.Extensions.Logging;
@@ -12,10 +12,16 @@ namespace Maki.Core.Download;
 public class PageDownloader(
     IHttpClientFactory httpClientFactory,
     IDownloadCooldown cooldown,
+    TimeProvider time,
     ILogger<PageDownloader> logger)
 {
     public const string HttpClientName = "pages";
     private const int MaxParallelPerChapter = 4;
+    private const int CopyBufferSize = 81920;
+
+    // HttpClient.Timeout stops applying once the headers are in, so a body that stops arriving would
+    // otherwise hold the page, and the worker, until the per-item deadline.
+    private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
     /// <returns>Ordered list of downloaded page file paths.</returns>
     public async Task<List<string>> DownloadAsync(
@@ -95,7 +101,7 @@ public class PageDownloader(
 
             await using (var file = File.Create(temp))
             {
-                await response.Content.CopyToAsync(file, ct);
+                await CopyWithStallTimeoutAsync(response.Content, file, page.Url, StallTimeout, time, ct);
             }
         }
 
@@ -114,6 +120,42 @@ public class PageDownloader(
 
         File.Move(temp, target, overwrite: true);
         logger.LogDebug("Downloaded page {Target}", Path.GetFileName(target));
+    }
+
+    /// <summary>
+    /// Copies the body, failing when no bytes arrive for <paramref name="stallTimeout"/>. The stall
+    /// clock runs on <paramref name="time"/> rather than <see cref="CancellationTokenSource.CancelAfter(TimeSpan)"/>
+    /// so tests can drive it without depending on wall-clock scheduling.
+    /// </summary>
+    internal static async Task CopyWithStallTimeoutAsync(
+        HttpContent content, Stream destination, string url, TimeSpan stallTimeout, TimeProvider time, CancellationToken ct)
+    {
+        await using var body = await content.ReadAsStreamAsync(ct);
+        using var stall = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        await using var stallTimer = time.CreateTimer(
+            static s => ((CancellationTokenSource)s!).Cancel(), stall, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        var buffer = new byte[CopyBufferSize];
+        try
+        {
+            while (true)
+            {
+                stallTimer.Change(stallTimeout, Timeout.InfiniteTimeSpan);
+                var read = await body.ReadAsync(buffer, stall.Token);
+                // Only the read side can stall: a slow disk under the write is not the source's fault.
+                stallTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+                if (read == 0)
+                {
+                    return;
+                }
+
+                await destination.WriteAsync(buffer.AsMemory(0, read), ct);
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"No data from {new Uri(url).Host} for {stallTimeout.TotalSeconds:0}s while downloading a page");
+        }
     }
 
     /// <summary>

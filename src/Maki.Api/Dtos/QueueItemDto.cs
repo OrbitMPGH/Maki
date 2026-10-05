@@ -48,9 +48,13 @@ public record QueueItemDto(
     IReadOnlyDictionary<string, JsonElement>? ErrorParams,
     string? ErrorMessage,
     DateTime QueuedAt,
-    DateTime? CompletedAt)
+    DateTime? CompletedAt,
+    string Origin,
+    UpgradeQueueInfoDto? Upgrade)
 {
-    public static QueueItemDto FromEntity(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName)
+    /// <param name="upgradeHistory">The applied upgrade's history state, when the caller looked it up.</param>
+    public static QueueItemDto FromEntity(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName,
+        UpgradeHistoryState? upgradeHistory = null)
     {
         // Invariant, as everywhere this app formats a chapter number: it is an identifier being put
         // on the wire, not a number being shown to anyone. A culture that writes "12,5" here would
@@ -78,7 +82,9 @@ public record QueueItemDto(
             ParseParams(item.ErrorParamsJson),
             item.ErrorMessage,
             item.QueuedAt,
-            item.CompletedAt);
+            item.CompletedAt,
+            item.Origin.ToString().ToLowerInvariant(),
+            UpgradeQueueInfoDto.From(item.UpgradeInfoJson, upgradeHistory));
     }
 
     /// <summary>
@@ -105,6 +111,9 @@ public record QueueItemDto(
 
 public record QueueHistoryDto(IReadOnlyList<QueueItemDto> Items, int Total, int Page, int PageSize);
 
+/// <param name="Active">Items still working: everything not settled, failed or parked for an import decision.</param>
+public record QueueSummaryDto(int Active, int AwaitingImport, int Failed);
+
 /// <summary>What to do with a download parked as <see cref="QueueStatus.AwaitingImport"/>.</summary>
 public enum ImportDecision
 {
@@ -118,7 +127,8 @@ public enum ImportDecision
     Reject
 }
 
-public record ImportDecisionDto(ImportDecision Mode);
+/// <param name="SkipFiles">Downloaded file names to leave out, for Replace and SkipExisting.</param>
+public record ImportDecisionDto(ImportDecision Mode, IReadOnlyList<string>? SkipFiles = null);
 
 public record ImportDecisionResultDto(int Imported, int Linked, int Skipped, int Deleted);
 

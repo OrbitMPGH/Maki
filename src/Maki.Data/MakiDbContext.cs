@@ -85,6 +85,12 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
     public DbSet<ImportListSkip> ImportListSkips => Set<ImportListSkip>();
+    public DbSet<UpgradeProfile> UpgradeProfiles => Set<UpgradeProfile>();
+    public DbSet<QualityFormat> QualityFormats => Set<QualityFormat>();
+    public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
+    public DbSet<SourceQualitySample> SourceQualitySamples => Set<SourceQualitySample>();
+    public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
+    public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
 
     public override int SaveChanges()
     {
@@ -137,6 +143,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
     }
 
+    // Here rather than at the AddDbContext call so the design-time factory and every test that
+    // builds its own options get the same connection pragmas as the app.
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+        optionsBuilder.AddInterceptors(SqlitePragmaInterceptor.Instance);
+
     private sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
         v => v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : v,
         v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
@@ -157,6 +168,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // automatic scanning is on, so without an index it is a full HealthFiles scan per candidate
         // ChapterFile, forever.
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.ChapterFileId);
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.SeriesId);
         modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
         modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
         modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);
@@ -248,6 +260,21 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });
 
+        modelBuilder.Entity<UpgradeProfile>(e =>
+        {
+            e.Property(p => p.Name).UseCollation("NOCASE");
+            e.HasIndex(p => p.Name).IsUnique();
+            e.Property(p => p.Tiers).HasConversion(JsonListConverter<ProfileTier>.Instance, JsonListConverter<ProfileTier>.Comparer);
+            e.Property(p => p.FormatScores).HasConversion(JsonListConverter<FormatScore>.Instance, JsonListConverter<FormatScore>.Comparer);
+        });
+
+        modelBuilder.Entity<QualityFormat>(e =>
+        {
+            e.Property(f => f.Name).UseCollation("NOCASE");
+            e.HasIndex(f => f.Name).IsUnique();
+            e.Property(f => f.Conditions).HasConversion(JsonListConverter<FormatCondition>.Instance, JsonListConverter<FormatCondition>.Comparer);
+        });
+
         modelBuilder.Entity<ReadingProfile>(e =>
         {
             // NOCASE for the same reason Tag.Label is: the name is free text and the picker shows
@@ -311,6 +338,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasMany(s => s.Chapters).WithOne(c => c.Series!).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(s => s.SourceMappings).WithOne(m => m.Series!).HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.RootFolder).WithMany().HasForeignKey(s => s.RootFolderId).OnDelete(DeleteBehavior.Restrict);
+            // SetNull is only the safety net: the API refuses to delete a profile any series still uses.
+            e.HasOne(s => s.UpgradeProfile).WithMany().HasForeignKey(s => s.UpgradeProfileId).OnDelete(DeleteBehavior.SetNull);
             e.HasMany(s => s.UserTags).WithMany(t => t.Series).UsingEntity<SeriesTag>(
                 r => r.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId),
                 l => l.HasOne<Series>().WithMany().HasForeignKey(j => j.SeriesId),
@@ -400,6 +429,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // Chapter numbers have at most 3 decimal places, well within double precision.
             e.Property(c => c.Number).HasConversion<double?>();
             e.HasIndex(c => new { c.SeriesId, c.Number, c.Volume, c.Language });
+            // Covers the library list's per-series tallies, so they never touch the table rows.
+            e.HasIndex(c => new { c.SeriesId, c.ChapterFileId, c.Wanted });
             e.HasOne(c => c.ChapterFile).WithMany().HasForeignKey(c => c.ChapterFileId).OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -407,11 +438,16 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         {
             e.HasQueryFilter(f => _scope.Unrestricted || Series.Any(s => s.Id == f.SeriesId));
 
-            e.HasIndex(f => f.SeriesId);
+            // Also serves every plain SeriesId lookup, and the library list's GROUP BY SeriesId, SourceName.
+            e.HasIndex(f => new { f.SeriesId, f.SourceName });
 
             // Home's "recently added" rail is an ORDER BY DateAdded DESC LIMIT n; without this it
             // is a full scan plus a sort of every file in the library on every landing-page load.
             e.HasIndex(f => f.DateAdded);
+
+            // Cheap lookup for the measurement backfill: only the unmeasured rows are ever queried
+            // through this index, so indexing the rest of the table would be pure overhead.
+            e.HasIndex(f => f.MeasuredAtUtc).HasFilter("MeasuredAtUtc IS NULL");
 
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -448,6 +484,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // Covers ClaimNextAsync's filter and sort (Protocol, Status, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
             e.HasIndex(q => new { q.Protocol, q.Status, q.SortOrder, q.QueuedAt });
 
+            // The active queue page, ORDER BY SortOrder, QueuedAt. SQLite only uses a partial index
+            // when the query repeats its filter term, and EF renders that page's two != checks as
+            // exactly this NOT IN, in this order.
+            e.HasIndex(q => new { q.SortOrder, q.QueuedAt })
+                .HasFilter($"\"Status\" NOT IN ({(int)QueueStatus.Completed}, {(int)QueueStatus.Cancelled})");
+            // MAX(SortOrder) on every enqueue spans settled rows too, which the partial index omits.
+            e.HasIndex(q => q.SortOrder);
+            e.HasIndex(q => q.HealthOperationId);
+
             // One active row per chapter. SQLite allows any number of NULLs in a unique index, so
             // settled rows never collide.
             e.Property(q => q.ActiveChapterId).HasComputedColumnSql(
@@ -458,6 +503,44 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne(q => q.Series).WithMany().HasForeignKey(q => q.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.Chapter).WithMany().HasForeignKey(q => q.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.SourceMapping).WithMany().HasForeignKey(q => q.SourceMappingId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<SourceQualitySample>(e =>
+        {
+            e.HasQueryFilter(s => _scope.Unrestricted || Series.Any(x => x.Id == s.SeriesId));
+            e.HasOne(s => s.SourceMapping).WithMany().HasForeignKey(s => s.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(s => new { s.SourceMappingId, s.ChapterId }).IsUnique();
+            e.HasIndex(s => s.SeriesId);
+        });
+
+        modelBuilder.Entity<UpgradeAttempt>(e =>
+        {
+            e.HasQueryFilter(a => _scope.Unrestricted || Series.Any(s => s.Id == a.SeriesId));
+            e.HasIndex(a => new { a.ChapterId, a.SourceMappingId, a.SourceChapterId, a.ProfileId, a.ProfileVersion }).IsUnique();
+            e.HasIndex(a => a.SeriesId);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(a => a.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(a => a.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<SourceMapping>().WithMany().HasForeignKey(a => a.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UpgradeHistory>(e =>
+        {
+            e.HasQueryFilter(h => _scope.Unrestricted || Series.Any(s => s.Id == h.SeriesId));
+            e.HasIndex(h => new { h.SeriesId, h.CreatedAtUtc });
+            e.HasIndex(h => h.ChapterFileId);
+            e.HasIndex(h => h.GroupId);
+            e.HasOne<Series>().WithMany().HasForeignKey(h => h.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(h => h.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            // No FK to ChapterFile: a torrent replacement removes the superseded file's row and its
+            // history has to outlive it so the group can be reverted.
+        });
+
+        modelBuilder.Entity<TorrentProposal>(e =>
+        {
+            e.HasQueryFilter(p => _scope.Unrestricted || Series.Any(s => s.Id == p.SeriesId));
+            e.HasIndex(p => new { p.SeriesId, p.Status });
+            e.HasIndex(p => new { p.SeriesId, p.ReleaseGuid }).IsUnique();
+            e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AppConfigEntry>(e =>

@@ -1,5 +1,6 @@
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
+using Maki.Core.Parsing;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,25 +25,13 @@ namespace Maki.Api.Services;
 /// </summary>
 public class ExternalReadSyncService(IServiceScopeFactory scopeFactory)
 {
-    /// <summary>Kavita marks specials/uncounted items with huge sentinel numbers.</summary>
-    private const double Sentinel = 10000;
-
     /// <summary>
-    /// Chapter numbers Kavita reports as <em>fully</em> read. A partially-read chapter is not a
-    /// read one, and Kavita tags specials/uncounted entries with huge sentinel numbers that must
-    /// never be matched against a real local chapter number.
-    /// </summary>
-    public static HashSet<decimal> ReadChapterNumbers(List<KavitaProgress.KavitaVolumeDto> volumes) =>
-        volumes
-            .SelectMany(v => v.Chapters ?? [])
-            .Where(c => !c.IsSpecial && c.Pages > 0 && c.PagesRead >= c.Pages &&
-                        c.Number is { } n && n > 0 && n < Sentinel)
-            .Select(c => (decimal)c.Number!.Value)
-            .ToHashSet();
-
-    /// <summary>
-    /// Marks every downloaded local chapter whose number Kavita reports as fully read. Returns how
-    /// many rows changed, so an idempotent re-run reports 0.
+    /// Marks every downloaded local chapter Kavita reports as fully read, from the same
+    /// <see cref="KavitaProgress.Compute"/> result the tracker push uses. A chapter counts when its
+    /// number falls in a read range, or when it lives in a volume archive whose volume Kavita reports
+    /// as fully read: Kavita sees such an archive as a volume with no chapter number at all, so
+    /// matching by number alone never marked anything in a library of volumes. Returns how many rows
+    /// changed, so an idempotent re-run reports 0.
     /// <para>
     /// Two rows are left alone: one that is already complete (never un-complete, and never restamp
     /// a read Maki observed itself as external), and one carrying
@@ -55,9 +44,10 @@ public class ExternalReadSyncService(IServiceScopeFactory scopeFactory)
     /// <c>kavita.userid</c> — but it is passed rather than assumed because both callers run outside a
     /// request (the recurring pass and the one-off import) where there is no current user to read.
     /// </param>
-    public async Task<int> MarkAsync(int userId, int seriesId, HashSet<decimal> readNumbers, CancellationToken ct)
+    public async Task<int> MarkAsync(
+        int userId, int seriesId, KavitaProgress.SeriesProgress read, CancellationToken ct)
     {
-        if (readNumbers.Count == 0)
+        if (read.IsEmpty)
         {
             return 0;
         }
@@ -66,11 +56,14 @@ public class ExternalReadSyncService(IServiceScopeFactory scopeFactory)
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
         var chapters = await db.Chapters
-            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null && c.Number != null)
-            .Select(c => new { c.Id, c.Number })
+            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+            .Select(c => new { c.Id, c.Number, c.ChapterFile!.RelativePath })
             .ToListAsync(ct);
 
-        var targets = chapters.Where(c => readNumbers.Contains(c.Number!.Value)).Select(c => c.Id).ToList();
+        var targets = chapters
+            .Where(c => (c.Number is { } n && read.CoversChapter(n)) || InReadVolume(read, c.RelativePath))
+            .Select(c => c.Id)
+            .ToList();
         if (targets.Count == 0)
         {
             return 0;
@@ -121,5 +114,18 @@ public class ExternalReadSyncService(IServiceScopeFactory scopeFactory)
 
         await db.SaveChangesAsync(ct);
         return changed;
+    }
+
+    /// <summary>Whether the file is a volume archive (no chapter number in its name) for a volume Kavita reports as read.</summary>
+    private static bool InReadVolume(KavitaProgress.SeriesProgress read, string relativePath)
+    {
+        if (read.Volumes.Count == 0)
+        {
+            return false;
+        }
+
+        var parsed = ReleaseNameParser.ParseFileName(relativePath);
+        return parsed is { IsVolume: true, Volume: { } from } &&
+               read.CoversVolume(from, parsed.VolumeEnd ?? from);
     }
 }

@@ -21,10 +21,11 @@ public record RecommendationFilters(
     int? MinChapters = null,
     int? MaxChapters = null,
     IReadOnlyList<string>? Tags = null,
-    /// <summary><see cref="ContentRating"/> vocabulary values to include. Empty/null means no
+    /// <summary><see cref="ContentRating"/> vocabulary values to include. Null means no
     /// constraint at all — callers with a viewer must resolve this to the viewer's ceiling
     /// themselves (<see cref="ContentRating.Allowed"/>/<see cref="ContentRating.Clamp"/>) before
-    /// building a scan with it; there is no floor left in the scan sites to fall back on.</summary>
+    /// building a scan with it; there is no floor left in the scan sites to fall back on. An empty
+    /// list matches nothing, never everything.</summary>
     IReadOnlyList<string>? ContentRatings = null,
     /// <summary>Genre and tag rules, ANDed together and with every field above. The legacy
     /// <see cref="Genres"/>/<see cref="Tags"/> lists still apply and read as an "all" rule.</summary>
@@ -170,7 +171,7 @@ public record RecommendationFilters(
 
         AppendIn(cmd, parts, alias, "type", Types, $"{prefix}_t");
         AppendIn(cmd, parts, alias, "status", Statuses, $"{prefix}_s");
-        AppendIn(cmd, parts, alias, "content_rating", ContentRatings, $"{prefix}_cr");
+        AppendIn(cmd, parts, alias, "content_rating", ContentRatings, $"{prefix}_cr", emptyMatchesNothing: true);
 
         return parts.Count > 0 ? " AND " + string.Join(" AND ", parts) : string.Empty;
     }
@@ -210,10 +211,19 @@ public record RecommendationFilters(
 
     private static void AppendIn(
         SqliteCommand cmd, List<string> parts, string alias, string column,
-        IReadOnlyList<string>? values, string prefix)
+        IReadOnlyList<string>? values, string prefix, bool emptyMatchesNothing = false)
     {
-        if (values is null || values.Count == 0)
+        if (values is null)
         {
+            return;
+        }
+
+        if (values.Count == 0)
+        {
+            if (emptyMatchesNothing)
+            {
+                parts.Add("0");
+            }
             return;
         }
 

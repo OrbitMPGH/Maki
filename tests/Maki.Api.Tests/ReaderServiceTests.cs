@@ -132,6 +132,27 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PageSliceMatchesTheFullSlice()
+    {
+        var (_, chapters) = SeedFromCbz("vol2.cbz",
+            ["S - c001 - p001.png", "S - c002 - p001.png", "S - c002 - p002.png"],
+            [(1m, 2), (2m, 2)]);
+
+        var reader = Reader();
+        foreach (var chapterId in chapters.Values)
+        {
+            var full = await reader.SliceAsync(chapterId, CancellationToken.None);
+            var slim = await reader.PageSliceAsync(chapterId, CancellationToken.None);
+
+            Assert.NotNull(full);
+            Assert.Equal(
+                new ReaderService.PageSlice(chapterId, full.ChapterFileId, full.ArchivePath, full.ArchiveSize,
+                    full.Pages, full.StartPage, full.PageCount),
+                slim);
+        }
+    }
+
+    [Fact]
     public async Task ChapterWithoutAMarkerFallsBackToTheWholeArchive()
     {
         // Chapter 9 is linked to the file but no page names mention it — serving everything
@@ -178,12 +199,131 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.False(await reader.SaveProgressAsync(slice!, 0, null, ReaderService.TimeReport.None, CancellationToken.None));
         Assert.True(await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None));
 
+        // The mark is the chapter's number, but reading one chapter is one chapter read.
         var e = Assert.Single(Events());
         Assert.Equal(StatsEventType.ChaptersRead, e.Type);
-        Assert.Equal(4, e.Value);
+        Assert.Equal(1, e.Value);
 
         using var db = _db.NewContext();
         Assert.Equal(4, db.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
+    }
+
+    private async Task ReadAsync(ReaderService reader, int chapterId)
+    {
+        var slice = await reader.SliceAsync(chapterId, CancellationToken.None);
+        Assert.True(await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None));
+    }
+
+    private List<int> ChaptersRead() =>
+        Events().Where(e => e.Type == StatsEventType.ChaptersRead).Select(e => e.Value).ToList();
+
+    [Fact]
+    public async Task TheFirstReadOfASeriesAddedMidwayIsOneChapter()
+    {
+        var (seriesId, chapters) = SeedFromCbz("midway.cbz", ["001.jpg"], [(150m, null), (151m, null)]);
+
+        await ReadAsync(Reader(), chapters[151m]);
+
+        Assert.Equal([1], ChaptersRead());
+        using var db = _db.NewContext();
+        Assert.Equal(151, db.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
+    }
+
+    [Fact]
+    public async Task SkippingAheadIsOneChapter()
+    {
+        var (_, chapters) = SeedFromCbz("skip.cbz", ["001.jpg"], [(5m, null), (100m, null)]);
+        var reader = Reader();
+
+        await ReadAsync(reader, chapters[5m]);
+        await ReadAsync(reader, chapters[100m]);
+
+        Assert.Equal([1, 1], ChaptersRead());
+    }
+
+    [Fact]
+    public async Task TheNextChapterIsOneChapter()
+    {
+        var (_, chapters) = SeedFromCbz("next.cbz", ["001.jpg"], [(5m, null), (6m, null)]);
+        var reader = Reader();
+
+        await ReadAsync(reader, chapters[5m]);
+        await ReadAsync(reader, chapters[6m]);
+
+        Assert.Equal([1, 1], ChaptersRead());
+    }
+
+    [Fact]
+    public async Task ThreeConsecutiveCompletionsAreThreeChapters()
+    {
+        var (_, chapters) = SeedFromCbz("three.cbz", ["001.jpg"], [(1m, null), (2m, null), (3m, null)]);
+        var reader = Reader();
+
+        await ReadAsync(reader, chapters[1m]);
+        await ReadAsync(reader, chapters[2m]);
+        await ReadAsync(reader, chapters[3m]);
+
+        Assert.Equal(3, ChaptersRead().Sum());
+    }
+
+    /// <summary>
+    /// Ticking chapters off the table is not reading them today: it raises the mark silently, the
+    /// same way watched does, so the next genuine read still counts one.
+    /// </summary>
+    [Fact]
+    public async Task BulkMarkReadIsSilentAndRaisesTheMark()
+    {
+        var (seriesId, chapters) = SeedFromCbz("bulk.cbz", ["001.jpg", "002.jpg"],
+            [(1m, null), (2m, null), (3m, null)]);
+        var reader = Reader();
+
+        var updated = await reader.MarkReadAsync([chapters[1m], chapters[2m]], CancellationToken.None);
+
+        Assert.Equal(2, updated);
+        Assert.Empty(Events());
+        using (var db = _db.NewContext(TestUser))
+        {
+            var rows = db.ChapterProgress.Where(p => p.SeriesId == seriesId).ToList();
+            Assert.Equal(2, rows.Count);
+            Assert.All(rows, r => Assert.True(r is { Completed: true, Watched: false, PageCount: 2, PageIndex: 1 }));
+            Assert.Equal(2, db.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
+        }
+
+        await ReadAsync(reader, chapters[3m]);
+        Assert.Equal([1], ChaptersRead());
+    }
+
+    [Fact]
+    public async Task BulkMarkReadUsesTheMeasuredPageCountWithoutOpeningTheArchive()
+    {
+        var (seriesId, chapters) = SeedFromCbz("measured.cbz", ["001.jpg"], [(1m, null)]);
+        using (var db = _db.NewContext())
+        {
+            db.ChapterFiles.Single(f => f.SeriesId == seriesId).PageCount = 24;
+            db.SaveChanges();
+        }
+        File.Delete(Path.Combine(_root, "measured.cbz"));
+
+        Assert.Equal(1, await Reader().MarkReadAsync([chapters[1m]], CancellationToken.None));
+
+        using var after = _db.NewContext(TestUser);
+        Assert.Equal(24, after.ChapterProgress.Single(p => p.ChapterId == chapters[1m]).PageCount);
+    }
+
+    [Fact]
+    public async Task BulkMarkUnreadTombstonesEveryRow()
+    {
+        var (seriesId, chapters) = SeedFromCbz("bulkunread.cbz", ["001.jpg"], [(1m, null), (2m, null)]);
+        var reader = Reader();
+        await reader.MarkReadAsync([chapters[1m], chapters[2m]], CancellationToken.None);
+
+        await reader.ClearProgressAsync([chapters[1m], chapters[2m]], CancellationToken.None);
+
+        using var db = _db.NewContext(TestUser);
+        var rows = db.ChapterProgress.Where(p => p.SeriesId == seriesId).ToList();
+        Assert.Equal(2, rows.Count);
+        Assert.All(rows, r => Assert.True(r is { Completed: false, Watched: false, PageIndex: 0 }));
+        Assert.All(rows, r => Assert.NotNull(r.UnreadAt));
     }
 
     [Fact]

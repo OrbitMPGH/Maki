@@ -8,10 +8,12 @@ import {
   IconPlus,
   IconSparkles,
   IconStar,
+  IconStarFilled,
   IconUsers,
 } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
 import type { RecommendationItem } from '../../api/hooks'
+import { Rail } from './Rail'
 import { t as now } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 
@@ -72,6 +74,31 @@ function posterUrl(item: RecommendationItem): string | null {
   return item.thumbUrlHiDpi ?? item.thumbUrl ?? item.coverUrl
 }
 
+function RatingChip({ rating }: { rating: number }) {
+  return (
+    <span className="cover-badge discover-rating">
+      <IconStarFilled size={12} style={{ color: 'var(--rating)' }} />
+      {(rating / 10).toFixed(1)}
+    </span>
+  )
+}
+
+/** "2017, Completed" on the left, "103 ch" on the right. */
+function DiscoverSub({ item }: { item: RecommendationItem }) {
+  const { t } = useLingui()
+  const { year, status, totalChapters } = item
+  return (
+    <div className="discover-sub">
+      <span className="discover-sub-status">{year ? t`${year}, ${status}` : status}</span>
+      {totalChapters ? (
+        <span className="discover-sub-chapters">
+          <Trans>{totalChapters} ch</Trans>
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 /** Poster-forward Discover card. Cover art is the hero; a bottom scrim carries the
  *  reason line, title and meta, and a corner control quick-opens (or navigates when owned).
  *
@@ -99,7 +126,7 @@ export const RecommendationCard = memo(function RecommendationCard({
   const { t } = useLingui()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
-  const { title, totalChapters } = item
+  const { title } = item
 
   return (
     <div className="cover-card discover-card">
@@ -128,16 +155,11 @@ export const RecommendationCard = memo(function RecommendationCard({
         )}
         <div className="cover-scrim" />
 
-        {item.rating != null && (
-          <span className="cover-badge discover-rating">
-            <IconStar size={10} style={{ color: 'var(--rating)' }} />
-            {(item.rating / 10).toFixed(1)}
-          </span>
-        )}
+        {item.rating != null && <RatingChip rating={item.rating} />}
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={16} />
+            <IconCheck size={14} stroke={2.2} />
           </span>
         ) : (
           <span
@@ -146,7 +168,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             data-tip={t`View & add`}
             aria-hidden="true"
           >
-            <IconPlus size={16} />
+            <IconPlus size={16} stroke={2} />
           </span>
         )}
 
@@ -159,15 +181,7 @@ export const RecommendationCard = memo(function RecommendationCard({
           <span className="cover-title" title={item.title}>
             {item.title}
           </span>
-          <div className="discover-sub">
-            {item.year && <span className="tnum">{item.year}</span>}
-            <span className="discover-sub-status">· {item.status}</span>
-            {totalChapters && (
-              <span className="discover-sub-chapters">
-                · <Trans>{totalChapters} ch</Trans>
-              </span>
-            )}
-          </div>
+          <DiscoverSub item={item} />
         </div>
       </div>
     </div>
@@ -290,7 +304,7 @@ function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
 
 /**
  * Poster card for an engine rail: the catalogue card's poster, plus a footer carrying why this
- * pick is here — one reason line and the tags it matched on.
+ * pick is here: one reason line and the tags it matched on.
  *
  * Memoized and built from plain elements for the same reasons `RecommendationCard` is.
  */
@@ -306,7 +320,7 @@ export const EngineCard = memo(function EngineCard({
   const { t } = useLingui()
   const owned = inLibrarySeriesId != null
   const { Glyph, text } = engineWhy(item)
-  const { title, totalChapters } = item
+  const { title } = item
   // Tags before genres: "Time Loop" says what a pick is, "Action" says what a third of the
   // catalogue is. Two, because three at this width truncate to "Cl…", "Stud…", "High…".
   // matchedTags is filtered against this series' spoiler flags by both recommendation paths.
@@ -334,20 +348,15 @@ export const EngineCard = memo(function EngineCard({
         )}
         <div className="cover-scrim" />
 
-        {item.rating != null && (
-          <span className="cover-badge discover-rating">
-            <IconStar size={10} style={{ color: 'var(--rating)' }} />
-            {(item.rating / 10).toFixed(1)}
-          </span>
-        )}
+        {item.rating != null && <RatingChip rating={item.rating} />}
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={16} />
+            <IconCheck size={14} stroke={2.2} />
           </span>
         ) : (
           <span className="discover-corner" data-add="true" data-tip={t`View & add`} aria-hidden="true">
-            <IconPlus size={16} />
+            <IconPlus size={16} stroke={2} />
           </span>
         )}
 
@@ -355,15 +364,7 @@ export const EngineCard = memo(function EngineCard({
           <span className="cover-title" title={item.title}>
             {item.title}
           </span>
-          <div className="discover-sub">
-            {item.year && <span className="tnum">{item.year}</span>}
-            <span className="discover-sub-status">· {item.status}</span>
-            {totalChapters && (
-              <span className="discover-sub-chapters">
-                · <Trans>{totalChapters} ch</Trans>
-              </span>
-            )}
-          </div>
+          <DiscoverSub item={item} />
         </div>
       </div>
 
@@ -405,13 +406,13 @@ export function EngineRailRow({
   onOpen: (item: RecommendationItem) => void
 }) {
   return (
-    <div className="discover-rail" data-engine>
+    <Rail engine>
       {items.map((item) => (
         <div key={item.providerId} className="discover-rail-item">
           <EngineCard item={item} inLibrarySeriesId={seriesIdFor(item)} onOpen={onOpen} />
         </div>
       ))}
-    </div>
+    </Rail>
   )
 }
 
@@ -434,7 +435,7 @@ export function DiscoverRailRow({
   showReason?: boolean
 }) {
   return (
-    <div className="discover-rail">
+    <Rail>
       {items.map((item) => (
         <div key={item.providerId} className="discover-rail-item">
           <RecommendationCard
@@ -445,6 +446,6 @@ export function DiscoverRailRow({
           />
         </div>
       ))}
-    </div>
+    </Rail>
   )
 }

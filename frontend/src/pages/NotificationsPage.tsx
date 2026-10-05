@@ -214,6 +214,7 @@ export default function NotificationsPage() {
         />
       ) : items.length === 0 ? (
         <EmptyState
+          mood={unreadOnly || category ? undefined : 'pleased'}
           title={unreadOnly || category ? t`Nothing matches` : t`No notifications yet`}
           description={
             unreadOnly || category

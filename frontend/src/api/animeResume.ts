@@ -136,10 +136,16 @@ export function useDismissAnimeResume(seriesId: number) {
  * Home's "Continue from the anime" rail: series whose anime is done but the manga isn't caught up,
  * library first, then manga the reader could add.
  */
-export function useHomeFromAnime(limit = 12, enabled = true) {
+export interface HomeAnimeResumePage {
+  /** Capped by the server; `total` is the real count. */
+  items: HomeAnimeResumeItem[]
+  total: number
+}
+
+export function useHomeFromAnime(enabled = true) {
   return useQuery({
-    queryKey: ['home', 'from-anime', limit],
-    queryFn: () => api<HomeAnimeResumeItem[]>(`/home/from-anime?limit=${limit}`),
+    queryKey: ['home', 'from-anime'],
+    queryFn: () => api<HomeAnimeResumePage>('/home/from-anime'),
     enabled,
     staleTime: 60_000,
   })

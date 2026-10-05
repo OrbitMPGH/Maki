@@ -38,7 +38,8 @@ public class AccountApiKeyScopeTests : IDisposable
         var clock = new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero));
         return new AccountController(
             new TestLocalizer(), db, BuildUserManager(db), null!, new TestCurrentUser(userId),
-            new AuthEventLogger(db, clock), new OidcRuntimeOptions(), clock);
+            new AuthEventLogger(db, clock), new OidcRuntimeOptions(), clock,
+            new UserSnapshotCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())));
     }
 
     private static UserManager<MakiUser> BuildUserManager(MakiDbContext db)
@@ -94,6 +95,19 @@ public class AccountApiKeyScopeTests : IDisposable
         var result = await Controller(userId).CreateApiKey(request, CancellationToken.None);
 
         Assert.Equal("error.account.opdsKeyOnOpdsCard", CodeOf(result));
+    }
+
+    [Fact]
+    public async Task An_account_with_a_password_has_to_confirm_it_to_mint_a_key()
+    {
+        var userId = _db.SeedUser("alice", configure: u =>
+            u.PasswordHash = new PasswordHasher<MakiUser>().HashPassword(u, "correct horse battery"));
+        var request = new CreateApiKeyRequest("a script", UserApiKeyScope.Full);
+
+        var result = await Controller(userId).CreateApiKey(request, CancellationToken.None);
+
+        // A key outlives the session that minted it, so a hijacked session alone must not be enough.
+        Assert.Equal("error.account.incorrectPassword", CodeOf(result));
     }
 
     [Fact]

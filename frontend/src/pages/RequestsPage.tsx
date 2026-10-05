@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ActionIcon,
@@ -212,6 +212,7 @@ export default function RequestsPage() {
 
       {!isPending && (requests?.length ?? 0) === 0 ? (
         <EmptyState
+          mood="asleep"
           title={filter === 'pending' ? t`No pending requests` : t`Nothing here`}
           description={
             isAdmin
@@ -417,7 +418,14 @@ export default function RequestsPage() {
       </Modal>
 
       <Modal opened={editing !== null} onClose={() => setEditing(null)} title={t`Edit request`}>
-        <Stack gap="sm">
+        <Stack
+          component="form"
+          gap="sm"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            submitEdit()
+          }}
+        >
           <Text size="sm">
             <Trans>
               {editingTitle}, asked for {editingAskedFor}
@@ -454,7 +462,7 @@ export default function RequestsPage() {
             <Button variant="default" onClick={() => setEditing(null)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button onClick={submitEdit} loading={edit.isPending}>
+            <Button type="submit" loading={edit.isPending}>
               <Trans>Save range</Trans>
             </Button>
           </Group>

@@ -1,4 +1,4 @@
-﻿import { ActionIcon, Menu, Text } from '@mantine/core'
+﻿import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
 import { useState } from 'react'
 import {
     IconBell,
@@ -10,6 +10,8 @@ import {
     IconPhoto,
     IconRefresh,
     IconScan,
+    IconSearch,
+    IconSparkles,
     IconTrash,
 } from '@tabler/icons-react'
 import { useIncognitoOptions } from '../ui/incognito'
@@ -18,6 +20,10 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../../i18n-context'
+import type { UpgradeProfileDto } from '../../api/upgrades'
+
+/** Sentinel for "Instance default" in the profile RadioGroup, which only carries strings. */
+const INSTANCE_DEFAULT = ''
 
 /** Mirrors the labels the old monitor Select carried, so the toast after a change still matches. */
 export const MONITOR_OPTIONS = [
@@ -40,6 +46,11 @@ export function SeriesActionsMenu({
                                       monitorMode,
                                       incognito,
                                       notificationMode,
+                                      upgradeProfileId,
+                                      upgradeProfiles,
+                                      canScanUpgrades,
+                                      scanningUpgrades,
+                                      searchingVolumes,
                                       busy,
                                       onRefreshChapters,
                                       onRefreshMetadata,
@@ -49,12 +60,22 @@ export function SeriesActionsMenu({
                                       onSetMonitor,
                                       onSetIncognito,
                                       onSetNotify,
+                                      onSetUpgradeProfile,
+                                      onScanUpgrades,
+                                      onSearchVolumes,
                                       canRemove,
                                       onRemove,
                                   }: {
     monitorMode: string
     incognito: string
     notificationMode: string
+    /** Null means "instance default", i.e. no profile pinned to this series. */
+    upgradeProfileId: number | null
+    upgradeProfiles: UpgradeProfileDto[]
+    /** DownloadChapters: gates the "Scan for upgrades" item, same permission as "Upgrade now". */
+    canScanUpgrades: boolean
+    scanningUpgrades: boolean
+    searchingVolumes: boolean
     busy: boolean
     onRefreshChapters: () => void
     onRefreshMetadata: () => void
@@ -64,6 +85,9 @@ export function SeriesActionsMenu({
     onSetMonitor: (mode: string) => void
     onSetIncognito: (mode: string) => void
     onSetNotify: (mode: string) => void
+    onSetUpgradeProfile: (upgradeProfileId: number | null) => void
+    onScanUpgrades: () => void
+    onSearchVolumes: () => void
     canRemove: boolean
     onRemove: () => void
 }) {
@@ -76,6 +100,10 @@ export function SeriesActionsMenu({
         options: readonly { value: string; label: string | MessageDescriptor }[],
         value: string,
     ) => options.find((o) => o.value === value)?.label ?? value
+    const instanceDefaultLabel = t`Instance default`
+    const upgradeProfileValue = upgradeProfileId == null ? INSTANCE_DEFAULT : String(upgradeProfileId)
+    const upgradeProfileLabel =
+        upgradeProfiles.find((p) => p.id === upgradeProfileId)?.name ?? instanceDefaultLabel
 
     return (
         <Menu
@@ -208,6 +236,56 @@ export function SeriesActionsMenu({
                         </Menu.Label>
                     </Menu.Sub.Dropdown>
                 </Menu.Sub>
+
+                <Menu.Sub>
+                    <Menu.Sub.Target>
+                        <Menu.Sub.Item
+                            leftSection={<IconSparkles size={16} />}
+                            rightSection={
+                                <Text size="xs" c="var(--ink-3)">
+                                    {upgradeProfileLabel}
+                                </Text>
+                            }
+                        >
+                            <Trans>Quality profile</Trans>
+                        </Menu.Sub.Item>
+                    </Menu.Sub.Target>
+                    <Menu.Sub.Dropdown maw={264}>
+                        <Menu.RadioGroup
+                            value={upgradeProfileValue}
+                            onChange={(value) =>
+                                onSetUpgradeProfile(value === INSTANCE_DEFAULT ? null : Number(value))
+                            }
+                        >
+                            <Menu.RadioItem value={INSTANCE_DEFAULT}>{instanceDefaultLabel}</Menu.RadioItem>
+                            {upgradeProfiles.map((profile) => (
+                                <Menu.RadioItem key={profile.id} value={String(profile.id)}>
+                                    {profile.name}
+                                </Menu.RadioItem>
+                            ))}
+                        </Menu.RadioGroup>
+                    </Menu.Sub.Dropdown>
+                </Menu.Sub>
+
+                {canScanUpgrades && (
+                    <Menu.Item
+                        leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
+                        disabled={scanningUpgrades}
+                        onClick={onScanUpgrades}
+                    >
+                        <Trans>Scan for upgrades</Trans>
+                    </Menu.Item>
+                )}
+
+                {canScanUpgrades && (
+                    <Menu.Item
+                        leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
+                        disabled={searchingVolumes}
+                        onClick={onSearchVolumes}
+                    >
+                        <Trans>Search volume releases</Trans>
+                    </Menu.Item>
+                )}
 
                 {canRemove && (
                     <>

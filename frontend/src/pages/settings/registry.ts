@@ -204,7 +204,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'reading',
     title: msg`Kavita sync`,
     keywords: msg({
-      message: `mark read in kavita, push to kavita, import read status, kavita progress`,
+      message: `mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -269,6 +269,26 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
+  {
+    id: 'profiles',
+    tab: 'library',
+    title: msg`Quality profiles`,
+    admin: true,
+    keywords: msg({
+      message: `upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, maximum score loss, allow replacing unknown, resolution weight, compression weight, measured quality`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'formats',
+    tab: 'library',
+    title: msg`Quality formats`,
+    admin: true,
+    keywords: msg({
+      message: `quality format, condition, high resolution, format score, regex, group matches, release name matches, image format, minimum width`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
 
   {
     id: 'downloads',
@@ -276,7 +296,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Downloads`,
     admin: true,
     keywords: msg({
-      message: `concurrent, workers, retry, max attempts, backoff, smart download, unread trigger`,
+      message: `concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -287,6 +307,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     admin: true,
     keywords: msg({
       message: `scrapers, manage sources, priority, source priority, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'upgrades',
+    tab: 'downloads',
+    title: msg`Upgrades`,
+    admin: true,
+    keywords: msg({
+      message: `upgrade, quality profile, default profile, automatic upgrades`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

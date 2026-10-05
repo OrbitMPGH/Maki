@@ -28,6 +28,7 @@ import {
 import {
   IconCheck,
   IconColumns,
+  IconRuler,
   IconExternalLink,
   IconLink,
   IconPlugConnected,
@@ -49,9 +50,21 @@ import {
   useSourceMatchProgress,
   useSources,
   useSourceSearch,
+  useReorderMappings,
   useUpdateMapping,
+  type SourceOrderMode,
 } from '../api/hooks'
+import { MeasureProgress, MeasureResult, ScoutCell } from './SourceMeasurePanel'
 import type { SourceMappingDto } from '../api/types'
+import {
+  QUALITY_TIER_COLOR,
+  QUALITY_TIER_LABELS,
+  useMeasureSources,
+  useSetSourceOrderMode,
+  useSourceOrder,
+  type QualityTierName,
+  type SourceQualityDto,
+} from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
@@ -91,6 +104,41 @@ export function SourceMappingsSection({
   matching?: boolean
 }) {
   const { data: mappings } = useSourceMappings(seriesId)
+  const { data: sourceOrder } = useSourceOrder(seriesId)
+  const setOrderMode = useSetSourceOrderMode(seriesId)
+  const measureSources = useMeasureSources(seriesId)
+  const scout = sourceOrder?.scout
+  const scouting = scout?.running ?? false
+  const scoutPlanned = scout?.probes ?? 0
+  const scoutMeasured = scout?.measured ?? 0
+  const reorderMappings = useReorderMappings()
+  const seenKey = `maki:scout-seen:${seriesId}`
+  const [seenScout, setSeenScout] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(seenKey)
+    } catch {
+      return null
+    }
+  })
+  const dismissScout = () => {
+    const finished = scout?.finishedAtUtc ?? null
+    setSeenScout(finished)
+    try {
+      if (finished) localStorage.setItem(seenKey, finished)
+    } catch {
+      // Private mode or blocked storage: the card just comes back on the next visit.
+    }
+  }
+  const showScoutResult = !!scout && !scout.running && !!scout.finishedAtUtc && seenScout !== scout.finishedAtUtc
+  const scoutProgressFor = (mappingId: number) =>
+    scouting || showScoutResult ? scout?.sources.find((s) => s.mappingId === mappingId) : undefined
+  const qualities = sourceOrder?.sources
+  const byQuality = sourceOrder?.mode === 'quality'
+  const orderedMappings = useMemo(() => {
+    if (!mappings || !byQuality) return mappings
+    const rank = new Map(sourceOrder.order.map((id, i) => [id, i]))
+    return [...mappings].sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity))
+  }, [mappings, byQuality, sourceOrder])
   const { data: sources } = useSources()
   const { data: progress } = useSourceMatchProgress(seriesId)
   const updateMapping = useUpdateMapping()
@@ -194,6 +242,36 @@ export function SourceMappingsSection({
         {/* Both held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
             source that the matcher is about to add itself fails its whole batch of mappings. */}
         <Group gap="xs">
+          {sourceOrder && (
+            <Tooltip
+              label={t`Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties.`}
+              withArrow
+              multiline
+              w={280}
+            >
+              <Select
+                size="xs"
+                w={210}
+                aria-label={t`Download order`}
+                allowDeselect={false}
+                value={sourceOrder.seriesMode ?? 'default'}
+                onChange={(value) =>
+                  value && setOrderMode.mutate(value === 'default' ? null : (value as SourceOrderMode))
+                }
+                data={[
+                  {
+                    value: 'default',
+                    label:
+                      sourceOrder.defaultMode === 'quality'
+                        ? t`Default (best quality first)`
+                        : t`Default (manual priority)`,
+                  },
+                  { value: 'manual', label: t`Manual priority` },
+                  { value: 'quality', label: t`Best quality first` },
+                ]}
+              />
+            </Tooltip>
+          )}
           <Tooltip
             label={
               matching
@@ -251,6 +329,31 @@ export function SourceMappingsSection({
             </Box>
           </Tooltip>
           <Tooltip
+            label={
+              matching
+                ? t`Auto-matching is still running. It'll be free in a moment.`
+                : scout && !scout.running
+                  ? t`Sample a few pages from three chapters on every enabled source and update each source's quality. Last run measured ${scoutMeasured} of ${scoutPlanned} samples.`
+                  : t`Sample a few pages from three chapters on every enabled source and update each source's quality.`
+            }
+            withArrow
+            multiline
+            w={260}
+          >
+            <Box component="span" display="inline-flex">
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={scouting ? <Loader size={12} /> : <IconRuler size={14} />}
+                disabled={matching || scouting || (mappings?.length ?? 0) === 0}
+                loading={measureSources.isPending}
+                onClick={() => measureSources.mutate()}
+              >
+                {scouting ? <Trans>Measuring…</Trans> : <Trans>Measure</Trans>}
+              </Button>
+            </Box>
+          </Tooltip>
+          <Tooltip
             label={t`Auto-matching is still running. It'll be free in a moment.`}
             withArrow
             disabled={!matching}
@@ -287,6 +390,28 @@ export function SourceMappingsSection({
         </Group>
       )}
 
+      {sourceOrder && scouting && <MeasureProgress order={sourceOrder} />}
+      {sourceOrder && showScoutResult && (
+        <MeasureResult
+          order={sourceOrder}
+          label={(id) => sourceLabel(mappings?.find((m) => m.id === id)?.sourceName ?? '')}
+          needsFlareSolverr={(id) => {
+            const name = mappings?.find((m) => m.id === id)?.sourceName
+            return sources?.find((s) => s.name === name)?.needsFlareSolverr ?? false
+          }}
+          busy={setOrderMode.isPending || reorderMappings.isPending}
+          onUseQuality={() => setOrderMode.mutate('quality', { onSuccess: dismissScout })}
+          onReorder={() => {
+            const rest = sourceOrder.order.filter((id) => !sourceOrder.qualityOrder.includes(id))
+            reorderMappings.mutate(
+              { seriesId, orderedMappingIds: [...sourceOrder.qualityOrder, ...rest] },
+              { onSuccess: dismissScout },
+            )
+          }}
+          onDismiss={dismissScout}
+        />
+      )}
+
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
           <Text c="var(--ink-3)" size="sm">
@@ -306,6 +431,7 @@ export function SourceMappingsSection({
               <Table.Th><Trans>Series</Trans></Table.Th>
               <Table.Th><Trans>Languages</Trans></Table.Th>
               <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Priority</Trans></Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Quality</Trans></Table.Th>
               {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
               <Table.Th w={44}>
                 <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
@@ -316,7 +442,7 @@ export function SourceMappingsSection({
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {(mappings ?? []).map((m) => {
+              {(orderedMappings ?? []).map((m) => {
               const { sourceName: sourceKey } = m
               const sourceName = sourceLabel(sourceKey)
               return (
@@ -366,7 +492,14 @@ export function SourceMappingsSection({
                   />
                 </Table.Td>
                 <Table.Td>
-                  <Tooltip label={t`Lower number = tried first when downloading`} withArrow>
+                  <Tooltip
+                    label={
+                      byQuality
+                        ? t`Downloads try the best-scoring source first. Priority only breaks ties.`
+                        : t`Lower number = tried first when downloading`
+                    }
+                    withArrow
+                  >
                     <NumberInput
                       size="xs"
                       w={70}
@@ -381,6 +514,22 @@ export function SourceMappingsSection({
                       }}
                     />
                   </Tooltip>
+                </Table.Td>
+                <Table.Td>
+                  {(() => {
+                    const progress = scoutProgressFor(m.id)
+                    return progress && progress.state !== 'done' ? (
+                      <ScoutCell
+                        progress={progress}
+                        needsFlareSolverr={sources?.find((s) => s.name === m.sourceName)?.needsFlareSolverr ?? false}
+                      />
+                    ) : (
+                      <MappingQuality
+                        quality={qualities?.find((q) => q.mappingId === m.id)}
+                        tier={sourceOrder?.tiers[m.id]}
+                      />
+                    )
+                  })()}
                 </Table.Td>
                 <Table.Td>
                   <Tooltip
@@ -783,6 +932,79 @@ export function SourceMappingsSection({
       />
     </>
   )
+}
+
+/**
+ * The source's tier, then the median width and compression of its recently measured chapters of
+ * the series. The tier is shown because best quality first compares it before the score.
+ */
+function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefined; tier: QualityTierName | undefined }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  return (
+    <Group gap={8} wrap="nowrap">
+      {tier && (
+        <Tooltip
+          label={t`Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers.`}
+          withArrow
+          multiline
+          w={260}
+        >
+          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]}>
+            {renderLabel(QUALITY_TIER_LABELS[tier])}
+          </Badge>
+        </Tooltip>
+      )}
+      <MappingMeasurement quality={quality} />
+    </Group>
+  )
+}
+
+function MappingMeasurement({ quality }: { quality: SourceQualityDto | undefined }) {
+  const { t, i18n } = useLingui()
+  if (!quality) {
+    return (
+      <Tooltip label={t`Nothing downloaded or sampled from this source yet.`} withArrow>
+        <Text size="xs" c="var(--ink-3)">
+          –
+        </Text>
+      </Tooltip>
+    )
+  }
+
+  const width = i18n.number(quality.medianWidth)
+  const bpp = i18n.number(quality.bitsPerPixel, { maximumFractionDigits: 2 })
+  const count = quality.samples
+  const measured = formatDateTime(quality.latestUtc)
+  const lines = [
+    plural(count, {
+      one: `Median of # measured chapter: ${width}px wide, ${bpp} bits per pixel (JPG equivalent).`,
+      other: `Median of # measured chapters: ${width}px wide, ${bpp} bits per pixel (JPG equivalent).`,
+    }),
+    t`Last measured ${measured}.`,
+  ]
+  if (quality.resolutionPoints != null && quality.compressionPoints != null) {
+    const resolution = signedNumber(i18n, quality.resolutionPoints)
+    const compression = signedNumber(i18n, quality.compressionPoints)
+    lines.push(t`Resolution ${resolution}, compression ${compression} under this series' profile.`)
+  }
+  if (!quality.reliable) {
+    lines.push(t`Too few or too old to trust yet, so upgrade scans still sample this source first.`)
+  }
+
+  return (
+    <Tooltip label={lines.join(' ')} withArrow multiline w={280}>
+      <Text size="xs" c={quality.reliable ? undefined : 'var(--ink-3)'} style={{ whiteSpace: 'nowrap' }}>
+        <Trans>
+          {width}px · {bpp} bpp
+        </Trans>
+      </Text>
+    </Tooltip>
+  )
+}
+
+function signedNumber(i18n: { number: (n: number) => string }, n: number) {
+  return n > 0 ? `+${i18n.number(n)}` : i18n.number(n)
 }
 
 /**

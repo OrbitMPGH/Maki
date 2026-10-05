@@ -25,7 +25,6 @@ import {
   IconAdjustmentsHorizontal,
   IconAffiliate,
   IconAlertTriangle,
-  IconChevronRight,
   IconCompass,
   IconDeviceFloppy,
   IconFlame,
@@ -600,7 +599,7 @@ function RecommendedTab() {
       </Group>
 
       <Collapse expanded={customizeOpen}>
-        <Panel p="md" mb="md">
+        <Panel p="md" mb="md" className="discover-recommended-customize" edge="brand" edgeSide="left">
           <Stack gap="md">
             <MultiSelect
               label={t`Seed from`}
@@ -1309,12 +1308,12 @@ function DiscoverBrowseTab({
             <Button
               variant="subtle"
               size="xs"
-              rightSection={<IconChevronRight size={14} />}
               onClick={() => setExpandedRail(recentRail)}
             >
               <Trans>Show more</Trans>
             </Button>
           }
+          chevron
         />
         {/* The covers of the series this was built from, with the server's prose subtitle as the
             fallback for a reader whose seeds no longer resolve to library rows. */}
@@ -1355,12 +1354,12 @@ function DiscoverBrowseTab({
                 <Button
                   variant="subtle"
                   size="xs"
-                  rightSection={<IconChevronRight size={14} />}
                   onClick={() => setExpandedRail(rail)}
                 >
                   <Trans>Show more</Trans>
                 </Button>
               }
+              chevron
             />
             {rail.seedIds && rail.seedIds.length > 0 ? (
               <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
@@ -1384,12 +1383,12 @@ function DiscoverBrowseTab({
             <Button
               variant="subtle"
               size="xs"
-              rightSection={<IconChevronRight size={14} />}
               onClick={() => setExpandedRail(cohortRail)}
             >
               <Trans>Show more</Trans>
             </Button>
           }
+          chevron
         />
         {cohortRail.subtitle && (
           <Text c="var(--ink-3)" size="sm" mb="sm">
@@ -1418,12 +1417,12 @@ function DiscoverBrowseTab({
                 <Button
                   variant="subtle"
                   size="xs"
-                  rightSection={<IconChevronRight size={14} />}
                   onClick={() => setExpandedRail(trendingRail)}
                 >
                   <Trans>Show more</Trans>
                 </Button>
               }
+              chevron
             />
             {/* Ranks are the point of a trending row, so the row is numbered. The counter lives on a
                 Discover-only wrapper: `.discover-rail-item` is shared with five other surfaces. */}

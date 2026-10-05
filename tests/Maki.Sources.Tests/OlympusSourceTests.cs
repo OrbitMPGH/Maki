@@ -1,4 +1,5 @@
 using System.Net;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Sources.Olympus;
 
@@ -78,10 +79,8 @@ public class OlympusSourceTests
     [Fact]
     public async Task GetSeries_retries_once_on_error_then_gives_up()
     {
-        // A "{"error":true,...}" body (both the 400 a numeric id gets and the 404 a rotated slug
-        // gets come back shaped this way, since ChallengeAwareFetcher never surfaces the origin
-        // status code to the source) should force exactly one catalog refresh and retry before
-        // the call gives up, never looping forever.
+        // A "{"error":true,...}" body (the API's answer to a numeric id or a rotated slug) should
+        // force exactly one catalog refresh and retry before the call gives up, never looping forever.
         var fetcher = new FakeHtmlFetcher(new()
         {
             ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json"),
@@ -93,6 +92,72 @@ public class OlympusSourceTests
 
         Assert.Equal(2, fetcher.Requested.Count(u => u.Contains("api/series/list")));
         Assert.Equal(2, fetcher.Requested.Count(u => u.Contains(SeriesUrl)));
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    public async Task A_404_or_400_status_takes_the_same_refresh_and_retry_path_as_an_error_body(HttpStatusCode status)
+    {
+        var fetcher = new StatusFetcher(
+            new() { ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json") },
+            SeriesUrl,
+            status);
+        var source = new OlympusSource(fetcher);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetSeriesAsync("10"));
+
+        Assert.Equal(2, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+        Assert.Equal(2, fetcher.Requested.Count(u => u.Contains(SeriesUrl)));
+    }
+
+    [Fact]
+    public async Task GetPages_maps_a_404_status_to_not_found()
+    {
+        var fetcher = new StatusFetcher(new(), "api/capitulo/", HttpStatusCode.NotFound);
+        var source = new OlympusSource(fetcher);
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => source.GetPagesAsync(
+            new SourceChapter("olympus", "10", "1", "1", 1m, null, null, "es", null)));
+        Assert.Equal(HttpStatusCode.NotFound, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_server_error_status_is_not_mistaken_for_a_missing_series()
+    {
+        var fetcher = new StatusFetcher(
+            new() { ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json") },
+            SeriesUrl,
+            HttpStatusCode.InternalServerError);
+        var source = new OlympusSource(fetcher);
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => source.GetSeriesAsync("10"));
+
+        Assert.Equal(HttpStatusCode.InternalServerError, ex.StatusCode);
+        Assert.Equal(1, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+    }
+
+    /// <summary>Answers one URL with an HTTP status, the way ChallengeAwareFetcher surfaces it.</summary>
+    private sealed class StatusFetcher(Dictionary<string, string> fixtures, string failing, HttpStatusCode status)
+        : IHtmlFetcher
+    {
+        private readonly FakeHtmlFetcher _inner = new(fixtures);
+
+        public List<string> Requested { get; } = [];
+
+        public Task<string> GetHtmlAsync(string url, CancellationToken ct = default) =>
+            FetchAsync(new HtmlFetchRequest(url), ct);
+
+        public Task<string> FetchAsync(HtmlFetchRequest request, CancellationToken ct = default)
+        {
+            Requested.Add(request.Url);
+            if (request.Url.Contains(failing, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new HttpRequestException($"HTTP {(int)status}", null, status);
+            }
+
+            return _inner.FetchAsync(request, ct);
+        }
     }
 
     [Fact]

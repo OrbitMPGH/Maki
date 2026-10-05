@@ -5,6 +5,58 @@ namespace Maki.Core.Tests;
 public class LibraryPathsTests
 {
     [Fact]
+    public void IsSameDirectory_tells_a_case_only_spelling_from_a_second_folder()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-same-dir-").FullName;
+        try
+        {
+            var lower = Path.Combine(root, "chainsaw man");
+            var upper = Path.Combine(root, "Chainsaw Man");
+            Directory.CreateDirectory(lower);
+            Directory.CreateDirectory(Path.Combine(root, "Other"));
+
+            Assert.True(LibraryPaths.IsSameDirectory(lower, lower + Path.DirectorySeparatorChar));
+            Assert.False(LibraryPaths.IsSameDirectory(lower, Path.Combine(root, "Other")));
+            if (Directory.Exists(upper))
+            {
+                // Case-insensitive filesystem: both spellings are the one folder.
+                Assert.True(LibraryPaths.IsSameDirectory(lower, upper));
+            }
+            else
+            {
+                Directory.CreateDirectory(upper);
+                Assert.False(LibraryPaths.IsSameDirectory(lower, upper));
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Resolve_reads_a_backslash_as_a_separator_on_every_host()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-library-paths-").FullName;
+        try
+        {
+            Assert.Equal(Path.Combine(root, "Berserk", "Berserk c001.cbz"),
+                LibraryPaths.Resolve(root, @"Berserk\Berserk c001.cbz"));
+            Assert.Null(LibraryPaths.Resolve(root, @"Berserk\..\..\outside.cbz"));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FolderComparer_ignores_case_on_every_host()
+    {
+        Assert.True(LibraryPaths.FolderComparer.Equals("One Piece", "one piece"));
+    }
+
+    [Fact]
     public void Resolve_joins_root_and_relative_path()
     {
         var root = Directory.CreateTempSubdirectory("maki-library-paths-").FullName;

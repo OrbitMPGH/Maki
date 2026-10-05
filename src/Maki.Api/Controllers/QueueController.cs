@@ -2,12 +2,15 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 namespace Maki.Api.Controllers;
 
@@ -19,7 +22,9 @@ public class QueueController(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     TorrentImportService importer,
-    EventBroadcaster events)
+    EventBroadcaster events,
+    ISchedulerFactory schedulerFactory,
+    ILogger<QueueController> logger)
     : ControllerBase
 {
     /// <summary>
@@ -38,21 +43,16 @@ public class QueueController(
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled);
 
         var total = await query.CountAsync(ct);
-        var items = await query
-            .Include(q => q.SourceMapping)
-            .Include(q => q.Chapter)
-            .Include(q => q.Series)
-            .OrderBy(q => q.SortOrder)
-            .ThenBy(q => q.QueuedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var rows = await Rows(query
+                .OrderBy(q => q.SortOrder)
+                .ThenBy(q => q.QueuedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize))
             .ToListAsync(ct);
 
-        var dtos = items
-            .Where(q => q.Series != null)
-            .Select(q => QueueItemDto.FromEntity(
-                q, q.Chapter, q.Series!,
-                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?")))
+        var dtos = rows
+            .Where(r => r.Series != null)
+            .Select(r => QueueItemDto.FromEntity(r.Item, r.Chapter, r.Series!, r.SourceName))
             .ToList();
 
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
@@ -70,24 +70,81 @@ public class QueueController(
             .Where(q => q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled);
 
         var total = await query.CountAsync(ct);
-        var items = await query
-            .Include(q => q.SourceMapping)
-            .Include(q => q.Chapter)
-            .Include(q => q.Series)
-            .OrderByDescending(q => q.CompletedAt ?? q.QueuedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        // Id breaks ties so rows sharing a timestamp cannot repeat or vanish between pages.
+        var rows = await Rows(query
+                .OrderByDescending(q => q.CompletedAt ?? q.QueuedAt)
+                .ThenByDescending(q => q.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize))
             .ToListAsync(ct);
+        var items = rows.Select(r => r.Item).ToList();
 
-        var dtos = items
-            .Where(q => q.Series != null)
-            .Select(q => QueueItemDto.FromEntity(
-                q, q.Chapter, q.Series!,
-                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?")))
+        var historyIds = items
+            .Where(q => q.UpgradeInfoJson != null && !TorrentUpgradeInfo.IsTorrent(q.UpgradeInfoJson))
+            .Select(q => UpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryId)
+            .OfType<int>()
+            .ToList();
+        var upgrades = await UpgradeHistoryStates.LoadAsync(db, historyIds, ct);
+        var groupIds = items
+            .Select(q => TorrentUpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryGroupId)
+            .OfType<Guid>()
+            .ToList();
+        var groups = await UpgradeHistoryStates.LoadGroupsAsync(db, groupIds, ct);
+
+        var dtos = rows
+            .Where(r => r.Series != null)
+            .Select(r => QueueItemDto.FromEntity(
+                r.Item, r.Chapter, r.Series!, r.SourceName,
+                TorrentUpgradeInfo.Parse(r.Item.UpgradeInfoJson) is { } torrent
+                    ? torrent.HistoryGroupId is { } groupId ? groups.GetValueOrDefault(groupId) : null
+                    : UpgradeInfo.Parse(r.Item.UpgradeInfoJson)?.HistoryId is { } historyId ? upgrades.GetValueOrDefault(historyId) : null))
             .ToList();
 
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
     }
+
+    /// <summary>
+    /// Per-status counts for the shell's Activity badge, which polls every few seconds and needs two
+    /// numbers, not a page of rows. Counts the whole queue, where the list endpoint is paged.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> Summary(CancellationToken ct)
+    {
+        var counts = await db.DownloadQueue
+            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
+            .GroupBy(q => q.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Status, x => x.Count, ct);
+
+        return Ok(new QueueSummaryDto(
+            Active: counts.Where(kv => kv.Key is not (QueueStatus.Failed or QueueStatus.AwaitingImport)).Sum(kv => kv.Value),
+            AwaitingImport: counts.GetValueOrDefault(QueueStatus.AwaitingImport),
+            Failed: counts.GetValueOrDefault(QueueStatus.Failed)));
+    }
+
+    private sealed record QueueRow(DownloadQueueItem Item, Chapter? Chapter, Series? Series, string SourceName);
+
+    /// <summary>
+    /// The columns a <see cref="QueueItemDto"/> is built from, untracked. Including the navigations
+    /// instead loaded every Series column (and its JSON converters) for a title.
+    /// </summary>
+    private static IQueryable<QueueRow> Rows(IQueryable<DownloadQueueItem> query) =>
+        query.AsNoTracking().Select(q => new QueueRow(
+            q,
+            q.Chapter == null
+                ? null
+                : new Chapter
+                {
+                    Id = q.Chapter.Id,
+                    Number = q.Chapter.Number,
+                    Volume = q.Chapter.Volume,
+                    Title = q.Chapter.Title,
+                    IsOneShot = q.Chapter.IsOneShot,
+                },
+            q.Series == null ? null : new Series { Id = q.Series.Id, Title = q.Series.Title },
+            q.SourceMapping != null
+                ? q.SourceMapping.SourceName
+                : q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"));
 
     /// <summary>
     /// Sets the manual dispatch order for the active queue. <c>OrderedIds</c> is the full list of active
@@ -200,7 +257,9 @@ public class QueueController(
             error = plan.ErrorKey is not null ? localizer.Get(plan.ErrorKey, plan.ErrorArgs) : null,
             plan.HasConflicts,
             plan.NewChapterCount,
-            plan.ReplacedFileCount
+            plan.ReplacedFileCount,
+            plan.IsUpgrade,
+            plan.SuggestedSkips
         });
     }
 
@@ -222,16 +281,49 @@ public class QueueController(
             return NotFound();
         }
 
-        if (item.Status != QueueStatus.AwaitingImport)
+        if (item.Status != QueueStatus.AwaitingImport || !TorrentImportService.TryBeginManualImport(item.Id))
         {
             return this.Conflict(localizer, "error.queue.notAwaitingImport");
         }
 
+        try
+        {
+            // Conditional, so a second click or the poll job cannot take the same parked row: only
+            // one caller moves it out of AwaitingImport.
+            var claimed = await db.DownloadQueue
+                .Where(q => q.Id == id && q.Status == QueueStatus.AwaitingImport)
+                .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Importing), ct);
+            if (claimed == 0)
+            {
+                return this.Conflict(localizer, "error.queue.notAwaitingImport");
+            }
+
+            // The tracked copy has to agree with the row, or restoring AwaitingImport below would read
+            // as no change and never be written.
+            db.Entry(item).Property(q => q.Status).OriginalValue = QueueStatus.Importing;
+            item.Status = QueueStatus.Importing;
+            return await SettleImportAsync(item, request, ct);
+        }
+        finally
+        {
+            TorrentImportService.EndManualImport(item.Id);
+        }
+    }
+
+    private async Task<IActionResult> SettleImportAsync(
+        DownloadQueueItem item, ImportDecisionDto request, CancellationToken ct)
+    {
         if (request.Mode == ImportDecision.Reject)
         {
             item.Status = QueueStatus.Cancelled;
             item.CompletedAt = DateTime.UtcNow;
             item.SetError("error.download.importRejected");
+            if (TorrentUpgradeInfo.Parse(item.UpgradeInfoJson) is { } rejected)
+            {
+                rejected.Outcome = TorrentUpgradeOutcomes.Rejected;
+                item.UpgradeInfoJson = rejected.Serialize();
+            }
+
             await db.SaveChangesAsync(ct);
             await batches.DiscardAsync(item.SeriesId, item.Id);
             await Broadcast(item);
@@ -242,27 +334,41 @@ public class QueueController(
             ? TorrentImportMode.Replace
             : TorrentImportMode.SkipExisting;
 
-        item.Status = QueueStatus.Importing;
-        await db.SaveChangesAsync(ct);
         await Broadcast(item);
 
         TorrentImportOutcome outcome;
         try
         {
             var contentPath = await importer.ResolveContentPathAsync(item, ct);
-            outcome = await importer.ImportAsync(item, item.Series, contentPath, mode, ct);
+            var skipFiles = request.SkipFiles is { Count: > 0 } skip ? skip.ToHashSet(StringComparer.Ordinal) : null;
+            outcome = await importer.ImportAsync(item, item.Series!, contentPath, mode, ct, skipFiles: skipFiles);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
         {
             // Back to AwaitingImport, not Failed. The guard at the top of this method is the only
             // way in, so a row left reading Importing could never be retried from here, and the
             // poll job skips it too, since parked items are the user's to settle. Restoring the
-            // state it arrived in is what keeps a failed attempt retryable.
+            // state it arrived in is what keeps a failed attempt retryable. That holds for a dropped
+            // request too, whose token is already cancelled, hence the uncancellable save.
             item.Status = QueueStatus.AwaitingImport;
             item.SetRawError(ex.Message);
-            await db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(CancellationToken.None);
             await Broadcast(item);
             throw;
+        }
+
+        if (outcome.ErrorKey == TorrentImportService.SeriesChangedKey)
+        {
+            // Deleted: the row cascaded away with the series. Moved: still the user's to settle.
+            if (await db.DownloadQueue.AnyAsync(q => q.Id == item.Id, ct))
+            {
+                item.Status = QueueStatus.AwaitingImport;
+                item.SetError(outcome.ErrorKey);
+                await db.SaveChangesAsync(ct);
+                await Broadcast(item);
+            }
+
+            return this.Conflict(localizer, outcome.ErrorKey);
         }
 
         if (!outcome.Applied)
@@ -281,12 +387,17 @@ public class QueueController(
         item.Status = QueueStatus.Completed;
         item.CompletedAt = DateTime.UtcNow;
         item.PagesDone = item.PagesTotal;
+        item.ClearError();
 
         // Saved before the rename: its active-download check re-queries this row, and an item still
         // reading as in-flight makes it refuse to name the files it just imported.
         await db.SaveChangesAsync(ct);
-        await importer.ApplyNamingAsync(item.Series, outcome.ImportedPaths, ct);
+        await importer.ApplyNamingAsync(item.Series!, outcome.ImportedPaths, ct);
         await Broadcast(item);
+        if (outcome.Imported > 0)
+        {
+            await ChapterFileMeasureJob.TriggerAsync(schedulerFactory, logger);
+        }
 
         return Ok(new ImportDecisionResultDto(
             outcome.Imported, outcome.Linked, outcome.Skipped, outcome.Deleted));

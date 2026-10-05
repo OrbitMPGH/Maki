@@ -16,7 +16,10 @@ namespace Maki.Core.Sources;
 /// </para>
 /// <para>
 /// Successes only. A failed listing is not cached: a source that was briefly down should be retried
-/// on the next item, not remembered as broken for the rest of the TTL.
+/// on the next item, not remembered as broken for the rest of the TTL. The one exception is the
+/// callers already queued behind the failing fetch: they get its exception (for up to
+/// <see cref="FailureTtl"/>) instead of each re-running a listing that just timed out or was told 429.
+/// That gate is <see cref="SingleFlightGate"/>, shared with <see cref="SourceExternalIdCache"/>.
 /// </para>
 /// </summary>
 public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChapterListCache> logger)
@@ -34,9 +37,11 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     /// </summary>
     private const int MaxEntries = 512;
 
-    private sealed class Entry
+    public static readonly TimeSpan FailureTtl = SingleFlightGate.FailureTtl;
+
+    private sealed class Entry(TimeProvider time)
     {
-        public readonly SemaphoreSlim Gate = new(1, 1);
+        public readonly SingleFlightGate Flight = new(time);
         public IReadOnlyList<SourceChapter>? Chapters;
         public DateTime FetchedAt = DateTime.MinValue;
         public long LastUsedTicks;
@@ -52,7 +57,7 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     public async Task<IReadOnlyList<SourceChapter>> GetAsync(
         ISource source, string sourceSeriesId, string? languageFilter, CancellationToken ct = default)
     {
-        var entry = _entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry());
+        var entry = _entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry(time));
         var now = time.GetUtcNow().UtcDateTime;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -61,23 +66,15 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
             return entry.Chapters!;
         }
 
-        await entry.Gate.WaitAsync(ct);
-        try
-        {
-            // Somebody else refreshed it while this call waited for the gate.
-            if (IsFresh(entry, time.GetUtcNow().UtcDateTime))
+        return await entry.Flight.RunAsync(
+            () => (IsFresh(entry, time.GetUtcNow().UtcDateTime), entry.Chapters!),
+            async token =>
             {
-                return entry.Chapters!;
-            }
-
-            var chapters = await source.ListChaptersAsync(sourceSeriesId, languageFilter, ct);
-            Fill(entry, chapters);
-            return chapters;
-        }
-        finally
-        {
-            entry.Gate.Release();
-        }
+                var chapters = await source.ListChaptersAsync(sourceSeriesId, languageFilter, token);
+                Fill(entry, chapters);
+                return chapters;
+            },
+            ct);
     }
 
     /// <summary>
@@ -89,7 +86,7 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     /// </summary>
     public void Store(
         ISource source, string sourceSeriesId, string? languageFilter, IReadOnlyList<SourceChapter> chapters) =>
-        Fill(_entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry()), chapters);
+        Fill(_entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry(time)), chapters);
 
     private static string Key(ISource source, string sourceSeriesId, string? languageFilter) =>
         $"{source.Name} {sourceSeriesId} {languageFilter ?? string.Empty}";
@@ -121,7 +118,7 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
         {
             // Skip an entry whose gate is held: a fetch is in flight against it, and dropping it now
             // would only make the next caller start a second one.
-            if (!IsFresh(entry, now) && entry.Gate.CurrentCount == 1)
+            if (!IsFresh(entry, now) && !entry.Flight.Busy)
             {
                 _entries.TryRemove(key, out _);
             }

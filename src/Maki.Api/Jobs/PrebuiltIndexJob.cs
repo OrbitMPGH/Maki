@@ -1,3 +1,5 @@
+using Maki.Api.Localization;
+using Maki.Core.Localization;
 using Maki.Metadata.Embedding;
 using Quartz;
 
@@ -13,7 +15,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class PrebuiltIndexJob(
-    PrebuiltIndexInstaller installer, ArtifactBuildGate gate, ILogger<PrebuiltIndexJob> logger) : IJob
+    PrebuiltIndexInstaller installer, ArtifactBuildGate gate, IMessageCatalog messages, ILogger<PrebuiltIndexJob> logger) : IJob
 {
     public static readonly JobKey Key = new("prebuilt-index");
 
@@ -32,14 +34,14 @@ public class PrebuiltIndexJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
-                logger.LogInformation("Prebuilt embedding index installed: {Reason}", result.Reason);
+                logger.LogInformation("Prebuilt embedding index: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else
             {
-                logger.LogDebug("Prebuilt embedding index not installed: {Reason}", result.Reason);
+                logger.LogDebug("Prebuilt embedding index not installed: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {
             // Shutdown mid-download; the staged file is discarded and the next run starts over.
         }
@@ -48,4 +50,7 @@ public class PrebuiltIndexJob(
             logger.LogWarning(ex, "Prebuilt embedding index check failed");
         }
     }
+
+    /// <summary>The installer answers with a catalogue key; the log is English, so render it in English.</summary>
+    private string Outcome(string reason, object? args) => messages.GetFor(SupportedLanguages.Default, reason, args);
 }

@@ -19,7 +19,9 @@ using Maki.Metadata.Taste;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Metadata.RecoGraph;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Quartz;
 
 namespace Maki.Api.Controllers;
@@ -70,6 +72,7 @@ public class SettingsController(
     ICurrentUser currentUser,
     IUserSettings userSettings,
     KavitaUserResolver kavitaUser,
+    KavitaLiveReadSync kavitaLive,
     ISchedulerFactory schedulerFactory,
     IServiceScopeFactory scopeFactory,
     ILogger<SettingsController> logger) : ControllerBase
@@ -125,10 +128,32 @@ public class SettingsController(
     /// Hardlink completed torrents into the library instead of copying them, where the
     /// filesystem allows it. See <see cref="SettingKeys.DownloadUseHardlinks"/>.
     /// </param>
+    /// <param name="SourceOrder">
+    /// "manual" or "quality"; see <see cref="SettingKeys.DownloadSourceOrder"/>. Null on a write leaves it alone.
+    /// </param>
+    /// <param name="ScoutOnMatch">See <see cref="SettingKeys.SourcesScoutOnMatch"/>. Null on a write leaves it alone.</param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
-        bool UseHardlinks = true, int? BulkHoldThreshold = null);
+        bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null);
+    /// <param name="Enabled">Turns the daily upgrade scan on.</param>
+    /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
+    /// <param name="MaxPerDay">0 means no cap.</param>
+    /// <param name="TrashRetentionDays">0 purges replaced files on the next housekeeping run.</param>
+    public record UpgradeSettings(
+        bool Enabled,
+        int? DefaultProfileId,
+        int ScanHour = 4,
+        int MaxPerDay = 25,
+        int MaxProbesPerRun = 50,
+        int QuietPeriodDays = 7,
+        int TrashRetentionDays = 14,
+        bool ScanIncognito = true,
+        bool VolumeSearch = true,
+        long TorrentAutoGrabMaxBytes = UpgradeOptions.DefaultAutoGrabMaxBytes,
+        int VolumeMissingTolerance = 3,
+        int VolumeSearchesPerRun = 10,
+        int ProposalExpiryDays = 30);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -144,8 +169,14 @@ public class SettingsController(
     public record KavitaSettings(
         string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo,
         int? UserId = null, int? ResolvedUserId = null);
+    /// <param name="PullFromKavita">
+    /// Nullable so the reader's own prefs write, which predates it and never sends it, leaves the
+    /// stored value alone instead of switching it off.
+    /// </param>
+    /// <param name="KavitaLive">Read-only: the live connection's state, see <see cref="KavitaLiveStatus"/>.</param>
     public record ReaderSettings(
-        Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita, int? KavitaUserId = null);
+        Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita, int? KavitaUserId = null,
+        bool? PullFromKavita = null, KavitaLiveStatus? KavitaLive = null);
     /// <param name="SeriesSections">
     /// Nullable, and coalesced to the default on write: a client built before this field existed PUTs
     /// a two-field body, and turning that into "both rails on" is the safe failure — the same
@@ -176,9 +207,14 @@ public class SettingsController(
     /// <param name="Language">
     /// Whether this user still has the one-off "Maki speaks your language now" notice waiting.
     /// </param>
-    public record AnnouncementsResponse(bool Language);
+    /// <param name="Appearance">Same, for the notice about the new background and accent choices.</param>
+    public record AnnouncementsResponse(bool Language, bool Appearance);
 
-    public record OpdsSettings(bool Enabled, bool TrackProgress);
+    /// <param name="Password">
+    /// The account password, required only when this request mints the first token (enabling with
+    /// none yet), the same as minting an API key.
+    /// </param>
+    public record OpdsSettings(bool Enabled, bool TrackProgress, string? Password = null);
 
     public record SecuritySettings(
         bool RequireHttps,
@@ -261,11 +297,13 @@ public class SettingsController(
     public async Task<IActionResult> GetReader(CancellationToken ct)
     {
         var stored = await userSettings.GetManyAsync(
-            [SettingKeys.ReaderPrefs, SettingKeys.ReaderPushToKavita], ct);
+            [SettingKeys.ReaderPrefs, SettingKeys.ReaderPushToKavita, SettingKeys.ReaderPullFromKavita], ct);
         return Ok(new ReaderSettings(
             Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)),
             stored.GetValueOrDefault(SettingKeys.ReaderPushToKavita) == "true",
-            KavitaUserId: await kavitaUser.ResolveAsync(ct)));
+            KavitaUserId: await kavitaUser.ResolveAsync(ct),
+            PullFromKavita: stored.GetValueOrDefault(SettingKeys.ReaderPullFromKavita) == "true",
+            KavitaLive: kavitaLive.Status));
     }
 
     /// <summary>
@@ -284,7 +322,13 @@ public class SettingsController(
         await userSettings.SetAsync(SettingKeys.ReaderPrefs,
             Maki.Core.Reading.ReaderPrefsSpec.Serialize(defaults), ct);
         await userSettings.SetAsync(SettingKeys.ReaderPushToKavita, request.PushToKavita ? "true" : "false", ct);
-        return Ok(new ReaderSettings(defaults, request.PushToKavita, await kavitaUser.ResolveAsync(ct)));
+        if (request.PullFromKavita is { } pull)
+        {
+            await userSettings.SetAsync(SettingKeys.ReaderPullFromKavita, pull ? "true" : "false", ct);
+            kavitaLive.Nudge();
+        }
+
+        return await GetReader(ct);
     }
 
     /// <summary>
@@ -318,17 +362,33 @@ public class SettingsController(
     /// Enabling mints a token if this user has none. Disabling deliberately keeps the existing one, so
     /// switching OPDS off and on again doesn't silently break every reader already configured with it
     /// — throwing readers off is what <c>opds/token</c> is for.
+    /// <para>
+    /// Session cookie only, and minting asks for the password, for the reason
+    /// <c>POST account/apikeys</c> does: the token outlives the session that minted it.
+    /// </para>
     /// </summary>
     [Authorize(Policy = Policies.UseOpds)]
+    [CookieSessionOnly]
     [HttpPut("opds")]
-    public async Task<IActionResult> SetOpds([FromBody] OpdsSettings request, CancellationToken ct)
+    public async Task<IActionResult> SetOpds(
+        [FromBody] OpdsSettings request,
+        [FromServices] UserManager<MakiUser> users,
+        [FromServices] SignInManager<MakiUser> signIn,
+        CancellationToken ct)
     {
+        var existing = await CurrentOpdsKeyAsync(ct);
+        var mints = request.Enabled && existing is null;
+        if (mints && await ConfirmOpdsPasswordAsync(users, signIn, request.Password) is { } refused)
+        {
+            return refused;
+        }
+
         await userSettings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
         await userSettings.SetAsync(
             SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
+        OpdsAccessService.EvictUser(currentUser.UserId);
 
-        var existing = await CurrentOpdsKeyAsync(ct);
-        if (request.Enabled && existing is null)
+        if (mints)
         {
             var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
             return Ok(new OpdsSettingsResponse(true, request.TrackProgress, true, prefix, feedUrl));
@@ -338,12 +398,27 @@ public class SettingsController(
             request.Enabled, request.TrackProgress, existing is not null, existing?.Prefix, FeedUrl: null));
     }
 
-    /// <summary>Mints a fresh token and revokes the previous one, invalidating every feed URL already handed out.</summary>
+    /// <summary>
+    /// Mints a fresh token and revokes the previous one, invalidating every feed URL already handed
+    /// out. Asks for the password, as <see cref="SetOpds"/> does when it mints.
+    /// </summary>
     [Authorize(Policy = Policies.UseOpds)]
+    [CookieSessionOnly]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     [HttpPost("opds/token")]
-    public async Task<IActionResult> RotateOpdsToken(CancellationToken ct)
+    public async Task<IActionResult> RotateOpdsToken(
+        [FromBody] Maki.Api.Dtos.ConfirmPasswordRequest? request,
+        [FromServices] UserManager<MakiUser> users,
+        [FromServices] SignInManager<MakiUser> signIn,
+        CancellationToken ct)
     {
+        if (await ConfirmOpdsPasswordAsync(users, signIn, request?.Password) is { } refused)
+        {
+            return refused;
+        }
+
         var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
+        OpdsAccessService.EvictUser(currentUser.UserId);
         var stored = await userSettings.GetManyAsync(
             [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
         return Ok(new OpdsSettingsResponse(
@@ -352,6 +427,20 @@ public class SettingsController(
             true,
             prefix,
             feedUrl));
+    }
+
+    private async Task<IActionResult?> ConfirmOpdsPasswordAsync(
+        UserManager<MakiUser> users, SignInManager<MakiUser> signIn, string? password)
+    {
+        var user = await users.FindByIdAsync(currentUser.UserId.ToString(CultureInfo.InvariantCulture));
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        return await AccountCredentials.ConfirmPasswordAsync(users, signIn, user, password) is { } key
+            ? this.Fail(localizer, key)
+            : null;
     }
 
     private Task<UserApiKey?> CurrentOpdsKeyAsync(CancellationToken ct) =>
@@ -515,18 +604,31 @@ public class SettingsController(
 
     /// <summary>
     /// The one-off notices this user has not been shown yet. Read on every app load, so it is one
-    /// key read and nothing more.
+    /// bulk key read and nothing more.
     /// </summary>
     [HttpGet("announcements")]
-    public async Task<IActionResult> GetAnnouncements(CancellationToken ct) =>
-        Ok(new AnnouncementsResponse(
-            await userSettings.GetAsync(SettingKeys.UiLanguageAnnouncement, ct) == "pending"));
+    public async Task<IActionResult> GetAnnouncements(CancellationToken ct)
+    {
+        var rows = await userSettings.GetManyAsync(
+            [SettingKeys.UiLanguageAnnouncement, SettingKeys.UiAppearanceAnnouncement], ct);
+        return Ok(new AnnouncementsResponse(
+            rows.GetValueOrDefault(SettingKeys.UiLanguageAnnouncement) == "pending",
+            rows.GetValueOrDefault(SettingKeys.UiAppearanceAnnouncement) == "pending"));
+    }
 
     /// <summary>Marks the language notice as shown. Idempotent, and only ever for the caller.</summary>
     [HttpPost("announcements/language/seen")]
     public async Task<IActionResult> SeenLanguageAnnouncement(CancellationToken ct)
     {
         await userSettings.SetAsync(SettingKeys.UiLanguageAnnouncement, "seen", ct);
+        return NoContent();
+    }
+
+    /// <summary>Marks the appearance notice as shown. Idempotent, and only ever for the caller.</summary>
+    [HttpPost("announcements/appearance/seen")]
+    public async Task<IActionResult> SeenAppearanceAnnouncement(CancellationToken ct)
+    {
+        await userSettings.SetAsync(SettingKeys.UiAppearanceAnnouncement, "seen", ct);
         return NoContent();
     }
 
@@ -790,7 +892,12 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
-        await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct)));
+        await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
+        await SourceOrderNameAsync(ct),
+        await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"));
+
+    private async Task<string> SourceOrderNameAsync(CancellationToken ct) => SourceOrderService.Name(
+        SourceOrderService.Parse(await settings.GetAsync(SettingKeys.DownloadSourceOrder, ct)) ?? SourceOrderMode.Manual);
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
@@ -819,6 +926,12 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
         }
 
+        var sourceOrder = SourceOrderService.Parse(request.SourceOrder);
+        if (request.SourceOrder is not null && sourceOrder is null)
+        {
+            return this.Fail(localizer, "error.sourceMapping.unknownOrderMode", new { mode = request.SourceOrder });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -841,7 +954,117 @@ public class SettingsController(
                 bulkHold.ToString(CultureInfo.InvariantCulture), ct);
         }
 
-        return Ok(request with { BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct) });
+        if (sourceOrder is { } order)
+        {
+            await settings.SetAsync(SettingKeys.DownloadSourceOrder, SourceOrderService.Name(order), ct);
+        }
+
+        if (request.ScoutOnMatch is { } scoutOnMatch)
+        {
+            await settings.SetAsync(SettingKeys.SourcesScoutOnMatch, scoutOnMatch ? "true" : "false", ct);
+        }
+
+        return Ok(request with
+        {
+            BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
+            SourceOrder = await SourceOrderNameAsync(ct),
+            ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"
+        });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("upgrades")]
+    public async Task<IActionResult> GetUpgrades(CancellationToken ct)
+    {
+        var options = await UpgradeOptions.LoadAsync(settings, ct);
+        var defaultId = options.DefaultProfileId;
+        if (defaultId is { } id && !await db.UpgradeProfiles.AnyAsync(p => p.Id == id, ct))
+        {
+            defaultId = null;
+        }
+
+        return Ok(new UpgradeSettings(options.Enabled, defaultId, options.ScanHour, options.MaxPerDay,
+            options.MaxProbesPerRun, options.QuietPeriodDays, options.TrashRetentionDays, options.ScanIncognito,
+            options.VolumeSearch, options.TorrentAutoGrabMaxBytes, options.VolumeMissingTolerance,
+            options.VolumeSearchesPerRun, options.ProposalExpiryDays));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("upgrades")]
+    public async Task<IActionResult> SetUpgrades([FromBody] UpgradeSettings request, CancellationToken ct)
+    {
+        if (request.DefaultProfileId is { } id && !await db.UpgradeProfiles.AnyAsync(p => p.Id == id, ct))
+        {
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
+        }
+
+        if (request.ScanHour is < 0 or > 23)
+        {
+            return this.Fail(localizer, "error.settings.upgradesScanHourRange", new { min = 0, max = 23 });
+        }
+
+        if (request.MaxPerDay is < 0 or > 1000)
+        {
+            return this.Fail(localizer, "error.settings.upgradesMaxPerDayRange", new { min = 0, max = 1000 });
+        }
+
+        if (request.MaxProbesPerRun is < 1 or > 500)
+        {
+            return this.Fail(localizer, "error.settings.upgradesMaxProbesPerRunRange", new { min = 1, max = 500 });
+        }
+
+        if (request.QuietPeriodDays is < 0 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesQuietPeriodDaysRange", new { min = 0, max = 365 });
+        }
+
+        if (request.TrashRetentionDays is < 0 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesTrashRetentionDaysRange", new { min = 0, max = 365 });
+        }
+
+        if (request.TorrentAutoGrabMaxBytes < 0)
+        {
+            return this.Fail(localizer, "error.settings.upgradesTorrentAutoGrabMaxBytesRange");
+        }
+
+        if (request.VolumeMissingTolerance is < 0 or > 50)
+        {
+            return this.Fail(localizer, "error.settings.upgradesVolumeMissingToleranceRange", new { min = 0, max = 50 });
+        }
+
+        if (request.VolumeSearchesPerRun is < 1 or > 200)
+        {
+            return this.Fail(localizer, "error.settings.upgradesVolumeSearchesPerRunRange", new { min = 1, max = 200 });
+        }
+
+        if (request.ProposalExpiryDays is < 1 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesProposalExpiryDaysRange", new { min = 1, max = 365 });
+        }
+
+        await settings.SetAsync(SettingKeys.UpgradesEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesDefaultProfileId,
+            request.DefaultProfileId?.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesScanHour, request.ScanHour.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesMaxPerDay, request.MaxPerDay.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesMaxProbesPerRun,
+            request.MaxProbesPerRun.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesQuietPeriodDays,
+            request.QuietPeriodDays.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesTrashRetentionDays,
+            request.TrashRetentionDays.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesScanIncognito, request.ScanIncognito ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeSearch, request.VolumeSearch ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesTorrentAutoGrabMaxBytes,
+            request.TorrentAutoGrabMaxBytes.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeMissingTolerance,
+            request.VolumeMissingTolerance.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeSearchesPerRun,
+            request.VolumeSearchesPerRun.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesProposalExpiryDays,
+            request.ProposalExpiryDays.ToString(CultureInfo.InvariantCulture), ct);
+        return Ok(request);
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1143,6 +1366,7 @@ public class SettingsController(
 
         // The resolver caches for a minute; without this the change appears not to have taken.
         kavitaUser.Invalidate();
+        kavitaLive.Nudge();
         return await GetKavita(ct);
     }
 
@@ -1167,6 +1391,7 @@ public class SettingsController(
 
         // The resolver caches for a minute; without this the change appears not to have taken.
         kavitaUser.Invalidate();
+        kavitaLive.Nudge();
         return Ok(new KavitaUserSetting(await kavitaUser.ResolveAsync(ct)));
     }
 
@@ -1840,17 +2065,16 @@ public class SettingsController(
     /// trusted-proxy list and the lockout thresholds all configure objects the host builds once — so
     /// a change here takes effect on restart, and the UI says so.
     /// </summary>
+    // Read through the same clamp startup applies, so a stored value from before the bounds existed
+    // shows as what is actually in effect rather than failing validation on the next save.
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("security")]
     public async Task<IActionResult> GetSecurity(CancellationToken ct) => Ok(new SecuritySettings(
         await settings.GetAsync(SettingKeys.AuthRequireHttps, ct) == "true",
         await settings.GetAsync(SettingKeys.AuthTrustedProxies, ct) ?? string.Empty,
-        int.TryParse(await settings.GetAsync(SettingKeys.AuthLockoutMaxAttempts, ct), out var attempts)
-            ? attempts : AuthRuntimeOptions.DefaultLockoutMaxAttempts,
-        int.TryParse(await settings.GetAsync(SettingKeys.AuthLockoutMinutes, ct), out var minutes)
-            ? minutes : AuthRuntimeOptions.DefaultLockoutMinutes,
-        int.TryParse(await settings.GetAsync(SettingKeys.AuthSessionDays, ct), out var days)
-            ? days : AuthRuntimeOptions.DefaultSessionDays));
+        AuthRuntimeOptions.LockoutMaxAttemptsFrom(await settings.GetAsync(SettingKeys.AuthLockoutMaxAttempts, ct)),
+        AuthRuntimeOptions.LockoutMinutesFrom(await settings.GetAsync(SettingKeys.AuthLockoutMinutes, ct)),
+        AuthRuntimeOptions.SessionDaysFrom(await settings.GetAsync(SettingKeys.AuthSessionDays, ct))));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("security")]
@@ -1869,15 +2093,30 @@ public class SettingsController(
             }
         }
 
+        // Zero is meaningful (lockout off), so that range starts at zero rather than at one.
+        if (request.LockoutMaxAttempts is < 0 or > AuthRuntimeOptions.MaxLockoutMaxAttempts)
+        {
+            return this.Fail(localizer, "error.settings.lockoutMaxAttemptsRange",
+                new { min = 0, max = AuthRuntimeOptions.MaxLockoutMaxAttempts });
+        }
+
+        if (request.LockoutMinutes is < 1 or > AuthRuntimeOptions.MaxLockoutMinutes)
+        {
+            return this.Fail(localizer, "error.settings.lockoutMinutesRange",
+                new { min = 1, max = AuthRuntimeOptions.MaxLockoutMinutes });
+        }
+
+        if (request.SessionDays is < 1 or > AuthRuntimeOptions.MaxSessionDays)
+        {
+            return this.Fail(localizer, "error.settings.sessionDaysRange",
+                new { min = 1, max = AuthRuntimeOptions.MaxSessionDays });
+        }
+
         await settings.SetAsync(SettingKeys.AuthRequireHttps, request.RequireHttps ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.AuthTrustedProxies, request.TrustedProxies, ct);
-        // Zero is meaningful (lockout off), so it is clamped at zero rather than at one.
-        await settings.SetAsync(SettingKeys.AuthLockoutMaxAttempts,
-            Math.Max(0, request.LockoutMaxAttempts).ToString(), ct);
-        await settings.SetAsync(SettingKeys.AuthLockoutMinutes,
-            Math.Max(1, request.LockoutMinutes).ToString(), ct);
-        await settings.SetAsync(SettingKeys.AuthSessionDays,
-            Math.Max(1, request.SessionDays).ToString(), ct);
+        await settings.SetAsync(SettingKeys.AuthLockoutMaxAttempts, request.LockoutMaxAttempts.ToString(), ct);
+        await settings.SetAsync(SettingKeys.AuthLockoutMinutes, request.LockoutMinutes.ToString(), ct);
+        await settings.SetAsync(SettingKeys.AuthSessionDays, request.SessionDays.ToString(), ct);
 
         return await GetSecurity(ct);
     }
@@ -1919,7 +2158,10 @@ public class SettingsController(
             OidcRuntimeOptions.BreakGlassSet));
     }
 
+    // Session cookie only: a leaked admin key repointing the issuer at a provider it controls would
+    // be a way back in that survives revoking the key.
     [Authorize(Policy = Policies.Admin)]
+    [CookieSessionOnly]
     [HttpPut("oidc")]
     public async Task<IActionResult> SetOidc([FromBody] OidcSettings request, CancellationToken ct)
     {

@@ -2,61 +2,161 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { MantineProvider } from '@mantine/core'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { accents, createAppTheme } from './theme'
+import { accentSwatch, accents, createAppTheme, groundRamp, grounds } from './theme'
 
 /**
- * User-selectable themes. Each preset pairs an accent palette (drives Mantine's `brand`
- * colour and the CSS `--brand*` variables via `[data-accent]` in theme.css) with a colour
- * scheme. The choice persists in localStorage and is applied before first paint.
+ * Appearance is two independent choices. A background is a dark surface ramp, the light theme, or
+ * the OS setting; an accent is the brand colour on top. Either can change without the other, and
+ * both persist in localStorage.
  *
- * `label` is a descriptor, not a string: this table is built once when the module loads, so a
+ * `label` is a descriptor, not a string: these tables are built once when the module loads, so a
  * rendered string here would be stuck in whichever language was active at that moment. Render
  * with `useLabel()`. `id` is persisted in localStorage and must stay exactly as it is.
  */
-export interface ThemePreset {
+export interface BackgroundOption {
   id: string
   label: MessageDescriptor
-  /** Accent palette key in theme.ts `accents`. */
-  accent: keyof typeof accents
   /** `system` follows the OS light/dark setting and changes with it live. */
   scheme: 'dark' | 'light' | 'system'
-  /** Swatch shown in the settings picker (the accent's primary shade). Any CSS background. */
+  /** Surface ramp key in theme.ts `grounds`, used while the scheme resolves to dark. */
+  ground: keyof typeof grounds
+  /** Swatch for the picker, given the active accent's hex: tinted surfaces follow the accent. */
+  swatch: (accentHex: string) => string
+}
+
+export interface AccentOption {
+  id: keyof typeof accents
+  label: MessageDescriptor
+  /** The accent's primary shade, also the hex that background swatches derive from. */
   swatch: string
 }
 
-export const THEME_PRESETS: ThemePreset[] = [
-  { id: 'indigo', label: msg`Indigo`, accent: 'indigo', scheme: 'dark', swatch: '#6d7dff' },
-  { id: 'rose', label: msg`Rose`, accent: 'rose', scheme: 'dark', swatch: '#f52069' },
-  { id: 'emerald', label: msg`Emerald`, accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },
-  { id: 'amber', label: msg`Amber`, accent: 'amber', scheme: 'dark', swatch: '#f0ad14' },
-  { id: 'light', label: msg`Light`, accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
+const tintedSwatch = (accentHex: string) => `color-mix(in srgb, #1b1b1b 96%, ${accentHex})`
+
+export const BACKGROUNDS: BackgroundOption[] = [
+  { id: 'tinted', label: msg`Tinted black`, scheme: 'dark', ground: 'tinted', swatch: tintedSwatch },
+  { id: 'night', label: msg`Night`, scheme: 'dark', ground: 'night', swatch: () => '#161922' },
+  { id: 'charcoal', label: msg`Charcoal`, scheme: 'dark', ground: 'charcoal', swatch: () => '#181818' },
+  { id: 'moss', label: msg`Moss`, scheme: 'dark', ground: 'moss', swatch: () => '#1b1e1b' },
+  { id: 'light', label: msg`Light`, scheme: 'light', ground: 'tinted', swatch: () => '#f4f5fa' },
   {
     id: 'system',
     label: msg`Match system`,
-    accent: 'indigo',
     scheme: 'system',
-    swatch: 'linear-gradient(135deg, #f4f5fa 50%, #0b0d13 50%)',
+    ground: 'tinted',
+    swatch: (accentHex) => `linear-gradient(135deg, #f4f5fa 50%, ${tintedSwatch(accentHex)} 50%)`,
   },
 ]
 
-const STORAGE_KEY = 'maki-theme'
-const DEFAULT_ID = 'indigo'
+export const ACCENTS: AccentOption[] = [
+  { id: 'indigo', label: msg`Indigo`, swatch: accentSwatch('indigo') },
+  { id: 'rose', label: msg`Rose`, swatch: accentSwatch('rose') },
+  { id: 'blush', label: msg`Blush`, swatch: accentSwatch('blush') },
+  { id: 'emerald', label: msg`Emerald`, swatch: accentSwatch('emerald') },
+  { id: 'amber', label: msg`Amber`, swatch: accentSwatch('amber') },
+]
 
-function presetFor(id: string): ThemePreset {
-  return THEME_PRESETS.find((p) => p.id === id) ?? THEME_PRESETS[0]
+const BACKGROUND_KEY = 'maki-background'
+const ACCENT_KEY = 'maki-accent'
+/** Pre-split storage: one preset id that bundled scheme and accent. Read once, then removed. */
+const LEGACY_KEY = 'maki-theme'
+
+// Nothing stored means the user never picked, so they follow the defaults. Stored ids are kept.
+const DEFAULT_BACKGROUND = 'tinted'
+const DEFAULT_ACCENT: AccentOption['id'] = 'indigo'
+
+// A returning user keeps exactly what they had: the old presets all sat on the night ground.
+const LEGACY_PRESETS: Record<string, [background: string, accent: AccentOption['id']]> = {
+  indigo: ['night', 'indigo'],
+  rose: ['night', 'rose'],
+  blush: ['night', 'blush'],
+  emerald: ['night', 'emerald'],
+  amber: ['night', 'amber'],
+  light: ['light', 'indigo'],
+  system: ['system', 'indigo'],
+}
+
+// Storage can be blocked or throw (private windows, cleared site data); the theme must still render.
+function storageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function storageSet(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // The choice still applies for this session.
+  }
+}
+
+function readStored(): { background: string; accent: AccentOption['id'] } {
+  const legacy = storageGet(LEGACY_KEY)
+  if (legacy !== null) {
+    try {
+      localStorage.removeItem(LEGACY_KEY)
+    } catch {
+      // Nothing to clean up if storage is unavailable.
+    }
+    const mapped = Object.hasOwn(LEGACY_PRESETS, legacy) ? LEGACY_PRESETS[legacy] : undefined
+    if (mapped) {
+      storageSet(BACKGROUND_KEY, mapped[0])
+      storageSet(ACCENT_KEY, mapped[1])
+    }
+  }
+  return {
+    background: storageGet(BACKGROUND_KEY) ?? DEFAULT_BACKGROUND,
+    accent: (storageGet(ACCENT_KEY) as AccentOption['id'] | null) ?? DEFAULT_ACCENT,
+  }
+}
+
+/** The resolved `--app-bg` as a colour a `theme-color` meta accepts; the raw property can be a `color-mix()` string. */
+function resolveAppBackground(): string | null {
+  const probe = document.createElement('div')
+  probe.style.cssText = 'display:none;background-color:var(--app-bg)'
+  document.body.appendChild(probe)
+  const color = getComputedStyle(probe).backgroundColor
+  probe.remove()
+  if (/^(#|rgb)/.test(color)) return color
+  try {
+    const ctx = document.createElement('canvas').getContext('2d')
+    if (!ctx) return null
+    ctx.fillStyle = '#010203'
+    ctx.fillStyle = color
+    if (ctx.fillStyle === '#010203') return null
+    ctx.fillRect(0, 0, 1, 1)
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+    return `rgb(${r}, ${g}, ${b})`
+  } catch {
+    return null
+  }
+}
+
+function backgroundFor(id: string): BackgroundOption {
+  return BACKGROUNDS.find((b) => b.id === id) ?? BACKGROUNDS[0]
+}
+
+function accentFor(id: string): AccentOption {
+  return ACCENTS.find((a) => a.id === id) ?? ACCENTS[0]
 }
 
 interface ThemeContextValue {
-  themeId: string
-  setThemeId: (id: string) => void
-  presets: ThemePreset[]
+  background: string
+  setBackground: (id: string) => void
+  accent: AccentOption['id']
+  setAccent: (id: AccentOption['id']) => void
+  backgrounds: BackgroundOption[]
+  accents: AccentOption[]
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const DARK_QUERY = '(prefers-color-scheme: dark)'
 
-/** The OS light/dark setting, kept current so a `system` preset flips along with it. */
+/** The OS light/dark setting, kept current so a `system` background flips along with it. */
 function useSystemScheme(): 'dark' | 'light' {
   const [scheme, setScheme] = useState<'dark' | 'light'>(() =>
     window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light',
@@ -76,39 +176,57 @@ export function useThemeChoice(): ThemeContextValue {
   return ctx
 }
 
-/** Wraps MantineProvider, swapping the accent palette and colour scheme to match the choice. */
+/** Wraps MantineProvider, swapping the accent palette, surface ramp and colour scheme to match. */
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeId, setThemeIdState] = useState<string>(
-    () => localStorage.getItem(STORAGE_KEY) ?? DEFAULT_ID,
-  )
-  const preset = presetFor(themeId)
+  const [stored] = useState(readStored)
+  const [backgroundId, setBackgroundState] = useState(stored.background)
+  const [accentId, setAccentState] = useState(stored.accent)
+  const background = backgroundFor(backgroundId)
+  const accent = accentFor(accentId)
   const systemScheme = useSystemScheme()
-  const scheme = preset.scheme === 'system' ? systemScheme : preset.scheme
+  const scheme = background.scheme === 'system' ? systemScheme : background.scheme
 
-  const setThemeId = useCallback((id: string) => {
-    setThemeIdState(id)
-    localStorage.setItem(STORAGE_KEY, id)
+  const setBackground = useCallback((id: string) => {
+    setBackgroundState(id)
+    storageSet(BACKGROUND_KEY, id)
+  }, [])
+  const setAccent = useCallback((id: AccentOption['id']) => {
+    setAccentState(id)
+    storageSet(ACCENT_KEY, id)
   }, [])
 
-  // The custom CSS in theme.css reads `[data-accent]` / `[data-theme]` on the root element.
+  // The custom CSS in theme.css reads `[data-accent]`, `[data-ground]` and `[data-theme]` on the
+  // root element.
   useEffect(() => {
     const root = document.documentElement
-    root.dataset.accent = preset.accent
+    root.dataset.accent = accent.id
+    root.dataset.ground = background.ground
     root.dataset.theme = scheme
 
     // Keep the browser and OS chrome in step with the choice: Android's address bar, and the
     // status bar of an installed (standalone) window. Read back from `--app-bg` rather than
     // duplicating the hex here, so the two can't drift: a light preset would otherwise leave a
-    // near-black bar above a white app. `getComputedStyle` after the attribute write reflects it.
-    const bg = getComputedStyle(root).getPropertyValue('--app-bg').trim()
+    // near-black bar above a white app. Resolved to a real colour because the tinted ground's
+    // `--app-bg` is a `color-mix()` string.
+    const bg = resolveAppBackground()
     const meta = document.querySelector('meta[name="theme-color"]')
     if (bg && meta) meta.setAttribute('content', bg)
-  }, [preset.accent, scheme])
+  }, [accent.id, background.ground, scheme])
 
-  const mantineTheme = useMemo(() => createAppTheme(accents[preset.accent]), [preset.accent])
+  const mantineTheme = useMemo(
+    () => createAppTheme(accents[accent.id], scheme, groundRamp(background.ground, accents[accent.id])),
+    [accent.id, background.ground, scheme],
+  )
   const value = useMemo(
-    () => ({ themeId, setThemeId, presets: THEME_PRESETS }),
-    [themeId, setThemeId],
+    () => ({
+      background: background.id,
+      setBackground,
+      accent: accent.id,
+      setAccent,
+      backgrounds: BACKGROUNDS,
+      accents: ACCENTS,
+    }),
+    [background.id, accent.id, setBackground, setAccent],
   )
 
   return (

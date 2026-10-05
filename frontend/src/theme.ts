@@ -2,12 +2,15 @@ import {
   Badge,
   Button,
   Card,
+  type MantineColorScheme,
   type MantineColorsTuple,
   type MantineThemeOverride,
   Modal,
   Paper,
   Table,
+  type VariantColorsResolver,
   createTheme,
+  defaultVariantColorsResolver,
 } from '@mantine/core'
 import type { ReactNode } from 'react'
 
@@ -18,7 +21,7 @@ const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
  *
  * Content-first, cinematic dark UI for a self-hosted collection manager. The
  * dark scale is overridden to a cohesive near-black elevation ramp so every
- * Mantine surface picks up the look for free; `brand` (indigo/periwinkle) is
+ * Mantine surface picks up the look for free; `brand` (indigo/periwinkle by default) is
  * the single accent. Semantic status hues live in ./status.ts.
  */
 
@@ -33,6 +36,19 @@ const brand: MantineColorsTuple = [
   '#3742c4',
   '#2d38a0',
   '#232c80',
+]
+
+const blush: MantineColorsTuple = [
+  '#fff0f4',
+  '#ffe0e9',
+  '#f9c3d3',
+  '#f2a2bb',
+  '#ee7fa4',
+  '#e86d96',
+  '#c4476e',
+  '#b8436a',
+  '#953556',
+  '#752a45',
 ]
 
 const rose: MantineColorsTuple = [
@@ -75,10 +91,11 @@ const amber: MantineColorsTuple = [
 ]
 
 /** Selectable accent palettes; the CSS-variable side lives in theme.css under [data-accent]. */
-export const accents: Record<string, MantineColorsTuple> = { indigo: brand, rose, emerald, amber }
+export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, emerald, amber }
 
 // Near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
-// 4 = borders, 2 = dimmed text, 0 = primary text.
+// 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the default; the others are
+// selectable grounds whose CSS side lives in theme.css under [data-ground].
 const dark: MantineColorsTuple = [
   '#c7cad4',
   '#a9adba',
@@ -92,11 +109,109 @@ const dark: MantineColorsTuple = [
   '#06070b',
 ]
 
-/** Builds the Mantine theme for a given accent palette (defaults to indigo). */
-export function createAppTheme(accent: MantineColorsTuple = brand) {
-  // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
-  const primaryShade = accent === rose ? ({ light: 6, dark: 6 } as const) : themeBase.primaryShade
-  return createTheme({ ...themeBase, primaryShade, colors: { brand: accent, dark } })
+const charcoal: MantineColorsTuple = [
+  '#c6c4bf',
+  '#a8a6a1',
+  '#8a8884',
+  '#5a5956',
+  '#2a2a2a',
+  '#1e1e1e',
+  '#181818',
+  '#0f0f0f',
+  '#0a0a0a',
+  '#060606',
+]
+
+// Faint green: the refresh's surfaces under the default neutral ink.
+const moss: MantineColorsTuple = [
+  '#c7cad4',
+  '#a9adba',
+  '#8b90a0',
+  '#5d6373',
+  '#2e332e',
+  '#222622',
+  '#1b1e1b',
+  '#0e100e',
+  '#0a0c0a',
+  '#060706',
+]
+
+// Neutral ramp under the tinted ground, wider from body to card than charcoal's: the mix toward
+// the accent lifts the body more than the cards in relative terms, so an equal ramp reads flat.
+const tintedBase: MantineColorsTuple = [
+  '#c7cad4',
+  '#a9adba',
+  '#8b90a0',
+  '#5d6373',
+  '#303030',
+  '#222222',
+  '#1b1b1b',
+  '#0b0b0b',
+  '#070707',
+  '#040404',
+]
+
+/** Selectable surface ramps; the CSS-variable side lives in theme.css under [data-ground]. */
+export const grounds: Record<string, MantineColorsTuple> = { night: dark, charcoal, moss, tinted: tintedBase }
+
+function mixHex(a: string, b: string, t: number): string {
+  const parse = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+  const [ar, ag, ab] = parse(a)
+  const [br, bg, bb] = parse(b)
+  const channel = (x: number, y: number) => Math.round(x + (y - x) * t).toString(16).padStart(2, '0')
+  return `#${channel(ar, br)}${channel(ag, bg)}${channel(ab, bb)}`
+}
+
+/** The accent's primary shade in the dark scheme, the hex `--brand` carries in theme.css. */
+export function accentSwatch(key: keyof typeof accents): string {
+  const tuple = accents[key]
+  return tuple[Math.min(primaryShades.get(tuple)?.dark ?? 5, 5)]
+}
+
+/**
+ * The surface ramp for a ground. Tinted mixes every surface 4% toward the accent, the same rule
+ * theme.css applies with color-mix, so the black belongs to whichever accent is active.
+ */
+export function groundRamp(ground: keyof typeof grounds, accent: MantineColorsTuple): MantineColorsTuple {
+  const base = grounds[ground] ?? dark
+  if (ground !== 'tinted') return base
+  const hex = accent[Math.min(primaryShades.get(accent)?.dark ?? 5, 5)]
+  return base.map((c, i) => (i >= 4 ? mixHex(c, hex, 0.04) : c)) as unknown as MantineColorsTuple
+}
+
+// Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
+// Blush fills at shade 4 in dark with dark text; light takes shade 6 with white.
+const primaryShades = new Map<MantineColorsTuple, { light: number; dark: number }>([
+  [rose, { light: 6, dark: 6 }],
+  [blush, { light: 6, dark: 4 }],
+])
+
+/**
+ * Text on a brand fill comes from `--brand-on` (theme.css), which theme.css already sets per accent
+ * and per scheme. Mantine's own resolver judges lightness from the light-scheme shade whatever
+ * scheme is active, so blush's pale dark fill would otherwise get white labels.
+ */
+const variantColorResolver: VariantColorsResolver = (input) => {
+  const resolved = defaultVariantColorsResolver(input)
+  const isBrand = !input.color || input.color === 'brand' || input.color === input.theme.primaryColor
+  if (input.variant === 'filled' && isBrand) return { ...resolved, color: 'var(--brand-on)' }
+  return resolved
+}
+
+/**
+ * Builds the Mantine theme for a given accent palette (defaults to indigo) and the active scheme.
+ * The primary shade is pinned to a single number for that scheme: Mantine reads the light shade
+ * when it picks contrast colours for checkboxes, radios and pagination, so a per-scheme object
+ * would judge the dark fill by the light one.
+ */
+export function createAppTheme(
+  accent: MantineColorsTuple = brand,
+  scheme: MantineColorScheme = 'dark',
+  ground: MantineColorsTuple = dark,
+) {
+  const shades = primaryShades.get(accent) ?? (themeBase.primaryShade as { light: number; dark: number })
+  const primaryShade = (scheme === 'light' ? shades.light : shades.dark) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+  return createTheme({ ...themeBase, primaryShade, variantColorResolver, colors: { brand: accent, dark: ground } })
 }
 
 const themeBase: MantineThemeOverride = {

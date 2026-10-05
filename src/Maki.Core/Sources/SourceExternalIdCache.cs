@@ -15,6 +15,9 @@ namespace Maki.Core.Sources;
 /// An empty result is cached — a site that publishes no tracker links for a title still publishes none
 /// a minute later, and re-fetching to rediscover that is the case this exists to avoid. A *failed*
 /// lookup is not: a source that was briefly down should be retried, not remembered as having no ids.
+/// Only the callers already queued behind a failing fetch get its exception, for up to
+/// <see cref="FailureTtl"/>, rather than each re-running it, through the same <see cref="SingleFlightGate"/>
+/// as <see cref="SourceChapterListCache"/>.
 /// </para>
 /// </summary>
 public sealed class SourceExternalIdCache(TimeProvider time)
@@ -28,9 +31,11 @@ public sealed class SourceExternalIdCache(TimeProvider time)
     /// <summary>Bounds memory at a few candidates per series being matched; the coldest go first.</summary>
     private const int MaxEntries = 512;
 
-    private sealed class Entry
+    public static readonly TimeSpan FailureTtl = SingleFlightGate.FailureTtl;
+
+    private sealed class Entry(TimeProvider time)
     {
-        public readonly SemaphoreSlim Gate = new(1, 1);
+        public readonly SingleFlightGate Flight = new(time);
         public IReadOnlyDictionary<string, string>? Ids;
         public bool Filled;
         public DateTime FetchedAt = DateTime.MinValue;
@@ -46,7 +51,7 @@ public sealed class SourceExternalIdCache(TimeProvider time)
     public async Task<IReadOnlyDictionary<string, string>?> GetAsync(
         ISource source, string sourceSeriesId, CancellationToken ct = default)
     {
-        var entry = _entries.GetOrAdd($"{source.Name} {sourceSeriesId}", _ => new Entry());
+        var entry = _entries.GetOrAdd($"{source.Name} {sourceSeriesId}", _ => new Entry(time));
         var now = time.GetUtcNow().UtcDateTime;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -55,26 +60,19 @@ public sealed class SourceExternalIdCache(TimeProvider time)
             return entry.Ids;
         }
 
-        await entry.Gate.WaitAsync(ct);
-        try
-        {
-            if (IsFresh(entry, time.GetUtcNow().UtcDateTime))
+        return await entry.Flight.RunAsync(
+            () => (IsFresh(entry, time.GetUtcNow().UtcDateTime), entry.Ids),
+            async token =>
             {
-                return entry.Ids;
-            }
-
-            var ids = await source.GetExternalIdsAsync(sourceSeriesId, ct);
-            entry.Ids = ids;
-            entry.Filled = true;
-            entry.FetchedAt = time.GetUtcNow().UtcDateTime;
-            Volatile.Write(ref entry.LastUsedTicks, entry.FetchedAt.Ticks);
-            Trim();
-            return ids;
-        }
-        finally
-        {
-            entry.Gate.Release();
-        }
+                var ids = await source.GetExternalIdsAsync(sourceSeriesId, token);
+                entry.Ids = ids;
+                entry.Filled = true;
+                entry.FetchedAt = time.GetUtcNow().UtcDateTime;
+                Volatile.Write(ref entry.LastUsedTicks, entry.FetchedAt.Ticks);
+                Trim();
+                return ids;
+            },
+            ct);
     }
 
     private bool IsFresh(Entry entry, DateTime now) => entry.Filled && now - entry.FetchedAt < Ttl;
@@ -92,7 +90,7 @@ public sealed class SourceExternalIdCache(TimeProvider time)
         {
             // Skip an entry whose gate is held: a fetch is in flight against it, and dropping it now
             // would only make the next caller start a second one.
-            if (!IsFresh(entry, now) && entry.Gate.CurrentCount == 1)
+            if (!IsFresh(entry, now) && !entry.Flight.Busy)
             {
                 _entries.TryRemove(key, out _);
             }

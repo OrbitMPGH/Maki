@@ -102,7 +102,14 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
         while (true)
         {
             var root = await GetAsync($"v1/chapter/{sourceSeriesId}/list?page={page}&page_size=3000", ct);
-            if (root.TryGetProperty("data", out var rows) && rows.ValueKind == JsonValueKind.Array)
+            if (!root.TryGetProperty("data", out var rows) ||
+                rows.ValueKind is not (JsonValueKind.Array or JsonValueKind.Null))
+            {
+                throw new InvalidOperationException(
+                    $"Shinigami v1/chapter/{sourceSeriesId}/list has a missing or non-array 'data'");
+            }
+
+            if (rows.ValueKind == JsonValueKind.Array)
             {
                 foreach (var row in rows.EnumerateArray())
                 {

@@ -25,6 +25,11 @@ export type InboxEventType =
   | 'sourceMatchFinished'
   | 'importListFinished'
   | 'followedCreatorRelease'
+  | 'chapterUpgraded'
+  | 'upgradeRestoreFailed'
+  | 'torrentProposalPending'
+  | 'volumeUpgraded'
+  | 'accountSecurity'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -95,7 +100,18 @@ export const INBOX_CATEGORIES: {
     types: ['newChapterAvailable', 'smartDownloadQueued', 'sourceMatchFinished', 'importListFinished'],
   },
   { id: 'discover', label: msg`Discover`, types: ['followedCreatorRelease'] },
-  { id: 'downloads', label: msg`Downloads`, types: ['chapterDownloaded', 'downloadFailed'] },
+  {
+    id: 'downloads',
+    label: msg`Downloads`,
+    types: [
+      'chapterDownloaded',
+      'downloadFailed',
+      'chapterUpgraded',
+      'upgradeRestoreFailed',
+      'torrentProposalPending',
+      'volumeUpgraded',
+    ],
+  },
   { id: 'progress', label: msg`Progress`, types: ['achievementUnlocked', 'levelUp'] },
   {
     id: 'requests',
@@ -132,6 +148,11 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   sourceMatchFinished: msg`Source matching finished`,
   importListFinished: msg`Import list finished`,
   followedCreatorRelease: msg`New series from creators you follow`,
+  chapterUpgraded: msg`Chapter upgraded`,
+  upgradeRestoreFailed: msg`Upgrade restore failed`,
+  torrentProposalPending: msg`Volume release proposed`,
+  volumeUpgraded: msg`Volume upgraded`,
+  accountSecurity: msg`Account security`,
 }
 
 /**
@@ -142,6 +163,10 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
   importListFinished: msg`A tracker list sync added or requested series.`,
   followedCreatorRelease: msg`Checked after each nightly catalogue update. Follow someone from their creator page.`,
+  chapterUpgraded: msg`A better release replaced a downloaded chapter's file.`,
+  upgradeRestoreFailed: msg`A file could not be put back after a failed upgrade and is waiting in the trash folder.`,
+  torrentProposalPending: msg`A torrent volume release could replace files in a series and is waiting for your decision.`,
+  volumeUpgraded: msg`A volume release replaced several chapter files in a series.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */
@@ -151,6 +176,7 @@ export const INBOX_ADMIN_ONLY: InboxEventType[] = [
   'updateAvailable',
   'importFinished',
   'backupFinished',
+  'upgradeRestoreFailed',
 ]
 
 export function useInbox(filter?: { unreadOnly?: boolean; type?: InboxEventType | null }) {

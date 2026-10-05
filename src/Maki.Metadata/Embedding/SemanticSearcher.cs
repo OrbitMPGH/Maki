@@ -17,6 +17,11 @@ public sealed record SemanticSearchOutcome(
     IReadOnlyList<ResolvedCredit> Credits)
 {
     public static readonly SemanticSearchOutcome Empty = new([], null, []);
+
+    /// <summary>Empty because the index or the query model could not be used, not because nothing matched.</summary>
+    public bool Unavailable { get; init; }
+
+    public static readonly SemanticSearchOutcome NotAvailable = new([], null, []) { Unavailable = true };
 }
 
 /// <summary>
@@ -73,14 +78,79 @@ public class SemanticSearcher(
     private IReadOnlyDictionary<int, TagInfo>? _tagVocab;
     private int _tagCacheStamp = -1;
 
-    /// <summary>True once embeddings are on and the index holds enough vectors to search.</summary>
-    public bool IsReady() => options.Enabled && store.Count() >= MinIndexed;
+    private int _embedderWarming;
 
     /// <summary>
-    /// Ranked matches for a free-text query. Empty when the index isn't built — the caller falls
-    /// back to title search rather than showing nothing.
+    /// True once embeddings are on, the index holds enough vectors to search, and the in-memory
+    /// index and query model are loaded. Either one cold after an idle unload would hold this
+    /// request for 10 to 20 s, so instead it starts loading in the background and answers false,
+    /// and the caller serves this query from the title index.
     /// </summary>
-    public async Task<SemanticSearchOutcome> SearchAsync(
+    public virtual bool IsReady()
+    {
+        if (!IsAvailable())
+        {
+            return false;
+        }
+
+        var warm = true;
+        if (!cache.IsCurrent)
+        {
+            cache.WarmInBackground();
+            warm = false;
+        }
+
+        if (!embedder.IsReady)
+        {
+            WarmEmbedder();
+            warm = false;
+        }
+
+        return warm;
+    }
+
+    /// <summary>
+    /// True when embeddings are on and the index holds enough vectors, loaded or not. A caller that
+    /// cannot accept the title fallback searches anyway and waits out the warm-up.
+    /// </summary>
+    public virtual bool IsAvailable() => options.Enabled && store.Count() >= MinIndexed;
+
+    /// <summary>
+    /// False while the query model is known not to load (embeddings off, or a failed load still in
+    /// its backoff). Waiting on the semantic path then only buys an empty answer.
+    /// </summary>
+    public virtual bool CanEmbed() => embedder.CanLoad;
+
+    private void WarmEmbedder()
+    {
+        if (Interlocked.CompareExchange(ref _embedderWarming, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await embedder.EnsureReadyAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "Background load of the text embedder failed");
+            }
+            finally
+            {
+                Volatile.Write(ref _embedderWarming, 0);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Ranked matches for a free-text query. When the index isn't built or the query model won't
+    /// load the outcome is <see cref="SemanticSearchOutcome.Unavailable"/>, and the caller answers
+    /// from the title index instead. An empty outcome without that flag is a real "no matches".
+    /// </summary>
+    public virtual async Task<SemanticSearchOutcome> SearchAsync(
         string query, RecommendationFilters? filters = null, int limit = 60, CancellationToken ct = default)
     {
         query = query?.Trim() ?? string.Empty;
@@ -94,11 +164,13 @@ public class SemanticSearcher(
         var index = await cache.GetAsync(ct);
         if (index is null || index.Count < MinIndexed)
         {
-            return SemanticSearchOutcome.Empty;
+            return SemanticSearchOutcome.NotAvailable;
         }
 
         var parsed = CatalogueQuery.Parse(query);
-        var catalogue = await catalogueIndexes.GetAsync(ct);
+        // Stated credits cannot resolve without the indexes. Otherwise they only feed the credit
+        // channel, which is not worth a cold build of several seconds on this request.
+        var catalogue = parsed.HasCredits ? await catalogueIndexes.GetAsync(ct) : catalogueIndexes.GetIfReady();
         var credits = catalogue is null
             ? CreditResolution.None
             : CreditResolver.Resolve(parsed, catalogue.Credits, tuning.Catalogue);
@@ -142,8 +214,8 @@ public class SemanticSearcher(
 
         if (!await embedder.EnsureReadyAsync(ct))
         {
-            logger.LogWarning("Semantic search skipped — the embedding model isn't available");
-            return SemanticSearchOutcome.Empty with { Credits = credits.Credits };
+            logger.LogWarning("Semantic search skipped, the embedding model isn't available");
+            return SemanticSearchOutcome.NotAvailable with { Credits = credits.Credits };
         }
 
         // How deep each channel ranks before the fusion. This is what a series has to reach to be

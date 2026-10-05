@@ -332,8 +332,7 @@ public class RecommendationFeedbackService(
             var detail = await catalogue.GetDetailAsync(id, ct)
                 ?? throw new FeedbackNotFoundException("error.feedback.unknownTitle");
             if (detail.ProviderId != id.ToString() ||
-                detail.ContentRating is not null &&
-                !ContentRating.Allowed(currentUser.MaxContentRating).Contains(detail.ContentRating))
+                !ContentRating.Permits(detail.ContentRating, currentUser.MaxContentRating))
                 throw new FeedbackValidationException("error.feedback.titleNotAvailable");
             state = new RecommendationFeedback { UserId = userId, ProviderId = id, Title = detail.Title };
             db.RecommendationFeedback.Add(state);

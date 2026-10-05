@@ -17,7 +17,9 @@ namespace Maki.Api.Auth;
 /// The disabled/unclaimed check here is a hard backstop, not the primary mechanism. Identity's
 /// security stamp validator already invalidates a disabled user's cookie, but only when its
 /// validation interval elapses; this closes that window on every request, which is what makes
-/// "disable this account" mean *now* rather than *within a minute*.
+/// "disable this account" mean *now* rather than *within a minute*. The snapshot is cached for a
+/// few seconds (<see cref="IUserSnapshotCache"/>); every write to its inputs evicts it, which is what
+/// keeps that promise.
 /// </para>
 /// </summary>
 public class CurrentUserMiddleware(RequestDelegate next)
@@ -31,7 +33,7 @@ public class CurrentUserMiddleware(RequestDelegate next)
     /// </param>
     public async Task InvokeAsync(
         HttpContext context, CurrentUserContext current, DataScope scope, MakiDbContext db,
-        ILocalizer localizer)
+        ILocalizer localizer, IUserSnapshotCache snapshots)
     {
         if (context.User.Identity?.IsAuthenticated != true)
         {
@@ -53,6 +55,34 @@ public class CurrentUserMiddleware(RequestDelegate next)
             return;
         }
 
+        var snapshot = snapshots.Get(userId) ?? await LoadAsync(db, snapshots, userId, context.RequestAborted);
+        if (snapshot is null)
+        {
+            // Deleted, suspended, or never claimed.
+            await RejectAsync(context, localizer);
+            return;
+        }
+
+        current.Set(
+            snapshot.Id,
+            snapshot.UserName,
+            snapshot.Permissions,
+            snapshot.AllRootFolders,
+            snapshot.RootFolderIds,
+            snapshot.MaxContentRating);
+
+        // Same facts, second consumer: CurrentUserContext answers "may this caller do X?" for the
+        // authorization handlers, DataScope answers "which rows exist?" for the DbContext. Set from one
+        // load so the two can never disagree.
+        scope.SetUser(snapshot.Id, snapshot.AllRootFolders);
+
+        await next(context);
+    }
+
+    private static async Task<UserSnapshot?> LoadAsync(
+        MakiDbContext db, IUserSnapshotCache snapshots, int userId, CancellationToken ct)
+    {
+        var generation = snapshots.Generation;
         var row = await db.Users
             .AsNoTracking()
             .Where(u => u.Id == userId)
@@ -66,13 +96,11 @@ public class CurrentUserMiddleware(RequestDelegate next)
                 u.Disabled,
                 u.PendingSetup
             })
-            .FirstOrDefaultAsync(context.RequestAborted);
+            .FirstOrDefaultAsync(ct);
 
         if (row is null || row.Disabled || row.PendingSetup)
         {
-            // Deleted, suspended, or never claimed.
-            await RejectAsync(context, localizer);
-            return;
+            return null;
         }
 
         // Two queries rather than one projection with a correlated collection: EF Core compiles a
@@ -83,23 +111,13 @@ public class CurrentUserMiddleware(RequestDelegate next)
             : (await db.UserRootFolders
                 .Where(g => g.UserId == userId)
                 .Select(g => g.RootFolderId)
-                .ToListAsync(context.RequestAborted))
+                .ToListAsync(ct))
                 .ToHashSet();
 
-        current.Set(
-            row.Id,
-            row.UserName ?? string.Empty,
-            row.Permissions,
-            row.AllRootFolders,
-            folders,
-            row.MaxContentRating);
-
-        // Same facts, second consumer: CurrentUserContext answers "may this caller do X?" for the
-        // authorization handlers, DataScope answers "which rows exist?" for the DbContext. Set from one
-        // load so the two can never disagree.
-        scope.SetUser(row.Id, row.AllRootFolders);
-
-        await next(context);
+        var snapshot = new UserSnapshot(
+            row.Id, row.UserName ?? string.Empty, row.Permissions, row.AllRootFolders, folders, row.MaxContentRating);
+        snapshots.Set(snapshot, generation);
+        return snapshot;
     }
 
     /// <summary>

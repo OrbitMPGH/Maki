@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Api.Dtos;
@@ -31,8 +32,17 @@ public class CompletedDownloadJob(
     QBittorrentClient qbittorrent,
     TorrentImportService importer,
     EventBroadcaster events,
+    ISchedulerFactory schedulerFactory,
     ILogger<CompletedDownloadJob> logger) : IJob
 {
+    /// <summary>How long a torrent whose hash is known may be missing from qBittorrent before its row fails.</summary>
+    internal static readonly TimeSpan MissingTorrentGrace = TimeSpan.FromHours(6);
+
+    // The job instance is created per run, so state that must outlive a poll is static. In memory
+    // only: after a restart the grace period for a missing torrent starts over, which errs on waiting.
+    private static readonly ConcurrentDictionary<int, DateTime> MissingSince = new();
+    private static int _qbittorrentDown;
+
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
@@ -61,7 +71,34 @@ public class CompletedDownloadJob(
         }
 
         var pathMap = await releaseService.GetQbtPathMapAsync(ct);
-        var torrents = await qbittorrent.ListAsync(qbt.Url, qbt.Username, qbt.Password, qbt.Category, ct);
+        IReadOnlyList<QBittorrentClient.QbtTorrent> torrents;
+        try
+        {
+            torrents = await qbittorrent.ListAsync(qbt.Url, qbt.Username, qbt.Password, qbt.Category, ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException ||
+                                   (ex is TaskCanceledException && !ct.IsCancellationRequested))
+        {
+            // Polled every 15 seconds: logging each failure with its stack buried the log within a
+            // day of qBittorrent being down. One line when it goes, one when it comes back.
+            if (Interlocked.Exchange(ref _qbittorrentDown, 1) == 0)
+            {
+                logger.LogWarning("qBittorrent at {Url} is not answering ({Error}); torrent progress is paused until it does",
+                    qbt.Url, ex.Message);
+            }
+
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _qbittorrentDown, 0) == 1)
+        {
+            logger.LogInformation("qBittorrent at {Url} is answering again", qbt.Url);
+        }
+
+        foreach (var gone in MissingSince.Keys.Where(id => pending.All(q => q.Id != id)).ToList())
+        {
+            MissingSince.TryRemove(gone, out _);
+        }
 
         // Hashes already tied to any torrent item — including completed and failed ones,
         // whose torrents keep seeding in qBittorrent. Excluding only pending items let a
@@ -85,6 +122,25 @@ public class CompletedDownloadJob(
                 continue;
             }
 
+            // A request is importing it (QueueController.Import) and owns the row until it settles.
+            // One reading Importing with no request behind it lost that request to a restart; it goes
+            // back to the user's decision rather than being imported here unattended; conditionally,
+            // since the request may have settled the row after this poll read it.
+            if (item.Status == QueueStatus.Importing)
+            {
+                if (!TorrentImportService.IsManualImportRunning(item.Id) &&
+                    await db.DownloadQueue
+                        .Where(q => q.Id == item.Id && q.Status == QueueStatus.Importing)
+                        .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.AwaitingImport), ct) > 0)
+                {
+                    db.Entry(item).Property(q => q.Status).OriginalValue = QueueStatus.AwaitingImport;
+                    item.Status = QueueStatus.AwaitingImport;
+                    await BroadcastAsync(item);
+                }
+
+                continue;
+            }
+
             var torrent = info.TorrentHash != null
                 ? torrents.FirstOrDefault(t => t.Hash.Equals(info.TorrentHash, StringComparison.OrdinalIgnoreCase))
                 : ClaimTorrent(item, torrents, claimedHashes);
@@ -96,10 +152,23 @@ public class CompletedDownloadJob(
                 {
                     item.Status = QueueStatus.Failed;
                     item.SetError("error.download.torrentMissing");
+                    await BroadcastAsync(item);
+                }
+                else if (info.TorrentHash is not null && item.Status != QueueStatus.AwaitingImport &&
+                         DateTime.UtcNow - MissingSince.GetOrAdd(item.Id, DateTime.UtcNow) > MissingTorrentGrace)
+                {
+                    // Deleted in qBittorrent, moved to another category, or dropped by it. Nothing else
+                    // settles a torrent row, so without this it read "Downloading" forever.
+                    item.Status = QueueStatus.Failed;
+                    item.SetError("error.download.torrentRemoved");
+                    MissingSince.TryRemove(item.Id, out _);
+                    await BroadcastAsync(item);
                 }
 
                 continue;
             }
+
+            MissingSince.TryRemove(item.Id, out _);
 
             if (info.TorrentHash is null)
             {
@@ -129,6 +198,12 @@ public class CompletedDownloadJob(
                     logger.LogError(ex, "Could not import torrent '{Title}'", item.Title);
                     item.Status = QueueStatus.Failed;
                     item.SetRawError(ex.Message);
+                }
+
+                // Its series was deleted mid-import and the row cascaded away with it.
+                if (db.Entry(item).State == EntityState.Detached)
+                {
+                    continue;
                 }
             }
 
@@ -202,6 +277,20 @@ public class CompletedDownloadJob(
     private async Task ImportAsync(
         DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
     {
+        TorrentImportService.BeginAutomaticImport(item.Id);
+        try
+        {
+            await ImportRegisteredAsync(item, torrent, pathMap, ct);
+        }
+        finally
+        {
+            TorrentImportService.EndAutomaticImport(item.Id);
+        }
+    }
+
+    private async Task ImportRegisteredAsync(
+        DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
+    {
         var series = item.Series!;
 
         // qBittorrent reports the path as it sees it; rewrite it to how Maki does
@@ -216,7 +305,16 @@ public class CompletedDownloadJob(
             return;
         }
 
-        if (plan.HasConflicts)
+        var decision = await importer.DecideUnattendedAsync(item, series, contentPath!, plan, ct);
+        if (decision.Guard is { } failure)
+        {
+            logger.LogInformation("Upgrade torrent '{Title}' held back for review: {File} is {Reason}",
+                item.Title, failure.File, failure.Reason);
+            return;
+        }
+
+        var skipFiles = decision.SkipFiles;
+        if (decision.Park)
         {
             item.Status = QueueStatus.AwaitingImport;
             item.ClearError();
@@ -228,12 +326,28 @@ public class CompletedDownloadJob(
             return;
         }
 
+        var statusBefore = item.Status;
         item.Status = QueueStatus.Importing;
         // The plan just built, handed over rather than left to be rebuilt: PlanAsync reads the page
         // names out of every volume archive in the download, and the answer cannot have changed
         // between the conflict check above and this line.
         var outcome = await importer.ImportAsync(
-            item, series, contentPath, TorrentImportMode.Replace, ct, plan);
+            item, series, contentPath, TorrentImportMode.Replace, ct, plan, skipFiles);
+        if (outcome.ErrorKey == TorrentImportService.SeriesChangedKey)
+        {
+            // Deleted: the row went with the series. Moved: the next poll loads the series afresh.
+            if (await db.DownloadQueue.IgnoreQueryFilters().AnyAsync(q => q.Id == item.Id, ct))
+            {
+                item.Status = statusBefore;
+            }
+            else
+            {
+                db.Entry(item).State = EntityState.Detached;
+            }
+
+            return;
+        }
+
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
@@ -251,6 +365,10 @@ public class CompletedDownloadJob(
         // than still in-flight and refuses to rename the series it just finished importing into.
         await db.SaveChangesAsync(ct);
         await importer.ApplyNamingAsync(series, outcome.ImportedPaths, ct);
+        if (outcome.Imported > 0)
+        {
+            await ChapterFileMeasureJob.TriggerAsync(schedulerFactory, logger);
+        }
     }
 
     private static ReleaseInfo? ReleaseInfoOf(DownloadQueueItem item) =>

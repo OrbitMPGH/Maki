@@ -74,6 +74,22 @@ public class WebtoonsSourceTests
     }
 
     [Fact]
+    public async Task Search_flags_canvas_as_user_made_and_reads_the_author()
+    {
+        var source = SourceFor(new() { ["en/search"] = FakeHttpClientFactory.Fixture("webtoons-search.html") });
+
+        var results = await source.SearchAsync("tower of god");
+
+        var original = Assert.Single(results, r => r.Title == "Tower of God");
+        Assert.False(original.UserGenerated);
+        Assert.Equal("SIU", original.Author);
+
+        var canvas = Assert.Single(results, r => r.SourceSeriesId == "canvas/tower-of-god-no-mans-tower/726081");
+        Assert.True(canvas.UserGenerated);
+        Assert.Equal("Bovelle", canvas.Author);
+    }
+
+    [Fact]
     public async Task Search_strips_the_image_transform_from_covers()
     {
         var source = SourceFor(new() { ["en/search"] = FakeHttpClientFactory.Fixture("webtoons-search.html") });

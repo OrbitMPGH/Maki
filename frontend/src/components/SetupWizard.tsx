@@ -55,8 +55,8 @@ import {
 } from '../api/hooks'
 import { languageName } from '../api/titles'
 import { formatBytes } from '../format'
-import { useLabel, useLanguageChoice } from '../i18n-context'
-import { useThemeChoice } from '../theme-context'
+import { useLanguageChoice } from '../i18n-context'
+import { AppearancePicker } from './AppearancePicker'
 import { ConnectionForm, type ConnectionField } from './ConnectionSettingsCard'
 import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
@@ -99,11 +99,9 @@ function SettingRow({
 
 function WelcomeStep() {
   const { t } = useLingui()
-  const renderLabel = useLabel()
   const { data: ui } = useUiSettings()
   const languageOptions = useLanguageOptions()
   const applyLanguage = useApplyLanguage()
-  const { themeId, setThemeId, presets } = useThemeChoice()
   // Applying a language clears the query cache, so the stored value is briefly unknown. Hold the
   // pick locally so the select doesn't fall back to Automatic while it reloads.
   const [languageChoice, setLanguageChoice] = useState<string | null>(null)
@@ -131,26 +129,9 @@ function WelcomeStep() {
       />
       <SettingRow
         label={<Trans>Appearance</Trans>}
-        description={<Trans>An accent colour, the light theme, or whatever your system uses. Remembered on this device.</Trans>}
+        description={<Trans>A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device.</Trans>}
       >
-        <div className="setup-swatches" role="radiogroup" aria-label={t`Appearance`}>
-          {presets.map((p) => {
-            const active = p.id === themeId
-            return (
-              <UnstyledButton
-                key={p.id}
-                role="radio"
-                aria-checked={active}
-                className="setup-swatch"
-                data-active={active || undefined}
-                onClick={() => setThemeId(p.id)}
-              >
-                <span className="setup-swatch-dot" style={{ background: p.swatch }} />
-                <span>{renderLabel(p.label)}</span>
-              </UnstyledButton>
-            )
-          })}
-        </div>
+        <AppearancePicker />
       </SettingRow>
     </>
   )

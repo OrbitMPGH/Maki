@@ -27,9 +27,29 @@ public static class ScrobblePlanner
     /// Status to list a not-yet-listed series under when there is no scrobbable
     /// progress (plan-to-read sync); null when that behavior is off.
     /// </param>
+    /// <param name="finished">
+    /// Every chapter of a one-shot is read. A one-shot has no number to raise the chapter mark to,
+    /// so without this it could never reach Completed; it pushes Completed with at least chapter 1.
+    /// Ignored when the tracker lists more than one chapter or says the work is still publishing:
+    /// the series is not a one-shot there. Callers pass the raw chapter mark; the planner owns the
+    /// "finished one-shot means chapter 1" rule.
+    /// </param>
+    /// <param name="completedLocally">
+    /// The library already records the work as completed. Without it, a finished one-shot also needs
+    /// the tracker to confirm it (not releasing, or exactly one chapter): a few read unnumbered
+    /// chapters of a series whose status is simply unknown are not evidence the work is over.
+    /// </param>
     public static ScrobblePlan Decide(
-        RemoteEntry entry, int chapter, int volume, ScrobbleStatus? fallbackStatus = null)
+        RemoteEntry entry, int chapter, int volume, ScrobbleStatus? fallbackStatus = null, bool finished = false,
+        bool completedLocally = false)
     {
+        finished = finished && entry.TotalChapters is null or <= 1 && entry.Releasing != true &&
+                   (completedLocally || entry.Releasing == false || entry.TotalChapters == 1);
+        if (finished)
+        {
+            chapter = Math.Max(chapter, 1);
+        }
+
         if (chapter <= 0 && volume <= 0)
         {
             // No scrobbable progress: only add the series to the list if it isn't
@@ -39,14 +59,18 @@ public static class ScrobblePlanner
                 return new ScrobblePlan(false, entry.ProgressChapter, entry.ProgressVolume, existing, existing);
             }
 
-            var listAs = fallbackStatus ?? ScrobbleStatus.PlanToRead;
+            if (fallbackStatus is not { } listAs)
+            {
+                return new ScrobblePlan(false, 0, 0, ScrobbleStatus.Other, ScrobbleStatus.Other);
+            }
+
             return new ScrobblePlan(true, 0, 0, listAs, listAs);
         }
 
         var newCh = Math.Max(chapter, entry.ProgressChapter);
         var newVol = Math.Max(volume, entry.ProgressVolume);
 
-        var completed = false;
+        var completed = finished;
         if (entry.TotalChapters is > 0 && newCh >= entry.TotalChapters)
         {
             completed = true;

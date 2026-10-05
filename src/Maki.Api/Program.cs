@@ -61,6 +61,8 @@ using Maki.Sources.Rawkuma;
 using Maki.Sources.TeamX;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
@@ -781,6 +783,10 @@ try
     // single chapter listing. A scoped one would be per-request and cache nothing across a batch.
     builder.Services.AddSingleton<SourceChapterListCache>();
     builder.Services.AddSingleton<SourceExternalIdCache>();
+    builder.Services.AddSingleton<SourceMatchSearchCache>();
+    builder.Services.AddSingleton<SourceOrderService>();
+    builder.Services.AddSingleton<SourceScoutService>();
+    builder.Services.AddSingleton<UpgradeScanTracker>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
@@ -791,11 +797,22 @@ try
     builder.Services.AddSingleton<SourceMatchQueue>();
     // Singleton because it owns detached jobs the request that started them no longer waits on.
     builder.Services.AddSingleton<SourceComparePreviewService>();
+    builder.Services.AddSingleton<SeriesPreviewService>();
     builder.Services.AddHostedService<SourceMatchWorkerHostedService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<FileRelinkPlanner>();
+    builder.Services.AddSingleton<ChapterFileQualityService>();
+    builder.Services.AddScoped<ChapterFileMeasureService>();
+    builder.Services.AddScoped<UpgradeEvaluationService>();
+    builder.Services.AddScoped<UpgradeProfileSeeder>();
+    builder.Services.AddScoped<SourceQualitySeeder>();
+    builder.Services.AddSingleton<SourceProbeService>();
+    builder.Services.AddScoped<UpgradeScanService>();
+    builder.Services.AddScoped<UpgradeRevertService>();
+    builder.Services.AddScoped<UpgradeTrashService>();
+    builder.Services.AddScoped<TorrentUpgradeService>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
@@ -824,6 +841,7 @@ try
     // event log rather than incremented, so an entry going stale costs a badge appearing a minute
     // late and nothing else.
     builder.Services.AddMemoryCache();
+    builder.Services.AddSingleton<IUserSnapshotCache, UserSnapshotCache>();
     builder.Services.AddScoped<UserMetricsService>();
     builder.Services.AddScoped<AchievementService>();
     builder.Services.AddSingleton<ReadingProgressGate>();
@@ -833,13 +851,17 @@ try
     // Singleton like the two Kavita services that use it: it opens its own scope per call, so it
     // can be reached from both the import's background task and the scrobble job.
     builder.Services.AddSingleton<ExternalReadSyncService>();
+    builder.Services.AddSingleton<VolumeBoundaryService>();
     builder.Services.AddSingleton<KavitaReadImportService>();
+    builder.Services.AddSingleton<KavitaLiveReadSync>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ContinueReadingService>();
     builder.Services.AddScoped<ReadingProfileService>();
     builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
+    builder.Services.AddSingleton<OpdsProgressWriter>().AddHostedService(sp => sp.GetRequiredService<OpdsProgressWriter>());
 
     builder.Services.AddHttpClient(Maki.Core.Indexers.ProwlarrClient.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers
@@ -1134,6 +1156,46 @@ try
             .WithIdentity(Maki.Api.Jobs.ImageCacheRebuildJob.Key)
             .StoreDurably());
 
+        // Same shape: only the Build button in recommendation settings runs it.
+        q.AddJob<Maki.Api.Jobs.EmbeddingIndexJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.EmbeddingIndexJob.Key)
+            .StoreDurably());
+
+        // Measures chapter files nothing has opened yet. Also fired after library and torrent
+        // imports; the timer catches anything those triggers missed. First run at +15, clear of the
+        // artifact builds in the first minutes after startup.
+        q.AddJob<Maki.Api.Jobs.ChapterFileMeasureJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
+            .WithIdentity("chapter-file-measure-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+
+        // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
+        // hour (UpgradeScanJob checks the marker), so changing the hour needs no reschedule. First
+        // poll at +25: a scan probes sources, some of which launch a browser, so it stays clear of
+        // the artifact builds and the +20 monitored sync.
+        q.AddJob<Maki.Api.Jobs.UpgradeScanJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.UpgradeScanJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.UpgradeScanJob.Key)
+            .WithIdentity("upgrade-scan-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));
+
+        // Torrent volume search, same marker shape as the upgrade scan, an hour after it.
+        q.AddJob<Maki.Api.Jobs.UpgradeVolumeSearchJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.UpgradeVolumeSearchJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.UpgradeVolumeSearchJob.Key)
+            .WithIdentity("upgrade-volume-search-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(40))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
+
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
         q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j
             .WithIdentity(Maki.Api.Jobs.CheckForUpdatesJob.Key));
@@ -1163,6 +1225,19 @@ try
         options.HttpMessageHandlerBuilderActions.Add(handlerBuilder =>
             handlerBuilder.AdditionalHandlers.Add(
                 handlerBuilder.Services.GetRequiredService<OutboundHttpLoggingHandler>())));
+
+    // Images, archives and the SignalR event stream are not in the default MIME list, so they pass
+    // through untouched. Fastest because most of it is JSON built per request, where CPU matters more
+    // than the last few percent of size.
+    builder.Services.AddResponseCompression(o =>
+    {
+        o.EnableForHttps = true;
+        o.Providers.Add<BrotliCompressionProvider>();
+        o.Providers.Add<GzipCompressionProvider>();
+        o.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/atom+xml"]);
+    });
+    builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+    builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
     var app = builder.Build();
 
@@ -1214,6 +1289,11 @@ try
         scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
+        scope.ServiceProvider.GetRequiredService<UpgradeProfileSeeder>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+        scope.ServiceProvider.GetRequiredService<SourceQualitySeeder>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
         // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist
         // on the stats page from the first release rather than only for reads after upgrade.
         scope.ServiceProvider.GetRequiredService<ReadingSessionBackfillService>()
@@ -1248,6 +1328,10 @@ try
         // options on the first request.
         app.Services.GetRequiredService<AuthRuntimeOptions>()
             .LoadAsync(db, CancellationToken.None).GetAwaiter().GetResult();
+
+        // Anything read before the migration and the marker-gated repairs above may have changed
+        // under the settings cache.
+        app.Services.GetRequiredService<SettingsService>().Invalidate();
     }
 
     var authOptions = app.Services.GetRequiredService<AuthRuntimeOptions>();
@@ -1357,8 +1441,20 @@ try
     // renders nothing at all — a blank screen with no way to sign in and nothing in the log but a
     // row of 401s. Only a deployment serving the SPA from wwwroot sees it; behind the Vite dev
     // server, which serves its own assets, everything looks fine.
+    //
+    // Vite fingerprints everything under /assets, so those never change under a URL. index.html
+    // must be revalidated every time, or a browser keeps the old shell after an upgrade and its
+    // lazy chunks point at hashes that no longer exist.
+    var spaFiles = new StaticFileOptions
+    {
+        OnPrepareResponse = c => c.Context.Response.Headers.CacheControl =
+            c.Context.Request.Path.StartsWithSegments("/assets")
+                ? "public, max-age=31536000, immutable"
+                : "no-cache"
+    };
+    app.UseResponseCompression();
     app.UseDefaultFiles();
-    app.UseStaticFiles();
+    app.UseStaticFiles(spaFiles);
 
     app.UseRateLimiter();
 
@@ -1415,7 +1511,7 @@ try
     // registers a real endpoint, so the authorization fallback policy would otherwise 401 every deep
     // link (/library, /login) on a fresh browser. index.html carries no data; the app fetches
     // /auth/me and routes itself to the login screen on a 401.
-    app.MapFallbackToFile("index.html").AllowAnonymous();
+    app.MapFallbackToFile("index.html", spaFiles).AllowAnonymous();
 
     app.Run();
 }

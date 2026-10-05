@@ -122,7 +122,7 @@ public class PublicAddressGuardTests
     {
         var handler = new RecordingHandler();
         var downloader = new PageDownloader(
-            new StubFactory(handler), new FakeCooldown(), NullLogger<PageDownloader>.Instance);
+            new StubFactory(handler), new FakeCooldown(), TimeProvider.System, NullLogger<PageDownloader>.Instance);
         var pages = new ChapterPages([new PageRequest("http://127.0.0.1/admin/secret.jpg")]);
 
         var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));

@@ -50,13 +50,17 @@ public class SmartDownloadJob(
 
         var limit = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5;
         var batchSize = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var n) ? n : 10;
+        var maxAttempts = int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var m)
+            ? m
+            : 5;
 
         var dueSeries = await SeriesNeedingTopUpAsync(db, limit, ct);
 
         foreach (var series in dueSeries)
         {
             var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
-            var missing = Chapter.NextWanted(chapters, batchSize);
+            var backingOff = await BackingOffAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct);
+            var missing = Chapter.NextWanted(chapters, batchSize, backingOff);
 
             var queuedItemIds = new List<int>();
             foreach (var chapterId in missing)
@@ -79,6 +83,34 @@ public class SmartDownloadJob(
             logger.LogInformation(
                 "Smart Download queued {Added} chapters for series {SeriesId}", queuedItemIds.Count, series.Id);
         }
+    }
+
+    /// <summary>
+    /// Wanted, missing chapters whose latest queue row failed and is not due again: still inside its
+    /// retry backoff, or out of attempts. Enqueueing only dedupes against active rows, so without this
+    /// every tick queued a fresh row for a failing chapter, bypassing both the backoff and the cap,
+    /// and a chapter no source carries held its place in the window forever.
+    /// </summary>
+    internal static async Task<HashSet<int>> BackingOffAsync(
+        MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct)
+    {
+        var candidates = chapters.Where(c => c.Wanted && c.ChapterFileId == null).Select(c => c.Id).ToList();
+        if (candidates.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await db.DownloadQueue
+            .Where(q => q.ChapterId != null && candidates.Contains(q.ChapterId.Value))
+            .Select(q => new { ChapterId = q.ChapterId!.Value, q.Id, q.Status, q.RetryCount, q.NextAttempt })
+            .ToListAsync(ct);
+
+        return rows
+            .GroupBy(r => r.ChapterId)
+            .Select(g => g.MaxBy(r => r.Id)!)
+            .Where(r => r.Status == QueueStatus.Failed && (r.RetryCount >= maxAttempts || r.NextAttempt > now))
+            .Select(r => r.ChapterId)
+            .ToHashSet();
     }
 
     /// <summary>Smart-monitored series that are due for a top-up: reading has caught up to within

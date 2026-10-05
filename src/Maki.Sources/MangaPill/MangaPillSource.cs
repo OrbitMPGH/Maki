@@ -74,6 +74,8 @@ public class MangaPillSource(IHttpClientFactory httpClientFactory) : ISource
             var chapterId = href["/chapters/".Length..];
             var label = (link.GetAttribute("title") ?? link.TextContent).Trim();
             var parsed = ChapterNumberParser.Parse(label);
+            var title = parsed.Number is null && label.Length > 0 ? label : null;
+            parsed = parsed.OrSlugNumber(href);
 
             chapters.Add(new SourceChapter(
                 Name,
@@ -82,7 +84,7 @@ public class MangaPillSource(IHttpClientFactory httpClientFactory) : ISource
                 label,
                 parsed.Number,
                 parsed.Volume,
-                Title: null,
+                title,
                 Language: "en", // MangaPill is English-only
                 ReleaseDate: null,
                 Url: $"{BaseUrl}{href}"));

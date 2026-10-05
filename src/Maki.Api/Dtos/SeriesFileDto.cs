@@ -20,4 +20,6 @@ public record SeriesFileDto(
     /// <summary>Chapter numbers this file is linked to (formatted, sorted), e.g. ["21", "22", "23"].</summary>
     List<string> MappedChapters,
     /// <summary>Parsed chapter/volume number for sorting; null when unrecognized.</summary>
-    decimal? SortKey);
+    decimal? SortKey,
+    /// <summary>Null for a file with no ChapterFile record.</summary>
+    ChapterFileQualityDto? Quality);

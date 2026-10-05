@@ -52,6 +52,13 @@ const STAGE_LABELS: Record<string, MessageDescriptor> = {
   failed: msg`Failed`,
 }
 
+/** Why a file stayed out of the series (`Maki.Api.Services.ImportSkipReason`). */
+const SKIP_REASONS: Record<string, MessageDescriptor> = {
+  unreadable: msg`could not be read, the archive is corrupt or truncated`,
+  noMatchingChapter: msg`no chapter with this number in the series`,
+  unrecognized: msg`no chapter or volume number in the name`,
+}
+
 interface ScanCandidate {
   folderName: string
   cleanedTitle: string
@@ -70,6 +77,8 @@ interface ImportResultDto {
   newFolderName: string | null
   filesLinked: number
   filesUnrecognized: number
+  warnings?: string[] | null
+  skipped?: { name: string; reason: string }[] | null
 }
 
 interface ImportProgressEvent {
@@ -103,6 +112,7 @@ export default function ImportPage() {
   // Read (not rendered) inside the hub handler below to drop events from a run this tab isn't
   // showing, e.g. another admin's import in progress at the same time.
   const operationIdRef = useRef<string | null>(null)
+  const keepResultsRef = useRef(false)
 
   useHubEvent<ImportProgressEvent>('importProgress', (evt) => {
     if (evt.operationId != null && evt.operationId !== operationIdRef.current) return
@@ -123,7 +133,8 @@ export default function ImportPage() {
     onSuccess: (data, folderId) => {
       setCandidates(data)
       setScannedRootFolderId(String(folderId))
-      setResults(null)
+      if (!keepResultsRef.current) setResults(null)
+      keepResultsRef.current = false
       const initial: Record<string, string> = {}
       for (const c of data) {
         if (c.matches.length > 0 && c.existingSeriesId === null) {
@@ -186,7 +197,10 @@ export default function ImportPage() {
         color: ok === data.length ? 'var(--ok)' : 'var(--warn)',
       })
       setProgress({})
-      if (rootFolderId) scan.mutate(Number(rootFolderId))
+      if (rootFolderId) {
+        keepResultsRef.current = true
+        scan.mutate(Number(rootFolderId))
+      }
     },
     // Only the local cleanup; results-so-far were already recorded batch by batch above, and the
     // error toast comes from the global handler in main.tsx.
@@ -330,25 +344,50 @@ export default function ImportPage() {
           {results.map((r) => {
             const folderLabel = r.newFolderName ?? r.folderName
             const { filesLinked, filesUnrecognized } = r
+            const skipped = r.skipped ?? []
+            const skippedCount = skipped.length
             return (
-              <Text key={r.folderName} c={r.success ? 'var(--ok)' : 'var(--danger)'} size="sm">
-                {r.success ? (
-                  filesUnrecognized > 0 ? (
-                    <Trans>
-                      {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />,{' '}
-                      <Plural value={filesUnrecognized} one="# unrecognized" other="# unrecognized" />
-                    </Trans>
+              <Stack key={r.folderName} gap={0}>
+                <Text c={!r.success ? 'var(--danger)' : skippedCount > 0 ? 'var(--warn)' : 'var(--ok)'} size="sm">
+                  {r.success ? (
+                    skippedCount > 0 ? (
+                      <Trans>
+                        {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />,{' '}
+                        <Plural value={skippedCount} one="# not linked" other="# not linked" />
+                      </Trans>
+                    ) : filesUnrecognized > 0 ? (
+                      <Trans>
+                        {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />,{' '}
+                        <Plural value={filesUnrecognized} one="# unrecognized" other="# unrecognized" />
+                      </Trans>
+                    ) : (
+                      <Trans>
+                        {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />
+                      </Trans>
+                    )
                   ) : (
-                    <Trans>
-                      {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />
-                    </Trans>
+                    <>
+                      {r.folderName}: {r.error}
+                    </>
+                  )}
+                </Text>
+                {skipped.map((f) => {
+                  const { name } = f
+                  const reason = label(SKIP_REASONS[f.reason] ?? f.reason)
+                  return (
+                    <Text key={name} size="xs" c="dimmed" pl="md">
+                      <Trans>
+                        {name}: {reason}
+                      </Trans>
+                    </Text>
                   )
-                ) : (
-                  <>
-                    {r.folderName}: {r.error}
-                  </>
-                )}
-              </Text>
+                })}
+                {(r.warnings ?? []).map((w) => (
+                  <Text key={w} size="xs" c="var(--warn)" pl="md">
+                    {w}
+                  </Text>
+                ))}
+              </Stack>
             )
           })}
         </Stack>
@@ -372,6 +411,7 @@ export default function ImportPage() {
 
       {visibleCandidates && visibleCandidates.length === 0 && (
         <EmptyState
+          mood="asleep"
           title={t`Nothing to import`}
           description={t`Every folder in this root is already claimed by a series in the library.`}
         />

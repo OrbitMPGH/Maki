@@ -1,11 +1,14 @@
 ﻿using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Import;
+using Maki.Core.Inbox;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Quality;
 using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -36,13 +39,68 @@ public record ImportPlanExisting(int ChapterFileId, string RelativePath, long Si
 /// <param name="Chapters">Chapter numbers this file would cover.</param>
 /// <param name="NewChapters">Of those, the ones no file backs today.</param>
 /// <param name="Replaces">Files the library would stop using if this one is imported.</param>
+/// <param name="UpgradeCount">For an upgrade download, covered chapters whose file this improves on.</param>
+/// <param name="AlreadyMetCount">For an upgrade download, covered chapters whose file is already as good or protected.</param>
 public record ImportPlanFile(
     string FileName,
     long Size,
     string? Label,
     IReadOnlyList<string> Chapters,
     IReadOnlyList<string> NewChapters,
-    IReadOnlyList<ImportPlanExisting> Replaces);
+    IReadOnlyList<ImportPlanExisting> Replaces,
+    int UpgradeCount = 0,
+    int AlreadyMetCount = 0);
+
+/// <param name="Reason"><c>unmeasurable</c> or <c>fewer_pages</c>.</param>
+public record VolumeGuardFailure(string File, string Reason);
+
+/// <param name="Park">Leave it for the user: it would displace files, or the guard held it back.</param>
+/// <param name="Guard">Set when the upgrade guard is why it parked; the item is already parked.</param>
+/// <param name="SkipFiles">For an unattended upgrade import, the files to leave out.</param>
+public record UnattendedDecision(bool Park, VolumeGuardFailure? Guard, IReadOnlySet<string>? SkipFiles);
+
+public sealed record TakenChapter(int ChapterId, int? PreviousFileId);
+
+/// <summary>
+/// What a grouped <c>UpgradeHistory</c> row needs to rebuild the superseded file's row on revert.
+/// Stored as <c>UpgradeHistory.DetailJson</c>.
+/// </summary>
+public sealed class VolumeReplacementDetail
+{
+    public string RelativePath { get; set; } = "";
+    public List<int> ChapterIds { get; set; } = [];
+    public int ReplacementFileId { get; set; }
+
+    /// <summary>The file each of <see cref="ChapterIds"/> moved to, in the same order; a file split across two volumes names both.</summary>
+    public List<int> ReplacementFileIds { get; set; } = [];
+
+    public DateTime DateAdded { get; set; }
+
+    /// <summary>
+    /// Every chapter the group's imported files took, with the file it read from before (null when it
+    /// had none). The same list sits on each row of a group, so losing one row loses nothing.
+    /// </summary>
+    public List<TakenChapter> TakenChapters { get; set; } = [];
+
+    public int ReplacementFor(int index) =>
+        index < ReplacementFileIds.Count && ReplacementFileIds[index] != 0 ? ReplacementFileIds[index] : ReplacementFileId;
+    public bool Trusted { get; set; }
+
+    public string Serialize() => JsonSerializer.Serialize(this, Maki.Core.Quality.QualitySnapshot.Json);
+
+    public static VolumeReplacementDetail? Parse(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<VolumeReplacementDetail>(json, Maki.Core.Quality.QualitySnapshot.Json);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+}
 
 /// <param name="ErrorKey">
 /// Catalogue key, set when the plan could not be built at all (download path gone, say). Never
@@ -65,9 +123,22 @@ public record TorrentImportPlan(
     public int NewChapterCount => Files.SelectMany(f => f.NewChapters).Distinct().Count();
 
     public int ReplacedFileCount => Files.SelectMany(f => f.Replaces).Select(r => r.ChapterFileId).Distinct().Count();
+
+    /// <summary>The item carries a <c>TorrentUpgradeInfo</c>.</summary>
+    public bool IsUpgrade { get; init; }
+
+    /// <summary>For an upgrade, the files whose chapters are all already at cutoff or protected.</summary>
+    public IReadOnlyList<string> SuggestedSkips { get; init; } = [];
+
+    /// <summary>
+    /// The scan <see cref="Files"/> was built from, kept so the guard and the import reuse it rather
+    /// than opening every archive in the download again. Empty for a plan that could not be built.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<ComicSource> Sources { get; init; } = [];
 }
 
-/// <param name="Deleted">Superseded files removed from disk, under <see cref="TorrentImportMode.Replace"/>.</param>
+/// <param name="Deleted">Superseded files moved to the trash, under <see cref="TorrentImportMode.Replace"/>.</param>
 /// <param name="Skipped">Downloaded files left alone because they brought nothing new.</param>
 /// <param name="Error">
 /// Raw text: an exception message from reading somebody else's archive. Null when <see cref="ErrorKey"/>
@@ -78,7 +149,7 @@ public record TorrentImportPlan(
 /// <param name="ErrorArgs">Placeholders for <paramref name="ErrorKey"/>, or null when it has none.</param>
 public record TorrentImportOutcome(
     bool Applied, string? Error, int Imported, int Linked, int Unrecognized, int Deleted, int Skipped,
-    IReadOnlyList<string> ImportedPaths, string? ErrorKey = null, object? ErrorArgs = null);
+    IReadOnlyList<string> ImportedPaths, string? ErrorKey = null, object? ErrorArgs = null, Guid? HistoryGroupId = null);
 
 /// <summary>
 /// Imports the CBZ files of a finished torrent into a series folder, and works out first whether
@@ -99,8 +170,35 @@ public class TorrentImportService(
     SeriesRenameService seriesRenameService,
     ReaderArchiveCache archives,
     IAppSettings settings,
+    UpgradeEvaluationService evaluation,
+    InboxService inbox,
     ILogger<TorrentImportService> logger)
 {
+    public const int GuardSamplePages = 6;
+
+    // Queue ids a request is importing right now (QueueController.Import). The poll job skips those,
+    // and treats any other row reading Importing as one whose request died with the process.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, byte> ManualImports = new();
+
+    public static bool TryBeginManualImport(int queueItemId) => ManualImports.TryAdd(queueItemId, 0);
+
+    public static void EndManualImport(int queueItemId) => ManualImports.TryRemove(queueItemId, out _);
+
+    public static bool IsManualImportRunning(int queueItemId) => ManualImports.ContainsKey(queueItemId);
+
+    // Queue ids CompletedDownloadJob is importing. That path never persists Importing (the poll would
+    // reset it), so the delete guards read this instead of the row.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, byte> AutomaticImports = new();
+
+    public static void BeginAutomaticImport(int queueItemId) => AutomaticImports.TryAdd(queueItemId, 0);
+
+    public static void EndAutomaticImport(int queueItemId) => AutomaticImports.TryRemove(queueItemId, out _);
+
+    public static int[] AutomaticImportIds() => AutomaticImports.Keys.ToArray();
+
+    /// <summary>The series was deleted or moved between planning and taking its lock.</summary>
+    public const string SeriesChangedKey = "error.torrentImport.seriesChanged";
+
     /// <summary>
     /// Where qBittorrent put this item's data, as Maki sees it. Null when the torrent is gone, or
     /// its path isn't reachable from here (qBittorrent in a container with a different mount).
@@ -162,15 +260,26 @@ public class TorrentImportService(
                 new { detail = ComicSourceScanner.Describe(contentPath) });
         }
 
-        var chapters = await db.Chapters
+        var upgradeInfo = TorrentUpgradeInfo.Parse(item.UpgradeInfoJson);
+        var chapters = (await db.Chapters
             .Where(c => c.SeriesId == series.Id)
-            .ToListAsync(ct);
+            .ToListAsync(ct))
+            .Where(c => upgradeInfo?.Language is not { } language || ChapterFileLanguage.Of(c) == language)
+            .ToList();
         var existingFiles = await db.ChapterFiles
             .Where(f => f.SeriesId == series.Id)
             .ToListAsync(ct);
 
+        var isUpgrade = upgradeInfo is not null;
+        var evaluator = isUpgrade ? await evaluation.ForSeriesAsync(series.Id, ct) : null;
+        var releaseInfo = ReleaseInfoOf(item);
+        var titleGroup = ReleaseTitleParser.Parse(releaseName).Group;
+        var suggestedSkips = new List<string>();
+
+        // An upgrade's verdict may name volume files, and the linker takes chapters off exactly those.
+        var displaceable = upgradeInfo?.ReplacedFileIds ?? [];
         var volumeFileIds = existingFiles
-            .Where(f => ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
+            .Where(f => !displaceable.Contains(f.Id) && ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
             .Select(f => f.Id)
             .ToHashSet();
 
@@ -180,8 +289,27 @@ public class TorrentImportService(
             var parsed = ReleaseNameParser.ParseFileName(source.Name);
             var covered = ChaptersCoveredBy(chapters, parsed, source.Pages, volumeFileIds);
 
+            var upgradeCount = 0;
+            var alreadyMetCount = 0;
+            if (evaluator is not null)
+            {
+                var candidate = evaluator.Score(TorrentUpgradeRules.Candidate(
+                    releaseName, releaseInfo?.Indexer ?? "", titleGroup, parsed.IsVolume));
+                var states = covered
+                    .Select(c => TorrentUpgradeRules.StateOf(evaluator, c,
+                        existingFiles.FirstOrDefault(f => f.Id == c.ChapterFileId), candidate))
+                    .ToList();
+                upgradeCount = states.Count(s => s == ChapterSpanState.Upgrade);
+                alreadyMetCount = states.Count(s => s == ChapterSpanState.AlreadyMet);
+                if (states.Count > 0 && states.All(s => s == ChapterSpanState.AlreadyMet))
+                {
+                    suggestedSkips.Add(source.Name);
+                }
+            }
+
+            // With a displaceable set the linker leaves every other file its chapters, so only those count.
             var replaces = covered
-                .Where(c => c.ChapterFileId != null)
+                .Where(c => c.ChapterFileId is { } fileId && (displaceable.Count == 0 || displaceable.Contains(fileId)))
                 .GroupBy(c => c.ChapterFileId!.Value)
                 .Select(g =>
                 {
@@ -202,10 +330,17 @@ public class TorrentImportService(
                 ParsedLabel(parsed),
                 covered.Select(Label).ToList(),
                 covered.Where(c => c.ChapterFileId == null).Select(Label).ToList(),
-                replaces));
+                replaces,
+                upgradeCount,
+                alreadyMetCount));
         }
 
-        return new TorrentImportPlan(item.Id, series.Id, series.Title, releaseName, files);
+        return new TorrentImportPlan(item.Id, series.Id, series.Title, releaseName, files)
+        {
+            IsUpgrade = isUpgrade,
+            SuggestedSkips = suggestedSkips,
+            Sources = sources
+        };
 
         TorrentImportPlan Empty(string errorKey, object? args = null) =>
             new(item.Id, series.Id, series.Title, releaseName, [], errorKey, args);
@@ -221,9 +356,10 @@ public class TorrentImportService(
     /// the download, so a caller that planned in order to decide whether to call this at all would
     /// otherwise pay for that walk twice. Null plans here.
     /// </param>
+    /// <param name="skipFiles">Downloaded file names to leave out entirely, whatever the mode.</param>
     public async Task<TorrentImportOutcome> ImportAsync(
         DownloadQueueItem item, Series series, string? contentPath, TorrentImportMode mode,
-        CancellationToken ct, TorrentImportPlan? plan = null)
+        CancellationToken ct, TorrentImportPlan? plan = null, IReadOnlySet<string>? skipFiles = null)
     {
         plan ??= await PlanAsync(item, series, contentPath, ct);
         if (plan.ErrorKey is not null)
@@ -238,20 +374,28 @@ public class TorrentImportService(
             return new TorrentImportOutcome(false, null, 0, 0, 0, 0, 0, [], "error.torrentImport.noRootFolder");
         }
 
-        var wanted = mode == TorrentImportMode.Replace
-            ? plan.Files
-            // Nothing new and something to lose: the file is exactly what the library already has.
-            : plan.Files.Where(f => f.Replaces.Count == 0 || f.NewChapters.Count > 0).ToList();
+        var wanted = (mode == TorrentImportMode.Replace
+                ? plan.Files
+                // Nothing new and something to lose: the file is exactly what the library already has.
+                : plan.Files.Where(f => f.Replaces.Count == 0 || f.NewChapters.Count > 0))
+            .Where(f => skipFiles is null || !skipFiles.Contains(f.FileName))
+            .ToList();
         var skipped = plan.Files.Count - wanted.Count;
         if (wanted.Count == 0)
         {
+            if (TorrentUpgradeInfo.Parse(item.UpgradeInfoJson) is { } nothingImported)
+            {
+                nothingImported.Outcome = TorrentUpgradeOutcomes.Applied;
+                nothingImported.HistoryGroupId = null;
+                item.UpgradeInfoJson = nothingImported.Serialize();
+            }
+
             return new TorrentImportOutcome(true, null, 0, 0, 0, 0, skipped, []);
         }
 
         // Safe to key on the name: the scan already returns one comic per name, which is the same
         // set PlanAsync named its rows after.
-        var byName = ComicSourceScanner.Scan(contentPath!)
-            .ToDictionary(s => s.Name, s => s, StringComparer.Ordinal);
+        var byName = SourcesOf(plan, contentPath!).ToDictionary(s => s.Name, s => s, StringComparer.Ordinal);
         var sourceFiles = wanted
             .Select(f => byName.GetValueOrDefault(f.FileName))
             .Where(s => s is not null)
@@ -262,9 +406,28 @@ public class TorrentImportService(
         // library its own name for the same bytes; the copy is the fallback when the two folders
         // can't share an inode (different volumes, a share, a filesystem without hardlinks).
         var seriesDir = Path.Combine(rootFolder.Path, series.FolderName);
+        var useHardlinks = await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false";
+        var writeComicInfoSetting = await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false";
+
+        // From the first file placed through the trash moves: a plain copy lands at its final name, so
+        // a rescan running beside it would adopt a half-written archive. Released before the inbox row.
+        using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+        // Everything above was read without the lock. A delete that ran meanwhile would get its
+        // folder recreated and filled with files no row can own.
+        var current = await db.Series.IgnoreQueryFilters()
+            .Where(s => s.Id == series.Id)
+            .Select(s => new { s.FolderName, s.RootFolderId })
+            .FirstOrDefaultAsync(ct);
+        if (current is null || current.FolderName != series.FolderName || current.RootFolderId != series.RootFolderId)
+        {
+            logger.LogWarning("Not importing '{Title}': series {SeriesId} was deleted or moved while it was planned",
+                item.Title, series.Id);
+            return new TorrentImportOutcome(false, null, 0, 0, 0, 0, skipped, [], SeriesChangedKey);
+        }
+
         Directory.CreateDirectory(seriesDir);
 
-        var useHardlinks = await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false";
         var imported = new List<string>();
         var hardlinked = 0;
         var freshCopies = 0;
@@ -305,8 +468,9 @@ public class TorrentImportService(
         // actually supersedes can be told apart from ones that were already spare.
         var backedBefore = await db.Chapters
             .Where(c => c.SeriesId == series.Id && c.ChapterFileId != null)
-            .Select(c => c.ChapterFileId!.Value)
+            .Select(c => new BackedChapter(c.Id, c.Number, c.Language, c.ChapterFileId!.Value))
             .ToListAsync(ct);
+        var upgrade = TorrentUpgradeInfo.Parse(item.UpgradeInfoJson);
 
         // Honor the global "don't modify my files" setting for adopted torrent files. Chapters Maki
         // downloads itself still get ComicInfo — those CBZs are built by Maki, not existing files.
@@ -318,20 +482,60 @@ public class TorrentImportService(
         // hardlinks off is how a user picks the other side of that. A file already in the folder is
         // skipped for the same reason — it may be a hardlink from an earlier run, and whatever
         // imported it already decided about its ComicInfo.
-        var writeComicInfo = await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false"
-                             && freshCopies == imported.Count;
+        var writeComicInfo = writeComicInfoSetting && freshCopies == imported.Count;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, seriesDir, imported, $"torrent:{ReleaseInfoOf(item)?.Indexer}",
             updateComicInfo: writeComicInfo, releaseName: ReleaseInfoOf(item)?.Title ?? item.Title,
-            replaceExisting: mode == TorrentImportMode.Replace, ct: ct);
+            replaceExisting: mode == TorrentImportMode.Replace, ct: ct,
+            // An upgrade may only take chapters off the files its verdict marked; a protected or
+            // already good file inside the volume's span keeps its chapter.
+            displaceableFileIds: mode == TorrentImportMode.Replace && upgrade is { ReplacedFileIds.Count: > 0 }
+                ? upgrade.ReplacedFileIds.ToHashSet()
+                : null,
+            language: upgrade?.Language);
 
-        var deleted = mode == TorrentImportMode.Replace
-            ? await DeleteSupersededAsync(series, rootFolder.Path, backedBefore, ct)
-            : 0;
+        var importedRows = await ImportedRowsAsync(series, imported, ct);
+        var hash = ReleaseInfoOf(item)?.TorrentHash;
+        foreach (var row in importedRows)
+        {
+            if (hash is not null)
+            {
+                row.ReleaseHash = hash;
+            }
+
+            archives.Invalidate(row.Id);
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var (deleted, groupId) = mode == TorrentImportMode.Replace
+            ? await TrashSupersededAsync(series, rootFolder.Path, backedBefore, item,
+                importedRows.Select(r => r.Id).ToHashSet(), ct)
+            : (0, null);
+        seriesLock.Dispose();
+
+        if (upgrade is not null)
+        {
+            upgrade.Outcome = TorrentUpgradeOutcomes.Applied;
+            upgrade.HistoryGroupId = groupId;
+            item.UpgradeInfoJson = upgrade.Serialize();
+            if (groupId is not null && item.QueuedByUserId is null)
+            {
+                inbox.RaiseForSeries(InboxEventType.VolumeUpgraded, new InboxMessage(
+                    Key: "inbox.upgrade.volume",
+                    Params: InboxMessage.Args(new
+                    {
+                        fileName = Path.GetFileName(imported[0]),
+                        replaced = deleted
+                    }),
+                    SeriesId: series.Id,
+                    Url: $"/series/{series.Id}"), series.Id);
+            }
+        }
 
         logger.LogInformation(
             "Imported torrent '{Title}': {Files} file(s) ({Hardlinked} hardlinked), {Linked} linked to chapters, " +
-            "{Unrecognized} unrecognized, {Skipped} skipped, {Deleted} superseded file(s) deleted",
+            "{Unrecognized} unrecognized, {Skipped} skipped, {Deleted} superseded file(s) moved to the trash",
             item.Title, imported.Count, hardlinked, linked, unrecognized, skipped, deleted);
         if (hardlinked > 0)
         {
@@ -341,7 +545,7 @@ public class TorrentImportService(
         }
 
         return new TorrentImportOutcome(
-            true, null, imported.Count, linked, unrecognized, deleted, skipped, imported);
+            true, null, imported.Count, linked, unrecognized, deleted, skipped, imported, HistoryGroupId: groupId);
     }
 
     /// <summary>
@@ -377,12 +581,18 @@ public class TorrentImportService(
         var relativePaths = importedPaths
             .Select(path => Path.Combine(series.FolderName, Path.GetFileName(path)))
             .ToList();
-        var fileIds = await db.ChapterFiles
-            .Where(f => f.SeriesId == series.Id && relativePaths.Contains(f.RelativePath))
-            .Select(f => f.Id)
-            .ToListAsync(ct);
 
-        var result = await seriesRenameService.RenameFilesAsync(series.Id, fileIds, ct);
+        // RenameFilesAsync takes no lock of its own: the public RenameAsync holds it around the same code.
+        SeriesRenameResult result;
+        using (await SeriesLocks.SeriesAsync(series.Id, ct))
+        {
+            var fileIds = await db.ChapterFiles
+                .Where(f => f.SeriesId == series.Id && relativePaths.Contains(f.RelativePath))
+                .Select(f => f.Id)
+                .ToListAsync(ct);
+            result = await seriesRenameService.RenameFilesAsync(series.Id, fileIds, ct);
+        }
+
         if (!result.Applied)
         {
             logger.LogWarning(
@@ -400,60 +610,305 @@ public class TorrentImportService(
         }
     }
 
+    private sealed record BackedChapter(int ChapterId, decimal? Number, string? Language, int FileId);
+
+    private async Task<List<ChapterFile>> ImportedRowsAsync(Series series, IReadOnlyList<string> importedPaths, CancellationToken ct)
+    {
+        var relativePaths = importedPaths
+            .Select(path => Path.Combine(series.FolderName, Path.GetFileName(path)))
+            .ToList();
+        return await db.ChapterFiles
+            .Where(f => f.SeriesId == series.Id && relativePaths.Contains(f.RelativePath))
+            .ToListAsync(ct);
+    }
+
     /// <summary>
-    /// Deletes the files this import left backing nothing: every chapter that read from them now
-    /// reads from an imported file instead. A file that was already spare before the import (an
-    /// adopted archive nothing matched, an extra) is untouched — it wasn't superseded, it was just
-    /// never used.
+    /// Moves the files this import left backing nothing into the trash: every chapter that read from
+    /// them now reads from an imported file instead. A file that was already spare before the import
+    /// (an adopted archive nothing matched, an extra) is untouched; it wasn't superseded, it was just
+    /// never used. Each moved file gets an <c>UpgradeHistory</c> row, all sharing one group id, so the
+    /// whole import can be reverted. This is the one code path that trashes a user's file without
+    /// them naming it, hence <c>LibraryPaths.Resolve</c> and the per-file failure handling. A move is
+    /// a rename, so a hardlinked file keeps its bytes and the torrent keeps seeding.
     /// </summary>
-    private async Task<int> DeleteSupersededAsync(
-        Series series, string rootPath, IReadOnlyCollection<int> backedBefore, CancellationToken ct)
+    private async Task<(int Trashed, Guid? GroupId)> TrashSupersededAsync(
+        Series series, string rootPath, IReadOnlyList<BackedChapter> backedBefore, DownloadQueueItem item,
+        IReadOnlySet<int> importedFileIds, CancellationToken ct)
     {
         var backedNow = await db.Chapters
             .Where(c => c.SeriesId == series.Id && c.ChapterFileId != null)
-            .Select(c => c.ChapterFileId!.Value)
-            .ToListAsync(ct);
+            .Select(c => new { c.Id, FileId = c.ChapterFileId!.Value })
+            .ToDictionaryAsync(c => c.Id, c => c.FileId, ct);
 
-        var superseded = backedBefore.Distinct().Except(backedNow).ToList();
+        var nowFiles = backedNow.Values.ToHashSet();
+        var superseded = backedBefore.Select(b => b.FileId).Distinct().Where(id => !nowFiles.Contains(id)).ToList();
         if (superseded.Count == 0)
         {
-            return 0;
+            return (0, null);
         }
 
         var rows = await db.ChapterFiles
             .Where(f => f.SeriesId == series.Id && superseded.Contains(f.Id))
             .ToListAsync(ct);
+        var evaluator = await evaluation.ForSeriesAsync(series.Id, ct);
+        var releaseInfo = ReleaseInfoOf(item);
+        var groupId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        var afterByFile = new Dictionary<int, QualitySnapshot>();
 
-        var deleted = 0;
+        // Every chapter an imported file took and where it read from before, so a revert can hand a
+        // chapter back to a file this import did not supersede.
+        var beforeById = backedBefore.ToDictionary(b => b.ChapterId, b => b.FileId);
+        var taken = backedNow
+            .Where(c => importedFileIds.Contains(c.Value) && beforeById.GetValueOrDefault(c.Key) != c.Value)
+            .Select(c => new TakenChapter(c.Key, beforeById.TryGetValue(c.Key, out var previous) ? previous : null))
+            .ToList();
+
+        // The history row is saved before the file moves and taken back if the move fails, so the
+        // trash never holds a file without a row; once the first row is written nothing is cancelled.
+        var trashed = 0;
         foreach (var row in rows)
         {
-            // Resolve, not Combine: a stored path escaping the root would turn this into an
-            // arbitrary delete, and this is the one code path that removes a user's files without
-            // them naming the file.
-            var path = LibraryPaths.Resolve(rootPath, row.RelativePath);
-            if (path is not null && File.Exists(path))
-            {
-                try
-                {
-                    File.Delete(path);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    logger.LogWarning(ex, "Could not delete superseded file {Path}", row.RelativePath);
-                    continue;
-                }
-            }
+            var backed = backedBefore.Where(b => b.FileId == row.Id)
+                .OrderBy(b => b.Number is null).ThenBy(b => b.Number).ThenBy(b => b.ChapterId)
+                .ToList();
+            var replacements = backed.Select(b => backedNow.GetValueOrDefault(b.ChapterId)).ToList();
+            var replacementId = replacements.FirstOrDefault(id => id != 0);
 
             // SQLite reuses rowids after a delete, so a later adopt can land on this id with a
             // different archive behind it and the cache's size guard would not notice.
             archives.Invalidate(row.Id);
+            var path = LibraryPaths.Resolve(rootPath, row.RelativePath);
+            if (path is null || !File.Exists(path))
+            {
+                // Already gone from disk: nothing to put aside or bring back, so no history row.
+                db.ChapterFiles.Remove(row);
+                await db.SaveChangesAsync(CancellationToken.None);
+                continue;
+            }
+
+            UpgradeTrash.EnsureFolder(rootPath, series.Id);
+            var trashRelative = UpgradeTrash.NewRelativePath(rootPath, series.Id,
+                row.Id.ToString(CultureInfo.InvariantCulture), Path.GetFileName(row.RelativePath));
+            var trashPath = LibraryPaths.Resolve(rootPath, trashRelative)!;
+
+            var beforeScore = evaluator?.Evaluate(row, backed[0].Language) is { } current ? current.Score.Score : 0;
+            if (!afterByFile.TryGetValue(replacementId, out var after))
+            {
+                after = await AfterSnapshotAsync(rootPath, replacementId, backed[0].Language, releaseInfo, evaluator,
+                    CancellationToken.None);
+                afterByFile[replacementId] = after;
+            }
+
+            var history = new UpgradeHistory
+            {
+                SeriesId = series.Id,
+                ChapterId = backed[0].ChapterId,
+                ChapterFileId = row.Id,
+                QueueItemId = item.Id == 0 ? null : item.Id,
+                ProfileId = evaluator?.Profile.Id ?? 0,
+                ProfileVersion = evaluator?.Profile.Version ?? 0,
+                QueuedByUserId = item.QueuedByUserId,
+                BeforeJson = UpgradeEvaluator.Snapshot(row, beforeScore).Serialize(),
+                AfterJson = after.Serialize(),
+                TrashPath = trashRelative,
+                TrashBytes = new FileInfo(path).Length,
+                CreatedAtUtc = now,
+                GroupId = groupId,
+                DetailJson = new VolumeReplacementDetail
+                {
+                    RelativePath = row.RelativePath,
+                    ChapterIds = [.. backed.Select(b => b.ChapterId)],
+                    ReplacementFileId = replacementId,
+                    ReplacementFileIds = replacements,
+                    DateAdded = row.DateAdded,
+                    Trusted = row.Trusted,
+                    TakenChapters = taken
+                }.Serialize()
+            };
+            db.UpgradeHistory.Add(history);
             db.ChapterFiles.Remove(row);
-            deleted++;
-            logger.LogInformation("Deleted superseded file {Path} for '{Title}'", row.RelativePath, series.Title);
+            await db.SaveChangesAsync(CancellationToken.None);
+
+            if (!await UpgradeTrash.MoveIntoTrashAsync(path, trashPath, logger, CancellationToken.None))
+            {
+                logger.LogWarning("Could not move superseded file {Path} to the trash", row.RelativePath);
+                db.UpgradeHistory.Remove(history);
+                db.ChapterFiles.Add(row);
+                await db.SaveChangesAsync(CancellationToken.None);
+                continue;
+            }
+
+            trashed++;
+            logger.LogInformation("Moved superseded file {Path} for '{Title}' to the trash", row.RelativePath, series.Title);
         }
 
-        await db.SaveChangesAsync(ct);
-        return deleted;
+        return trashed > 0 ? (trashed, (Guid?)groupId) : (0, null);
+    }
+
+    private async Task<QualitySnapshot> AfterSnapshotAsync(
+        string rootPath, int fileId, string? language, ReleaseInfo? releaseInfo, UpgradeEvaluator? evaluator,
+        CancellationToken ct)
+    {
+        var file = await db.ChapterFiles.FirstOrDefaultAsync(f => f.Id == fileId, ct);
+        if (file is null)
+        {
+            return new QualitySnapshot { SourceName = $"torrent:{releaseInfo?.Indexer}", ReleaseName = releaseInfo?.Title };
+        }
+
+        var snapshot = UpgradeEvaluator.Snapshot(file,
+            evaluator?.Score(evaluator.CandidateFor(file, language)).Score ?? 0);
+        snapshot.ReleaseHash = releaseInfo?.TorrentHash ?? file.ReleaseHash;
+        if (LibraryPaths.Resolve(rootPath, file.RelativePath) is { } path && File.Exists(path))
+        {
+            try
+            {
+                var measured = ChapterFileMeasurer.MeasureArchive(path, GuardSamplePages, ct);
+                snapshot.PageCount = measured.PageCount;
+                snapshot.MedianWidth = measured.MedianWidth;
+                snapshot.MedianHeight = measured.MedianHeight;
+                snapshot.ImageFormat = measured.ImageFormat;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                logger.LogDebug(ex, "Could not measure {Path}", path);
+            }
+        }
+
+        return snapshot;
+    }
+
+    /// <summary>
+    /// The check an upgrade download passes before it may replace anything on its own: every volume
+    /// file it would import must be measurable and carry at least as many pages as the single-chapter
+    /// files it replaces, less the profile's page tolerance. Null when it passes or the item is not an
+    /// upgrade. A failure parks the item for the user rather than importing it.
+    /// </summary>
+    public async Task<VolumeGuardFailure?> CheckVolumeGuardAsync(
+        DownloadQueueItem item, Series series, string contentPath, TorrentImportPlan plan, CancellationToken ct)
+    {
+        if (TorrentUpgradeInfo.Parse(item.UpgradeInfoJson) is not { } upgrade)
+        {
+            return null;
+        }
+
+        var byName = SourcesOf(plan, contentPath).ToDictionary(s => s.Name, s => s, StringComparer.Ordinal);
+        var files = await db.ChapterFiles.AsNoTracking().Where(f => f.SeriesId == series.Id).ToDictionaryAsync(f => f.Id, ct);
+        var tolerance = (await evaluation.ForSeriesAsync(series.Id, ct))?.Profile.PageTolerancePercent ?? 10;
+        var replaced = upgrade.ReplacedFileIds.ToHashSet();
+        var skipped = plan.SuggestedSkips.ToHashSet(StringComparer.Ordinal);
+
+        // Every file that would take chapters off a replaced file is measured, volume or chapter.
+        foreach (var planned in plan.Files.Where(f => !skipped.Contains(f.FileName)))
+        {
+            if (!planned.Replaces.Any(r => replaced.Contains(r.ChapterFileId)) ||
+                !byName.TryGetValue(planned.FileName, out var source))
+            {
+                continue;
+            }
+
+            var measured = Measure(source, ct);
+            if (measured?.MedianWidth is null)
+            {
+                return new VolumeGuardFailure(planned.FileName, UpgradeReasons.Unmeasurable);
+            }
+
+            var expected = planned.Replaces
+                .Select(r => r.ChapterFileId)
+                .Where(replaced.Contains)
+                .Distinct()
+                .Select(id => files.GetValueOrDefault(id))
+                .Where(f => f is not null && !ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
+                .Sum(f => f!.PageCount ?? 0);
+            if (measured.PageCount < expected * (1 - tolerance / 100.0))
+            {
+                return new VolumeGuardFailure(planned.FileName, UpgradeReasons.FewerPages);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// What the unattended job does with a finished download. An auto-grabbed upgrade whose verdict named
+    /// files to replace imports on its own once the guard passes, skipping the suggested files; anything
+    /// else, a grabbed proposal or an upgrade that names no file included, parks when it would displace one.
+    /// </summary>
+    public async Task<UnattendedDecision> DecideUnattendedAsync(
+        DownloadQueueItem item, Series series, string contentPath, TorrentImportPlan plan, CancellationToken ct)
+    {
+        if (TorrentUpgradeInfo.Parse(item.UpgradeInfoJson) is not { Outcome: TorrentUpgradeOutcomes.Pending } upgrade)
+        {
+            return new UnattendedDecision(plan.HasConflicts, null, null);
+        }
+
+        upgrade.SkipFileNames = [.. plan.SuggestedSkips];
+        item.UpgradeInfoJson = upgrade.Serialize();
+
+        // A proposal the user grabbed waits for them with the plan filled in; only the search's own
+        // auto-grabs replace files unattended.
+        if (upgrade.ProposalId is not null || upgrade.ReplacedFileIds.Count == 0)
+        {
+            return new UnattendedDecision(plan.HasConflicts, null, null);
+        }
+
+        if (await CheckVolumeGuardAsync(item, series, contentPath, plan, ct) is { } failure)
+        {
+            ParkForGuard(item, failure);
+            return new UnattendedDecision(true, failure, null);
+        }
+
+        return new UnattendedDecision(false, null, plan.SuggestedSkips.ToHashSet(StringComparer.Ordinal));
+    }
+
+    private static IReadOnlyList<ComicSource> SourcesOf(TorrentImportPlan plan, string contentPath) =>
+        plan.Sources.Count > 0 ? plan.Sources : ComicSourceScanner.Scan(contentPath);
+
+    /// <summary>Parks an upgrade download that failed <see cref="CheckVolumeGuardAsync"/> for the user to settle.</summary>
+    public static void ParkForGuard(DownloadQueueItem item, VolumeGuardFailure failure)
+    {
+        item.Status = QueueStatus.AwaitingImport;
+        item.PagesDone = item.PagesTotal;
+        item.SetError("error.upgrades.volumeGuard", new { file = failure.File, reason = failure.Reason });
+        if (TorrentUpgradeInfo.Parse(item.UpgradeInfoJson) is { } upgrade)
+        {
+            upgrade.Outcome = TorrentUpgradeOutcomes.Parked;
+            item.UpgradeInfoJson = upgrade.Serialize();
+        }
+    }
+
+    private ChapterFileMeasurement? Measure(ComicSource source, CancellationToken ct)
+    {
+        try
+        {
+            if (source.Entry is null && source.Kind is ComicSourceKind.Cbz or ComicSourceKind.Zip)
+            {
+                return ChapterFileMeasurer.MeasureArchive(source.Path, GuardSamplePages, ct);
+            }
+
+            if (source.Kind == ComicSourceKind.LooseImages && source.Pages.Count > 0)
+            {
+                var step = Math.Max(1, source.Pages.Count / GuardSamplePages);
+                var sample = new List<(string Name, byte[] Bytes)>();
+                for (var i = 0; i < source.Pages.Count && sample.Count < GuardSamplePages; i += step)
+                {
+                    var page = Path.Combine(source.Path, source.Pages[i]);
+                    if (File.Exists(page))
+                    {
+                        sample.Add((source.Pages[i], File.ReadAllBytes(page)));
+                    }
+                }
+
+                var measured = ChapterFileMeasurer.Measure(sample);
+                return measured with { PageCount = source.Pages.Count };
+            }
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            logger.LogDebug(ex, "Could not measure {Name} for the upgrade guard", source.Name);
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -461,13 +916,18 @@ public class TorrentImportService(
     /// for a compilation both the volume range the provider assigns and the chapter markers in its
     /// page names, which is the pair <c>CbzLinkService</c> links on. When the page names carry
     /// markers, the range only reaches chapters nothing backs yet, the same limit the linker has.
-    /// A chapter already on a volume file is never counted: the linker does not take chapters off
-    /// a volume, so the import would neither gain nor replace it.
+    /// A chapter already on one of <paramref name="volumeFileIds"/> is never counted: the linker does
+    /// not take chapters off a volume it was not told to displace, so the import would neither gain
+    /// nor replace it.
     /// </summary>
-    private static List<Chapter> ChaptersCoveredBy(
-        List<Chapter> chapters, ParsedReleaseFile parsed, IReadOnlyList<string> pages, HashSet<int> volumeFileIds)
+    public static List<Chapter> ChaptersCoveredBy(
+        List<Chapter> chapters, ParsedReleaseFile parsed, IReadOnlyList<string> pages,
+        IReadOnlySet<int>? volumeFileIds = null)
     {
-        chapters = chapters.Where(c => c.ChapterFileId is not { } fileId || !volumeFileIds.Contains(fileId)).ToList();
+        if (volumeFileIds is { Count: > 0 })
+        {
+            chapters = chapters.Where(c => c.ChapterFileId is not { } fileId || !volumeFileIds.Contains(fileId)).ToList();
+        }
         if (parsed.IsChapter)
         {
             return chapters.Where(c => c.Number == parsed.Number).ToList();

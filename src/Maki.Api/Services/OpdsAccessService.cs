@@ -1,9 +1,12 @@
+using System.Collections.Concurrent;
 using Maki.Api.Auth;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Primitives;
 
 namespace Maki.Api.Services;
 
@@ -30,8 +33,33 @@ public record OpdsAccess(bool TrackProgress, int UserId, bool AllRootFolders);
 /// fresh scope and DbContext per key, three round trips where this needs one.
 /// </para>
 /// </summary>
-public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
+public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCache? cache = null)
 {
+    /// <summary>
+    /// How long a resolved token is reused. A streaming reader resolves once per page, so this turns
+    /// a chapter's worth of lookups into one. Only successes are kept, so enabling the catalogue or
+    /// minting a key works at once. Rotating or revoking a key and editing or disabling its owner call
+    /// <see cref="EvictUser"/>; disabling the catalogue takes up to this long.
+    /// </summary>
+    private static readonly TimeSpan CacheFor = TimeSpan.FromSeconds(30);
+
+    private static readonly ConcurrentDictionary<int, CancellationTokenSource> UserEntries = new();
+    private static readonly Lock Gate = new();
+    private static long _evictions;
+
+    /// <summary>Drops every cached resolution for this user's tokens.</summary>
+    public static void EvictUser(int userId)
+    {
+        CancellationTokenSource? entries;
+        lock (Gate)
+        {
+            _evictions++;
+            UserEntries.TryRemove(userId, out entries);
+        }
+
+        entries?.Cancel();
+    }
+
     /// <summary>
     /// How stale a key's <c>LastUsedAt</c> may get. A prefetching reader would otherwise turn one
     /// chapter into a write per page.
@@ -51,6 +79,18 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
         }
 
         var hash = ApiKeyCrypto.Hash(token);
+        var cacheKey = (typeof(OpdsAccess), hash);
+        if (cache?.TryGetValue(cacheKey, out OpdsAccess? cached) == true)
+        {
+            return cached;
+        }
+
+        long evictionsBefore;
+        lock (Gate)
+        {
+            evictionsBefore = _evictions;
+        }
+
         var match = await db.UserApiKeys
             .Where(k => k.KeyHash == hash && k.RevokedAt == null && k.Scope == UserApiKeyScope.Opds)
             .Join(db.Users, k => k.UserId, u => u.Id, (k, u) => new
@@ -105,6 +145,24 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
                 .ExecuteUpdateAsync(s => s.SetProperty(k => k.LastUsedAt, now), ct);
         }
 
-        return new OpdsAccess(trackProgress, match.Id, match.AllRootFolders);
+        var access = new OpdsAccess(trackProgress, match.Id, match.AllRootFolders);
+
+        // An eviction while this was reading may have been about this key, so the answer is not kept.
+        // Checked and stored under the lock EvictUser takes, so one cannot land in between.
+        if (cache is not null)
+        {
+            lock (Gate)
+            {
+                if (_evictions == evictionsBefore)
+                {
+                    var entries = UserEntries.GetOrAdd(match.Id, _ => new CancellationTokenSource());
+                    cache.Set(cacheKey, access, new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(CacheFor)
+                        .AddExpirationToken(new CancellationChangeToken(entries.Token)));
+                }
+            }
+        }
+
+        return access;
     }
 }

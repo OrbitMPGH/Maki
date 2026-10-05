@@ -1,6 +1,7 @@
 import { Button, Group, NumberInput, Stack, Text, Textarea } from '@mantine/core'
 import { IconSend } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import type { FormEvent } from 'react'
 
 /**
  * The chapter range + note a request carries, and its submit button.
@@ -44,7 +45,15 @@ export function RequestForm({
   const buttonLabel = label ?? t`Request series`
 
   return (
-    <Stack gap="xs" mt="xs">
+    <Stack
+      component="form"
+      gap="xs"
+      mt="xs"
+      onSubmit={(e: FormEvent) => {
+        e.preventDefault()
+        onSubmit()
+      }}
+    >
       <Text size="xs" fw={700} c="var(--ink-3)" tt="uppercase">
         <Trans>Chapters - leave blank for all</Trans>
       </Text>
@@ -85,7 +94,7 @@ export function RequestForm({
         maxRows={4}
       />
       <Group grow={dense}>
-        <Button leftSection={<IconSend size={16} />} onClick={onSubmit} loading={pending}>
+        <Button type="submit" leftSection={<IconSend size={16} />} loading={pending}>
           {buttonLabel}
         </Button>
       </Group>

@@ -3,6 +3,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Recommendations;
 using Maki.Data.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Tests;
@@ -64,7 +65,7 @@ public class HomeControllerTests : IDisposable
 
     private void SeedProgress(
         int seriesId, int chapterId, int pageIndex, bool completed,
-        DateTime updatedAt, DateTime? unreadAt = null, int pageCount = 20)
+        DateTime updatedAt, DateTime? unreadAt = null, int pageCount = 20, bool watched = false)
     {
         using var db = _db.NewContext();
         db.ChapterProgress.Add(new ChapterProgress
@@ -75,6 +76,7 @@ public class HomeControllerTests : IDisposable
             PageIndex = pageIndex,
             PageCount = pageCount,
             Completed = completed,
+            Watched = watched,
             UnreadAt = unreadAt,
             StartedAt = updatedAt,
             UpdatedAt = updatedAt
@@ -176,6 +178,19 @@ public class HomeControllerTests : IDisposable
         var seriesId = _db.SeedSeries();
         var only = SeedChapter(seriesId, 1);
         SeedProgress(seriesId, only, pageIndex: 0, completed: true, updatedAt: Base);
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        Assert.Empty(response.JumpBackIn);
+    }
+
+    [Fact]
+    public async Task JumpBackIn_ignores_watched_chapters()
+    {
+        var seriesId = _db.SeedSeries();
+        var watched = SeedChapter(seriesId, 1);
+        SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, watched, pageIndex: 0, completed: true, updatedAt: Base, watched: true);
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 
@@ -328,7 +343,8 @@ public class HomeControllerTests : IDisposable
                 null!, // app paths
                 null!, // logger
                 null!, // current user
-                null!  // kavita user resolver
+                null!, // kavita user resolver
+                null!  // app settings
             );
 
             var result = await controller.Continue(seriesId, CancellationToken.None);
@@ -406,14 +422,21 @@ public class HomeControllerTests : IDisposable
 
     private readonly ReadingProgressGate _gate = new();
 
-    private async Task<IReadOnlyList<HomeAnimeResumeItem>> FromAnime(int userId = 1, bool allRootFolders = true)
+    private async Task<IReadOnlyList<HomeAnimeResumeItem>> FromAnime(int userId = 1, bool allRootFolders = true) =>
+        (await FromAnimePage(userId, allRootFolders)).Items;
+
+    private async Task<(IReadOnlyList<HomeAnimeResumeItem> Items, string? Total)> FromAnimePage(
+        int userId = 1, bool allRootFolders = true)
     {
         var context = _db.NewContext(userId, allRootFolders);
-        var controller = new HomeController(context, new ContinueReadingService(context));
+        var controller = new HomeController(context, new ContinueReadingService(context))
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
         var result = await controller.FromAnime(
             AnimeResumeFixture.Service(_db, context, _gate), ct: CancellationToken.None);
-        return Assert.IsAssignableFrom<IReadOnlyList<HomeAnimeResumeItem>>(
-            Assert.IsType<OkObjectResult>(result).Value);
+        var page = Assert.IsType<AnimeResumeService.RailPage>(Assert.IsType<OkObjectResult>(result).Value);
+        return (page.Items, page.Total.ToString());
     }
 
     private int SeedFromAnime(string title, int mangaBakaId, int? score, int userId = 1)
@@ -439,6 +462,21 @@ public class HomeControllerTests : IDisposable
         var first = items[0];
         Assert.Equal(5m, first.CoveredTo);
         Assert.Equal("Ch.6", first.ResumeChapterLabel);
+    }
+
+    [Fact]
+    public async Task From_anime_caps_the_response_but_reports_the_real_total()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        for (var i = 1; i <= AnimeResumeService.RailLimit + 3; i++)
+        {
+            SeedFromAnime($"Series {i:000}", i, 8);
+        }
+
+        var (items, total) = await FromAnimePage();
+
+        Assert.Equal(AnimeResumeService.RailLimit, items.Count);
+        Assert.Equal((AnimeResumeService.RailLimit + 3).ToString(), total);
     }
 
     [Fact]

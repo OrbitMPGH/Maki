@@ -1,3 +1,5 @@
+import type { QualityTierName, UpgradeQueueInfoDto } from './upgrades'
+
 /** A clickable external metadata link. `site` is a stable lowercase key (e.g. "mangabaka"). */
 export interface MetadataLink {
   site: string
@@ -127,6 +129,19 @@ export interface SeriesDto {
    * since the series was still created.
    */
   warnings?: string[] | null
+  /** Upgrade profile pinned to this series, or null to fall back to the instance default. */
+  upgradeProfileId: number | null
+  /** Null when this series has never been scanned for upgrades, by any of the three entry points. */
+  /** `checked` is null for scans recorded before it was kept; `skipped` maps a reason code to a count. */
+  lastUpgradeScan: {
+    at: string
+    probed: number
+    queued: number
+    checked: number | null
+    skipped: Record<string, number>
+  } | null
+  /** Id of the series' pending torrent volume proposal, if any. */
+  pendingProposalId: number | null
 }
 
 /** A user-assigned library label. `color` is a Mantine colour name. */
@@ -144,6 +159,8 @@ export interface TagDto {
 export interface LibraryFilterSpec {
   query?: string | null
   status: string
+  /** `SeriesDto.type` values to include. Empty/null means "don't filter"; untyped series only show then. */
+  types?: string[] | null
   tagIds?: number[] | null
   /** "any" | "all": whether a series must carry every listed tag. */
   tagMatch: string
@@ -185,6 +202,8 @@ export interface LibraryFilterSpec {
   fileSources?: string[] | null
   /** "any" | "all" */
   fileSourceMatch: string
+  /** "all", "default" (no pin of its own), or a quality profile id as a string. Absent on older presets. */
+  qualityProfile?: string
 }
 
 export interface SavedFilterDto {
@@ -211,6 +230,27 @@ export interface RootFolder {
   accessible: boolean
 }
 
+/** A file's release tier and archive stats, as the quality backfill measures it. */
+export interface ChapterFileQualityDto {
+  /** The backing `ChapterFile`'s id, for the per-file actions such as `POST /chapter-files/{id}/trusted`. */
+  fileId: number
+  tier: 'unknown' | 'aggregator' | 'scanlator' | 'official' | 'volume'
+  group: string | null
+  pageCount: number | null
+  medianWidth: number | null
+  medianHeight: number | null
+  /** jpg | png | webp | avif | gif | pdf | mixed | unknown */
+  imageFormat: string | null
+  /** False until the backfill has actually opened the archive; the fields above are guesses until then. */
+  measured: boolean
+  /** Quality score against the series' upgrade profile. Null with no profile or an unmeasured file. */
+  score: number | null
+  /** Whether this file already meets its profile's cutoff. Null with no profile or an unmeasured file. */
+  cutoffMet: boolean | null
+  /** "Protect from upgrades": a trusted file is never replaced by the automatic upgrader. */
+  trusted: boolean
+}
+
 export interface ChapterDto {
   id: number
   seriesId: number
@@ -235,6 +275,8 @@ export interface ChapterDto {
   fileReleaseName: string | null
   /** Volume label ("3", "1-2") when the backing file is a volume/compilation CBZ, else null. */
   fileVolume: string | null
+  /** Null when there is no file. */
+  fileQuality: ChapterFileQualityDto | null
 }
 
 export interface SeriesFileDto {
@@ -250,6 +292,14 @@ export interface SeriesFileDto {
   isVolume: boolean
   /** Chapter numbers this file is linked to (formatted, sorted). */
   mappedChapters: string[]
+  /** Null for a file with no ChapterFile record (unlinked, unrecognized). */
+  quality: ChapterFileQualityDto | null
+}
+
+/** The series page's Files tab count and unlinked banner, without the full listing. */
+export interface SeriesFilesSummaryDto {
+  count: number
+  unlinkedOnDisk: number
 }
 
 export interface SeriesScrobbleServiceDto {
@@ -276,6 +326,21 @@ export interface SeriesScrobbleDto {
   kavitaSeriesId: number | null
   services: SeriesScrobbleServiceDto[]
 }
+
+/**
+ * Mirrors `DownloadOrigin` on the server: the enum name, fully lowercased (not camelCase, since this
+ * is `.ToString().ToLowerInvariant()`, not the camelCase convention most other wire enums use). An
+ * origin this build doesn't recognise (a newer server, older page) reads as 'unknown' rather than
+ * breaking a lookup table; see `queueOriginOrUnknown` in `api/queue.ts`.
+ */
+export type QueueOrigin =
+  | 'unknown'
+  | 'manual'
+  | 'smartdownload'
+  | 'monitorrefresh'
+  | 'requestapproval'
+  | 'healthrepair'
+  | 'upgrade'
 
 /**
  * Nothing here is a sentence in a language. The label and the failure reason arrive as their parts,
@@ -307,6 +372,9 @@ export interface QueueItemDto {
   errorMessage: string | null
   queuedAt: string
   completedAt: string | null
+  origin: QueueOrigin
+  /** Set only when `origin` is 'upgrade'. */
+  upgrade: UpgradeQueueInfoDto | null
 }
 
 export interface QueueHistoryDto {
@@ -314,6 +382,13 @@ export interface QueueHistoryDto {
   total: number
   page: number
   pageSize: number
+}
+
+/** Whole-queue counts for the Activity badge. `active` excludes failed and parked items. */
+export interface QueueSummaryDto {
+  active: number
+  awaitingImport: number
+  failed: number
 }
 
 /** An existing library file a downloaded file would leave backing nothing. */
@@ -331,6 +406,9 @@ export interface ImportPlanFileDto {
   chapters: string[]
   newChapters: string[]
   replaces: ImportPlanExistingDto[]
+  /** Only meaningful when the plan `isUpgrade`. */
+  upgradeCount: number
+  alreadyMetCount: number
 }
 
 export interface TorrentImportPlanDto {
@@ -343,6 +421,10 @@ export interface TorrentImportPlanDto {
   hasConflicts: boolean
   newChapterCount: number
   replacedFileCount: number
+  /** True when the download came from the upgrader or a proposal; drives the skip checkboxes. */
+  isUpgrade: boolean
+  /** File names whose chapters are all at cutoff already; pre-ticked as Skip when `isUpgrade`. */
+  suggestedSkips: string[]
 }
 
 /** Matches the server's `ImportDecision`; sent verbatim. */
@@ -384,6 +466,34 @@ export interface ComparePage {
   bytes: number
 }
 
+/**
+ * A column's quality read against the series' upgrade profile, filled by `SourceMappingController`
+ * from the same pages the compare job already sampled (no extra probe). Null on a panel where no
+ * page width could be measured at all.
+ */
+export interface ComparePanelQualityDto {
+  tier: QualityTierName
+  score: number
+  matchedFormats: string[]
+  isUpgrade: boolean
+  /** A reason code from `UPGRADE_REASON_LABELS`, set whenever `isUpgrade` is false. */
+  reason: string | null
+  medianWidth: number | null
+  pageCount: number | null
+  /** The file on disk's tier, score and width: the same on every panel for one chapter, null with no file. */
+  currentTier: QualityTierName | null
+  currentScore: number | null
+  currentWidth: number | null
+  /** Parts of `score` from the profile's resolution and compression weights. */
+  resolutionPoints: number
+  compressionPoints: number
+  /** JPG-equivalent bits per pixel of the sampled pages, null when they could not be measured. */
+  bitsPerPixel: number | null
+  currentResolutionPoints: number | null
+  currentCompressionPoints: number | null
+  currentBitsPerPixel: number | null
+}
+
 export interface ComparePanel {
   mappingId: number
   sourceName: string
@@ -400,6 +510,7 @@ export interface ComparePanel {
   pages: (ComparePage | null)[]
   /** Pages in the whole chapter, not just the sampled rows. Null when the source didn't say. */
   pageCount: number | null
+  quality: ComparePanelQualityDto | null
 }
 
 /**
@@ -434,6 +545,8 @@ export interface AddSeriesRequest {
   incognito?: string
   addedFrom?: string
   clientMutationId?: string
+  /** Upgrade profile to pin, or null/omitted for the instance default. */
+  upgradeProfileId?: number | null
 }
 
 export type NotificationType =

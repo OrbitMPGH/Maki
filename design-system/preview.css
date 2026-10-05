@@ -49,6 +49,7 @@ button, input, select, textarea { font: inherit; }
 .mk-button[data-variant='light'] { background: color-mix(in srgb, var(--brand) 15%, transparent); color: var(--brand-fg); }
 .mk-button[data-variant='subtle'] { background: transparent; color: var(--brand-fg); }
 .mk-button[data-variant='subtle']:hover { background: color-mix(in srgb, var(--brand) 12%, transparent); }
+.section-header-action .mk-button[data-variant='subtle'] { color: var(--ink-3); }
 .mk-button[data-color='danger'] { background: var(--danger-fill); color: #ffffff; }
 .mk-button[data-size='xs'] { height: var(--control-height-xs); padding: 0 0.875rem; font-size: var(--type-micro); }
 .mk-button[data-size='md'] { height: var(--control-height-md); padding: 0 1.375rem; font-size: 1rem; }
@@ -118,7 +119,7 @@ button, input, select, textarea { font: inherit; }
   background: var(--surface);
 }
 .stat-label { color: var(--ink-3); font-size: var(--type-micro); font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: 0.05em; }
-.stat-value { margin-top: 6px; color: var(--ink-hi); font-size: 26px; font-weight: var(--fw-heavy); line-height: 1.1; }
+.stat-value { margin-top: 6px; color: var(--ink-hi); font-size: 26px; font-weight: var(--fw-bold); line-height: 1.1; }
 .stat-hint { margin-top: 4px; color: var(--ink-3); font-size: var(--type-micro); }
 .stat-delta { margin-top: 4px; font-size: var(--type-micro); font-weight: var(--fw-semibold); }
 .stat-icon { width: 20px; height: 20px; opacity: 0.9; }
@@ -128,6 +129,8 @@ button, input, select, textarea { font: inherit; }
 .empty-state[data-compact] { padding: var(--spacing-sm) 0; }
 .empty-state-description { max-width: 520px; color: var(--ink-3); font-size: var(--type-body); }
 .empty-state .mk-button { margin-top: var(--spacing-sm); }
+.empty-state[data-mood] { flex-direction: row; align-items: center; gap: 16px; }
+.empty-state-text { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 
 /* --- Cards: the grid sets their width in the app, the preview does here ---- */
 .mk-preview > .cover-card { width: 180px; }

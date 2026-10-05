@@ -192,12 +192,14 @@ public class DownloadWorkerHostedService(
         var interrupted = pending.Except(stillResolving).ToList();
 
         // RateLimited rows keep their status and NextAttempt, and their source's cooldown is put
-        // back, so a restart straight after a 429 doesn't hit the source again at once.
+        // back, so a restart straight after a 429 doesn't hit the source again at once. A row parked
+        // for a missing root folder says nothing about its source and must not cool it down.
         foreach (var item in interrupted)
         {
             if (item.Status == QueueStatus.RateLimited)
             {
-                if (item.NextAttempt is { } until && item.SourceMapping is { } mapping)
+                if (item.NextAttempt is { } until && item.SourceMapping is { } mapping &&
+                    item.ErrorKey != ChapterDownloadProcessor.RootFolderUnavailableKey)
                 {
                     queue.RestoreCooldown(mapping.SourceName, until);
                 }
@@ -372,15 +374,16 @@ public class DownloadWorkerHostedService(
                 return;
             }
 
+            var (key, detail) = DownloadFailureReason.Classify(cause);
             item.Status = QueueStatus.Failed;
-            item.SetError("error.download.unexpected");
+            item.SetError(key, detail: detail);
             item.RetryCount++;
             item.NextAttempt = queue.NextRetryAttempt(item.RetryCount);
             await db.SaveChangesAsync(ct);
 
             // This path bypasses ChapterDownloadProcessor.FailAsync, so report the outcome
             // ourselves — an unreported item would hold its batch open until the stale sweep.
-            await batches.FailedAsync(item.SeriesId, item.Id, "error.download.unexpected");
+            await batches.FailedAsync(item.SeriesId, item.Id, key);
 
             if (item.Series is { } series)
             {

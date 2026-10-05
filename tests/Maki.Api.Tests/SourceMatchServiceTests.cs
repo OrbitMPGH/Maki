@@ -41,7 +41,23 @@ public class SourceMatchServiceTests : IDisposable
     private Task<List<string>> RunAutoMatch(
         int seriesId, SourceAvailability availability, IProgress<SourceMatchStep>? progress,
         params ISource[] sources) =>
-        RunAutoMatch(seriesId, availability, progress, new FakeAppSettings(), sources);
+        // Pinned to the order given, so a fake named after a real source isn't reordered by the
+        // shipped default priority order.
+        RunAutoMatch(seriesId, availability, progress,
+            new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, string.Join(",", sources.Select(s => s.Name))),
+            sources);
+
+    [Fact]
+    public void An_unset_priority_order_uses_the_measured_default_then_registration_order()
+    {
+        ISource[] all = [.. new[] { "unknown-b", "topmanhua", "unknown-a", "mangadex", "webtoons" }
+            .Select(name => new FakeSource { Name = name })];
+
+        Assert.Equal(["mangadex", "webtoons", "topmanhua", "unknown-b", "unknown-a"],
+            SourceMatchService.OrderSources(all, null).Select(s => s.Name));
+        Assert.Equal(["unknown-a", "unknown-b", "topmanhua", "mangadex", "webtoons"],
+            SourceMatchService.OrderSources(all, "unknown-a").Select(s => s.Name));
+    }
 
     private async Task<List<string>> RunAutoMatch(
         int seriesId, SourceAvailability availability, IProgress<SourceMatchStep>? progress,
@@ -51,7 +67,8 @@ public class SourceMatchServiceTests : IDisposable
         var series = await context.Series.Include(s => s.SourceMappings).FirstAsync(s => s.Id == seriesId);
         var service = new SourceMatchService(
             context, new SourceRegistry(sources), appSettings, availability,
-            new SourceExternalIdCache(TimeProvider.System), NullLogger<SourceMatchService>.Instance);
+            new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
+            NullLogger<SourceMatchService>.Instance);
         return await service.AutoMatchAsync(series, default, progress);
     }
 
@@ -108,6 +125,76 @@ public class SourceMatchServiceTests : IDisposable
     {
         using var db = _db.NewContext();
         return db.SourceMappings.Where(m => m.SeriesId == seriesId).ToList();
+    }
+
+    [Fact]
+    public async Task FindCandidates_ranks_like_auto_match_and_writes_nothing()
+    {
+        // The Discover preview asks for candidates on a series that was never saved, so the search
+        // must not need the row and must not leave mappings behind for one that does exist.
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var first = new FakeSource { Name = "first", OnSearch = _ => [Hit("a", "Hajime no Ippo")] };
+        var miss = new FakeSource { Name = "miss", OnSearch = _ => [Hit("b", "Something Else Entirely")] };
+        var second = new FakeSource { Name = "second", OnSearch = _ => [Hit("c", "Hajime no Ippo")] };
+        var appSettings = new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, "second,miss,first");
+
+        var context = _db.NewContext();
+        var service = new SourceMatchService(
+            context, new SourceRegistry([first, miss, second]), appSettings, Sources.AllEnabled,
+            new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
+            NullLogger<SourceMatchService>.Instance);
+
+        var candidates = await service.FindCandidatesAsync(new Series { Id = seriesId, Title = "Hajime no Ippo" });
+
+        Assert.Equal(["second", "first"], candidates.Select(c => c.Source.Name));
+        Assert.Equal(["c", "a"], candidates.Select(c => c.SourceSeriesId));
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task Adding_after_a_preview_reuses_its_searches_and_retries_only_failed_sources()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo", configure: s => s.MangaBakaId = 42);
+        var hitSearches = 0;
+        var missSearches = 0;
+        var flakySearches = 0;
+        var hit = new FakeSource
+        {
+            Name = "hit",
+            OnSearch = _ => { hitSearches++; return [Hit("a", "Hajime no Ippo")]; }
+        };
+        var miss = new FakeSource
+        {
+            Name = "miss",
+            OnSearch = _ => { missSearches++; return [Hit("b", "Something Else Entirely")]; }
+        };
+        var flaky = new FakeSource
+        {
+            Name = "flaky",
+            OnSearch = _ => ++flakySearches == 1
+                ? throw new HttpRequestException("blip")
+                : [Hit("c", "Hajime no Ippo")]
+        };
+        var sources = new SourceRegistry([hit, miss, flaky]);
+        var appSettings = new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, "hit,miss,flaky");
+        var searchCache = new SourceMatchSearchCache(TimeProvider.System);
+        SourceMatchService NewService() => new(
+            _db.NewContext(), sources, appSettings, Sources.AllEnabled,
+            new SourceExternalIdCache(TimeProvider.System), searchCache, NullLogger<SourceMatchService>.Instance);
+
+        await NewService().FindCandidatesAsync(
+            new Series { Title = "Hajime no Ippo", MangaBakaId = 42 });
+
+        var mapped = await NewService().AutoMatchAsync(await _db.NewContext().Series.FirstAsync(s => s.Id == seriesId));
+
+        Assert.Equal(["hit", "flaky"], mapped);
+        Assert.Equal(1, hitSearches);
+        Assert.Equal(1, missSearches);
+        Assert.Equal(2, flakySearches);
+
+        // Taken once: a later re-match searches every source again.
+        await NewService().AutoMatchAsync(await _db.NewContext().Series.FirstAsync(s => s.Id == seriesId));
+        Assert.Equal(2, missSearches);
     }
 
     [Fact]
@@ -192,6 +279,78 @@ public class SourceMatchServiceTests : IDisposable
         var mapped = await RunAutoMatch(seriesId, source);
 
         Assert.Equal(["fake"], mapped);
+    }
+
+    // Release smoke test: Fujimoto's "Look Back" was mapped to a WEBTOON CANVAS comic of the same
+    // name by somebody else, and its one chapter was downloaded as the series.
+    [Fact]
+    public async Task A_user_made_comic_with_the_same_title_by_someone_else_is_not_mapped()
+    {
+        var seriesId = _db.SeedSeries("Look Back", configure: s => s.AuthorStory = "Tatsuki Fujimoto");
+        var webtoons = new FakeSource
+        {
+            Name = "webtoons",
+            OnSearch = _ =>
+            [
+                new SourceSeriesResult("canvas/look-back/849510", "LOOK BACK", "https://x.test/lb",
+                    UserGenerated: true, Author: "Jordzart")
+            ]
+        };
+
+        var mapped = await RunAutoMatch(seriesId, webtoons);
+
+        Assert.Empty(mapped);
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task A_user_made_comic_by_the_series_author_is_still_mapped()
+    {
+        var seriesId = _db.SeedSeries("Look Back", configure: s =>
+        {
+            s.AuthorStory = "Someone Else, Tatsuki Fujimoto";
+        });
+        var webtoons = new FakeSource
+        {
+            Name = "webtoons",
+            OnSearch = _ =>
+            [
+                new SourceSeriesResult("canvas/look-back/1", "Look Back", "https://x.test/lb",
+                    UserGenerated: true, Author: "FUJIMOTO Tatsuki / Assistant")
+            ]
+        };
+
+        Assert.Equal(["webtoons"], await RunAutoMatch(seriesId, webtoons));
+    }
+
+    [Fact]
+    public async Task A_user_made_comic_needs_a_credit_to_compare_against()
+    {
+        var seriesId = _db.SeedSeries("Look Back");
+        var webtoons = new FakeSource
+        {
+            Name = "webtoons",
+            OnSearch = _ =>
+            [
+                new SourceSeriesResult("canvas/look-back/1", "Look Back", "https://x.test/lb",
+                    UserGenerated: true, Author: "Jordzart")
+            ]
+        };
+
+        Assert.Empty(await RunAutoMatch(seriesId, webtoons));
+    }
+
+    [Fact]
+    public async Task A_catalogued_result_still_matches_on_title_alone()
+    {
+        var seriesId = _db.SeedSeries("Look Back", configure: s => s.AuthorStory = "Tatsuki Fujimoto");
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnSearch = _ => [new SourceSeriesResult("lb", "Look Back", "https://x.test/lb", Author: "Somebody")]
+        };
+
+        Assert.Equal(["fake"], await RunAutoMatch(seriesId, source));
     }
 
     [Fact]

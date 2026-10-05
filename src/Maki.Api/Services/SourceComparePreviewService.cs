@@ -5,6 +5,7 @@ using Maki.Api.Localization;
 using Maki.Core.Download;
 using Maki.Core.Http;
 using Maki.Core.Images;
+using Maki.Core.Quality;
 using Maki.Core.Sources;
 using SixLabors.ImageSharp;
 
@@ -18,7 +19,8 @@ public record SourceCompareCandidate(int MappingId, string SourceName, string So
 /// could not be read for measurement — AVIF, which browsers display happily and ImageSharp cannot
 /// decode at all. The image is still shown; only its caption is thinner.
 /// </summary>
-public record ComparePage(string Url, int? Width, int? Height, long Bytes);
+/// <param name="Format">jpg, png, webp and so on; null when the page could not be decoded.</param>
+public record ComparePage(string Url, int? Width, int? Height, long Bytes, string? Format = null);
 
 public record ComparePanel(
     int MappingId,
@@ -43,7 +45,9 @@ public record ComparePanel(
     /// One entry per grid row, null where this source has no page for that row. Row N is the same
     /// drawing in every aligned column.
     /// </summary>
-    List<ComparePage?> Pages);
+    List<ComparePage?> Pages,
+    /// <summary>How the sampled pages score against the file on disk; filled by <see cref="SourceCompareQuality"/>.</summary>
+    ComparePanelQuality? Quality = null);
 
 public record CompareSnapshot(
     int SeriesId,
@@ -418,12 +422,14 @@ public sealed class SourceComparePreviewService(
                 // dimensions and its place in the alignment, never its place in the comparison.
                 int? width = null;
                 int? height = null;
+                string? format = null;
                 ulong? hash = null;
                 try
                 {
                     var info = await Image.IdentifyAsync(files[i], ct);
                     width = info.Width;
                     height = info.Height;
+                    format = ChapterFileMeasurer.FormatName(info.Metadata.DecodedImageFormat);
                     hash = await PerceptualHash.OfFileAsync(files[i], ct);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
@@ -435,7 +441,8 @@ public sealed class SourceComparePreviewService(
                     $"/api/v1/sourcemapping/compare/image/{job.SeriesId}/{panel.SourceName}/{i}?v={job.Token}",
                     width,
                     height,
-                    new FileInfo(files[i]).Length));
+                    new FileInfo(files[i]).Length,
+                    format));
                 hashes.Add(hash);
             }
 

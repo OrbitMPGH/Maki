@@ -14,12 +14,21 @@ public static class LibraryPaths
     /// the root folder. Callers taking a path from a request must use this rather than a bare
     /// <see cref="Path.Combine(string, string)"/>: <c>Combine</c> happily accepts <c>..\..</c>
     /// segments, and an absolute second argument silently discards the root entirely.
+    /// <para>
+    /// A backslash counts as a separator on every host, like <see cref="ComparisonKey"/>: a row written
+    /// on Windows holds <c>\</c>, which Linux would otherwise read as part of a single file name.
+    /// </para>
     /// </summary>
     public static string? Resolve(string rootPath, string relativePath)
     {
         if (string.IsNullOrWhiteSpace(rootPath) || string.IsNullOrWhiteSpace(relativePath))
         {
             return null;
+        }
+
+        if (Path.DirectorySeparatorChar != '\\')
+        {
+            relativePath = relativePath.Replace('\\', '/');
         }
 
         try
@@ -184,9 +193,51 @@ public static class LibraryPaths
     public static string ComparisonKey(string relativePath) =>
         relativePath.Replace('\\', '/').TrimStart('/');
 
-    /// <summary>Folder names compare the way the host's filesystem does.</summary>
-    public static StringComparer FolderComparer { get; } =
-        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    /// <summary>
+    /// True when two paths name one directory on disk. A case-insensitive filesystem (Windows, or an
+    /// SMB mount under Docker) answers to <c>chainsaw man</c> and <c>Chainsaw Man</c> alike, so
+    /// comparing the strings, or asking whether the second exists, cannot tell a second folder from
+    /// the first one under another spelling. The parent's listing can: a case-sensitive filesystem
+    /// holding two such folders lists both names.
+    /// </summary>
+    public static bool IsSameDirectory(string a, string b)
+    {
+        var fullA = Path.TrimEndingDirectorySeparator(Path.GetFullPath(a));
+        var fullB = Path.TrimEndingDirectorySeparator(Path.GetFullPath(b));
+        if (string.Equals(fullA, fullB, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (!string.Equals(fullA, fullB, StringComparison.OrdinalIgnoreCase) ||
+            !Directory.Exists(fullA) || !Directory.Exists(fullB))
+        {
+            return false;
+        }
+
+        var parent = Path.GetDirectoryName(fullB);
+        if (parent is null)
+        {
+            return true;
+        }
+
+        var nameA = Path.GetFileName(fullA);
+        var nameB = Path.GetFileName(fullB);
+        if (string.Equals(nameA, nameB, StringComparison.Ordinal))
+        {
+            return IsSameDirectory(Path.GetDirectoryName(fullA)!, parent);
+        }
+
+        var listed = Directory.EnumerateDirectories(parent).Select(Path.GetFileName).ToList();
+        return !(listed.Contains(nameA, StringComparer.Ordinal) && listed.Contains(nameB, StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// Folder names ignore case on every host. A case-insensitive share mounted under Docker holds
+    /// <c>One Piece</c> and <c>one piece</c> as one folder, so an ordinal comparison there would let
+    /// one series reach into another's folder, or count a folder it shares as its own.
+    /// </summary>
+    public static StringComparer FolderComparer { get; } = StringComparer.OrdinalIgnoreCase;
 
     /// <summary>
     /// The root-level folder a stored relative path sits in, or null for a file directly in the

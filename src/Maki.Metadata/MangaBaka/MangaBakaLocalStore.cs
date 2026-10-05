@@ -1313,8 +1313,8 @@ public class MangaBakaLocalStore(
             {
                 var name = element.ValueKind == JsonValueKind.Object &&
                            element.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
-                    ? n.GetString()
-                    : element.ValueKind == JsonValueKind.String ? element.GetString() : null;
+                    ? n.GetString()?.Trim()
+                    : element.ValueKind == JsonValueKind.String ? element.GetString()?.Trim() : null;
                 if (!string.IsNullOrWhiteSpace(name) && !names.Contains(name, StringComparer.OrdinalIgnoreCase))
                 {
                     names.Add(name);
@@ -1517,16 +1517,49 @@ public class MangaBakaLocalStore(
         return result;
     }
 
+    /// <summary>
+    /// The ids among <paramref name="ids"/> that pass <paramref name="filters"/> in SQL. Tags are
+    /// not tested here (see <see cref="RecommendationFilters.BuildClause"/>); callers match those
+    /// by name.
+    /// </summary>
+    public virtual async Task<IReadOnlySet<long>> FilterIdsAsync(
+        IReadOnlyCollection<long> ids, RecommendationFilters filters, CancellationToken ct = default)
+    {
+        var passing = new HashSet<long>();
+        if (ids.Count == 0)
+        {
+            return passing;
+        }
+
+        using var conn = Open();
+        foreach (var chunk in ids.Distinct().Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT series.id FROM series WHERE series.id IN ({string.Join(",", chunk)})" +
+                filters.BuildClause(cmd, "series");
+            cmd.CommandTimeout = 600;
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                passing.Add(reader.GetInt64(0));
+            }
+        }
+
+        return passing;
+    }
+
     /// <summary>Which provider's manga ids a lookup is keyed on.</summary>
     public enum ExternalSource { AniList, MyAnimeList, Kitsu }
 
     /// <summary>
     /// External manga id -> canonical MangaBaka id, for the ids that resolve.
     /// <para>
-    /// Chunked <c>IN (...)</c> rather than a temp table or a join, because the dump is opened
-    /// read-only and a nightly swap replaces the file: nothing here may write to it, index included.
-    /// Each chunk is one scan, so the chunk is large (500) and the callers are expected to ask once
-    /// per sync rather than once per entry.
+    /// Chunked <c>IN (...)</c> rather than a temp table or a join, because queries open the dump
+    /// read-only. Each column has a partial index (<c>ix_ext_*</c>), built by
+    /// <see cref="MangaBakaDumpService"/> on the staged file at install and backfilled on the live
+    /// one at startup, so a chunk is an index lookup rather than a scan.
     /// </para>
     /// Merged rows are followed to their canonical series the same way <see cref="GetAsync"/> does,
     /// and novels are dropped, so a light-novel relation picked up from a provider cannot enter the

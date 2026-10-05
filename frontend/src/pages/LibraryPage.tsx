@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
@@ -25,11 +25,14 @@ import {
   IconBookmark,
   IconDeviceFloppy,
   IconEye,
+  IconStars,
   IconFileText,
   IconFilter,
+  IconFolderDown,
   IconFolderSymlink,
   IconLayoutGrid,
   IconLayoutList,
+  IconLineHeight,
   IconListCheck,
   IconPhoto,
   IconPlus,
@@ -58,6 +61,7 @@ import {
   missingCount,
   useAutoMatchSources,
   useBulkSetSeriesNotificationMode,
+  useBulkSetUpgradeProfile,
   useBulkTag,
   useDeleteSavedFilter,
   useLibraryStats,
@@ -67,6 +71,7 @@ import {
   useSeries,
   useTags,
 } from '../api/hooks'
+import { useUpgradeProfiles } from '../api/upgrades'
 import { useReadTracking } from '../api/reader'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
@@ -77,6 +82,7 @@ import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { PosterSkeletons } from '../components/CatalogueBrowser'
+import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -177,6 +183,7 @@ function facetOptions(
 const DEFAULT_SPEC: LibraryFilterSpec = {
   query: '',
   status: 'all',
+  types: [],
   tagIds: [],
   tagMatch: 'any',
   monitored: 'all',
@@ -197,7 +204,11 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   sourceState: 'all',
   fileSources: [],
   fileSourceMatch: 'any',
+  qualityProfile: 'all',
 }
+
+/** Quality profile filter value for series with no pin of their own. */
+const DEFAULT_PROFILE_FILTER = 'default'
 
 const SOURCE_STATE_VALUES = ['all', 'none', 'hasDisabled', 'noneEnabled', 'hasEnabled'] as const
 
@@ -247,6 +258,7 @@ const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
   // ComicInfo is the file format's name and is deliberately absent: the fallback shows the key.
   Delete: msg`Delete`,
   'Set monitoring': msg`Set monitoring`,
+  'Quality profile': msg`Quality profile`,
   Move: msg`Move`,
 }
 
@@ -273,6 +285,8 @@ export default function LibraryPage() {
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
   const bulkNotifications = useBulkSetSeriesNotificationMode()
+  const bulkUpgradeProfile = useBulkSetUpgradeProfile()
+  const { data: upgradeProfiles } = useUpgradeProfiles()
   const autoMatch = useAutoMatchSources()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
@@ -295,6 +309,7 @@ export default function LibraryPage() {
   const [debouncedQuery] = useDebouncedValue(query, 200)
   const [sort, setSort] = usePageState(`${MEM}:sort`, 'added')
   const [statusFilter, setStatusFilter] = usePageState(`${MEM}:status`, 'all')
+  const [typeFilter, setTypeFilter] = usePageState<string[]>(`${MEM}:types`, [])
   // Tag ids live as strings because that's what MultiSelect speaks.
   const [tagFilter, setTagFilter] = usePageState<string[]>(`${MEM}:tags`, [])
   const [tagMatch, setTagMatch] = usePageState(`${MEM}:tag-match`, 'any')
@@ -316,6 +331,7 @@ export default function LibraryPage() {
   const [sourceState, setSourceState] = usePageState(`${MEM}:source-state`, 'all')
   const [fileSourceFilter, setFileSourceFilter] = usePageState<string[]>(`${MEM}:file-sources`, [])
   const [fileSourceMatch, setFileSourceMatch] = usePageState(`${MEM}:file-source-match`, 'any')
+  const [qualityProfileFilter, setQualityProfileFilter] = usePageState(`${MEM}:quality-profile`, 'all')
   const [activeFilterId, setActiveFilterId] = usePageState<number | null>(`${MEM}:saved-filter`, null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
@@ -332,6 +348,8 @@ export default function LibraryPage() {
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [autoMatchModalOpen, setAutoMatchModalOpen] = useState(false)
   const [monitorModalOpen, setMonitorModalOpen] = useState(false)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [bulkProfile, setBulkProfile] = useState<string>(DEFAULT_PROFILE_FILTER)
   const [monitorMode, setMonitorMode] = useState('All')
   const [notifyModalOpen, setNotifyModalOpen] = useState(false)
   const [notifyMode, setNotifyMode] = useState<SeriesNotificationMode>('Default')
@@ -351,6 +369,7 @@ export default function LibraryPage() {
       )
     }
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
+    if (typeFilter.length > 0) list = list.filter((s) => s.type != null && typeFilter.includes(s.type))
     if (tagFilter.length > 0) {
       const wanted = tagFilter.map(Number)
       list = list.filter((s) => matches(wanted, s.tagIds, tagMatch))
@@ -368,6 +387,13 @@ export default function LibraryPage() {
     }
     if (monitoredFilter !== 'all') {
       list = list.filter((s) => s.monitored === (monitoredFilter === 'monitored'))
+    }
+    if (qualityProfileFilter !== 'all') {
+      list = list.filter((s) =>
+        qualityProfileFilter === DEFAULT_PROFILE_FILTER
+          ? s.upgradeProfileId == null
+          : String(s.upgradeProfileId) === qualityProfileFilter,
+      )
     }
     if (completeness !== 'all') {
       list = list.filter((s) => (completeness === 'behind' ? missingCount(s) > 0 : missingCount(s) <= 0))
@@ -405,16 +431,25 @@ export default function LibraryPage() {
     })
     return list
   }, [
-    series, debouncedQuery, statusFilter, tagFilter, tagMatch, genreFilter, genreMatch,
+    series, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
-    chapterMin, chapterMax, chapterMode,
+    chapterMin, chapterMax, chapterMode, qualityProfileFilter,
   ])
 
   const statusOptions = useMemo(() => {
     const set = new Set((series ?? []).map((s) => s.status))
     return ['all', ...[...set].sort()]
   }, [series])
+
+  // Only types some series actually carries, in the catalogue's order rather than alphabetical.
+  const typeOptions = useMemo(() => {
+    const present = new Set((series ?? []).map((s) => s.type))
+    return TYPE_OPTIONS.filter((value) => present.has(value)).map((value) => ({
+      value,
+      label: renderLabel(TYPE_LABELS[value]),
+    }))
+  }, [series, renderLabel, i18n.locale])
 
   const tagOptions = useMemo(
     () => (tags ?? []).map((t) => ({ value: String(t.id), label: `${t.label} (${t.seriesCount})` })),
@@ -473,6 +508,7 @@ export default function LibraryPage() {
   const currentSpec = (): LibraryFilterSpec => ({
     query,
     status: statusFilter,
+    types: typeFilter,
     tagIds: tagFilter.map(Number),
     tagMatch,
     monitored: monitoredFilter,
@@ -493,6 +529,7 @@ export default function LibraryPage() {
     sourceState,
     fileSources: fileSourceFilter,
     fileSourceMatch,
+    qualityProfile: qualityProfileFilter,
   })
 
   const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
@@ -501,6 +538,7 @@ export default function LibraryPage() {
     const merged = { ...DEFAULT_SPEC, ...spec }
     setQuery(merged.query ?? '')
     setStatusFilter(merged.status)
+    setTypeFilter(merged.types ?? [])
     setTagFilter((merged.tagIds ?? []).map(String))
     setTagMatch(merged.tagMatch)
     setGenreFilter(merged.genres ?? [])
@@ -521,6 +559,7 @@ export default function LibraryPage() {
     setSourceState(merged.sourceState)
     setFileSourceFilter(merged.fileSources ?? [])
     setFileSourceMatch(merged.fileSourceMatch)
+    setQualityProfileFilter(merged.qualityProfile ?? 'all')
     setSort(merged.sort)
     setActiveFilterId(id)
   }
@@ -528,6 +567,7 @@ export default function LibraryPage() {
   /** Everything except the search box: what the "Filters" button badges. */
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) +
+    (typeFilter.length > 0 ? 1 : 0) +
     (tagFilter.length > 0 ? 1 : 0) +
     (genreFilter.length > 0 ? 1 : 0) +
     (metaTagFilter.length > 0 ? 1 : 0) +
@@ -538,7 +578,8 @@ export default function LibraryPage() {
     (contentRatingFilter.length > 0 ? 1 : 0) +
     (sourceFilter.length > 0 ? 1 : 0) +
     (sourceState !== 'all' ? 1 : 0) +
-    (fileSourceFilter.length > 0 ? 1 : 0)
+    (fileSourceFilter.length > 0 ? 1 : 0) +
+    (qualityProfileFilter !== 'all' ? 1 : 0)
 
   const filtersActive = query.trim() !== '' || activeFilterCount > 0
 
@@ -714,6 +755,70 @@ export default function LibraryPage() {
   // Kept mounted through loading and error too, so the grid lands where it will stay and an error isn't a dead end.
   const showChrome = isLoading || error != null || (series != null && series.length > 0)
 
+  const indexRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const panel = indexRef.current
+    const strip = panel?.querySelector<HTMLElement>('.library-index-metrics')
+    if (!panel || !strip) return
+    const apply = () => panel.style.setProperty('--library-strip-h', `${strip.offsetHeight}px`)
+    apply()
+    const observer = new ResizeObserver(apply)
+    observer.observe(strip)
+    return () => observer.disconnect()
+  }, [showChrome])
+
+  const densityLabel = densityOptions.find((o) => o.value === density)?.label ?? ''
+  const cycleDensity = () => {
+    const order: Density[] = ['compact', 'default', 'comfortable']
+    const next = order[(order.indexOf(density) + 1) % order.length]
+    setDensity(next)
+    writeStored(LS_DENSITY, next)
+  }
+
+  const viewControls = (
+    <>
+      <SegmentedControl
+        className="library-view-toggle"
+        size="xs"
+        value={viewMode}
+        onChange={(v) => {
+          setViewMode(v as ViewMode)
+          writeStored(LS_VIEW, v)
+        }}
+        aria-label={t`View`}
+        data={[
+          {
+            value: 'grid',
+            label: (
+              <span className="library-view-option" title={t`Grid view`} aria-label={t`Grid view`}>
+                <IconLayoutGrid size={16} />
+              </span>
+            ),
+          },
+          {
+            value: 'list',
+            label: (
+              <span className="library-view-option" title={t`List view`} aria-label={t`List view`}>
+                <IconLayoutList size={16} />
+              </span>
+            ),
+          },
+        ]}
+      />
+      <Tooltip label={t`Density: ${densityLabel}`} withArrow>
+        <ActionIcon
+          className="library-density-button"
+          variant="default"
+          size={34}
+          onClick={cycleDensity}
+          aria-label={t`Density: ${densityLabel}`}
+        >
+          <IconLineHeight size={16} />
+        </ActionIcon>
+      </Tooltip>
+    </>
+  )
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
@@ -722,39 +827,9 @@ export default function LibraryPage() {
         actions={
           showChrome && !selectMode ? (
             <>
-              <Button.Group>
-                <Button
-                  variant={viewMode === 'grid' ? 'filled' : 'default'}
-                  size="sm"
-                  onClick={() => {
-                    setViewMode('grid')
-                    writeStored(LS_VIEW, 'grid')
-                  }}
-                  aria-label={t`Grid view`}
-                >
-                  <IconLayoutGrid size={16} />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'filled' : 'default'}
-                  size="sm"
-                  onClick={() => {
-                    setViewMode('list')
-                    writeStored(LS_VIEW, 'list')
-                  }}
-                  aria-label={t`List view`}
-                >
-                  <IconLayoutList size={16} />
-                </Button>
-              </Button.Group>
-              <SegmentedControl
-                size="sm"
-                value={density}
-                onChange={(v) => {
-                  setDensity(v as Density)
-                  writeStored(LS_DENSITY, v)
-                }}
-                data={densityOptions}
-              />
+              <Group gap="xs" wrap="nowrap" hiddenFrom="sm">
+                {viewControls}
+              </Group>
               <Button
                 variant="default"
                 leftSection={<IconListCheck size={16} />}
@@ -771,7 +846,7 @@ export default function LibraryPage() {
       />
 
       {showChrome && (
-        <Panel p={0} className="library-index layer-sunken">
+        <Panel ref={indexRef} p={0} className="library-index layer-sunken">
           <FigureStrip
             flush
             loading={isLoading}
@@ -860,6 +935,10 @@ export default function LibraryPage() {
                 {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
                   setNotifyModalOpen(true),
                 )}
+                {bulkBtn('Quality profile', <Trans>Quality profile</Trans>, <IconStars size={15} />, () => {
+                  setBulkProfile(DEFAULT_PROFILE_FILTER)
+                  setProfileModalOpen(true)
+                })}
                 {can('Admin') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
@@ -920,6 +999,17 @@ export default function LibraryPage() {
                     <IconFilter size={16} />
                   </ActionIcon>
                 </Indicator>
+                <Tooltip label={t`Manage tags`} withArrow>
+                  <ActionIcon
+                    className="library-tags-button"
+                    variant="default"
+                    size={34}
+                    onClick={() => setTagManagerOpen(true)}
+                    aria-label={t`Manage tags`}
+                  >
+                    <IconSettings size={16} />
+                  </ActionIcon>
+                </Tooltip>
                 <Select
                   className="library-sort"
                   data={sortOptions}
@@ -940,76 +1030,75 @@ export default function LibraryPage() {
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
                 </Text>
-              </Group>
-
-              <Group
-                className="library-saved-filters"
-                gap="xs"
-                wrap="wrap"
-                data-tools-only={((savedFilters ?? []).length === 0 && !filtersActive) || undefined}
-              >
-                {(savedFilters ?? []).map((f) => (
-                <Group key={f.id} gap={2}>
-                  <TagChip
-                    active={activeFilterId === f.id}
-                    onClick={() => applySpec(f.spec, f.id)}
-                  >
-                    <IconBookmark size={11} />
-                    {f.name}
-                  </TagChip>
-                  <ActionIcon
-                    size="xs"
-                    variant="subtle"
-                    color="var(--ink-4)"
-                    aria-label={t`Delete saved filter`}
-                    onClick={() => {
-                      deleteSavedFilter.mutate(f.id)
-                      if (activeFilterId === f.id) setActiveFilterId(null)
-                    }}
-                  >
-                    <IconX size={11} />
-                  </ActionIcon>
+                <Group className="library-view-controls" gap="sm" wrap="nowrap" visibleFrom="sm">
+                  {viewControls}
                 </Group>
-              ))}
-              {filtersActive && (
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  leftSection={<IconDeviceFloppy size={14} />}
-                  onClick={() => {
-                    const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
-                    setFilterName(active?.name ?? '')
-                    setSaveFilterOpen(true)
-                  }}
-                >
-                  <Trans>Save filter</Trans>
-                </Button>
-              )}
-              {filtersActive && (
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  color="var(--neutral)"
-                  leftSection={<IconX size={14} />}
-                  onClick={() => applySpec(DEFAULT_SPEC, null)}
-                >
-                  <Trans>Clear</Trans>
-                </Button>
-              )}
-              <Tooltip label={t`Manage tags`} withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  color="var(--neutral)"
-                  onClick={() => setTagManagerOpen(true)}
-                  aria-label={t`Manage tags`}
-                >
-                  <IconSettings size={16} />
-                </ActionIcon>
-              </Tooltip>
               </Group>
             </Stack>
           )}
         </Panel>
+      )}
+
+      {showChrome && !selectMode && ((savedFilters ?? []).length > 0 || filtersActive) && (
+        <Group
+          className="library-saved-filters"
+          gap="xs"
+          wrap="wrap"
+        >
+          {(savedFilters ?? []).length > 0 && (
+            <span className="library-saved-label">
+              <IconBookmark size={14} />
+              <Trans>Saved filters</Trans>
+            </span>
+          )}
+          {(savedFilters ?? []).map((f) => (
+            <Group key={f.id} gap={2}>
+              <TagChip
+                active={activeFilterId === f.id}
+                onClick={() => applySpec(f.spec, f.id)}
+              >
+                {f.name}
+              </TagChip>
+              <ActionIcon
+                size="xs"
+                variant="subtle"
+                color="var(--ink-4)"
+                aria-label={t`Delete saved filter`}
+                onClick={() => {
+                  deleteSavedFilter.mutate(f.id)
+                  if (activeFilterId === f.id) setActiveFilterId(null)
+                }}
+              >
+                <IconX size={11} />
+              </ActionIcon>
+            </Group>
+          ))}
+          {filtersActive && (
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              leftSection={<IconDeviceFloppy size={14} />}
+              onClick={() => {
+                const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
+                setFilterName(active?.name ?? '')
+                setSaveFilterOpen(true)
+              }}
+            >
+              <Trans>Save filter</Trans>
+            </Button>
+          )}
+          {filtersActive && (
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              color="var(--neutral)"
+              leftSection={<IconX size={14} />}
+              onClick={() => applySpec(DEFAULT_SPEC, null)}
+            >
+              <Trans>Clear</Trans>
+            </Button>
+          )}
+        </Group>
       )}
 
       <Drawer
@@ -1034,6 +1123,16 @@ export default function LibraryPage() {
             }))}
             value={statusFilter}
             onChange={(v) => setStatusFilter(v ?? 'all')}
+            comboboxProps={{ withinPortal: true }}
+          />
+          <MultiSelect
+            label={t`Type`}
+            placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
+            data={typeOptions}
+            value={typeFilter}
+            onChange={setTypeFilter}
+            disabled={typeOptions.length === 0}
+            clearable
             comboboxProps={{ withinPortal: true }}
           />
           {facetFilter({
@@ -1092,6 +1191,17 @@ export default function LibraryPage() {
             ]}
             value={monitoredFilter}
             onChange={(v) => setMonitoredFilter(v ?? 'all')}
+            comboboxProps={{ withinPortal: true }}
+          />
+          <Select
+            label={t`Quality profile`}
+            data={[
+              { value: 'all', label: t`Any` },
+              { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
+              ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+            ]}
+            value={qualityProfileFilter}
+            onChange={(v) => setQualityProfileFilter(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
           <Select
@@ -1204,7 +1314,29 @@ export default function LibraryPage() {
         onClose={() => setSaveFilterOpen(false)}
         title={t`Save this filter`}
       >
-        <Stack gap="md">
+        <Stack
+          component="form"
+          gap="md"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            if (!filterName.trim()) return
+            const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
+            const overwrite = active && active.name === filterName.trim()
+            saveFilter.mutate(
+              { id: overwrite ? active.id : undefined, name: filterName.trim(), spec: currentSpec() },
+              {
+                onSuccess: (saved) => {
+                  setActiveFilterId(saved.id)
+                  setSaveFilterOpen(false)
+                },
+                onError: (err) => {
+                  const detail = err instanceof Error ? err.message : String(err)
+                  notifications.show({ color: 'var(--danger)', message: now`Failed to save filter: ${detail}` })
+                },
+              },
+            )
+          }}
+        >
           <Text size="sm" c="var(--ink-3)">
             <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
             <Trans>Reusing the name of the active preset overwrites it.</Trans>
@@ -1220,27 +1352,7 @@ export default function LibraryPage() {
             <Button variant="default" onClick={() => setSaveFilterOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button
-              disabled={!filterName.trim()}
-              loading={saveFilter.isPending}
-              onClick={() => {
-                const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
-                const overwrite = active && active.name === filterName.trim()
-                saveFilter.mutate(
-                  { id: overwrite ? active.id : undefined, name: filterName.trim(), spec: currentSpec() },
-                  {
-                    onSuccess: (saved) => {
-                      setActiveFilterId(saved.id)
-                      setSaveFilterOpen(false)
-                    },
-                    onError: (err) => {
-                      const detail = err instanceof Error ? err.message : String(err)
-                      notifications.show({ color: 'var(--danger)', message: now`Failed to save filter: ${detail}` })
-                    },
-                  },
-                )
-              }}
-            >
+            <Button type="submit" disabled={!filterName.trim()} loading={saveFilter.isPending}>
               <Trans>Save</Trans>
             </Button>
           </Group>
@@ -1440,6 +1552,77 @@ export default function LibraryPage() {
       </Modal>
 
       <Modal
+        opened={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        title={t`Set quality profile for ${selectedCount} series`}
+      >
+        <Text size="sm" mb="md">
+          <Trans>
+            Decides which copies of these series get upgraded and, in best-quality source order, which
+            source their downloads try first. Instance default clears each series' own choice.
+          </Trans>
+        </Text>
+        <Select
+          data={[
+            { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
+            ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+          ]}
+          value={bulkProfile}
+          onChange={(v) => setBulkProfile(v ?? DEFAULT_PROFILE_FILTER)}
+          allowDeselect={false}
+          comboboxProps={{ withinPortal: true }}
+          mb="xs"
+        />
+        {(() => {
+          const description = upgradeProfiles?.find((p) => String(p.id) === bulkProfile)?.description
+          return description ? (
+            <Text size="xs" c="var(--ink-3)" mb="lg">
+              {description}
+            </Text>
+          ) : (
+            <div style={{ height: 'var(--mantine-spacing-lg)' }} />
+          )
+        })()}
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setProfileModalOpen(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            loading={bulkUpgradeProfile.isPending}
+            onClick={() =>
+              bulkUpgradeProfile.mutate(
+                {
+                  seriesIds: [...selected],
+                  upgradeProfileId: bulkProfile === DEFAULT_PROFILE_FILTER ? null : Number(bulkProfile),
+                },
+                {
+                  onSuccess: ({ updated }) => {
+                    setProfileModalOpen(false)
+                    notifications.show({
+                      color: 'var(--ok)',
+                      message: plural(updated, {
+                        one: 'Quality profile set for # series',
+                        other: 'Quality profile set for # series',
+                      }),
+                    })
+                  },
+                  onError: (err) => {
+                    const detail = err instanceof Error ? err.message : String(err)
+                    notifications.show({
+                      color: 'var(--danger)',
+                      message: now`Failed to set the quality profile: ${detail}`,
+                    })
+                  },
+                },
+              )
+            }
+          >
+            <Trans>Apply</Trans>
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
         title={t`Set notifications for ${selectedCount} series`}
@@ -1559,10 +1742,15 @@ export default function LibraryPage() {
       )}
       {series && series.length === 0 && (
         <EmptyState
+          art="shelf"
           title={t`Your library is empty`}
           description={t`Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically.`}
-          actionLabel={t`Add a series`}
+          actionLabel={can('AddSeries') ? t`Add a series` : t`Request series`}
           actionTo="/add"
+          actionIcon={<IconPlus size={16} />}
+          secondaryActionLabel={can('ImportLibrary') ? t`Import a folder` : undefined}
+          secondaryActionTo="/import"
+          secondaryActionIcon={<IconFolderDown size={16} />}
         />
       )}
       {series && series.length > 0 && visible.length === 0 && (
@@ -1589,6 +1777,15 @@ export default function LibraryPage() {
                 onToggle={toggle}
               />
             ))}
+            {!selectMode && (series?.length ?? 0) < 12 && (
+              <Link
+                to="/add"
+                className="library-add-cell"
+                aria-label={can('AddSeries') ? t`Add a series` : t`Request series`}
+              >
+                <IconPlus size={24} aria-hidden />
+              </Link>
+            )}
           </SimpleGrid>
         </div>
       )}

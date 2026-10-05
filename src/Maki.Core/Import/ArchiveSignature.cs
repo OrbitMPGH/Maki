@@ -19,6 +19,16 @@ public static class ArchiveSignature
         Other
     }
 
+    /// <summary>The specific container, for naming a mislabelled original after what it really is.</summary>
+    public enum Format
+    {
+        Unknown,
+        Zip,
+        SevenZip,
+        Rar,
+        Tar
+    }
+
     private static readonly byte[] ZipLocalHeader = [0x50, 0x4B, 0x03, 0x04];
     private static readonly byte[] ZipEmpty = [0x50, 0x4B, 0x05, 0x06];
     private static readonly byte[] ZipSpanned = [0x50, 0x4B, 0x07, 0x08];
@@ -27,7 +37,11 @@ public static class ArchiveSignature
     private static readonly byte[] Ustar = [0x75, 0x73, 0x74, 0x61, 0x72];
     private const int UstarOffset = 257;
 
-    public static Container Sniff(string path)
+    public static Container Sniff(string path) => ToContainer(Detect(path));
+
+    public static Container Sniff(ReadOnlySpan<byte> head) => ToContainer(Detect(head));
+
+    public static Format Detect(string path)
     {
         Span<byte> head = stackalloc byte[UstarOffset + 5];
         int read;
@@ -39,29 +53,50 @@ public static class ArchiveSignature
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return Container.Unknown;
+            return Format.Unknown;
         }
 
-        return Sniff(head[..read]);
+        return Detect(head[..read]);
     }
 
-    public static Container Sniff(ReadOnlySpan<byte> head)
+    public static Format Detect(ReadOnlySpan<byte> head)
     {
         if (head.StartsWith(ZipLocalHeader) || head.StartsWith(ZipEmpty) || head.StartsWith(ZipSpanned))
         {
-            return Container.Zip;
+            return Format.Zip;
         }
 
-        if (head.StartsWith(SevenZip) || head.StartsWith(Rar))
+        if (head.StartsWith(SevenZip))
         {
-            return Container.Other;
+            return Format.SevenZip;
+        }
+
+        if (head.StartsWith(Rar))
+        {
+            return Format.Rar;
         }
 
         if (head.Length >= UstarOffset + Ustar.Length && head[UstarOffset..].StartsWith(Ustar))
         {
-            return Container.Other;
+            return Format.Tar;
         }
 
-        return Container.Unknown;
+        return Format.Unknown;
     }
+
+    /// <summary>The comic extension that names this container, or null for a zip or an unknown one.</summary>
+    public static string? ComicExtension(Format format) => format switch
+    {
+        Format.SevenZip => ".cb7",
+        Format.Rar => ".cbr",
+        Format.Tar => ".cbt",
+        _ => null
+    };
+
+    private static Container ToContainer(Format format) => format switch
+    {
+        Format.Zip => Container.Zip,
+        Format.Unknown => Container.Unknown,
+        _ => Container.Other
+    };
 }

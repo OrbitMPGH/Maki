@@ -138,7 +138,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
           {!taste ? (
             <ChartSkeleton h={200} />
           ) : taste.lean.length === 0 ? (
-            <EmptyState compact title={t`Not enough genre data yet`} />
+            <EmptyState compact mood="asleep" title={t`Not enough genre data yet`} />
           ) : (
             <>
               <LeanBars items={taste.lean} />
@@ -203,7 +203,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
           {!taste ? (
             <ChartSkeleton h={120} />
           ) : typeItems.length === 0 ? (
-            <EmptyState compact title={t`No type data yet`} />
+            <EmptyState compact mood="asleep" title={t`No type data yet`} />
           ) : (
             <SplitBar items={typeItems} />
           )}
@@ -213,7 +213,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
           {!taste ? (
             <ChartSkeleton h={120} />
           ) : demographicItems.length === 0 ? (
-            <EmptyState compact title={t`No demographic data yet`} />
+            <EmptyState compact mood="asleep" title={t`No demographic data yet`} />
           ) : (
             <SplitBar items={demographicItems} />
           )}
@@ -226,7 +226,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
           {!taste ? (
             <ChartSkeleton h={140} />
           ) : eraTotal === 0 ? (
-            <EmptyState compact title={t`No release-year data yet`} />
+            <EmptyState compact mood="asleep" title={t`No release-year data yet`} />
           ) : (
             <div className="stats-hist">
               {eras.map((e) => (
@@ -247,7 +247,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
           {standing === undefined ? (
             <ChartSkeleton h={140} />
           ) : (standing.creators ?? []).length === 0 ? (
-            <EmptyState compact title={t`No repeat creators yet`} />
+            <EmptyState compact mood="asleep" title={t`No repeat creators yet`} />
           ) : (
             <CreatorList creators={standing.creators} />
           )}
@@ -261,7 +261,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
         {!activity ? (
           <ChartSkeleton h={80} />
         ) : activity.topTags.length === 0 ? (
-          <EmptyState compact title={t`No tag data yet`} />
+          <EmptyState compact mood="asleep" title={t`No tag data yet`} />
         ) : (
           <TagChips>
             {activity.topTags.map((tag) => (

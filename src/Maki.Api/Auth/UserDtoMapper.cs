@@ -33,7 +33,7 @@ public static class UserDtoMapper
         oidcLinked,
         oidcUserName);
 
-    public static UserSummaryDto ToSummary(MakiUser user, IReadOnlyList<int> rootFolderIds) => new(
+    public static UserSummaryDto ToSummary(MakiUser user, IReadOnlyList<int> rootFolderIds, bool oidcLinked = false) => new(
         user.Id,
         user.UserName ?? string.Empty,
         user.DisplayName,
@@ -47,5 +47,6 @@ public static class UserDtoMapper
         user.PendingSetup,
         user.TwoFactorEnabled,
         user.CreatedAt,
-        user.LastLoginAt);
+        user.LastLoginAt,
+        oidcLinked);
 }

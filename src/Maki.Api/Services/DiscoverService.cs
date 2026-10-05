@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 using Maki.Core.Metadata;
+using Maki.Core.Recommendations;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -176,6 +178,9 @@ public class DiscoverService(
     /// </para>
     /// </summary>
     public const int RefillRailSize = RailSize * 2;
+
+    /// <summary>The same cap <c>SemanticSearcher</c> puts on its own results.</summary>
+    private const int MaxSearchLimit = 200;
 
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
@@ -755,8 +760,9 @@ public class DiscoverService(
 
     /// <summary>
     /// Free-text search over the catalogue. Prefers the semantic engine (query embedding fused
-    /// with the title index); falls back to plain title search when the embedding index hasn't
-    /// been built, so the box is never dead — the response says which one answered.
+    /// with the title index); falls back to plain title search, with the filters still applied,
+    /// when the embedding index isn't built or the query model can't load, so the box is never
+    /// dead. The response says which one answered.
     /// </summary>
     public async Task<DiscoverSearchResponse> SearchAsync(
         DiscoverSearchRequest request, CancellationToken ct = default)
@@ -769,9 +775,18 @@ public class DiscoverService(
             return new DiscoverSearchResponse("semantic", []);
         }
 
-        if (!request.WantsTitleOnly && searcher.IsReady())
+        // The semantic searcher clamps its own limit; the title index would take this straight into
+        // SQL, so one request could pull the whole catalogue through memory and JSON.
+        var limit = Math.Clamp(request.Limit, 1, MaxSearchLimit);
+
+        // The title index honours only the content-rating ceiling, so a query that narrows further
+        // waits for the semantic engine to warm rather than answering with titles the filters
+        // exclude. Only while the model can load, though: waiting on one that can't answers nothing.
+        var narrowed = Narrows(request.Filters);
+        if (!request.WantsTitleOnly &&
+            (searcher.IsReady() || (narrowed && searcher.IsAvailable() && searcher.CanEmbed())))
         {
-            var outcome = await searcher.SearchAsync(query, request.Filters, request.Limit, ct);
+            var outcome = await searcher.SearchAsync(query, request.Filters, limit, ct);
             if (outcome.Items.Count > 0)
             {
                 return new DiscoverSearchResponse(
@@ -781,7 +796,7 @@ public class DiscoverService(
             // A resolved credit that matched nothing is a real answer ("no such author", or nobody
             // whose work fits the filters), not a reason to go looking for title hits that would
             // ignore the credit entirely.
-            if (request.Filters is not null || outcome.Credits.Count > 0)
+            if (!outcome.Unavailable && (request.Filters is not null || outcome.Credits.Count > 0))
             {
                 return new DiscoverSearchResponse("semantic", [], null, outcome.Credits);
             }
@@ -792,15 +807,70 @@ public class DiscoverService(
         // ceiling-resolved Filters.ContentRatings (Allowed/Clamp always produce a prefix of
         // ContentRating.All, so its highest member is the ceiling) so this fallback stays in step
         // with the semantic path it stands in for instead of using a different rule.
+        //
+        // An empty list is a ceiling that admits nothing, not an absent one, and a missing or
+        // unreadable list falls back to Safe: this fallback must not be the one path that fails open.
+        if (request.Filters?.ContentRatings is { Count: 0 })
+        {
+            return new DiscoverSearchResponse("title", []);
+        }
+
         var maxAllowed = request.Filters?.ContentRatings is { Count: > 0 } allowedRatings
-            ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Default
-            : ContentRating.Default;
-        var titleHits = await store.SearchWithCorrectionAsync(query, maxAllowed, limit: request.Limit, ct: ct);
+            ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Safe
+            : ContentRating.Safe;
+        // Filters are applied after the title index answers, so a narrowed query reads deeper first.
+        var titleHits = await store.SearchWithCorrectionAsync(
+            query, maxAllowed, limit: narrowed ? MaxSearchLimit : limit, ct: ct);
+        var items = await WithinFiltersAsync(titleHits.Items, request.Filters, ct);
         return new DiscoverSearchResponse(
             "title",
-            titleHits.Items.Select(ToRecommendation).ToList(),
+            items.Take(limit).Select(ToRecommendation).ToList(),
             titleHits.CorrectedQuery,
             titleHits.Credits);
+    }
+
+    private static bool Narrows(RecommendationFilters? f) =>
+        f is not null && (
+            f.YearMin is not null || f.YearMax is not null || f.MinRating is not null ||
+            f.MinChapters is not null || f.MaxChapters is not null ||
+            f.Types is { Count: > 0 } || f.Statuses is { Count: > 0 } || f.Genres is { Count: > 0 } ||
+            f.Tags is { Count: > 0 } || f.Rules is { Count: > 0 } || f.Hidden is { Count: > 0 } ||
+            f.Credits is { Count: > 0 } || f.CreditIds is not null);
+
+    /// <summary>
+    /// The caller's filters applied to title hits: the title index honours only the content-rating
+    /// ceiling. The vector index tests every filter on the rows it holds; for the rest the dump tests
+    /// what SQL can and tags are matched by name. A hit neither can vouch for is dropped.
+    /// </summary>
+    private async Task<IReadOnlyList<MetadataSearchResult>> WithinFiltersAsync(
+        IReadOnlyList<MetadataSearchResult> hits, RecommendationFilters? filters, CancellationToken ct)
+    {
+        if (filters is null || !Narrows(filters) || hits.Count == 0)
+        {
+            return hits;
+        }
+
+        var ids = hits
+            .Select(h => long.TryParse(h.ProviderId, NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
+            .ToList();
+
+        var index = await vectorIndex.GetAsync(ct);
+        var plan = index?.Plan(filters);
+        var unindexed = ids.Where(id => id > 0 && (index is null || !index.TryGetRow(id, out _))).ToList();
+        var passing = await store.FilterIdsAsync(unindexed, filters, ct);
+        var rows = await store.GetProfileRowsAsync(passing.ToList(), ct);
+        return hits
+            .Where((_, i) => index is not null && index.TryGetRow(ids[i], out var row)
+                ? index.Matches(row, plan!)
+                : rows.TryGetValue(ids[i], out var profile) && MatchesByName(filters, profile))
+            .ToList();
+    }
+
+    private static bool MatchesByName(RecommendationFilters filters, MangaBakaProfileRow row)
+    {
+        var tags = row.Tags.Select(t => t.Name).ToList();
+        return filters.MatchesNames(row.Genres, tags) &&
+               (filters.Tags ?? []).All(wanted => tags.Contains(wanted, StringComparer.OrdinalIgnoreCase));
     }
 
     /// <summary>Shapes a title-index hit like a semantic one so the UI renders one card type.</summary>

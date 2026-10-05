@@ -70,6 +70,7 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
             // A null Number is deduped by title downstream (ChapterIdentity), so it must never
             // carry a null Title too, or two different specials read as one chapter.
             var title = parsed.Number is null ? label : null;
+            parsed = parsed.OrSlugNumber(chapterId);
 
             chapters.Add(new SourceChapter(
                 Name,

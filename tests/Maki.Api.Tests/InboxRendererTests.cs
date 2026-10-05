@@ -57,7 +57,21 @@ public class InboxRendererTests
         { "inbox.sourceMatch.none", new { } },
         { "inbox.update.available", new { latest = "1.2.0", current = "1.1.0" } },
         { "inbox.importList.finished", new { tracker = "AniList", added = 3, requested = 0, skipped = 2, errors = 1 } },
+        { "inbox.upgrade.torrentProposal", new { replaced = 10, missing = 47, sizeBytes = 480L * 1024 * 1024 } },
+        { "inbox.upgrade.volume", new { fileName = "Berserk v03.cbz", replaced = 9 } },
+        { "inbox.account.ssoLinked", new { account = "alice@idp" } },
     };
+
+    [Fact]
+    public void A_torrent_proposal_words_its_size()
+    {
+        var (_, small) = Render("inbox.upgrade.torrentProposal", new { replaced = 1, missing = 0, sizeBytes = 480L * 1024 * 1024 });
+        var (_, large) = Render("inbox.upgrade.torrentProposal", new { replaced = 10, missing = 2, sizeBytes = 3L * 1024 * 1024 * 1024 });
+
+        Assert.EndsWith("480 MB", small, StringComparison.Ordinal);
+        Assert.Contains("replaces 1 file,", small, StringComparison.Ordinal);
+        Assert.EndsWith("3.0 GB", large, StringComparison.Ordinal);
+    }
 
     [Theory]
     [MemberData(nameof(Messages))]

@@ -91,10 +91,21 @@ export interface AuthEvent {
 
 export const ME_QUERY_KEY = ['auth', 'me'] as const
 
+// The server stores this as the user's zone when none is set yet, so streaks use local days
+// before anybody opens Progress settings.
+function browserTimeZoneHeader(): Record<string, string> {
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    return zone ? { 'X-Maki-TimeZone': zone } : {}
+  } catch {
+    return {}
+  }
+}
+
 export function useMe(enabled = true) {
   return useQuery({
     queryKey: ME_QUERY_KEY,
-    queryFn: () => api<Me>('/auth/me'),
+    queryFn: () => api<Me>('/auth/me', { headers: browserTimeZoneHeader() }),
     enabled,
     // A 401 here is the normal signed-out state, not a transient failure, so retrying it just delays
     // the login screen.
@@ -187,10 +198,10 @@ export function useStartTwoFactorSetup() {
 export function useEnableTwoFactor() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (code: string) =>
+    mutationFn: (body: { code: string; password: string }) =>
       api<{ recoveryCodes: string[] }>('/account/2fa/enable', {
         method: 'POST',
-        body: JSON.stringify({ code }),
+        body: JSON.stringify(body),
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['account', '2fa'] })
@@ -222,7 +233,7 @@ export function useCreateApiKey() {
   const qc = useQueryClient()
   return useMutation({
     // Full keys only: the OPDS feed token is minted and rotated on the OPDS settings card.
-    mutationFn: (body: { name: string }) =>
+    mutationFn: (body: { name: string; password: string }) =>
       api<CreatedApiKey>('/account/apikeys', {
         method: 'POST',
         body: JSON.stringify({ ...body, scope: 'Full' }),
@@ -236,6 +247,25 @@ export function useRevokeApiKey() {
   return useMutation({
     mutationFn: (id: number) => api<void>(`/account/apikeys/${id}`, { method: 'DELETE' }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['account', 'apikeys'] }),
+  })
+}
+
+/**
+ * Confirms the password before linking single sign-on. The link itself is a browser navigation
+ * that cannot carry one, so the server answers with a short-lived cookie the link then requires.
+ */
+export function useConfirmOidcLink() {
+  return useMutation({
+    mutationFn: (password: string) =>
+      api<void>('/auth/oidc/link', { method: 'POST', body: JSON.stringify({ password }) }),
+  })
+}
+
+export function useUnlinkOidc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<void>('/account/oidc', { method: 'DELETE' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ME_QUERY_KEY }),
   })
 }
 
@@ -322,6 +352,22 @@ export function useDeleteUser() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => api<void>(`/users/${id}`, { method: 'DELETE' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['users'] }),
+  })
+}
+
+export function useResetUserTwoFactor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/users/${id}/2fa/reset`, { method: 'POST' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['users'] }),
+  })
+}
+
+export function useUnlinkUserOidc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/users/${id}/oidc`, { method: 'DELETE' }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['users'] }),
   })
 }

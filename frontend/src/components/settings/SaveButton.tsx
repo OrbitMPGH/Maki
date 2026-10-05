@@ -5,6 +5,16 @@ import { Trans } from '@lingui/react/macro'
 /** Collects which settings cards hold unsaved edits, so the page can warn before dropping them. */
 export const UnsavedSettingsContext = createContext<((id: string, dirty: boolean) => void) | null>(null)
 
+/** For editors that are not a settings card or a SaveButton: reports `dirty` while mounted. */
+export function useReportUnsaved(dirty: boolean) {
+  const id = useId()
+  const report = useContext(UnsavedSettingsContext)
+  useEffect(() => {
+    report?.(id, dirty)
+    return () => report?.(id, false)
+  }, [report, id, dirty])
+}
+
 /**
  * The one Save control for settings cards whose fields save together. Quiet while nothing has
  * changed, filled with an "Unsaved changes" note once something has. `dirty` left undefined is for

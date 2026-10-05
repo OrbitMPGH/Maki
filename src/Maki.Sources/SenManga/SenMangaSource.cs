@@ -75,7 +75,7 @@ public class SenMangaSource(IHttpClientFactory httpClientFactory) : ISource
         var detail = await Client.GetFromJsonAsync<SeriesDetail>($"api/manga/{sourceSeriesId}", JsonOptions, ct);
         if (detail?.ChapterList is null)
         {
-            return [];
+            throw new InvalidOperationException($"Sen Manga api/manga/{sourceSeriesId} has no chapter list");
         }
 
         var chapters = new List<SourceChapter>();

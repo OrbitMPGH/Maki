@@ -1,3 +1,4 @@
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -138,6 +139,54 @@ public class SourceChapterListCacheTests
         var chapters = await cache.GetAsync(source, "series-1", "en");
         Assert.Single(chapters);
         Assert.Equal(3, source.ListCalls);
+    }
+
+    /// <summary>
+    /// Callers queued behind a listing that fails get its exception rather than each re-running a
+    /// fetch that just timed out; a 429 stays a RateLimitException so the item is still parked.
+    /// </summary>
+    [Fact]
+    public async Task Callers_queued_behind_a_failing_listing_share_its_failure()
+    {
+        var source = new CountingSource
+        {
+            Delay = TimeSpan.FromMilliseconds(200),
+            Throws = new RateLimitException("429", TimeSpan.FromSeconds(30)),
+        };
+        var cache = NewCache();
+
+        var calls = Enumerable.Range(0, 5).Select(_ => cache.GetAsync(source, "series-1", "en")).ToList();
+        foreach (var call in calls)
+        {
+            await Assert.ThrowsAsync<RateLimitException>(() => call);
+        }
+
+        Assert.Equal(1, source.ListCalls);
+    }
+
+    /// <summary>
+    /// An HttpClient timeout surfaces as a TaskCanceledException. The callers queued behind it never
+    /// had their own token cancelled, so they get the shared failure as a timeout, not a cancellation.
+    /// </summary>
+    [Fact]
+    public async Task Callers_queued_behind_a_timed_out_listing_get_a_timeout_not_a_cancellation()
+    {
+        var source = new CountingSource
+        {
+            Delay = TimeSpan.FromMilliseconds(200),
+            Throws = new TaskCanceledException("HttpClient.Timeout", new TimeoutException()),
+        };
+        var cache = NewCache();
+
+        var calls = Enumerable.Range(0, 4).Select(_ => cache.GetAsync(source, "series-1", "en")).ToList();
+
+        await Assert.ThrowsAsync<TaskCanceledException>(() => calls[0]);
+        foreach (var call in calls.Skip(1))
+        {
+            await Assert.ThrowsAsync<TimeoutException>(() => call);
+        }
+
+        Assert.Equal(1, source.ListCalls);
     }
 
     /// <summary>

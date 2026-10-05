@@ -226,8 +226,10 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
         // An unnumbered chapter's identity is IsOneShot + Language + Title, in Normalize and
         // ChapterIdentity alike, so two differently-named unnumbered entries need distinct
         // Titles or they alias each other. A numbered chapter's name carries nothing beyond the
-        // number worth keeping, so Title stays null there.
+        // number worth keeping, so Title stays null there. A name with no number at all is the
+        // chapter's title, and the number is then read from the URL.
         var title = parsed.Number is null ? item.Name : null;
+        parsed = parsed.OrSlugNumber(item.Href);
 
         return new SourceChapter(
             Name,

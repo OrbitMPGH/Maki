@@ -6,16 +6,17 @@ import { msg } from '@lingui/core/macro'
 import {
   IconBook,
   IconBookmarks,
-  IconChevronRight,
   IconDeviceTv,
   IconDownload,
   IconFlame,
+  IconFolderDown,
   IconLayoutDashboard,
   IconPlayerPlay,
   IconPlus,
   IconSparkles,
 } from '@tabler/icons-react'
 import { useHomeFromAnime } from '../api/animeResume'
+import { useAuth } from '../auth/AuthProvider'
 import {
   HOME_HERO_DEFAULTS,
   useDiscover,
@@ -74,7 +75,6 @@ function FindMore() {
       to="/discover"
       variant="subtle"
       size="compact-sm"
-      rightSection={<IconChevronRight size={14} />}
     >
       <Trans>Find more</Trans>
     </Button>
@@ -90,6 +90,7 @@ export default function HomePage() {
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
+  const { can } = useAuth()
 
   // Opposite default to the nav's in App.tsx on purpose: there, assuming "available" while the
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
@@ -128,7 +129,7 @@ export default function HomePage() {
     refetch: refetchReading,
   } = useHomeReading(12, needsReading)
   const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(12, on('recent'))
-  const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(12, on('fromanime'))
+  const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(on('fromanime'))
   const { data: queue } = useQueue()
   const { data: rails, isLoading: railsLoading } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
@@ -232,14 +233,20 @@ export default function HomePage() {
   }
 
   if (!seriesLoading && !hasLibrary) {
+    // No header actions: the empty state carries "Add series" itself, and there is no layout to edit.
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        {header}
+        <PageHeader title={t`Home`} description={t`Pick up where you left off.`} />
         <EmptyState
+          art="shelf"
           title={t`Nothing in your library yet`}
           description={t`Add a series and Maki will start tracking chapters for it. This page fills up as you read and download.`}
-          actionLabel={t`Add series`}
+          actionLabel={can('AddSeries') ? t`Add series` : t`Request series`}
           actionTo="/add"
+          actionIcon={<IconPlus size={16} />}
+          secondaryActionLabel={can('ImportLibrary') ? t`Import a folder` : undefined}
+          secondaryActionTo="/import"
+          secondaryActionIcon={<IconFolderDown size={16} />}
         />
       </SurfaceFrame>
     )
@@ -343,10 +350,10 @@ export default function HomePage() {
     fromanime: fromAnimeLoading ? (
       <RailSkeleton />
     ) : (
-      fromAnime && fromAnime.length > 0 && (
+      fromAnime && fromAnime.items.length > 0 && (
         <>
-          <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.length} />
-          <AnimeResumeRail items={fromAnime} onOpen={setDetailItem} />
+          <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.total} />
+          <AnimeResumeRail items={fromAnime.items} onOpen={setDetailItem} />
         </>
       )
     ),
@@ -366,7 +373,7 @@ export default function HomePage() {
     ) : (
       youMightLike.length > 0 && (
         <>
-          <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} />
+          <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} chevron />
           <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
         </>
       )
@@ -377,7 +384,7 @@ export default function HomePage() {
     ) : (
       popular.length > 0 && (
         <>
-          <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} />
+          <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} chevron />
           <DiscoverRailRow
             items={popular.slice(0, RAIL_SIZE)}
             seriesIdFor={seriesIdFor}

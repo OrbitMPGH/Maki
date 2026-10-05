@@ -83,6 +83,12 @@ public class AppPaths
     /// anything left behind.
     /// </summary>
     public string SourcePreviewDir => Path.Combine(CacheDir, "sourcepreview");
+
+    /// <summary>
+    /// First chapters fetched for the Discover preview, <c>{mangaBakaId}/{token}/{sourceName}/000.jpg</c>.
+    /// Throwaway, same as <see cref="SourcePreviewDir"/>.
+    /// </summary>
+    public string SeriesPreviewDir => Path.Combine(CacheDir, "seriespreview");
     public string MediaCoverDir => Path.Combine(ConfigDir, "MediaCover");
     public string BackupDir => Path.Combine(ConfigDir, "backups");
 

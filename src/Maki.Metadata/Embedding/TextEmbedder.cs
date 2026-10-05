@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
@@ -51,6 +52,12 @@ public sealed class TextEmbedder(
     public bool IsReady => _session is not null;
 
     /// <summary>
+    /// False when embeddings are off or the last load failed and is still in its backoff, so a
+    /// caller can tell a cold model it may wait for from one that will not load.
+    /// </summary>
+    public bool CanLoad => options.Enabled && (_session is not null || !InFailureBackoff());
+
+    /// <summary>
     /// What the loaded session actually runs on, which is not always what was asked for: a CUDA
     /// request falls back to CPU rather than failing. Null until a session is loaded. The build tool
     /// checks this and refuses to start a pass that would silently take the slow path.
@@ -72,6 +79,11 @@ public sealed class TextEmbedder(
             return true;
         }
 
+        if (InFailureBackoff())
+        {
+            return false;
+        }
+
         await _initLock.WaitAsync(ct);
         try
         {
@@ -81,10 +93,33 @@ public sealed class TextEmbedder(
                 return true;
             }
 
+            // Another caller may have failed while this one waited on the lock.
+            if (InFailureBackoff())
+            {
+                return false;
+            }
+
             await modelStore.EnsureAsync(ct);
             _tokenizer = await CreateTokenizerAsync();
             using var sessionOptions = CreateSessionOptions(out var provider);
-            _session = new InferenceSession(options.ModelPath, sessionOptions);
+            try
+            {
+                _session = new InferenceSession(options.ModelPath, sessionOptions);
+            }
+            catch (OnnxRuntimeException ex) when (IsCorruptModel(ex) &&
+                                                  !DeletedCorruptModels.ContainsKey(options.ModelPath))
+            {
+                // The store only checks sizes, so a corrupt file would fail here on every attempt.
+                // Provider and allocation failures are not the file's fault and must not cost a
+                // re-download, and a file that parses badly twice will not be fixed by a third.
+                // Remembered per model, and only once the files are actually gone.
+                if (modelStore.DeleteModelFiles())
+                {
+                    DeletedCorruptModels.TryAdd(options.ModelPath, 0);
+                }
+
+                throw;
+            }
 
             // Read the graph rather than assume it. token_type_ids is a BERT-family input that the
             // Gemma export simply does not declare, and ONNX Runtime rejects a run that feeds an
@@ -99,7 +134,15 @@ public sealed class TextEmbedder(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to initialize the text embedder");
+            if (ct.IsCancellationRequested)
+            {
+                logger.LogDebug(ex, "Text embedder initialization cancelled");
+                return false;
+            }
+
+            Interlocked.Exchange(ref _failedUntilTicks, (DateTime.UtcNow + FailureBackoff).Ticks);
+            logger.LogError(ex, "Failed to initialize the text embedder; not retrying for {Minutes} minute(s)",
+                FailureBackoff.TotalMinutes);
             return false;
         }
         finally
@@ -107,6 +150,26 @@ public sealed class TextEmbedder(
             _initLock.Release();
         }
     }
+
+    /// <summary>
+    /// How long a failed init is remembered. Without it an offline instance retried the model download
+    /// on every search, each one queueing behind the last on the init lock and logging an error.
+    /// </summary>
+    private static readonly TimeSpan FailureBackoff = TimeSpan.FromMinutes(5);
+
+    private long _failedUntilTicks;
+
+    private static readonly ConcurrentDictionary<string, byte> DeletedCorruptModels =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private static bool IsCorruptModel(OnnxRuntimeException ex) =>
+        ex.Message.Contains("InvalidProtobuf", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("InvalidGraph", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("NoModel", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("Protobuf parsing failed", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("external data", StringComparison.OrdinalIgnoreCase);
+
+    private bool InFailureBackoff() => DateTime.UtcNow.Ticks < Interlocked.Read(ref _failedUntilTicks);
 
     /// <summary>
     /// Drops the loaded session and tokenizer so the next <see cref="EnsureReadyAsync"/> reloads
@@ -127,6 +190,7 @@ public sealed class TextEmbedder(
                 _session?.Dispose();
                 _session = null;
                 _tokenizer = null;
+                Interlocked.Exchange(ref _failedUntilTicks, 0);
                 logger.LogInformation("Text embedder reset; will reload on next use");
             }
             finally

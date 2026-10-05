@@ -114,6 +114,28 @@ public class ShinigamiSourceTests
     }
 
     [Fact]
+    public async Task Chapter_list_without_a_data_array_throws_rather_than_reading_as_empty()
+    {
+        var source = new ShinigamiSource(new FakeHttpClientFactory(new()
+        {
+            ["chapter"] = "{\"retcode\":0,\"message\":\"maintenance\"}"
+        }));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync(SeriesId));
+    }
+
+    [Fact]
+    public async Task Chapter_list_with_a_null_data_array_is_an_empty_listing()
+    {
+        var source = new ShinigamiSource(new FakeHttpClientFactory(new()
+        {
+            ["chapter"] = "{\"retcode\":0,\"data\":null}"
+        }));
+
+        Assert.Empty(await source.ListChaptersAsync(SeriesId));
+    }
+
+    [Fact]
     public async Task Chapter_list_asks_for_a_large_page_size_and_stops_when_meta_says_one_page()
     {
         var factory = new FakeHttpClientFactory(new()

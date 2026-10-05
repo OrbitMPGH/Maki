@@ -92,8 +92,12 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         // One bounded, index-ordered pass over the newest progress rows, grouped in memory. Both
         // rails are "most recently touched first", so the newest RecentProgressScan rows contain
         // every series either of them could show — see the constant for why this is not a GROUP BY.
+        // Watched ticks are not reading, so they neither put a series on a rail nor bring back a
+        // hidden one.
         var recent = await db.ChapterProgress
             .AsNoTracking()
+            .OwnedByScopeUser(db)
+            .Where(p => !p.Watched)
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.Completed, p.UnreadAt, p.PageIndex, p.UpdatedAt })
@@ -365,9 +369,10 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     [HttpGet("from-anime")]
     public async Task<IActionResult> FromAnime(
         [FromServices] AnimeResumeService animeResume,
-        [FromQuery] int limit = 12,
-        CancellationToken ct = default) =>
-        Ok(await animeResume.RailAsync(Math.Clamp(limit, 1, 50), ct));
+        CancellationToken ct = default)
+    {
+        return Ok(await animeResume.RailAsync(ct));
+    }
 
     /// <summary>Labels for a set of chapter ids, in one query.</summary>
     private async Task<Dictionary<int, string>> ChapterLabelsAsync(

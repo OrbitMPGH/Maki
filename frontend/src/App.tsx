@@ -17,6 +17,7 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import {
   IconAlertTriangle,
+  IconArrowLeft,
   IconDownload,
   IconHeartbeat,
 } from '@tabler/icons-react'
@@ -25,7 +26,7 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-r
 import {
   useHealth,
   useMetadataSettings,
-  useQueue,
+  useQueueSummary,
   useSetupStatus,
   useUiSettings,
 } from './api/hooks'
@@ -39,10 +40,9 @@ import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
 import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
-import { UserMenu } from './components/UserMenu'
 import SidebarFooter from './components/layout/SidebarFooter'
 import LanguageAnnouncementModal from './components/LanguageAnnouncementModal'
-import { isQueueActive, needsImportReview } from './components/ui/status'
+import AppearanceAnnouncementModal from './components/AppearanceAnnouncementModal'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { EmptyState } from './components/ui/EmptyState'
@@ -87,10 +87,13 @@ function NotFoundPage() {
   const { t } = useLingui()
   return (
     <EmptyState
+      art="missing"
+      headingOrder={1}
       title={t`Page not found`}
       description={t`Nothing lives at this address. The link may be old or mistyped.`}
       actionLabel={t`Go to start page`}
       actionTo="/"
+      actionIcon={<IconArrowLeft size={16} />}
     />
   )
 }
@@ -117,9 +120,9 @@ function NavLinks({
   const { pathname } = useLocation()
   const { _ } = useLinguiReact()
   return (
-    <Stack gap="lg">
+    <Stack gap={22}>
       {sections.map((section) => (
-        <Stack key={section.label.id} gap={4}>
+        <Stack key={section.label.id} gap={2}>
           <Text className="nav-section-label" mb={2}>
             {_(section.label)}
           </Text>
@@ -136,9 +139,7 @@ function NavLinks({
                 <item.icon size={18} stroke={1.7} className="nav-icon" />
                 {_(item.label)}
                 {count > 0 && (
-                  <Badge size="xs" variant="filled" color="brand" ml="auto" className="tnum">
-                    {count > 99 ? '99+' : count}
-                  </Badge>
+                  <span className="nav-count tnum">{count > 99 ? '99+' : count}</span>
                 )}
               </Link>
             )
@@ -162,6 +163,7 @@ function HealthButton() {
           color={hasError ? 'var(--danger)' : 'var(--warn)'}
           label={health.length}
           withBorder
+          className="count-indicator"
         >
           <ActionIcon
             variant="subtle"
@@ -206,11 +208,11 @@ function HealthButton() {
 
 function ActivityButton() {
   const { t } = useLingui()
-  const { data: queue } = useQueue()
-  const active = queue?.items.filter((q) => isQueueActive(q.status)).length ?? 0
+  const { data: summary } = useQueueSummary()
+  const active = summary?.active ?? 0
   // A download waiting on an import decision outranks work in progress: progress finishes on its
   // own, this does not, and the count is the only thing telling anyone it is there.
-  const review = queue?.items.filter((q) => needsImportReview(q.status)).length ?? 0
+  const review = summary?.awaitingImport ?? 0
   const count = review > 0 ? review : active
   return (
     <Tooltip
@@ -320,6 +322,7 @@ function AppShellRoutes() {
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
+  const { t } = useLingui()
   useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
@@ -365,18 +368,17 @@ function AppShellRoutes() {
           <Group gap="sm" wrap="nowrap">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Group gap="sm" wrap="nowrap" hiddenFrom="sm">
-              <span className="brand-mark">
+              <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
                 <IconBrandMark />
               </span>
             </Group>
             <ShellTitle />
           </Group>
-          <Group gap="xs" wrap="nowrap">
+          <Group gap={4} wrap="nowrap">
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <NotificationBell />
             {isAdmin && <HealthButton />}
-            <UserMenu />
           </Group>
         </Group>
       </AppShell.Header>
@@ -387,19 +389,14 @@ function AppShellRoutes() {
           column and nothing is covered. */}
       {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
 
-      <AppShell.Navbar className="app-navbar" p="md">
-        <Group gap="sm" mb="xl" px={4} wrap="nowrap">
-          <span className="brand-mark">
+      <AppShell.Navbar className="app-navbar" px={12} pt={16} pb={12}>
+        <Group gap={10} mb={18} px={4} wrap="nowrap">
+          <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />
           </span>
-          <div>
-            <Text fz="lg" lh={1} className="brand-wordmark">
-              Maki
-            </Text>
-            <Text fz={10} c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
-              <Trans>Manga manager</Trans>
-            </Text>
-          </div>
+          <Text fz="1.125rem" lh={1} c="var(--ink-hi)" className="brand-wordmark">
+            Maki
+          </Text>
         </Group>
         <AppShell.Section grow component={ScrollArea} type="never">
           <NavLinks
@@ -409,14 +406,14 @@ function AppShellRoutes() {
           />
         </AppShell.Section>
         <AppShell.Section>
-          <SidebarFooter />
+          <SidebarFooter onNavigate={close} />
         </AppShell.Section>
       </AppShell.Navbar>
 
       {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
           series page, Home, and Discover's browse tab. Written as "Discover, but not its other two tabs"
           rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
-          unrecognised :tab — a stale /discover/genres link lands on the band and has to bleed like
+          unrecognised :tab: a stale /discover/genres link lands on the band and has to bleed like
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
       <AppShell.Main
         className={
@@ -471,6 +468,7 @@ function AppShellRoutes() {
       {/* Only once the instance is past first-run: the wizard owns the screen while it is up, and
           nobody being handed a brand-new Maki needs to be told what changed in it. */}
       {setup?.completed && <LanguageAnnouncementModal />}
+      {setup?.completed && <AppearanceAnnouncementModal />}
       {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
       {isAdmin && <MetadataDumpProgress />}
       <TipLayer />

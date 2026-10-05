@@ -41,6 +41,14 @@ public class ChapterWantedTests
         new() { Id = id, Number = number, Language = "en", Wanted = wanted, ChapterFileId = fileId };
 
     [Fact]
+    public void NextWanted_skipped_chapters_free_their_place_in_the_window()
+    {
+        Chapter[] chapters = [Ch(1, 1m), Ch(2, 2m), Ch(3, 3m), Ch(4, 4m)];
+
+        Assert.Equal([2, 3], Chapter.NextWanted(chapters, 2, new HashSet<int> { 1 }));
+    }
+
+    [Fact]
     public void NextWanted_takes_the_lowest_numbered_chapters_not_the_first_rows()
     {
         // Insertion order deliberately scrambled: sources list newest-first, and this used to be a

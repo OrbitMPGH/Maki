@@ -17,16 +17,17 @@ public sealed class KavitaImportGateTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private ReaderController Controller(int userId, MakiPermission permissions)
+    private ReaderController Controller(int userId, MakiPermission permissions, IAppSettings? appSettings = null)
     {
         var scopeFactory = _db.ScopeFactory();
         var settings = new SettingsService(scopeFactory);
         var resolver = new KavitaUserResolver(scopeFactory, settings);
         var import = new KavitaReadImportService(
-            scopeFactory, settings, null!, null!, resolver, NullLogger<KavitaReadImportService>.Instance);
+            scopeFactory, settings, null!, null!, null!, resolver, NullLogger<KavitaReadImportService>.Instance);
         return new ReaderController(
             new TestLocalizer(), _db.NewContext(userId), null!, null!, null!, import, null!, null!, null!,
-            NullLogger<ReaderController>.Instance, new TestCurrentUser(userId, permissions: permissions), resolver);
+            NullLogger<ReaderController>.Instance, new TestCurrentUser(userId, permissions: permissions), resolver,
+            appSettings ?? new FakeAppSettings());
     }
 
     private static int StatusOf(IActionResult result) => result switch
@@ -45,6 +46,23 @@ public sealed class KavitaImportGateTests : IDisposable
 
         Assert.Equal(403, StatusOf(await Controller(reader, MakiPermission.None).StartKavitaImport(CancellationToken.None)));
         Assert.Equal(403, StatusOf(await Controller(reader, MakiPermission.None).KavitaImportStatus(CancellationToken.None)));
+    }
+
+    // Read state is gated on "Kavita is connected", and a non-admin used to learn that from the
+    // admin-only settings endpoint, which answered 403 on every page load.
+    [Fact]
+    public async Task Anyone_learns_whether_Kavita_is_connected_from_reader_used()
+    {
+        var reader = _db.SeedUser("reader", MakiPermission.None);
+        var connected = new FakeAppSettings()
+            .Set(SettingKeys.KavitaUrl, "http://kavita.test")
+            .Set(SettingKeys.KavitaApiKey, "key");
+
+        var withKavita = await Controller(reader, MakiPermission.None, connected).Used(CancellationToken.None);
+        var without = await Controller(reader, MakiPermission.None).Used(CancellationToken.None);
+
+        Assert.Contains("\"kavita\":true", System.Text.Json.JsonSerializer.Serialize(((OkObjectResult)withKavita).Value));
+        Assert.Contains("\"kavita\":false", System.Text.Json.JsonSerializer.Serialize(((OkObjectResult)without).Value));
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   ActionIcon,
@@ -45,6 +45,8 @@ import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
+import { PreviewChapterButton } from './PreviewChapterButton'
+import { SeriesPreviewReader } from './SeriesPreviewReader'
 import { DiscoverTags } from './DiscoverTags'
 import { DiceIcon } from '../LuckyButton'
 import { prefersReducedMotion, useDiceTumble } from '../../lib/lucky'
@@ -75,6 +77,8 @@ export function DiscoverDetailModal({
   const rerolling = useRef(false)
   const rerollTimer = useRef<number | undefined>(undefined)
   const open = item != null
+  const [previewFor, setPreviewFor] = useState<string | null>(null)
+  const previewing = previewFor != null && previewFor === item?.providerId
   useEffect(() => {
     if (open) return
     window.clearTimeout(rerollTimer.current)
@@ -148,6 +152,10 @@ export function DiscoverDetailModal({
     <Modal
       opened={item !== null}
       onClose={onClose}
+      // The preview reader portals out of the card, so while it is up the card must neither take
+      // Escape for itself nor pull focus back from the reader's controls.
+      closeOnEscape={!previewing}
+      trapFocus={!previewing}
       // A width, not a Mantine size step: the two-column body wants ~1180px, and the calc keeps it
       // off the edges of a laptop screen rather than relying on the modal's own max-width.
       size="min(1180px, calc(100vw - 3rem))"
@@ -277,7 +285,7 @@ export function DiscoverDetailModal({
                             style={{ '--band': `var(--${band.token})` } as CSSProperties}
                           >
                             <IconStar size={18} />
-                            <span className="hero-score-n tnum">{(score / 10).toFixed(1)}</span>
+                            <span className="hero-score-n figure">{(score / 10).toFixed(1)}</span>
                           </span>
                         </Tooltip>
                       )}
@@ -288,7 +296,7 @@ export function DiscoverDetailModal({
                         <div className="hero-stats">
                           {figures.map((f) => (
                             <div key={f.id} className="hero-stat">
-                              <span className="hero-stat-n tnum">{f.value}</span>
+                              <span className="hero-stat-n figure">{f.value}</span>
                               <span className="hero-stat-l">{f.label}</span>
                             </div>
                           ))}
@@ -385,6 +393,14 @@ export function DiscoverDetailModal({
                     onClose={onClose}
                     addedFrom={feedbackContext ? 'recommendation' : 'library'}
                   />
+                  {inLibrarySeriesId == null && (
+                    <PreviewChapterButton
+                      key={`preview-${item.providerId}`}
+                      providerId={item.providerId}
+                      title={title}
+                      onRead={() => setPreviewFor(item.providerId)}
+                    />
+                  )}
                   {feedbackContext && (
                     <RecommendationFeedbackMenu
                       providerId={item.providerId}
@@ -487,6 +503,15 @@ export function DiscoverDetailModal({
               )}
             </div>
           </div>
+          {previewing && (
+            <SeriesPreviewReader
+              providerId={item.providerId}
+              title={title}
+              coverUrl={cover}
+              seriesType={detail?.type ?? null}
+              onClose={() => setPreviewFor(null)}
+            />
+          )}
         </div>
       )}
     </Modal>

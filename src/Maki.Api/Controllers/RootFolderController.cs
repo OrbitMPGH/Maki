@@ -14,7 +14,8 @@ namespace Maki.Api.Controllers;
 // Admin-only: a root folder is a filesystem path the server will read and write, and listing them
 // discloses the host's directory layout.
 [Authorize(Policy = Policies.Admin)]
-public class RootFolderController(ILocalizer localizer, MakiDbContext db) : ControllerBase
+public class RootFolderController(ILocalizer localizer, MakiDbContext db, IUserSnapshotCache snapshots)
+    : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -60,8 +61,19 @@ public class RootFolderController(ILocalizer localizer, MakiDbContext db) : Cont
             return this.Conflict(localizer, "error.rootFolder.inUse");
         }
 
+        // The grants cascade away, but a cached snapshot still lists this id, and SQLite hands it to
+        // the next folder added.
+        var grantees = await db.UserRootFolders
+            .Where(g => g.RootFolderId == id)
+            .Select(g => g.UserId)
+            .ToListAsync(ct);
         db.RootFolders.Remove(folder);
         await db.SaveChangesAsync(ct);
+        foreach (var userId in grantees)
+        {
+            snapshots.Evict(userId);
+        }
+
         return NoContent();
     }
 

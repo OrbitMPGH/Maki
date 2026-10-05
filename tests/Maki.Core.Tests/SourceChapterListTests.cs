@@ -99,6 +99,32 @@ public class SourceChapterListTests
     }
 
     [Fact]
+    public void Untitled_Unnumbered_Chapters_Key_On_Their_Label()
+    {
+        var result = SourceChapterList.Normalize(
+        [
+            Ch(null, id: "a") with { NumberRaw = "Special" },
+            Ch(null, id: "b") with { NumberRaw = "Extra" },
+            Ch(null, id: "c") with { NumberRaw = "special" },
+        ]);
+
+        Assert.Equal(["a", "b"], result.Select(c => c.SourceChapterId));
+        Assert.Equal(["Special", "Extra"], result.Select(c => c.Title));
+    }
+
+    [Fact]
+    public void Label_Does_Not_Replace_A_Real_Title_Or_Title_A_Numbered_Chapter()
+    {
+        var result = SourceChapterList.Normalize(
+        [
+            Ch(null, id: "a", title: "Afterword") with { NumberRaw = "Extra" },
+            Ch(2, id: "b") with { NumberRaw = "Chapter 2" },
+        ]);
+
+        Assert.Equal(["Afterword", null], result.Select(c => c.Title));
+    }
+
+    [Fact]
     public void Empty_Input_Yields_Empty_List()
     {
         Assert.Empty(SourceChapterList.Normalize([]));

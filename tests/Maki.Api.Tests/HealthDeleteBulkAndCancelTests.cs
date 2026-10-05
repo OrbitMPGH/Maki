@@ -29,7 +29,8 @@ public sealed class HealthDeleteBulkAndCancelTests : IDisposable
     private HealthOperationService Operations(MakiDbContext db) => new(db, null!, null!,
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         new EventBroadcaster(new NoopHubContext(), fixture.ScopeFactory()),
-        new KavitaScanService(null!, null!, fixture.ScopeFactory(), NullLogger<KavitaScanService>.Instance));
+        new KavitaScanService(null!, null!, fixture.ScopeFactory(), NullLogger<KavitaScanService>.Instance),
+        TestQuality.Create());
 
     private HealthController Controller(MakiDbContext db, HealthOperationService operations) =>
         new(db, null!, operations, null!, new TestCurrentUser(1), null!, new TestLocalizer(), null!, null!)

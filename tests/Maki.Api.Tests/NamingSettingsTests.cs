@@ -36,7 +36,7 @@ public class NamingSettingsTests : IDisposable
         coReadCache: null!, readerCohortInstaller: null!, readerCohortCache: null!,
         tasteVectorInstaller: null!, vectorIndexCache: null!, modelSwitcher: null!,
         db: _db.NewContext(), updateCheck: null!, currentUser: null!, userSettings: null!,
-        kavitaUser: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
+        kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
         logger: NullLogger<SettingsController>.Instance);
 
     private static SettingsController.LibrarySettings Payload(

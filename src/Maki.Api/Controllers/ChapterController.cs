@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
+using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Quality;
 using Maki.Core.Reading;
 using Maki.Core.Sources;
 using Maki.Core.Security;
@@ -39,7 +41,8 @@ public class ChapterController(
     ILogger<ChapterController> logger) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
+    public async Task<IActionResult> List(
+        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
@@ -62,9 +65,27 @@ public class ChapterController(
                 // file the user brought in from disk, or "torrent:{indexer}" for a grabbed release.
                 // Only the first kind is ever replaced by a source-switch re-download.
                 FileSourceName = c.ChapterFile != null ? c.ChapterFile.SourceName : null,
-                FileReleaseName = c.ChapterFile != null ? c.ChapterFile.ReleaseName : null
+                FileReleaseName = c.ChapterFile != null ? c.ChapterFile.ReleaseName : null,
+                // Only the quality columns; a new instance in a projection is never tracked.
+                File = c.ChapterFile == null ? null : new ChapterFile
+                {
+                    Id = c.ChapterFile.Id,
+                    RelativePath = c.ChapterFile.RelativePath,
+                    Size = c.ChapterFile.Size,
+                    SourceName = c.ChapterFile.SourceName,
+                    ReleaseName = c.ChapterFile.ReleaseName,
+                    Tier = c.ChapterFile.Tier,
+                    Group = c.ChapterFile.Group,
+                    PageCount = c.ChapterFile.PageCount,
+                    MedianWidth = c.ChapterFile.MedianWidth,
+                    MedianHeight = c.ChapterFile.MedianHeight,
+                    ImageFormat = c.ChapterFile.ImageFormat,
+                    MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
+                    Trusted = c.ChapterFile.Trusted
+                }
             })
             .ToListAsync(ct);
+        var evaluator = await upgrades.ForSeriesAsync(seriesId, ct);
 
         // When a chapter's backing file is a volume/compilation CBZ, surface that
         // volume so the UI can show "Vol.x Ch.y" even for scrape-source chapters that
@@ -86,7 +107,9 @@ public class ChapterController(
             c.FilePath,
             c.FileSourceName,
             c.FileReleaseName,
-            FileVolume = VolumeFileLabel(c.FilePath)
+            FileVolume = VolumeFileLabel(c.FilePath),
+            FileQuality = c.File is null ? null
+                : evaluator?.Quality(c.File, c.Language) ?? ChapterFileQualityDto.From(c.File)
         });
 
         return Ok(chapters);
@@ -179,39 +202,19 @@ public class ChapterController(
             .Select(c => new { c.Id, c.SeriesId, c.Number, SeriesTitle = c.Series!.Title })
             .ToListAsync(ct);
 
-        var queuedBySeries = new Dictionary<int, (string Title, List<int> ItemIds)>();
-        string? error = null;
-        foreach (var chapter in chapters.OrderBy(c => c.Number ?? decimal.MaxValue).ThenBy(c => c.Id))
-        {
-            if (!queuedBySeries.TryGetValue(chapter.SeriesId, out var batch))
-            {
-                batch = (chapter.SeriesTitle, []);
-                queuedBySeries[chapter.SeriesId] = batch;
-            }
+        // A selection can span series, and one unmapped series must not throw away the rest; the
+        // bulk enqueue skips that series and reports why.
+        var ordered = chapters.OrderBy(c => c.Number ?? decimal.MaxValue).ThenBy(c => c.Id).ToList();
+        var result = await queue.EnqueueChaptersAsync(
+            ordered.Select(c => c.Id).ToList(), DownloadOrigin.Manual, currentUser.UserId, ct);
 
-            try
-            {
-                if (await queue.EnqueueChapterAsync(
-                        chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId) is { } item)
-                {
-                    batch.ItemIds.Add(item.Id);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                // A selection can span series, and one unmapped series must not throw away the rest.
-                error = ex.Message;
-            }
+        var titles = ordered.GroupBy(c => c.SeriesId).ToDictionary(g => g.Key, g => g.First().SeriesTitle);
+        foreach (var batch in result.Queued.GroupBy(item => item.SeriesId))
+        {
+            await downloadBatches.QueuedAsync(batch.Key, titles[batch.Key], batch.Select(item => item.Id).ToList());
         }
 
-        var queued = 0;
-        foreach (var (seriesId, batch) in queuedBySeries)
-        {
-            await downloadBatches.QueuedAsync(seriesId, batch.Title, batch.ItemIds);
-            queued += batch.ItemIds.Count;
-        }
-
-        return Ok(new { queued, error });
+        return Ok(new { queued = result.Queued.Count, error = result.Error is null ? null : localizer.Get(result.Error) });
     }
 
     /// <summary>
@@ -305,6 +308,7 @@ public class ChapterController(
                 SourceName = "Manual",
                 DateAdded = DateTime.UtcNow
             };
+            ChapterFileQualityService.StampTierOnly(file, sourceRegistry.Find(file.SourceName)?.Kind, null);
             db.ChapterFiles.Add(file);
             stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             await db.SaveChangesAsync(ct);
@@ -350,28 +354,60 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
-        var chapters = await db.Chapters.Where(c => chapterIds.Contains(c.Id)).ToListAsync(ct);
+        var seriesIds = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id))
+            .Select(c => c.SeriesId)
+            .Distinct()
+            .ToListAsync(ct);
+        if (seriesIds.Count == 0)
+        {
+            return Ok(new { deleted = 0 });
+        }
+
+        // The root folder below comes from this one series, so a mixed batch would delete series B's
+        // file using series A's root path. Same check Link makes, for the same reason.
+        if (seriesIds.Count > 1)
+        {
+            return this.Fail(localizer, "error.chapter.differentSeries");
+        }
+
+        var seriesId = seriesIds[0];
+
+        // Rows and files are read and removed under the lock a rescan or import holds, so neither
+        // can link a chapter to a file this deletes, or save over a row it removed.
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId, ct);
+        var chapters = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id) && c.SeriesId == seriesId)
+            .ToListAsync(ct);
         if (chapters.Count == 0)
         {
             return Ok(new { deleted = 0 });
         }
 
-        var seriesId = chapters[0].SeriesId;
-        // The root folder below comes from this one series, so a mixed batch would delete series B's
-        // file using series A's root path. Same check Link makes, for the same reason.
-        if (chapters.Any(c => c.SeriesId != seriesId))
+        var deletingIds = chapters.Select(c => c.Id).ToList();
+
+        // A worker holding one of these would package into the folder after the row is gone.
+        if (await SeriesLocks.InFlight(db.DownloadQueue)
+                .AnyAsync(q => q.ChapterId != null && deletingIds.Contains(q.ChapterId.Value), ct))
         {
-            return this.Fail(localizer, "error.chapter.differentSeries");
+            return this.Conflict(localizer, "error.chapter.activeDownloadDelete");
         }
 
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
-        var deletingIds = chapters.Select(c => c.Id).ToHashSet();
 
         var fileIds = chapters
             .Where(c => c.ChapterFileId != null)
             .Select(c => c.ChapterFileId!.Value)
-            .Distinct()
-            .ToList();
+            .ToHashSet();
+        var fileIdList = fileIds.ToList();
+        var stillReferenced = (await db.Chapters
+                .Where(c => c.ChapterFileId != null && fileIdList.Contains(c.ChapterFileId.Value) &&
+                            !deletingIds.Contains(c.Id))
+                .Select(c => c.ChapterFileId!.Value)
+                .Distinct()
+                .ToListAsync(ct))
+            .ToHashSet();
+        var batchFiles = await db.ChapterFiles.Where(f => fileIdList.Contains(f.Id)).ToListAsync(ct);
 
         // A manual link (see Link above) can point a second row, in this series or another, at the
         // same physical file, so ChapterFileId alone can't tell if the file is still claimed elsewhere.
@@ -382,33 +418,25 @@ public class ChapterController(
                      select new { f.Id, f.RelativePath }).ToListAsync(ct)
             : [];
 
+        // A row removed in this batch doesn't count as a claim, or two rows pointing at one file that
+        // are both removed would each see the other as still holding it and the file would never be
+        // deleted. A row kept because another chapter still uses it does count.
+        var claimedPaths = filesInRoot
+            .Where(f => !fileIds.Contains(f.Id) || stillReferenced.Contains(f.Id))
+            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
+            .ToHashSet(LibraryPaths.FolderComparer);
+
         // Collected here instead of deleted in place: rows are saved first, and only a successful
         // save unlocks touching the filesystem.
         var toDeleteFromDisk = new List<(string AbsPath, string RelativePath)>();
-        foreach (var fileId in fileIds)
+        foreach (var file in batchFiles)
         {
-            var stillReferenced = await db.Chapters
-                .AnyAsync(c => c.ChapterFileId == fileId && !deletingIds.Contains(c.Id), ct);
-            if (stillReferenced)
+            if (stillReferenced.Contains(file.Id))
             {
                 continue;
             }
 
-            var file = await db.ChapterFiles.FindAsync([fileId], ct);
-            if (file is null)
-            {
-                continue;
-            }
-
-            // fileIds is this same batch: a row also being deleted here doesn't count as a claim,
-            // or two rows pointing at one file that are both removed would each see the other as
-            // still holding it and the file would never actually be deleted from disk.
-            var key = LibraryPaths.ComparisonKey(file.RelativePath);
-            var pathStillClaimed = filesInRoot.Any(f =>
-                f.Id != file.Id && !fileIds.Contains(f.Id) &&
-                LibraryPaths.FolderComparer.Equals(LibraryPaths.ComparisonKey(f.RelativePath), key));
-
-            if (!pathStillClaimed)
+            if (!claimedPaths.Contains(LibraryPaths.ComparisonKey(file.RelativePath)))
             {
                 // Never File.Delete a bare Combine: a row written before the check in Link, or by any
                 // future path that skips it, would delete whatever it points at outside the library.
@@ -466,6 +494,10 @@ public class ChapterController(
                 ? this.Conflict(localizer, "error.chapter.alreadyQueued")
                 : Ok(new { queueItemId = item.Id });
         }
+        catch (EnqueueRefusedException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
@@ -477,12 +509,14 @@ public class ChapterController(
     /// source's copy, e.g. from the compare view, rather than letting priority order decide.
     /// <see cref="DownloadQueueService.EnqueueChapterAsync"/> carries the pin through to resolution
     /// and, if the chapter is already queued but not yet actively fetching, overrides that row's
-    /// pin in place instead of being dropped like a duplicate plain enqueue.
+    /// pin in place instead of being dropped like a duplicate plain enqueue. A chapter that already has
+    /// a file is replaced through the upgrade gate, so the old copy lands in the trash.
     /// </summary>
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/download-from")]
     public async Task<IActionResult> DownloadFrom(
-        int id, [FromBody] DownloadChapterFromRequest request, CancellationToken ct)
+        int id, [FromBody] DownloadChapterFromRequest request, [FromServices] UpgradeEvaluationService upgrades,
+        CancellationToken ct)
     {
         var chapter = await db.Chapters.FindAsync([id], ct);
         if (chapter is null)
@@ -508,8 +542,10 @@ public class ChapterController(
 
         try
         {
+            var replaceInfo = await ReplaceInfoAsync(id, mapping.SourceName,
+                await upgrades.ForSeriesAsync(chapter.SeriesId, ct), ct);
             var item = await queue.EnqueueChapterAsync(
-                id, ct, DownloadOrigin.Manual, currentUser.UserId, request.SourceMappingId);
+                id, ct, DownloadOrigin.Manual, currentUser.UserId, request.SourceMappingId, replaceInfo);
             if (item is null)
             {
                 return this.Conflict(localizer, "error.chapter.alreadyQueued");
@@ -519,6 +555,10 @@ public class ChapterController(
             return item.PreferredMappingId == request.SourceMappingId
                 ? Ok(new { queueItemId = item.Id })
                 : this.Conflict(localizer, "error.chapter.alreadyDownloading");
+        }
+        catch (EnqueueRefusedException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -543,10 +583,15 @@ public class ChapterController(
     /// avoid is queueing chapters the preferred source doesn't list at all, which would re-fetch them
     /// from the very source they already came from.
     /// </para>
+    /// <para>
+    /// Each chapter goes through the upgrade gate as a forced replacement, so its old copy lands in
+    /// the trash and can be reverted from Activity.
+    /// </para>
     /// </summary>
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("redownload")]
-    public async Task<IActionResult> Redownload([FromBody] RedownloadRequest request, CancellationToken ct)
+    public async Task<IActionResult> Redownload(
+        [FromBody] RedownloadRequest request, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
         var mapping = await db.SourceMappings
             .FirstOrDefaultAsync(m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct);
@@ -577,6 +622,7 @@ public class ChapterController(
             .Select(c => c.Number!.Value)
             .ToHashSet();
 
+        var evaluator = await upgrades.ForSeriesAsync(request.SeriesId, ct);
         var queued = 0;
         var unavailable = 0;
         foreach (var chapter in candidates)
@@ -589,7 +635,9 @@ public class ChapterController(
 
             try
             {
-                if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId) is not null)
+                var replaceInfo = await ReplaceInfoAsync(chapter.Id, request.SourceName, evaluator, ct);
+                if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId,
+                        replaceInfo: replaceInfo) is not null)
                 {
                     queued++;
                 }
@@ -601,5 +649,42 @@ public class ChapterController(
         }
 
         return Ok(new { queued, unavailable });
+    }
+
+    /// <summary>
+    /// What a re-download needs to replace the chapter's file through the upgrade gate instead of
+    /// overwriting it. Null for a chapter without a file, for one whose file also backs other
+    /// chapters (a volume), and for a file the packaged zip cannot stand in for (a PDF): those still
+    /// download to their own path.
+    /// </summary>
+    private async Task<UpgradeInfo?> ReplaceInfoAsync(
+        int chapterId, string sourceName, UpgradeEvaluator? evaluator, CancellationToken ct)
+    {
+        var row = await db.Chapters.AsNoTracking()
+            .Where(c => c.Id == chapterId && c.ChapterFileId != null)
+            .Select(c => new
+            {
+                c.Language,
+                File = c.ChapterFile!,
+                Shared = db.Chapters.Count(o => o.ChapterFileId == c.ChapterFileId) > 1
+            })
+            .FirstOrDefaultAsync(ct);
+        if (row is null || row.Shared || !UpgradeTrash.IsReplaceable(row.File.RelativePath))
+        {
+            return null;
+        }
+
+        var tier = QualityTierResolver.Resolve(sourceRegistry.Find(sourceName)?.Kind, null,
+            Path.GetFileName(row.File.RelativePath), isVolume: false);
+        return new UpgradeInfo
+        {
+            ChapterFileId = row.File.Id,
+            Force = true,
+            IgnoreGuards = currentUser.Permissions.Grants(MakiPermission.ManageDownloadQueue),
+            ProfileId = evaluator?.Profile.Id ?? 0,
+            ProfileVersion = evaluator?.Profile.Version ?? 0,
+            Before = UpgradeEvaluator.Snapshot(row.File, evaluator?.Evaluate(row.File, row.Language)?.Score.Score ?? 0),
+            Predicted = new QualitySnapshot { Tier = QualitySnapshot.TierName(tier), SourceName = sourceName }
+        };
     }
 }

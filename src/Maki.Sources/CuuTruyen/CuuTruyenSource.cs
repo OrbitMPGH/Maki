@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Http;
+using Maki.Core.Images;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using SixLabors.ImageSharp;
@@ -339,26 +340,29 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
             })
             .ToList();
 
-        using var source = Image.Load<Rgba32>(imageBytes);
-        using var destination = new Image<Rgba32>(source.Width, source.Height);
-
-        var sourceY = 0;
-        destination.Mutate(ctx =>
+        return await ImageWorkGate.RunAsync(async () =>
         {
-            foreach (var (dy, h) in strips)
+            using var source = Image.Load<Rgba32>(imageBytes);
+            using var destination = new Image<Rgba32>(source.Width, source.Height);
+
+            var sourceY = 0;
+            destination.Mutate(ctx =>
             {
-                ctx.DrawImage(source, new Point(0, dy), new Rectangle(0, sourceY, source.Width, h), 1f);
-                sourceY += h;
-            }
-        });
+                foreach (var (dy, h) in strips)
+                {
+                    ctx.DrawImage(source, new Point(0, dy), new Rectangle(0, sourceY, source.Width, h), 1f);
+                    sourceY += h;
+                }
+            });
 
-        IImageEncoder encoder = source.Metadata.DecodedImageFormat is { } format
-            ? source.Configuration.ImageFormatsManager.GetEncoder(format)
-            : new JpegEncoder { Quality = 90 };
+            IImageEncoder encoder = source.Metadata.DecodedImageFormat is { } format
+                ? source.Configuration.ImageFormatsManager.GetEncoder(format)
+                : new JpegEncoder { Quality = 90 };
 
-        using var buffer = new MemoryStream();
-        await destination.SaveAsync(buffer, encoder, ct);
-        return buffer.ToArray();
+            using var buffer = new MemoryStream();
+            await destination.SaveAsync(buffer, encoder, ct);
+            return buffer.ToArray();
+        }, ct);
     }
 
     // ── Plumbing ──────────────────────────────────────────────────────

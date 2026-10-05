@@ -1,5 +1,7 @@
 ﻿using Maki.Core.ComicInfo;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Import;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
@@ -9,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecognized);
+public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecognized, bool RootUnavailable = false);
 
 /// <summary>
 /// Shared logic for adopting CBZ files that Maki didn't download page-by-page
@@ -21,7 +23,7 @@ public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecogn
 public class CbzLinkService(
     MakiDbContext db, SourceRegistry sources, KavitaScanService kavitaScans,
     StatsEventService stats, ReaderArchiveCache archives, SourceAvailability sourceAvailability,
-    ILogger<CbzLinkService> logger)
+    ChapterFileQualityService quality, IAppSettings settings, ILogger<CbzLinkService> logger)
 {
     /// <param name="files">Absolute paths of CBZ files, already inside the series folder.</param>
     /// <param name="seriesDir">Absolute path of the series folder (for relative paths).</param>
@@ -32,12 +34,24 @@ public class CbzLinkService(
     /// only chapters nothing backs yet, so an adopted archive can never quietly orphan the file a
     /// chapter is being read from today.
     /// </param>
+    /// <param name="displaceableFileIds">
+    /// The only existing files these may take chapters off, volume files included. Without it a
+    /// volume may displace single-chapter files but never another volume; a torrent upgrade passes the
+    /// files its verdict said it replaces.
+    /// </param>
+    /// <param name="language">
+    /// When set, only chapters of this language are linked, by chapter and by volume alike; a torrent
+    /// upgrade passes the language its verdict judged.
+    /// </param>
     public async Task<(int Linked, int Unrecognized)> LinkFilesAsync(
         Series series, string seriesDir, IEnumerable<string> files, string sourceName,
         Func<int, int, Task>? progress = null, bool updateComicInfo = true, string? releaseName = null,
-        bool replaceExisting = true, CancellationToken ct = default)
+        bool replaceExisting = true, CancellationToken ct = default, IReadOnlySet<int>? displaceableFileIds = null,
+        string? language = null)
     {
-        var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
+        var chapters = (await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct))
+            .Where(c => language is null || string.Equals(ChapterFileLanguage.Of(c), language, StringComparison.OrdinalIgnoreCase))
+            .ToList();
         var volumeFileIds = await VolumeFileIdsAsync(series.Id, ct);
         var linked = 0;
         var unrecognized = 0;
@@ -74,7 +88,13 @@ public class CbzLinkService(
                 // The spelling on disk wins: a row written under the other separator, or with
                 // different casing, is repaired here rather than duplicated.
                 chapterFile.RelativePath = relativePath;
-                chapterFile.Size = new FileInfo(file).Length;
+                var size = new FileInfo(file).Length;
+                if (chapterFile.Size != size)
+                {
+                    chapterFile.MeasuredAtUtc = null;
+                }
+
+                chapterFile.Size = size;
                 chapterFile.ReleaseName ??= releaseName;
             }
             else
@@ -88,6 +108,8 @@ public class CbzLinkService(
                     ReleaseName = releaseName,
                     DateAdded = DateTime.UtcNow
                 };
+                var (kind, group) = quality.ResolveProvenance(chapterFile, null);
+                ChapterFileQualityService.StampTierOnly(chapterFile, kind, group);
                 db.ChapterFiles.Add(chapterFile);
                 await db.SaveChangesAsync(ct); // need the file id for linking
                 existing[key] = chapterFile;
@@ -106,12 +128,14 @@ public class CbzLinkService(
             }
             else
             {
-                matched = LinkChapters(chapters, parsed, chapterFile.Id, file, volumeFileIds, replaceExisting);
+                matched = LinkChapters(chapters, parsed, chapterFile.Id, file, volumeFileIds, replaceExisting,
+                    displaceableFileIds);
                 if (matched.Count == 0 && parsed.IsVolume)
                 {
                     // No volume metadata to range-match against — read the chapters the
                     // compilation actually contains from its page file names.
-                    matched = LinkVolumeByContents(chapters, parsed, file, chapterFile.Id, volumeFileIds, replaceExisting);
+                    matched = LinkVolumeByContents(chapters, parsed, file, chapterFile.Id, volumeFileIds, replaceExisting,
+                        displaceableFileIds);
                 }
 
                 if (parsed.IsVolume)
@@ -129,7 +153,9 @@ public class CbzLinkService(
                 }
             }
 
-            if (updateComicInfo)
+            // The rewrite swaps a new archive over the name, which would turn a hardlinked file (a
+            // seeding torrent, an import's zip) into a second full copy.
+            if (updateComicInfo && !HardLinks.IsShared(file))
             {
                 StandardizeComicInfo(file, series, parsed, matched.Count == 1 ? matched[0] : null, chapterFile);
             }
@@ -141,13 +167,14 @@ public class CbzLinkService(
         if (unlinkedVolumeFiles.Count > 0 && await TryBackfillChapterVolumesAsync(series, chapters, ct))
         {
             linked += unlinkedVolumeFiles.Count(
-                x => LinkChapters(chapters, x.Parsed, x.Record.Id, x.Path, volumeFileIds, replaceExisting).Count > 0);
+                x => LinkChapters(chapters, x.Parsed, x.Record.Id, x.Path, volumeFileIds, replaceExisting,
+                    displaceableFileIds).Count > 0);
         }
 
         // A volume file that range-matched some chapters can still contain others the
         // provider assigned to a different volume (compilation vs provider boundaries
         // disagree). Link any still-missing chapter its page markers prove it contains.
-        linked += FillVolumeContents(chapters, volumeFiles, volumeFileIds, replaceExisting);
+        linked += FillVolumeContents(chapters, volumeFiles, volumeFileIds, replaceExisting, displaceableFileIds);
 
         linked += await LinkLoneFileAsync(series, chapters, ct);
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
@@ -177,6 +204,18 @@ public class CbzLinkService(
     {
         var rootFolder = series.RootFolder
             ?? throw new InvalidOperationException("Series has no root folder loaded");
+        using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+        // An unmounted share looks exactly like every file having been deleted, so a missing root
+        // changes nothing, and step 1 below keeps the rows of any folder it could not list.
+        var folders = await SeriesFolders.ForAsync(db, series, ct);
+        if (!Directory.Exists(rootFolder.Path))
+        {
+            logger.LogWarning("Skipping rescan of '{Title}': root folder {Root} is not reachable",
+                series.Title, rootFolder.Path);
+            return new RescanResult(0, 0, 0, 0, RootUnavailable: true);
+        }
+
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
         var dbFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
         var volumeFileIds = dbFiles
@@ -184,26 +223,73 @@ public class CbzLinkService(
             .Select(f => f.Id)
             .ToHashSet();
 
+        // An empty root is usually an unmounted share's mount point, so a folder missing from it
+        // says nothing. Under a root that lists anything, a missing folder was deleted or renamed.
+        var rootListable = Directory.EnumerateFileSystemEntries(rootFolder.Path).Any();
         var onDisk = new List<(string SeriesDir, string AbsolutePath, string RelativePath)>();
-        foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
+        var readableFolders = new HashSet<string>(LibraryPaths.FolderComparer);
+        foreach (var folder in folders)
         {
             // A symlink or junction anywhere below the root would have adoption read, and the
             // ComicInfo rewrite modify, archives outside the library.
-            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir || !Directory.Exists(seriesDir))
+            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir)
             {
+                continue;
+            }
+
+            if (!Directory.Exists(seriesDir))
+            {
+                if (rootListable)
+                {
+                    readableFolders.Add(folder);
+                }
+
                 continue;
             }
 
             onDisk.AddRange(LibraryPaths.EnumerateFilesNoLinks(seriesDir)
                 .Where(ComicFile.IsComic)
                 .Select(f => (seriesDir, f, Path.Combine(folder, Path.GetRelativePath(seriesDir, f)))));
+            readableFolders.Add(folder);
         }
 
-        var diskRelPaths = onDisk.Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // A 7z or RAR under a ".cbz" name links fine and then reads as having no pages.
+        foreach (var file in onDisk.Where(f => ComicFile.IsCbz(f.AbsolutePath)))
+        {
+            if (RepackMislabelled(file.AbsolutePath) &&
+                dbFiles.FirstOrDefault(f => LibraryPaths.ComparisonKey(f.RelativePath)
+                    .Equals(LibraryPaths.ComparisonKey(file.RelativePath), StringComparison.OrdinalIgnoreCase)) is { } known)
+            {
+                known.Size = new FileInfo(file.AbsolutePath).Length;
+                known.MeasuredAtUtc = null;
+                archives.Invalidate(known.Id);
+            }
+        }
 
-        // 1. Files deleted from disk: drop the record, free the chapters.
+        var diskRelPaths = onDisk
+            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Files deleted from disk: drop the record, free the chapters. Only rows whose folder
+        // was actually listed: a folder that is not there says nothing about the files in it, and a
+        // file directly in the root says nothing under a root that lists empty.
+        bool Gone(ChapterFile f)
+        {
+            if (LibraryPaths.TopFolder(f.RelativePath) is { } top
+                    ? !readableFolders.Contains(top) || diskRelPaths.Contains(LibraryPaths.ComparisonKey(f.RelativePath))
+                    : !rootListable)
+            {
+                return false;
+            }
+
+            // The listing above never returns a linked file, but one that is there was not deleted. A
+            // linked folder on the way still counts as gone, as it always has.
+            return LibraryPaths.ResolveForDelete(rootFolder.Path, f.RelativePath) is not { } path ||
+                   !(File.Exists(path) || LibraryPaths.IsLink(path));
+        }
+
         var removed = 0;
-        foreach (var dbFile in dbFiles.Where(f => !diskRelPaths.Contains(f.RelativePath)).ToList())
+        foreach (var dbFile in dbFiles.Where(Gone).ToList())
         {
             foreach (var chapter in chapters.Where(c => c.ChapterFileId == dbFile.Id))
             {
@@ -242,7 +328,7 @@ public class CbzLinkService(
                 continue;
             }
 
-            var absolutePath = LibraryPaths.ResolveNoLinks(rootFolder.Path, dbFile.RelativePath);
+            var absolutePath = LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(dbFile.RelativePath));
             var matched = LinkChapters(chapters, parsed, dbFile.Id, absolutePath, volumeFileIds);
             if (matched.Count == 0 && parsed.IsVolume)
             {
@@ -266,7 +352,7 @@ public class CbzLinkService(
         var volumeFilesOnDisk = dbFiles
             .Select(f => (
                 f.Id,
-                AbsolutePath: LibraryPaths.ResolveNoLinks(rootFolder.Path, f.RelativePath),
+                AbsolutePath: LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(f.RelativePath)),
                 Parsed: ReleaseNameParser.ParseFileName(f.RelativePath)))
             .Where(f => f.AbsolutePath is not null)
             .Select(f => (f.Id, f.AbsolutePath!, f.Parsed))
@@ -276,14 +362,19 @@ public class CbzLinkService(
         await db.SaveChangesAsync(ct);
 
         // 3. Files on disk we have no record of yet.
-        var knownRelPaths = dbFiles.Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var newFiles = onDisk.Where(f => !knownRelPaths.Contains(f.RelativePath)).ToList();
+        var knownRelPaths = dbFiles
+            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var newFiles = onDisk.Where(f => !knownRelPaths.Contains(LibraryPaths.ComparisonKey(f.RelativePath))).ToList();
         var linkedNew = 0;
         var unrecognized = 0;
+        var writeComicInfo = newFiles.Count > 0 &&
+                             await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false";
         foreach (var group in newFiles.GroupBy(f => f.SeriesDir))
         {
             var (linked, skipped) = await LinkFilesAsync(
-                series, group.Key, group.Select(f => f.AbsolutePath), "rescan", ct: ct);
+                series, group.Key, group.Select(f => f.AbsolutePath), "rescan",
+                updateComicInfo: writeComicInfo, ct: ct);
             linkedNew += linked;
             unrecognized += skipped;
         }
@@ -466,6 +557,24 @@ public class CbzLinkService(
         }
     }
 
+    private bool RepackMislabelled(string path)
+    {
+        try
+        {
+            if (ComicSourceConverter.RepackMislabelled(path))
+            {
+                logger.LogInformation("Rebuilt {File} as a CBZ; it held a 7z, RAR or tar archive", path);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not rebuild {File} as a CBZ", path);
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Rewrites the file's embedded ComicInfo.xml to Maki's standard so Kavita
     /// groups it with downloaded chapters. Failures are logged, never fatal — the
@@ -505,9 +614,14 @@ public class CbzLinkService(
         .Select(f => f.Id)
         .ToHashSet();
 
-    /// <summary>Whether a volume file may take this chapter: it is free or sits on a single-chapter file.</summary>
-    private static bool VolumeMayTake(Chapter chapter, HashSet<int> volumeFileIds, bool replaceExisting) =>
-        chapter.ChapterFileId is null || (replaceExisting && !volumeFileIds.Contains(chapter.ChapterFileId.Value));
+    /// <summary>
+    /// Whether a volume file may take this chapter: it is free or sits on a single-chapter file. With a
+    /// displaceable set, only the files in it may lose a chapter, volume or not.
+    /// </summary>
+    private static bool VolumeMayTake(
+        Chapter chapter, HashSet<int> volumeFileIds, bool replaceExisting, IReadOnlySet<int>? displaceable = null) =>
+        chapter.ChapterFileId is not { } fileId ||
+        (replaceExisting && (displaceable?.Contains(fileId) ?? !volumeFileIds.Contains(fileId)));
 
     /// <summary>
     /// Links a volume/compilation CBZ to the chapters it actually contains by reading the
@@ -517,7 +631,7 @@ public class CbzLinkService(
     /// </summary>
     private List<Chapter> LinkVolumeByContents(
         List<Chapter> chapters, ParsedReleaseFile parsed, string cbzPath, int chapterFileId,
-        HashSet<int> volumeFileIds, bool replaceExisting = true)
+        HashSet<int> volumeFileIds, bool replaceExisting = true, IReadOnlySet<int>? displaceable = null)
     {
         var numbers = VolumeChapterScanner.ScanCbz(cbzPath);
         if (numbers.Count == 0)
@@ -529,7 +643,7 @@ public class CbzLinkService(
         foreach (var number in numbers)
         {
             var match = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
-                        ?? chapters.FirstOrDefault(c => c.Number == number && VolumeMayTake(c, volumeFileIds, replaceExisting));
+                        ?? chapters.FirstOrDefault(c => c.Number == number && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable));
             if (match != null && !targets.Contains(match))
             {
                 targets.Add(match);
@@ -564,7 +678,7 @@ public class CbzLinkService(
     /// </summary>
     private int FillVolumeContents(
         List<Chapter> chapters, IEnumerable<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)> files,
-        HashSet<int> volumeFileIds, bool replaceExisting)
+        HashSet<int> volumeFileIds, bool replaceExisting, IReadOnlySet<int>? displaceable = null)
     {
         var linked = 0;
         foreach (var (fileId, path, parsed) in files)
@@ -579,7 +693,8 @@ public class CbzLinkService(
             {
                 var chapter = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
                               ?? chapters.FirstOrDefault(c =>
-                                  c.Number == number && c.ChapterFileId != fileId && VolumeMayTake(c, volumeFileIds, replaceExisting));
+                                  c.Number == number && c.ChapterFileId != fileId &&
+                                  VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable));
                 if (chapter != null)
                 {
                     chapter.ChapterFileId = fileId;
@@ -613,7 +728,7 @@ public class CbzLinkService(
     /// </param>
     private static List<Chapter> LinkChapters(
         List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, string? filePath,
-        HashSet<int> volumeFileIds, bool replaceExisting = true)
+        HashSet<int> volumeFileIds, bool replaceExisting = true, IReadOnlySet<int>? displaceable = null)
     {
         List<Chapter> targets = [];
         if (parsed.IsChapter)
@@ -626,7 +741,9 @@ public class CbzLinkService(
                                     && (languages is null || languages.Contains(ChapterFileLanguage.Of(c)));
             var match = chapters.FirstOrDefault(c => Fits(c) && c.ChapterFileId == null)
                         ?? (replaceExisting
-                            ? chapters.FirstOrDefault(c => Fits(c) && !volumeFileIds.Contains(c.ChapterFileId!.Value))
+                            ? chapters.FirstOrDefault(c =>
+                                Fits(c) && c.ChapterFileId is { } fileId &&
+                                (displaceable?.Contains(fileId) ?? !volumeFileIds.Contains(fileId)))
                             : null);
             if (match != null)
             {
@@ -639,7 +756,7 @@ public class CbzLinkService(
             HashSet<decimal>? markers = null;
             targets = chapters
                 .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId != chapterFileId
-                            && VolumeMayTake(c, volumeFileIds, replaceExisting))
+                            && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable))
                 .Where(c =>
                 {
                     if (c.ChapterFileId is null)

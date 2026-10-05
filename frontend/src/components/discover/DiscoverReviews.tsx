@@ -1,7 +1,7 @@
 import { Anchor, Badge, Group, Loader, Paper, Spoiler, Stack, Text, Title } from '@mantine/core'
 import { IconExternalLink, IconStar } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { useMangaReviews } from '../../api/hooks'
+import { useMangaReviews, type MangaReview } from '../../api/hooks'
 import { ratingBandVisual } from '../ui/status'
 
 /**
@@ -13,7 +13,6 @@ import { ratingBandVisual } from '../ui/status'
  * ends after the tags.
  */
 export function DiscoverReviews({ malId }: { malId: number | null }) {
-  const { t } = useLingui()
   const { data: reviews, isLoading } = useMangaReviews(malId)
 
   if (malId == null) return null
@@ -33,6 +32,23 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
         </Text>
       </Group>
 
+      <ReviewList reviews={reviews} isLoading={isLoading} />
+    </Paper>
+  )
+}
+
+/** The loader, the upstream-failure line and the review cards, shared with the series page drawer. */
+export function ReviewList({
+  reviews,
+  isLoading,
+}: {
+  reviews: MangaReview[] | null | undefined
+  isLoading: boolean
+}) {
+  const { t } = useLingui()
+
+  return (
+    <>
       {isLoading && (
         <Group justify="center" py="lg">
           <Loader size="sm" />
@@ -92,6 +108,6 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
           </Paper>
         ))}
       </Stack>
-    </Paper>
+    </>
   )
 }

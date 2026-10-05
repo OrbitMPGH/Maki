@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// Opt-in write-back: after a chapter is finished in the built-in reader, mark it read in Kavita
-/// too, so both apps agree.
+/// Opt-in write-back: after a chapter is finished in the built-in reader, or marked read in bulk
+/// from the series page, mark it read in Kavita too, so both apps agree.
 /// <para>
 /// Gated on the series having an <em>adopted</em> <see cref="ReadingState"/> row — one whose
 /// KavitaSeriesId is set. That is the sharpest edge in the feature: the echo (push to Kavita,

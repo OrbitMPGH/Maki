@@ -116,14 +116,14 @@ grows with the page number, so wrong page order is obvious in the reader.
 
 | Folder | What it tests | Expected |
 |---|---|---|
-| `Dandadan (2021)` | Plain CBZs, a decimal chapter, ComicInfo.xml in Ch.1 | 4 chapters including 2.5 |
+| `Dandadan (2021)` | Plain CBZs, a decimal chapter no source lists, ComicInfo.xml in Ch.1 | Ch.1, 2 and 3 link. Dandadan has no chapter 2.5 anywhere, so Ch.2.5 stays on disk unlinked and the import row lists it as having no matching chapter |
 | `Chainsaw Man` | `.zip` | 3 chapters, placed as CBZ without a repack |
 | `Sousou no Frieren` | `.cbr`, romanised title | Matches Frieren, 3 chapters repacked to CBZ |
 | `Blue Period` | `.cb7`, `.7z`, `.cbt`, and a 7z named `.cbz` | 4 chapters, all real CBZ afterwards |
 | `Vagabond` | Folders of loose images | 2 volumes |
 | `Oyasumi Punpun` | `.pdf` | 2 volumes kept as PDF, 4 pages each |
 | `Spy x Family` | Ch.1 as both `.cbr` and `.cbz`, plus `.txt`/`.nfo` | 2 chapters, Ch.1 once, other files ignored |
-| `Berserk` | Ch.002 is a truncated archive | Ch.001 imports, Ch.002 is skipped or reported, nothing crashes |
+| `Berserk` | Ch.002 is a truncated archive | Ch.001 imports, the import row lists Ch.002 as unreadable, nothing crashes |
 | `ワンパンマン` | Non-ASCII folder and file names | Matches One-Punch Man, names survive the import |
 | `Totally Made Up Series 9999` | No catalogue match | Offers no match and can be left out |
 | `Empty Series Folder` | No comics | Listed with 0 comics, nothing to import |

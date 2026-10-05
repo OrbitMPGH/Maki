@@ -178,6 +178,15 @@ public record SeriesDto(
     /// </summary>
     public ReadingTimeEstimateDto? ReadTimeEstimate { get; init; }
 
+    /// <summary>The series' own upgrade profile pin. Null means it follows the instance default.</summary>
+    public int? UpgradeProfileId { get; init; }
+
+    /// <summary>The last upgrade scan pass over this series, or null when it has never been scanned.</summary>
+    public LastUpgradeScanDto? LastUpgradeScan { get; init; }
+
+    /// <summary>The series' pending torrent volume proposal, filled only by the detail endpoint.</summary>
+    public int? PendingProposalId { get; init; }
+
     /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
     /// carve-outs, so a plain <c>&lt;img src&gt;</c> loads it without a header.
@@ -259,7 +268,14 @@ public record SeriesDto(
         readChapterCount,
         s.SourceMatchPending,
         s.Incognito.ToString(),
-        notificationMode.ToString());
+        notificationMode.ToString())
+    {
+        UpgradeProfileId = s.UpgradeProfileId,
+        LastUpgradeScan = s.LastUpgradeScanUtc is { } at
+            ? new LastUpgradeScanDto(at, s.LastUpgradeScanProbed ?? 0, s.LastUpgradeScanQueued ?? 0,
+                s.LastUpgradeScanChecked, LastUpgradeScanDto.ParseSkips(s.LastUpgradeScanSkipsJson))
+            : null
+    };
 
     /// <summary>
     /// The title to render for a caller preferring <paramref name="titleLanguage"/>. Considers the
@@ -287,6 +303,28 @@ public record SeriesDto(
 /// </param>
 public record SeriesOperationDto(Guid Id, string State, int SeriesId, long SignalRevision);
 
+/// <param name="Checked">Null for scans recorded before it was kept.</param>
+/// <param name="Skipped">Reason code to count, see <c>UpgradeScanResult.Skipped</c>.</param>
+public record LastUpgradeScanDto(DateTime At, int Probed, int Queued, int? Checked, IReadOnlyDictionary<string, int> Skipped)
+{
+    public static IReadOnlyDictionary<string, int> ParseSkips(string? json)
+    {
+        if (string.IsNullOrEmpty(json))
+        {
+            return new Dictionary<string, int>();
+        }
+
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(json) ?? new Dictionary<string, int>();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return new Dictionary<string, int>();
+        }
+    }
+}
+
 public record AddSeriesRequest(
     string MetadataProviderId,
     int RootFolderId,
@@ -294,4 +332,5 @@ public record AddSeriesRequest(
     string MonitorNewItems = "All",
     string? Incognito = null,
     string? AddedFrom = null,
-    Guid? ClientMutationId = null);
+    Guid? ClientMutationId = null,
+    int? UpgradeProfileId = null);

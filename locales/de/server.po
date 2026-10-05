@@ -80,11 +80,27 @@ msgstr "OPDS-Feed-URLs werden auf der OPDS-Karte in den Einstellungen erstellt"
 msgid "error.account.noPasswordLogin"
 msgstr "Die Zwei-Faktor-Authentifizierung schützt eine Passwortanmeldung, aber für dieses Konto ist keine eingerichtet"
 
+#. Removing single sign-on from an account that has no working password login would leave it with
+#. no way in at all.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Single sign-on is the only way into this account, so it cannot be removed
+#, fuzzy
+msgid "error.account.onlySignInMethod"
+msgstr "Single Sign-on ist die einzige Möglichkeit, sich bei diesem Konto anzumelden, deshalb kann es nicht entfernt werden"
+
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Current and new password are required
 #, fuzzy
 msgid "error.account.passwordsRequired"
 msgstr "Das aktuelle und das neue Passwort sind erforderlich"
+
+#. An API key tried to manage the account itself (new keys, two-factor, single sign-on). Only a
+#. browser session may.
+#: src/Maki.Api/Auth/CookieSessionOnlyAttribute.cs
+#. English: Account settings can only be changed from a signed-in browser, not with an API key
+#, fuzzy
+msgid "error.account.sessionRequired"
+msgstr "Kontoeinstellungen können nur aus einem angemeldeten Browser geändert werden, nicht mit einem API-Schlüssel"
 
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Two-factor authentication is already enabled
@@ -146,6 +162,14 @@ msgstr "Eine Anime-Listen-Synchronisierung läuft bereits"
 msgid "error.auth.antiforgeryTokenInvalid"
 msgstr "Ungültiges oder fehlendes Antiforgery-Token"
 
+#. auth.requirehttps is on but the browser is on a plain-HTTP, non-localhost address, so it would
+#. discard the Secure session cookie and every request after sign-in would 401.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: This server requires HTTPS, so your browser would drop the sign-in. Open Maki through its https:// address, or turn off Require HTTPS in Settings (it can be reached from http://localhost on the server).
+#, fuzzy
+msgid "error.auth.httpsRequired"
+msgstr "Dieser Server verlangt HTTPS, deshalb würde dein Browser die Anmeldung verwerfen. Öffne Maki über die https://-Adresse oder deaktiviere HTTPS erzwingen unter Einstellungen (erreichbar über http://localhost auf dem Server)."
+
 #. Also shared across several distinct two-factor failures (missing code, expired 2FA cookie,
 #. wrong code, locked out at 2FA) for the same enumeration-safety reason as error.auth.signInFailed.
 #: src/Maki.Api/Controllers/AuthController.cs
@@ -188,6 +212,14 @@ msgstr "Dieses Konto ist deaktiviert"
 msgid "error.auth.ssoAccountNotSetUp"
 msgstr "Dieses Konto wurde noch nicht eingerichtet"
 
+#. Self-service linking (settings page): the account already has a single sign-on login, and only
+#. one is allowed. Removing it first is the way to link a different one.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: This account already has a single sign-on login. Remove it before linking another.
+#, fuzzy
+msgid "error.auth.ssoAlreadyLinked"
+msgstr "Dieses Konto hat bereits eine Single-Sign-on-Anmeldung. Entferne sie, bevor du eine andere verknüpfst."
+
 #. Self-service linking (settings page), not the automatic linking a verified email does at
 #. sign-in: this subject is already linked to a different Maki account.
 #: src/Maki.Api/Controllers/AuthController.cs
@@ -217,6 +249,14 @@ msgstr "Die Anmeldung wurde nicht abgeschlossen. Versuch es erneut."
 #, fuzzy
 msgid "error.auth.ssoLinkFailed"
 msgstr "Dieses Single-Sign-on-Konto konnte nicht verknüpft werden"
+
+#. Linking single sign-on was started without confirming the account password first, or the
+#. confirmation expired (it lasts a few minutes).
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: Confirm your password, then start linking single sign-on again
+#, fuzzy
+msgid "error.auth.ssoLinkNeedsPassword"
+msgstr "Bestätige dein Passwort und starte dann die Verknüpfung von Single Sign-on erneut"
 
 #: src/Maki.Api/Auth/OidcSignInService.cs
 #. English: Could not link that login to a new account
@@ -267,6 +307,12 @@ msgstr "Nicht autorisiert"
 #, fuzzy
 msgid "error.auth.usernameRequired"
 msgstr "Benutzername ist erforderlich"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: One of these chapters is downloading right now. Wait for it to finish before deleting.
+#, fuzzy
+msgid "error.chapter.activeDownloadDelete"
+msgstr "Eines dieser Kapitel wird gerade heruntergeladen. Warte, bis der Download fertig ist, bevor du löschst."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already downloading, try again once it finishes
@@ -539,16 +585,35 @@ msgid "error.libraryImport.alreadyInLibrary"
 msgstr "„{title}“ ist bereits mit heruntergeladenen Dateien in der Bibliothek. Lösche sie zuerst, wenn du sie von Grund auf neu importieren möchtest."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Import failed. The server log has the details.
+#, fuzzy
+msgid "error.libraryImport.failed"
+msgstr "Import fehlgeschlagen. Details stehen im Serverprotokoll."
+
+#: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
 #, fuzzy
 msgid "error.libraryImport.folderGone"
 msgstr "Ordner existiert nicht mehr"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
+#. English: This folder already belongs to another series in the library
+#, fuzzy
+msgid "error.libraryImport.folderOwnedByOtherSeries"
+msgstr "Dieser Ordner gehört bereits zu einer anderen Serie in der Bibliothek"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Invalid folder name
 #, fuzzy
 msgid "error.libraryImport.invalidFolderName"
 msgstr "Ungültiger Ordnername"
+
+#. A warning on a finished import. {count} is a number of files; {folder} is the scanned folder's name, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: {count} files stayed in "{folder}" because the series folder already has files with the same names
+#, fuzzy
+msgid "error.libraryImport.mergeLeftFiles"
+msgstr "{count} Dateien sind in „{folder}“ geblieben, weil der Serienordner bereits Dateien mit denselben Namen enthält"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Metadata lookup failed
@@ -562,12 +627,32 @@ msgstr "Metadaten konnten nicht abgerufen werden"
 msgid "error.libraryImport.noItemsToImport"
 msgstr "Keine Elemente zum Importieren"
 
+#. A warning on a finished import.
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: No source matched this series. Link one from the series page so the imported files can be matched to chapters.
+#, fuzzy
+msgid "error.libraryImport.noSourceMatch"
+msgstr "Keine Quelle passt zu dieser Serie. Verknüpfe auf der Serienseite eine Quelle, damit die importierten Dateien Kapiteln zugeordnet werden können."
+
+#. {title} is the series title, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: "{title}" was only partly imported. Open the series and run Rescan to pick up the rest.
+#, fuzzy
+msgid "error.libraryImport.partial"
+msgstr "„{title}“ wurde nur teilweise importiert. Öffne die Serie und starte „Erneut scannen“, um den Rest zu übernehmen."
+
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Cannot rename: "{name}" already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
 msgstr "Umbenennen nicht möglich: „{name}“ ist im Stammordner bereits vorhanden"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+#. English: The root folder could not be read. Check that it is mounted and that Maki can access it.
+#, fuzzy
+msgid "error.libraryImport.rootUnavailable"
+msgstr "Der Stammordner konnte nicht gelesen werden. Prüfe, ob er eingehängt ist und Maki darauf zugreifen kann."
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -665,6 +750,48 @@ msgstr "Die URL muss eine vollständige Adresse mit http:// oder https:// sein"
 #, fuzzy
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Webhook-URL ist erforderlich"
+
+#: src/Maki.Api/Controllers/PreviewController.cs
+#. English: Other previews are loading right now. Try again in a moment.
+#, fuzzy
+msgid "error.preview.busy"
+msgstr "Andere Vorschauen werden gerade geladen. Versuche es gleich noch einmal."
+
+#: src/Maki.Api/Controllers/PreviewController.cs
+#. English: This series is above your content rating limit
+#, fuzzy
+msgid "error.preview.contentRating"
+msgstr "Diese Serie liegt über deinem Limit für die Inhaltsbewertung"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: The preview could not be loaded
+#, fuzzy
+msgid "error.preview.failed"
+msgstr "Die Vorschau konnte nicht geladen werden"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: No source has the first chapter available
+#, fuzzy
+msgid "error.preview.noChapter"
+msgstr "Keine Quelle hat das erste Kapitel verfügbar"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: No source carries this series
+#, fuzzy
+msgid "error.preview.noSource"
+msgstr "Keine Quelle führt diese Serie"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: Sources are rate limited, try again shortly
+#, fuzzy
+msgid "error.preview.rateLimited"
+msgstr "Die Quellen sind durch ein Ratenlimit gebremst, versuche es in Kürze erneut"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: The preview took too long to load
+#, fuzzy
+msgid "error.preview.timedOut"
+msgstr "Das Laden der Vorschau hat zu lange gedauert"
 
 #: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
@@ -1034,6 +1161,12 @@ msgid "error.search.unknownSource"
 msgstr "Unbekannte Quelle: {sourceName}"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series has a download in progress. Wait for it to finish before deleting.
+#, fuzzy
+msgid "error.series.activeDownloadDelete"
+msgstr "Für die Serie läuft ein Download. Warte, bis er fertig ist, bevor du löschst."
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has an active download - wait for it to finish before moving
 #, fuzzy
 msgid "error.series.activeDownloadMove"
@@ -1156,6 +1289,12 @@ msgstr "Serie hat keinen Stammordner"
 #, fuzzy
 msgid "error.series.rootFolderNotFound"
 msgstr "Stammordner nicht gefunden"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: The series' root folder could not be read, so nothing was changed. Check that it is mounted, then rescan.
+#, fuzzy
+msgid "error.series.rootUnavailable"
+msgstr "Der Stammordner der Serie konnte nicht gelesen werden, deshalb wurde nichts geändert. Prüfe, ob er eingehängt ist, und scanne dann erneut."
 
 #. Shown when a client sends an unrecognized IncognitoMode name. Distinct from
 #. error.series.unknownMonitorMode and error.series.unknownNotificationMode, which share this
@@ -1345,6 +1484,12 @@ msgid "error.sourceMapping.needsTwoSources"
 msgstr "Für den Vergleich müssen mindestens zwei Quellen für diese Serie aktiviert sein"
 
 #: src/Maki.Api/Controllers/SourceMappingController.cs
+#. English: Unknown source order "{mode}". Use manual or quality.
+#, fuzzy
+msgid "error.sourceMapping.unknownOrderMode"
+msgstr "Unbekannte Quellenreihenfolge „{mode}“. Verwende manual oder quality."
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: No mappings given
 #, fuzzy
 msgid "error.sourceMapping.noMappingsGiven"
@@ -1444,6 +1589,232 @@ msgstr "Der Download ist nicht mehr in qBittorrent"
 msgid "error.torrentImport.pathNotAccessible"
 msgstr "Maki kann nicht auf den Downloadpfad zugreifen: {path}"
 
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: The series was deleted or moved while this download was being imported, so nothing was imported
+#, fuzzy
+msgid "error.torrentImport.seriesChanged"
+msgstr "Die Serie wurde während des Imports dieses Downloads gelöscht oder verschoben, deshalb wurde nichts importiert"
+
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: Every condition needs a value
+#, fuzzy
+msgid "error.upgrades.conditionValueRequired"
+msgstr "Jede Bedingung braucht einen Wert"
+
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: A format needs at least one condition
+#, fuzzy
+msgid "error.upgrades.conditionsRequired"
+msgstr "Ein Format braucht mindestens eine Bedingung"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: The cutoff must be one of the allowed tiers
+#, fuzzy
+msgid "error.upgrades.cutoffNotAllowed"
+msgstr "Der Cutoff muss eine der erlaubten Stufen sein"
+
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: A quality format called "{name}" already exists
+#, fuzzy
+msgid "error.upgrades.formatNameTaken"
+msgstr "Ein Qualitätsformat mit dem Namen „{name}“ existiert bereits"
+
+#. {formatId} is the numeric id of a quality format.
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Quality format {formatId} does not exist
+#, fuzzy
+msgid "error.upgrades.formatNotFound"
+msgstr "Das Qualitätsformat {formatId} existiert nicht"
+
+#. {value} is the text the user typed and is never translated.
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: "{value}" is not a whole number of zero or more
+#, fuzzy
+msgid "error.upgrades.invalidNumber"
+msgstr "„{value}“ ist keine ganze Zahl ab null"
+
+#. {pattern} is the regular expression the user typed and is never translated.
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: "{pattern}" is not a valid regular expression
+#, fuzzy
+msgid "error.upgrades.invalidRegex"
+msgstr "„{pattern}“ ist kein gültiger regulärer Ausdruck"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Minimum score gain cannot be negative
+#, fuzzy
+msgid "error.upgrades.minScoreDeltaRange"
+msgstr "Der Mindestzuwachs bei der Punktzahl darf nicht negativ sein"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Maximum score loss for a higher tier cannot be negative
+#, fuzzy
+msgid "error.upgrades.maxTierScoreDropRange"
+msgstr "Der maximale Punkteverlust bei einer höheren Stufe darf nicht negativ sein"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: Name is required
+#, fuzzy
+msgid "error.upgrades.nameRequired"
+msgstr "Ein Name ist erforderlich"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: Name must be {maxLength} characters or fewer
+#, fuzzy
+msgid "error.upgrades.nameTooLong"
+msgstr "Der Name darf höchstens {maxLength} Zeichen lang sein"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Page tolerance must be between {min} and {max} percent
+#, fuzzy
+msgid "error.upgrades.pageToleranceRange"
+msgstr "Die Seitentoleranz muss zwischen {min} und {max} Prozent liegen"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Resolution and compression weights must be between {min} and {max}
+#, fuzzy
+msgid "error.upgrades.measuredWeightRange"
+msgstr "Die Gewichte für Auflösung und Komprimierung müssen zwischen {min} und {max} liegen"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Description must be {maxLength} characters or fewer
+#, fuzzy
+msgid "error.upgrades.descriptionTooLong"
+msgstr "Die Beschreibung darf höchstens {maxLength} Zeichen lang sein"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: "{name}" is still used by a series or is the default profile
+#, fuzzy
+msgid "error.upgrades.profileInUse"
+msgstr "„{name}“ wird noch von einer Serie verwendet oder ist das Standardprofil"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: A quality profile called "{name}" already exists
+#, fuzzy
+msgid "error.upgrades.profileNameTaken"
+msgstr "Ein Qualitätsprofil mit dem Namen „{name}“ existiert bereits"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: That quality profile does not exist
+#, fuzzy
+msgid "error.upgrades.profileNotFound"
+msgstr "Dieses Qualitätsprofil existiert nicht"
+
+#. {type} is the condition type the caller sent.
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: "{type}" is not a condition type
+#, fuzzy
+msgid "error.upgrades.unknownConditionType"
+msgstr "„{type}“ ist kein Bedingungstyp"
+
+#. {tier} is the tier name the caller sent.
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: "{tier}" is not a quality tier
+#, fuzzy
+msgid "error.upgrades.unknownTier"
+msgstr "„{tier}“ ist keine Qualitätsstufe"
+
+#. 0 means the score is ignored, so negative values have no meaning.
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Upgrade until score cannot be negative
+#, fuzzy
+msgid "error.upgrades.upgradeUntilScoreRange"
+msgstr "Die Punktzahl für „Upgrade bis Punktzahl“ darf nicht negativ sein"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: An upgrade scan is already running
+#, fuzzy
+msgid "error.upgrades.scanRunning"
+msgstr "Ein Upgrade-Scan läuft bereits"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: That upgrade does not exist
+#, fuzzy
+msgid "error.upgrades.historyNotFound"
+msgstr "Dieses Upgrade existiert nicht"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: This upgrade has already been reverted
+#, fuzzy
+msgid "error.upgrades.alreadyReverted"
+msgstr "Dieses Upgrade wurde bereits rückgängig gemacht"
+
+#. The same file was upgraded again later; that newer upgrade has to be reverted first.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: A newer upgrade of this file has to be reverted first
+#, fuzzy
+msgid "error.upgrades.notLatest"
+msgstr "Ein neueres Upgrade dieser Datei muss zuerst rückgängig gemacht werden"
+
+#. The replaced file was purged from the trash folder, or removed by hand, so there is nothing to put back.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: The previous file is no longer in the trash, so this upgrade cannot be reverted
+#, fuzzy
+msgid "error.upgrades.trashGone"
+msgstr "Die vorherige Datei ist nicht mehr im Papierkorb, deshalb kann dieses Upgrade nicht rückgängig gemacht werden"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: Could not swap the files back. Another program may have the chapter open
+#, fuzzy
+msgid "error.upgrades.revertMoveFailed"
+msgstr "Die Dateien konnten nicht zurückgetauscht werden. Möglicherweise hat ein anderes Programm das Kapitel geöffnet"
+
+#. The chapter was downloaded or imported again after the upgrade; reverting would throw that newer copy away.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: This chapter's file was replaced after the upgrade, so reverting it would discard the newer copy
+#, fuzzy
+msgid "error.upgrades.fileChangedSinceUpgrade"
+msgstr "Die Datei dieses Kapitels wurde nach dem Upgrade ersetzt, deshalb würde das Rückgängigmachen die neuere Kopie verwerfen"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: A download for this chapter is running. Try again once it finishes
+#, fuzzy
+msgid "error.upgrades.revertDownloadInFlight"
+msgstr "Für dieses Kapitel läuft ein Download. Versuche es erneut, sobald er fertig ist"
+
+#. An upgrade scan request named both a series and a chapter; it has to name one or neither.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: Scan either a series or a chapter, not both
+#, fuzzy
+msgid "error.upgrades.scanTargetAmbiguous"
+msgstr "Scanne entweder eine Serie oder ein Kapitel, nicht beides"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: That chapter has no file to upgrade
+#, fuzzy
+msgid "error.upgrades.chapterHasNoFile"
+msgstr "Dieses Kapitel hat keine Datei, die per Upgrade ersetzt werden könnte"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: That volume release proposal does not exist
+#, fuzzy
+msgid "error.upgrades.proposalNotFound"
+msgstr "Dieser Vorschlag für ein Band-Release existiert nicht"
+
+#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: Could not grab the release: {detail}
+#, fuzzy
+msgid "error.upgrades.grabFailed"
+msgstr "Das Release konnte nicht abgerufen werden: {detail}"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: That volume release proposal was already grabbed, dismissed or expired
+#, fuzzy
+msgid "error.upgrades.proposalResolved"
+msgstr "Dieser Vorschlag für ein Band-Release wurde bereits abgerufen, verworfen oder ist abgelaufen"
+
+#. A torrent volume that would replace library files was measured after it downloaded and held
+#. back for review. {file} is the file name, shown as it is. {reason} is a code, never shown.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: {file} was held back for review: {reason, select, fewer_pages {it has fewer pages than the files it would replace} other {its pages could not be measured}}
+#, fuzzy
+msgid "error.upgrades.volumeGuard"
+msgstr "{file} wurde zur Prüfung zurückgehalten: {reason, select, fewer_pages {die Datei hat weniger Seiten als die Dateien, die sie ersetzen würde} other {ihre Seiten konnten nicht gemessen werden}}"
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy
@@ -1462,6 +1833,12 @@ msgstr "Du kannst dein eigenes Konto nicht deaktivieren"
 msgid "error.users.cannotRemoveOwnAdmin"
 msgstr "Du kannst deine eigene Administratorberechtigung nicht entfernen"
 
+#: src/Maki.Api/Controllers/UsersController.cs
+#. English: Turn off your own two-factor from your account settings
+#, fuzzy
+msgid "error.users.cannotResetOwnTwoFactor"
+msgstr "Deaktiviere deine eigene Zwei-Faktor-Authentifizierung in deinen Kontoeinstellungen"
+
 #. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
 #. translated.
 #: src/Maki.Api/Controllers/UsersController.cs
@@ -1477,6 +1854,13 @@ msgstr "Die Bewertung muss eine der folgenden sein: {ratings}"
 #, fuzzy
 msgid "error.users.lastAdministrator"
 msgstr "Dies ist der einzige Administrator. Erteile zuerst einem anderen Konto Administratorrechte"
+
+#. Same situation as error.account.onlySignInMethod, refused for an admin acting on another account.
+#: src/Maki.Api/Controllers/UsersController.cs
+#. English: Single sign-on is the only way into this account, so it cannot be removed
+#, fuzzy
+msgid "error.users.onlySignInMethod"
+msgstr "Single Sign-on ist die einzige Möglichkeit, sich bei diesem Konto anzumelden, deshalb kann es nicht entfernt werden"
 
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: Password is required
@@ -1533,10 +1917,83 @@ msgid "error.settings.bulkHoldRange"
 msgstr "Die Rückhalteschwelle muss zwischen 0 (aus) und {max} Kapiteln liegen"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The upgrade scan hour must be between {min} and {max}
+#, fuzzy
+msgid "error.settings.upgradesScanHourRange"
+msgstr "Die Stunde für den Upgrade-Scan muss zwischen {min} und {max} liegen"
+
+#. 0 means no daily cap and is inside the range.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Upgrades per day must be between {min} and {max}
+#, fuzzy
+msgid "error.settings.upgradesMaxPerDayRange"
+msgstr "Upgrades pro Tag müssen zwischen {min} und {max} liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Probes per scan must be between {min} and {max}
+#, fuzzy
+msgid "error.settings.upgradesMaxProbesPerRunRange"
+msgstr "Stichproben pro Scan müssen zwischen {min} und {max} liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The quiet period must be between {min} and {max} days
+#, fuzzy
+msgid "error.settings.upgradesQuietPeriodDaysRange"
+msgstr "Die Ruhezeit muss zwischen {min} und {max} Tagen liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Trash retention must be between {min} and {max} days
+#, fuzzy
+msgid "error.settings.upgradesTrashRetentionDaysRange"
+msgstr "Die Aufbewahrung im Papierkorb muss zwischen {min} und {max} Tagen liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The automatic grab size limit cannot be negative
+#, fuzzy
+msgid "error.settings.upgradesTorrentAutoGrabMaxBytesRange"
+msgstr "Das Größenlimit für den automatischen Abruf darf nicht negativ sein"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Missing chapters per volume must be between {min} and {max}
+#, fuzzy
+msgid "error.settings.upgradesVolumeMissingToleranceRange"
+msgstr "Fehlende Kapitel pro Band müssen zwischen {min} und {max} liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Volume searches per run must be between {min} and {max}
+#, fuzzy
+msgid "error.settings.upgradesVolumeSearchesPerRunRange"
+msgstr "Bandsuchen pro Lauf müssen zwischen {min} und {max} liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Proposal expiry must be between {min} and {max} days
+#, fuzzy
+msgid "error.settings.upgradesProposalExpiryDaysRange"
+msgstr "Der Ablauf eines Vorschlags muss zwischen {min} und {max} Tagen liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
 #, fuzzy
 msgid "error.settings.backupsToKeepRange"
 msgstr "Die Anzahl der aufzubewahrenden Backups muss zwischen {min} und {max} liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Failed attempts before lockout must be between {min} and {max}
+#, fuzzy
+msgid "error.settings.lockoutMaxAttemptsRange"
+msgstr "Fehlversuche vor der Sperre müssen zwischen {min} und {max} liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Lockout duration must be between {min} and {max} minutes
+#, fuzzy
+msgid "error.settings.lockoutMinutesRange"
+msgstr "Die Sperrdauer muss zwischen {min} und {max} Minuten liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Session length must be between {min} and {max} days
+#, fuzzy
+msgid "error.settings.sessionDaysRange"
+msgstr "Die Sitzungsdauer muss zwischen {min} und {max} Tagen liegen"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unknown language code(s): {codes}
@@ -1905,6 +2362,19 @@ msgstr "Bibliotheksimport mit Fehlern abgeschlossen"
 msgid "inbox.libraryImport.finishedWithErrors.body"
 msgstr "{imported, plural, one {# Ordner importiert} other {# Ordner importiert}}, {failed} fehlgeschlagen"
 
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: Single sign-on linked
+#, fuzzy
+msgid "inbox.account.ssoLinked.title"
+msgstr "Single Sign-on verknüpft"
+
+#. {account} is the username the identity provider reported, never translated.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: {account} can now sign in to your account. If that was not you, remove it in account settings and change your password.
+#, fuzzy
+msgid "inbox.account.ssoLinked.body"
+msgstr "{account} kann sich jetzt bei deinem Konto anmelden. Falls du das nicht warst, entferne es in den Kontoeinstellungen und ändere dein Passwort."
+
 #. Seen by admins. {user} is a username and is never translated.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: New request
@@ -2109,6 +2579,86 @@ msgstr "Neue Kapitel heruntergeladen"
 #, fuzzy
 msgid "inbox.chapters.downloaded.body"
 msgstr "{series}: {count, plural, one {# Kapitel bereit zum Lesen} other {# Kapitel bereit zum Lesen}}"
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Chapter upgraded
+#, fuzzy
+msgid "inbox.upgrade.chapter.title"
+msgstr "Kapitel per Upgrade ersetzt"
+
+#. {fromSource} and {toSource} are site names, never translated. {hasFromWidth} is "yes" or "no":
+#. the old file's page width is not always known. Widths are pixels.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: {series}: chapter {chapter} replaced with a better copy, {fromSource}{hasFromWidth, select, yes { {fromWidth}px} other {}} to {toSource} {toWidth}px
+#, fuzzy
+msgid "inbox.upgrade.chapter.body"
+msgstr "{series}: Kapitel {chapter} durch eine bessere Kopie ersetzt, {fromSource}{hasFromWidth, select, yes { {fromWidth}px} other {}} zu {toSource} {toWidth}px"
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Upgrade left a chapter without its file
+#, fuzzy
+msgid "inbox.upgrade.restoreFailed.title"
+msgstr "Upgrade hat ein Kapitel ohne Datei hinterlassen"
+
+#. Admins only. {trashPath} is a path inside the root folder, shown as it is. The original file is
+#. still there and has to be moved back by hand.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: {series}: chapter {chapter} could not be replaced or put back. The original file is at {trashPath}
+#, fuzzy
+msgid "inbox.upgrade.restoreFailed.body"
+msgstr "{series}: Kapitel {chapter} konnte weder ersetzt noch wiederhergestellt werden. Die Originaldatei liegt unter {trashPath}"
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: Chapters upgraded
+#, fuzzy
+msgid "inbox.upgrade.batch.title"
+msgstr "Kapitel per Upgrade ersetzt"
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: {series}: {count, plural, one {# chapter replaced with a better copy} other {# chapters replaced with a better copy}}
+#, fuzzy
+msgid "inbox.upgrade.batch.body"
+msgstr "{series}: {count, plural, one {# Kapitel durch eine bessere Kopie ersetzt} other {# Kapitel durch bessere Kopien ersetzt}}"
+
+#: src/Maki.Api/Services/TorrentUpgradeService.cs
+#. English: Volume release available
+#, fuzzy
+msgid "inbox.upgrade.torrentProposal.title"
+msgstr "Band-Release verfügbar"
+
+#. {size} is an already worded file size, such as "480 MB".
+#: src/Maki.Api/Services/TorrentUpgradeService.cs
+#. English: Volume release available for {series}: replaces {replaced, plural, one {# file} other {# files}}, adds {missing, plural, one {# chapter} other {# chapters}}, {size}
+#, fuzzy
+msgid "inbox.upgrade.torrentProposal.body"
+msgstr "Band-Release verfügbar für {series}: ersetzt {replaced, plural, one {# Datei} other {# Dateien}}, ergänzt {missing, plural, one {# Kapitel} other {# Kapitel}}, {size}"
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: Volume upgraded
+#, fuzzy
+msgid "inbox.upgrade.volume.title"
+msgstr "Band per Upgrade ersetzt"
+
+#. {fileName} is the imported volume file's name, shown as it is.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: {fileName} replaced {replaced, plural, one {# file} other {# files}} in {series}
+#, fuzzy
+msgid "inbox.upgrade.volume.body"
+msgstr "{fileName} hat in {series} {replaced, plural, one {# Datei} other {# Dateien}} ersetzt"
+
+#. {value} is a number already formatted for the reader, in megabytes.
+#: src/Maki.Api/Localization/InboxRenderer.cs
+#. English: {value} MB
+#, fuzzy
+msgid "inbox.size.megabytes"
+msgstr "{value} MB"
+
+#. {value} is a number already formatted for the reader, in gigabytes.
+#: src/Maki.Api/Localization/InboxRenderer.cs
+#. English: {value} GB
+#, fuzzy
+msgid "inbox.size.gigabytes"
+msgstr "{value} GB"
 
 #: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: Downloads finished with errors
@@ -2492,15 +3042,71 @@ msgstr "Alle Quellen sind für dieses Kapitel fehlgeschlagen"
 msgid "error.download.pickedSourceUnavailable"
 msgstr "Die ausgewählte Quelle konnte dieses Kapitel nicht bereitstellen."
 
-#. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
-#. the person looking at their queue, where it is noise and can leak a path or a host name.
+#. An upgrade was downloaded, but the file it was meant to replace is no longer in the library.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The file this upgrade was meant to replace is gone
+#, fuzzy
+msgid "error.download.upgradeTargetGone"
+msgstr "Die Datei, die dieses Upgrade ersetzen sollte, ist nicht mehr da"
+
+#. The old file could not be moved aside, usually because another program has it open. Nothing changed on disk.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Could not replace the existing file. Another program may have it open
+#, fuzzy
+msgid "error.download.upgradeMoveFailed"
+msgstr "Die vorhandene Datei konnte nicht ersetzt werden. Möglicherweise hat ein anderes Programm sie geöffnet"
+
+#. A failure Maki has no specific reason for. The queue row shows what the error said after this,
+#. untranslated, as its own detail.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
 #: src/Maki.Api/Services/DownloadQueueService.cs
-#: src/Maki.Api/Services/DownloadWorkerHostedService.cs
 #. English: Something went wrong, Maki will try again
 #, fuzzy
 msgid "error.download.unexpected"
 msgstr "Etwas ist schiefgelaufen, Maki versucht es erneut"
+
+#. The site answered 401 or 403. The queue row shows the status after this.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: The source refused the request
+#, fuzzy
+msgid "error.download.sourceRejected"
+msgstr "Die Quelle hat die Anfrage abgelehnt"
+
+#. The site answered with an error status or an error message of its own. The queue row shows the
+#. site's own words, untranslated, after this.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: The source answered with an error
+#, fuzzy
+msgid "error.download.sourceError"
+msgstr "Die Quelle hat mit einem Fehler geantwortet"
+
+#. Connection refused, timed out, DNS or SSL failure: the site could not be reached at all.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: Could not reach the source
+#, fuzzy
+msgid "error.download.network"
+msgstr "Die Quelle war nicht erreichbar"
+
+#. Writing the chapter to disk failed: the folder is read-only, full, or a file is in use.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: Could not write the chapter to disk
+#, fuzzy
+msgid "error.download.disk"
+msgstr "Das Kapitel konnte nicht auf die Festplatte geschrieben werden"
+
+#. A downloaded page is not a readable image. The queue row shows the page's file name after this.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: A page the source sent is not a readable image
+#, fuzzy
+msgid "error.download.invalidPage"
+msgstr "Eine von der Quelle gesendete Seite ist kein lesbares Bild"
+
+#. No source lists this chapter right now. The queue row shows what each source said after this.
+#: src/Maki.Api/Services/ChapterSourceResolver.cs
+#. English: No source has this chapter right now
+#, fuzzy
+msgid "error.download.notListed"
+msgstr "Derzeit hat keine Quelle dieses Kapitel"
 
 #. {source} is a site name (MangaDex, Weeb Central), never translated. The queue row shows when the
 #. next attempt is as its own field, in the reader's own zone, so it is not repeated here.
@@ -2553,6 +3159,34 @@ msgstr "Import abgelehnt, die Bibliothek blieb unverändert"
 #, fuzzy
 msgid "error.download.torrentMissing"
 msgstr "Der Torrent ist in qBittorrent nie erschienen"
+
+#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
+#. another category, or dropped.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The torrent is no longer in qBittorrent
+#, fuzzy
+msgid "error.download.torrentRemoved"
+msgstr "Der Torrent ist nicht mehr in qBittorrent"
+
+#. The library folder is missing or empty, usually a network share that is not mounted. Maki retries
+#. on its own and does not count it as a failed attempt.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The library folder is not available, check that its drive or share is mounted
+#, fuzzy
+msgid "error.download.rootFolderUnavailable"
+msgstr "Der Bibliotheksordner ist nicht verfügbar. Prüfe, ob sein Laufwerk oder seine Freigabe eingehängt ist"
+
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: A health review is active for this series
+#, fuzzy
+msgid "error.download.healthReviewActive"
+msgstr "Für diese Serie läuft eine Gesundheitsprüfung"
+
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: This series has no enabled sources
+#, fuzzy
+msgid "error.download.noEnabledMapping"
+msgstr "Diese Serie hat keine aktivierten Quellen"
 
 #. Label before a series title in an outbound notification, e.g. "Series: Naruto".
 #: src/Maki.Api/Services/NotificationService.cs
@@ -3109,6 +3743,22 @@ msgstr "Reparatur-Staging für Stammordner {root} kann nicht überprüft werden"
 #, fuzzy
 msgid "health.check.failedDownloads"
 msgstr "{count, plural, =0 {Keine fehlgeschlagenen Downloads} one {# fehlgeschlagener Download} other {# fehlgeschlagene Downloads}}"
+
+#. Informational. The background measurement job reads page count, size and image format from
+#. these files on its own; nothing needs doing.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {count, plural, one {# chapter file waiting to be measured} other {# chapter files waiting to be measured}}
+#, fuzzy
+msgid "health.check.unmeasuredFiles"
+msgstr "{count, plural, one {# Kapiteldatei wartet auf die Messung} other {# Kapiteldateien warten auf die Messung}}"
+
+#. Files replaced by automatic upgrades, kept for {days} days so an upgrade can be reverted. A
+#. warning only when a library drive is already low on space.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Upgrade trash: {files, plural, one {# replaced file} other {# replaced files}}, {gib} GiB, kept {days, plural, one {# day} other {# days}}
+#, fuzzy
+msgid "health.check.upgradeTrash"
+msgstr "Upgrade-Papierkorb: {files, plural, one {# ersetzte Datei} other {# ersetzte Dateien}}, {gib} GiB, aufbewahrt für {days, plural, one {# Tag} other {# Tage}}"
 
 #. {source} is a site name (MangaDex, Weeb Central) and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs

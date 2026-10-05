@@ -110,6 +110,63 @@ public class MangaBakaBrowseIndexTests : IDisposable
         Assert.Equal(repairedVersion, check.ExecuteScalar());
     }
 
+    private const string ExternalIdColumns =
+        ", merged_with TEXT, source_anilist_id INTEGER, source_my_anime_list_id INTEGER, source_kitsu_id INTEGER";
+
+    private static long RootPage(SqliteConnection conn, string index)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT rootpage FROM sqlite_master WHERE name = $name";
+        cmd.Parameters.AddWithValue("$name", index);
+        return (long)cmd.ExecuteScalar()!;
+    }
+
+    [Fact]
+    public async Task Repairing_the_live_file_creates_only_what_is_missing()
+    {
+        using var conn = OpenWith(FullColumns + ExternalIdColumns);
+        MangaBakaDumpService.BuildBrowseIndexes(conn);
+        var popBefore = RootPage(conn, "ix_browse_pop");
+        using (var drop = conn.CreateCommand())
+        {
+            drop.CommandText = "DROP INDEX ix_ext_kitsu";
+            drop.ExecuteNonQuery();
+        }
+
+        var service = new MangaBakaDumpService(null!,
+            new MangaBakaDumpOptions(conn.DataSource, _dir), new FakeAppSettings(),
+            new MangaBakaDumpStatus(), NullLogger<MangaBakaDumpService>.Instance);
+        await service.EnsureBrowseIndexesAsync();
+
+        // Rebuilding would have dropped and recreated it on a fresh page.
+        Assert.Equal(popBefore, RootPage(conn, "ix_browse_pop"));
+        Assert.True(RootPage(conn, "ix_ext_kitsu") > 0);
+    }
+
+    [Theory]
+    [InlineData("source_anilist_id", "ix_ext_anilist")]
+    [InlineData("source_my_anime_list_id", "ix_ext_mal")]
+    [InlineData("source_kitsu_id", "ix_ext_kitsu")]
+    public void External_id_lookups_use_their_partial_index(string column, string expected)
+    {
+        using var conn = OpenWith(FullColumns + ExternalIdColumns);
+        MangaBakaDumpService.BuildBrowseIndexes(conn);
+
+        using var cmd = conn.CreateCommand();
+        // The shape MangaBakaLocalStore.GetIdsByExternalIdsAsync sends.
+        cmd.CommandText = $"EXPLAIN QUERY PLAN SELECT {column}, id, state, merged_with, type FROM series WHERE {column} IN (1,2,3)";
+        var plan = new List<string>();
+        using (var reader = cmd.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                plan.Add(reader.GetString(3));
+            }
+        }
+
+        Assert.Contains(expected, string.Join(" | ", plan));
+    }
+
     [Fact]
     public void Builds_every_index_when_the_dump_has_all_the_columns()
     {

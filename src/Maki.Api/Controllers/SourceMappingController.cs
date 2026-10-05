@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Localization;
+using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -25,6 +27,8 @@ public class SourceMappingController(
     SourceComparePreviewService comparePreviews,
     ChapterSyncService chapterSync,
     SourceMappingRemovalService removalService,
+    SourceOrderService sourceOrder,
+    SourceScoutService scout,
     ICurrentUser currentUser) : ControllerBase
 {
     public record CreateMappingRequest(
@@ -51,20 +55,31 @@ public class SourceMappingController(
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateMappingRequest request, CancellationToken ct)
     {
-        if (sourceRegistry.Find(request.SourceName) is null)
+        if (sourceRegistry.Find(request.SourceName) is not { } source)
         {
             return this.Fail(localizer, "error.sourceMapping.unknownSource", new { name = request.SourceName });
         }
 
+        // The registry matches names case-insensitively but the column and its unique index do not,
+        // so storing the caller's casing would let "mangadex" and "MangaDex" both map one series.
+        var sourceName = source.Name;
+
+        // Through db.Series, whose query filter hides series in root folders the caller holds no
+        // grant for. The insert below would not check that on its own.
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        {
+            return NotFound();
+        }
+
         // Linking a globally switched-off source would create a mapping that never runs;
         // say so rather than storing something inert.
-        if (!await sourceAvailability.IsEnabledAsync(request.SourceName, ct))
+        if (!await sourceAvailability.IsEnabledAsync(sourceName, ct))
         {
-            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = request.SourceName });
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = sourceName });
         }
 
         if (await db.SourceMappings.AnyAsync(
-                m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct))
+                m => m.SeriesId == request.SeriesId && m.SourceName == sourceName, ct))
         {
             return this.Conflict(localizer, "error.sourceMapping.alreadyMapped");
         }
@@ -72,15 +87,15 @@ public class SourceMappingController(
         var mapping = new SourceMapping
         {
             SeriesId = request.SeriesId,
-            SourceName = request.SourceName,
+            SourceName = sourceName,
             SourceSeriesId = request.SourceSeriesId,
             Url = request.Url,
             LanguageFilter = string.IsNullOrWhiteSpace(request.LanguageFilter)
                 ? SourceLanguagePreference.SeedFilter(
-                    sourceRegistry.GetRequired(request.SourceName),
+                    source,
                     await SourceLanguagePreference.LoadAsync(settings, ct))
                 : SourceLanguages.Serialize(SourceLanguages.Parse(request.LanguageFilter)),
-            Priority = request.Priority ?? await PriorityForAsync(request.SourceName, ct),
+            Priority = request.Priority ?? await PriorityForAsync(sourceName, ct),
             Enabled = true,
             Origin = SourceMappingOrigin.Manual
         };
@@ -214,15 +229,91 @@ public class SourceMappingController(
         }
     }
 
-    [HttpGet("compare")]
-    public async Task<IActionResult> Compare([FromQuery] int seriesId, CancellationToken ct)
+    [HttpGet("quality")]
+    public async Task<IActionResult> Quality(
+        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
         if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
             return NotFound();
         }
 
-        return comparePreviews.Snapshot(seriesId, localizer) is { } snapshot ? Ok(snapshot) : NotFound();
+        var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
+        var profile = (await upgrades.ForSeriesAsync(seriesId, ct))?.Profile;
+        var now = DateTime.UtcNow;
+        var mappings = await db.SourceMappings.AsNoTracking().Where(m => m.SeriesId == seriesId).ToListAsync(ct);
+        var disabled = await sourceAvailability.DisabledAsync(ct);
+        var usable = mappings.Where(m => m.Enabled && !disabled.Contains(m.SourceName)).ToList();
+        var order = await sourceOrder.OrderAsync(db, seriesId, usable, ct);
+        var qualityOrder = order.Mode == SourceOrderMode.Quality
+            ? order
+            : await sourceOrder.OrderAsync(db, seriesId, usable, ct, SourceOrderMode.Quality);
+        var rest = mappings.Except(usable).OrderBy(m => m.Priority).ThenBy(m => m.Id);
+        return Ok(new SourceOrderDto(
+            order.SeriesMode is { } own ? SourceOrderService.Name(own) : null,
+            SourceOrderService.Name(order.DefaultMode),
+            SourceOrderService.Name(order.Mode),
+            [.. order.Ordered.Concat(rest).Select(m => m.Id)],
+            [.. estimates.Select(e => SourceQualityDto.From(e.Key, e.Value, profile, now))],
+            scout.Snapshot(seriesId),
+            [.. qualityOrder.Ordered.Select(m => m.Id)],
+            mappings.ToDictionary(m => m.Id, m => QualityNames.Tier(
+                qualityOrder.Scores.GetValueOrDefault(m.Id)?.Tier
+                ?? QualityTierResolver.Resolve(sourceRegistry.Find(m.SourceName)?.Kind, null, string.Empty, false)))));
+    }
+
+    public record ScoutRequest(int SeriesId);
+
+    /// <summary>
+    /// Samples a few chapters from every enabled source of the series, in the background. Available
+    /// whether or not <see cref="SettingKeys.SourcesScoutOnMatch"/> is on; poll <c>GET quality</c>.
+    /// </summary>
+    [HttpPost("scout")]
+    public async Task<IActionResult> Scout([FromBody] ScoutRequest request, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        {
+            return NotFound();
+        }
+
+        return Accepted(scout.Start(request.SeriesId));
+    }
+
+    public record OrderModeRequest(int SeriesId, string? Mode);
+
+    /// <summary>Sets or clears (null) a series' own source order mode.</summary>
+    [HttpPut("ordermode")]
+    public async Task<IActionResult> SetOrderMode([FromBody] OrderModeRequest request, CancellationToken ct)
+    {
+        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == request.SeriesId, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        var mode = SourceOrderService.Parse(request.Mode);
+        if (request.Mode is not null && mode is null)
+        {
+            return this.Fail(localizer, "error.sourceMapping.unknownOrderMode", new { mode = request.Mode });
+        }
+
+        series.SourceOrderMode = mode;
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpGet("compare")]
+    public async Task<IActionResult> Compare(
+        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        return comparePreviews.Snapshot(seriesId, localizer) is { } snapshot
+            ? Ok(await SourceCompareQuality.FillAsync(db, upgrades, sourceRegistry, snapshot, ct))
+            : NotFound();
     }
 
     /// <summary>

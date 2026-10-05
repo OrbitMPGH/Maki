@@ -107,4 +107,33 @@ public class KavitaProgressTests
         Assert.Equal(1.5, progress.MaxChapter);
         Assert.Equal(20, progress.ReadPages);
     }
+
+    [Fact]
+    public void A_fully_read_chapter_range_covers_every_number_in_it()
+    {
+        var progress = KavitaProgress.Compute([
+            Volume(1, 40, 0,
+                new KavitaProgress.KavitaChapterDto(1, 5, 20, 20, false),
+                Chapter(6, 20, 19)),
+        ]);
+
+        Assert.Equal([(1m, 5m)], progress.Chapters);
+        Assert.True(progress.CoversChapter(3.5m));
+        Assert.False(progress.CoversChapter(6m));
+        Assert.Equal(5, progress.MaxChapter);
+    }
+
+    [Fact]
+    public void A_volume_archive_reads_as_a_volume_not_a_chapter()
+    {
+        // How Kavita reports a "Vol. 03.cbz" with no chapter number: one loose-leaf chapter
+        // numbered -100000 inside volume 3.
+        var progress = KavitaProgress.Compute([
+            Volume(3, 180, 0, Chapter(-100000, 180, 180)),
+            new KavitaProgress.KavitaVolumeDto(1, 2, 300, 300, null),
+        ]);
+
+        Assert.Empty(progress.Chapters);
+        Assert.Equal([(3, 3), (1, 2)], progress.Volumes);
+    }
 }

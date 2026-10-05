@@ -241,6 +241,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
         // A null Number is deduped by title downstream (ChapterIdentity), so it must never carry
         // a null Title too, or two different specials read as one chapter.
         var chapterTitle = number is null ? label : null;
+        number ??= ChapterNumberParser.FromSlug(slug);
 
         return new SourceChapter(
             Name,

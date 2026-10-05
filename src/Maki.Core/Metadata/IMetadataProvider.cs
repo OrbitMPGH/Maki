@@ -69,6 +69,12 @@ public record SeriesMetadata
     public string? AnimeStart { get; init; }
     public string? AnimeEnd { get; init; }
 
+    /// <summary>
+    /// The provider could not fill every field (MangaBaka's API fallback has no alt titles, anime
+    /// data or spoiler flags), so an empty or false value here means unknown, not absent.
+    /// </summary>
+    public bool Partial { get; init; }
+
     // Cross-provider IDs
     public int? MangaBakaId { get; init; }
     public int? AniListId { get; init; }

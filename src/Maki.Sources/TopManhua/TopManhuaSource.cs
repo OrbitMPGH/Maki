@@ -19,8 +19,7 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
     public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua;
     public SourceRating Rating => SourceRating.Mature;
     public IReadOnlyList<string> CoverHosts => ["2xstorage.com", "zinmanga1.com"];
-    private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
-    
+    private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);    
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
         // https://www.topmanhua.fan/manhua/{id}. A chapter URL adds a second segment
@@ -104,6 +103,8 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             
             var label = link.TextContent.Trim();
             var parsed = ChapterNumberParser.Parse(label);
+            var title = parsed.Number is null && label.Length > 0 ? label : null;
+            parsed = parsed.OrSlugNumber(href);
             
             var dateText = row.QuerySelector(".chapter-release-date")?.TextContent.Trim();
             DateTime? releaseDate = null;
@@ -120,7 +121,7 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
                 label,
                 parsed.Number,
                 parsed.Volume,
-                Title: null,
+                title,
                 Language: "en",
                 releaseDate,
                 Url: href));

@@ -1,4 +1,5 @@
-﻿using Maki.Sources.MangaPlus;
+﻿using Maki.Core.Sources;
+using Maki.Sources.MangaPlus;
 
 namespace Maki.Sources.Tests;
 
@@ -131,7 +132,24 @@ public class MangaPlusSourceTests
             ["title_list/allV2"] = FakeHttpClientFactory.BinaryFixture("mangaplus-banned.pb")
         });
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("one piece"));
-        Assert.Equal("Account Banned", error.Message);
+        var error = await Assert.ThrowsAsync<SourceErrorException>(() => source.SearchAsync("one piece"));
+        Assert.StartsWith("Account Banned: ", error.Message);
+    }
+
+    // Recorded off the viewer for Goodbye, Eri, a one-shot MANGA Plus lists only in the paid middle
+    // stretch. It used to fail the download as "unexpected" on every retry instead of moving on.
+    [Fact]
+    public async Task A_subscriber_only_chapter_reads_as_not_found_so_the_next_source_is_tried()
+    {
+        var source = SourceFor(new()
+        {
+            ["manga_viewer"] = FakeHttpClientFactory.BinaryFixture("mangaplus-viewer-subscription.pb")
+        });
+
+        var error = await Assert.ThrowsAsync<HttpRequestException>(() => source.GetPagesAsync(
+            new SourceChapter("mangaplus", "100188", "1013145", null, null, null, null, "en", null)));
+
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, error.StatusCode);
+        Assert.Contains("Invalid user access(11302)", error.Message);
     }
 }

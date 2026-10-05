@@ -24,6 +24,12 @@ public class AuthRuntimeOptions
     public const int DefaultLockoutMinutes = 15;
     public const int DefaultSessionDays = 30;
 
+    // Upper bounds exist because TimeSpan.FromDays throws past about 10.6 million days, which would
+    // stop the host from starting, and far smaller values still overflow the cookie's expiry date.
+    public const int MaxLockoutMaxAttempts = 1000;
+    public const int MaxLockoutMinutes = 10080;
+    public const int MaxSessionDays = 3650;
+
     /// <summary>
     /// Redirect to HTTPS, send HSTS, and require <c>Secure</c> on the session cookie.
     /// <para>
@@ -64,13 +70,50 @@ public class AuthRuntimeOptions
         TrustedProxies = (rows.GetValueOrDefault(SettingKeys.AuthTrustedProxies) ?? string.Empty)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        LockoutMaxAttempts = ReadInt(rows, SettingKeys.AuthLockoutMaxAttempts, DefaultLockoutMaxAttempts, min: 0);
-        LockoutDuration = TimeSpan.FromMinutes(
-            ReadInt(rows, SettingKeys.AuthLockoutMinutes, DefaultLockoutMinutes, min: 1));
-        SessionLifetime = TimeSpan.FromDays(
-            ReadInt(rows, SettingKeys.AuthSessionDays, DefaultSessionDays, min: 1));
+        LockoutMaxAttempts = LockoutMaxAttemptsFrom(rows.GetValueOrDefault(SettingKeys.AuthLockoutMaxAttempts));
+        LockoutDuration = TimeSpan.FromMinutes(LockoutMinutesFrom(rows.GetValueOrDefault(SettingKeys.AuthLockoutMinutes)));
+        SessionLifetime = TimeSpan.FromDays(SessionDaysFrom(rows.GetValueOrDefault(SettingKeys.AuthSessionDays)));
+
+        // Lockout is expressed by the threshold alone (see ApplyLockout), so every account has to
+        // carry LockoutEnabled. Accounts created by an older build while the threshold was zero got
+        // false and would otherwise never lock out again once it was raised.
+        await db.Users
+            .Where(u => !u.LockoutEnabled)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LockoutEnabled, true), ct);
     }
 
-    private static int ReadInt(Dictionary<string, string> rows, string key, int fallback, int min) =>
-        int.TryParse(rows.GetValueOrDefault(key), out var value) && value >= min ? value : fallback;
+    /// <summary>
+    /// Whether a sign-in from this page would hand the browser a <c>Secure</c> session cookie it is
+    /// going to throw away, leaving a login that answers 200 and then 401s on every request after.
+    /// <para>
+    /// Judged from the browser's <c>Origin</c> rather than <c>Request.IsHttps</c>: behind a TLS proxy
+    /// that is not in <see cref="TrustedProxies"/> the request reaches Maki as plain HTTP while the
+    /// browser is on HTTPS and keeps the cookie just fine. Loopback counts as secure because browsers
+    /// accept <c>Secure</c> cookies there. No <c>Origin</c> means nothing to judge by, so no refusal.
+    /// </para>
+    /// </summary>
+    public bool SessionCookieWouldBeDropped(string? origin) =>
+        RequireHttps && IsInsecureOrigin(origin);
+
+    public static bool IsInsecureOrigin(string? origin) =>
+        Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttp
+        && !uri.IsLoopback
+        && !uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase);
+
+    public static int LockoutMaxAttemptsFrom(string? stored) =>
+        ReadInt(stored, DefaultLockoutMaxAttempts, min: 0, max: MaxLockoutMaxAttempts);
+
+    public static int LockoutMinutesFrom(string? stored) =>
+        ReadInt(stored, DefaultLockoutMinutes, min: 1, max: MaxLockoutMinutes);
+
+    public static int SessionDaysFrom(string? stored) =>
+        ReadInt(stored, DefaultSessionDays, min: 1, max: MaxSessionDays);
+
+    /// <summary>
+    /// Below the floor falls back to the default; above the ceiling clamps to it, since a large value
+    /// saved by an older build still states an intent (a long session) worth keeping.
+    /// </summary>
+    private static int ReadInt(string? stored, int fallback, int min, int max) =>
+        int.TryParse(stored, out var value) && value >= min ? Math.Min(value, max) : fallback;
 }

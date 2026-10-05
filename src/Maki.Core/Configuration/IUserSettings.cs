@@ -67,6 +67,7 @@ public static class UserSettingKeys
     [
         SettingKeys.ReaderPrefs,
         SettingKeys.ReaderPushToKavita,
+        SettingKeys.ReaderPullFromKavita,
         SettingKeys.UiStartPage,
         SettingKeys.UiHomeSections,
         SettingKeys.UiDiscoverSections,
@@ -74,6 +75,7 @@ public static class UserSettingKeys
         SettingKeys.UiTitleLanguage,
         SettingKeys.UiLanguage,
         SettingKeys.UiLanguageAnnouncement,
+        SettingKeys.UiAppearanceAnnouncement,
         SettingKeys.RecommendationsDefaults,
         SettingKeys.DiscoverSearchDefaults,
         SettingKeys.DiscoverHidden,

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Maki.Core.Parsing;
 
 namespace Maki.Core.Tests;
@@ -93,5 +94,36 @@ public class ChapterNumberParserTests
         var result = ChapterNumberParser.Parse("24", "99999999999999999999");
         Assert.Equal(24m, result.Number);
         Assert.Null(result.Volume);
+    }
+
+    [Theory]
+    [InlineData("https://www.topmanhua.fan/manhua/anjo/chapter-225", "225")]
+    [InlineData("https://toonily.com/serie/secret-class/chapter-242/", "242")]
+    [InlineData("https://toonily.com/serie/secret-class/chapter-12-5/", "12.5")]
+    [InlineData("7991/one-piece-chapter-1187", "1187")]
+    [InlineData("/chapters/1-20385000/berserk-chapter-385", "385")]
+    [InlineData("chapter-652", "652")]
+    [InlineData("https://mangakatana.com/manga/slug.123/c1050.5", "1050.5")]
+    [InlineData("7992/one-piece-oneshot", null)]
+    [InlineData("https://mangadex.org/chapter/0b1f5e0e-3c0e-4a7d-9d4e-000000000000", null)]
+    [InlineData("chapter-99999999999999999999999999999999", null)]
+    [InlineData(null, null)]
+    public void Slug_number_is_read_from_the_end_of_a_chapter_url(string? url, string? expected) =>
+        Assert.Equal(expected is null ? null : decimal.Parse(expected, CultureInfo.InvariantCulture),
+            ChapterNumberParser.FromSlug(url));
+
+    [Fact]
+    public void A_title_only_label_takes_its_number_from_the_slug()
+    {
+        var result = ChapterNumberParser.Parse("Anna-chan Can't Study").OrSlugNumber("/manhua/anjo/chapter-224");
+        Assert.Equal(224m, result.Number);
+        Assert.False(result.IsOneShot);
+    }
+
+    [Fact]
+    public void A_numbered_label_wins_over_the_slug()
+    {
+        var result = ChapterNumberParser.Parse("Chapter 10").OrSlugNumber("/chapter-11");
+        Assert.Equal(10m, result.Number);
     }
 }

@@ -9,6 +9,7 @@ internal sealed class FakeSource : ISource
     public string DisplayName => Name;
     public string BaseUrl => $"https://{Name}.test";
     public SourceCapabilities Capabilities { get; init; } = SourceCapabilities.None;
+    public SourceKind Kind { get; init; } = SourceKind.Aggregator;
 
     public IReadOnlyList<string> SupportedLanguages { get; init; } = ["en"];
 
@@ -85,8 +86,11 @@ internal sealed class FakeSource : ISource
         return Task.FromResult(OnGetSeries(sourceSeriesId));
     }
 
+    /// <summary>Page list per chapter; unset means the source cannot serve pages.</summary>
+    public Func<SourceChapter, ChapterPages>? OnGetPages { get; init; }
+
     public Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default) =>
-        throw new NotSupportedException();
+        OnGetPages is null ? throw new NotSupportedException() : Task.FromResult(OnGetPages(chapter));
 
     /// <summary>Builds a chapter for this source with the common fields defaulted.</summary>
     public SourceChapter Chapter(

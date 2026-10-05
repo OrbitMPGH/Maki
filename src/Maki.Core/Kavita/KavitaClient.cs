@@ -148,6 +148,21 @@ public class KavitaClient(IHttpClientFactory httpClientFactory)
         return await response.Content.ReadFromJsonAsync<List<KavitaProgress.KavitaVolumeDto>>(cancellationToken: ct) ?? [];
     }
 
+    /// <summary>One series by id, with the same fields as <see cref="GetAllSeriesAsync"/>. Null when Kavita no longer has it.</summary>
+    public async Task<KavitaSeriesSummary?> GetSeriesAsync(
+        string baseUrl, string apiKey, int kavitaSeriesId, CancellationToken ct = default)
+    {
+        using var response = await SendAuthedAsync(baseUrl, apiKey,
+            client => client.GetAsync($"api/Series/{kavitaSeriesId}", ct), ct);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.NoContent)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<KavitaSeriesSummary>(cancellationToken: ct);
+    }
+
     /// <summary>The library a Kavita series belongs to; needed to write reading progress.</summary>
     public async Task<int?> GetSeriesLibraryIdAsync(
         string baseUrl, string apiKey, int kavitaSeriesId, CancellationToken ct = default)
@@ -243,6 +258,10 @@ public class KavitaClient(IHttpClientFactory httpClientFactory)
             new AuthenticationHeaderValue("Bearer", await GetTokenAsync(baseUrl, apiKey, force: true, ct));
         return await send(retryClient);
     }
+
+    /// <summary>The API key's JWT, for Kavita's SignalR hub, which takes it as a query parameter.</summary>
+    public Task<string> GetAccessTokenAsync(string baseUrl, string apiKey, bool force, CancellationToken ct = default) =>
+        GetTokenAsync(baseUrl, apiKey, force, ct);
 
     private async Task<string> GetTokenAsync(string baseUrl, string apiKey, bool force, CancellationToken ct)
     {

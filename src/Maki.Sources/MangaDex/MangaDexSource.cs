@@ -18,6 +18,9 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public string DisplayName => "MangaDex";
     public string BaseUrl => "https://mangadex.org";
     public SourceCapabilities Capabilities => SourceCapabilities.SupportsLanguageFilter;
+
+    /// <summary>Groups upload their own releases here, under their own name, rather than the site re-hosting them.</summary>
+    public SourceKind Kind => SourceKind.Scanlator;
     public SourceContent Content =>
         SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua | SourceContent.Doujinshi;
     // Every scanlation group posts in whatever language it works in; there's no fixed catalogue,
@@ -105,7 +108,8 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
                 $"manga/{sourceSeriesId}/feed?limit=500&offset={offset}" +
                 languageQuery +
-                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
+                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica" +
+                "&includes[]=scanlation_group",
                 ct);
 
             if (response is null)
@@ -133,7 +137,8 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
                     c.Attributes.Title,
                     c.Attributes.TranslatedLanguage ?? languages[0],
                     c.Attributes.PublishAt,
-                    $"{BaseUrl}/chapter/{c.Id}"));
+                    $"{BaseUrl}/chapter/{c.Id}",
+                    GroupFor(c)));
             }
 
             offset += response.Limit;
@@ -249,6 +254,21 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
         }
 
         return ids;
+    }
+
+    /// <summary>
+    /// Scanlation group name(s) of the upload, joined with ", " when a chapter carries more than
+    /// one (a joint release). Null when the chapter carries no scanlation_group relationship at all.
+    /// </summary>
+    private static string? GroupFor(MdChapter chapter)
+    {
+        var names = chapter.Relationships
+            .Where(r => r.Type == "scanlation_group")
+            .Select(r => r.Attributes?.Name)
+            .Where(n => !string.IsNullOrEmpty(n))
+            .ToList();
+
+        return names.Count > 0 ? string.Join(", ", names) : null;
     }
 
     private static readonly (string Code, string Service)[] MdLinkServices =

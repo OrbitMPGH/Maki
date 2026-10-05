@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -138,6 +139,10 @@ export interface BackTarget {
  * entries of their own (the series page's `?tab=` is a push, deliberately, so the browser's back
  * button steps through them). Those all share a pathname, so skipping them takes one comparison
  * and no per-page knowledge, and the distance covers them in a single jump.
+ *
+ * The reader is skipped too. Reading to a chapter's end and following its link to the series
+ * pushes the series on top of the reader, and a back link that drops you into the chapter you just
+ * finished is never what anyone wants from it.
  */
 export function useBackTarget(fallback: { to: string; label: string | MessageDescriptor }): BackTarget {
   const { entries } = useContext(NavHistoryContext)
@@ -146,7 +151,8 @@ export function useBackTarget(fallback: { to: string; label: string | MessageDes
 
   const origin = useMemo(() => {
     for (let i = entries.length - 1; i >= 0; i--) {
-      if (entries[i].pathname !== location.pathname) {
+      const { pathname } = entries[i]
+      if (pathname !== location.pathname && !pathname.startsWith('/read/')) {
         return { entry: entries[i], distance: entries.length - 1 - i }
       }
     }
@@ -192,7 +198,9 @@ const USER_SCROLL_EVENTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as 
  * its data yet, so the offset is clamped to a document that is still a spinner tall. This records
  * the offset per history entry and re-applies it across frames until the content is there.
  *
- * Only POP is touched, so a fresh navigation keeps whatever the browser does today.
+ * A PUSH or REPLACE to a different path starts at the top. pushState never moves the window, so
+ * without this a series opened from halfway down Home opened halfway down too. Search and state
+ * changes keep their offset, since filters and modals ride on those.
  */
 export function ScrollMemory() {
   const location = useLocation()
@@ -202,10 +210,17 @@ export function ScrollMemory() {
   const slot = `${SCROLL_PREFIX}${location.key}:${location.pathname}`
   const slotRef = useRef(slot)
   slotRef.current = slot
+  const pathRef = useRef(location.pathname)
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'
   }, [])
+
+  useLayoutEffect(() => {
+    if (pathRef.current === location.pathname) return
+    pathRef.current = location.pathname
+    if (navigationType !== 'POP') window.scrollTo(0, 0)
+  }, [location.pathname, navigationType])
 
   // Recorded continuously rather than on unmount: a POP unmounts the old page *after* the router
   // has already moved, so anything read in a cleanup is the new page's offset, not the old one's.

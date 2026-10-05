@@ -55,14 +55,19 @@ export function useLiveEvents() {
 
   useEffect(() => {
     let cancelled = false
+    let summaryTimer: ReturnType<typeof setTimeout> | null = null
 
     void ensureConnection().then((conn) => {
       if (cancelled) return
 
       conn.on('queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
-        queryClient.setQueriesData<QueueHistoryDto>({ queryKey: ['queue'] }, (old) => {
-          if (!old) return old
+        // Only the paged lists ['queue', page, pageSize] hold `items`; ['queue', 'import-plan', id] does not.
+        queryClient.setQueriesData<QueueHistoryDto>({
+          queryKey: ['queue'],
+          predicate: (q) => typeof q.queryKey[1] === 'number',
+        }, (old) => {
+          if (!old || !Array.isArray(old.items)) return old
           if (isDone) {
             const items = old.items.filter((q) => q.id !== item.id)
             // Only decrement when the item was actually on this page, or repeated events
@@ -83,6 +88,14 @@ export function useLiveEvents() {
         if (isDone) {
           // The item moved into history, so refresh the paginated history feed.
           void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+        }
+        // The shell badge reads the summary endpoint; a download burst fires many of these, so
+        // coalesce to one refetch per second.
+        if (summaryTimer === null) {
+          summaryTimer = setTimeout(() => {
+            summaryTimer = null
+            void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+          }, 1000)
         }
       })
 
@@ -138,6 +151,14 @@ export function useLiveEvents() {
         },
       )
 
+      // Kavita's live sync marked chapters read. Same queries a manual mark-read invalidates.
+      conn.on('readProgressChanged', ({ seriesId }: { seriesId: number }) => {
+        void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['series'] })
+        void queryClient.invalidateQueries({ queryKey: ['home'] })
+      })
+
       conn.on('updateAvailable', () => {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
       })
@@ -174,8 +195,10 @@ export function useLiveEvents() {
 
     return () => {
       cancelled = true
+      if (summaryTimer !== null) clearTimeout(summaryTimer)
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
+      connection?.off('readProgressChanged')
       connection?.off('sourceMatchFinished')
       connection?.off('sourceMatchProgress')
       connection?.off('updateAvailable')

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
@@ -30,6 +31,7 @@ public class KavitaReadImportService(
     SettingsService settings,
     KavitaClient kavita,
     ExternalReadSyncService externalReads,
+    VolumeBoundaryService volumeBoundaries,
     KavitaUserResolver kavitaUser,
     ILogger<KavitaReadImportService> logger)
 {
@@ -154,17 +156,17 @@ public class KavitaReadImportService(
                 continue;
             }
 
-            var readNumbers = ExternalReadSyncService.ReadChapterNumbers(volumes);
+            var progress = KavitaProgress.Compute(
+                volumes, await volumeBoundaries.ForSeriesAsync(userId, localSeriesId, ct));
 
             matched++;
-            if (readNumbers.Count == 0)
+            if (progress.IsEmpty)
             {
                 continue;
             }
 
-            marked += await externalReads.MarkAsync(userId, localSeriesId, readNumbers, ct);
+            marked += await externalReads.MarkAsync(userId, localSeriesId, progress, ct);
 
-            var progress = KavitaProgress.Compute(volumes);
             using var scope = scopeFactory.CreateScope();
             var reading = scope.ServiceProvider.GetRequiredService<ReadingProgressService>();
             await reading.ImportSilentAsync(userId, localSeriesId, series.Id, title,
@@ -175,6 +177,85 @@ public class KavitaReadImportService(
             "Kavita read import: {Matched} series matched, {Marked} chapters marked read, {Unmatched} unmatched, {Failed} failed",
             matched, marked, unmatched, failedTitles.Count);
         return new ImportResult(matched, marked, unmatched, failedTitles.Count, failedTitles);
+    }
+
+    /// <summary>
+    /// The import for one Kavita series, run by <see cref="KavitaLiveReadSync"/> the moment Kavita
+    /// reports progress on it. Writes the same rows as the full import, through the same
+    /// <see cref="ExternalReadSyncService.MarkAsync"/>.
+    /// <para>
+    /// Does <em>not</em> raise the high-water mark. The next scrobble tick still reads this series
+    /// from Kavita and records the mark delta for Rewind and the trackers; raising it here would turn
+    /// that delta into zero and the reading would never reach either.
+    /// </para>
+    /// </summary>
+    public record SeriesMarkResult(int SeriesId, int Marked);
+
+    private static readonly TimeSpan UnmatchedFor = TimeSpan.FromMinutes(5);
+
+    private readonly ConcurrentDictionary<int, DateTime> _unmatched = new();
+
+    /// <summary>
+    /// Kavita series with no local match are remembered briefly: every page turn of one would
+    /// otherwise repeat a Kavita GET and rebuild the library index just to find nothing again.
+    /// </summary>
+    internal bool IsKnownUnmatched(int kavitaSeriesId) =>
+        _unmatched.TryGetValue(kavitaSeriesId, out var at) && DateTime.UtcNow - at < UnmatchedFor;
+
+    public async Task<SeriesMarkResult?> MarkSeriesAsync(
+        int userId, string url, string apiKey, int kavitaSeriesId, CancellationToken ct)
+    {
+        var localSeriesId = await AdoptedSeriesIdAsync(userId, kavitaSeriesId, ct);
+        if (localSeriesId is null)
+        {
+            if (IsKnownUnmatched(kavitaSeriesId))
+            {
+                return null;
+            }
+
+            var series = await kavita.GetSeriesAsync(url, apiKey, kavitaSeriesId, ct);
+            if (series is null)
+            {
+                _unmatched[kavitaSeriesId] = DateTime.UtcNow;
+                return null;
+            }
+
+            var index = await BuildLibraryIndexAsync(ct);
+            if (index.TryGetValue(ScrobbleMatching.NormalizeTitle(series.Name ?? ""), out var byName))
+            {
+                localSeriesId = byName;
+            }
+            else if (series.LocalizedName is not null &&
+                     index.TryGetValue(ScrobbleMatching.NormalizeTitle(series.LocalizedName), out var byLocalized))
+            {
+                localSeriesId = byLocalized;
+            }
+            else
+            {
+                _unmatched[kavitaSeriesId] = DateTime.UtcNow;
+                return null;
+            }
+        }
+
+        _unmatched.TryRemove(kavitaSeriesId, out _);
+        var volumes = await kavita.GetVolumesAsync(url, apiKey, kavitaSeriesId, ct);
+        var progress = KavitaProgress.Compute(
+            volumes, await volumeBoundaries.ForSeriesAsync(userId, localSeriesId.Value, ct));
+        var marked = await externalReads.MarkAsync(userId, localSeriesId.Value, progress, ct);
+        return new SeriesMarkResult(localSeriesId.Value, marked);
+    }
+
+    /// <summary>The local series a previous scrobble tick already tied to this Kavita series, if any.</summary>
+    private async Task<int?> AdoptedSeriesIdAsync(int userId, int kavitaSeriesId, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        return await db.ReadingStates.AsNoTracking()
+            .Where(r => r.UserId == userId && r.KavitaSeriesId == kavitaSeriesId && r.SeriesId != null)
+            .OrderByDescending(r => r.MaxChapter)
+            .ThenByDescending(r => r.Id)
+            .Select(r => r.SeriesId)
+            .FirstOrDefaultAsync(ct);
     }
 
     /// <summary>Normalized title (and folder name) → local series id, for reverse-matching Kavita.</summary>

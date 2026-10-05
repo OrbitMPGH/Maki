@@ -203,15 +203,18 @@ public class SeriesRenameService(
     }
 
     public Task<SeriesRenameResult> RenameAsync(int seriesId, CancellationToken ct) =>
-        RenameAsync(seriesId, RenameScope.Everything, null, ct);
+        RenameAsync(seriesId, expectedFingerprint: null, ct);
 
     /// <param name="expectedFingerprint">
     /// The <see cref="SeriesRenamePlan.Fingerprint"/> of the preview being confirmed. A plan that no
     /// longer matches it is refused rather than applied unseen.
     /// </param>
-    public Task<SeriesRenameResult> RenameAsync(
-        int seriesId, string? expectedFingerprint, CancellationToken ct) =>
-        RenameAsync(seriesId, RenameScope.Everything, expectedFingerprint, ct);
+    public async Task<SeriesRenameResult> RenameAsync(
+        int seriesId, string? expectedFingerprint, CancellationToken ct)
+    {
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId, ct);
+        return await RenameAsync(seriesId, RenameScope.Everything, expectedFingerprint, ct);
+    }
 
     /// <summary>
     /// Applies the chapter format to a specific set of <see cref="ChapterFile"/> rows and nothing

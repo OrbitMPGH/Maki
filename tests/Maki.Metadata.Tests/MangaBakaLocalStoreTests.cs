@@ -887,6 +887,47 @@ public class MangaBakaLocalStoreTests : IDisposable
         Assert.Equal(["Safe One", "Explicit One"], permitted.Select(r => r.Title));
     }
 
+    [Fact]
+    public async Task A_safe_ceiling_asking_for_only_pornographic_rows_gets_none()
+    {
+        _db.AddSeries(1, "Safe One", rating: 8.0, coverUrl: "c", popularity: 10, contentRating: "safe")
+            .AddSeries(2, "Explicit One", rating: 9.0, coverUrl: "c", popularity: 20, contentRating: "pornographic");
+
+        var clamped = ContentRating.Clamp([ContentRating.Pornographic], ContentRating.Safe);
+        var rail = await Store.GetBrowseAsync(
+            BrowseFeed.Popular, 10, filters: new RecommendationFilters(ContentRatings: clamped));
+
+        Assert.DoesNotContain("Explicit One", rail.Select(r => r.Title));
+    }
+
+    [Fact]
+    public async Task An_empty_content_rating_list_matches_nothing_rather_than_everything()
+    {
+        _db.AddSeries(1, "Safe One", rating: 8.0, coverUrl: "c", popularity: 10, contentRating: "safe")
+            .AddSeries(2, "Explicit One", rating: 9.0, coverUrl: "c", popularity: 20, contentRating: "pornographic");
+
+        var rail = await Store.GetBrowseAsync(
+            BrowseFeed.Popular, 10, filters: new RecommendationFilters(ContentRatings: []));
+
+        Assert.Empty(rail);
+    }
+
+    [Theory]
+    [InlineData(new[] { "pornographic" }, "safe", new[] { "safe" })]
+    [InlineData(new[] { "safe", "pornographic" }, "safe", new[] { "safe" })]
+    [InlineData(new[] { "erotica", "made-up" }, "pornographic", new[] { "erotica" })]
+    public void Clamp_never_leaves_an_empty_list(string[] requested, string ceiling, string[] expected)
+    {
+        Assert.Equal(expected, ContentRating.Clamp(requested, ceiling));
+    }
+
+    [Fact]
+    public void Clamp_reads_an_empty_request_as_no_request()
+    {
+        Assert.Null(ContentRating.Clamp([], ContentRating.Safe));
+        Assert.Null(ContentRating.Clamp(null, ContentRating.Safe));
+    }
+
     [Theory]
     [InlineData("one piece", "\"one\" \"piece\" *")]
     [InlineData("solo", "\"solo\" *")]

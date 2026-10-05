@@ -136,7 +136,8 @@ internal static class Sources
     /// </summary>
     public static ChapterSourceResolver Resolver(SourceRegistry registry, SourceAvailability? availability = null) =>
         new(registry, availability ?? AllEnabled,
-            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance));
+            new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
+            new SourceOrderService(registry, TestQuality.Create(registry)));
 }
 
 /// <summary>In-memory <see cref="IAppSettings"/> — a dictionary, no DB.</summary>

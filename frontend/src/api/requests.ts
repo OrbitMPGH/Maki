@@ -107,6 +107,7 @@ export function useApproveSeriesRequest() {
       // Approving adds a series and queues chapters, both of which other pages are showing.
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
     },
   })
 }

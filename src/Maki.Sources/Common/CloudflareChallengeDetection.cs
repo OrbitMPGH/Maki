@@ -39,19 +39,18 @@ public static class CloudflareChallengeDetection
                 return PageVerdict.Blocked;
             }
 
-            if (title.Contains("Just a moment", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("challenge-platform", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("cf-challenge", StringComparison.OrdinalIgnoreCase)
-                || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase))
-            {
-                return PageVerdict.Challenge;
-            }
-
-            return PageVerdict.Unknown;
+            return IsChallenge(title, content) ? PageVerdict.Challenge : PageVerdict.Unknown;
         }
         catch (PlaywrightException)
         {
             return PageVerdict.Unknown;
         }
     }
+
+    // Not "challenge-platform": Cloudflare's JS detections inject that path into healthy pages.
+    internal static bool IsChallenge(string title, string content) =>
+        title.Contains("Just a moment", StringComparison.OrdinalIgnoreCase)
+        || content.Contains("cf-challenge", StringComparison.OrdinalIgnoreCase)
+        || content.Contains("cf-chl", StringComparison.OrdinalIgnoreCase)
+        || content.Contains("__cf_chl", StringComparison.OrdinalIgnoreCase);
 }

@@ -284,9 +284,8 @@ public class OlympusSource : ISource
         var json = await GetJsonAsync($"{BaseUrl}/api/series/{slug}?type=comic", ct);
         if (IsError(json))
         {
-            // A 400 (numeric id) or 404 (rotated slug) both come back {"error": true, ...} rather
-            // than throwing, since ChallengeAwareFetcher falls through to FlareSolverr instead of
-            // surfacing the origin's status code. One forced catalog refresh covers slug rotation.
+            // A 400 (numeric id) or 404 (rotated slug) both read as an error body (GetJsonAsync maps
+            // the status onto one). One forced catalog refresh covers slug rotation.
             slug = await SlugForIdAsync(sourceSeriesId, ct, forceRefresh: true);
             json = await GetJsonAsync($"{BaseUrl}/api/series/{slug}?type=comic", ct);
             if (IsError(json))
@@ -366,12 +365,24 @@ public class OlympusSource : ISource
         return results;
     }
 
+    private static readonly JsonDocument ErrorBody = JsonDocument.Parse("""{"error": true}""");
+
     private static bool IsError(JsonElement json) =>
         json.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.True;
 
     private async Task<JsonElement> GetJsonAsync(string url, CancellationToken ct)
     {
-        var body = await _fetcher.GetHtmlAsync(url, ct);
+        string body;
+        try
+        {
+            body = await _fetcher.GetHtmlAsync(url, ct);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
+        {
+            // A numeric id (400) or a rotated slug (404): the same {"error": true} path as a body.
+            return ErrorBody.RootElement;
+        }
+
         if (body.TrimStart().StartsWith('<'))
         {
             // FlareSolverr wraps a JSON response in a <pre> tag like a browser's raw-JSON viewer.

@@ -26,6 +26,9 @@ public enum DownloadOrigin
     RequestApproval = 4,
     HealthRepair = 5,
 
+    /// <summary>Queued by the upgrade scan to replace an existing file with a better copy.</summary>
+    Upgrade = 6,
+
     // No "Retry" member: retrying reuses the original row rather than enqueueing a new one, so a
     // retried automatic download keeps its origin and still reports when it finally succeeds.
 }
@@ -102,9 +105,9 @@ public class DownloadQueueItem
     public string? ErrorParamsJson { get; set; }
 
     /// <summary>
-    /// Free text, used when <see cref="ErrorKey"/> is null: an error another program worded (a
-    /// torrent client, a scraper), and the English written by Maki itself before the queue was
-    /// keyed. Not a fallback rendering of the key, which would just be English by another route.
+    /// Free text. With <see cref="ErrorKey"/> null: an error another program worded (a torrent
+    /// client, a scraper), and the English written by Maki itself before the queue was keyed. With a
+    /// key: the detail behind it, never a rendering of the key itself.
     /// </summary>
     public string? ErrorMessage { get; set; }
 
@@ -128,7 +131,11 @@ public class DownloadQueueItem
 
     /// <summary>Whether an inbox notification is warranted when this item settles.</summary>
     public bool IsAutomatic => Origin is
-        DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval;
+        DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval or
+        DownloadOrigin.Upgrade;
+
+    /// <summary>Serialised <c>UpgradeInfo</c> for <see cref="DownloadOrigin.Upgrade"/> rows; null otherwise.</summary>
+    public string? UpgradeInfoJson { get; set; }
 
     /// <summary>
     /// Record why this item stopped, as a catalogue key plus the values its placeholders need.
@@ -138,11 +145,15 @@ public class DownloadQueueItem
     /// as the retry time: repeating it here freezes one rendering of it.
     /// </para>
     /// </summary>
-    public void SetError(string key, object? args = null)
+    /// <param name="detail">
+    /// Words Maki did not write that explain the keyed reason (a site's own error text, an HTTP
+    /// status, an exception message), shown after it. Stored in <see cref="ErrorMessage"/>.
+    /// </param>
+    public void SetError(string key, object? args = null, string? detail = null)
     {
         ErrorKey = key;
         ErrorParamsJson = args is null ? null : JsonSerializer.Serialize(args);
-        ErrorMessage = null;
+        ErrorMessage = detail;
     }
 
     /// <summary>

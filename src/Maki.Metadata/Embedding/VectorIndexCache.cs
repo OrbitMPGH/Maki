@@ -14,8 +14,9 @@ namespace Maki.Metadata.Embedding;
 /// Owns the process-wide <see cref="VectorIndex"/>: builds it on first use from the vector DB
 /// joined to the dump, then hands the same instance to every search. Vectors are stored int8
 /// already, so the build copies payloads verbatim and only reads the dump columns the filters need. The build is a full scan of
-/// both DBs (seconds), so it happens once and is only dropped when the embedding index is rebuilt
-/// — call <see cref="Invalidate"/> after an indexing pass.
+/// both DBs (seconds), so it happens once. It is dropped when the embedding index is rebuilt (call
+/// <see cref="Invalidate"/> after an indexing pass) and when the dump file changes, which the next
+/// read notices by itself.
 ///
 /// The index is immutable once built, so readers need no lock; only the build is serialized.
 /// </summary>
@@ -35,11 +36,66 @@ public sealed class VectorIndexCache(
         "d.state = 'active' AND d.rating IS NOT NULL AND d.type != 'novel'";
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private volatile VectorIndex? _index;
+
+    /// <summary>
+    /// The index with the dump's write time and length at build time. The index snapshots rating,
+    /// popularity, genres and content rating from the dump, so a nightly swap has to rebuild it,
+    /// the same way <see cref="Catalogue.CatalogueIndexCache"/> is stamped.
+    /// </summary>
+    private sealed record Loaded(VectorIndex Index, long DumpTicks, long DumpLength);
+
+    private volatile Loaded? _loaded;
     private readonly IdleStamp _idle = new();
+    private int _warming;
 
     /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
-    public bool IsLoaded => _index is not null;
+    public bool IsLoaded => _loaded is not null;
+
+    /// <summary>Whether an index is loaded and was built from the dump on disk now.</summary>
+    public bool IsCurrent => _loaded is { } loaded && MatchesDump(loaded);
+
+    /// <summary>
+    /// Starts building the index on the thread pool unless it is current or a build is already
+    /// running. For a request that would rather answer without the index this time than wait
+    /// seconds for it.
+    /// </summary>
+    public void WarmInBackground()
+    {
+        if (IsCurrent || _lock.CurrentCount == 0 || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await GetAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Background build of the search vectors failed");
+            }
+            finally
+            {
+                Volatile.Write(ref _warming, 0);
+            }
+        });
+    }
+
+    private bool MatchesDump(Loaded loaded) =>
+        DumpInfo() is { } info && info.LastWriteTimeUtc.Ticks == loaded.DumpTicks && info.Length == loaded.DumpLength;
+
+    private FileInfo? DumpInfo()
+    {
+        if (!File.Exists(dumpOptions.DatabasePath))
+        {
+            return null;
+        }
+
+        var info = new FileInfo(dumpOptions.DatabasePath);
+        return info.Exists ? info : null;
+    }
 
     /// <summary>How long since anything read them. Meaningless while unloaded.</summary>
     public TimeSpan IdleFor => _idle.Idle;
@@ -68,12 +124,12 @@ public sealed class VectorIndexCache(
     public bool ReleaseIfIdle(TimeSpan idleFor)
     {
         var idle = _idle.Idle;
-        if (_index is null || idle < idleFor)
+        if (_loaded is null || idle < idleFor)
         {
             return false;
         }
 
-        _index = null;
+        _loaded = null;
         logger.LogInformation(
             "Unloaded the search vectors after {Minutes:F0} idle minute(s); they rebuild on next use",
             idle.TotalMinutes);
@@ -83,7 +139,7 @@ public sealed class VectorIndexCache(
     /// <summary>Drops the cached index so the next search rebuilds it. Cheap; safe any time.</summary>
     public void Invalidate()
     {
-        _index = null;
+        _loaded = null;
         logger.LogDebug("Search vector index invalidated");
     }
 
@@ -98,7 +154,7 @@ public sealed class VectorIndexCache(
         await _lock.WaitAsync(ct);
         try
         {
-            _index = null;
+            _loaded = null;
             SqliteConnection.ClearAllPools();
 
             foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
@@ -124,29 +180,39 @@ public sealed class VectorIndexCache(
     /// </summary>
     public async Task<VectorIndex?> GetAsync(CancellationToken ct = default)
     {
-        if (_index is { } cached)
+        if (_loaded is { } cached && MatchesDump(cached))
         {
             _idle.Touch();
-            return cached;
+            return cached.Index;
         }
 
         await _lock.WaitAsync(ct);
         try
         {
-            if (_index is { } raced)
+            if (_loaded is { } raced && MatchesDump(raced))
             {
                 _idle.Touch();
-                return raced;
+                return raced.Index;
             }
 
-            if (!File.Exists(options.VectorDbPath) || !File.Exists(dumpOptions.DatabasePath))
+            if (!File.Exists(options.VectorDbPath) || DumpInfo() is not { } dump)
             {
                 return null;
             }
 
-            _index = await Task.Run(() => Build(ct), ct);
+            if (_loaded is not null)
+            {
+                logger.LogInformation("Rebuilding the search vectors because the dump file changed");
+                _loaded = null;
+            }
+
+            // Stamped before the build, so a dump swapped in while it runs reads as stale next time.
+            var ticks = dump.LastWriteTimeUtc.Ticks;
+            var length = dump.Length;
+            var built = await Task.Run(() => Build(ct), ct);
+            _loaded = built is null ? null : new Loaded(built, ticks, length);
             _idle.Touch();
-            return _index;
+            return built;
         }
         finally
         {

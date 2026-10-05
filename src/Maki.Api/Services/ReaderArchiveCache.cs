@@ -1,3 +1,4 @@
+using Maki.Core.Import;
 using System.Collections.Concurrent;
 using Maki.Core.Parsing;
 using Maki.Core.Reading;
@@ -172,7 +173,17 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
 
         if (pages.Count == 0)
         {
-            logger.LogWarning("No readable pages in {Path}", absolutePath);
+            var format = ComicFile.IsPdf(absolutePath) ? ArchiveSignature.Format.Unknown : ArchiveSignature.Detect(absolutePath);
+            if (ArchiveSignature.ComicExtension(format) is not null)
+            {
+                logger.LogWarning(
+                    "No readable pages in {Path}: it is a {Format} archive under a .cbz name. A rescan of the series rebuilds it as a CBZ",
+                    absolutePath, format);
+            }
+            else
+            {
+                logger.LogWarning("No readable pages in {Path}", absolutePath);
+            }
         }
 
         return new ArchiveInfo(pages, VolumeChapterScanner.BoundariesInNames(pages));

@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import { IconExternalLink, IconRefresh } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import {
   useScrobbleIgnore,
   useScrobbleMatch,
@@ -78,7 +78,14 @@ function ReviewControls({
           </Anchor>
         </Group>
       ))}
-      <Group gap={6}>
+      <Group
+        component="form"
+        gap={6}
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault()
+          if (manual.trim() && !match.isPending) doMatch(manual.trim())
+        }}
+      >
         <TextInput
           className="scrobble-review-input"
           size="xs"
@@ -87,11 +94,11 @@ function ReviewControls({
           onChange={(e) => setManual(e.currentTarget.value)}
         />
         <Button
+          type="submit"
           size="compact-xs"
           variant="default"
           disabled={!manual.trim() || match.isPending}
           loading={match.isPending && match.variables?.remoteId === manual.trim()}
-          onClick={() => doMatch(manual.trim())}
         >
           <Trans>Link</Trans>
         </Button>

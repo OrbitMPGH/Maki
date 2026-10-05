@@ -1,10 +1,12 @@
 using System.Security.Claims;
+using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Auth;
@@ -45,7 +47,9 @@ public class OidcSignInService(
     UserManager<MakiUser> userManager,
     OidcRuntimeOptions options,
     TimeProvider clock,
-    ILogger<OidcSignInService> logger)
+    ILogger<OidcSignInService> logger,
+    IUserSnapshotCache snapshots,
+    IHubContext<EventsHub> hub)
 {
     /// <param name="provider">The login provider name stored in <c>AspNetUserLogins</c>.</param>
     /// <param name="subject">
@@ -212,6 +216,7 @@ public class OidcSignInService(
         CancellationToken ct)
     {
         var changed = false;
+        var before = user.Permissions;
         using var adminLock = options.MapsPermissions && user.Permissions.Grants(MakiPermission.Admin)
             ? await AdminGuard.LockAsync(ct)
             : null;
@@ -251,6 +256,20 @@ public class OidcSignInService(
         if (changed)
         {
             await db.SaveChangesAsync(ct);
+            snapshots.Evict(user.Id);
+            OpdsAccessService.EvictUser(user.Id);
+        }
+
+        // Same as an edit on the Users page: other sessions carry the old permissions until the stamp
+        // moves, and hub connections keep the groups they joined with. The sign-in this is part of
+        // issues its cookie afterwards, so it picks up the new stamp.
+        if (user.Permissions != before)
+        {
+            await userManager.UpdateSecurityStampAsync(user);
+            if (before.Grants(MakiPermission.Admin) && !user.Permissions.Grants(MakiPermission.Admin))
+            {
+                await EventsHub.DisconnectUserAsync(hub, user.Id);
+            }
         }
 
         await RefreshLoginDisplayNameAsync(user, provider, providerKey, subject, claims, ct);

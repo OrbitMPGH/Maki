@@ -31,7 +31,7 @@ public sealed class SettingsHomeRailsTests : IDisposable
             readerCohortCache: null!, tasteVectorInstaller: null!, vectorIndexCache: null!,
             modelSwitcher: null!, db: db, updateCheck: null!, currentUser: new TestCurrentUser(userId),
             userSettings: new UserSettingsService(db, new TestCurrentUser(userId)),
-            kavitaUser: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
+            kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
             logger: NullLogger<SettingsController>.Instance);
     }
 

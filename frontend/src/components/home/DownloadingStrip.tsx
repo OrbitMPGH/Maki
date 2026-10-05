@@ -27,20 +27,30 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
           const visual = queueStatusVisual(q.status)
           return (
             <Group key={q.id} gap="sm" wrap="nowrap">
-              <Text
-                component={Link}
-                to={`/series/${q.seriesId}`}
-                size="sm"
-                fw={600}
-                c="var(--brand-fg)"
-                lineClamp={1}
-                style={{ flex: '1 1 0', minWidth: 0 }}
-              >
-                {q.seriesTitle}
-              </Text>
-              <Text size="sm" c="var(--ink-4)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
-                {queueItemLabel(q)}
-              </Text>
+              <div className="downloading-strip-name">
+                <Text
+                  component={Link}
+                  to={`/series/${q.seriesId}`}
+                  size="sm"
+                  fw={600}
+                  c="var(--brand-fg)"
+                  truncate="end"
+                  className="downloading-strip-title"
+                >
+                  {q.seriesTitle}
+                </Text>
+                {/* A bulk release label can be a whole filename, so it truncates instead of pushing
+                    the row wider than the page. */}
+                <Text
+                  size="sm"
+                  c="var(--ink-4)"
+                  truncate="end"
+                  title={queueItemLabel(q)}
+                  className="downloading-strip-label tnum"
+                >
+                  {queueItemLabel(q)}
+                </Text>
+              </div>
               {q.pagesTotal > 0 && (
                 <Progress
                   value={(q.pagesDone / q.pagesTotal) * 100}

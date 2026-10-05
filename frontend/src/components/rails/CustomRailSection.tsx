@@ -16,7 +16,6 @@ import {
 import { useIntersection } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
-  IconChevronRight,
   IconCopy,
   IconDots,
   IconFilter,
@@ -46,6 +45,7 @@ import { filtersFromSpec } from '../CatalogueFilters'
 import { CoverCard } from '../ui/CoverCard'
 import { DiscoverRailRow, EngineRailRow } from '../ui/DiscoverRail'
 import { EmptyState } from '../ui/EmptyState'
+import { Rail } from '../ui/Rail'
 import { SectionHeader } from '../ui/SectionHeader'
 import { useDensityPref } from '../ui/viewPrefs'
 import { CustomRailEditor, type CustomRailDraft } from './CustomRailEditor'
@@ -123,12 +123,7 @@ export function CustomRailSection({
         action={
           <Group gap={4} wrap="nowrap">
             {!empty && !isError && !data?.unavailable && (
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={showMore}
-              >
+              <Button variant="subtle" size="xs" onClick={showMore}>
                 <Trans>Show more</Trans>
               </Button>
             )}
@@ -162,6 +157,7 @@ export function CustomRailSection({
             </Menu>
           </Group>
         }
+        chevron
       />
 
       {data?.unavailable ? (
@@ -247,13 +243,13 @@ function LibraryRailRow({ ids }: { ids: number[] }) {
   const readTracking = useReadTracking()
   const series = ids.map((id) => byId.get(id)).filter((s): s is SeriesDto => s != null)
   return (
-    <div className="discover-rail">
+    <Rail>
       {series.map((s) => (
         <div key={s.id} className="discover-rail-item">
           <CoverCard series={s} selectMode={false} selected={false} readTracking={readTracking} onToggle={noop} />
         </div>
       ))}
-    </div>
+    </Rail>
   )
 }
 

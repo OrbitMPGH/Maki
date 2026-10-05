@@ -13,7 +13,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   useSaveSourcePriority, useSourcePriority, useSources,
-  type SourceContent, type SourceInfo,
+  type SourceContent, type SourceInfo, type SourceQualitySummary,
 } from '../../api/hooks'
 import { languageName } from '../../api/titles'
 import { SourceIcon, baseLanguage, sourceHost } from '../../sourceIcons'
@@ -55,6 +55,33 @@ function useContentLabels(): Record<SourceContent, string> {
   }
 }
 
+function QualityTag({ quality }: { quality: SourceQualitySummary }) {
+  const { t, i18n } = useLingui()
+  const bpp = i18n.number(quality.bitsPerPixel, { maximumFractionDigits: 2 })
+  const samples = quality.samples
+  const series = quality.series
+  const label = {
+    high: t`High quality`,
+    good: t`Good quality`,
+    fair: t`Fair quality`,
+    low: t`Low quality`,
+  }[quality.rating]
+  const basis =
+    quality.basis === 'library'
+      ? plural(samples, {
+          one: `Measured from # chapter across ${series} series in your library: ${bpp} bits per pixel, JPG equivalent.`,
+          other: `Measured from # chapters across ${series} series in your library: ${bpp} bits per pixel, JPG equivalent.`,
+        })
+      : t`Measured on a sample library, not yet on yours: ${bpp} bits per pixel, JPG equivalent. Sharper, less compressed pages score higher.`
+  return (
+    <Tooltip label={basis} events={{ hover: true, focus: true, touch: true }} withArrow multiline w={280}>
+      <span className="source-tag" data-tone={`quality-${quality.rating}`} tabIndex={0}>
+        {label}
+      </span>
+    </Tooltip>
+  )
+}
+
 function SourceTags({ source, contentLabels, nameOfLanguage }: {
   source: SourceInfo
   contentLabels: Record<SourceContent, string>
@@ -70,6 +97,7 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
       {(source.content ?? []).map((c) => contentLabels[c] && (
         <span key={c} className="source-tag">{contentLabels[c]}</span>
       ))}
+      {source.quality && <QualityTag quality={source.quality} />}
       {source.rating === 'adult' && <span className="source-tag" data-tone="adult"><Trans>18+</Trans></span>}
       {source.rating === 'mature' && <span className="source-tag" data-tone="mature"><Trans>Mature</Trans></span>}
       {languageCount > 3 ? (
@@ -326,7 +354,12 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
 
   function resetToDefaults() {
     if (!sources) return
-    setRail(sources.filter((s) => s.defaultEnabled ?? railSet.has(s.name)).map((s) => s.name))
+    setRail(
+      sources
+        .filter((s) => s.defaultEnabled ?? railSet.has(s.name))
+        .sort((a, b) => (a.defaultRank ?? Infinity) - (b.defaultRank ?? Infinity))
+        .map((s) => s.name),
+    )
   }
 
   function clearFilters() {

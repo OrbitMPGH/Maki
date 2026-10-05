@@ -135,7 +135,7 @@ public class ReleaseServiceTests : IDisposable
             MagnetUrl: "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567&dn=x",
             InfoUrl: null);
 
-        var item = await Build().GrabAsync(seriesId, release);
+        var item = await Build().GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
 
         Assert.Equal(AcquisitionProtocol.Torrent, item.Protocol);
         Assert.Equal(QueueStatus.Downloading, item.Status);
@@ -147,13 +147,34 @@ public class ReleaseServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Grab_records_the_origin_the_user_and_the_upgrade_info()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://x/t.torrent", null, null);
+
+        var manual = await Build().GrabAsync(seriesId, release, DownloadOrigin.Manual, 7, null);
+        var upgrade = await Build().GrabAsync(seriesId, release, DownloadOrigin.Upgrade, null, "{\"kind\":\"torrent\"}");
+
+        using var db = _db.NewContext();
+        var manualRow = db.DownloadQueue.Single(q => q.Id == manual.Id);
+        Assert.Equal(DownloadOrigin.Manual, manualRow.Origin);
+        Assert.Equal(7, manualRow.QueuedByUserId);
+        Assert.Null(manualRow.UpgradeInfoJson);
+        var upgradeRow = db.DownloadQueue.Single(q => q.Id == upgrade.Id);
+        Assert.Equal(DownloadOrigin.Upgrade, upgradeRow.Origin);
+        Assert.Null(upgradeRow.QueuedByUserId);
+        Assert.Equal("{\"kind\":\"torrent\"}", upgradeRow.UpgradeInfoJson);
+    }
+
+    [Fact]
     public async Task Grab_without_a_download_link_throws()
     {
         var seriesId = _db.SeedSeries("Berserk");
         await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
         var release = new ReleaseDto("g", "t", 1, "Nyaa", 1, 0, "torrent", null, null, null);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GrabAsync(seriesId, release));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null));
     }
 
     [Fact]
@@ -162,6 +183,6 @@ public class ReleaseServiceTests : IDisposable
         await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
         var release = new ReleaseDto("g", "t", 1, "Nyaa", 1, 0, "torrent", "http://x/t.torrent", null, null);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GrabAsync(404, release));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GrabAsync(404, release, DownloadOrigin.Manual, null, null));
     }
 }
