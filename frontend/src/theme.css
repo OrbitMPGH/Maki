@@ -1277,6 +1277,11 @@ body::before {
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
+/* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
+.cover-new-quiet {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
 /* A chapter chip: top-left on Continue, Resume and Recently added cards. */
 .cover-chapter {
   display: flex;
@@ -1591,13 +1596,14 @@ body::before {
   height: 20px;
   border-radius: 50%;
   cursor: pointer;
-  color: var(--brand-on);
-  background: var(--brand);
+  color: #fff;
+  background: rgba(6, 7, 11, 0.62);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
 .home-read-button:hover {
-  background: var(--brand-hover);
+  color: var(--brand-on);
+  background: var(--brand);
   transform: translateY(-1px);
 }
 .home-read-button:focus-visible {

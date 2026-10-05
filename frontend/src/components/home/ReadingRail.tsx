@@ -71,7 +71,7 @@ const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem 
           <div className="cover-row">
             <span>{item.page > 0 ? t`Resume` : t`Start`}</span>
             {unreadChapters > 0 && (
-              <span className="cover-new">
+              <span className="cover-new cover-new-quiet">
                 {plural(unreadChapters, { one: '# new', other: '# new' })}
               </span>
             )}
