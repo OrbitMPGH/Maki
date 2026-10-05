@@ -1567,6 +1567,37 @@ body::before {
   }
 }
 
+/* --- Home downloading strip --------------------------------------------- */
+/* Title and release label share a line on wider screens, the label capped at half of it. On a
+   phone the badge leaves too little room for both, so the label drops under the title. */
+.downloading-strip-name {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--mantine-spacing-sm);
+}
+.downloading-strip-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.downloading-strip-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
+}
+@media (max-width: 47.99em) {
+  .downloading-strip-name {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .downloading-strip-label {
+    max-width: none;
+    font-size: var(--mantine-font-size-xs);
+  }
+}
+
 /* --- Home dashboard rails ------------------------------------------------ */
 /* How far into the current chapter you are. Same geometry as .cover-bar so a Continue-reading
    card and a library card line up, but its own class: this measures pages within one chapter,
