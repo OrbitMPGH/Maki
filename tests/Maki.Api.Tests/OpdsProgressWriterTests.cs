@@ -145,16 +145,15 @@ public sealed class OpdsProgressWriterTests : IDisposable
         var userId = _db.SeedUser("reader");
         var first = SeedChapter("First");
         var last = SeedChapter("Last");
-        var writer = Writer();
+        var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var writer = Writer(new SignalOnSave(saved));
 
         // Wait for the loop to be running, so stopping exercises it rather than racing its start.
+        // Not by polling the table: the fixture shares one SQLite connection, and reading it while
+        // the loop is mid-statement fails.
         writer.Enqueue(userId, true, first, page: 1, pageCount: Pages);
         await writer.StartAsync(CancellationToken.None);
-        var deadline = DateTime.UtcNow.AddSeconds(30);
-        while (Progress(first) is null && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-        }
+        await saved.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
         // Whether the loop or the final flush picks this one up, it lands.
         writer.Enqueue(userId, true, last, page: 2, pageCount: Pages);
@@ -188,6 +187,16 @@ public sealed class OpdsProgressWriterTests : IDisposable
             DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
             stopping.Cancel();
+            return ValueTask.FromResult(result);
+        }
+    }
+
+    private sealed class SignalOnSave(TaskCompletionSource saved) : SaveChangesInterceptor
+    {
+        public override ValueTask<int> SavedChangesAsync(
+            SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
+        {
+            saved.TrySetResult();
             return ValueTask.FromResult(result);
         }
     }
