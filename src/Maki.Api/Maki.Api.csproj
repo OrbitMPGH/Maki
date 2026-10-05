@@ -62,4 +62,35 @@
     <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="5" Trim="false" />
   </ItemGroup>
 
+  <!--
+    Debug builds rebuild the SPA into wwwroot whenever frontend sources changed, so launching the API
+    from an IDE serves the current UI on :8990. Release (CI, Docker) skips it: Docker copies its own
+    frontend stage in. Calls vite directly rather than `npm run build` so a frontend type error
+    does not block a backend build; CI still runs tsc. Opt out with -p:SkipFrontendBuild=true.
+
+    wwwroot is dropped from Content because static web assets glob it at evaluation, before this
+    target swaps the hashed files, and then fail on the old names. UseStaticFiles reads the folder
+    from disk, so nothing is lost.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' And '$(SkipFrontendBuild)' != 'true'">
+    <BuildFrontendInDebug>true</BuildFrontendInDebug>
+    <FrontendDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'frontend'))</FrontendDir>
+    <LocalesDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'locales'))</LocalesDir>
+    <SpaOutDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wwwroot'))</SpaOutDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(BuildFrontendInDebug)' == 'true'">
+    <Content Remove="wwwroot\**" />
+    <FrontendInput Include="$(FrontendDir)src\**;$(FrontendDir)public\**;$(LocalesDir)*\client.po" />
+    <FrontendInput Include="$(FrontendDir)index.html;$(FrontendDir)package-lock.json;$(FrontendDir)vite.config.ts;$(FrontendDir)lingui.config.js" />
+  </ItemGroup>
+
+  <Target Name="BuildFrontend" BeforeTargets="BeforeBuild" Condition="'$(BuildFrontendInDebug)' == 'true'"
+          Inputs="@(FrontendInput)" Outputs="$(SpaOutDir)index.html">
+    <Warning Condition="!Exists('$(FrontendDir)node_modules')"
+             Text="Skipping the SPA build: run `npm ci` in frontend/ first. wwwroot keeps its old contents." />
+    <Exec Condition="Exists('$(FrontendDir)node_modules')" WorkingDirectory="$(FrontendDir)"
+          Command="npx vite build --outDir &quot;$(SpaOutDir.TrimEnd('\/'))&quot; --emptyOutDir" />
+  </Target>
+
 </Project>
