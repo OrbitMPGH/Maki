@@ -50,16 +50,16 @@ function PlanFile({
   const { fileName, chapters, label, size, newChapters, replaces } = file
   const newChapterCount = newChapters.length
   return (
-    <Card withBorder padding="sm" radius="md">
+    <Card withBorder padding="sm" radius="md" style={{ flexShrink: 0 }}>
       <Group justify="space-between" wrap="nowrap" align="flex-start">
-        <Group gap={8} wrap="nowrap" align="flex-start">
+        <Group gap={8} wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 0 }}>
           {isPdfFile(fileName) ? (
             <IconFileTypePdf size={16} style={{ marginTop: 2, flexShrink: 0 }} />
           ) : (
             <IconFileZip size={16} style={{ marginTop: 2, flexShrink: 0 }} />
           )}
-          <div>
-            <Text size="sm" fw={600} lineClamp={1}>
+          <div style={{ minWidth: 0 }}>
+            <Text size="sm" fw={600} lineClamp={2} title={fileName} style={{ overflowWrap: 'anywhere' }}>
               {fileName}
             </Text>
             <Text size="xs" c="var(--ink-3)">
@@ -220,7 +220,7 @@ export function ImportReviewModal({
             </Alert>
           )}
 
-          <Stack gap="xs" mah="min(360px, 35dvh)" style={{ overflowY: 'auto' }}>
+          <Stack gap="xs" mah="min(360px, 35dvh)" pr={4} style={{ overflowY: 'auto' }}>
             {plan.files.map((file) => (
               <PlanFile
                 key={file.fileName}
@@ -244,7 +244,7 @@ export function ImportReviewModal({
             </Text>
           )}
 
-          <Stack gap="xs">
+          <Stack gap="xs" className="import-review-actions">
             <Button
               color="var(--danger-fill)"
               onClick={() => decide('Replace')}

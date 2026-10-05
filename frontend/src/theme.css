@@ -1567,6 +1567,22 @@ body::before {
   }
 }
 
+/* --- Import review ------------------------------------------------------- */
+/* The choices are full sentences with a count in them, so on a phone they wrap rather than
+   losing their ending to Mantine's single-line label. */
+.import-review-actions .mantine-Button-root {
+  height: auto;
+  min-height: var(--button-height);
+  padding-block: 6px;
+}
+.import-review-actions .mantine-Button-inner,
+.import-review-actions .mantine-Button-label {
+  height: auto;
+  white-space: normal;
+  line-height: 1.3;
+  text-align: center;
+}
+
 /* --- Home downloading strip --------------------------------------------- */
 /* Title and release label share a line on wider screens, the label capped at half of it. On a
    phone the badge leaves too little room for both, so the label drops under the title. */
