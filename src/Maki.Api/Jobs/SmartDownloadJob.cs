@@ -94,7 +94,7 @@ public class SmartDownloadJob(
     internal static async Task<HashSet<int>> BackingOffAsync(
         MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct)
     {
-        var candidates = chapters.Where(c => c.Wanted && c.ChapterFileId == null).Select(c => c.Id).ToList();
+        var candidates = chapters.Where(Chapter.IsMissing).Select(c => c.Id).ToList();
         if (candidates.Count == 0)
         {
             return [];

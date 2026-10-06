@@ -6344,6 +6344,10 @@ msgstr "İçe aktarmada dosya adlandırma"
 msgid "file on disk, not linked"
 msgstr "diskteki dosya, bağlı değil"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -15193,6 +15197,10 @@ msgstr "Dosya adı bir bölüm veya cilt numarası taşımıyor, bu yüzden ona 
 #, fuzzy
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "Bu yükseltmenin yerini alacağı dosya artık yok"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy

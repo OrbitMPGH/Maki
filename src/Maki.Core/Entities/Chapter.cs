@@ -41,9 +41,28 @@ public class Chapter
     public int? ChapterFileId { get; set; }
     public ChapterFile? ChapterFile { get; set; }
 
+    /// <summary>
+    /// When Maki deleted this chapter's file on purpose, else null. A chapter carrying it with no
+    /// file is <em>removed</em>: it still counts toward the series total and its reads still count,
+    /// but it is not missing, so nothing queues it again. Separate from <see cref="Wanted"/> so a
+    /// delete never rewrites user intent. <c>MakiDbContext</c> clears it whenever a file is linked,
+    /// so a later unlink of that new file reads as missing again rather than as removed.
+    /// </summary>
+    public DateTime? FileRemovedAt { get; set; }
+
     /// <summary>The per-source listings that currently support this chapter.</summary>
     [JsonIgnore]
     public List<ChapterSourceLink> SourceLinks { get; set; } = [];
+
+    /// <summary>
+    /// Wanted, not on disk, and not removed on purpose: what downloads go looking for. Every
+    /// download selector and missing count uses this. The SQL tallies in <c>SeriesController</c> and
+    /// <c>ReadCounts</c> spell the same condition out, since EF can't translate a method call.
+    /// </summary>
+    public static bool IsMissing(Chapter c) => c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null;
+
+    /// <summary>The file was deleted on purpose and nothing has replaced it.</summary>
+    public static bool IsRemoved(Chapter c) => c.ChapterFileId == null && c.FileRemovedAt != null;
 
     /// <summary>A special is a decimal-numbered chapter (10.5 omake etc.); one-shots are not specials.</summary>
     public static bool IsSpecial(decimal? number) => number is { } n && n % 1 != 0;
@@ -80,7 +99,7 @@ public class Chapter
     /// </param>
     public static List<int> NextWanted(IEnumerable<Chapter> chapters, int count, IReadOnlySet<int>? skip = null) =>
         chapters
-            .Where(c => c.Wanted && c.ChapterFileId == null && (skip is null || !skip.Contains(c.Id)))
+            .Where(c => IsMissing(c) && (skip is null || !skip.Contains(c.Id)))
             .OrderBy(c => c.Number ?? decimal.MaxValue)
             .ThenBy(c => c.Id)
             .Take(count)

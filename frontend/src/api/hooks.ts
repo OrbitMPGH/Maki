@@ -16,6 +16,7 @@ import { affectedKeys } from './recommendationFeedback'
 import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
+import { obtainedCount } from '../lib/chapterCounts'
 import type {
   AddSeriesRequest,
   ChapterDto,
@@ -60,7 +61,7 @@ export function useSeries() {
  * reads "0/147", which made sorting and filtering on this a no-op for those series.
  */
 export function missingCount(s: SeriesDto): number {
-  return (s.wantedChapterCount || s.knownChapterCount || 0) - s.chapterFileCount
+  return (s.wantedChapterCount || s.knownChapterCount || 0) - obtainedCount(s)
 }
 
 export interface LibraryStats {

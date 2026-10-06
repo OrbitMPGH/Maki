@@ -385,6 +385,7 @@ public class SeriesController(
                 notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default,
                 titleLanguage: titleLanguage) with
             {
+                RemovedChapterCount = counts?.Removed ?? 0,
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
                 [
@@ -399,16 +400,17 @@ public class SeriesController(
         }));
     }
 
-    private sealed record ChapterTallies(int SeriesId, int Wanted, int WithFile, int Known);
+    private sealed record ChapterTallies(int SeriesId, int Wanted, int WithFile, int Known, int Removed);
 
     /// <summary>
-    /// The three chapter counts every series surface reports, keyed by series id. The list and detail
+    /// The chapter counts every series surface reports, keyed by series id. The list and detail
     /// endpoints must agree on these, so they share one expression rather than each spelling it out.
     /// <para>
     /// <c>Wanted</c> counts what the user asked for plus anything already on disk: a chapter they
     /// don't want and don't have (a skipped special) is excluded so a fully-downloaded series reads
     /// 39/39 rather than 39/40, while one they don't want but already have still counts on both
-    /// sides. Chapters merely waiting to download are wanted, so deferring never shrinks this.
+    /// sides. Chapters merely waiting to download are wanted, so deferring never shrinks this. A
+    /// chapter whose file was removed on purpose counts too, so clearing read files never shrinks it.
     /// </para>
     /// </summary>
     private static async Task<Dictionary<int, ChapterTallies>> ChapterTalliesAsync(
@@ -417,9 +419,10 @@ public class SeriesController(
             .GroupBy(c => c.SeriesId)
             .Select(g => new ChapterTallies(
                 g.Key,
-                g.Count(c => c.Wanted || c.ChapterFileId != null),
+                g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
                 g.Count(c => c.ChapterFileId != null),
-                g.Count()))
+                g.Count(),
+                g.Count(c => c.ChapterFileId == null && c.FileRemovedAt != null)))
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
     /// <summary>
@@ -977,6 +980,7 @@ public class SeriesController(
             notificationMode: userState.NotificationMode,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
+            RemovedChapterCount = counts?.Removed ?? 0,
             PendingProposalId = pendingProposalId,
             ReadTimeEstimate = estimate is null
                 ? null

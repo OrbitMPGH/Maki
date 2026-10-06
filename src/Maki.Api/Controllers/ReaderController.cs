@@ -169,13 +169,13 @@ public class ReaderController(
         var resolved = await profiles.ResolveAsync(slice.Series.Id, ct);
 
         // How far through the series this chapter sits, for the reader's own read meter. Same pair
-        // of numbers the series page draws, so the two can never disagree: downloaded chapters as
-        // the denominator (not every known chapter — an undownloaded one isn't something you can
+        // of numbers the series page draws, so the two can never disagree: downloaded chapters (plus
+        // read ones whose file was cleared) as the denominator (not every known chapter — an undownloaded one isn't something you can
         // read next), and ReadCounts for the numerator. Both are counted at manifest time and go
         // stale within the chapter, which is exactly right: they only move when a chapter is
         // finished, and finishing one refetches this.
         var seriesChapterCount = await db.Chapters
-            .CountAsync(c => c.SeriesId == slice.Series.Id && c.ChapterFileId != null, ct);
+            .CountAsync(c => c.SeriesId == slice.Series.Id && (c.ChapterFileId != null || c.FileRemovedAt != null), ct);
         var seriesReadCount = await ReadCounts.Read(db)
             .CountAsync(p => p.SeriesId == slice.Series.Id, ct);
 
@@ -183,7 +183,7 @@ public class ReaderController(
         // rule the series page's denominator uses. The toolbar shows it as a trailing hint so
         // someone reading a series that downloads in batches can tell there is more coming.
         var seriesWantedCount = await db.Chapters
-            .CountAsync(c => c.SeriesId == slice.Series.Id && (c.Wanted || c.ChapterFileId != null), ct);
+            .CountAsync(c => c.SeriesId == slice.Series.Id && (c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null), ct);
 
         // Named on the end-of-chapter screen, and its number is how that screen tells a straight
         // continuation from a jump over chapters that were never downloaded.

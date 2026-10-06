@@ -6344,6 +6344,10 @@ msgstr "가져오기 시 파일 이름"
 msgid "file on disk, not linked"
 msgstr "디스크에 있는 미연결 파일"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -15193,6 +15197,10 @@ msgstr "파일 이름에 챕터 또는 볼륨 번호가 없어 일치시킬 수 
 #, fuzzy
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "이 업그레이드가 교체하려던 파일이 없습니다"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy

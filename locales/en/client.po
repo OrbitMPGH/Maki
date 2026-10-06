@@ -5178,6 +5178,10 @@ msgstr "File naming on import"
 msgid "file on disk, not linked"
 msgstr "file on disk, not linked"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed"
+msgstr "File removed"
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -12429,6 +12433,10 @@ msgstr "The file name carries no chapter or volume number, so nothing can be mat
 #: src/api/queue.ts
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "The file this upgrade was meant to replace is gone"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
+msgstr "The file was deleted on purpose. Maki won't download it again unless you ask."
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "The first chapter of {title} is ready to read."

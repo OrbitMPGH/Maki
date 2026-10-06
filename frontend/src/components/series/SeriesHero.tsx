@@ -105,7 +105,7 @@ export function SeriesHero({
     // What "Download all wanted" would actually queue, so the button can say so rather than making
     // the user open the Chapters tab to find out.
     const missingWanted = useMemo(
-        () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile).length,
+        () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt).length,
         [chapters],
     )
 

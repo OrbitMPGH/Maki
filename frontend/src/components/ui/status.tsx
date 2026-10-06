@@ -21,6 +21,7 @@ import {
 } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { obtainedCount } from '../../lib/chapterCounts'
 
 export interface StatusVisual {
   color: string
@@ -226,6 +227,7 @@ export function seriesProgressVisual(
     wantedChapterCount: number
     knownChapterCount: number
     chapterFileCount: number
+    removedChapterCount?: number
     readChapterCount: number | null
   },
   readTracking: boolean,
@@ -233,7 +235,7 @@ export function seriesProgressVisual(
   const wantedTotal = s.wantedChapterCount || 0
   const total = wantedTotal || s.knownChapterCount || 0
   const nothingWanted = wantedTotal === 0 && total > 0
-  const have = s.chapterFileCount
+  const have = obtainedCount(s)
   const tracked = readTracking && s.readChapterCount != null && have > 0
   return {
     total,

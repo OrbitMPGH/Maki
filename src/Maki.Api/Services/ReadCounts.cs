@@ -6,7 +6,8 @@ namespace Maki.Api.Services;
 
 /// <summary>
 /// The one definition of "a chapter this user has read": a completed <see cref="ChapterProgress"/>
-/// row whose chapter is downloaded.
+/// row whose chapter is downloaded, or whose file Maki removed on purpose
+/// (<see cref="Chapter.FileRemovedAt"/>). Removing a read chapter's file must not un-read it.
 /// <para>
 /// Every read count the UI shows has to come from here. The series list, the series page and the
 /// reader's own progress meter all render the same number for the same series, and three hand-written
@@ -33,7 +34,7 @@ public static class ReadCounts
 {
     public static IQueryable<ChapterProgress> Read(MakiDbContext db) =>
         db.ChapterProgress.OwnedByScopeUser(db).Where(p => p.Completed &&
-            db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null));
+            db.Chapters.Any(c => c.Id == p.ChapterId && (c.ChapterFileId != null || c.FileRemovedAt != null)));
 
     /// <summary>
     /// The same condition for a <em>named</em> user, minus watched chapters, bypassing the global
@@ -45,5 +46,6 @@ public static class ReadCounts
     public static IQueryable<ChapterProgress> ReadFor(MakiDbContext db, int userId) =>
         db.ChapterProgress.IgnoreQueryFilters().Where(p => p.UserId == userId && p.Completed &&
             !p.Watched &&
-            db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId && c.ChapterFileId != null));
+            db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId &&
+                (c.ChapterFileId != null || c.FileRemovedAt != null)));
 }

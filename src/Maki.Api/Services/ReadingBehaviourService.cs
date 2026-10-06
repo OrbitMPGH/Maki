@@ -201,7 +201,7 @@ public class ReadingBehaviourService(
             progress = [.. rows.Where(r => visibleIds.Contains(r.SeriesId))];
 
             downloaded = await db.Chapters.IgnoreQueryFilters()
-                .Where(c => visibleIds.Contains(c.SeriesId) && c.ChapterFileId != null)
+                .Where(c => visibleIds.Contains(c.SeriesId) && (c.ChapterFileId != null || c.FileRemovedAt != null))
                 .GroupBy(c => c.SeriesId)
                 .Select(g => new { SeriesId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);

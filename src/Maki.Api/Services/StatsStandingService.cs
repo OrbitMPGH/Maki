@@ -84,7 +84,7 @@ public class StatsStandingService(
         }
 
         var held = await db.Chapters.AsNoTracking().IgnoreQueryFilters()
-            .Where(c => c.ChapterFileId != null)
+            .Where(c => c.ChapterFileId != null || c.FileRemovedAt != null)
             .GroupBy(c => c.SeriesId)
             .Select(g => new { SeriesId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
@@ -93,7 +93,8 @@ public class StatsStandingService(
         // included, because a watched run is not left to read.
         var progress = (await db.ChapterProgress.AsNoTracking().IgnoreQueryFilters()
                 .Where(p => p.UserId == userId && p.Completed && p.UnreadAt == null &&
-                            db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
+                            db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId &&
+                                (c.ChapterFileId != null || c.FileRemovedAt != null)))
                 .Select(p => new ProgressRow(p.SeriesId, p.ChapterId, p.Watched, p.UpdatedAt))
                 .ToListAsync(ct))
             .Where(p => series.ContainsKey(p.SeriesId))

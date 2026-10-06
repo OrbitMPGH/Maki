@@ -107,6 +107,14 @@ public class ChapterProgress : IUserOwned
 
     public DateTime StartedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>
+    /// When <see cref="Completed"/> last went from false to true. Stamped and cleared by
+    /// <c>MakiDbContext</c> on save, so no writer has to remember it. A re-read leaves it alone,
+    /// unlike <see cref="UpdatedAt"/>. Rows completed before the column existed carry their
+    /// <see cref="UpdatedAt"/>, which can only be later than the real completion.
+    /// </summary>
+    public DateTime? CompletedAt { get; set; }
 }
 
 /// <summary>

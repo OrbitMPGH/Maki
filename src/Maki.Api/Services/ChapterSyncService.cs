@@ -365,6 +365,7 @@ public class ChapterSyncService(
                 keeper.Title ??= dup.Title;
                 keeper.ReleaseDate ??= dup.ReleaseDate;
                 keeper.ChapterFileId ??= dup.ChapterFileId;
+                keeper.FileRemovedAt ??= dup.FileRemovedAt;
                 keeper.Wanted |= dup.Wanted;
                 await reads.MoveAsync(dup, keeper, ct);
 

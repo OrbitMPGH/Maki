@@ -258,7 +258,7 @@ const MONITOR_MODE_LABELS: Record<string, MessageDescriptor> = {
 const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   all: () => true,
   wanted: (c) => c.wanted,
-  missing: (c) => !c.hasFile,
+  missing: (c) => !c.hasFile && !c.fileRemovedAt,
   downloaded: (c) => c.hasFile,
   specials: isSpecial,
   // A one-shot has no number and counts as main, matching NewChapterMonitorMode.MainOnly.
@@ -416,13 +416,14 @@ function SeriesDetailBody() {
   )
   /**
    * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
-   * Both only consider downloaded chapters: a missing chapter is neither read nor "left to read".
+   * Both only consider downloaded chapters, plus read ones whose file was removed: a missing chapter is
+   * neither read nor "left to read".
    */
   const filters = useMemo<Record<string, (c: ChapterDto) => boolean>>(
       () => ({
         ...chapterFilters,
         unread: (c: ChapterDto) => c.hasFile && !readStateFor(c).read,
-        read: (c: ChapterDto) => c.hasFile && readStateFor(c).read,
+        read: (c: ChapterDto) => (c.hasFile || c.fileRemovedAt != null) && readStateFor(c).read,
       }),
       [readStateFor],
   )
@@ -701,7 +702,7 @@ function SeriesDetailBody() {
   // the user open the Chapters tab to find out.
   const unlinkedFilesOnDisk = filesSummary?.unlinkedOnDisk ?? 0
   const missingWanted = useMemo(
-      () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !queueByChapterId.has(c.id)).length,
+      () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt && !queueByChapterId.has(c.id)).length,
       [chapters, queueByChapterId],
   )
 
@@ -2731,6 +2732,12 @@ function SeriesDetailBody() {
                                             <Badge size="sm" color="var(--ok)" variant="light" leftSection={<IconCircleCheck size={12} />}>
                                               <Trans>Downloaded</Trans>
                                             </Badge>
+                                        ) : c.fileRemovedAt ? (
+                                            <Tooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
+                                              <Badge size="sm" color="gray" variant="light" leftSection={<IconTrash size={12} />}>
+                                                <Trans>File removed</Trans>
+                                              </Badge>
+                                            </Tooltip>
                                         ) : (
                                             <Badge size="sm" color="gray" variant="light">
                                               <Trans>Missing</Trans>
@@ -2775,18 +2782,20 @@ function SeriesDetailBody() {
                                     </Table.Td>
                                     <Table.Td onClick={(e) => e.stopPropagation()}>
                                       <Group gap={2} wrap="nowrap" justify="flex-end">
+                                        {/* Marking read needs the file for its page count, so a removed chapter can only be un-read. */}
+                                        {(c.hasFile || (c.fileRemovedAt && read)) && (
+                                            <Tooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
+                                              <ActionIcon
+                                                  variant={read ? 'light' : 'subtle'}
+                                                  color={read ? 'var(--ok)' : 'gray'}
+                                                  onClick={() => setRead.mutate({ chapterId: c.id, read: !read })}
+                                                  aria-label={t`Toggle read state of ${chapterLbl}`}
+                                              >
+                                                {!read ? <IconEye size={17} /> : <IconEyeOff size={17} />}
+                                              </ActionIcon>
+                                            </Tooltip>
+                                        )}
                                         {c.hasFile && (
-                                            <>
-                                              <Tooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
-                                                <ActionIcon
-                                                    variant={read ? 'light' : 'subtle'}
-                                                    color={read ? 'var(--ok)' : 'gray'}
-                                                    onClick={() => setRead.mutate({ chapterId: c.id, read: !read })}
-                                                    aria-label={t`Toggle read state of ${chapterLbl}`}
-                                                >
-                                                  {!read ? <IconEye size={17} /> : <IconEyeOff size={17} />}
-                                                </ActionIcon>
-                                              </Tooltip>
                                               <Tooltip label={t`Read`} withArrow>
                                                 <ActionIcon
                                                     component={Link}
@@ -2798,7 +2807,6 @@ function SeriesDetailBody() {
                                                   <IconBook size={17} />
                                                 </ActionIcon>
                                               </Tooltip>
-                                            </>
                                         )}
                                         {!c.hasFile && canLinkFiles && (
                                             <Tooltip label={t`Link to a file already on disk`} withArrow>

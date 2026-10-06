@@ -93,7 +93,7 @@ public class RefreshMonitoredSeriesJob(
 
         var newChapterIds = await chapterSync.SyncSeriesAsync(seriesId, ct);
         var wanted = await db.Chapters
-            .Where(c => newChapterIds.Contains(c.Id) && c.Wanted && c.ChapterFileId == null)
+            .Where(c => newChapterIds.Contains(c.Id) && c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null)
             .Select(c => c.Id)
             .ToListAsync(ct);
 

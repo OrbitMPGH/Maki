@@ -95,13 +95,52 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public override int SaveChanges()
     {
         StampOwner();
+        StampFileAndCompletion();
         return base.SaveChanges();
     }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
     {
         StampOwner();
+        StampFileAndCompletion();
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+    }
+
+    /// <summary>
+    /// Keeps <see cref="Chapter.FileRemovedAt"/> and <see cref="ChapterProgress.CompletedAt"/> in step
+    /// with the fields they describe, here rather than at each of the dozen-odd places that link a
+    /// file or complete a chapter. Bulk <c>ExecuteUpdate</c> bypasses this; none of those touch
+    /// either field today.
+    /// </summary>
+    private void StampFileAndCompletion()
+    {
+        foreach (var entry in ChangeTracker.Entries<Chapter>())
+        {
+            if (entry.State is EntityState.Added or EntityState.Modified &&
+                entry.Entity.FileRemovedAt != null &&
+                (entry.Entity.ChapterFileId != null || entry.Entity.ChapterFile != null))
+            {
+                entry.Entity.FileRemovedAt = null;
+            }
+        }
+
+        foreach (var entry in ChangeTracker.Entries<ChapterProgress>())
+        {
+            if (entry.State is not (EntityState.Added or EntityState.Modified))
+            {
+                continue;
+            }
+
+            var row = entry.Entity;
+            if (!row.Completed)
+            {
+                row.CompletedAt = null;
+            }
+            else if (row.CompletedAt == null)
+            {
+                row.CompletedAt = DateTime.UtcNow;
+            }
+        }
     }
 
     /// <summary>

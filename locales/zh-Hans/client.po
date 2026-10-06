@@ -6344,6 +6344,10 @@ msgstr "导入时的文件命名"
 msgid "file on disk, not linked"
 msgstr "磁盘上未关联的文件"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -15193,6 +15197,10 @@ msgstr "文件名不包含章节或卷号，因此无法与任何内容匹配。
 #, fuzzy
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "此次升级要替换的文件已不存在"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy

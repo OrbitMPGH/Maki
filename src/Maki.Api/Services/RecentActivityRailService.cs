@@ -435,7 +435,7 @@ public class RecentActivityRailService(
                 // The denominator the reader can actually reach. Downloaded chapters, not the
                 // provider's chapter count: "ch 40 of 200" when only 41 exist on disk reads as
                 // barely started when they are in fact caught up.
-                Available = db.Chapters.Count(c => c.SeriesId == s.Id && c.ChapterFileId != null),
+                Available = db.Chapters.Count(c => c.SeriesId == s.Id && (c.ChapterFileId != null || c.FileRemovedAt != null)),
             })
             .ToListAsync(ct);
         var byId = visible.ToDictionary(s => s.Id);

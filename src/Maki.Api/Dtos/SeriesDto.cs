@@ -184,6 +184,13 @@ public record SeriesDto(
     /// <summary>The last upgrade scan pass over this series, or null when it has never been scanned.</summary>
     public LastUpgradeScanDto? LastUpgradeScan { get; init; }
 
+    /// <summary>
+    /// Chapters whose file Maki deleted on purpose (<see cref="Chapter.FileRemovedAt"/>). Part of
+    /// <see cref="WantedChapterCount"/> and not missing, so the UI adds it to
+    /// <see cref="ChapterFileCount"/> wherever it means "chapters the user has had".
+    /// </summary>
+    public int RemovedChapterCount { get; init; }
+
     /// <summary>The series' pending torrent volume proposal, filled only by the detail endpoint.</summary>
     public int? PendingProposalId { get; init; }
 

@@ -64,6 +64,7 @@ import { SectionHeader } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
 import { formatNumber } from '../format'
+import { obtainedCount } from '../lib/chapterCounts'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -154,9 +155,10 @@ export default function HomePage() {
     let started = 0
     let finished = 0
     for (const s of series ?? []) {
-      if (s.readChapterCount == null || s.chapterFileCount === 0) continue
-      unread += Math.max(0, s.chapterFileCount - s.readChapterCount)
-      if (s.readChapterCount >= s.chapterFileCount) finished++
+      const have = obtainedCount(s)
+      if (s.readChapterCount == null || have === 0) continue
+      unread += Math.max(0, have - s.readChapterCount)
+      if (s.readChapterCount >= have) finished++
       else if (s.readChapterCount > 0) started++
     }
     return { unread, started, finished }

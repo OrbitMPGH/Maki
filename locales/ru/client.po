@@ -6344,6 +6344,10 @@ msgstr "Именование файлов при импорте"
 msgid "file on disk, not linked"
 msgstr "файл на диске, не привязанный ни к одной главе"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -15193,6 +15197,10 @@ msgstr "В имени файла нет номера главы или тома,
 #, fuzzy
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "Файл, который должно было заменить это улучшение, исчез"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy

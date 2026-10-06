@@ -6344,6 +6344,10 @@ msgstr "Nomeação de arquivos na importação"
 msgid "file on disk, not linked"
 msgstr "arquivo no disco, sem vínculo"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -15193,6 +15197,10 @@ msgstr "O nome do arquivo não contém número de capítulo ou volume, então na
 #, fuzzy
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "O arquivo que este upgrade deveria substituir não existe mais"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy

@@ -60,6 +60,7 @@ public class ChapterController(
                 c.ReleaseDate,
                 c.Wanted,
                 HasFile = c.ChapterFileId != null,
+                FileRemovedAt = c.ChapterFileId == null ? c.FileRemovedAt : null,
                 FilePath = c.ChapterFile != null ? c.ChapterFile.RelativePath : null,
                 // Where the file came from: a registered source's name, the literal "import" for a
                 // file the user brought in from disk, or "torrent:{indexer}" for a grabbed release.
@@ -104,6 +105,7 @@ public class ChapterController(
             c.ReleaseDate,
             c.Wanted,
             c.HasFile,
+            c.FileRemovedAt,
             c.FilePath,
             c.FileSourceName,
             c.FileReleaseName,

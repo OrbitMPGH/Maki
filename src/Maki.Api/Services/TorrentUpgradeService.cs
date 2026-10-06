@@ -75,7 +75,7 @@ public static class TorrentUpgradeRules
     {
         if (file is null)
         {
-            return chapter.Wanted ? ChapterSpanState.Missing : ChapterSpanState.Skipped;
+            return chapter.Wanted && chapter.FileRemovedAt == null ? ChapterSpanState.Missing : ChapterSpanState.Skipped;
         }
 
         if (file.Trusted || evaluator.Evaluate(file, chapter.Language) is not { } current)

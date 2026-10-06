@@ -75,6 +75,8 @@ export interface SeriesDto {
   /** Chapters the user asked for, plus any already downloaded. The progress denominator. */
   wantedChapterCount: number
   chapterFileCount: number
+  /** Chapters whose file Maki deleted on purpose. Counted in `wantedChapterCount`, never missing. */
+  removedChapterCount: number
   /** Every chapter known to exist, wanted or not. Denominator fallback when nothing is wanted. */
   knownChapterCount: number
   /** Chapters queued but not yet actively downloading (Queued / RateLimited). */
@@ -264,6 +266,8 @@ export interface ChapterDto {
   /** Whether the user wants this chapter. Nothing in the download pipeline writes it. */
   wanted: boolean
   hasFile: boolean
+  /** When Maki deleted this chapter's file on purpose; null while it has a file. Not missing, never re-queued on its own. */
+  fileRemovedAt: string | null
   filePath: string | null
   /**
    * Where the file came from: a registered source's name, the literal "import" for a file brought
