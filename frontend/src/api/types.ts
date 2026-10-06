@@ -541,7 +541,8 @@ export interface AddSeriesRequest {
   metadataProviderId: string
   rootFolderId: number
   monitored: boolean
-  monitorNewItems: string
+  /** Omitted follows the "Default monitoring for new series" setting. */
+  monitorNewItems?: string
   /**
    * "Off" | "ScrobbleOnly" | "Full". Omitted means "let the server pick from the content rating"
    * (Settings → Library incognito rules), which is what happens on any add form that doesn't ask.

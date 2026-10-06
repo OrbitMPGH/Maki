@@ -1404,6 +1404,11 @@ msgstr "Fonte(s) desconhecida(s): {sources}"
 
 #. Shown when a client asks for an interface language Maki ships no translation for.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The default monitoring for new series must be All, MainOnly or Smart
+msgid "error.settings.invalidMonitorMode"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unsupported language: {language}
 #, fuzzy
 msgid "error.settings.unsupportedLanguage"

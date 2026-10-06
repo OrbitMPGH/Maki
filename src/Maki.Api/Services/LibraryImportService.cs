@@ -406,10 +406,7 @@ public class LibraryImportService(
             }
         }
 
-        series.MonitorNewItems =
-            await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"
-                ? NewChapterMonitorMode.MainOnly
-                : NewChapterMonitorMode.All;
+        series.MonitorNewItems = await MonitorDefaults.ForNewSeriesAsync(appSettings, ct);
         series.RootFolderId = rootFolder.Id;
         series.FolderName = seriesFolderName;
         db.Series.Add(series);

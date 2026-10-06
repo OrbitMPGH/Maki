@@ -67,6 +67,12 @@ public static class SettingKeys
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
     /// <summary>
+    /// The <see cref="Entities.NewChapterMonitorMode"/> a series added without an explicit mode starts
+    /// with: All (unset), MainOnly or Smart. Read through <c>MonitorDefaults</c>.
+    /// </summary>
+    public const string MonitoringDefaultMode = "monitoring.defaultmode";
+
+    /// <summary>
     /// More new wanted chapters than this in one monitored refresh of a series are held back instead
     /// of queued. Default 5; 0 turns the hold off. A real release rarely drops that many at once, but
     /// a source that renumbers or backfills its list does, and every "new" row of that shape would

@@ -439,7 +439,7 @@ function DownloadsStep() {
           <Switch
             aria-label={t`Skip specials on new series`}
             checked={monitoring?.unmonitorSpecials ?? false}
-            onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
+            onChange={(e) => saveMonitoring.mutate({ unmonitorSpecials: e.currentTarget.checked })}
           />
         }
       />

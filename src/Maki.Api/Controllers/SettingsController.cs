@@ -83,7 +83,8 @@ public class SettingsController(
         string? Url, string? Username, string? Password, string? Category, string? PathMapFrom, string? PathMapTo);
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
-    public record MonitoringSettings(bool UnmonitorSpecials);
+    /// <summary>Both fields optional on PUT: a null leaves that setting as it is.</summary>
+    public record MonitoringSettings(bool? UnmonitorSpecials, string? DefaultMode = null);
     /// <param name="IncognitoByRating">
     /// Content rating → <see cref="IncognitoMode"/> name, the default a newly added series of that
     /// rating starts at. Null on a write leaves the stored rules alone, so a caller that predates
@@ -280,14 +281,30 @@ public class SettingsController(
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("monitoring")]
     public async Task<IActionResult> GetMonitoring(CancellationToken ct) => Ok(new MonitoringSettings(
-        await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"));
+        await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true",
+        MonitorDefaults.Parse(await settings.GetAsync(SettingKeys.MonitoringDefaultMode, ct)).ToString()));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("monitoring")]
     public async Task<IActionResult> SetMonitoring([FromBody] MonitoringSettings request, CancellationToken ct)
     {
-        await settings.SetAsync(SettingKeys.MonitoringUnmonitorSpecials, request.UnmonitorSpecials ? "true" : "false", ct);
-        return Ok(request);
+        if (request.DefaultMode is { } defaultMode)
+        {
+            if (!Enum.TryParse<NewChapterMonitorMode>(defaultMode, true, out var mode) ||
+                !MonitorDefaults.Choosable.Contains(mode))
+            {
+                return this.Fail(localizer, "error.settings.invalidMonitorMode");
+            }
+
+            await settings.SetAsync(SettingKeys.MonitoringDefaultMode, mode.ToString(), ct);
+        }
+
+        if (request.UnmonitorSpecials is { } unmonitorSpecials)
+        {
+            await settings.SetAsync(SettingKeys.MonitoringUnmonitorSpecials, unmonitorSpecials ? "true" : "false", ct);
+        }
+
+        return await GetMonitoring(ct);
     }
 
     /// <summary>

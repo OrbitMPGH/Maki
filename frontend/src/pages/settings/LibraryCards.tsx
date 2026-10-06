@@ -46,6 +46,7 @@ import {
   type LibrarySettings,
 } from '../../api/hooks'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
+import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
 import { formatBytes, formatDateTime } from '../../format'
 
@@ -312,12 +313,26 @@ export function NewSeriesDefaultsSection() {
         </Trans>
       }
     >
+      <Select
+        mb="md"
+        styles={{ wrapper: { maxWidth: 320 } }}
+        label={t`Monitoring`}
+        description={t`What a series added with monitoring on, or imported from disk, starts with. Smart downloads the next few chapters ahead of your reading.`}
+        data={MONITOR_OPTIONS.filter((o) => o.value !== 'None').map((o) => ({
+          value: o.value,
+          label: renderLabel(o.label),
+        }))}
+        value={monitoring?.defaultMode ?? 'All'}
+        onChange={(value) => value && saveMonitoring.mutate({ defaultMode: value })}
+        allowDeselect={false}
+      />
+
       <Switch
         mb="lg"
         label={t`Skip specials`}
         description={t`New series start without decimal chapters (10.5, x.1): they stay listed but are never downloaded or counted. Also applies to Smart-monitored series when a special appears later.`}
         checked={monitoring?.unmonitorSpecials ?? false}
-        onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
+        onChange={(e) => saveMonitoring.mutate({ unmonitorSpecials: e.currentTarget.checked })}
       />
 
       <Text fw={500} size="sm" mb={4}>

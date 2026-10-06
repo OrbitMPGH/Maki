@@ -111,7 +111,7 @@ public class SeriesCreationService(
         string metadataProviderId,
         int rootFolderId,
         bool monitored,
-        string monitorNewItems,
+        string? monitorNewItems,
         CancellationToken ct,
         bool deferSourceMatching = false,
         string? incognito = null,
@@ -177,12 +177,11 @@ public class SeriesCreationService(
         var series = SeriesMetadataMapper.NewFromMetadata(metadata);
         // Monitoring is only the mode now, so an unmonitored add is simply mode None —
         // there's no separate flag left for it to contradict.
-        series.MonitorNewItems = await DefaultedMonitorMode(
-            !monitored
-                ? NewChapterMonitorMode.None
-                : Enum.TryParse<NewChapterMonitorMode>(monitorNewItems, true, out var mode)
-                    ? mode
-                    : NewChapterMonitorMode.All, ct);
+        series.MonitorNewItems = !monitored
+            ? NewChapterMonitorMode.None
+            : Enum.TryParse<NewChapterMonitorMode>(monitorNewItems, true, out var mode) && Enum.IsDefined(mode)
+                ? await DefaultedMonitorMode(mode, ct)
+                : await MonitorDefaults.ForNewSeriesAsync(appSettings, ct);
         // An explicit choice from the add form wins, including an explicit "Off" over a rule that
         // would have hidden it. Only an absent value consults the per-rating rules.
         series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode)

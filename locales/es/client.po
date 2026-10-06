@@ -9190,6 +9190,7 @@ msgid "Monitored"
 msgstr "Supervisado"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Monitoring"
 msgstr "Supervisión"
@@ -17102,6 +17103,10 @@ msgstr "Bienvenido a Maki"
 
 #: src/api/readingProfiles.ts
 msgid "Western (OEL)"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "What a series added with monitoring on, or imported from disk, starts with. Smart downloads the next few chapters ahead of your reading."
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx

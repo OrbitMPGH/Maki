@@ -2977,6 +2977,8 @@ export function useSaveMetadataSettings() {
 
 export interface MonitoringSettings {
   unmonitorSpecials: boolean
+  /** "All" | "MainOnly" | "Smart": what a series added without an explicit mode starts with. */
+  defaultMode: string
 }
 
 export function useMonitoringSettings() {
@@ -2989,10 +2991,11 @@ export function useMonitoringSettings() {
 export function useSaveMonitoringSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (unmonitorSpecials: boolean) =>
+    // Partial on purpose: the server leaves a field it isn't sent as it is.
+    mutationFn: (patch: Partial<MonitoringSettings>) =>
       api<MonitoringSettings>('/settings/monitoring', {
         method: 'PUT',
-        body: JSON.stringify({ unmonitorSpecials }),
+        body: JSON.stringify(patch),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'monitoring'] })

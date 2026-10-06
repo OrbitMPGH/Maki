@@ -5,8 +5,8 @@ namespace Maki.Api.Tests;
 
 /// <summary>
 /// <see cref="SmartDownloadJob.SeriesNeedingTopUpAsync"/> is the eligibility gate the job runs
-/// before topping anything up: only a Smart series whose downloaded-but-unread backlog has shrunk
-/// to within the configured limit is due, and only once reading progress exists at all.
+/// before topping anything up. A Smart series nobody has read is due only for its first batch; after
+/// that, it is due once the downloaded-but-unread backlog past the reader has shrunk to the limit.
 /// </summary>
 public class SeriesNeedingTopUpTests : IDisposable
 {
@@ -53,11 +53,11 @@ public class SeriesNeedingTopUpTests : IDisposable
     {
         using var db = _db.NewContext();
         var due = await SmartDownloadJob.SeriesNeedingTopUpAsync(db, limit, CancellationToken.None);
-        return due.Select(s => s.Id).ToList();
+        return due.Select(t => t.Series.Id).ToList();
     }
 
     [Fact]
-    public async Task Not_due_without_any_reading_progress()
+    public async Task Not_due_without_reading_once_something_is_on_disk()
     {
         var id = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart);
         SeedDownloaded(id, 1m, 2m, 3m);
@@ -65,13 +65,42 @@ public class SeriesNeedingTopUpTests : IDisposable
         Assert.DoesNotContain(id, await Due());
     }
 
+    /// <summary>
+    /// A new Smart series used to wait for a reading state and a downloaded chapter before its first
+    /// batch, so one added and never touched by hand downloaded nothing at all.
+    /// </summary>
     [Fact]
-    public async Task Not_due_with_no_downloaded_chapters()
+    public async Task A_new_series_with_nothing_read_or_downloaded_gets_its_first_batch()
     {
         var id = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart);
-        SeedReadingState(id, maxChapter: 1);
 
-        Assert.DoesNotContain(id, await Due());
+        using var db = _db.NewContext();
+        var due = Assert.Single(await SmartDownloadJob.SeriesNeedingTopUpAsync(db, 5, CancellationToken.None));
+        Assert.Equal(id, due.Series.Id);
+        Assert.Null(due.After);
+    }
+
+    [Fact]
+    public async Task Due_with_reading_and_nothing_downloaded_starting_after_the_reader()
+    {
+        var id = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart);
+        SeedReadingState(id, maxChapter: 40);
+
+        using var db = _db.NewContext();
+        var due = Assert.Single(await SmartDownloadJob.SeriesNeedingTopUpAsync(db, 5, CancellationToken.None));
+        Assert.Equal(id, due.Series.Id);
+        Assert.Equal(40m, due.After);
+    }
+
+    [Fact]
+    public void A_batch_skips_chapters_at_or_below_the_reader()
+    {
+        Chapter Ch(int id, decimal? n) => new() { Id = id, Number = n, Language = "en" };
+        Chapter[] chapters = [Ch(1, 1m), Ch(2, 40m), Ch(3, 41m), Ch(4, 42m), Ch(5, null)];
+
+        Assert.Equal([3, 4], Chapter.NextWanted(SmartDownloadJob.Ahead(chapters, 40m), 2));
+        Assert.Equal([1, 2], Chapter.NextWanted(SmartDownloadJob.Ahead(chapters, null), 2));
+        Assert.Equal([3, 4, 5], Chapter.NextWanted(SmartDownloadJob.Ahead(chapters, 40m), 10));
     }
 
     [Fact]

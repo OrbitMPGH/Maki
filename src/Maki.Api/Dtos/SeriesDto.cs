@@ -336,7 +336,8 @@ public record AddSeriesRequest(
     string MetadataProviderId,
     int RootFolderId,
     bool Monitored = true,
-    string MonitorNewItems = "All",
+    // Null follows the "Default monitoring for new series" setting.
+    string? MonitorNewItems = null,
     string? Incognito = null,
     string? AddedFrom = null,
     Guid? ClientMutationId = null,

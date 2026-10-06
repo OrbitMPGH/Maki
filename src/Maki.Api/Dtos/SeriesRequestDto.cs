@@ -78,7 +78,7 @@ public record CreateSeriesRequestBody(
 /// </summary>
 public record ApproveSeriesRequestBody(
     int? RootFolderId = null,
-    string MonitorNewItems = "All",
+    string? MonitorNewItems = null,
     string? Note = null);
 
 public record RejectSeriesRequestBody(string? Note = null);

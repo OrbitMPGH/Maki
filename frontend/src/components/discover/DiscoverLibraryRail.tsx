@@ -118,7 +118,8 @@ export function DiscoverLibraryRail({
         metadataProviderId: item.providerId,
         rootFolderId: Number(rootFolderId),
         monitored,
-        monitorNewItems: monitored ? 'All' : 'None',
+        // Left out when monitoring, so the server applies the instance's default mode.
+        monitorNewItems: monitored ? undefined : 'None',
         incognito: incognito ?? 'Off',
         addedFrom: addedFrom ?? 'library',
         clientMutationId: addMutationId.current,

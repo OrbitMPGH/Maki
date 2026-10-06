@@ -978,6 +978,10 @@ msgstr "Unknown source(s): {sources}"
 
 #. Shown when a client asks for an interface language Maki ships no translation for.
 #: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.invalidMonitorMode"
+msgstr "The default monitoring for new series must be All, MainOnly or Smart"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.unsupportedLanguage"
 msgstr "Unsupported language: {language}"
 
