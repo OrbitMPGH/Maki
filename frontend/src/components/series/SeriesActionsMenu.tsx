@@ -13,6 +13,7 @@ import {
     IconSearch,
     IconSparkles,
     IconTrash,
+    IconTrashX,
 } from '@tabler/icons-react'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationOptions } from '../ui/seriesNotifications'
@@ -48,6 +49,8 @@ export function SeriesActionsMenu({
                                       notificationMode,
                                       upgradeProfileId,
                                       upgradeProfiles,
+                                      readFileCleanup,
+                                      readFileCleanupActive,
                                       canScanUpgrades,
                                       scanningUpgrades,
                                       searchingVolumes,
@@ -61,6 +64,7 @@ export function SeriesActionsMenu({
                                       onSetIncognito,
                                       onSetNotify,
                                       onSetUpgradeProfile,
+                                      onSetReadFileCleanup,
                                       onScanUpgrades,
                                       onSearchVolumes,
                                       canRemove,
@@ -72,6 +76,10 @@ export function SeriesActionsMenu({
     /** Null means "instance default", i.e. no profile pinned to this series. */
     upgradeProfileId: number | null
     upgradeProfiles: UpgradeProfileDto[]
+    /** "Default" | "On" | "Off". */
+    readFileCleanup: string
+    /** The choice and the instance switch combined, for the value shown inline. */
+    readFileCleanupActive: boolean
     /** DownloadChapters: gates the "Scan for upgrades" item, same permission as "Upgrade now". */
     canScanUpgrades: boolean
     scanningUpgrades: boolean
@@ -86,6 +94,7 @@ export function SeriesActionsMenu({
     onSetIncognito: (mode: string) => void
     onSetNotify: (mode: string) => void
     onSetUpgradeProfile: (upgradeProfileId: number | null) => void
+    onSetReadFileCleanup: (mode: string) => void
     onScanUpgrades: () => void
     onSearchVolumes: () => void
     canRemove: boolean
@@ -151,6 +160,37 @@ export function SeriesActionsMenu({
                 <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
                     <Trans>Rename files</Trans>
                 </Menu.Item>
+                <Menu.Sub>
+                    <Menu.Sub.Target>
+                        <Menu.Sub.Item
+                            leftSection={<IconTrashX size={16} />}
+                            rightSection={
+                                <Text size="xs" c="var(--ink-3)">
+                                    {readFileCleanupActive ? t`On` : t`Off`}
+                                </Text>
+                            }
+                        >
+                            <Trans>Clean up read files</Trans>
+                        </Menu.Sub.Item>
+                    </Menu.Sub.Target>
+                    <Menu.Sub.Dropdown maw={264}>
+                        <Menu.Label>
+                            <Trans>Delete a chapter's file some days after everyone has read it</Trans>
+                        </Menu.Label>
+                        <Menu.RadioGroup value={readFileCleanup} onChange={onSetReadFileCleanup}>
+                            <Menu.RadioItem value="Default">
+                                <Trans>Follow the setting</Trans>
+                            </Menu.RadioItem>
+                            <Menu.RadioItem value="On">
+                                <Trans>On for this series</Trans>
+                            </Menu.RadioItem>
+                            <Menu.RadioItem value="Off">
+                                <Trans>Off for this series</Trans>
+                            </Menu.RadioItem>
+                        </Menu.RadioGroup>
+                        <Menu.Label><Trans>Read history stays, and the chapters aren't downloaded again.</Trans></Menu.Label>
+                    </Menu.Sub.Dropdown>
+                </Menu.Sub>
 
                 <Menu.Divider />
                 <Menu.Label><Trans>Automation</Trans></Menu.Label>

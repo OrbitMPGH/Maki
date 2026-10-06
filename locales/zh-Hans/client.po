@@ -570,6 +570,10 @@ msgstr "{count, plural, other {显示受影响的 # 部作品}}"
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgstr "{cycles, plural, other {重新添加 #×}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "{decade}s"
@@ -4099,6 +4103,15 @@ msgstr "选择根文件夹"
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 msgstr "声明中用于指定权限的值，例如 <0>DownloadChapters</0>。无法匹配任何内容的值会被忽略。"
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Clean up read chapters"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Clean up read files"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/HealthPage.tsx
@@ -5091,6 +5104,10 @@ msgstr "连续天数"
 msgid "Days active"
 msgstr "活跃天数"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days after reading"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
@@ -5186,6 +5203,10 @@ msgstr "删除 {name}？"
 msgid "Delete {selectedCount} series?"
 msgstr "删除 {selectedCount} 个系列？"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Delete a chapter's file some days after everyone has read it"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Delete backup"
@@ -5245,6 +5266,15 @@ msgstr "删除配置文件"
 msgid "Delete rail"
 msgstr "删除推荐栏"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Delete read chapters for every series"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "delete read, auto delete, cleanup, clean up, disk space, retention, remove read chapters"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Delete request"
@@ -5302,6 +5332,10 @@ msgstr "删除用户"
 #, fuzzy
 msgid "Deleted \"{name}\""
 msgstr "已删除“{name}”"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6383,6 +6417,10 @@ msgstr "磁盘上未关联的文件"
 msgid "File removed"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed soon"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -6655,6 +6693,10 @@ msgstr ""
 #, fuzzy
 msgid "Follow"
 msgstr "关注"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow the setting"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -7865,6 +7907,10 @@ msgstr "在本地保存 MangaBaka 数据副本"
 #, fuzzy
 msgid "Keep as is"
 msgstr "保持不变"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Keep each reader's last read chapter"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10610,6 +10656,7 @@ msgstr "OEL"
 msgid "of reading time"
 msgstr "阅读时间的"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -10627,6 +10674,10 @@ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Off for this series"
 msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
@@ -10654,6 +10705,10 @@ msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Off stops the daily scan and the daily volume search. Scan now and per-series scans still work."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Off: only series switched on from their own menu are cleaned up."
 msgstr ""
 
 #: src/api/upgrades.ts
@@ -10690,6 +10745,7 @@ msgstr "最早优先"
 msgid "OLED black"
 msgstr "OLED 黑色"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -10709,6 +10765,10 @@ msgstr "在磁盘上"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "On for this series"
 msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -11888,10 +11948,18 @@ msgstr "阅读几章后这里会填充内容。"
 msgid "Read ch. {resumeAt}"
 msgstr "阅读第 {resumeAt} 章"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Read file cleanup is on for this series"
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "Read first chapter"
 msgstr "阅读第一章"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Read history stays, and the chapters aren't downloaded again."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13231,6 +13299,7 @@ msgstr "保存你的恢复代码"
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -14519,6 +14588,10 @@ msgstr "磁盘上的快照：{snapshotSize}，刷新于 {refreshedAtLabel}"
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "磁盘上的快照：{snapshotSize}，刷新时间未知"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "So there is always something to look back at where you stopped."
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy

@@ -473,6 +473,10 @@ msgstr "{count, plural, one {Show # affected series} other {Show # affected seri
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+msgstr "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "{decade}s"
 msgstr "{decade}s"
@@ -3349,6 +3353,15 @@ msgstr "Choose a root folder"
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 msgstr "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Clean up read chapters"
+msgstr "Clean up read chapters"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Clean up read files"
+msgstr "Clean up read files"
+
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/HealthPage.tsx
@@ -4163,6 +4176,10 @@ msgstr "Day streak"
 msgid "Days active"
 msgstr "Days active"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days after reading"
+msgstr "Days after reading"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "Decides when your reading day ends, which is what streaks and daily goals count against."
@@ -4241,6 +4258,10 @@ msgstr "Delete {name}?"
 msgid "Delete {selectedCount} series?"
 msgstr "Delete {selectedCount} series?"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Delete a chapter's file some days after everyone has read it"
+msgstr "Delete a chapter's file some days after everyone has read it"
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Delete backup"
 msgstr "Delete backup"
@@ -4291,6 +4312,15 @@ msgstr "Delete profile"
 msgid "Delete rail"
 msgstr "Delete rail"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Delete read chapters for every series"
+msgstr "Delete read chapters for every series"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "delete read, auto delete, cleanup, clean up, disk space, retention, remove read chapters"
+msgstr "delete read, auto delete, cleanup, clean up, disk space, retention, remove read chapters"
+
 #: src/pages/RequestsPage.tsx
 msgid "Delete request"
 msgstr "Delete request"
@@ -4337,6 +4367,10 @@ msgstr "Delete user"
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Deleted \"{name}\""
 msgstr "Deleted \"{name}\""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
+msgstr "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
 
 #: src/pages/HealthPage.tsx
 msgid "Deleting"
@@ -5217,6 +5251,10 @@ msgstr "file on disk, not linked"
 msgid "File removed"
 msgstr "File removed"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed soon"
+msgstr "File removed soon"
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -5441,6 +5479,10 @@ msgstr "Folders where series are stored. Point Kavita at the same folders. Which
 #: src/pages/CreatorPage.tsx
 msgid "Follow"
 msgstr "Follow"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow the setting"
+msgstr "Follow the setting"
 
 #: src/pages/CreatorPage.tsx
 msgid "Following"
@@ -6431,6 +6473,10 @@ msgstr "Keep a local copy of MangaBaka"
 #: src/components/SourceMeasurePanel.tsx
 msgid "Keep as is"
 msgstr "Keep as is"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Keep each reader's last read chapter"
+msgstr "Keep each reader's last read chapter"
 
 #: src/pages/SettingsPage.tsx
 msgid "Keep editing"
@@ -8672,6 +8718,7 @@ msgstr "OEL"
 msgid "of reading time"
 msgstr "of reading time"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Off"
@@ -8688,6 +8735,10 @@ msgstr "Off answers from the API instead and turns Discover off. The copy on dis
 #: src/components/settings/SecuritySection.tsx
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
 msgstr "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Off for this series"
+msgstr "Off for this series"
 
 #: src/components/settings/ProgressSection.tsx
 #~ msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
@@ -8712,6 +8763,10 @@ msgstr "Off skips series set to No scrobble or Full incognito."
 #: src/pages/settings/DownloadCards.tsx
 msgid "Off stops the daily scan and the daily volume search. Scan now and per-series scans still work."
 msgstr "Off stops the daily scan and the daily volume search. Scan now and per-series scans still work."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Off: only series switched on from their own menu are cleaned up."
+msgstr "Off: only series switched on from their own menu are cleaned up."
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -8741,6 +8796,7 @@ msgstr "Oldest first"
 msgid "OLED black"
 msgstr "OLED black"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "On"
@@ -8758,6 +8814,10 @@ msgstr "On disk"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
 msgstr "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "On for this series"
+msgstr "On for this series"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "On hold"
@@ -9728,9 +9788,17 @@ msgstr "Read a few chapters and this fills in."
 msgid "Read ch. {resumeAt}"
 msgstr "Read ch. {resumeAt}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Read file cleanup is on for this series"
+msgstr "Read file cleanup is on for this series"
+
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "Read first chapter"
 msgstr "Read first chapter"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Read history stays, and the chapters aren't downloaded again."
+msgstr "Read history stays, and the chapters aren't downloaded again."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Read in Kavita"
@@ -10829,6 +10897,7 @@ msgstr "Save your recovery codes"
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -11885,6 +11954,10 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed {refreshedAtLabel}"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "So there is always something to look back at where you stopped."
+msgstr "So there is always something to look back at where you stopped."
 
 #: src/api/inbox.ts
 msgid "Somebody filed a request"

@@ -21,8 +21,10 @@ import {
   useDownloadSettings,
   useProwlarrIndexers,
   useProwlarrOptions,
+  useReadFileCleanupSettings,
   useSaveDownloadSettings,
   useSaveProwlarrOptions,
+  useSaveReadFileCleanupSettings,
   useSaveSourceLanguages,
   type SourceOrderMode,
   useSourceLanguages,
@@ -418,6 +420,74 @@ export function SmartDownloadSection() {
           w={220}
         />
       </Group>
+    </SettingsSection>
+  )
+}
+
+export function ReadFileCleanupSection() {
+  const { t } = useLingui()
+  const { data: settings } = useReadFileCleanupSettings()
+  const save = useSaveReadFileCleanupSettings()
+  const [enabled, setEnabled] = useState(false)
+  const [days, setDays] = useState<number | string>(7)
+  const [keepLast, setKeepLast] = useState(true)
+  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+
+  useSliceSync(
+    settings,
+    (slice) => {
+      setEnabled(slice.enabled)
+      setDays(slice.days)
+      setKeepLast(slice.keepLast)
+    },
+    discarded,
+  )
+
+  const dirty =
+    settings !== undefined &&
+    (enabled !== settings.enabled || Number(days) !== settings.days || keepLast !== settings.keepLast)
+
+  return (
+    <SettingsSection
+      id="read-cleanup"
+      title={<Trans>Clean up read chapters</Trans>}
+      description={
+        <Trans>
+          Deletes a chapter's file once everyone reading the series has finished it and the days below
+          have passed. The chapter stays in the list with its read history, and Maki won't download
+          it again unless you ask. A series can turn this on or off for itself from its menu.
+        </Trans>
+      }
+      dirty={dirty}
+      saving={save.isPending}
+      onDiscard={discard}
+      onSave={() =>
+        save.mutate({ enabled, days: Number(days), keepLast }, { onSuccess: savedToast })
+      }
+    >
+      <Stack gap="md">
+        <Switch
+          label={t`Delete read chapters for every series`}
+          description={t`Off: only series switched on from their own menu are cleaned up.`}
+          checked={enabled}
+          onChange={(e) => setEnabled(e.currentTarget.checked)}
+        />
+        <NumberInput
+          label={t`Days after reading`}
+          min={1}
+          max={365}
+          clampBehavior="strict"
+          value={days}
+          onChange={setDays}
+          w={220}
+        />
+        <Switch
+          label={t`Keep each reader's last read chapter`}
+          description={t`So there is always something to look back at where you stopped.`}
+          checked={keepLast}
+          onChange={(e) => setKeepLast(e.currentTarget.checked)}
+        />
+      </Stack>
     </SettingsSection>
   )
 }

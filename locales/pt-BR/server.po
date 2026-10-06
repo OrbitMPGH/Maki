@@ -1272,6 +1272,11 @@ msgid "error.series.mutationIdReused"
 msgstr "Esse ID de mutação já foi usado para outra adição"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Read file cleanup must be Default, On or Off
+msgid "error.series.invalidReadCleanup"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
 #, fuzzy
 msgid "error.series.noFilesSelected"
@@ -1406,6 +1411,12 @@ msgstr "Fonte(s) desconhecida(s): {sources}"
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The default monitoring for new series must be All, MainOnly or Smart
 msgid "error.settings.invalidMonitorMode"
+msgstr ""
+
+#. {min} and {max} are whole numbers of days.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Days before read files are deleted must be between {min} and {max}
+msgid "error.settings.readCleanupDaysRange"
 msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs

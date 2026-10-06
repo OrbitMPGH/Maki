@@ -155,6 +155,7 @@ public class SettingsController(
         int VolumeMissingTolerance = 3,
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30);
+    public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -988,6 +989,32 @@ public class SettingsController(
             SourceOrder = await SourceOrderNameAsync(ct),
             ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"
         });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("readcleanup")]
+    public async Task<IActionResult> GetReadFileCleanup(
+        [FromServices] ReadFileCleanupService cleanup, CancellationToken ct)
+    {
+        var options = await cleanup.OptionsAsync(ct);
+        return Ok(new ReadFileCleanupSettings(options.Enabled, options.Days, options.KeepLast));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("readcleanup")]
+    public async Task<IActionResult> SetReadFileCleanup(
+        [FromBody] ReadFileCleanupSettings request, [FromServices] ReadFileCleanupService cleanup, CancellationToken ct)
+    {
+        if (request.Days is < 1 or > ReadFileCleanupService.MaxDays)
+        {
+            return this.Fail(localizer, "error.settings.readCleanupDaysRange",
+                new { min = 1, max = ReadFileCleanupService.MaxDays });
+        }
+
+        await settings.SetAsync(SettingKeys.ReadFileCleanupEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.ReadFileCleanupDays, request.Days.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.ReadFileCleanupKeepLast, request.KeepLast ? "true" : "false", ct);
+        return await GetReadFileCleanup(cleanup, ct);
     }
 
     [Authorize(Policy = Policies.Admin)]

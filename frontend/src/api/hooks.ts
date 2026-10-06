@@ -2139,6 +2139,47 @@ export interface SetUpgradeProfileResult {
 }
 
 /** Pins (or clears, with null) which upgrade profile a series resolves to instead of the instance default. */
+export function useSetReadFileCleanup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, mode }: { seriesId: number; mode: string }) =>
+      api<{ readFileCleanup: string }>(`/series/${seriesId}/readcleanup`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    },
+  })
+}
+
+export interface ReadFileCleanupSettings {
+  enabled: boolean
+  days: number
+  keepLast: boolean
+}
+
+export function useReadFileCleanupSettings() {
+  return useQuery({
+    queryKey: ['settings', 'readcleanup'],
+    queryFn: () => api<ReadFileCleanupSettings>('/settings/readcleanup'),
+  })
+}
+
+export function useSaveReadFileCleanupSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: ReadFileCleanupSettings) =>
+      api<ReadFileCleanupSettings>('/settings/readcleanup', { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'readcleanup'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    },
+  })
+}
+
 export function useSetUpgradeProfile() {
   const queryClient = useQueryClient()
   return useMutation({

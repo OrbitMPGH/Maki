@@ -570,6 +570,10 @@ msgstr "{count, plural, other {影響のあるシリーズを#件表示}}"
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgstr "{cycles, plural, other {#×件を再追加}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "{decade}s"
@@ -4099,6 +4103,15 @@ msgstr "ルートフォルダーを選択"
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 msgstr "権限を示す値を持つクレーム。例：<0>DownloadChapters</0>。何にも一致しない値は無視されます。"
 
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Clean up read chapters"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Clean up read files"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/pages/HealthPage.tsx
@@ -5091,6 +5104,10 @@ msgstr "連続日数"
 msgid "Days active"
 msgstr "活動日数"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days after reading"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
@@ -5186,6 +5203,10 @@ msgstr "{name}を削除しますか？"
 msgid "Delete {selectedCount} series?"
 msgstr "選択した{selectedCount}シリーズを削除しますか？"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Delete a chapter's file some days after everyone has read it"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Delete backup"
@@ -5245,6 +5266,15 @@ msgstr "プロファイルを削除"
 msgid "Delete rail"
 msgstr "レールを削除"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Delete read chapters for every series"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "delete read, auto delete, cleanup, clean up, disk space, retention, remove read chapters"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Delete request"
@@ -5302,6 +5332,10 @@ msgstr "ユーザーを削除"
 #, fuzzy
 msgid "Deleted \"{name}\""
 msgstr "「{name}」を削除しました"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6383,6 +6417,10 @@ msgstr "ディスク上にある未リンクのファイル"
 msgid "File removed"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "File removed soon"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -6655,6 +6693,10 @@ msgstr ""
 #, fuzzy
 msgid "Follow"
 msgstr "フォロー"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow the setting"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -7865,6 +7907,10 @@ msgstr "MangaBakaのローカルコピーを保持"
 #, fuzzy
 msgid "Keep as is"
 msgstr "そのままにする"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Keep each reader's last read chapter"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10610,6 +10656,7 @@ msgstr "OEL"
 msgid "of reading time"
 msgstr "読書時間の"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -10627,6 +10674,10 @@ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Off for this series"
 msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
@@ -10654,6 +10705,10 @@ msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Off stops the daily scan and the daily volume search. Scan now and per-series scans still work."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Off: only series switched on from their own menu are cleaned up."
 msgstr ""
 
 #: src/api/upgrades.ts
@@ -10690,6 +10745,7 @@ msgstr "古い順"
 msgid "OLED black"
 msgstr "OLEDブラック"
 
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -10709,6 +10765,10 @@ msgstr "ディスク上"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "On for this series"
 msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -11888,10 +11948,18 @@ msgstr "いくつか章を読むとここに表示されます。"
 msgid "Read ch. {resumeAt}"
 msgstr "第{resumeAt}章を読む"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Read file cleanup is on for this series"
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "Read first chapter"
 msgstr "最初の章を読む"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Read history stays, and the chapters aren't downloaded again."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13231,6 +13299,7 @@ msgstr "復旧コードを保存"
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -14519,6 +14588,10 @@ msgstr "ディスク上のスナップショット：{snapshotSize}、更新{ref
 #, fuzzy
 msgid "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 msgstr "ディスク上のスナップショット：{snapshotSize}、更新時刻不明"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "So there is always something to look back at where you stopped."
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy

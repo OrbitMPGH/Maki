@@ -886,7 +886,7 @@ public class SeriesController(
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> Get(int id, CancellationToken ct)
+    public async Task<IActionResult> Get(int id, [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.UserTags).Include(s => s.RootFolder)
             .FirstOrDefaultAsync(s => s.Id == id, ct);
@@ -934,6 +934,7 @@ public class SeriesController(
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             RemovedChapterCount = counts?.Removed ?? 0,
+            ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
             ReadTimeEstimate = estimate is null
                 ? null
@@ -1695,6 +1696,29 @@ public class SeriesController(
         series.UpgradeProfileId = request.UpgradeProfileId;
         await db.SaveChangesAsync(ct);
         return Ok(new { upgradeProfileId = series.UpgradeProfileId });
+    }
+
+    /// <param name="Mode">"Default", "On" or "Off".</param>
+    public record ReadFileCleanupRequest(string Mode);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{id:int}/readcleanup")]
+    public async Task<IActionResult> SetReadFileCleanup(int id, [FromBody] ReadFileCleanupRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<ReadFileCleanup>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
+        {
+            return this.Fail(localizer, "error.series.invalidReadCleanup");
+        }
+
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        series.ReadFileCleanup = mode;
+        await db.SaveChangesAsync(ct);
+        return Ok(new { readFileCleanup = mode.ToString() });
     }
 
     /// <param name="UpgradeProfileId">Null clears every pin so the series follow the instance default.</param>

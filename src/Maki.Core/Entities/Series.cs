@@ -59,6 +59,9 @@ public class Series
 
     /// <summary>Null means the instance default from <c>SettingKeys.UpgradesDefaultProfileId</c>, which may itself be unset.</summary>
     public int? UpgradeProfileId { get; set; }
+
+    /// <summary>Opts this series in or out of deleting read chapter files; see <c>ReadFileCleanupService</c>.</summary>
+    public ReadFileCleanup ReadFileCleanup { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
 
     /// <summary>Which source a download tries first. Null means the instance default from <c>SettingKeys.DownloadSourceOrder</c>.</summary>

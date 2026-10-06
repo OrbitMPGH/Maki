@@ -43,6 +43,7 @@ import {
   ProwlarrSection,
   QbittorrentCard,
   SmartDownloadSection,
+  ReadFileCleanupSection,
   SourceLanguageSection,
   SourcePrioritySection,
   UpgradeScanSection,
@@ -88,6 +89,7 @@ function useSectionNodes(): Record<string, ReactNode> {
 
       downloads: <DownloadQueueSection />,
       'smart-download': <SmartDownloadSection />,
+      'read-cleanup': <ReadFileCleanupSection />,
       languages: <SourceLanguageSection />,
       sources: <SourcePrioritySection />,
       flaresolverr: <FlareSolverrCard />,

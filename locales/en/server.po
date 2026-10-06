@@ -886,6 +886,10 @@ msgid "error.series.mutationIdReused"
 msgstr "That mutation ID was already used for a different add"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidReadCleanup"
+msgstr "Read file cleanup must be Default, On or Off"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.noFilesSelected"
 msgstr "No files selected"
 
@@ -980,6 +984,11 @@ msgstr "Unknown source(s): {sources}"
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.invalidMonitorMode"
 msgstr "The default monitoring for new series must be All, MainOnly or Smart"
+
+#. {min} and {max} are whole numbers of days.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.readCleanupDaysRange"
+msgstr "Days before read files are deleted must be between {min} and {max}"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.unsupportedLanguage"

@@ -42,7 +42,8 @@ public class ChapterController(
 {
     [HttpGet]
     public async Task<IActionResult> List(
-        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
+        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades,
+        [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct)
     {
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
@@ -88,6 +89,13 @@ public class ChapterController(
             .ToListAsync(ct);
         var evaluator = await upgrades.ForSeriesAsync(seriesId, ct);
 
+        // When each file is due to be cleaned up, so the table can say so ahead of time.
+        var cleanupOptions = await readFileCleanup.OptionsAsync(ct);
+        var cleanupMode = await db.Series.Where(s => s.Id == seriesId).Select(s => s.ReadFileCleanup).FirstOrDefaultAsync(ct);
+        var deleteDue = rows.Count > 0 && ReadFileCleanupService.AppliesTo(cleanupMode, cleanupOptions)
+            ? await readFileCleanup.ScheduleAsync(seriesId, cleanupOptions, ct)
+            : [];
+
         // When a chapter's backing file is a volume/compilation CBZ, surface that
         // volume so the UI can show "Vol.x Ch.y" even for scrape-source chapters that
         // carry no volume metadata (parsing can't run inside the EF query, so it's
@@ -106,6 +114,7 @@ public class ChapterController(
             c.Wanted,
             c.HasFile,
             c.FileRemovedAt,
+            FileDeleteDueAt = deleteDue.TryGetValue(c.Id, out var dueAt) ? dueAt : (DateTime?)null,
             c.FilePath,
             c.FileSourceName,
             c.FileReleaseName,

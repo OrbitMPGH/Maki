@@ -41,6 +41,17 @@ public static class SeriesTypes
     }
 }
 
+/// <summary>
+/// Whether a series' read chapter files are deleted after the configured number of days. Default
+/// follows the instance switch, which is off unless an admin turns it on; On and Off override it.
+/// </summary>
+public enum ReadFileCleanup
+{
+    Default = 0,
+    On = 1,
+    Off = 2
+}
+
 public enum NewChapterMonitorMode
 {
     All = 0,

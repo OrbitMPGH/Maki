@@ -72,6 +72,15 @@ public static class SettingKeys
     /// </summary>
     public const string MonitoringDefaultMode = "monitoring.defaultmode";
 
+    /// <summary>"true" deletes read chapter files for every series left on Default. Off unless set.</summary>
+    public const string ReadFileCleanupEnabled = "cleanup.readfiles.enabled";
+
+    /// <summary>Days after the last reader finished a chapter before its file goes. Default 7.</summary>
+    public const string ReadFileCleanupDays = "cleanup.readfiles.days";
+
+    /// <summary>"false" lets each reader's most recently finished chapter go too. Kept unless set.</summary>
+    public const string ReadFileCleanupKeepLast = "cleanup.readfiles.keeplast";
+
     /// <summary>
     /// More new wanted chapters than this in one monitored refresh of a series are held back instead
     /// of queued. Default 5; 0 turns the hold off. A real release rarely drops that many at once, but

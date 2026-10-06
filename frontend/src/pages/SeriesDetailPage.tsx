@@ -40,6 +40,7 @@ import {
   IconBook,
   IconChevronDown,
   IconCircleCheck,
+  IconClock,
   IconDownload,
   IconEye,
   IconEyeCheck,
@@ -87,6 +88,7 @@ import {
   useSetSeriesNotificationMode,
   useSetMonitorMode,
   useSetUpgradeProfile,
+  useSetReadFileCleanup,
   useSetRating,
   useToggleChapterWanted,
   useUnlinkChapters,
@@ -449,6 +451,7 @@ function SeriesDetailBody() {
   const [nextCount, setNextCount] = useState<number | string>(10)
   const setMonitorMode = useSetMonitorMode()
   const setUpgradeProfile = useSetUpgradeProfile()
+  const setReadFileCleanup = useSetReadFileCleanup()
   const { data: upgradeProfiles } = useUpgradeProfiles()
   const setFileTrusted = useSetFileTrusted()
   const upgradeChapterNow = useUpgradeChapterNow()
@@ -1678,6 +1681,11 @@ function SeriesDetailBody() {
                     notificationMode={series.notificationMode}
                     upgradeProfileId={series.upgradeProfileId}
                     upgradeProfiles={upgradeProfiles ?? []}
+                    readFileCleanup={series.readFileCleanup}
+                    readFileCleanupActive={series.readFileCleanupActive}
+                    onSetReadFileCleanup={(mode) =>
+                        setReadFileCleanup.mutate({ seriesId, mode }, { onSuccess: () => notify.ok(staticT`Saved`) })
+                    }
                     canScanUpgrades={canDownload}
                     scanningUpgrades={runUpgradeScan.isPending || scanning}
                     busy={refresh.isPending || refreshMetadata.isPending || rescan.isPending}
@@ -2829,9 +2837,29 @@ function SeriesDetailBody() {
                                               )
                                             })()
                                         ) : c.hasFile ? (
-                                            <Badge size="sm" color="var(--ok)" variant="light" leftSection={<IconCircleCheck size={12} />}>
-                                              <Trans>Downloaded</Trans>
-                                            </Badge>
+                                            <>
+                                              <Badge size="sm" color="var(--ok)" variant="light" leftSection={<IconCircleCheck size={12} />}>
+                                                <Trans>Downloaded</Trans>
+                                              </Badge>
+                                              {c.fileDeleteDueAt && (() => {
+                                                const daysLeft = Math.max(
+                                                    0,
+                                                    Math.ceil((Date.parse(c.fileDeleteDueAt) - Date.now()) / 86_400_000),
+                                                )
+                                                return (
+                                                    <Tooltip label={t`Read file cleanup is on for this series`} withArrow>
+                                                      <Badge size="sm" color="gray" variant="light" leftSection={<IconClock size={12} />}>
+                                                        {daysLeft === 0
+                                                            ? t`File removed soon`
+                                                            : plural(daysLeft, {
+                                                              one: 'File removed in # day',
+                                                              other: 'File removed in # days',
+                                                            })}
+                                                      </Badge>
+                                                    </Tooltip>
+                                                )
+                                              })()}
+                                            </>
                                         ) : c.fileRemovedAt ? (
                                             <Tooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
                                               <Badge size="sm" color="gray" variant="light" leftSection={<IconTrash size={12} />}>

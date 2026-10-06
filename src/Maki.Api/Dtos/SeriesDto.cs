@@ -181,6 +181,12 @@ public record SeriesDto(
     /// <summary>The series' own upgrade profile pin. Null means it follows the instance default.</summary>
     public int? UpgradeProfileId { get; init; }
 
+    /// <summary>"Default" | "On" | "Off": this series' choice about deleting read chapter files.</summary>
+    public string ReadFileCleanup { get; init; } = nameof(Core.Entities.ReadFileCleanup.Default);
+
+    /// <summary>Whether read files are actually being deleted, the series' choice and the instance switch combined. Detail endpoint only.</summary>
+    public bool ReadFileCleanupActive { get; init; }
+
     /// <summary>The last upgrade scan pass over this series, or null when it has never been scanned.</summary>
     public LastUpgradeScanDto? LastUpgradeScan { get; init; }
 
@@ -278,6 +284,7 @@ public record SeriesDto(
         notificationMode.ToString())
     {
         UpgradeProfileId = s.UpgradeProfileId,
+        ReadFileCleanup = s.ReadFileCleanup.ToString(),
         LastUpgradeScan = s.LastUpgradeScanUtc is { } at
             ? new LastUpgradeScanDto(at, s.LastUpgradeScanProbed ?? 0, s.LastUpgradeScanQueued ?? 0,
                 s.LastUpgradeScanChecked, LastUpgradeScanDto.ParseSkips(s.LastUpgradeScanSkipsJson))

@@ -777,6 +777,7 @@ try
     builder.Services.AddScoped<HealthMatchService>();
     builder.Services.AddScoped<HealthOperationService>();
     builder.Services.AddScoped<ChapterFileDeletion>();
+    builder.Services.AddScoped<ReadFileCleanupService>();
     builder.Services.AddHostedService<HealthWorker>();
 
     builder.Services.AddSingleton(TimeProvider.System);
@@ -970,6 +971,12 @@ try
             .WithIdentity("housekeeping")
             .StartAt(DateTimeOffset.UtcNow.AddHours(1))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // Off unless an admin or a series opts in; the job finds nothing to do until then.
+        q.ScheduleJob<Maki.Api.Jobs.ReadFileCleanupJob>(t => t
+            .WithIdentity("read-file-cleanup")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
 
         q.ScheduleJob<Maki.Api.Jobs.HealthCheckJob>(t => t
             .WithIdentity("health-check")

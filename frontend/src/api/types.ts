@@ -77,6 +77,10 @@ export interface SeriesDto {
   chapterFileCount: number
   /** Chapters whose file Maki deleted on purpose. Counted in `wantedChapterCount`, never missing. */
   removedChapterCount: number
+  /** "Default" | "On" | "Off": this series' choice about deleting read chapter files. */
+  readFileCleanup: string
+  /** Whether read files are actually being deleted, the choice and the instance switch combined. Detail endpoint only. */
+  readFileCleanupActive: boolean
   /** Every chapter known to exist, wanted or not. Denominator fallback when nothing is wanted. */
   knownChapterCount: number
   /** Chapters queued but not yet actively downloading (Queued / RateLimited). */
@@ -268,6 +272,8 @@ export interface ChapterDto {
   hasFile: boolean
   /** When Maki deleted this chapter's file on purpose; null while it has a file. Not missing, never re-queued on its own. */
   fileRemovedAt: string | null
+  /** When read file cleanup will delete this chapter's file, or null when it isn't scheduled. */
+  fileDeleteDueAt: string | null
   filePath: string | null
   /**
    * Where the file came from: a registered source's name, the literal "import" for a file brought
