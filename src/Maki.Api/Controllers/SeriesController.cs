@@ -962,6 +962,11 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.mutationIdRequired");
         if (request.UpgradeProfileId is { } profileId && !await db.UpgradeProfiles.AnyAsync(p => p.Id == profileId, ct))
             return this.Fail(localizer, "error.upgrades.profileNotFound");
+        // Same answer as a folder that does not exist: a non-admin must not be able to tell a folder
+        // they were not granted apart from one that is not there.
+        if (!currentUser.AllRootFolders && !currentUser.Has(MakiPermission.Admin)
+            && !currentUser.RootFolderIds.Contains(request.RootFolderId))
+            return this.Fail(localizer, "error.series.rootFolderNotFound");
         // deferSourceMatching: the button is the whole point here. Matching every source and pulling
         // the first chapter list is tens of seconds of network; the caller gets the series row and
         // the Sources card shows a spinner until the background worker is done.

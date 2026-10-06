@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
+using Maki.Core.Security;
 using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -11,19 +12,25 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/rootfolder")]
-// Admin-only: a root folder is a filesystem path the server will read and write, and listing them
-// discloses the host's directory layout.
-[Authorize(Policy = Policies.Admin)]
-public class RootFolderController(ILocalizer localizer, MakiDbContext db, IUserSnapshotCache snapshots)
+// Writes are admin-only: a root folder is a filesystem path the server will read and write. The
+// list is open to anyone who may add a series, but scoped to the folders they were granted, so a
+// non-admin learns no more of the host's layout than the folders their own library already lives in
+// (issue #114: AddSeries without Admin had nowhere to point the add at).
+public class RootFolderController(
+    ILocalizer localizer, MakiDbContext db, IUserSnapshotCache snapshots, ICurrentUser currentUser)
     : ControllerBase
 {
+    [Authorize(Policy = Policies.AddSeries)]
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var folders = await db.RootFolders.ToListAsync(ct);
+        var folders = currentUser.AllRootFolders || currentUser.Has(MakiPermission.Admin)
+            ? await db.RootFolders.ToListAsync(ct)
+            : await db.RootFolders.Where(f => currentUser.RootFolderIds.Contains(f.Id)).ToListAsync(ct);
         return Ok(folders.Select(ToDto));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] RootFolder folder, CancellationToken ct)
     {
@@ -47,6 +54,7 @@ public class RootFolderController(ILocalizer localizer, MakiDbContext db, IUserS
         return Ok(ToDto(folder));
     }
 
+    [Authorize(Policy = Policies.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

@@ -3,6 +3,7 @@ using Maki.Api.Controllers;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -33,7 +34,76 @@ public class RootFolderControllerTests : IDisposable
 
     private readonly UserSnapshotCache _snapshots = new(new MemoryCache(new MemoryCacheOptions()));
 
-    private RootFolderController Controller() => new(new TestLocalizer(), _db.NewContext(), _snapshots);
+    private RootFolderController Controller(ICurrentUser? user = null) =>
+        new(new TestLocalizer(), _db.NewContext(), _snapshots, user ?? new TestCurrentUser(1));
+
+    private int SeedFolder()
+    {
+        using var db = _db.NewContext();
+        var folder = new RootFolder { Path = TempDir() };
+        db.RootFolders.Add(folder);
+        db.SaveChanges();
+        return folder.Id;
+    }
+
+    private static int[] ListedIds(IActionResult result) =>
+        ((IEnumerable<object>)((OkObjectResult)result).Value!)
+            .Select(dto => (int)dto.GetType().GetProperty("Id")!.GetValue(dto)!)
+            .Order()
+            .ToArray();
+
+    [Fact]
+    public async Task List_shows_every_folder_to_an_admin_without_a_blanket_grant()
+    {
+        var first = SeedFolder();
+        var second = SeedFolder();
+        var admin = new TestCurrentUser(1, permissions: MakiPermission.Admin, allRootFolders: false);
+
+        var result = await Controller(admin).List(CancellationToken.None);
+
+        Assert.Equal(new[] { first, second }.Order().ToArray(), ListedIds(result));
+    }
+
+    [Fact]
+    public async Task List_shows_a_non_admin_only_the_folders_they_were_granted()
+    {
+        var granted = SeedFolder();
+        SeedFolder();
+        var user = new TestCurrentUser(
+            2, permissions: MakiPermission.AddSeries, allRootFolders: false, rootFolderIds: new HashSet<int> { granted });
+
+        var result = await Controller(user).List(CancellationToken.None);
+
+        Assert.Equal([granted], ListedIds(result));
+    }
+
+    [Fact]
+    public async Task List_is_empty_for_a_non_admin_with_no_grants()
+    {
+        SeedFolder();
+        var user = new TestCurrentUser(2, permissions: MakiPermission.AddSeries, allRootFolders: false);
+
+        var result = await Controller(user).List(CancellationToken.None);
+
+        Assert.Empty(ListedIds(result));
+    }
+
+    [Fact]
+    public void Only_the_list_is_open_to_AddSeries_and_the_writes_stay_admin()
+    {
+        static string? PolicyOf(string method) =>
+            typeof(RootFolderController).GetMethod(method)!
+                .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: false)
+                .Cast<AuthorizeAttribute>()
+                .Single()
+                .Policy;
+
+        Assert.Null(typeof(RootFolderController)
+            .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: false).SingleOrDefault());
+        Assert.Equal(Policies.AddSeries, PolicyOf(nameof(RootFolderController.List)));
+        Assert.Equal(Policies.Admin, PolicyOf(nameof(RootFolderController.Add)));
+        Assert.Equal(Policies.Admin, PolicyOf(nameof(RootFolderController.Delete)));
+    }
 
     [Fact]
     public async Task Add_rejects_a_blank_path()

@@ -17525,9 +17525,13 @@ msgid "You bail around"
 msgstr "중단하는 시점은 대략"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+msgid "You can add series, but no root folder has been granted to you yet. Ask an admin to grant you one, or to add this title."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
-msgstr "시리즈를 추가할 수 있지만 루트 폴더는 관리자만 선택할 수 있습니다. 관리자에게 이 작품을 추가해 달라고 요청하거나 관리자 권한을 받으세요."
+#~ msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
+#~ msgstr "시리즈를 추가할 수 있지만 루트 폴더는 관리자만 선택할 수 있습니다. 관리자에게 이 작품을 추가해 달라고 요청하거나 관리자 권한을 받으세요."
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy

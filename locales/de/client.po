@@ -17525,9 +17525,13 @@ msgid "You bail around"
 msgstr "Du brichst ungefähr ab bei"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+msgid "You can add series, but no root folder has been granted to you yet. Ask an admin to grant you one, or to add this title."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
-msgstr "Du kannst Serien hinzufügen, aber nur ein Admin kann einen Stammordner auswählen. Bitte einen Admin, diesen Titel hinzuzufügen oder dir Adminrechte zu geben."
+#~ msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
+#~ msgstr "Du kannst Serien hinzufügen, aber nur ein Admin kann einen Stammordner auswählen. Bitte einen Admin, diesen Titel hinzuzufügen oder dir Adminrechte zu geben."
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy

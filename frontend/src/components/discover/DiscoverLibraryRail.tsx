@@ -202,18 +202,18 @@ export function DiscoverLibraryRail({
             {addedSeriesId != null ? <Trans>Go to series</Trans> : <Trans>View in library</Trans>}
           </Button>
         </>
-      ) : canAdd && !can('Admin') && (rootFolders?.length ?? 0) === 0 ? (
-        // AddSeries lets someone create a series, but the root folder list is admin-only (it
-        // discloses the host's directory layout), so a non-admin has nothing to point the add at.
-        // Say so rather than leaving a dead Select and a disabled button.
+      ) : canAdd && !can('Admin') && rootFolders !== undefined && rootFolders.length === 0 ? (
+        // AddSeries lets someone create a series, but only into a root folder they were granted
+        // under Settings, Users. With no grant there is nothing to point the add at. Say so rather
+        // than leaving a dead Select and a disabled button.
         <>
           <Title order={3} fz={16}>
             <Trans>Add to library</Trans>
           </Title>
           <Alert color="var(--warn)" variant="light" mt="md">
             <Trans>
-              You can add series, but only an admin can choose a root folder. Ask one to add this
-              title, or to grant you admin.
+              You can add series, but no root folder has been granted to you yet. Ask an admin to
+              grant you one, or to add this title.
             </Trans>
           </Alert>
         </>
