@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import { useSaveSettingsRecord } from './settingsRecord'
 
@@ -92,6 +92,23 @@ export interface AuthEvent {
 
 export const ME_QUERY_KEY = ['auth', 'me'] as const
 
+/**
+ * Drops every cached query except the identity one, so nothing one account fetched is shown to the
+ * next. Runs on logout, on any 401 and on every sign-in.
+ *
+ * Not qc.clear(): that tears down every Query instance, including the one the mounted useMe
+ * observer is attached to, so a setQueryData right after builds a fresh instance the observer was
+ * never subscribed to. Data updates in the cache, but nothing re-renders and AuthGate never swaps
+ * screens. Keeping ME_QUERY_KEY's instance alive lets the caller's setQueryData notify it directly.
+ */
+export function dropAccountData(qc: QueryClient): void {
+  qc.removeQueries({
+    predicate: (query) =>
+      query.queryKey.length !== ME_QUERY_KEY.length ||
+      !ME_QUERY_KEY.every((k, i) => query.queryKey[i] === k),
+  })
+}
+
 // The server stores this as the user's zone when none is set yet, so streaks use local days
 // before anybody opens Progress settings.
 function browserTimeZoneHeader(): Record<string, string> {
@@ -122,7 +139,9 @@ export function useLogin() {
       api<Me & LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: (result) => {
       // Two-factor is still pending, so there is no session yet and nothing to cache.
-      if (!result.requiresTwoFactor) qc.setQueryData(ME_QUERY_KEY, result)
+      if (result.requiresTwoFactor) return
+      dropAccountData(qc)
+      qc.setQueryData(ME_QUERY_KEY, result)
     },
   })
 }
@@ -132,7 +151,10 @@ export function useVerifyTwoFactor() {
   return useMutation({
     mutationFn: (body: { code: string; rememberMachine: boolean }) =>
       api<Me>('/auth/2fa', { method: 'POST', body: JSON.stringify(body) }),
-    onSuccess: (me) => qc.setQueryData(ME_QUERY_KEY, me),
+    onSuccess: (me) => {
+      dropAccountData(qc)
+      qc.setQueryData(ME_QUERY_KEY, me)
+    },
   })
 }
 
@@ -142,6 +164,7 @@ export function useSetup() {
     mutationFn: (body: { username: string; password: string; displayName?: string }) =>
       api<Me>('/auth/setup', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: (me) => {
+      dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, me)
       setSetupDone()
     },
@@ -153,16 +176,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
     onSuccess: () => {
-      // Clear everything except the identity query itself: qc.clear() tears down every Query
-      // instance, including the one the mounted useMe observer is attached to, so a setQueryData
-      // right after builds a fresh instance the observer was never subscribed to: data updates
-      // in the cache, but nothing re-renders and AuthGate never swaps to the login screen. Keeping
-      // ME_QUERY_KEY's instance alive lets setData below notify that same observer directly.
-      qc.removeQueries({
-        predicate: (query) =>
-          query.queryKey.length !== ME_QUERY_KEY.length ||
-          !ME_QUERY_KEY.every((k, i) => query.queryKey[i] === k),
-      })
+      dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, null)
     },
   })

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getInitialize, setUnauthorizedHandler } from '../api/client'
-import { ME_QUERY_KEY, setSetupDoneHandler, useMe, type Me, type Permission } from '../api/auth'
+import { dropAccountData, ME_QUERY_KEY, setSetupDoneHandler, useMe, type Me, type Permission } from '../api/auth'
 
 interface AuthState {
   me: Me | null
@@ -46,7 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Any 401 from anywhere drops the cached identity, which re-renders the guard below into the
     // login screen. Registered here so the ~150 query hooks need no 401 handling of their own.
-    setUnauthorizedHandler(() => qc.setQueryData(ME_QUERY_KEY, null))
+    // An expired session takes the rest of the cache with it, or the next account to sign in on
+    // this tab would see the previous one's data until each query refetched.
+    setUnauthorizedHandler(() => {
+      dropAccountData(qc)
+      qc.setQueryData(ME_QUERY_KEY, null)
+    })
     return () => setUnauthorizedHandler(null)
   }, [qc])
 
