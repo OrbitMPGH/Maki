@@ -1948,6 +1948,27 @@ export function useDeleteChapters() {
   })
 }
 
+/**
+ * Deletes the files behind these chapters and keeps the chapters, marked removed. A volume file
+ * takes every chapter on it along. `kept` counts files left on disk because another series' record
+ * still points at them.
+ */
+export function useDeleteChapterFiles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (chapterIds: number[]) =>
+      api<{ deleted: number; kept: number; failed: number; chaptersRemoved: number }>('/chapter/deletefiles', {
+        method: 'POST',
+        body: JSON.stringify(chapterIds),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export function useDeleteSeriesFiles(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({

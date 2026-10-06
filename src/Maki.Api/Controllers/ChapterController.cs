@@ -341,7 +341,7 @@ public class ChapterController(
     }
 
     /// <summary>
-    /// Permanently removes chapter rows — not just their file link — for cases like a
+    /// "Remove chapters": permanently removes chapter rows, not just their file, for cases like a
     /// broken auto-match that pulled in the wrong show: chapter data is otherwise
     /// additive-only, so bad rows would sit in the library forever. Also deletes the
     /// backing CBZ from disk when this batch drops the last chapter referencing it
@@ -349,7 +349,8 @@ public class ChapterController(
     /// </summary>
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete]
-    public async Task<IActionResult> Delete([FromBody] int[] chapterIds, CancellationToken ct)
+    public async Task<IActionResult> Delete(
+        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct)
     {
         if (chapterIds.Length == 0)
         {
@@ -412,21 +413,18 @@ public class ChapterController(
         var batchFiles = await db.ChapterFiles.Where(f => fileIdList.Contains(f.Id)).ToListAsync(ct);
 
         // A manual link (see Link above) can point a second row, in this series or another, at the
-        // same physical file, so ChapterFileId alone can't tell if the file is still claimed elsewhere.
-        var filesInRoot = series?.RootFolderId is int rootFolderId
-            ? await (from f in db.ChapterFiles
-                     join s in db.Series on f.SeriesId equals s.Id
-                     where s.RootFolderId == rootFolderId
-                     select new { f.Id, f.RelativePath }).ToListAsync(ct)
-            : [];
-
-        // A row removed in this batch doesn't count as a claim, or two rows pointing at one file that
-        // are both removed would each see the other as still holding it and the file would never be
-        // deleted. A row kept because another chapter still uses it does count.
-        var claimedPaths = filesInRoot
-            .Where(f => !fileIds.Contains(f.Id) || stillReferenced.Contains(f.Id))
-            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
-            .ToHashSet(LibraryPaths.FolderComparer);
+        // same physical file, and nested root folders can name it twice, so ChapterFileId alone
+        // can't tell if the file is still claimed elsewhere. A row removed in this batch doesn't count
+        // as a claim, or two rows pointing at one file that are both removed would each see the other
+        // as still holding it and the file would never be deleted. A row kept because another chapter
+        // still uses it does count.
+        var resolved = batchFiles.ToDictionary(f => f.Id, f => series?.RootFolder is null
+            ? null
+            : LibraryPaths.ResolveForDelete(series.RootFolder.Path, f.RelativePath));
+        var claimedPaths = await deletion.ClaimedAsync(
+            resolved.Values.OfType<string>().ToList(),
+            fileIds.Where(id => !stillReferenced.Contains(id)).ToHashSet(),
+            ct);
 
         // Collected here instead of deleted in place: rows are saved first, and only a successful
         // save unlocks touching the filesystem.
@@ -438,13 +436,11 @@ public class ChapterController(
                 continue;
             }
 
-            if (!claimedPaths.Contains(LibraryPaths.ComparisonKey(file.RelativePath)))
+            // Never File.Delete a bare Combine: a row written before the check in Link, or by any
+            // future path that skips it, would delete whatever it points at outside the library.
+            var absPath = resolved[file.Id];
+            if (absPath is null || !claimedPaths.Contains(absPath))
             {
-                // Never File.Delete a bare Combine: a row written before the check in Link, or by any
-                // future path that skips it, would delete whatever it points at outside the library.
-                var absPath = series?.RootFolder is null
-                    ? null
-                    : LibraryPaths.ResolveForDelete(series.RootFolder.Path, file.RelativePath);
                 if (series?.RootFolder is not null && absPath is null)
                 {
                     logger.LogWarning("Refusing to delete {File}: resolves outside {Root} or through a linked folder",
@@ -483,6 +479,68 @@ public class ChapterController(
         }
 
         return Ok(new { deleted = chapters.Count });
+    }
+
+    /// <summary>
+    /// "Delete file": deletes the files behind these chapters and keeps the chapters, with everyone's
+    /// reads, marked removed so nothing downloads them again. A volume file backs several chapters,
+    /// so every chapter on it loses it, not only the ones named; the dialog says so before sending.
+    /// </summary>
+    [Authorize(Policy = Policies.DeleteSeries)]
+    [HttpPost("deletefiles")]
+    public async Task<IActionResult> DeleteFiles(
+        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct)
+    {
+        if (chapterIds.Length == 0)
+        {
+            return this.Fail(localizer, "error.chapter.noChaptersSelected");
+        }
+
+        var seriesIds = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id))
+            .Select(c => c.SeriesId)
+            .Distinct()
+            .ToListAsync(ct);
+        if (seriesIds.Count == 0)
+        {
+            return Ok(new ChapterFileDeletion.Result(0, 0, 0, 0));
+        }
+
+        if (seriesIds.Count > 1)
+        {
+            return this.Fail(localizer, "error.chapter.differentSeries");
+        }
+
+        var seriesId = seriesIds[0];
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId, ct);
+        var fileIds = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id) && c.SeriesId == seriesId && c.ChapterFileId != null)
+            .Select(c => c.ChapterFileId!.Value)
+            .Distinct()
+            .ToListAsync(ct);
+        if (fileIds.Count == 0)
+        {
+            return Ok(new ChapterFileDeletion.Result(0, 0, 0, 0));
+        }
+
+        // Every chapter on these files, not just the named ones: a worker packaging any of them would
+        // write into a file this is about to delete.
+        if (await SeriesLocks.InFlight(db.DownloadQueue)
+                .AnyAsync(q => q.ChapterId != null &&
+                               db.Chapters.Any(c => c.Id == q.ChapterId && c.ChapterFileId != null &&
+                                                    fileIds.Contains(c.ChapterFileId.Value)), ct))
+        {
+            return this.Conflict(localizer, "error.chapter.activeDownloadDelete");
+        }
+
+        var series = await db.Series.Include(s => s.RootFolder).FirstAsync(s => s.Id == seriesId, ct);
+        if (series.RootFolder is null)
+        {
+            return this.Fail(localizer, "error.series.noRootFolder");
+        }
+
+        var files = await db.ChapterFiles.Where(f => fileIds.Contains(f.Id)).ToListAsync(ct);
+        return Ok(await deletion.DeleteAsync(series, files, ct));
     }
 
     [Authorize(Policy = Policies.DownloadChapters)]

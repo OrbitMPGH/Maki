@@ -138,6 +138,11 @@ msgstr "{0, plural, one {# conservado} many {# conservados} other {# conservados
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, one {# coincidencia} many {# coincidencias} other {# coincidencias}}"
 
+#. placeholder {0}: deleteFilesPlan.others
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
+msgstr ""
+
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -196,17 +201,27 @@ msgstr "{0, plural, one {queda disponible para leer} many {quedan disponibles pa
 msgid "{0, plural, one {Clear # queued download?} other {Clear # queued downloads?}}"
 msgstr "{0, plural, one {¿Vaciar # descarga en cola?} many {¿Vaciar # descargas en cola?} other {¿Vaciar # descargas en cola?}}"
 
+#. placeholder {0}: r.failed
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Couldn't delete # file, check the log} other {Couldn't delete # files, check the log}}"
+msgstr ""
+
 #. placeholder {0}: r.deleted
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{0, plural, one {Deleted # chapter} other {Deleted # chapters}}"
-msgstr "{0, plural, one {Eliminado # capítulo} many {Eliminados # capítulos} other {Eliminados # capítulos}}"
+#~ msgid "{0, plural, one {Deleted # chapter} other {Deleted # chapters}}"
+#~ msgstr "{0, plural, one {Eliminado # capítulo} many {Eliminados # capítulos} other {Eliminados # capítulos}}"
 
 #. placeholder {0}: r.deleted
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{0, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{0, plural, one {Eliminado # archivo} many {Eliminados # archivos} other {Eliminados # archivos}}"
+
+#. placeholder {0}: deleteFilesPlan?.files ?? 0
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Deletes # file from disk.} other {Deletes # files from disk.}}"
+msgstr ""
 
 #. placeholder {0}: r.rowCount
 #: src/components/RecommendationModelSwitch.tsx
@@ -285,6 +300,11 @@ msgstr "{0, plural, one {En cola # capítulo que falta} many {En cola # capítul
 #, fuzzy
 msgid "{0, plural, one {Refreshed, # new chapter} other {Refreshed, # new chapters}}"
 msgstr "{0, plural, one {Actualizado, # capítulo nuevo} many {Actualizado, # capítulos nuevos} other {Actualizado, # capítulos nuevos}}"
+
+#. placeholder {0}: r.deleted
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Removed # chapter} other {Removed # chapters}}"
+msgstr ""
 
 #. placeholder {0}: result.removedChapters
 #: src/components/SourceMappingsSection.tsx
@@ -675,6 +695,10 @@ msgstr "Pulsa {forwardKey} o Espacio para abrirlo. Pulsa Esc para volver a la se
 #, fuzzy
 msgid "{free} free"
 msgstr "{free} libres"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5131,7 +5155,6 @@ msgstr "Definición"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Delete"
 msgstr "Eliminar"
@@ -5170,18 +5193,30 @@ msgstr "Eliminar copia de seguridad"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Delete chapters?"
-msgstr "¿Eliminar capítulos?"
+#~ msgid "Delete chapters?"
+#~ msgstr "¿Eliminar capítulos?"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Delete connection"
 msgstr "Eliminar conexión"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delete file"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delete files"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Delete files from disk?"
 msgstr "¿Eliminar archivos del disco?"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delete files?"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -10072,6 +10107,10 @@ msgstr "Ninguno de los {total} capítulos solicitados"
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "Ninguno de los títulos de este creador coincide con estos filtros. Prueba a relajar alguno."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "None of these chapters has a file on disk."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "none yet"
@@ -12357,6 +12396,14 @@ msgstr "Eliminar archivo"
 #, fuzzy
 msgid "Remove bookmark"
 msgstr "Eliminar marcador"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Remove chapters"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Remove chapters?"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -15160,6 +15207,10 @@ msgstr ""
 msgid "The chapter numbers are in the archive's page file names. Certain."
 msgstr "Los números de capítulo aparecen en los nombres de archivo de las páginas del archivo. Certeza alta."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
@@ -15585,9 +15636,13 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "Esta acción elimina permanentemente el archivo. Los registros de capítulos y el historial de lectura se conservan."
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
-msgstr "Esto elimina permanentemente {selectedCount} entradas de capítulo, no solo sus vínculos a los archivos, y también elimina cualquier archivo correspondiente del disco."
+#~ msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
+#~ msgstr "Esto elimina permanentemente {selectedCount} entradas de capítulo, no solo sus vínculos a los archivos, y también elimina cualquier archivo correspondiente del disco."
 
 #: src/api/queue.ts
 #, fuzzy

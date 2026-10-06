@@ -138,6 +138,11 @@ msgstr "{0, plural, one {# bırakıldı} other {# bırakıldı}}"
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, one {# eşleşme} other {# eşleşme}}"
 
+#. placeholder {0}: deleteFilesPlan.others
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
+msgstr ""
+
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -196,17 +201,27 @@ msgstr "{0, plural, one {okunabilir hale gelir} other {okunabilir hale gelir}}"
 msgid "{0, plural, one {Clear # queued download?} other {Clear # queued downloads?}}"
 msgstr "{0, plural, one {Kuyruktaki # indirme temizlensin mi?} other {Kuyruktaki # indirme temizlensin mi?}}"
 
+#. placeholder {0}: r.failed
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Couldn't delete # file, check the log} other {Couldn't delete # files, check the log}}"
+msgstr ""
+
 #. placeholder {0}: r.deleted
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{0, plural, one {Deleted # chapter} other {Deleted # chapters}}"
-msgstr "{0, plural, one {# bölüm silindi} other {# bölüm silindi}}"
+#~ msgid "{0, plural, one {Deleted # chapter} other {Deleted # chapters}}"
+#~ msgstr "{0, plural, one {# bölüm silindi} other {# bölüm silindi}}"
 
 #. placeholder {0}: r.deleted
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{0, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{0, plural, one {# dosya silindi} other {# dosya silindi}}"
+
+#. placeholder {0}: deleteFilesPlan?.files ?? 0
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Deletes # file from disk.} other {Deletes # files from disk.}}"
+msgstr ""
 
 #. placeholder {0}: r.rowCount
 #: src/components/RecommendationModelSwitch.tsx
@@ -285,6 +300,11 @@ msgstr "{0, plural, one {Eksik # bölüm kuyruğa alındı} other {Eksik # böl�
 #, fuzzy
 msgid "{0, plural, one {Refreshed, # new chapter} other {Refreshed, # new chapters}}"
 msgstr "{0, plural, one {Yenilendi, # yeni bölüm} other {Yenilendi, # yeni bölüm}}"
+
+#. placeholder {0}: r.deleted
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Removed # chapter} other {Removed # chapters}}"
+msgstr ""
 
 #. placeholder {0}: result.removedChapters
 #: src/components/SourceMappingsSection.tsx
@@ -675,6 +695,10 @@ msgstr "{forwardKey} veya Boşluk ile açılır, Esc ile seriye dönülür."
 #, fuzzy
 msgid "{free} free"
 msgstr "{free} boş"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5131,7 +5155,6 @@ msgstr "Belirleyici"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Delete"
 msgstr "Sil"
@@ -5170,18 +5193,30 @@ msgstr "Yedeği sil"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Delete chapters?"
-msgstr "Bölümler silinsin mi?"
+#~ msgid "Delete chapters?"
+#~ msgstr "Bölümler silinsin mi?"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Delete connection"
 msgstr "Bağlantıyı sil"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delete file"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delete files"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Delete files from disk?"
 msgstr "Dosyalar diskten silinsin mi?"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delete files?"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -10072,6 +10107,10 @@ msgstr "{total} bölümün hiçbiri istenmiyor"
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "Bu yaratıcının başlıklarının hiçbiri bu filtrelere uymuyor. Bunlardan birini gevşetmeyi deneyin."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "None of these chapters has a file on disk."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "none yet"
@@ -12357,6 +12396,14 @@ msgstr "Arşivi kaldır"
 #, fuzzy
 msgid "Remove bookmark"
 msgstr "Yer imini kaldır"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Remove chapters"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Remove chapters?"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -15160,6 +15207,10 @@ msgstr ""
 msgid "The chapter numbers are in the archive's page file names. Certain."
 msgstr "Bölüm numaraları arşivdeki sayfa dosyalarının adlarında yer alıyor. Kesin."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
@@ -15585,9 +15636,13 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "Bu, arşivi kalıcı olarak siler. Bölüm kayıtları ve okuma geçmişi kalır."
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
-msgstr "Bu işlem yalnızca dosya bağlantısını değil, {selectedCount} bölüm satırını ve diskteki ilişkili dosyaları da kalıcı olarak siler."
+#~ msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
+#~ msgstr "Bu işlem yalnızca dosya bağlantısını değil, {selectedCount} bölüm satırını ve diskteki ilişkili dosyaları da kalıcı olarak siler."
 
 #: src/api/queue.ts
 #, fuzzy

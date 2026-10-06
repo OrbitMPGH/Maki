@@ -49,6 +49,7 @@ import {
   IconMinus,
   IconSearch,
   IconSend,
+  IconRowRemove,
   IconTrash,
   IconWand,
   IconX,
@@ -89,6 +90,7 @@ import {
   useSetRating,
   useToggleChapterWanted,
   useUnlinkChapters,
+  useDeleteChapterFiles,
   useDeleteChapters,
   useQueue, useSeriesFilesSummary,
   useRecommendationDetail,
@@ -514,6 +516,7 @@ function SeriesDetailBody() {
   const unlinkChapters = useUnlinkChapters()
   const setChaptersWanted = useSetChaptersWanted()
   const deleteChapters = useDeleteChapters()
+  const deleteChapterFiles = useDeleteChapterFiles()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   // A series with no upgrade profile (own or default) never gets a cutoffMet verdict at all, so the
   // "Cutoff unmet" chip disappears rather than sitting at "(0)" forever. The effective filter below
@@ -558,6 +561,9 @@ function SeriesDetailBody() {
   const [linkChapterIds, setLinkChapterIds] = useState<number[] | null>(null)
   const [relinkOpen, setRelinkOpen] = useState(false)
   const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
+  // Chapter ids the "Delete files" dialog is working on; null keeps it closed. Set from the
+  // selection bar or from a single row's menu.
+  const [deleteFileIds, setDeleteFileIds] = useState<number[] | null>(null)
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
 
@@ -565,6 +571,7 @@ function SeriesDetailBody() {
   const { can } = useAuth()
   const canDownload = can('DownloadChapters')
   const canLinkFiles = can('EditMetadata')
+  const canDelete = can('DeleteSeries')
   const pendingProposalId = series?.pendingProposalId ?? null
   const { data: seriesProposals } = useTorrentProposals(seriesId, canDownload && pendingProposalId != null)
   const pendingProposal = seriesProposals?.find((p) => p.id === pendingProposalId) ?? null
@@ -705,6 +712,18 @@ function SeriesDetailBody() {
       () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt && !queueByChapterId.has(c.id)).length,
       [chapters, queueByChapterId],
   )
+
+  // What "Delete files" will actually touch: a volume file backs several chapters, and the server
+  // removes it from all of them, so the dialog has to say so before anyone confirms.
+  const deleteFilesPlan = useMemo(() => {
+    if (!deleteFileIds || !chapters) return null
+    const named = new Set(deleteFileIds)
+    const paths = new Set(
+        chapters.filter((c) => named.has(c.id) && c.hasFile && c.filePath).map((c) => c.filePath!),
+    )
+    const affected = chapters.filter((c) => c.hasFile && c.filePath && paths.has(c.filePath))
+    return { files: paths.size, others: affected.filter((c) => !named.has(c.id)).length }
+  }, [deleteFileIds, chapters])
 
 
   const animeMarkers = useMemo(
@@ -2429,16 +2448,30 @@ function SeriesDetailBody() {
                       >
                         <Trans>Unlink</Trans>
                       </Button>
-                      <Button
-                          size="xs"
-                          variant="light"
-                          color="var(--danger)"
-                          leftSection={<IconTrash size={15} />}
-                          disabled={selected.size === 0}
-                          onClick={() => setDeleteChaptersModalOpen(true)}
-                      >
-                        <Trans>Delete</Trans>
-                      </Button>
+                      {canDelete && (
+                          <>
+                            <Button
+                                size="xs"
+                                variant="light"
+                                color="var(--danger)"
+                                leftSection={<IconTrash size={15} />}
+                                disabled={selected.size === 0}
+                                onClick={() => setDeleteFileIds([...selected])}
+                            >
+                              <Trans>Delete files</Trans>
+                            </Button>
+                            <Button
+                                size="xs"
+                                variant="subtle"
+                                color="var(--danger)"
+                                leftSection={<IconRowRemove size={15} />}
+                                disabled={selected.size === 0}
+                                onClick={() => setDeleteChaptersModalOpen(true)}
+                            >
+                              <Trans>Remove chapters</Trans>
+                            </Button>
+                          </>
+                      )}
                       <Button
                           size="xs"
                           variant="default"
@@ -2455,13 +2488,13 @@ function SeriesDetailBody() {
             <Modal
                 opened={deleteChaptersModalOpen}
                 onClose={() => setDeleteChaptersModalOpen(false)}
-                title={t`Delete chapters?`}
+                title={t`Remove chapters?`}
                 centered
             >
               <Stack gap="md">
                 <Text size="sm" c="var(--ink-3)">
                   <Trans>This permanently removes {selectedCount} chapter row(s), not just their file link,
-                    along with any backing file on disk.</Trans>{' '}
+                    along with any backing file on disk and everyone's read history for them.</Trans>{' '}
                   <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
                   <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>
@@ -2480,7 +2513,7 @@ function SeriesDetailBody() {
                           deleteChapters.mutate([...selected], {
                             onSuccess: (r) => {
                               notify.ok(
-                                  plural(r.deleted, { one: 'Deleted # chapter', other: 'Deleted # chapters' }),
+                                  plural(r.deleted, { one: 'Removed # chapter', other: 'Removed # chapters' }),
                               )
                               setDeleteChaptersModalOpen(false)
                               exitSelectMode()
@@ -2488,7 +2521,74 @@ function SeriesDetailBody() {
                           })
                       }
                   >
-                    <Trans>Delete</Trans>
+                    <Trans>Remove</Trans>
+                  </Button>
+                </Group>
+              </Stack>
+            </Modal>
+
+            <Modal
+                opened={deleteFileIds !== null}
+                onClose={() => setDeleteFileIds(null)}
+                title={t`Delete files?`}
+                centered
+            >
+              <Stack gap="md">
+                {deleteFilesPlan && deleteFilesPlan.files === 0 ? (
+                    <Text size="sm" c="var(--ink-3)">
+                      <Trans>None of these chapters has a file on disk.</Trans>
+                    </Text>
+                ) : (
+                    <Text size="sm" c="var(--ink-3)">
+                      <Plural
+                          value={deleteFilesPlan?.files ?? 0}
+                          one="Deletes # file from disk."
+                          other="Deletes # files from disk."
+                      />{' '}
+                      <Trans>The chapters stay in the list with their read history, and Maki won't download
+                        them again unless you ask.</Trans>
+                    </Text>
+                )}
+                {deleteFilesPlan && deleteFilesPlan.others > 0 && (
+                    <Text size="sm" c="var(--warn)">
+                      <Plural
+                          value={deleteFilesPlan.others}
+                          one="# more chapter is in the same volume file and loses it too."
+                          other="# more chapters are in the same volume files and lose them too."
+                      />
+                    </Text>
+                )}
+                <Group justify="flex-end">
+                  <Button variant="default" onClick={() => setDeleteFileIds(null)}>
+                    <Trans>Cancel</Trans>
+                  </Button>
+                  <Button
+                      color="var(--danger-fill)"
+                      leftSection={<IconTrash size={16} />}
+                      disabled={!deleteFilesPlan || deleteFilesPlan.files === 0}
+                      loading={deleteChapterFiles.isPending}
+                      onClick={() =>
+                          deleteChapterFiles.mutate(deleteFileIds ?? [], {
+                            onSuccess: (r) => {
+                              const gone = r.deleted + r.kept
+                              if (gone > 0) {
+                                notify.ok(plural(gone, { one: 'Deleted # file', other: 'Deleted # files' }))
+                              }
+                              if (r.failed > 0) {
+                                notify.err(
+                                    plural(r.failed, {
+                                      one: "Couldn't delete # file, check the log",
+                                      other: "Couldn't delete # files, check the log",
+                                    }),
+                                )
+                              }
+                              setDeleteFileIds(null)
+                              if (selectMode) exitSelectMode()
+                            },
+                          })
+                      }
+                  >
+                    <Trans>Delete files</Trans>
                   </Button>
                 </Group>
               </Stack>
@@ -2836,7 +2936,7 @@ function SeriesDetailBody() {
                                               </ActionIcon>
                                             </Tooltip>
                                         )}
-                                        {canDownload && c.hasFile && (
+                                        {(canDownload || canDelete) && c.hasFile && (
                                             <Menu shadow="md" position="bottom-end" withinPortal>
                                               <Menu.Target>
                                                 <ActionIcon
@@ -2848,7 +2948,7 @@ function SeriesDetailBody() {
                                                 </ActionIcon>
                                               </Menu.Target>
                                               <Menu.Dropdown>
-                                                {c.number !== null && enabledMappings > 1 && (
+                                                {canDownload && c.number !== null && enabledMappings > 1 && (
                                                     <Menu.Item
                                                         leftSection={<IconPhotoSearch size={14} />}
                                                         onClick={() =>
@@ -2863,6 +2963,7 @@ function SeriesDetailBody() {
                                                       <Trans>Find better copy</Trans>
                                                     </Menu.Item>
                                                 )}
+                                                {canDownload && (
                                                 <Menu.Item
                                                     leftSection={
                                                       upgradeChapterNow.isPending && upgradeChapterNow.variables === c.id
@@ -2888,7 +2989,8 @@ function SeriesDetailBody() {
                                                 >
                                                   <Trans>Upgrade now</Trans>
                                                 </Menu.Item>
-                                                {c.fileQuality && (
+                                                )}
+                                                {canDownload && c.fileQuality && (
                                                     <Menu.Item
                                                         leftSection={
                                                           c.fileQuality.trusted
@@ -2906,6 +3008,18 @@ function SeriesDetailBody() {
                                                           ? <Trans>Allow upgrades</Trans>
                                                           : <Trans>Protect from upgrades</Trans>}
                                                     </Menu.Item>
+                                                )}
+                                                {canDelete && (
+                                                    <>
+                                                      {canDownload && <Menu.Divider />}
+                                                      <Menu.Item
+                                                          color="var(--danger)"
+                                                          leftSection={<IconTrash size={14} />}
+                                                          onClick={() => setDeleteFileIds([c.id])}
+                                                      >
+                                                        <Trans>Delete file</Trans>
+                                                      </Menu.Item>
+                                                    </>
                                                 )}
                                               </Menu.Dropdown>
                                             </Menu>

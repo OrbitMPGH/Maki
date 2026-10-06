@@ -46,7 +46,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
 
     private static SeriesController Series(MakiDbContext db) =>
         new(new TestLocalizer(), db, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
-            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!);
+            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!);
 
     private SettingsController Settings(MakiDbContext db) => new(
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),

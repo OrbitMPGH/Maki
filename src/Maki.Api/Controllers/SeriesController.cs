@@ -47,7 +47,6 @@ public class SeriesController(
     MangaBakaLocalStore mangaBakaStore,
     SimilarSeriesService similarSeries,
     RecommendationFeedbackService recommendationFeedback,
-    ReaderArchiveCache archives,
     ReadingProfileService readingProfiles,
     ReadingTimeEstimateService readingTimeEstimates,
     SourceAvailability sourceAvailability,
@@ -604,12 +603,14 @@ public class SeriesController(
     }
 
     /// <summary>
-    /// Deletes the given CBZ files from disk, removes their ChapterFile records, and
-    /// unlinks every chapter that shared each file (volume CBZs back several chapters).
+    /// Deletes the given files from disk and removes their records. Every chapter that shared one
+    /// (volume CBZs back several) is marked removed rather than left missing, so it keeps its reads
+    /// and nothing downloads it again; see <see cref="ChapterFileDeletion"/>.
     /// </summary>
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}/files")]
-    public async Task<IActionResult> DeleteFiles(int id, [FromBody] string[] relativePaths, CancellationToken ct)
+    public async Task<IActionResult> DeleteFiles(
+        int id, [FromBody] string[] relativePaths, [FromServices] ChapterFileDeletion deletion, CancellationToken ct)
     {
         if (relativePaths.Length == 0)
             return this.Fail(localizer, "error.series.noFilesSelected");
@@ -630,59 +631,13 @@ public class SeriesController(
         // The Files tab also lists comics on disk that have no record (never adopted), and those
         // are what this dialog is most often used to clean up.
         var (strayDeleted, strayFailed) = await DeleteStrayFilesAsync(
-            series, relativePaths.Except(files.Select(f => f.RelativePath), StringComparer.Ordinal).ToList(), ct);
+            series, relativePaths.Except(files.Select(f => f.RelativePath), StringComparer.Ordinal).ToList(),
+            deletion, ct);
 
-        if (files.Count == 0)
-            return Ok(new { deleted = strayDeleted, failed = strayFailed });
-
-        var fileIds = files.Select(f => f.Id).ToList();
-        var linkedByFileId = (await db.Chapters
-                .Where(c => c.ChapterFileId != null && fileIds.Contains(c.ChapterFileId.Value))
-                .ToListAsync(ct))
-            .ToLookup(c => c.ChapterFileId!.Value);
-
-        var deleted = strayDeleted;
-        var failed = strayFailed;
-        foreach (var file in files)
-        {
-            // Resolve, never a bare Combine: RelativePath is stored data, and a row that escapes the
-            // root would have this delete an arbitrary file for whoever holds DeleteSeries.
-            var absPath = LibraryPaths.ResolveForDelete(series.RootFolder.Path, file.RelativePath);
-            if (absPath is null)
-            {
-                logger.LogWarning("Refusing to delete {File}: resolves outside {Root} or through a linked folder",
-                    file.RelativePath, series.RootFolder.Path);
-                failed++;
-                continue;
-            }
-
-            try
-            {
-                System.IO.File.Delete(absPath);
-            }
-            catch (DirectoryNotFoundException)
-            {
-                // Containing directory is already gone — the file is effectively deleted.
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // File locked or permission denied: leave the record and its chapter
-                // links intact so a half-finished batch doesn't drift from disk state.
-                logger.LogWarning(ex, "Could not delete {File}, skipping", file.RelativePath);
-                failed++;
-                continue;
-            }
-
-            foreach (var chapter in linkedByFileId[file.Id])
-                chapter.ChapterFileId = null;
-
-            archives.Invalidate(file.Id);
-            db.ChapterFiles.Remove(file);
-            deleted++;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { deleted, failed });
+        // A file another series still points at stays on disk, but this series has let go of it,
+        // which is what the user asked for here, so it reads as deleted.
+        var result = await deletion.DeleteAsync(series, files, ct);
+        return Ok(new { deleted = strayDeleted + result.Deleted + result.Kept, failed = strayFailed + result.Failed });
     }
 
     /// <summary>
@@ -690,7 +645,7 @@ public class SeriesController(
     /// folders, never through a link, and never a path another series has a record for.
     /// </summary>
     private async Task<(int Deleted, int Failed)> DeleteStrayFilesAsync(
-        Series series, List<string> relativePaths, CancellationToken ct)
+        Series series, List<string> relativePaths, ChapterFileDeletion deletion, CancellationToken ct)
     {
         if (relativePaths.Count == 0)
         {
@@ -699,17 +654,15 @@ public class SeriesController(
 
         var rootPath = series.RootFolder!.Path;
         var folders = await SeriesFolders.ForAsync(db, series, ct);
-        var spellings = relativePaths
-            .SelectMany(p => new[] { p, p.Replace('\\', '/'), p.Replace('/', '\\') })
-            .Distinct()
-            .ToList();
-        var recorded = (await db.ChapterFiles
-                .Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == series.RootFolderId) &&
-                            spellings.Contains(f.RelativePath))
-                .Select(f => f.RelativePath)
-                .ToListAsync(ct))
-            .Select(LibraryPaths.ComparisonKey)
-            .ToHashSet(LibraryPaths.FolderComparer);
+        // Any record anywhere counts, including one under a nested root folder or in a root the
+        // caller cannot see: that file is somebody's chapter, not a stray.
+        var recorded = await deletion.ClaimedAsync(
+            relativePaths
+                .Select(p => LibraryPaths.ResolveForDelete(rootPath, LibraryPaths.ComparisonKey(p)))
+                .OfType<string>()
+                .ToList(),
+            new HashSet<int>(),
+            ct);
 
         var deleted = 0;
         var failed = 0;
@@ -717,7 +670,7 @@ public class SeriesController(
         {
             var key = LibraryPaths.ComparisonKey(path);
             var absolute = LibraryPaths.ResolveForDelete(rootPath, key);
-            if (recorded.Contains(key) || absolute is null || !ComicFile.IsComic(absolute) ||
+            if (absolute is null || recorded.Contains(absolute) || !ComicFile.IsComic(absolute) ||
                 LibraryPaths.TopFolder(key) is not { } top || !folders.Contains(top, LibraryPaths.FolderComparer) ||
                 !System.IO.File.Exists(absolute))
             {

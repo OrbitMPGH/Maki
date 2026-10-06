@@ -53,6 +53,10 @@ public class ChapterControllerTests : IDisposable
         new TestCurrentUser(1),
         NullLogger<ChapterController>.Instance);
 
+    private static ChapterFileDeletion Deletion(MakiDbContext db) => new(
+        db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
+        NullLogger<ChapterFileDeletion>.Instance);
+
     /// <summary>
     /// A series rooted at the temp directory, plus one chapter, returning both ids. Passing
     /// <paramref name="rootFolderId"/> puts a second series in the same root instead of creating
@@ -222,7 +226,7 @@ public class ChapterControllerTests : IDisposable
         var (_, second) = SeedSeriesWithChapter("Second");
 
         using var db = _db.NewContext();
-        var result = await Controller(db).Delete([first, second], default);
+        var result = await Controller(db).Delete([first, second], Deletion(db), default);
 
         // The root folder used to build the delete path comes from chapters[0]'s series, so a mixed
         // batch would delete the second series' file from under the first series' root.
@@ -261,7 +265,7 @@ public class ChapterControllerTests : IDisposable
             }
 
             using var db = _db.NewContext();
-            var result = await Controller(db).Delete([chapterId], default);
+            var result = await Controller(db).Delete([chapterId], Deletion(db), default);
 
             Assert.IsType<OkObjectResult>(result);
             Assert.True(File.Exists(outside));
@@ -317,7 +321,7 @@ public class ChapterControllerTests : IDisposable
 
             using (var db = _db.NewContext())
             {
-                var result = await Controller(db).Delete([chapterId], default);
+                var result = await Controller(db).Delete([chapterId], Deletion(db), default);
 
                 Assert.IsType<OkObjectResult>(result);
                 Assert.Empty(db.Chapters);
@@ -367,7 +371,7 @@ public class ChapterControllerTests : IDisposable
 
             using (var db = _db.NewContext())
             {
-                Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], default));
+                Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], Deletion(db), default));
                 Assert.Empty(db.ChapterFiles);
             }
 
@@ -425,7 +429,7 @@ public class ChapterControllerTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            var result = await Controller(db).Delete([chapterId], default);
+            var result = await Controller(db).Delete([chapterId], Deletion(db), default);
 
             Assert.IsType<OkObjectResult>(result);
             Assert.Null(await db.Chapters.FindAsync(chapterId));
@@ -467,7 +471,7 @@ public class ChapterControllerTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId, secondChapterId], default));
+            Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId, secondChapterId], Deletion(db), default));
             Assert.Equal(keptFileId, Assert.Single(db.ChapterFiles).Id);
         }
 
@@ -507,12 +511,131 @@ public class ChapterControllerTests : IDisposable
         using (var failing = new FailingSaveDbContext(_db.Options))
         {
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => Controller(failing).Delete([chapterId], default));
+                () => Controller(failing).Delete([chapterId], Deletion(failing), default));
         }
 
         using var db = _db.NewContext();
         Assert.True(File.Exists(Path.Combine(_root, relativePath)));
         Assert.NotNull(await db.Chapters.FindAsync(chapterId));
         Assert.Single(db.ChapterFiles);
+    }
+
+    /// <summary>Links a new file at <paramref name="relativePath"/> to the given chapters, writing it to disk under the root.</summary>
+    private async Task<int> LinkFile(int seriesId, string relativePath, params int[] chapterIds)
+    {
+        await File.WriteAllTextAsync(Path.Combine(_root, relativePath), "cbz");
+        using var seed = _db.NewContext();
+        var file = new ChapterFile
+        {
+            SeriesId = seriesId, RelativePath = relativePath, Size = 1, SourceName = "Manual", DateAdded = DateTime.UtcNow
+        };
+        seed.ChapterFiles.Add(file);
+        seed.SaveChanges();
+        foreach (var chapter in seed.Chapters.Where(c => chapterIds.Contains(c.Id)))
+        {
+            chapter.ChapterFileId = file.Id;
+        }
+
+        seed.SaveChanges();
+        return file.Id;
+    }
+
+    [Fact]
+    public async Task DeleteFiles_keeps_the_chapters_and_their_reads_and_marks_them_removed()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        int secondChapterId;
+        using (var seed = _db.NewContext())
+        {
+            var second = new Chapter { SeriesId = seriesId, Number = 2, NumberRaw = "2" };
+            seed.Chapters.Add(second);
+            seed.SaveChanges();
+            secondChapterId = second.Id;
+            seed.ChapterProgress.Add(new ChapterProgress
+            {
+                UserId = 1, SeriesId = seriesId, ChapterId = chapterId, Completed = true,
+                StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+            });
+            seed.SaveChanges();
+        }
+
+        var relativePath = Path.Combine("Series", "v01.cbz");
+        await LinkFile(seriesId, relativePath, chapterId, secondChapterId);
+
+        using (var db = _db.NewContext())
+        {
+            // Only the first chapter is named, but the volume file backs both, so both lose it.
+            var result = Assert.IsType<OkObjectResult>(await Controller(db).DeleteFiles([chapterId], Deletion(db), default));
+            var counts = Assert.IsType<ChapterFileDeletion.Result>(result.Value);
+            Assert.Equal(1, counts.Deleted);
+            Assert.Equal(2, counts.ChaptersRemoved);
+        }
+
+        Assert.False(File.Exists(Path.Combine(_root, relativePath)));
+        using var check = _db.NewContext();
+        Assert.Empty(check.ChapterFiles);
+        Assert.All(check.Chapters, c =>
+        {
+            Assert.Null(c.ChapterFileId);
+            Assert.NotNull(c.FileRemovedAt);
+        });
+        Assert.True(Assert.Single(check.ChapterProgress).Completed);
+    }
+
+    [Fact]
+    public async Task Both_deletes_keep_a_file_another_series_reaches_through_a_nested_root_folder()
+    {
+        // Root B sits inside root A, so one file on disk has a different relative path under each.
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        int otherChapterId;
+        using (var seed = _db.NewContext())
+        {
+            var nested = new RootFolder { Path = Path.Combine(_root, "Series") };
+            seed.RootFolders.Add(nested);
+            seed.SaveChanges();
+            var other = new Series
+            {
+                Title = "Other", SortTitle = "other", RootFolderId = nested.Id, FolderName = "Other", Added = DateTime.UtcNow
+            };
+            seed.Series.Add(other);
+            seed.SaveChanges();
+            var otherChapter = new Chapter { SeriesId = other.Id, Number = 1, NumberRaw = "1" };
+            seed.Chapters.Add(otherChapter);
+            seed.SaveChanges();
+            otherChapterId = otherChapter.Id;
+            var otherFile = new ChapterFile
+            {
+                SeriesId = other.Id, RelativePath = "ch1.cbz", Size = 1, SourceName = "Manual", DateAdded = DateTime.UtcNow
+            };
+            seed.ChapterFiles.Add(otherFile);
+            seed.SaveChanges();
+            otherChapter.ChapterFileId = otherFile.Id;
+            seed.SaveChanges();
+        }
+
+        var path = Path.Combine("Series", "ch1.cbz");
+        await LinkFile(seriesId, path, chapterId);
+
+        using (var db = _db.NewContext())
+        {
+            var result = Assert.IsType<OkObjectResult>(await Controller(db).DeleteFiles([chapterId], Deletion(db), default));
+            Assert.Equal(1, Assert.IsType<ChapterFileDeletion.Result>(result.Value).Kept);
+        }
+
+        Assert.True(File.Exists(Path.Combine(_root, path)));
+        using (var check = _db.NewContext())
+        {
+            Assert.NotNull((await check.Chapters.FindAsync(chapterId))!.FileRemovedAt);
+            Assert.NotNull((await check.Chapters.FindAsync(otherChapterId))!.ChapterFileId);
+        }
+
+        // The same file linked again, then removed outright: the other series' row still holds it.
+        await LinkFile(seriesId, path, chapterId);
+        using (var db = _db.NewContext())
+        {
+            Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], Deletion(db), default));
+        }
+
+        Assert.True(File.Exists(Path.Combine(_root, path)));
     }
 }
