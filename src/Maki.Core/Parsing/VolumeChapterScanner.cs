@@ -16,10 +16,11 @@ namespace Maki.Core.Parsing;
 public static partial class VolumeChapterScanner
 {
     // A chapter marker in a page name: "c049", "c049.5", "ch049", "chapter 49", "c. 49".
-    // The page ("p113") and volume ("v05") markers start with other letters, so a
-    // "c" not preceded by another letter and followed by digits is unambiguous; the
-    // letter lookbehind keeps "Arc049"/"Comic" from reading as chapters.
-    [GeneratedRegex(@"(?<![a-z])c(?:h(?:apter)?)?\.?\s*([0-9]+(?:\.[0-9]+)?)", RegexOptions.IgnoreCase)]
+    // The page ("p113") and volume ("v05") markers start with other letters. The lookbehind is
+    // ReleaseNameParser's, keeping "Arc049" and the "9c5" of a hashed page name out; the lookahead
+    // is extra because page names carry hex hashes ("x1-c3f0...") and tags like "[c2c]", where the
+    // digits run straight into another letter.
+    [GeneratedRegex(@"(?<![a-z0-9])c(?:h(?:apter)?)?\.?\s*((?>[0-9]+(?:\.[0-9]+)?))(?![a-z])", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterMarker();
 
     /// <summary>
@@ -47,13 +48,12 @@ public static partial class VolumeChapterScanner
         var found = new SortedSet<decimal>();
         foreach (var name in imageNames)
         {
-            foreach (Match match in ChapterMarker().Matches(name))
+            // One page belongs to one chapter, so only its first marker counts, as in BoundariesInNames.
+            var match = ChapterMarker().Match(name);
+            if (match.Success && decimal.TryParse(
+                    match.Groups[1].Value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number))
             {
-                if (decimal.TryParse(
-                        match.Groups[1].Value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number))
-                {
-                    found.Add(number);
-                }
+                found.Add(number);
             }
         }
 

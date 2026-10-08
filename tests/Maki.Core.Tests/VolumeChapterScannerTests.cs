@@ -83,9 +83,25 @@ public class VolumeChapterScannerTests
     [InlineData("Series v05 - p113.png")] // page marker only, no chapter
     [InlineData("Comic Compilation cover.png")] // 'c' words but no c-digit marker
     [InlineData("Arc049 promo.png")] // 'c' preceded by a letter is not a chapter marker
+    [InlineData("x1-9c5e2a7b0d.png")] // MangaDex-style hashed page name
+    [InlineData("x1-c3f0a9d2b1.png")] // hash segment that starts with a c
+    [InlineData("x1-c35f0a9d2b.png")]
+    [InlineData("Title [c2c] - p001.png")] // cover-to-cover tag
     public void Returns_empty_when_no_chapter_marker(string name)
     {
         Assert.Empty(VolumeChapterScanner.ChaptersInNames([name]));
+    }
+
+    [Fact]
+    public void A_c2c_tag_does_not_hide_the_real_marker_after_it()
+    {
+        Assert.Equal([49m], VolumeChapterScanner.ChaptersInNames(["[c2c] Title - c049 - p001.png"]));
+    }
+
+    [Fact]
+    public void Only_the_first_marker_of_a_page_name_counts()
+    {
+        Assert.Equal([3m], VolumeChapterScanner.ChaptersInNames(["Title - c003/c010 credits.png"]));
     }
 
     [Fact]
