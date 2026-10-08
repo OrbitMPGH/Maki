@@ -43,7 +43,8 @@ public class UsersController(
     ILogger<UsersController> logger,
     OidcRuntimeOptions oidc,
     IHubContext<EventsHub> hub,
-    IUserSnapshotCache snapshots) : ControllerBase
+    IUserSnapshotCache snapshots,
+    SignInManager<MakiUser> signInManager) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -141,6 +142,7 @@ public class UsersController(
 
         var wasAdmin = user.Permissions.Grants(MakiPermission.Admin);
         var before = user.Permissions;
+        var wasDisabled = user.Disabled;
 
         if (request.Permissions is { } permissions)
         {
@@ -214,11 +216,13 @@ public class UsersController(
         await ReplaceRootFolderGrantsAsync(user, request.RootFolderIds, ct);
         await db.SaveChangesAsync(ct);
 
-        // Any change to what the account may do, or whether it may sign in at all, invalidates its
-        // existing cookies. Permission checks read the database per request so they are already
-        // current once the snapshot cache is evicted below; this is about not leaving a disabled
-        // user with a live session.
-        if (user.Permissions != before || request.Disabled is not null || !string.IsNullOrEmpty(request.Password))
+        // Only a change that takes access away, or a password reset, ends existing sessions. Permission
+        // checks read the database per request and are current once the snapshot cache is evicted
+        // below, so widening a grant or editing a name, rating or folder list must not sign anyone out.
+        var revokeSessions = user.Disabled != wasDisabled
+            || !string.IsNullOrEmpty(request.Password)
+            || (!user.Permissions.Grants(MakiPermission.Admin) && (before & ~user.Permissions) != 0);
+        if (revokeSessions)
         {
             await userManager.UpdateSecurityStampAsync(user);
         }
@@ -226,6 +230,11 @@ public class UsersController(
         await transaction.CommitAsync(ct);
         snapshots.Evict(user.Id);
         OpdsAccessService.EvictUser(user.Id);
+
+        if (revokeSessions && user.Id == currentUser.UserId)
+        {
+            await signInManager.RefreshSignInAsync(user);
+        }
 
         if ((wasAdmin && !user.Permissions.Grants(MakiPermission.Admin)) || user.Disabled)
         {
