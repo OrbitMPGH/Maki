@@ -129,13 +129,30 @@ public class ChapterNumberParserTests
 
     // \d matches any Unicode digit but decimal.Parse only takes ASCII, so these used to throw.
     [Theory]
-    [InlineData("\uFF11\uFF12")]
-    [InlineData("Ch. \uFF11\uFF12")]
+    [InlineData("\u0661\u0662")]
+    [InlineData("Ch. \u0661\u0662")]
     [InlineData("\u0661\u0662 - Title")]
     public void Non_ascii_digits_read_as_unnumbered_rather_than_throwing(string label)
     {
         var result = ChapterNumberParser.Parse(label);
         Assert.Null(result.Number);
         Assert.True(result.IsOneShot);
+    }
+
+    [Theory]
+    [InlineData("\uFF11\uFF12", 12)]
+    [InlineData("Ch. \uFF11\uFF12", 12)]
+    [InlineData("\uFF23\uFF48. \uFF11\uFF10.\uFF15", 10.5)]
+    public void Fullwidth_digits_read_as_their_ascii_number(string label, double expected)
+    {
+        var result = ChapterNumberParser.Parse(label);
+        Assert.Equal((decimal)expected, result.Number);
+        Assert.False(result.IsOneShot);
+    }
+
+    [Fact]
+    public void A_fullwidth_volume_string_is_read()
+    {
+        Assert.Equal(3, ChapterNumberParser.Parse("12", "\uFF13").Volume);
     }
 }

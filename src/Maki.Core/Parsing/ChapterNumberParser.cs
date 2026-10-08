@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Maki.Core.Parsing;
@@ -38,7 +39,9 @@ public static partial class ChapterNumberParser
             return new ParsedChapter(null, volume, IsOneShot: volume is null);
         }
 
-        var text = chapterRaw.Trim();
+        // Fullwidth digits and letters fold to ASCII, as the ComicWalker and GigaViewer sources already
+        // do for their own labels; otherwise a fullwidth number reads as a titled one-shot.
+        var text = chapterRaw.Normalize(NormalizationForm.FormKC).Trim();
 
         if (OneShotPattern().IsMatch(text))
         {
@@ -123,6 +126,7 @@ public static partial class ChapterNumberParser
             return null;
         }
 
+        text = text.Normalize(NormalizationForm.FormKC);
         if (int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var direct))
         {
             return direct;
