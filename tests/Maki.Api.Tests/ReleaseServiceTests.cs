@@ -157,13 +157,16 @@ public class ReleaseServiceTests : IDisposable
         await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
         const string magnet = "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567";
         var service = Build("[" + Release("g", "torrent", 5, magnet: magnet) + "]");
-        var searches = new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions()));
-        searches.Remember(seriesId, (await service.SearchAsync(seriesId, "berserk")).Releases);
+        var controller = new ReleaseController(
+            service, new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions())), new TestLocalizer());
         var forged = new ReleaseDto("g", "Forged", 1, "Forged", 0, 0, "torrent",
             DownloadUrl: "http://169.254.169.254/latest/meta-data", MagnetUrl: null, InfoUrl: null);
 
         using var db = _db.NewContext();
-        var result = await new ReleaseController(service, searches, new TestLocalizer()).Grab(
+        var torrents = new TorrentUpgradeService(db, new UpgradeEvaluationService(db, TestQuality.Create()), service,
+            null!, new FakeAppSettings(), TimeProvider.System, NullLogger<TorrentUpgradeService>.Instance);
+        Assert.IsType<OkObjectResult>(await controller.Search(seriesId, "berserk", torrents, CancellationToken.None));
+        var result = await controller.Grab(
             new ReleaseController.GrabRequest(seriesId, forged), new TestCurrentUser(1), db, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);

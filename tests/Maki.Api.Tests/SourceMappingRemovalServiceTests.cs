@@ -59,6 +59,31 @@ public class SourceMappingRemovalServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Removal_waits_for_the_series_lock()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("wrong"));
+        int wrongId;
+        using (var db = _db.NewContext())
+        {
+            wrongId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+        }
+
+        Task<SourceMappingRemovalResult?> removal;
+        using (await SeriesLocks.SeriesAsync(seriesId, CancellationToken.None))
+        {
+            removal = BuildService().RemoveAsync(wrongId, deleteFiles: false);
+            await Task.Delay(200);
+            Assert.False(removal.IsCompleted);
+            using var check = _db.NewContext();
+            Assert.Single(check.SourceMappings.Where(m => m.Id == wrongId));
+        }
+
+        Assert.NotNull(await removal);
+        using var after = _db.NewContext();
+        Assert.Empty(after.SourceMappings.Where(m => m.Id == wrongId));
+    }
+
+    [Fact]
     public async Task Removing_the_last_source_needs_no_snapshot_and_keeps_files_unlinked()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("wrong"));
