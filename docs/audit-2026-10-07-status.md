@@ -108,9 +108,9 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | SERIES | SERIES-17 | pending |
 | SERIES | SERIES-23 | pending |
 | SERIES | DATA-02 | pending |
-| AUTH | AUTH-03 | pending |
-| AUTH | AUTH-04 | pending |
-| AUTH | AUTH-06 | pending |
+| AUTH | AUTH-03 | done c9d8940e, 478f7cde |
+| AUTH | AUTH-04 | done e572a343 |
+| AUTH | AUTH-06 | done 204d4dd2 (500 only; admin exemption from root-folder scope: owner decision) |
 | PROGRESS | PROGRESS-07 | pending |
 | PROGRESS | PROGRESS-08 | pending |
 | PROGRESS | PROGRESS-09 | pending |
