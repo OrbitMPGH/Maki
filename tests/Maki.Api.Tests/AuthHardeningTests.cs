@@ -250,14 +250,129 @@ public sealed class AuthHardeningTests : IDisposable
 
     // ---- admin user management ----
 
-    private UsersController Users(MakiDbContext db, int adminId, OidcRuntimeOptions? oidc = null) =>
-        new(new TestLocalizer(), db, IdentityTestKit.UserManager(db), new AdminGuard(db),
+    private UsersController Users(MakiDbContext db, int adminId, OidcRuntimeOptions? oidc = null)
+    {
+        var userManager = IdentityTestKit.UserManager(db);
+        return new(new TestLocalizer(), db, userManager, new AdminGuard(db),
             new TestCurrentUser(adminId, "admin"), new AuthEventLogger(db, _clock), _clock,
             NullLogger<UsersController>.Instance, oidc ?? new OidcRuntimeOptions(), new NoopHubContext(),
-            new UserSnapshotCache(new MemoryCache(new MemoryCacheOptions())))
+            new UserSnapshotCache(new MemoryCache(new MemoryCacheOptions())), new TestSignInManager(userManager))
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };
+    }
+
+    private string StampOf(int userId)
+    {
+        using var db = _db.NewContext();
+        return db.Users.Single(u => u.Id == userId).SecurityStamp!;
+    }
+
+    [Fact]
+    public async Task Editing_a_name_or_rating_keeps_the_users_sessions()
+    {
+        var adminId = _db.SeedUser("admin");
+        var readerId = SeedWithPassword("reader", MakiPermission.AddSeries);
+        var stamp = StampOf(readerId);
+        using var db = _db.NewContext();
+
+        var result = await Users(db, adminId).Update(readerId, new SaveUserRequest(
+            "reader", null, "Reader", MakiPermission.AddSeries | MakiPermission.UseOpds, "safe", false, null, false),
+            default);
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(stamp, StampOf(readerId));
+    }
+
+    [Fact]
+    public async Task Taking_a_permission_away_or_disabling_ends_the_users_sessions()
+    {
+        var adminId = _db.SeedUser("admin");
+        var shrunkId = SeedWithPassword("shrunk", MakiPermission.AddSeries | MakiPermission.UseOpds);
+        var disabledId = SeedWithPassword("disabled", MakiPermission.AddSeries);
+        var shrunkStamp = StampOf(shrunkId);
+        var disabledStamp = StampOf(disabledId);
+        using var db = _db.NewContext();
+        var users = Users(db, adminId);
+
+        await users.Update(shrunkId, new SaveUserRequest(
+            "shrunk", null, null, MakiPermission.AddSeries, null, null, null, null), default);
+        await users.Update(disabledId, new SaveUserRequest(
+            "disabled", null, null, null, null, null, null, true), default);
+
+        Assert.NotEqual(shrunkStamp, StampOf(shrunkId));
+        Assert.NotEqual(disabledStamp, StampOf(disabledId));
+    }
+
+    [Fact]
+    public async Task Renaming_a_user_keeps_their_sessions_whether_it_is_another_user_or_the_admin_themselves()
+    {
+        var adminId = _db.SeedUser("admin", MakiPermission.Admin);
+        var readerId = SeedWithPassword("reader");
+        var adminStamp = StampOf(adminId);
+        var readerStamp = StampOf(readerId);
+        using var db = _db.NewContext();
+        var users = Users(db, adminId);
+
+        var other = await users.Update(readerId, new SaveUserRequest(
+            "reader2", null, null, null, null, null, null, null), default);
+        var self = await users.Update(adminId, new SaveUserRequest(
+            "admin2", null, null, null, null, null, null, null), default);
+
+        Assert.IsType<OkObjectResult>(other);
+        Assert.IsType<OkObjectResult>(self);
+        using var check = _db.NewContext();
+        Assert.Equal("reader2", check.Users.Single(u => u.Id == readerId).UserName);
+        Assert.Equal("admin2", check.Users.Single(u => u.Id == adminId).UserName);
+        Assert.Equal(readerStamp, StampOf(readerId));
+        Assert.Equal(adminStamp, StampOf(adminId));
+    }
+
+    [Fact]
+    public async Task Promoting_to_admin_or_granting_a_folder_keeps_the_users_sessions()
+    {
+        var adminId = _db.SeedUser("admin", MakiPermission.Admin);
+        var promotedId = SeedWithPassword("promoted", MakiPermission.AddSeries);
+        var grantedId = SeedWithPassword("granted");
+        int folderId;
+        using (var seed = _db.NewContext())
+        {
+            var folder = new Maki.Core.Entities.RootFolder { Path = Path.GetTempPath() };
+            seed.RootFolders.Add(folder);
+            seed.SaveChanges();
+            folderId = folder.Id;
+        }
+
+        var promotedStamp = StampOf(promotedId);
+        var grantedStamp = StampOf(grantedId);
+        using var db = _db.NewContext();
+        var users = Users(db, adminId);
+
+        await users.Update(promotedId, new SaveUserRequest(
+            "promoted", null, null, MakiPermission.Admin, null, null, null, null), default);
+        await users.Update(grantedId, new SaveUserRequest(
+            "granted", null, null, null, null, false, [folderId], null), default);
+
+        using var check = _db.NewContext();
+        Assert.True(check.Users.Single(u => u.Id == promotedId).Permissions.Grants(MakiPermission.Admin));
+        Assert.Contains(check.UserRootFolders, g => g.UserId == grantedId && g.RootFolderId == folderId);
+        Assert.Equal(promotedStamp, StampOf(promotedId));
+        Assert.Equal(grantedStamp, StampOf(grantedId));
+    }
+
+    [Fact]
+    public async Task A_save_that_sends_the_current_disabled_state_keeps_the_users_sessions()
+    {
+        var adminId = _db.SeedUser("admin");
+        var readerId = SeedWithPassword("reader");
+        var stamp = StampOf(readerId);
+        using var db = _db.NewContext();
+
+        await Users(db, adminId).Update(readerId, new SaveUserRequest(
+            "reader", null, null, null, null, null, null, false), default);
+
+        Assert.Equal(stamp, StampOf(readerId));
+    }
 
     [Fact]
     public async Task A_rejected_password_reset_leaves_the_earlier_edits_unapplied()

@@ -64,7 +64,9 @@ public class RootFolderController(
             return NotFound();
         }
 
-        if (await db.Series.AnyAsync(s => s.RootFolderId == id, ct))
+        // Past the library scope: an admin granted only some folders must still be refused for one
+        // whose series they cannot see, not hit the foreign key.
+        if (await db.Series.IgnoreQueryFilters().AnyAsync(s => s.RootFolderId == id, ct))
         {
             return this.Conflict(localizer, "error.rootFolder.inUse");
         }
