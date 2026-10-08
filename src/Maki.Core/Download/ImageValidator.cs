@@ -60,6 +60,28 @@ public static class ImageValidator
         }
     }
 
+    /// <summary>
+    /// The media type an image header announces, or null when the bytes are not one of the raster
+    /// formats Maki serves. Judges the bytes only, never a declared Content-Type: the cover proxy
+    /// serves its result from Maki's own origin, so an upstream answering HTML or SVG under an image
+    /// label would otherwise render there as same-origin content.
+    /// </summary>
+    public static string? SniffMediaType(ReadOnlySpan<byte> header)
+    {
+        if (header.StartsWith(Jpeg)) return "image/jpeg";
+        if (header.StartsWith(Png)) return "image/png";
+        if (header.StartsWith(Gif)) return "image/gif";
+        if (header.Length < 12) return null;
+        if (header.StartsWith(Riff) && header.Slice(8, 4).SequenceEqual("WEBP"u8)) return "image/webp";
+        if (header.Slice(4, 4).SequenceEqual("ftyp"u8))
+        {
+            var brand = header.Slice(8, 4);
+            if (brand.SequenceEqual("avif"u8) || brand.SequenceEqual("avis"u8)) return "image/avif";
+        }
+
+        return null;
+    }
+
     private static bool HasKnownMagic(byte[] header) =>
         header.AsSpan().StartsWith(Jpeg) ||
         header.AsSpan().StartsWith(Png) ||

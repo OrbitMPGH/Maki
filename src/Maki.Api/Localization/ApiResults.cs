@@ -72,6 +72,14 @@ public static class ApiResults
         this ControllerBase controller, ILocalizer localizer, string key, object? args = null) =>
         controller.StatusCode(StatusCodes.Status500InternalServerError, Body(localizer, key, args));
 
+    /// <summary>
+    /// 502, for something the server fetched on the caller's behalf that did not answer with what
+    /// was asked. Not 500: Maki did its part, the upstream did not.
+    /// </summary>
+    public static IActionResult BadGateway(
+        this ControllerBase controller, ILocalizer localizer, string key, object? args = null) =>
+        controller.StatusCode(StatusCodes.Status502BadGateway, Body(localizer, key, args));
+
     private static object Body(ILocalizer localizer, string key, object? args) =>
         new { code = key, error = localizer.Get(key, args) };
 }

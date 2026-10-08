@@ -2,6 +2,7 @@
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Download;
 using Maki.Core.Metadata;
 using Maki.Core.Quality;
 using Maki.Core.Security;
@@ -128,7 +129,18 @@ public class SearchController(
             using var request = new HttpRequestMessage(HttpMethod.Get, current);
             request.Headers.Referrer = referer;
 
-            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            }
+            catch (Exception ex) when (ex is HttpRequestException || (ex is OperationCanceledException && !ct.IsCancellationRequested))
+            {
+                logger.LogDebug(ex, "Cover fetch from {Host} via source {Source} failed", current.Host, sourceName);
+                return this.BadGateway(localizer, "error.search.coverUnavailable");
+            }
+
+            using var _ = response;
 
             if (response.StatusCode is >= HttpStatusCode.MultipleChoices and < HttpStatusCode.BadRequest &&
                 response.Headers.Location is { } location)
@@ -149,12 +161,40 @@ public class SearchController(
 
             if (!response.IsSuccessStatusCode)
             {
-                return StatusCode((int)response.StatusCode);
+                logger.LogDebug(
+                    "Cover fetch from {Host} via source {Source} answered {Status}",
+                    current.Host, sourceName, (int)response.StatusCode);
+                return this.BadGateway(localizer, "error.search.coverUnavailable");
             }
 
-            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
-            Response.Headers.CacheControl = "public,max-age=86400";
-            return File(bytes, response.Content.Headers.ContentType?.MediaType ?? "image/jpeg");
+            var bytes = await ReadCappedAsync(response.Content, MaxCoverBytes, ct);
+            if (bytes is null)
+            {
+                logger.LogWarning(
+                    "Cover from {Host} via source {Source} exceeds {Max} bytes; refused",
+                    current.Host, sourceName, MaxCoverBytes);
+                return this.BadGateway(localizer, "error.search.coverUnavailable");
+            }
+
+            // The bytes decide the type, never the upstream's Content-Type header. This response is
+            // served from Maki's own origin with the reader's session, and the global CSP allows
+            // same-origin scripts, so an upstream answering text/html or image/svg+xml would run as
+            // Maki. Anything that is not a raster image is refused outright, and the per-response
+            // CSP below keeps even a crafted image inert if a browser ever sniffs it differently.
+            var mediaType = ImageValidator.SniffMediaType(bytes);
+            if (mediaType is null)
+            {
+                logger.LogWarning(
+                    "Cover from {Host} via source {Source} is not an image ({Declared}); refused",
+                    current.Host, sourceName, response.Content.Headers.ContentType?.MediaType ?? "no content type");
+                return this.BadGateway(localizer, "error.search.notAnImage");
+            }
+
+            // private, not public: the endpoint needs a session, so a shared cache in front of Maki
+            // must not hand one reader's proxied response to another.
+            Response.Headers.CacheControl = "private,max-age=86400";
+            Response.Headers.ContentSecurityPolicy = "default-src 'none'; sandbox";
+            return File(bytes, mediaType);
         }
 
         return this.Fail(localizer, "error.search.tooManyRedirects");
@@ -162,6 +202,37 @@ public class SearchController(
 
     /// <summary>Redirect hops the cover proxy will follow before giving up.</summary>
     private const int MaxCoverRedirects = 3;
+
+    /// <summary>
+    /// Ceiling on a proxied cover. Real covers are well under a megabyte; the cap stops a reader from
+    /// making the server buffer an arbitrarily large file from an allowed host.
+    /// </summary>
+    private const int MaxCoverBytes = 10 * 1024 * 1024;
+
+    /// <summary>The whole body, or null once it would exceed <paramref name="max"/> bytes.</summary>
+    private static async Task<byte[]?> ReadCappedAsync(HttpContent content, int max, CancellationToken ct)
+    {
+        if (content.Headers.ContentLength is > 0 and var declared && declared > max)
+        {
+            return null;
+        }
+
+        await using var stream = await content.ReadAsStreamAsync(ct);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[64 * 1024];
+        int read;
+        while ((read = await stream.ReadAsync(chunk, ct)) > 0)
+        {
+            if (buffer.Length + read > max)
+            {
+                return null;
+            }
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return buffer.ToArray();
+    }
 
     /// <summary>A source's own measurements count once there are this many samples from this many series.</summary>
     private const int LibraryQualityMinSamples = 10;

@@ -1125,6 +1125,11 @@ msgid "error.scrobble.unknownService"
 msgstr "servicio desconocido"
 
 #: src/Maki.Api/Controllers/SearchController.cs
+#. English: The source did not return the cover
+msgid "error.search.coverUnavailable"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: That host is not served by this source
 #, fuzzy
 msgid "error.search.hostNotServed"
@@ -1141,6 +1146,11 @@ msgstr "No es una URL http(s) válida"
 #, fuzzy
 msgid "error.search.noSourceRecognizesUrl"
 msgstr "Ninguna fuente reconoce esta URL"
+
+#: src/Maki.Api/Controllers/SearchController.cs
+#. English: The source answered with something that is not an image
+msgid "error.search.notAnImage"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SearchController.cs
 #. English: Search query is required
