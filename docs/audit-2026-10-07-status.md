@@ -119,9 +119,9 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | PROGRESS | PROGRESS-23 | pending |
 | PROGRESS | PROGRESS-24 | pending |
 | PROGRESS | FE-READER-04 (server clamp) | pending |
-| FE-READER-2 | FE-READER-11 | pending |
-| FE-READER-2 | FE-READER-14 | pending |
-| FE-READER-2 | FE-READER-16 | pending |
+| FE-READER-2 | FE-READER-11 | done 3d410c75, fc936e68 |
+| FE-READER-2 | FE-READER-14 | done 4ba0da23 |
+| FE-READER-2 | FE-READER-16 | done 14b960dd, 5cfce219 |
 | i18n sweep | HOSTING-22 | pending |
 | i18n sweep | SERIES-06 | pending |
 | i18n sweep | SERIES-07 | pending |
