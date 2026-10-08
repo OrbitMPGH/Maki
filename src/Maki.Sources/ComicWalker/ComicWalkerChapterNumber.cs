@@ -16,7 +16,7 @@ namespace Maki.Sources.ComicWalker;
 /// </summary>
 public static partial class ComicWalkerChapterNumber
 {
-    [GeneratedRegex(@"第?\s*(\d+(?:\.\d+)?)\s*[話回]")]
+    [GeneratedRegex(@"第?\s*([0-9]+(?:\.[0-9]+)?)\s*[話回]")]
     private static partial Regex EpisodePattern();
 
     public static decimal? Parse(string? title)
@@ -34,7 +34,11 @@ public static partial class ComicWalkerChapterNumber
             return ChapterNumberParser.Parse(title).Number;
         }
 
-        var number = decimal.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+        if (!decimal.TryParse(match.Groups[1].Value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number))
+        {
+            return ChapterNumberParser.Parse(title).Number;
+        }
+
         var part = PartMarker(title);
 
         if (part is int p)
