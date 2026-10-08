@@ -67,6 +67,13 @@ public sealed class InboxRenderer(ILocalizer localizer)
             args["error"] = localizer.GetFor(locale, errorKey, args);
         }
 
+        // An edited request's chapter range, stored as one of four keys plus its bounds. A row from
+        // before the range was keyed stores English, which is not a key and comes back as itself.
+        if (args.TryGetValue("range", out var range) && range is string { Length: > 0 } rangeKey)
+        {
+            args["range"] = localizer.GetFor(locale, rangeKey, args);
+        }
+
         // A health check's sentence, stored as its key with its values under a `detail.` prefix (see
         // HealthMonitor.InboxDetailArgs). A row from before the checks were keyed stores its English,
         // which is not a key and comes back as itself.

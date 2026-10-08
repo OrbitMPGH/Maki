@@ -332,6 +332,12 @@ msgstr "Le chapitre est déjà en file"
 msgid "error.chapter.differentSeries"
 msgstr "Les chapitres appartiennent à des séries différentes"
 
+#. The cause is in the server log.
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Could not queue the chapter. The server log has the details.
+msgid "error.chapter.enqueueFailed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: File not found on disk
 #, fuzzy
@@ -974,6 +980,38 @@ msgstr "Nécessite la base de données MangaBaka locale (Paramètres → Métado
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr "Votre profil de goûts nécessite la base de données locale MangaBaka (Paramètres → Métadonnées → base locale)"
 
+#. The Prowlarr or qBittorrent call failed; the cause is in the server log.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: Could not send the release to qBittorrent. The server log has the details.
+msgid "error.release.grabFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/ReleaseService.cs
+#. English: This release has no download link
+msgid "error.release.noDownloadLink"
+msgstr ""
+
+#: src/Maki.Api/Services/ReleaseService.cs
+#. English: Prowlarr is not configured (Settings → Downloads → Prowlarr)
+msgid "error.release.prowlarrNotConfigured"
+msgstr ""
+
+#: src/Maki.Api/Services/ReleaseService.cs
+#. English: qBittorrent is not configured (Settings → Downloads → qBittorrent)
+msgid "error.release.qbittorrentNotConfigured"
+msgstr ""
+
+#. The Prowlarr call failed; the cause is in the server log.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: The release search failed. The server log has the details.
+msgid "error.release.searchFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/ReleaseService.cs
+#. English: Series not found
+msgid "error.release.seriesNotFound"
+msgstr ""
+
 #. A grab names a release from an earlier search; the server no longer holds that search (it expired or was never run for this series).
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: This search result has expired. Search again, then grab the release.
@@ -1065,6 +1103,12 @@ msgstr "Une série est requise"
 #, fuzzy
 msgid "error.requests.seriesRequired"
 msgstr "La série à demander est requise"
+
+#. Shown as the requester's name when the account no longer exists.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: Unknown user
+msgid "error.requests.unknownUser"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Unknown request kind
@@ -1168,6 +1212,12 @@ msgstr ""
 #, fuzzy
 msgid "error.search.queryRequired"
 msgstr "La requête de recherche est requise"
+
+#. {source} is the source's display name, never translated. The cause is in the server log.
+#: src/Maki.Api/Controllers/SearchController.cs
+#. English: The URL matched {source} but its series page could not be fetched. The server log has the details.
+msgid "error.search.seriesPageFailed"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SearchController.cs
 #. English: Too many redirects
@@ -2492,12 +2542,34 @@ msgstr "{user} a demandé {title}"
 msgid "inbox.request.edited.title"
 msgstr "Votre demande a été modifiée"
 
-#. {range} is a chapter range such as "1-20" or "all chapters", built by the controller.
+#. {range} is one of the inbox.request.range.* messages below, worded when the row is read.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title}: now {range}
 #, fuzzy
 msgid "inbox.request.edited.body"
 msgstr "{title} : maintenant {range}"
+
+#. The four inbox.request.range.* messages fill {range} in inbox.request.edited.body. {start} and
+#. {end} are chapter numbers.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: everything
+msgid "inbox.request.range.all"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: chapters {start} to {end}
+msgid "inbox.request.range.between"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: chapter {start} onwards
+msgid "inbox.request.range.from"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: up to chapter {end}
+msgid "inbox.request.range.upTo"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was approved

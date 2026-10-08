@@ -37,6 +37,17 @@ public record ReleaseInfo(
 
 public record ReleaseSearchResult(string Query, IReadOnlyList<ReleaseDto> Releases);
 
+/// <summary>A release search or grab refused for a reason the caller can show, with its catalogue key.</summary>
+public sealed class ReleaseRefusedException(string key, string message) : InvalidOperationException(message)
+{
+    public const string SeriesNotFound = "error.release.seriesNotFound";
+    public const string NoDownloadLink = "error.release.noDownloadLink";
+    public const string ProwlarrNotConfigured = "error.release.prowlarrNotConfigured";
+    public const string QBittorrentNotConfigured = "error.release.qbittorrentNotConfigured";
+
+    public string Key { get; } = key;
+}
+
 public partial class ReleaseService(
     MakiDbContext db,
     ProwlarrClient prowlarr,
@@ -50,7 +61,7 @@ public partial class ReleaseService(
     public virtual async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
         var series = await db.Series.FindAsync([seriesId], ct)
-            ?? throw new InvalidOperationException("Series not found");
+            ?? throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
 
         var (url, apiKey) = await GetProwlarrConfigAsync(ct);
         var indexerIds = ParseIds(await settings.GetAsync(SettingKeys.ProwlarrIndexerIds, ct));
@@ -93,12 +104,12 @@ public partial class ReleaseService(
     {
         if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
-            throw new InvalidOperationException("Series not found");
+            throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
         }
 
         var qbt = await GetQbtConfigAsync(ct);
         var link = release.MagnetUrl ?? release.DownloadUrl
-            ?? throw new InvalidOperationException("Release has no download link");
+            ?? throw new ReleaseRefusedException(ReleaseRefusedException.NoDownloadLink, "Release has no download link");
 
         await qbittorrent.AddAsync(qbt.Url, qbt.Username, qbt.Password, link, qbt.Category, ct);
 
@@ -152,7 +163,8 @@ public partial class ReleaseService(
         var apiKey = await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new InvalidOperationException("Prowlarr is not configured (Settings → Downloads → Prowlarr)");
+            throw new ReleaseRefusedException(
+                ReleaseRefusedException.ProwlarrNotConfigured, "Prowlarr is not configured (Settings → Downloads → Prowlarr)");
         }
 
         return (url, apiKey);
@@ -163,7 +175,8 @@ public partial class ReleaseService(
         var url = await settings.GetAsync(SettingKeys.QBittorrentUrl, ct);
         if (string.IsNullOrWhiteSpace(url))
         {
-            throw new InvalidOperationException("qBittorrent is not configured (Settings → Downloads → qBittorrent)");
+            throw new ReleaseRefusedException(
+                ReleaseRefusedException.QBittorrentNotConfigured, "qBittorrent is not configured (Settings → Downloads → qBittorrent)");
         }
 
         return (
