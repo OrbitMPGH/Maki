@@ -460,4 +460,49 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Assert.Equal("linked", linked.Status);
         Assert.Empty(linked.MappedChapters);
     }
+
+    [Fact]
+    public async Task Move_refuses_a_root_where_another_series_already_owns_the_folder_name()
+    {
+        var (seriesId, _, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+        using (var seed = _db.NewContext())
+        {
+            seed.Series.Add(new Series
+            {
+                Title = "Berserk (other)", SortTitle = "berserk", FolderName = "berserk", RootFolderId = toId,
+            });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(userId: 1);
+        var result = await Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.True(Directory.Exists(Path.Combine(from, "Berserk")));
+        Assert.False(Directory.Exists(Path.Combine(to, "Berserk")));
+        using var verify = _db.NewContext();
+        Assert.NotEqual(toId, verify.Series.Single(s => s.Id == seriesId).RootFolderId);
+    }
+
+    [Fact]
+    public async Task Move_without_files_refuses_a_root_where_another_series_owns_the_folder_name()
+    {
+        var (seriesId, _, toId, _, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(Path.Combine(to, "Berserk"));
+        using (var seed = _db.NewContext())
+        {
+            seed.Series.Add(new Series
+            {
+                Title = "Berserk (other)", SortTitle = "berserk", FolderName = "Berserk", RootFolderId = toId,
+            });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(userId: 1);
+        var result = await Controller(db).Move(
+            seriesId, new SeriesController.MoveSeriesRequest(toId, MoveFiles: false), CancellationToken.None);
+
+        Assert.IsType<ConflictObjectResult>(result);
+    }
 }

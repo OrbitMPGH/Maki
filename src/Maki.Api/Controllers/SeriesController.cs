@@ -1288,6 +1288,15 @@ public class SeriesController(
         var folders = await SeriesFolders.ForAsync(db, series, ct);
         var newFolder = Path.Combine(destination.Path, series.FolderName);
 
+        // Add and import never give two series of one root the same folder, so a move must not
+        // either. Checked again under the folder-name lock just before the save, once the files
+        // have moved and a racing add could have claimed the name.
+        if ((await SeriesCreationService.SeriesFoldersInRootAsync(db, destination.Id, id, ct))
+            .Contains(series.FolderName))
+        {
+            return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
+        }
+
         // A failure part way through puts back whatever already moved, since RootFolderId is
         // not updated and would otherwise resolve it under the old root. The series' own folder
         // moves whole; a folder it only has some files in gives up just those files, the same
@@ -1463,6 +1472,14 @@ public class SeriesController(
 
         var oldRootFolderPath = series.RootFolder.Path;
         var oldRootFolderId = series.RootFolderId;
+        using var folderNameLock = await SeriesLocks.FolderNamesAsync(CancellationToken.None);
+        if ((await SeriesCreationService.SeriesFoldersInRootAsync(db, destination.Id, id, CancellationToken.None))
+            .Contains(series.FolderName))
+        {
+            RollbackMoves();
+            return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
+        }
+
         series.RootFolderId = destination.Id;
         try
         {
