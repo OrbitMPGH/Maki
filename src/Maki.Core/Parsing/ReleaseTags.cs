@@ -15,13 +15,13 @@ namespace Maki.Core.Parsing;
 /// </summary>
 public static partial class ReleaseTags
 {
-    [GeneratedRegex(@"^(\d{4})(?:-\d{4})?$")]
+    [GeneratedRegex(@"^([0-9]{4})(?:-[0-9]{4})?$")]
     private static partial Regex YearPattern();
 
-    [GeneratedRegex(@"^\d+x\d+$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^[0-9]+x[0-9]+$", RegexOptions.IgnoreCase)]
     private static partial Regex ResolutionPattern();
 
-    [GeneratedRegex(@"^(?:v|vol\.?|volumes?|c|ch\.?|chapters?)\s*\d+(?:[.-](?:v|c|ch\.?)?\d+)?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?:v|vol\.?|volumes?|c|ch\.?|chapters?)\s*[0-9]+(?:[.-](?:v|c|ch\.?)?[0-9]+)?$", RegexOptions.IgnoreCase)]
     private static partial Regex VersionMarkerPattern();
 
     // Two or three lowercase letters, optionally with a lowercase region suffix, are Maki's own

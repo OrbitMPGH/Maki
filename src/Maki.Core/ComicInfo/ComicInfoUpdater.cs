@@ -45,7 +45,7 @@ public static class ComicInfoUpdater
             }
 
             info ??= new ComicInfo();
-            var pageCount = source.Entries.Count(e => ImageExtensions.Contains(Path.GetExtension(e.Name)));
+            var pageCount = source.Entries.Count(e => Reading.CbzReader.IsImage(e.FullName));
             Standardize(info, series, parsed, chapter, pageCount);
 
             newXml = ComicInfoBuilder.Serialize(info);

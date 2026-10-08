@@ -215,4 +215,28 @@ public class ReleaseNameParserTests
 
         Assert.Empty(parsed.Tags);
     }
+
+    [Theory]
+    [InlineData("Title \uFF11\uFF10\uFF11.cbz")]
+    [InlineData("Title v\uFF11.zip")]
+    [InlineData("Title c\u0661\u0662.cbz")]
+    public void Non_ascii_digits_are_unrecognized_rather_than_throwing(string file)
+    {
+        Assert.False(ReleaseNameParser.ParseFileName(file).IsRecognized);
+    }
+
+    [Fact]
+    public void An_overflowing_volume_falls_through_instead_of_throwing()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("Title v99999999999.cbz");
+        Assert.Null(parsed.Volume);
+    }
+
+    [Fact]
+    public void An_overflowing_volume_beside_a_chapter_is_dropped()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("Title v99999999999 c12.cbz");
+        Assert.Equal(12m, parsed.Number);
+        Assert.Null(parsed.Volume);
+    }
 }

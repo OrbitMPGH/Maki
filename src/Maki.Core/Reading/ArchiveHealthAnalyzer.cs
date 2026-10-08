@@ -122,7 +122,7 @@ public static class ArchiveHealthAnalyzer
             {
                 // Names and order, taken at the directory's word. Dimensions and hashes are things
                 // only the bytes can answer.
-                foreach (var entry in archive.Entries.Where(e => CbzReader.IsImage(e.Name)))
+                foreach (var entry in archive.Entries.Where(e => CbzReader.IsImage(e.FullName)))
                     result.Pages.Add(new(entry.FullName, null, 0, 0));
                 result.Pages.Sort((a, b) => NaturalFileNameComparer.Instance.Compare(a.Name, b.Name));
                 return result;
@@ -178,7 +178,7 @@ public static class ArchiveHealthAnalyzer
                     uint crc = uint.MaxValue;
                     foreach (var b in bytes) crc = CrcTable[(crc ^ b) & 255] ^ (crc >> 8);
                     if (~crc != entry.Crc32) problems.Add(new("corrupt", "error", "health.finding.entryChecksumFailed", Params(new { entry = entry.FullName })));
-                    if (!CbzReader.IsImage(entry.Name)) continue;
+                    if (!CbzReader.IsImage(entry.FullName)) continue;
                     yield return (entry.FullName, bytes);
                 }
             }
@@ -190,7 +190,7 @@ public static class ArchiveHealthAnalyzer
             // nowhere near the cap and keeps every worker; one archive holding a few very large
             // entries drops to as few as one rather than multiplying them.
             var largestEntry = archive.Entries
-                .Where(e => CbzReader.IsImage(e.Name))
+                .Where(e => CbzReader.IsImage(e.FullName))
                 .Aggregate(0L, (max, e) => Math.Max(max, e.Length));
             var affordable = largestEntry > 0
                 ? (int)Math.Min(budget, Math.Max(1, MaxInFlightBytes / largestEntry))

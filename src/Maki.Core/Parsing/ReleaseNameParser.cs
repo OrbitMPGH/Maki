@@ -43,19 +43,21 @@ public static partial class ReleaseNameParser
     // file "Narutaru_vol.03", and _ is a word character, so \b found no boundary in front of the
     // marker and not one of them parsed. Any other letter or digit in front still blocks the
     // match, which is what keeps "Revolution" out of the volume pattern.
-    [GeneratedRegex(@"(?<![a-z0-9])v(?:ol(?:ume)?)?\.?[\s_]*(\d+)(?:\s*-\s*(?:v(?:ol)?\.?[\s_]*)?(\d+))?", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?<![a-z0-9])v(?:ol(?:ume)?)?\.?[\s_]*([0-9]+)(?:\s*-\s*(?:v(?:ol)?\.?[\s_]*)?([0-9]+))?", RegexOptions.IgnoreCase)]
     internal static partial Regex VolumePattern();
 
-    // The "h" is optional because a bare "c049" is the scanlation convention, and this has to read
-    // the same marker VolumeChapterScanner reads off the page names inside an archive — the two
-    // disagreeing meant an archive whose own name said c001 parsed as nothing at all while its
-    // pages parsed fine. The lookbehind is what keeps "Comic" and "Arc049" out. A range takes a bare
+    // The "h" is optional because a bare "c049" is the scanlation convention, and this has to accept
+    // the markers VolumeChapterScanner reads off the page names inside an archive: when the two
+    // disagreed, an archive whose own name said c001 parsed as nothing at all while its pages parsed
+    // fine. The scanner is stricter (it also refuses digits running into a hex letter, for hashed
+    // page names), which a file name has no need for. The lookbehind is what keeps "Comic" and
+    // "Arc049" out. A range takes a bare
     // hyphen only: Maki's own names put " - " between the number and the chapter title, and
     // "Ch.10 - 15 Years Later" is chapter 10, not 10 to 15.
-    [GeneratedRegex(@"(?<![a-z0-9])c(?:h(?:apter)?)?\.?[\s_]*(\d+(?:\.\d+)?)(?:-(?:c(?:h(?:apter)?)?\.?)?(\d+(?:\.\d+)?))?", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?<![a-z0-9])c(?:h(?:apter)?)?\.?[\s_]*([0-9]+(?:\.[0-9]+)?)(?:-(?:c(?:h(?:apter)?)?\.?)?([0-9]+(?:\.[0-9]+)?))?", RegexOptions.IgnoreCase)]
     internal static partial Regex ChapterPattern();
 
-    [GeneratedRegex(@"(?:^|[\s_])#?(\d+(?:\.\d+)?)\s*$")]
+    [GeneratedRegex(@"(?:^|[\s_])#?([0-9]+(?:\.[0-9]+)?)\s*$")]
     private static partial Regex TrailingNumberPattern();
 
     /// <summary>
@@ -108,53 +110,54 @@ public static partial class ReleaseNameParser
             .ToList();
 
     /// <summary>First and last number of a <see cref="ChapterPattern"/> match; End is null unless it is a real, ascending range.</summary>
-    internal static (decimal Start, decimal? End) ChapterRange(Match match)
+    /// <remarks>Null when the digits overflow, so a nonsense run reads as no marker rather than throwing.</remarks>
+    internal static (decimal Start, decimal? End)? ChapterRange(Match match)
     {
-        var start = decimal.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+        if (TryDecimal(match.Groups[1].Value) is not { } start) return null;
         if (!match.Groups[2].Success) return (start, null);
-        var end = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+        var end = TryDecimal(match.Groups[2].Value);
         return end > start ? (start, end) : (start, null);
     }
 
     /// <summary>First and last volume of a <see cref="VolumePattern"/> match; End is null for a single volume.</summary>
-    internal static (int Start, int? End) VolumeRange(Match match)
+    /// <remarks>Null when the digits overflow, so a nonsense run reads as no marker rather than throwing.</remarks>
+    internal static (int Start, int? End)? VolumeRange(Match match)
     {
-        var start = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-        return match.Groups[2].Success
-            ? (start, int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture))
-            : (start, null);
+        if (TryInt(match.Groups[1].Value) is not { } start) return null;
+        return match.Groups[2].Success ? (start, TryInt(match.Groups[2].Value)) : (start, null);
     }
+
+    internal static decimal? TryDecimal(string digits) =>
+        decimal.TryParse(digits, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value) ? value : null;
+
+    private static int? TryInt(string digits) =>
+        int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : null;
 
     private static ParsedReleaseFile ParseCleanedName(string stripped)
     {
         // Explicit chapter marker wins ("Chapter 0001", "Ch. 10.5").
         var chapter = ChapterPattern().Match(stripped);
-        if (chapter.Success)
+        if (chapter.Success && ChapterRange(chapter) is var (number, numberEnd))
         {
             var volumeForChapter = VolumePattern().Match(stripped);
-            var (number, numberEnd) = ChapterRange(chapter);
             return new ParsedReleaseFile(
                 number,
-                volumeForChapter.Success ? int.Parse(volumeForChapter.Groups[1].Value, CultureInfo.InvariantCulture) : null,
+                volumeForChapter.Success ? TryInt(volumeForChapter.Groups[1].Value) : null,
                 null) { NumberEnd = numberEnd };
         }
 
         // Volume marker ("v01", "v01-02", "Vol. 3").
         var volume = VolumePattern().Match(stripped);
-        if (volume.Success)
+        if (volume.Success && VolumeRange(volume) is var (start, end))
         {
-            var (start, end) = VolumeRange(volume);
             return new ParsedReleaseFile(null, start, end);
         }
 
         // Bare trailing number after the title ("Dandadan 148", "Title 049.1").
         var trailing = TrailingNumberPattern().Match(stripped);
-        if (trailing.Success)
+        if (trailing.Success && TryDecimal(trailing.Groups[1].Value) is { } trailingNumber)
         {
-            return new ParsedReleaseFile(
-                decimal.Parse(trailing.Groups[1].Value, CultureInfo.InvariantCulture),
-                null,
-                null);
+            return new ParsedReleaseFile(trailingNumber, null, null);
         }
 
         return new ParsedReleaseFile(null, null, null);

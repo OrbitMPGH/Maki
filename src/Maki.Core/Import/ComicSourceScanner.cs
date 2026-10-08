@@ -148,7 +148,7 @@ public static class ComicSourceScanner
         // No pages of its own: an archive of archives, one per chapter. Each inner one is its own
         // comic, and its entries stay unlisted because reaching them means extracting it.
         return entries
-            .Where(e => IsArchive(e.Name))
+            .Where(e => IsArchive(e.Name) && !CbzReader.IsMacMetadata(e.Name))
             .Select(e => new ComicSource(
                 CbzName(e.Name), ComicSourceKind.Repack, path, e.Size, [], e.Name))
             .ToList();

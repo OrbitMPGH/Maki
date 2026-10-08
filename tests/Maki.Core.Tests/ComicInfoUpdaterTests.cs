@@ -180,4 +180,41 @@ public class ComicInfoUpdaterTests : IDisposable
         Assert.Equal("fake image bytes", reader.ReadToEnd());
         Assert.Single(archive.Entries, e => e.Name == "ComicInfo.xml");
     }
+
+    [Fact]
+    public void Fields_the_class_does_not_model_survive_the_rewrite()
+    {
+        var path = CreateCbz("Berserk v05.cbz", """
+            <?xml version="1.0"?>
+            <ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="ComicInfo.xsd">
+              <Series>Beruseruku</Series>
+              <Characters>Guts, Casca</Characters>
+              <Teams>Band of the Hawk</Teams>
+              <CommunityRating>4.5</CommunityRating>
+              <Pages>
+                <Page Image="0" Type="FrontCover" DoublePage="false" />
+                <Page Image="4" DoublePage="true" />
+              </Pages>
+            </ComicInfo>
+            """);
+
+        Assert.True(ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null));
+
+        using (var archive = ZipFile.OpenRead(path))
+        {
+            using var reader = new StreamReader(archive.Entries.Single(e => e.Name == "ComicInfo.xml").Open());
+            var doc = System.Xml.Linq.XDocument.Parse(reader.ReadToEnd());
+            var root = doc.Root!;
+            Assert.Equal("Berserk", root.Element("Series")!.Value);
+            Assert.Equal("Guts, Casca", root.Element("Characters")!.Value);
+            Assert.Equal("Band of the Hawk", root.Element("Teams")!.Value);
+            Assert.Equal("4.5", root.Element("CommunityRating")!.Value);
+            var pages = root.Element("Pages")!.Elements("Page").ToList();
+            Assert.Equal(2, pages.Count);
+            Assert.Equal("FrontCover", pages[0].Attribute("Type")!.Value);
+            Assert.Equal("true", pages[1].Attribute("DoublePage")!.Value);
+        }
+
+        Assert.False(ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null));
+    }
 }
