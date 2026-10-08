@@ -69,7 +69,7 @@ public class BehavioralTasteService(TasteTuning tuning)
         var candidates = read.Select(r => r.SeriesId).ToList();
 
         var downloaded = await db.Chapters.IgnoreQueryFilters()
-            .Where(c => candidates.Contains(c.SeriesId) && c.ChapterFileId != null)
+            .Where(c => candidates.Contains(c.SeriesId) && (c.ChapterFileId != null || c.FileRemovedAt != null))
             .GroupBy(c => c.SeriesId)
             .Select(g => new { SeriesId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
