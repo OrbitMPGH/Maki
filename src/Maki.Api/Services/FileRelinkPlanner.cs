@@ -282,7 +282,13 @@ public class FileRelinkPlanner(
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
         {
-            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir || !Directory.Exists(seriesDir))
+            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir)
+            {
+                logger.LogWarning("Skipping series folder {Folder}: resolves outside the root or through a linked folder", folder);
+                continue;
+            }
+
+            if (!Directory.Exists(seriesDir))
             {
                 continue;
             }
