@@ -902,49 +902,49 @@ export default function LibraryPage() {
                 </Text>
               </Group>
               <Group gap="xs">
-                {bulkBtn('Search missing', <Trans>Search missing</Trans>, <IconSearch size={15} />, () =>
+                {can('DownloadChapters') && bulkBtn('Search missing', <Trans>Search missing</Trans>, <IconSearch size={15} />, () =>
                   runBulk('Search missing', (id) =>
                     api(`/series/${id}/searchmissing`, { method: 'POST' }),
                   ),
                 )}
-                {bulkBtn('Refresh', <Trans>Refresh</Trans>, <IconRefresh size={15} />, () =>
+                {can('EditMetadata') && bulkBtn('Refresh', <Trans>Refresh</Trans>, <IconRefresh size={15} />, () =>
                   runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
                 )}
-                {bulkBtn('Auto-match', <Trans>Auto-match</Trans>, <IconWand size={15} />, () =>
+                {can('ManageSources') && bulkBtn('Auto-match', <Trans>Auto-match</Trans>, <IconWand size={15} />, () =>
                   setAutoMatchModalOpen(true),
                 )}
-                {bulkBtn('Metadata', <Trans>Metadata</Trans>, <IconPhoto size={15} />, () =>
+                {can('EditMetadata') && bulkBtn('Metadata', <Trans>Metadata</Trans>, <IconPhoto size={15} />, () =>
                   runBulk('Metadata', (id) =>
                     api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
                   ),
                 )}
                 {/* "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5). */}
-                {bulkBtn('ComicInfo', 'ComicInfo', <IconFileText size={15} />, () =>
+                {can('EditMetadata') && bulkBtn('ComicInfo', 'ComicInfo', <IconFileText size={15} />, () =>
                   runBulk('ComicInfo', (id) =>
                     api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
                   ),
                 )}
-                {bulkBtn('Tags', <Trans>Tags</Trans>, <IconTag size={15} />, () => {
+                {can('ManageTags') && bulkBtn('Tags', <Trans>Tags</Trans>, <IconTag size={15} />, () => {
                   setTagsToAdd([])
                   setTagsToRemove([])
                   setTagModalOpen(true)
                 })}
-                {bulkBtn('Monitoring', <Trans>Monitoring</Trans>, <IconEye size={15} />, () =>
+                {can('EditMetadata') && bulkBtn('Monitoring', <Trans>Monitoring</Trans>, <IconEye size={15} />, () =>
                   setMonitorModalOpen(true),
                 )}
                 {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
                   setNotifyModalOpen(true),
                 )}
-                {bulkBtn('Quality profile', <Trans>Quality profile</Trans>, <IconStars size={15} />, () => {
+                {can('EditMetadata') && bulkBtn('Quality profile', <Trans>Quality profile</Trans>, <IconStars size={15} />, () => {
                   setBulkProfile(DEFAULT_PROFILE_FILTER)
                   setProfileModalOpen(true)
                 })}
-                {can('Admin') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
+                {can('EditMetadata') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
                   setMoveModalOpen(true)
                 })}
-                {bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
+                {can('DeleteSeries') && bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
                 <Button
                   visibleFrom="sm"
                   size="xs"
