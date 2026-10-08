@@ -38,6 +38,11 @@ public class QBittorrentClient
         Client = new HttpClient(retry) { Timeout = TimeSpan.FromSeconds(30) };
     }
 
+    internal QBittorrentClient(HttpMessageHandler handler)
+    {
+        Client = new HttpClient(handler);
+    }
+
     private HttpClient Client { get; }
 
     public async Task<bool> PingAsync(string baseUrl, string username, string password, CancellationToken ct = default)
@@ -114,13 +119,13 @@ public class QBittorrentClient
                 return;
             }
 
-            var response = await SendAsync(baseUrl, HttpMethod.Post, "auth/login", new Dictionary<string, string>
+            using var response = await SendAsync(baseUrl, HttpMethod.Post, "auth/login", new Dictionary<string, string>
             {
                 ["username"] = username,
                 ["password"] = password
             }, ct);
             response.EnsureSuccessStatusCode();
-            if (response.StatusCode != HttpStatusCode.NoContent)
+            if (!await LoginSucceededAsync(response, ct))
             {
                 throw new InvalidOperationException("qBittorrent login failed (check username/password). Status code: " + response.StatusCode);
             }
@@ -131,6 +136,21 @@ public class QBittorrentClient
         {
             _loginLock.Release();
         }
+    }
+
+    /// <summary>
+    /// qBittorrent 5 answers a good login with 204 and a bad one with 401. 4.x answers both with 200
+    /// and tells them apart only by the body, "Ok." or "Fails.".
+    /// </summary>
+    private static async Task<bool> LoginSucceededAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        if (response.StatusCode == HttpStatusCode.NoContent)
+        {
+            return true;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        return body.Trim().Equals("Ok.", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
