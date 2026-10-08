@@ -4664,6 +4664,10 @@ msgstr "Nie udało się zmierzyć"
 msgid "Couldn't load notification connections"
 msgstr "Nie udało się wczytać połączeń powiadomień"
 
+#: src/pages/RequestsPage.tsx
+msgid "Couldn't load requests"
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -12568,6 +12572,7 @@ msgstr ""
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
@@ -12589,6 +12594,7 @@ msgid "Retry download"
 msgstr "Ponów pobieranie"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Retrying…"
 msgstr "Ponawianie próby…"

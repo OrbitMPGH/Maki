@@ -4664,6 +4664,10 @@ msgstr "Ölçülemedi"
 msgid "Couldn't load notification connections"
 msgstr "Bildirim bağlantıları yüklenemedi"
 
+#: src/pages/RequestsPage.tsx
+msgid "Couldn't load requests"
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -12568,6 +12572,7 @@ msgstr ""
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
@@ -12589,6 +12594,7 @@ msgid "Retry download"
 msgstr "İndirmeyi yeniden dene"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Retrying…"
 msgstr "Yeniden deneniyor…"

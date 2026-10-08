@@ -3820,6 +3820,10 @@ msgstr "Couldn't be measured"
 msgid "Couldn't load notification connections"
 msgstr "Couldn't load notification connections"
 
+#: src/pages/RequestsPage.tsx
+msgid "Couldn't load requests"
+msgstr "Couldn't load requests"
+
 #: src/components/rails/CustomRailSection.tsx
 msgid "Couldn't load this rail"
 msgstr "Couldn't load this rail"
@@ -10307,6 +10311,7 @@ msgstr "Retries"
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Retry"
 msgstr "Retry"
@@ -10324,6 +10329,7 @@ msgid "Retry download"
 msgstr "Retry download"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/RequestsPage.tsx
 msgid "Retrying…"
 msgstr "Retrying…"
 

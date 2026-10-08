@@ -4664,6 +4664,10 @@ msgstr "无法测量"
 msgid "Couldn't load notification connections"
 msgstr "无法加载通知连接"
 
+#: src/pages/RequestsPage.tsx
+msgid "Couldn't load requests"
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -12568,6 +12572,7 @@ msgstr ""
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
@@ -12589,6 +12594,7 @@ msgid "Retry download"
 msgstr "重试下载"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Retrying…"
 msgstr "正在重试…"
