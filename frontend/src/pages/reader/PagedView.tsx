@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import type { ReaderDirection, ReaderFit } from './prefs'
 import type { Spread } from './useSpreads'
@@ -36,9 +37,19 @@ export default function PagedView({
   const { t } = useLingui()
   // In right-to-left reading the lower page number belongs on the right.
   const ordered = direction === 'rtl' ? [...spread].reverse() : spread
+  const root = useRef<HTMLDivElement>(null)
+
+  // The scroller outlives the page, so a page read to its bottom would otherwise hand the next one
+  // the same offset.
+  const leadSrc = urls[spread[0]]
+  useLayoutEffect(() => {
+    const scroller = root.current?.parentElement
+    if (scroller) scroller.scrollTop = 0
+  }, [leadSrc])
 
   return (
     <div
+      ref={root}
       className="reader-paged"
       data-double={spread.length > 1}
       style={zoom === 1 ? undefined : { transform: `scale(${zoom})`, transformOrigin: 'center top' }}
