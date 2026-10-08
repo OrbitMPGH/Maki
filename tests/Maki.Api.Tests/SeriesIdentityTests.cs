@@ -26,7 +26,8 @@ public sealed class SeriesIdentityTests : IDisposable
 
     private ActivityStatsService Activity() =>
         new(_db.NewContext(), new FakeAppSettings(), new NoStoredTimeZones(),
-            new StoppedClock(new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)));
+            new StoppedClock(new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)),
+            new TestCurrentUser(1));
 
     /// <summary>Nobody has a stored time zone here; callers fall back to their offset argument.</summary>
     private sealed class NoStoredTimeZones : Maki.Core.Configuration.IUserSettingsStore
