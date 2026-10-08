@@ -96,6 +96,7 @@ public class SeriesMetadataRefreshService(
         series.MangaBakaId = metadata.MangaBakaId ?? series.MangaBakaId;
         series.LastMetadataRefresh = DateTime.UtcNow;
         series.Title = metadata.Title;
+        series.SortTitle = SeriesMetadataMapper.SortTitleFor(metadata.Title);
         series.OriginalTitle = metadata.OriginalTitle ?? series.OriginalTitle;
 
         if (includeCover && metadata.CoverUrl != null)

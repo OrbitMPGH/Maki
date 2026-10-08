@@ -60,4 +60,16 @@ public class SeriesMetadataRefreshPartialTests
         Assert.Empty(series.AltTitles);
         Assert.Equal(["Elf"], series.Tags);
     }
+
+    [Fact]
+    public async Task A_retitled_series_gets_its_sort_title_rederived()
+    {
+        var series = Existing();
+        series.SortTitle = SeriesMetadataMapper.SortTitleFor("Frieren");
+
+        await Refresh(series, new SeriesMetadata { ProviderId = "42", Title = "The Mage Frieren" });
+
+        Assert.Equal("The Mage Frieren", series.Title);
+        Assert.Equal(SeriesMetadataMapper.SortTitleFor("The Mage Frieren"), series.SortTitle);
+    }
 }
