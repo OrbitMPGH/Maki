@@ -37,16 +37,17 @@ States: `done <sha>`, `skipped (reason)`, `decision (question)`, `pending`.
 | D | FE-READER-05 | done f81d09d7 |
 | D | FE-READER-13 | done aeabffdb |
 | E | FE-SETTINGS-33 | done 9c5b9ba2 |
-| CORE | CORE-01 | pending |
-| CORE | CORE-05 | pending |
-| CORE | CORE-08 | pending |
-| CORE | CORE-09 | pending |
-| CORE | CORE-13 | pending |
-| CORE | CORE-18 | pending |
-| CORE | CORE-19 | pending |
-| CORE | CORE-22 | pending |
-| CORE | CORE-24 | pending |
-| CORE | HOSTING-07 | pending |
+| CORE | CORE-01 | done e0ef8f89, 0e393cbd |
+| CORE | CORE-05 | done 3383f9c7, 19cee1ff |
+| CORE | CORE-08 | done 06cda549 |
+| CORE | CORE-09 | done e3db0669 |
+| CORE | CORE-13 | done 3a909429 (verified against qBittorrent 4.6.7 source) |
+| CORE | CORE-18 | done 707a52ec |
+| CORE | CORE-19 | done 1495b2f7 |
+| CORE | CORE-22 | done 9786a048 |
+| CORE | CORE-24 | done 7f9d8081 |
+| CORE | HOSTING-07 | done 7f9d8081 |
+| CORE | HOSTING-33 | done 69a17ff7 (pulled forward) |
 
 ## Wave 2: Tier 2 remainder
 
