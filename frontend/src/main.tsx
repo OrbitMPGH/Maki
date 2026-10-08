@@ -46,9 +46,10 @@ window.addEventListener('vite:preloadError', (event) => {
  * which is exactly how the series monitor toggle ended up reverting silently. Call sites only
  * need their own `onError` for extra work (resetting local state); the toast is automatic.
  *
- * `meta.errorMessage` overrides the text; `meta.silent` opts out entirely for flows that show
- * failure inline (bulk actions with per-row results). `meta.inlineNotFound` drops only a 404, for
- * pages that render their own not-found state.
+ * A call site never toasts the server's own message, that is this handler's job. `meta.errorMessage`
+ * overrides the text; `meta.silent` opts out entirely for flows that show failure inline (bulk
+ * actions with per-row results) or word it themselves in an `onError`. `meta.inlineNotFound` drops
+ * only a 404, for pages that render their own not-found state.
  */
 function reportError(error: unknown, meta?: Record<string, unknown>) {
   if (meta?.silent) return

@@ -242,7 +242,6 @@ export function RecommendationIndexSection() {
             : r.reason,
           color: r.switching ? 'var(--info)' : 'var(--neutral)',
         }),
-      onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
     })
 
   return (

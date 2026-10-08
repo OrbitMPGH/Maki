@@ -202,7 +202,6 @@ export function SectionProperties({
                     onClose()
                     notifications.show({ color: 'var(--ok)', message: now`Rail deleted` })
                   },
-                  onError: (err) => notifications.show({ color: 'var(--danger)', message: String(err) }),
                 })
               }
             >

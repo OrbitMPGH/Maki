@@ -1288,6 +1288,7 @@ export function useSaveRecommendationDefaults() {
     onSuccess: (saved) => {
       queryClient.setQueryData(['recommendation-defaults'], saved)
     },
+    meta: { silent: true },
   })
 }
 
@@ -1333,6 +1334,7 @@ export function useSaveDiscoverSearchDefaults() {
     onSuccess: (saved) => {
       queryClient.setQueryData(['discover-search-defaults'], saved)
     },
+    meta: { silent: true },
   })
 }
 
@@ -2265,6 +2267,7 @@ export function useBulkSetUpgradeProfile() {
       void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
       void queryClient.invalidateQueries({ queryKey: ['source-order'] })
     },
+    meta: { silent: true },
   })
 }
 
@@ -2281,6 +2284,7 @@ export function useBulkSetSeriesNotificationMode() {
         body: JSON.stringify({ seriesIds, mode }),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['series'] }),
+    meta: { silent: true },
   })
 }
 
@@ -2383,6 +2387,7 @@ export function useBulkTag() {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['tags'] })
     },
+    meta: { silent: true },
   })
 }
 
@@ -2404,6 +2409,7 @@ export function useSaveFilter() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
     },
+    meta: { silent: true },
   })
 }
 
@@ -3852,6 +3858,7 @@ export function useRestoreBackup() {
       api<{ message: string }>(`/system/backups/${encodeURIComponent(name)}/restore`, {
         method: 'POST',
       }),
+    meta: { silent: true },
   })
 }
 
@@ -3896,6 +3903,7 @@ export function useUploadRestore() {
       }
       return (await res.json()) as { message: string }
     },
+    meta: { silent: true },
   })
 }
 

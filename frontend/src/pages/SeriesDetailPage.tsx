@@ -1469,7 +1469,6 @@ function SeriesDetailBody() {
               const to = result.coveredTo
               notifications.show({ color: 'var(--ok)', message: <Trans>Marked ch. 1 to {to} watched</Trans> })
             },
-            onError: (error) => notifications.show({ color: 'var(--danger)', message: String(error) }),
           },
       )
 
@@ -1488,7 +1487,6 @@ function SeriesDetailBody() {
               notifications.show({ message: <Trans>Chapter {resumeAt} is not downloaded yet</Trans> })
             }
           },
-          onError: (error) => notifications.show({ color: 'var(--danger)', message: String(error) }),
         },
     )
   }

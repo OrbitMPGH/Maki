@@ -456,11 +456,7 @@ function KavitaReadImportControl() {
         <Button
           variant="light"
           loading={status?.running ?? false}
-          onClick={() =>
-            start.mutate(undefined, {
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-            })
-          }
+          onClick={() => start.mutate()}
         >
           <Trans>Import read status</Trans>
         </Button>

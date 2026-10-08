@@ -137,7 +137,6 @@ export function RecommendationModelSwitch({
                     : r.reason,
                   color: r.installed ? 'var(--ok)' : 'var(--warn)',
                 }),
-              onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
             })
           }
         >

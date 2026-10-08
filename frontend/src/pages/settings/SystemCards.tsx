@@ -395,7 +395,6 @@ export function ImageCacheSection() {
           color: r.started ? 'var(--ok)' : 'var(--warn)',
         })
       },
-      onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
     })
 
   return (
