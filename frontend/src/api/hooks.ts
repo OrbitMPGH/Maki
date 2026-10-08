@@ -1218,6 +1218,7 @@ export function useCreateDiscoverPreset() {
     mutationFn: (body: { name: string; spec: SearchDefaults }) =>
       api<DiscoverPreset>('/discover/filters', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['discover-presets'] }),
+    meta: { silent: true },
   })
 }
 

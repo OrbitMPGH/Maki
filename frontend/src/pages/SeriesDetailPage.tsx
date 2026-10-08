@@ -2897,6 +2897,7 @@ function SeriesDetailBody() {
                                                   size="sm"
                                                   color={watched ? 'var(--watched)' : 'var(--ok)'}
                                                   variant={watched || external ? 'light' : 'filled'}
+                                                  c={watched || external ? undefined : 'var(--ok-on)'}
                                                   leftSection={
                                                     watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
                                                   }

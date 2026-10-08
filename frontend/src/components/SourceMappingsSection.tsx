@@ -854,7 +854,7 @@ export function SourceMappingsSection({
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                {...pressable(() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url))}
+                {...pressable(() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url), { role: false })}
               >
                 <Group wrap="nowrap">
                   {resolved.coverUrl && (
@@ -887,7 +887,7 @@ export function SourceMappingsSection({
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                {...pressable(() => sourceName && link(sourceName, r.sourceSeriesId, r.url))}
+                {...pressable(() => sourceName && link(sourceName, r.sourceSeriesId, r.url), { role: false })}
               >
                 <Group wrap="nowrap">
                   {r.coverUrl && (
