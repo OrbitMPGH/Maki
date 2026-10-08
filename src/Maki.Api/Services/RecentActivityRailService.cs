@@ -29,6 +29,7 @@ namespace Maki.Api.Services;
 public class RecentActivityRailService(
     IServiceScopeFactory scopeFactory,
     RecommendationService recommendations,
+    SeedWeightService seedWeights,
     ILogger<RecentActivityRailService> logger)
 {
     public const string RailKey = "recent-activity";
@@ -439,12 +440,15 @@ public class RecentActivityRailService(
             })
             .ToListAsync(ct);
         var byId = visible.ToDictionary(s => s.Id);
+        // Ignored, thumbed-down and low-rated titles are out of the effective population, and this
+        // rail seeds automatically, so it must not steer by them or name them in its subtitle.
+        var eligible = (await seedWeights.SnapshotAsync(db, scope, ct)).Effective.EligibleIds.ToHashSet();
 
         var seeds = new List<RecentSeed>(SeedCount);
         var seen = new HashSet<long>();
         foreach (var row in recent.OrderByDescending(r => r.LastReadAt))
         {
-            if (!byId.TryGetValue(row.SeriesId, out var series))
+            if (!byId.TryGetValue(row.SeriesId, out var series) || !eligible.Contains(series.MangaBakaId))
             {
                 continue;
             }
