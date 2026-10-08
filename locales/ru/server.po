@@ -1400,6 +1400,19 @@ msgstr ""
 msgid "error.seriesRename.activeDownload"
 msgstr "У серии идёт загрузка. Дождитесь её завершения, прежде чем переименовывать серию"
 
+#. {file}, {first} and {second} are file names or paths, never translated. Two chapters would get
+#. the same file name; {first} is the one that claimed it and {second} the one that was refused.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: {file} is wanted by both {first} and {second}
+msgid "error.seriesRename.conflict"
+msgstr ""
+
+#. {file} is a file name, never translated. The cause is in the server log.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: Could not rename {file}. The server log has the details.
+msgid "error.seriesRename.fileFailed"
+msgstr ""
+
 #. {file} is a filesystem path relative to the root folder, never translated.
 #: src/Maki.Api/Services/SeriesRenameService.cs
 #. English: {file} was missing from disk; its entry was updated anyway
@@ -1413,6 +1426,12 @@ msgstr "{file} не найден на диске; запись всё равно
 #, fuzzy
 msgid "error.seriesRename.fileSkippedExists"
 msgstr "Пропущен {from}: {to} уже существует"
+
+#. The cause is in the server log.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: Could not rename the series folder. The server log has the details.
+msgid "error.seriesRename.folderFailed"
+msgstr ""
 
 #: src/Maki.Api/Services/SeriesRenameService.cs
 #. English: The current chapter format gives two chapters the same file name

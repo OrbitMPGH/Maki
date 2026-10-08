@@ -983,6 +983,17 @@ msgstr "Could not schedule source matching. Link a source manually from the seri
 msgid "error.seriesRename.activeDownload"
 msgstr "Series has an active download, wait for it to finish before renaming"
 
+#. {file}, {first} and {second} are file names or paths, never translated. Two chapters would get
+#. the same file name; {first} is the one that claimed it and {second} the one that was refused.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.conflict"
+msgstr "{file} is wanted by both {first} and {second}"
+
+#. {file} is a file name, never translated. The cause is in the server log.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.fileFailed"
+msgstr "Could not rename {file}. The server log has the details."
+
 #. {file} is a filesystem path relative to the root folder, never translated.
 #: src/Maki.Api/Services/SeriesRenameService.cs
 msgid "error.seriesRename.fileMissingUpdated"
@@ -992,6 +1003,11 @@ msgstr "{file} was missing from disk; its entry was updated anyway"
 #: src/Maki.Api/Services/SeriesRenameService.cs
 msgid "error.seriesRename.fileSkippedExists"
 msgstr "Skipped {from}: {to} already exists"
+
+#. The cause is in the server log.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.folderFailed"
+msgstr "Could not rename the series folder. The server log has the details."
 
 #: src/Maki.Api/Services/SeriesRenameService.cs
 msgid "error.seriesRename.formatCollision"
