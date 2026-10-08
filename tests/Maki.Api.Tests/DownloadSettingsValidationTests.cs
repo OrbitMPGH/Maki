@@ -1,5 +1,6 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -8,12 +9,13 @@ namespace Maki.Api.Tests;
 public class DownloadSettingsValidationTests : IDisposable
 {
     private readonly TestDb _db = new();
+    private SettingsService Store() => new(_db.ScopeFactory());
 
     public void Dispose() => _db.Dispose();
 
     private SettingsController Controller() => new(
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
-        settings: new SettingsService(_db.ScopeFactory()),
+        settings: Store(),
         naming: null!,
         flareSolverr: null!, prowlarr: null!, qbittorrent: null!, kavita: null!,
         sourceRegistry: null!, sourceAvailability: null!, mangaBakaDump: null!, embeddingModel: null!,
@@ -47,5 +49,20 @@ public class DownloadSettingsValidationTests : IDisposable
         var result = await Controller().SetDownload(Payload(1, 20), CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task A_stored_zero_reads_back_clamped_so_the_next_save_validates()
+    {
+        var store = Store();
+        await store.SetAsync(SettingKeys.SmartDownloadChaptersLeft, "0");
+        await store.SetAsync(SettingKeys.SmartDownloadChaptersCount, "0");
+
+        var result = await Controller().GetDownload(CancellationToken.None);
+
+        var body = Assert.IsType<SettingsController.DownloadSettings>(
+            Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(1, body.SmartDownloadChaptersLeft);
+        Assert.Equal(1, body.SmartDownloadChapters);
     }
 }

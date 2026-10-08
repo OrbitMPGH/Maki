@@ -906,8 +906,10 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2,
         await settings.GetAsync(SettingKeys.DownloadRetryEnabled, ct) != "false",
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
+        SmartDownloadJob.ClampChaptersLeft(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5),
+        SmartDownloadJob.ClampBatchSize(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10),
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
@@ -944,14 +946,14 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
         }
 
-        if (request.SmartDownloadChaptersLeft is < 1 or > 10)
+        if (request.SmartDownloadChaptersLeft is < SmartDownloadJob.MinChapters or > SmartDownloadJob.MaxChaptersLeft)
         {
-            return this.Fail(localizer, "error.settings.smartChaptersLeftRange", new { min = 1, max = 10 });
+            return this.Fail(localizer, "error.settings.smartChaptersLeftRange", new { min = SmartDownloadJob.MinChapters, max = SmartDownloadJob.MaxChaptersLeft });
         }
 
-        if (request.SmartDownloadChapters is < 1 or > 20)
+        if (request.SmartDownloadChapters is < SmartDownloadJob.MinChapters or > SmartDownloadJob.MaxChaptersPerBatch)
         {
-            return this.Fail(localizer, "error.settings.smartChaptersRange", new { min = 1, max = 20 });
+            return this.Fail(localizer, "error.settings.smartChaptersRange", new { min = SmartDownloadJob.MinChapters, max = SmartDownloadJob.MaxChaptersPerBatch });
         }
 
         var sourceOrder = SourceOrderService.Parse(request.SourceOrder);
