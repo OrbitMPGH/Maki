@@ -72,6 +72,10 @@ export default function ContinuousView({
   const pageRef = useRef(page)
   pageRef.current = page
 
+  // Set by the sentinel effect below; image load handlers re-run it once a page settles.
+  const sentinelVisible = useRef(false)
+  const reportEnd = useRef<() => void>(() => {})
+
   useEffect(() => {
     progress.current = 0
     setPastEndProgress(0)
@@ -103,7 +107,8 @@ export default function ContinuousView({
     )
   }, [seekVersion, urls])
 
-  const onPageLoad = (index: number) => {
+  const onPageSettled = (index: number) => {
+    reportEnd.current()
     if (!settling.current.delete(index)) return
     pages.current[seekTarget.current]?.scrollIntoView({ block: 'start' })
   }
@@ -143,18 +148,29 @@ export default function ContinuousView({
   // center band, so the count sticks on the previous, taller page even once the strip is fully
   // scrolled. A 1px sentinel right after the last page catches that: it enters the viewport only
   // once the strip is scrolled essentially to its end, at which point the last page is current
-  // regardless of the band.
+  // regardless of the band. Until every image has settled the strip is collapsed and the sentinel
+  // sits in view at the top, so it only counts once nothing is still waiting for its size.
   useEffect(() => {
     if (urls.length === 0 || !sentinel.current) return
     const target = sentinel.current
+    reportEnd.current = () => {
+      if (!sentinelVisible.current) return
+      if (pages.current.slice(0, urls.length).some((element) => !element?.complete)) return
+      onPageChange(urls.length - 1)
+    }
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) onPageChange(urls.length - 1)
+        sentinelVisible.current = entries[entries.length - 1]?.isIntersecting ?? false
+        reportEnd.current()
       },
       { threshold: 0 },
     )
     observer.observe(target)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      sentinelVisible.current = false
+      reportEnd.current = () => {}
+    }
   }, [urls, onPageChange])
 
   // The bottom-of-strip "scroll for next chapter" meter. `.reader-surface` clamps scrollTop at
@@ -258,7 +274,8 @@ export default function ContinuousView({
               loading={index < 3 || Math.abs(index - pageRef.current) <= 2 ? 'eager' : 'lazy'}
               decoding="async"
               draggable={false}
-              onLoad={() => onPageLoad(index)}
+              onLoad={() => onPageSettled(index)}
+              onError={() => onPageSettled(index)}
             />
           )
         })}
