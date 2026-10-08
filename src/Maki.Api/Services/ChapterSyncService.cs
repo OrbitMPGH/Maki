@@ -328,7 +328,7 @@ public class ChapterSyncService(
     {
         var groups = existing
             .Where(c => c.Number is not null)
-            .GroupBy(c => (c.Number, c.Language))
+            .GroupBy(c => (c.Number, Language: SourceLanguages.Canonical(c.Language)))
             .Where(g => g.Count() > 1)
             .ToList();
 
@@ -355,9 +355,9 @@ public class ChapterSyncService(
                 // second file or a second read of its own stays rather than losing it.
                 if (!await reads.CanMergeAsync(keeper, dup, ct))
                 {
-                    logger.LogWarning(
-                        "Kept duplicate row {DupId} of chapter {Number} in series {SeriesId}: its file or progress cannot move to row {KeeperId}",
-                        dup.Id, keeper.Number, keeper.SeriesId, keeper.Id);
+                    logger.LogInformation(
+                        "Kept duplicate row {DupId} ({DupLanguage}) of chapter {Number} in series {SeriesId}: its file or progress cannot move to row {KeeperId} ({KeeperLanguage})",
+                        dup.Id, dup.Language, keeper.Number, keeper.SeriesId, keeper.Id, keeper.Language);
                     continue;
                 }
 

@@ -220,6 +220,46 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Rows_differing_only_by_language_spelling_are_merged()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5m, Language = "pt-BR" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5m, Volume = 2, Language = "pt-br" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 6m, Language = "zh" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 6m, Language = "zh-Hans" });
+            db.SaveChanges();
+        }
+
+        await BuildService(null, new FakeSource { Name = "fake", OnListChapters = _ => [] }).SyncSeriesAsync(seriesId);
+
+        var chapters = ChaptersOf(seriesId);
+        Assert.Equal(2, chapters.Count);
+        Assert.Equal(2, chapters.Single(c => c.Number == 5m).Volume);
+    }
+
+    [Fact]
+    public async Task Rows_differing_by_language_spelling_are_both_kept_when_each_holds_a_file()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        using (var db = _db.NewContext())
+        {
+            var first = new ChapterFile { SeriesId = seriesId, RelativePath = "a.cbz", DateAdded = DateTime.UtcNow };
+            var second = new ChapterFile { SeriesId = seriesId, RelativePath = "b.cbz", DateAdded = DateTime.UtcNow };
+            db.ChapterFiles.AddRange(first, second);
+            db.SaveChanges();
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5m, Language = "pt-BR", ChapterFileId = first.Id });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5m, Language = "pt-br", ChapterFileId = second.Id });
+            db.SaveChanges();
+        }
+
+        await BuildService(null, new FakeSource { Name = "fake", OnListChapters = _ => [] }).SyncSeriesAsync(seriesId);
+
+        Assert.Equal(2, ChaptersOf(seriesId).Count);
+    }
+
+    [Fact]
     public async Task Duplicate_merge_transfers_source_snapshot_links_to_the_keeper()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake", enabled: false));
