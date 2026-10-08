@@ -77,8 +77,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 try
                 {
                     var full = Path.GetFullPath(directory);
-                    var drive = DriveInfo.GetDrives().Where(d => full.StartsWith(d.Name, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-                        .OrderByDescending(d => d.Name.Length).FirstOrDefault();
+                    var allDrives = DriveInfo.GetDrives();
+                    var mount = Maki.Core.Storage.DiskSpace.LongestMount(full, allDrives.Select(d => d.Name),
+                        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    var drive = allDrives.FirstOrDefault(d => d.Name == mount);
                     if (drive == null || !drives.Add(drive.Name)) continue;
                     var gib = drive.AvailableFreeSpace / Math.Pow(1024, 3);
                     var percent = 100.0 * drive.AvailableFreeSpace / drive.TotalSize;

@@ -23,6 +23,14 @@ public class DiskSpaceTests
         Assert.Equal(@"D:\", DiskSpace.LongestMount(@"D:\Manga", [@"C:\", @"D:\"], StringComparison.OrdinalIgnoreCase));
     }
 
+    [Theory]
+    [InlineData(@"d:\Manga", @"D:\")]
+    [InlineData(@"E:\Manga", null)]
+    public void Windows_drive_letters_match_case_insensitively(string path, string? expected)
+    {
+        Assert.Equal(expected, DiskSpace.LongestMount(path, [@"C:\", @"D:\"], StringComparison.OrdinalIgnoreCase));
+    }
+
     [Fact]
     public void No_matching_mount_is_null()
     {
