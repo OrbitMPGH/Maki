@@ -41,7 +41,14 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                         await settings.SetAsync(SettingKeys.HealthLastScheduled, date, stoppingToken);
                     }
                     // Imports and downloads change ChapterFile.DateAdded or add a new row.
+                    // A scan skips a series while it has queue rows in flight and an offline root cannot
+                    // be read at all, so neither would ever move AnalyzedAt and the same scan would be
+                    // queued again on every pass.
+                    var onlineRoots = (await db.RootFolders.Select(r => new { r.Id, r.Path }).ToListAsync(stoppingToken))
+                        .Where(r => Directory.Exists(r.Path)).Select(r => r.Id).ToList();
                     var series = await db.ChapterFiles.Where(f => f.DateAdded >= baseline && !db.HealthFiles.Any(h => h.ChapterFileId == f.Id && !h.Removed && h.AnalyzedAt >= f.DateAdded))
+                        .Where(f => db.Series.Any(s => s.Id == f.SeriesId && onlineRoots.Contains(s.RootFolderId)))
+                        .Where(f => !db.DownloadQueue.Any(q => q.SeriesId == f.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled))
                         .Select(f => f.SeriesId).Distinct().Order().Take(100).ToListAsync(stoppingToken);
                     // Verified, unlike the scheduled sweep. These are the chapters that just
                     // arrived, so reading them costs a read of what was just written rather than of

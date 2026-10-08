@@ -3841,12 +3841,6 @@ msgid "health.check.coolingDown"
 msgstr "Für {source} läuft gerade eine Abkühlzeit"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {source} has no cooldown
-#, fuzzy
-msgid "health.check.noCooldown"
-msgstr "{source} hat keine Abkühlzeit"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Background scheduler is running
 #, fuzzy
 msgid "health.check.schedulerRunning"
@@ -3872,9 +3866,13 @@ msgstr "Datenbank ist erreichbar und aktuell"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: A previous startup migration failed. Check the startup logs.
-#, fuzzy
 msgid "health.check.migrationFailed"
 msgstr "Eine Migration beim letzten Start ist fehlgeschlagen. Prüfe die Startprotokolle."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: A previous startup migration failed ({error}). Check the startup logs.
+msgid "health.check.migrationFailedDetail"
+msgstr ""
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database or scheduler diagnostics could not complete

@@ -10490,6 +10490,7 @@ msgstr "Her tür için en popüler başlıkları açan bir kutucuk."
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

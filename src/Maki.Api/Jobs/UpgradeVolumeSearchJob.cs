@@ -76,6 +76,7 @@ public class UpgradeVolumeSearchJob(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(ex, "Volume search failed");
+            context.ReportFailure(ex);
         }
         finally
         {

@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Metadata.Embedding;
@@ -48,6 +49,7 @@ public class PrebuiltIndexJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Prebuilt embedding index check failed");
+            context.ReportFailure(ex);
         }
     }
 

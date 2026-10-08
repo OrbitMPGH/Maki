@@ -8597,6 +8597,7 @@ msgstr "One tile per genre, each opening its most popular titles."
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "One-shot"

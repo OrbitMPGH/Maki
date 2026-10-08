@@ -16,7 +16,7 @@ using Quartz;
 namespace Maki.Api.Tests;
 
 /// <summary>Quartz hands a job a context it only reads the token and job data off.</summary>
-internal sealed class TestJobContext(JobDataMap? data = null, CancellationToken ct = default) : IJobExecutionContext
+internal sealed class TestJobContext(JobDataMap? data = null, CancellationToken ct = default, IJobDetail? detail = null) : IJobExecutionContext
 {
     public CancellationToken CancellationToken => ct;
     public IScheduler Scheduler => throw new NotSupportedException();
@@ -26,7 +26,7 @@ internal sealed class TestJobContext(JobDataMap? data = null, CancellationToken 
     public TriggerKey RecoveringTriggerKey => throw new NotSupportedException();
     public int RefireCount => 0;
     public JobDataMap MergedJobDataMap => data ?? [];
-    public IJobDetail JobDetail => throw new NotSupportedException();
+    public IJobDetail JobDetail => detail ?? throw new NotSupportedException();
     public IJob JobInstance => throw new NotSupportedException();
     public DateTimeOffset FireTimeUtc => DateTimeOffset.UtcNow;
     public DateTimeOffset? ScheduledFireTimeUtc => null;

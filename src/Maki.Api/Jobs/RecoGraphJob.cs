@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Metadata.RecoGraph;
@@ -54,6 +55,7 @@ public class RecoGraphJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Co-recommendation graph check failed");
+            context.ReportFailure(ex);
         }
     }
 

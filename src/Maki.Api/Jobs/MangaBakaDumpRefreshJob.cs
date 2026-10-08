@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Api.Hubs;
 using Maki.Metadata.MangaBaka;
 using Quartz;
@@ -57,6 +58,7 @@ public class MangaBakaDumpRefreshJob(
         {
             // Health check surfaces prolonged staleness; the next run retries.
             logger.LogWarning(ex, "MangaBaka dump refresh failed");
+            context.ReportFailure(ex);
         }
     }
 

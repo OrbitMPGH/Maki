@@ -10490,6 +10490,7 @@ msgstr "ジャンルごとにタイルを表示し、それぞれから最も人
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

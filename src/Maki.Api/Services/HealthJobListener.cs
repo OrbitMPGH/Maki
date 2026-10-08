@@ -15,15 +15,17 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
     {
         try
         {
+            if (JobOutcome.WasInterrupted(context)) return;
+            var failed = JobOutcome.Failed(context, jobException);
             using var scope = scopes.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             var id = $"job:{context.JobDetail.Key}";
             var row = await db.HealthChecks.FindAsync([id], cancellationToken);
             if (row == null) { row = new HealthCheckRecord { Id = id, Category = "job" }; db.HealthChecks.Add(row); }
-            var status = jobException == null ? "healthy" : "error";
+            var status = failed ? "error" : "healthy";
             var previous = row.Status;
             var notify = HealthTransitions.Observe(row, status, false, DateTime.UtcNow);
-            row.MessageKey = jobException == null ? "health.check.jobSucceeded" : "health.check.jobFailed";
+            row.MessageKey = failed ? "health.check.jobFailed" : "health.check.jobSucceeded";
             row.ParamsJson = JsonSerializer.Serialize(new { job = context.JobDetail.Key.ToString() });
             row.Message = string.Empty;
             // Some jobs run every 15 seconds; a row per run buried the history in thousands of pages.
@@ -38,7 +40,7 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
             if (notify)
             {
                 var job = context.JobDetail.Key.ToString();
-                var recovered = jobException == null;
+                var recovered = !failed;
                 scope.ServiceProvider.GetRequiredService<InboxService>().Raise(
                     InboxEventType.HealthIssue,
                     new InboxMessage(

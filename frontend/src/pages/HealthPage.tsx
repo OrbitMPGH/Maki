@@ -774,8 +774,8 @@ function BulkDeleteModal({
  * Every check the monitor produced, grouped by the area it came from.
  *
  * Passing checks are hidden by default and not because they are uninteresting: there is one per
- * source cooldown and one per root folder, so a healthy instance shows around thirty green rows
- * and the two that matter are lost in them.
+ * root folder, per probed service and per scheduled job, so a healthy instance shows a screenful of
+ * green rows and the ones that matter are lost in them.
  */
 function ChecksPanel({
   checks,
