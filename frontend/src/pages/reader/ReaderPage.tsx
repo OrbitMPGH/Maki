@@ -143,7 +143,9 @@ export default function ReaderPage() {
     setResumedFor(manifest.chapterId)
     const toEnd = enterAtEndRef.current
     enterAtEndRef.current = false
-    seekToPage(toEnd ? Math.max(0, manifest.pageCount - 1) : manifest.resumePage)
+    const lastPage = Math.max(0, manifest.pageCount - 1)
+    const saved = manifest.resumePage <= lastPage ? Math.max(0, manifest.resumePage) : 0
+    seekToPage(toEnd ? lastPage : saved)
     setZoom(1)
     setAtEnd(false)
     setFinishedFor(null)
