@@ -87,12 +87,6 @@ public class SourceMappingRemovalService(
             .Where(c => c.SeriesId == mapping.SeriesId)
             .Include(c => c.ChapterFile)
             .ToListAsync(ct);
-        var orphanedIds = await OrphansWorthKeepingAsync(mapping.SeriesId, chapters, ct);
-        var removed = chapters.Where(c => !supportedIds.Contains(c.Id) && !orphanedIds.Contains(c.Id)).ToList();
-        var retained = chapters.Where(c => supportedIds.Contains(c.Id) || orphanedIds.Contains(c.Id)).ToList();
-
-        await RebuildMetadataAsync(retained.Where(c => supportedIds.Contains(c.Id)).ToList(), remainingIds, ct);
-
         // A chapter number can be valid on both the wrong and correct series. Its row survives,
         // but a CBZ acquired through the mapping being removed must not remain readable as if it
         // were the correct content.
@@ -102,6 +96,13 @@ public class SourceMappingRemovalService(
                             StringComparison.OrdinalIgnoreCase))
             .Select(c => c.ChapterFileId!.Value)
             .ToHashSet();
+        var keptIds = await KeptWithoutSupportAsync(
+            mapping.SeriesId, mappingId, chapters, supportedIds, wrongSourceFileIds, ct);
+        var removed = chapters.Where(c => !supportedIds.Contains(c.Id) && !keptIds.Contains(c.Id)).ToList();
+        var retained = chapters.Where(c => supportedIds.Contains(c.Id) || keptIds.Contains(c.Id)).ToList();
+
+        await RebuildMetadataAsync(retained.Where(c => supportedIds.Contains(c.Id)).ToList(), remainingIds, ct);
+
         foreach (var chapter in retained.Where(c => c.ChapterFileId is { } fileId && wrongSourceFileIds.Contains(fileId)))
         {
             chapter.ChapterFileId = null;
@@ -184,15 +185,18 @@ public class SourceMappingRemovalService(
     }
 
     /// <summary>
-    /// Chapters no mapping lists any more (a source delisted them, or they were adopted from disk)
-    /// that still hold a file or somebody's reading state. Removing a source says nothing about
-    /// them, and the row going takes every user's progress and bookmarks with it.
+    /// Chapters no remaining mapping supports that this removal still has no business deleting: ones
+    /// the removed mapping never listed (a source delisted them, they were adopted from disk, or only
+    /// a disabled mapping lists them) that hold a file from a source other than the removed one, or
+    /// somebody's reading state. The row going takes every user's progress and bookmarks with it.
+    /// A chapter the removed mapping did list is its own to remove, as before.
     /// </summary>
-    private async Task<HashSet<int>> OrphansWorthKeepingAsync(
-        int seriesId, IReadOnlyCollection<Chapter> chapters, CancellationToken ct)
+    private async Task<HashSet<int>> KeptWithoutSupportAsync(
+        int seriesId, int mappingId, IReadOnlyCollection<Chapter> chapters,
+        IReadOnlySet<int> supportedIds, IReadOnlySet<int> wrongSourceFileIds, CancellationToken ct)
     {
-        var linked = (await db.ChapterSourceLinks
-                .Where(l => l.Chapter!.SeriesId == seriesId)
+        var listedByRemoved = (await db.ChapterSourceLinks
+                .Where(l => l.SourceMappingId == mappingId)
                 .Select(l => l.ChapterId)
                 .Distinct()
                 .ToListAsync(ct))
@@ -210,7 +214,9 @@ public class SourceMappingRemovalService(
             .ToHashSet();
 
         return chapters
-            .Where(c => !linked.Contains(c.Id) && (c.ChapterFileId is not null || read.Contains(c.Id)))
+            .Where(c => !supportedIds.Contains(c.Id) && !listedByRemoved.Contains(c.Id) &&
+                        (read.Contains(c.Id) ||
+                         (c.ChapterFileId is { } fileId && !wrongSourceFileIds.Contains(fileId))))
             .Select(c => c.Id)
             .ToHashSet();
     }
