@@ -521,7 +521,7 @@ public class ReaderController(
 
         // No time: ticking a chapter off from the chapter table is not a sitting with it.
         await reader.SaveProgressAsync(
-            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct);
+            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct, bulk: true);
         return Ok(new { chapterId = id, completed = true });
     }
 

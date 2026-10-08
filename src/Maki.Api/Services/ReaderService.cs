@@ -345,18 +345,18 @@ public class ReaderService(
     /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct)
+        TimeReport time, CancellationToken ct, bool bulk = false)
     {
         try
         {
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, bulk, ct);
         }
         catch (DbUpdateException e) when (IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
             db.ChangeTracker.Clear();
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, bulk, ct);
         }
     }
 
@@ -367,7 +367,7 @@ public class ReaderService(
         e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct)
+        TimeReport time, bool bulk, CancellationToken ct)
     {
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
@@ -395,13 +395,16 @@ public class ReaderService(
         // A watched row stays ticked off while it is merely opened: the reader writes page 0 a
         // moment after mounting and an OPDS app prefetches pages, neither of which is a read. Only a
         // save that completes the chapter (last page or an explicit completed) turns it into one.
-        var stillWatched = row.Watched && !(completed ?? row.PageIndex >= slice.PageCount - 1);
+        var finishing = completed ?? row.PageIndex >= slice.PageCount - 1;
+        var stillWatched = row.Watched && !finishing;
         if (!stillWatched)
         {
             // A watched tick is not a start: the first genuine read dates the series, not the tick.
+            // Its Completed never went false, so the read date has to be stamped here as well.
             if (row.Watched)
             {
                 row.StartedAt = now;
+                row.CompletedAt = now;
             }
 
             row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
@@ -412,7 +415,11 @@ public class ReaderService(
         }
 
         var justCompleted = !stillWatched && row.Completed && !wasCompleted;
-        if (justCompleted)
+        if (bulk)
+        {
+            row.BulkMarked |= justCompleted;
+        }
+        else if (!stillWatched && row.Completed && finishing)
         {
             row.BulkMarked = false;
         }
