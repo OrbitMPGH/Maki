@@ -439,7 +439,9 @@ public class ReaderController(
             return NotFound();
         }
 
-        if (!ReaderService.IsPageInRange(request.PageIndex, slice.PageCount))
+        // A completing write from a reader holding a stale manifest is clamped by the service rather than
+        // refused, so the completion is not lost; only a plain position past the end is rejected.
+        if (request.Completed != true && !ReaderService.IsPageInRange(request.PageIndex, slice.PageCount))
         {
             return this.Fail(localizer, "error.reader.pageOutOfRange");
         }
