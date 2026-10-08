@@ -64,6 +64,12 @@ public sealed class VectorIndexCache(
     public bool IsCurrent => _loaded is { } loaded && MatchesDump(loaded);
 
     /// <summary>
+    /// The loaded index when it is current, without building one or counting as a read. For a
+    /// caller that only needs to know which index is live.
+    /// </summary>
+    public VectorIndex? TryGetLoaded() => _loaded is { } loaded && MatchesDump(loaded) ? loaded.Index : null;
+
+    /// <summary>
     /// Starts building the index on the thread pool unless it is current or a build is already
     /// running. For a request that would rather answer without the index this time than wait
     /// seconds for it.
