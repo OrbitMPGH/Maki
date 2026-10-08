@@ -100,7 +100,31 @@ public class RecommendationService(
 
     private readonly object _poolsGate = new();
     private readonly SemaphoreSlim _scanGate = new(1, 1);
-    private readonly Dictionary<string, Task<RecommendationsResult>> _building = [];
+    private readonly Dictionary<string, PoolBuild> _building = [];
+
+    /// <summary>
+    /// One pending pool build and how many readers are waiting on it. When the last one leaves
+    /// before the build reaches the scan gate it is cancelled, so a key nobody wants any more
+    /// (a slider position passed through, a rail scrolled past) never costs a scan.
+    /// </summary>
+    internal int PendingBuilds
+    {
+        get
+        {
+            lock (_poolsGate)
+            {
+                return _building.Count;
+            }
+        }
+    }
+
+    private sealed class PoolBuild
+    {
+        public Task<RecommendationsResult> Task { get; set; } = null!;
+        public int Waiters { get; set; }
+        public bool Scanning { get; set; }
+        public CancellationTokenSource Abandoned { get; } = new();
+    }
     private readonly RecommendationPoolCache _pools = new(CacheSlots, RailCacheSlots, CacheFor);
 
     /// <param name="scope">
@@ -207,26 +231,55 @@ public class RecommendationService(
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
                   $"|a:{avoidKey}";
         // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
-        // per key and run one at a time behind _scanGate, on no caller's token: a reader who leaves
-        // mid-scan neither throws the work away nor makes the next reader start it again.
+        // per key and run one at a time behind _scanGate. A scan that has started finishes on no
+        // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the
+        // next reader start it again; one still queued when its last reader leaves is dropped.
         RecommendationsResult? pool = null;
-        Task<RecommendationsResult>? build = null;
+        PoolBuild? build = null;
         lock (_poolsGate)
         {
             if (!request.Refresh && _pools.TryGet(key, origin, out var hit))
             {
                 pool = hit;
             }
-            else if (!_building.TryGetValue(key, out build))
+            else
             {
-                build = Task.Run(() => BuildPoolAsync(
-                    key, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
-                    coGraph, coRead, tasteVectors));
-                _building[key] = build;
+                if (!_building.TryGetValue(key, out build))
+                {
+                    var created = new PoolBuild();
+                    created.Task = Task.Run(() => BuildPoolAsync(
+                        key, created, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
+                        coGraph, coRead, tasteVectors));
+                    _building[key] = created;
+                    build = created;
+                }
+
+                build.Waiters++;
             }
         }
 
-        pool ??= await build!.WaitAsync(ct);
+        if (pool is null)
+        {
+            try
+            {
+                pool = await build!.Task.WaitAsync(ct);
+            }
+            finally
+            {
+                lock (_poolsGate)
+                {
+                    if (--build!.Waiters == 0 && !build.Scanning && !build.Task.IsCompleted)
+                    {
+                        build.Abandoned.Cancel();
+                        if (_building.TryGetValue(key, out var current) && ReferenceEquals(current, build))
+                        {
+                            _building.Remove(key);
+                        }
+                    }
+                }
+            }
+        }
+
 
         var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
 
@@ -250,14 +303,22 @@ public class RecommendationService(
     }
 
     private async Task<RecommendationsResult> BuildPoolAsync(
-        string key, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
+        string key, PoolBuild self, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
         RecommendationFilters filters, RecommendationRequest request,
         IReadOnlyDictionary<long, double> seedWeight, IReadOnlyDictionary<long, double> avoided,
         bool coGraph, bool coRead, bool tasteVectors)
     {
-        await _scanGate.WaitAsync();
+        var entered = false;
         try
         {
+            await _scanGate.WaitAsync(self.Abandoned.Token);
+            entered = true;
+            lock (_poolsGate)
+            {
+                self.Abandoned.Token.ThrowIfCancellationRequested();
+                self.Scanning = true;
+            }
+
             var started = DateTime.UtcNow;
             var exclude = new HashSet<long>(libraryIds.Concat(seeds));
             var related = await store.GetRelatedAsync(seeds, exclude, filters.ContentRatings, CancellationToken.None);
@@ -305,10 +366,16 @@ public class RecommendationService(
         {
             lock (_poolsGate)
             {
-                _building.Remove(key);
+                if (_building.TryGetValue(key, out var current) && ReferenceEquals(current, self))
+                {
+                    _building.Remove(key);
+                }
             }
 
-            _scanGate.Release();
+            if (entered)
+            {
+                _scanGate.Release();
+            }
         }
     }
 

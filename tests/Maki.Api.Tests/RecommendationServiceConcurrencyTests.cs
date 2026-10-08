@@ -129,4 +129,33 @@ public class RecommendationServiceConcurrencyTests : IDisposable
         Assert.Single((await service.GetAsync(Seeded(GatedRecommender.Blocked), user)).Similar);
         Assert.Equal(1, recommender.Scans);
     }
+
+    [Fact]
+    public async Task A_queued_build_whose_readers_all_left_never_scans()
+    {
+        var (service, recommender) = Service();
+        var user = new TestCurrentUser(1);
+        var blocked = service.GetAsync(Seeded(GatedRecommender.Blocked), user);
+        await recommender.Entered.Task.WaitAsync(Timeout);
+
+        using var cts = new CancellationTokenSource();
+        var abandoned = service.GetAsync(Seeded(5), user, cts.Token);
+        var deadline = DateTime.UtcNow + Timeout;
+        while (service.PendingBuilds < 2 && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.Equal(2, service.PendingBuilds);
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => abandoned);
+        Assert.Equal(1, service.PendingBuilds);
+
+        recommender.Release.SetResult();
+        await blocked.WaitAsync(Timeout);
+        Assert.Equal(1, recommender.Scans);
+
+        Assert.Single((await service.GetAsync(Seeded(5), user).WaitAsync(Timeout)).Similar);
+        Assert.Equal(2, recommender.Scans);
+    }
 }
