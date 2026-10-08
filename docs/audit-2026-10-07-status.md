@@ -75,12 +75,12 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | SOURCES | SOURCES-10 | pending |
 | SOURCES | SOURCES-11 | pending |
 | SOURCES | SOURCES-12 | pending |
-| FE-LIBRARY | FE-LIBRARY-01 | pending |
-| FE-LIBRARY | FE-LIBRARY-14 | pending |
-| FE-LIBRARY | FE-LIBRARY-15 | pending |
-| FE-LIBRARY | FE-LIBRARY-17 | pending |
-| FE-LIBRARY | FE-LIBRARY-27 | pending |
-| FE-LIBRARY | FE-LIBRARY-52 | pending |
+| FE-LIBRARY | FE-LIBRARY-01 | done 7ffe8338 |
+| FE-LIBRARY | FE-LIBRARY-14 | done cc58dfd3 |
+| FE-LIBRARY | FE-LIBRARY-15 | done 5cbb41cc |
+| FE-LIBRARY | FE-LIBRARY-17 | done 5881646a, 1e31ede0 |
+| FE-LIBRARY | FE-LIBRARY-27 | done 63fcb3c0, 41408ed3 |
+| FE-LIBRARY | FE-LIBRARY-52 | done 35ad8d17, 66a9547a |
 | FE-SETTINGS | FE-SETTINGS-01 | pending |
 | FE-SETTINGS | FE-SETTINGS-08 | pending |
 | FE-SETTINGS | FE-SETTINGS-09 | pending |
