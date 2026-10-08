@@ -488,6 +488,13 @@ public class AnimeSignalSyncService(
             return 0;
         }
 
+        // An unavailable dump answers every lookup with nothing, which would read as "no match" and
+        // wipe ids a working dump resolved earlier.
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return rows.Count(x => x.MangaBakaId != null);
+        }
+
         var byAniList = await store.GetIdsByExternalIdsAsync(
             MangaBakaLocalStore.ExternalSource.AniList,
             rows.Where(x => x.AniListMangaId is > 0).Select(x => x.AniListMangaId!.Value).ToList(), ct);
