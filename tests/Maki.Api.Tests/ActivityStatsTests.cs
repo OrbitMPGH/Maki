@@ -627,6 +627,26 @@ public sealed class ActivityStatsTests : IDisposable
         Assert.Equal("Mine", dropped.Title);
     }
 
+    [Fact]
+    public async Task DroppedListLeavesOutFullyIncognitoSeries()
+    {
+        var shown = _db.SeedSeries("Shown");
+        var secret = _db.SeedSeries("Secret", configure: s => s.Incognito = IncognitoMode.Full);
+        using (var db = _db.NewContext())
+        {
+            var stale = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+            db.ReadingStates.AddRange(
+                new ReadingState { UserId = TestUser, SeriesId = shown, Title = "Shown", MaxChapter = 12, LastProgressAt = stale },
+                new ReadingState { UserId = TestUser, SeriesId = secret, Title = "Secret", MaxChapter = 12, LastProgressAt = stale });
+            db.SaveChanges();
+        }
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal("Shown", Assert.Single(stats.Dropped).Title);
+        Assert.Equal(1, stats.Totals.SeriesDropped);
+    }
+
     // ---- the new headline numbers ----
 
     [Fact]
