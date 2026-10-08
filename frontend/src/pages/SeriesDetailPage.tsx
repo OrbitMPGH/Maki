@@ -470,7 +470,7 @@ function SeriesDetailBody() {
     }
     if (!scanWasRunning.current) return
     scanWasRunning.current = false
-    void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+    void queryClient.invalidateQueries({ queryKey: ['series'] })
     void queryClient.invalidateQueries({ queryKey: ['chapters'] })
     void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
     const { queued, chaptersChecked } = scanStatus
