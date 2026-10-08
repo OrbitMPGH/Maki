@@ -10490,6 +10490,7 @@ msgstr "ジャンルごとにタイルを表示し、それぞれから最も人
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -15914,6 +15915,10 @@ msgstr "未読（{unreadFilterCount}）"
 #, fuzzy
 msgid "Unread only"
 msgstr "未読のみ"
+
+#: src/pages/HealthPage.tsx
+msgid "Unreadable"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy

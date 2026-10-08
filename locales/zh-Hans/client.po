@@ -10490,6 +10490,7 @@ msgstr "每种类型显示一个方块，点击后打开最受欢迎的作品。
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -15914,6 +15915,10 @@ msgstr "未读（{unreadFilterCount}）"
 #, fuzzy
 msgid "Unread only"
 msgstr "仅未读"
+
+#: src/pages/HealthPage.tsx
+msgid "Unreadable"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy

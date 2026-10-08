@@ -10490,6 +10490,7 @@ msgstr "Kafelek dla każdego gatunku, który otwiera jego najpopularniejsze tytu
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -15914,6 +15915,10 @@ msgstr "Nieprzeczytane ({unreadFilterCount})"
 #, fuzzy
 msgid "Unread only"
 msgstr "Tylko nieprzeczytane"
+
+#: src/pages/HealthPage.tsx
+msgid "Unreadable"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy

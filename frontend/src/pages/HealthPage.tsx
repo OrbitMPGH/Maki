@@ -139,6 +139,7 @@ const FINDING_LABEL: Record<string, MessageDescriptor> = {
   unlinked: msg`Not linked`,
   sizeMismatch: msg`Size mismatch`,
   ambiguousNames: msg`Ambiguous names`,
+  unreadable: msg`Unreadable`,
 }
 
 const FINDING_STATES = ['open', 'acknowledged', 'ignored', 'resolved']

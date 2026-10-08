@@ -10490,6 +10490,7 @@ msgstr "Un mosaico por género; cada uno abre sus títulos más populares."
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -15914,6 +15915,10 @@ msgstr "No leído ({unreadFilterCount})"
 #, fuzzy
 msgid "Unread only"
 msgstr "Solo no leídos"
+
+#: src/pages/HealthPage.tsx
+msgid "Unreadable"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
