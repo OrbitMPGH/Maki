@@ -127,15 +127,18 @@ function writeStored(key: string, value: string) {
   try { localStorage.setItem(key, value) } catch { /* noop */ }
 }
 
+function titleSortKey(s: SeriesDto): string {
+  if (s.displayTitle === s.title) return s.sortTitle
+  const lowered = s.displayTitle.toLowerCase()
+  const article = ['the ', 'a ', 'an '].find((a) => lowered.startsWith(a))
+  return article ? lowered.slice(article.length) : lowered
+}
+
 /**
  * How much of the series has been read, 0–100. Kavita is the only source of read progress, so a
  * series it has never reported (`readChapterCount === null`) counts as 0% rather than being
  * dropped: the whole library would otherwise vanish the moment the slider left 0.
  */
-function titleSortKey(s: SeriesDto): string {
-  return s.displayTitle !== s.title ? s.displayTitle.toLowerCase() : s.sortTitle
-}
-
 function readPercent(s: SeriesDto): number {
   const total = s.wantedChapterCount || s.knownChapterCount || 0
   if (total <= 0) return 0
