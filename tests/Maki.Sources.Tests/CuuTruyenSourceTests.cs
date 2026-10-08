@@ -1,4 +1,5 @@
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 using Maki.Sources.CuuTruyen;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
@@ -229,6 +230,51 @@ public class CuuTruyenSourceTests
         AssertRowsDiffer(source, result, sourceY: 0, destinationY: 0);
     }
 
+    [Fact]
+    public async Task UnscrambleAsync_ReencodesAJpegAtQuality90NotTheEncoderDefault()
+    {
+        const string drmData =
+            "EEcATQYJAhsEBgVEAAcJHgIEBE0BDAIbBAYFRAkaCAYDTQUBAAkfBwUBSQkM" +
+            "BxQCBgFIBgAJHwcAA0kOCQcUAgYB";
+
+        var bytes = FakeHttpClientFactory.BinaryFixture("cuutruyen-page.bin");
+        var unscrambled = await CuuTruyenSource.UnscrambleAsync(bytes, drmData);
+        using var result = Image.Load<Rgba32>(unscrambled);
+
+        Assert.Equal(90, result.Metadata.GetJpegMetadata().Quality);
+    }
+
+    [Fact]
+    public async Task UnscrambleAsync_keeps_a_lossless_webp_lossless()
+    {
+        const string drmData =
+            "EEcATQYJAhsEBgVEAAcJHgIEBE0BDAIbBAYFRAkaCAYDTQUBAAkfBwUBSQkM" +
+            "BxQCBgFIBgAJHwcAA0kOCQcUAgYB";
+
+        using var original = new Image<Rgba32>(32, 1152);
+        for (var y = 0; y < original.Height; y++)
+        {
+            for (var x = 0; x < original.Width; x++)
+            {
+                original[x, y] = new Rgba32((byte)(y % 251), (byte)(x * 7), (byte)(y / 5), 255);
+            }
+        }
+
+        using var encoded = new MemoryStream();
+        await original.SaveAsync(encoded, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder
+        {
+            FileFormat = SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossless
+        });
+
+        var unscrambled = await CuuTruyenSource.UnscrambleAsync(encoded.ToArray(), drmData);
+        using var result = Image.Load<Rgba32>(unscrambled);
+
+        Assert.Equal(
+            SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossless,
+            result.Metadata.GetWebpMetadata().FileFormat);
+        Assert.Equal(original[3, 0], result[3, 300]);
+    }
+
     /// <summary>
     /// Proves the descrambler actually moves pixels rather than merely producing an image of the
     /// right size: the mapped destination strip must closely match the source strip it came from.
@@ -301,7 +347,7 @@ public class CuuTruyenSourceTests
         const string body = "<html><body><div>Just a moment...</div></body></html>";
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => CuuTruyenPreUnwrap.UnwrapAsync(body, "https://cuutruyen.net/api/v2/mangas/2637"));
+            () => PreUnwrap.UnwrapAsync(body, "https://cuutruyen.net/api/v2/mangas/2637"));
 
         Assert.Contains("https://cuutruyen.net/api/v2/mangas/2637", ex.Message);
     }

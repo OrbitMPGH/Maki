@@ -165,14 +165,14 @@ public class ChapterSourceResolver(
         var chapters = await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct);
         if (requireExactMatch)
         {
-            var exact = chapters.Where(c => c.Language == chapter.Language &&
+            var exact = chapters.Where(c => SourceLanguages.Same(c.Language, chapter.Language) &&
                 (chapter.Number != null ? c.Number == chapter.Number && (chapter.Volume == null || c.Volume == chapter.Volume) : c.Number == null && c.Title == chapter.Title)).ToList();
             return exact.Count == 1 ? exact[0].SourceChapterId : null;
         }
 
         // A mapping listing two languages carries both under one number, so language is part of every
         // match; a same-number hit in another language is "not listed", never a stand-in.
-        var sameLanguage = chapters.Where(c => c.Language == chapter.Language).ToList();
+        var sameLanguage = chapters.Where(c => SourceLanguages.Same(c.Language, chapter.Language)).ToList();
         var match = chapter.Number is not null
             ? sameLanguage.FirstOrDefault(c => c.Number == chapter.Number && c.Volume == chapter.Volume)
               ?? sameLanguage.FirstOrDefault(c => c.Number == chapter.Number)

@@ -6,9 +6,11 @@ using Maki.Core.Http;
 using Maki.Core.Images;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -355,9 +357,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
                 }
             });
 
-            IImageEncoder encoder = source.Metadata.DecodedImageFormat is { } format
-                ? source.Configuration.ImageFormatsManager.GetEncoder(format)
-                : new JpegEncoder { Quality = 90 };
+            var encoder = EncoderFor(source);
 
             using var buffer = new MemoryStream();
             await destination.SaveAsync(buffer, encoder, ct);
@@ -365,12 +365,27 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
         }, ct);
     }
 
+    private const int ReencodeQuality = 90;
+
+    /// <summary>
+    /// The registered encoder for a format carries ImageSharp's default quality of 75, so the formats
+    /// that take a quality are given one explicitly. Anything else keeps its own encoder.
+    /// </summary>
+    private static IImageEncoder EncoderFor(Image source) => source.Metadata.DecodedImageFormat switch
+    {
+        null or JpegFormat => new JpegEncoder { Quality = ReencodeQuality },
+        WebpFormat => source.Metadata.GetWebpMetadata().FileFormat == WebpFileFormatType.Lossless
+            ? new WebpEncoder { FileFormat = WebpFileFormatType.Lossless }
+            : new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = ReencodeQuality },
+        { } format => source.Configuration.ImageFormatsManager.GetEncoder(format),
+    };
+
     // ── Plumbing ──────────────────────────────────────────────────────
 
     private async Task<JsonDocument> FetchJsonAsync(string url, CancellationToken ct)
     {
         var body = await fetcher.GetHtmlAsync(url, ct);
-        var unwrapped = await CuuTruyenPreUnwrap.UnwrapAsync(body, url, ct);
+        var unwrapped = await PreUnwrap.UnwrapAsync(body, url, ct);
         return JsonDocument.Parse(unwrapped);
     }
 

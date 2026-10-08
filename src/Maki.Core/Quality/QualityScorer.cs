@@ -293,9 +293,20 @@ public static class QualityScorer
         FormatConditionType.MinBytesPerPage => AtLeast(
             c is { SizeBytes: { } size, PageCount: > 0 and var pages } ? size / pages : null, condition.Value),
         FormatConditionType.MinPages => AtLeast(c.PageCount, condition.Value),
-        FormatConditionType.LanguageIs => InList(c.Language, condition.Value),
+        FormatConditionType.LanguageIs => InLanguages(c.Language, condition.Value),
         _ => null
     };
+
+    private static bool? InLanguages(string? attribute, string list)
+    {
+        if (string.IsNullOrWhiteSpace(attribute))
+        {
+            return null;
+        }
+
+        return list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(item => Sources.SourceLanguages.Same(item, attribute));
+    }
 
     private static bool? InList(string? attribute, string list)
     {

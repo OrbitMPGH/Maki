@@ -11,13 +11,13 @@ public static class ChapterIdentity
         if (sourceChapter.Number is not null)
         {
             return chapter.Number == sourceChapter.Number &&
-                   chapter.Language == sourceChapter.Language &&
+                   SourceLanguages.Same(chapter.Language, sourceChapter.Language) &&
                    (chapter.Volume is null || sourceChapter.Volume is null ||
                     chapter.Volume == sourceChapter.Volume);
         }
 
         return chapter.IsOneShot &&
-               chapter.Language == sourceChapter.Language &&
+               SourceLanguages.Same(chapter.Language, sourceChapter.Language) &&
                string.Equals(chapter.Title, sourceChapter.Title, StringComparison.OrdinalIgnoreCase);
     }
 

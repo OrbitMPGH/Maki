@@ -16,6 +16,7 @@ public static class SourceChapterList
 {
     /// <summary>
     /// Dedupes by (Number, Volume, Language), plus Title when Number is null, and orders ascending by number.
+    /// Every chapter leaves with its language in <see cref="SourceLanguages.Canonical"/> form.
     /// <paramref name="preferred"/> picks the winner among duplicates; omit it to keep the first
     /// one the source listed.
     /// </summary>
@@ -34,10 +35,13 @@ public static class SourceChapterList
         Func<T, SourceChapter> toChapter,
         Func<IEnumerable<T>, T> preferred) =>
         items
-            .GroupBy(item => Key(ChapterIdentity.Labelled(toChapter(item))))
-            .Select(group => ChapterIdentity.Labelled(toChapter(preferred(group))))
+            .GroupBy(item => Key(Prepared(toChapter(item))))
+            .Select(group => Prepared(toChapter(preferred(group))))
             .OrderBy(c => c.Number)
             .ToList();
+
+    private static SourceChapter Prepared(SourceChapter chapter) =>
+        ChapterIdentity.Labelled(chapter) with { Language = SourceLanguages.Canonical(chapter.Language) };
 
     private static (decimal? Number, int? Volume, string Language, string? Title) Key(SourceChapter c) =>
         (c.Number, c.Volume, c.Language, c.Number is null ? c.Title?.ToUpperInvariant() : null);

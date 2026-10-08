@@ -129,6 +129,13 @@ public class ChapterSyncService(
                         // Enrich rather than duplicate: a volume-aware source fills in
                         // what a volume-less source couldn't provide.
                         match.Volume ??= sc.Volume;
+                        if (!string.Equals(match.Language, sc.Language, StringComparison.Ordinal))
+                        {
+                            // Same language under an older spelling: neighbour and repair queries
+                            // compare the stored string, so rows move to the canonical one as they sync.
+                            match.Language = SourceLanguages.Canonical(sc.Language);
+                        }
+
                         match.Title ??= sc.Title;
                         match.ReleaseDate ??= sc.ReleaseDate;
                     }
@@ -298,7 +305,7 @@ public class ChapterSyncService(
             : existing.FirstOrDefault(c =>
                 c.Number is null &&
                 c.IsOneShot &&
-                c.Language == sc.Language &&
+                SourceLanguages.Same(c.Language, sc.Language) &&
                 string.Equals(c.Title?.Trim(), sc.NumberRaw.Trim(), StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
@@ -315,7 +322,7 @@ public class ChapterSyncService(
         }
 
         var untitled = existing
-            .Where(c => c.Number is null && c.IsOneShot && c.Title is null && c.Language == sc.Language)
+            .Where(c => c.Number is null && c.IsOneShot && c.Title is null && SourceLanguages.Same(c.Language, sc.Language))
             .ToList();
         string? LinkedId(Chapter c) =>
             c.SourceLinks.FirstOrDefault(l => l.SourceMappingId == mapping.Id)?.SourceChapterId;
@@ -328,7 +335,7 @@ public class ChapterSyncService(
     {
         var groups = existing
             .Where(c => c.Number is not null)
-            .GroupBy(c => (c.Number, c.Language))
+            .GroupBy(c => (c.Number, Language: SourceLanguages.Canonical(c.Language)))
             .Where(g => g.Count() > 1)
             .ToList();
 
@@ -356,8 +363,8 @@ public class ChapterSyncService(
                 if (!await reads.CanMergeAsync(keeper, dup, ct))
                 {
                     logger.LogWarning(
-                        "Kept duplicate row {DupId} of chapter {Number} in series {SeriesId}: its file or progress cannot move to row {KeeperId}",
-                        dup.Id, keeper.Number, keeper.SeriesId, keeper.Id);
+                        "Kept duplicate row {DupId} ({DupLanguage}) of chapter {Number} in series {SeriesId}: its file or progress cannot move to row {KeeperId} ({KeeperLanguage})",
+                        dup.Id, dup.Language, keeper.Number, keeper.SeriesId, keeper.Id, keeper.Language);
                     continue;
                 }
 
@@ -400,6 +407,7 @@ public class ChapterSyncService(
 
             if (merged > 0)
             {
+                keeper.Language = SourceLanguages.Canonical(keeper.Language);
                 logger.LogInformation("Merged {Count} duplicate row(s) of chapter {Number} in series {SeriesId}",
                     merged, keeper.Number, keeper.SeriesId);
             }

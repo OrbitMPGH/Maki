@@ -27,4 +27,27 @@ public class ChapterIdentityTests
         Assert.Equal("Afterword", ChapterIdentity.Labelled(titled).Title);
         Assert.Equal("Extra", ChapterIdentity.Labelled(Unnumbered(" Extra ")).Title);
     }
+
+    [Theory]
+    [InlineData("pt-br", "pt-BR")]
+    [InlineData("pt-BR", "pt-br")]
+    [InlineData("zh", "zh-Hans")]
+    [InlineData("zh-Hans", "zh")]
+    [InlineData("EN", "en")]
+    public void A_stored_chapter_matches_the_same_language_spelled_differently(string stored, string listed)
+    {
+        var chapter = new Chapter { Number = 5m, Language = stored };
+        var sourceChapter = Unnumbered("5") with { Number = 5m, Language = listed };
+
+        Assert.True(ChapterIdentity.Matches(chapter, sourceChapter));
+    }
+
+    [Fact]
+    public void A_different_language_still_does_not_match()
+    {
+        var chapter = new Chapter { Number = 5m, Language = "pt-br" };
+        var sourceChapter = Unnumbered("5") with { Number = 5m, Language = "pt" };
+
+        Assert.False(ChapterIdentity.Matches(chapter, sourceChapter));
+    }
 }

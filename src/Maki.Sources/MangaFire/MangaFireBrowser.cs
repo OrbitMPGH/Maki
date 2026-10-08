@@ -253,15 +253,18 @@ public sealed class MangaFireBrowser(
                 var expected = lastPage ?? 1;
                 for (var pageNo = 2; pageNo <= expected; pageNo++)
                 {
+                    ct.ThrowIfCancellationRequested();
                     var wait = page.WaitForResponseAsync(
                         r => IsChaptersUrl(r.Url) && r.Url.Contains($"page={pageNo}", StringComparison.Ordinal),
                         new() { Timeout = PageResponseTimeoutMs });
 
-                    if (!await ClickNextPageAsync(page, pageNo))
+                    var advanced = await ClickNextPageAsync(page, pageNo);
+                    if (!advanced)
                     {
                         logger.LogWarning("MangaFire pager stalled at page {Page}/{Last} for {Series}", pageNo, expected, seriesId);
-                        break;
                     }
+
+                    EnsurePagerAdvanced(advanced, pageNo, expected);
 
                     await CollectAsync(await wait);
                 }
@@ -272,6 +275,19 @@ public sealed class MangaFireBrowser(
         finally
         {
             _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// A pager that stops short must not read as a complete list: the sync replaces the mapping's
+    /// snapshot with whatever comes back, so a partial walk would drop the links for every chapter on
+    /// the pages it never reached.
+    /// </summary>
+    internal static void EnsurePagerAdvanced(bool advanced, int pageNo, int expected)
+    {
+        if (!advanced)
+        {
+            throw new InvalidOperationException($"mangafire: chapter pager stalled at page {pageNo} of {expected}");
         }
     }
 
@@ -348,7 +364,7 @@ public sealed class MangaFireBrowser(
             var page = await context.NewPageAsync();
             try
             {
-                return await action(page);
+                return await CancellableBrowserCall.RunAsync(() => page.CloseAsync(), () => action(page), ct);
             }
             catch (ChallengeException) when (attempt == 0)
             {
