@@ -32,6 +32,27 @@ public class CbzReaderTests : IDisposable
     }
 
     [Fact]
+    public void PageNames_skips_macos_resource_fork_stubs()
+    {
+        var path = WriteZip("mac.cbz", "001.jpg", "002.jpg", "__MACOSX/._001.jpg", "__MACOSX/._002.jpg", "._001.jpg");
+
+        Assert.Equal(["001.jpg", "002.jpg"], CbzReader.PageNames(path));
+    }
+
+    [Theory]
+    [InlineData("001.jpg", true)]
+    [InlineData("Chapter 1/001.png", true)]
+    [InlineData("._001.jpg", false)]
+    [InlineData("Chapter 1/._001.jpg", false)]
+    [InlineData("__MACOSX/Chapter 1/001.jpg", false)]
+    [InlineData(@"C:\import\__MACOSX\001.jpg", false)]
+    [InlineData(".hidden.png", false)]
+    public void IsImage_rejects_mac_metadata(string entry, bool expected)
+    {
+        Assert.Equal(expected, CbzReader.IsImage(entry));
+    }
+
+    [Fact]
     public void Opens_a_readable_entry()
     {
         var path = WriteZip("ok.cbz", "001.jpg");
