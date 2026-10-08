@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text.Json;
 using Maki.Api.Hubs;
 using Maki.Core.Reading;
+using Maki.Core.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -169,10 +170,11 @@ public class HealthWorkspaceTests : IDisposable
         var file=await SeedPages(db,4,2);
         Assert.False(HealthScanService.Analysis(file).Verified);
         Assert.Equal(0,file.VerifiedVersion);
-        var analyzed=file.AnalyzedAt;
+        var analysis=file.AnalysisJson;
         // A file nobody asked to read is current at the index version, whatever the verify one is.
         await new HealthScanService(db).AnalyzeAsync(file,root,false,default);
-        Assert.Equal(analyzed,file.AnalyzedAt);
+        Assert.Equal(analysis,file.AnalysisJson);
+        Assert.Equal(0,file.VerifiedVersion);
     }
     [Fact] public void Every_health_action_and_preview_is_admin_only()
     {
@@ -229,6 +231,27 @@ public class HealthWorkspaceTests : IDisposable
         await Assert.ThrowsAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,false,false,default));
         Assert.Throws<InvalidOperationException>(()=>HealthPaths.Resolve(root,"../outside.cbz"));
     }
+    [Fact] public void A_library_root_that_is_itself_a_link_resolves_but_links_inside_it_do_not()
+    {
+        var real=Directory.CreateTempSubdirectory("maki-health-real-").FullName;
+        var outside=Directory.CreateTempSubdirectory("maki-health-outside-").FullName;
+        var linkedRoot=Path.Combine(root,"library");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(real,"Series"));
+            if(!TestLinks.TryLinkDirectory(linkedRoot,real)) return;
+            Assert.Equal(Path.Combine(linkedRoot,"one.cbz"),HealthPaths.Resolve(linkedRoot,"one.cbz"));
+            var inner=Path.Combine(real,"escape");
+            if(!TestLinks.TryLinkDirectory(inner,outside)) return;
+            Assert.Throws<InvalidOperationException>(()=>HealthPaths.Resolve(linkedRoot,"escape/one.cbz"));
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(Path.Combine(real,"escape"));
+            TestLinks.UnlinkDirectory(linkedRoot);
+            Directory.Delete(real,true);Directory.Delete(outside,true);
+        }
+    }
     [Fact] public async Task Interrupted_deletion_finishes_links_only_when_file_is_gone()
     {
         using var db=fixture.NewContext();var file=await Seed(db,true);var service=Operations(db);
@@ -258,6 +281,31 @@ public class HealthWorkspaceTests : IDisposable
         db.ChangeTracker.Clear();
         Assert.False((await db.HealthFiles.SingleAsync()).Removed);
         Assert.Contains(db.HealthFindings,f=>f.Kind=="missing"&&f.State=="open");
+    }
+    [Fact] public async Task A_scan_that_only_skipped_series_with_active_downloads_leaves_no_history_row()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        db.DownloadQueue.Add(new DownloadQueueItem{SeriesId=file.SeriesId!.Value,Status=QueueStatus.Queued});
+        var scan=new HealthScan{Verify=true};db.HealthScans.Add(scan);await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        Assert.Equal("completed",scan.Status);
+        Assert.DoesNotContain(db.HealthHistory,h=>h.Kind=="scan");
+    }
+    [Fact] public async Task A_verify_of_a_file_that_cannot_be_opened_records_a_finding_and_stamps_it_analysed()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        file.AnalyzedAt=null;await db.SaveChangesAsync();
+        await using(new FileStream(Path.Combine(root,"one.cbz"),FileMode.Open,FileAccess.Read,FileShare.None))
+            await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,true);
+        Assert.NotNull(file.AnalyzedAt);
+        Assert.Contains(db.HealthFindings.Local,f=>f.Kind=="unreadable"&&f.State=="open");
+    }
+    [Fact] public async Task An_unchanged_verified_file_is_still_stamped_analysed()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        file.AnalyzedAt=null;await db.SaveChangesAsync();
+        await new HealthScanService(db).AnalyzeAsync(file,root,false,default,0,true);
+        Assert.NotNull(file.AnalyzedAt);
     }
     [Fact] public async Task Unavailable_root_does_not_resolve_prior_findings()
     {

@@ -65,6 +65,7 @@ public class DiscoverCacheWarmJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Discover cache warm-up failed");
+            context.ReportFailure(ex);
         }
     }
 

@@ -69,11 +69,27 @@ public class BackupService(
         var zipPath = Path.Combine(paths.BackupDir, name);
         var snapshotPath = Path.Combine(paths.BackupDir, $".{Guid.NewGuid():N}.db.tmp");
 
+        var zipCreated = false;
+        var completed = false;
         try
         {
             SnapshotDatabase(snapshotPath);
 
-            using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            ZipArchive zip;
+            try
+            {
+                zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+                zipCreated = true;
+            }
+            catch (IOException ex) when (File.Exists(zipPath) || ex.HResult == unchecked((int)0x80070050))
+            {
+                // Open(Create) is FileMode.CreateNew: only a target that already exists means a
+                // backup for this exact name is in flight. Every later failure is a real one.
+                logger.LogError(ex, "Backup {Path} is already being written", zipPath);
+                throw new BackupCreateException("error.system.backupInProgress");
+            }
+
+            using (zip)
             {
                 zip.CreateEntryFromFile(snapshotPath, DbEntry);
                 if (File.Exists(paths.ConfigFile))
@@ -83,20 +99,22 @@ public class BackupService(
                 await using var writer = new StreamWriter(manifestEntry.Open());
                 await writer.WriteAsync(JsonSerializer.Serialize(manifest, JsonOptions));
             }
+
+            completed = true;
         }
-        catch (IOException ex)
+        catch (BackupCreateException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SqliteException)
         {
             logger.LogError(ex, "Failed to create {Kind} backup at {Path}", kind, zipPath);
-
-            // ZipFile.Open(..., Create) opens the target with FileMode.CreateNew, so an IOException
-            // whose target already exists (or whose HResult says so - ERROR_FILE_EXISTS) means a
-            // backup for this exact name is already in flight. Anything else - disk full, permission
-            // denied, a locked volume - is a real failure and must not be reported as a race.
-            var inProgress = File.Exists(zipPath) || ex.HResult == unchecked((int)0x80070050);
-            throw new BackupCreateException(inProgress ? "error.system.backupInProgress" : "error.system.backupFailed");
+            throw new BackupCreateException("error.system.backupFailed");
         }
         finally
         {
+            if (zipCreated && !completed)
+                TryDelete(zipPath);
             TryDelete(snapshotPath);
         }
 

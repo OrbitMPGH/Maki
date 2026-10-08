@@ -24,6 +24,14 @@ public class HealthTransitionTests
         Assert.False(HealthTransitions.Observe(row, "error", true, DateTime.UtcNow));
     }
     [Fact]
+    public void A_pending_check_never_announces_and_is_not_an_issue()
+    {
+        var row = new HealthCheckRecord { Status = "healthy", NotifiedStatus = "healthy" };
+        Assert.False(HealthTransitions.Observe(row, "pending", false, DateTime.UtcNow));
+        Assert.False(HealthTransitions.Observe(row, "healthy", false, DateTime.UtcNow));
+        Assert.False(HealthTransitions.IsIssue("pending"));
+    }
+    [Fact]
     public void Acknowledging_takes_a_check_off_the_header_badge()
     {
         var wants = HealthTransitions.Unattended.Compile();

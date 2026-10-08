@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Metadata.Embedding;
 using Quartz;
@@ -50,6 +51,7 @@ public class EmbeddingIndexJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Embedding index pass failed");
+            context.ReportFailure(ex);
         }
         finally
         {

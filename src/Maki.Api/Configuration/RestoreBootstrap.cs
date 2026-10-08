@@ -61,7 +61,16 @@ public static class RestoreBootstrap
 
         var stagedConfig = Path.Combine(paths.RestorePendingDir, "config.json");
         if (File.Exists(stagedConfig))
-            File.Copy(stagedConfig, paths.ConfigFile, overwrite: true);
+        {
+            try
+            {
+                File.Copy(stagedConfig, paths.ConfigFile, overwrite: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogError("Restored database in place, but config.json could not be replaced: {Error}", ex.Message);
+            }
+        }
 
         TryDeleteDirectory(paths.RestorePendingDir, logger);
         logger.LogInformation("Restore complete");

@@ -3815,12 +3815,6 @@ msgid "health.check.coolingDown"
 msgstr "{source} 냉각 중"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {source} has no cooldown
-#, fuzzy
-msgid "health.check.noCooldown"
-msgstr "{source} 냉각 시간 없음"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Background scheduler is running
 #, fuzzy
 msgid "health.check.schedulerRunning"
@@ -3846,9 +3840,13 @@ msgstr "데이터베이스에 연결할 수 있으며 최신 상태입니다"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: A previous startup migration failed. Check the startup logs.
-#, fuzzy
 msgid "health.check.migrationFailed"
 msgstr "이전 시작 마이그레이션이 실패했습니다. 시작 로그를 확인하세요."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: A previous startup migration failed ({error}). Check the startup logs.
+msgid "health.check.migrationFailedDetail"
+msgstr ""
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database or scheduler diagnostics could not complete

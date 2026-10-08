@@ -2699,10 +2699,6 @@ msgid "health.check.coolingDown"
 msgstr "{source} is cooling down"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-msgid "health.check.noCooldown"
-msgstr "{source} has no cooldown"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.schedulerRunning"
 msgstr "Background scheduler is running"
 
@@ -2721,6 +2717,10 @@ msgstr "Database is reachable and up to date"
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.migrationFailed"
 msgstr "A previous startup migration failed. Check the startup logs."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.migrationFailedDetail"
+msgstr "A previous startup migration failed ({error}). Check the startup logs."
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.diagnosticsUnavailable"
