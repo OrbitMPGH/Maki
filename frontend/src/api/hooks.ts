@@ -768,6 +768,14 @@ export function useCreator(request: CreatorRequest | null) {
         body: JSON.stringify(request),
       }),
     enabled: request != null && request.name.trim().length > 0,
+    // Paging, sorting and filtering keep the grid on screen while the next set loads; another
+    // creator does not inherit the previous one's works.
+    placeholderData: (previous, previousQuery) => {
+      const before = previousQuery?.queryKey[1] as CreatorRequest | null | undefined
+      return before && request && before.name === request.name && (before.role ?? null) === (request.role ?? null)
+        ? previous
+        : undefined
+    },
     staleTime: 5 * 60 * 1000,
     retry: false,
   })

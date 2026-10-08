@@ -71,7 +71,8 @@ msgstr "{0, plural, one {# chapter relinked} other {# chapters relinked}}"
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {# chapter selected} other {# chapters selected}}"
 
-#. placeholder {0}: chapterIds.length
+#. placeholder {0}: removed.length
+#. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "{0, plural, one {# chapter} other {# chapters}}"
 msgstr "{0, plural, one {# chapter} other {# chapters}}"
@@ -6748,9 +6749,16 @@ msgid "Linked"
 msgstr "Linked"
 
 #: src/components/LinkChaptersModal.tsx
-#: src/components/LinkFileToChaptersModal.tsx
 msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "Linked {chapterPhrase} to {fileName}"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Linked {linkedPhrase} to {fileName}"
+msgstr "Linked {linkedPhrase} to {fileName}"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Linked {linkedPhrase} to {fileName} and unlinked {unlinkedPhrase}"
+msgstr "Linked {linkedPhrase} to {fileName} and unlinked {unlinkedPhrase}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Linked {name}"
@@ -12997,9 +13005,14 @@ msgstr "Unknown date"
 msgid "Unknown source"
 msgstr "Unknown source"
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Unlink"
 msgstr "Unlink"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Unlinked {unlinkedPhrase} from {fileName}"
+msgstr "Unlinked {unlinkedPhrase} from {fileName}"
 
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx

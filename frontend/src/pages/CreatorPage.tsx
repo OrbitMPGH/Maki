@@ -116,7 +116,7 @@ export default function CreatorPage() {
     [decoded, role, applied, appliedCount, sort, pages],
   )
 
-  const { data, isFetching, error, refetch } = useCreator(decoded.length > 0 ? request : null)
+  const { data, isFetching, isPlaceholderData, error, refetch } = useCreator(decoded.length > 0 ? request : null)
   // Followed under the catalogue's own spelling, and the role the page was opened for: following
   // Shueisha from its studio page must not also follow a person who happens to share the name.
   const followRole = role === 'author' || role === 'artist' || role === 'studio' ? role : null
@@ -140,7 +140,8 @@ export default function CreatorPage() {
   }
 
   const items = data?.items ?? []
-  const canLoadMore = items.length >= PAGE_SIZE * pages && items.length < MAX_WORKS
+  const canLoadMore =
+    items.length >= PAGE_SIZE * (isPlaceholderData ? pages - 1 : pages) && items.length < MAX_WORKS
 
   if (decoded.length === 0) {
     return (
