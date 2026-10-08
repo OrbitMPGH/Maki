@@ -1949,6 +1949,16 @@ msgid "error.settings.bulkHoldRange"
 msgstr "Die Rückhalteschwelle muss zwischen 0 (aus) und {max} Kapiteln liegen"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Smart Download refill point must be between {min} and {max} chapters
+msgid "error.settings.smartChaptersLeftRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Smart Download batch size must be between {min} and {max} chapters
+msgid "error.settings.smartChaptersRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The upgrade scan hour must be between {min} and {max}
 #, fuzzy
 msgid "error.settings.upgradesScanHourRange"

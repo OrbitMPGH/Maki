@@ -2,7 +2,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Button, Checkbox, Group, MultiSelect, NumberInput, Select, Stack, Switch, Text } from '@mantine/core'
+import { Button, Checkbox, Group, MultiSelect, Select, Stack, Switch, Text } from '@mantine/core'
 import { IconAdjustments } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
@@ -33,6 +33,7 @@ import {
 } from '../../api/hooks'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
+import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { languageName } from '../../api/titles'
 
 export function SourceLanguageSection() {
@@ -219,12 +220,12 @@ export function DownloadQueueSection() {
   const { t } = useLingui()
   const { data: settings } = useDownloadSettings()
   const save = useSaveDownloadSettings()
-  const [concurrentChapters, setConcurrentChapters] = useState<number | string>(2)
+  const [concurrentChapters, setConcurrentChapters] = useState<number>(2)
   // One number on screen, two fields on the wire: 0 means retry is off, and turning it off keeps the
   // stored cap so switching it back on doesn't forget what it was.
-  const [retryAttempts, setRetryAttempts] = useState<number | string>(5)
-  const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
-  const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number | string>(5)
+  const [retryAttempts, setRetryAttempts] = useState<number>(5)
+  const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number>(120)
+  const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number>(5)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
@@ -277,12 +278,11 @@ export function DownloadQueueSection() {
         )
       }}
     >
-      <NumberInput
+      <SettingsNumberInput
         label={t`Concurrent chapter downloads`}
         description={t`More isn't always faster: tripping a site's rate limit pauses that source for a while.`}
         min={1}
         max={8}
-        clampBehavior="strict"
         value={concurrentChapters}
         onChange={setConcurrentChapters}
         w={220}
@@ -297,11 +297,10 @@ export function DownloadQueueSection() {
           off. Manual retries from Activity don't count.
         </Trans>
       </SettingsHelp>
-      <NumberInput
+      <SettingsNumberInput
         label={t`Retry a failed download up to (attempts)`}
         min={0}
         max={20}
-        clampBehavior="strict"
         value={retryAttempts}
         onChange={setRetryAttempts}
         w={220}
@@ -316,14 +315,13 @@ export function DownloadQueueSection() {
           many minutes it is marked failed and retried like any other failure. 0 means no limit.
         </Trans>
       </SettingsHelp>
-      <NumberInput
+      <SettingsNumberInput
         label={t`Give up on a chapter after (minutes)`}
         min={0}
         max={1440}
-        clampBehavior="strict"
         value={itemTimeoutMinutes}
         onChange={setItemTimeoutMinutes}
-        onBlur={() => setItemTimeoutMinutes(clampItemTimeout(Number(itemTimeoutMinutes)))}
+        settle={clampItemTimeout}
         w={220}
         mb="md"
       />
@@ -337,11 +335,10 @@ export function DownloadQueueSection() {
           stay wanted, so you can download them from the series page. 0 means always queue.
         </Trans>
       </SettingsHelp>
-      <NumberInput
+      <SettingsNumberInput
         label={t`Don't auto-queue more than (chapters)`}
         min={0}
         max={1000}
-        clampBehavior="strict"
         value={bulkHoldThreshold}
         onChange={setBulkHoldThreshold}
         w={220}
@@ -354,8 +351,8 @@ export function SmartDownloadSection() {
   const { t } = useLingui()
   const { data: settings } = useDownloadSettings()
   const save = useSaveDownloadSettings()
-  const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number | string>(5)
-  const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
+  const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number>(5)
+  const [smartDownloadChapters, setSmartDownloadChapters] = useState<number>(10)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
@@ -400,21 +397,19 @@ export function SmartDownloadSection() {
       }
     >
       <Group align="flex-end">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Fetch more when unread chapters drop to`}
           description={t`At this many or fewer downloaded chapters ahead of where you are, Maki fetches more.`}
           min={1}
           max={10}
-          clampBehavior="strict"
           value={smartDownloadChaptersLeft}
           onChange={setSmartDownloadChaptersLeft}
           w={220}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Chapters to fetch each time`}
           min={1}
           max={20}
-          clampBehavior="strict"
           value={smartDownloadChapters}
           onChange={setSmartDownloadChapters}
           w={220}
@@ -429,7 +424,7 @@ export function ReadFileCleanupSection() {
   const { data: settings } = useReadFileCleanupSettings()
   const save = useSaveReadFileCleanupSettings()
   const [enabled, setEnabled] = useState(false)
-  const [days, setDays] = useState<number | string>(7)
+  const [days, setDays] = useState<number>(7)
   const [keepLast, setKeepLast] = useState(true)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
@@ -472,11 +467,10 @@ export function ReadFileCleanupSection() {
           checked={enabled}
           onChange={(e) => setEnabled(e.currentTarget.checked)}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Days after reading`}
           min={1}
           max={365}
-          clampBehavior="strict"
           value={days}
           onChange={setDays}
           w={220}
@@ -572,11 +566,11 @@ export function UpgradeScanSection() {
   const scan = useRunUpgradeScan()
   const [enabled, setEnabled] = useState(false)
   const [defaultProfileId, setDefaultProfileId] = useState<number | null>(null)
-  const [scanHour, setScanHour] = useState<number | string>(4)
-  const [maxPerDay, setMaxPerDay] = useState<number | string>(25)
-  const [maxProbesPerRun, setMaxProbesPerRun] = useState<number | string>(50)
-  const [quietPeriodDays, setQuietPeriodDays] = useState<number | string>(7)
-  const [trashRetentionDays, setTrashRetentionDays] = useState<number | string>(14)
+  const [scanHour, setScanHour] = useState<number>(4)
+  const [maxPerDay, setMaxPerDay] = useState<number>(25)
+  const [maxProbesPerRun, setMaxProbesPerRun] = useState<number>(50)
+  const [quietPeriodDays, setQuietPeriodDays] = useState<number>(7)
+  const [trashRetentionDays, setTrashRetentionDays] = useState<number>(14)
   const [scanIncognito, setScanIncognito] = useState(true)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
@@ -665,51 +659,46 @@ export function UpgradeScanSection() {
         mb="md"
       />
       <Group grow mb="md">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Daily scan hour`}
           description={t`Server local time, 0 to 23.`}
           min={0}
           max={23}
-          clampBehavior="strict"
           value={scanHour}
           onChange={setScanHour}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Max upgrades per day`}
           description={t`Counted per UTC day. 0 means no cap.`}
           min={0}
           max={1000}
-          clampBehavior="strict"
           value={maxPerDay}
           onChange={setMaxPerDay}
         />
       </Group>
       <Group grow mb="md">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Release checks per scan`}
           description={t`How many candidate releases one scan may inspect before it stops.`}
           min={1}
           max={500}
-          clampBehavior="strict"
           value={maxProbesPerRun}
           onChange={setMaxProbesPerRun}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Quiet period (days)`}
           description={t`Skip a chapter this long after it was added or last upgraded.`}
           min={0}
           max={365}
-          clampBehavior="strict"
           value={quietPeriodDays}
           onChange={setQuietPeriodDays}
         />
       </Group>
-      <NumberInput
+      <SettingsNumberInput
         label={t`Trash retention (days)`}
         description={t`Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass.`}
         min={0}
         max={365}
-        clampBehavior="strict"
         value={trashRetentionDays}
         onChange={setTrashRetentionDays}
         w={260}
@@ -758,10 +747,10 @@ export function VolumeReleasesSection() {
   const { data: settings } = useUpgradeSettings()
   const save = useSaveUpgradeSettings()
   const [volumeSearch, setVolumeSearch] = useState(true)
-  const [autoGrabMb, setAutoGrabMb] = useState<number | string>(500)
-  const [volumeMissingTolerance, setVolumeMissingTolerance] = useState<number | string>(3)
-  const [volumeSearchesPerRun, setVolumeSearchesPerRun] = useState<number | string>(10)
-  const [proposalExpiryDays, setProposalExpiryDays] = useState<number | string>(30)
+  const [autoGrabMb, setAutoGrabMb] = useState<number>(500)
+  const [volumeMissingTolerance, setVolumeMissingTolerance] = useState<number>(3)
+  const [volumeSearchesPerRun, setVolumeSearchesPerRun] = useState<number>(10)
+  const [proposalExpiryDays, setProposalExpiryDays] = useState<number>(30)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
@@ -827,45 +816,41 @@ export function VolumeReleasesSection() {
         mb="md"
       />
       <Group grow mb="md" align="flex-start">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Auto-grab size limit (MB)`}
           description={t`Larger releases become proposals you approve by hand.`}
           min={0}
           max={102400}
           decimalScale={0}
-          clampBehavior="strict"
           value={autoGrabMb}
           onChange={setAutoGrabMb}
           disabled={!volumeSearch}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Missing chapters allowed per volume`}
           description={t`Auto-grab only when a volume adds this many chapters or fewer that you don't have.`}
           min={0}
           max={50}
-          clampBehavior="strict"
           value={volumeMissingTolerance}
           onChange={setVolumeMissingTolerance}
           disabled={!volumeSearch}
         />
       </Group>
       <Group grow align="flex-start">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Volume searches per run`}
           description={t`Series checked per daily run. Each series is searched at most once a week.`}
           min={1}
           max={200}
-          clampBehavior="strict"
           value={volumeSearchesPerRun}
           onChange={setVolumeSearchesPerRun}
           disabled={!volumeSearch}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Proposal expiry (days)`}
           description={t`A proposal nobody answers is dropped after this long.`}
           min={1}
           max={365}
-          clampBehavior="strict"
           value={proposalExpiryDays}
           onChange={setProposalExpiryDays}
           disabled={!volumeSearch}

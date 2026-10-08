@@ -4,7 +4,6 @@ import {
   Button,
   Code,
   Group,
-  NumberInput,
   Stack,
   Switch,
   Text,
@@ -25,6 +24,7 @@ import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useCopyText } from '../ui/useCopyText'
 import { useSliceSync } from '../../pages/settings/sharedRecord'
+import { SettingsNumberInput } from './SettingsNumberInput'
 
 /**
  * Instance security settings. Admin-only.
@@ -89,29 +89,29 @@ export function SecuritySection() {
       panelProps={{ id: 'security' }}
     >
       <Group grow align="flex-start">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Failed sign-ins before lockout`}
           description={<Trans>Set to <Code>0</Code> to disable lockout.</Trans>}
           min={0}
           max={1000}
           value={draft.lockoutMaxAttempts}
-          onChange={(v) => setDraft({ ...draft, lockoutMaxAttempts: Number(v) || 0 })}
+          onChange={(v) => setDraft({ ...draft, lockoutMaxAttempts: v })}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Lockout duration (minutes)`}
           description={t`Counted from the moment the limit is hit.`}
           min={1}
           max={10080}
           value={draft.lockoutMinutes}
-          onChange={(v) => setDraft({ ...draft, lockoutMinutes: Number(v) || 1 })}
+          onChange={(v) => setDraft({ ...draft, lockoutMinutes: v })}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Session lifetime (days)`}
           description={t`Sliding: activity extends it.`}
           min={1}
           max={3650}
           value={draft.sessionDays}
-          onChange={(v) => setDraft({ ...draft, sessionDays: Number(v) || 1 })}
+          onChange={(v) => setDraft({ ...draft, sessionDays: v })}
         />
       </Group>
     </SettingsSection>

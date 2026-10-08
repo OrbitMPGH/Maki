@@ -944,6 +944,16 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
         }
 
+        if (request.SmartDownloadChaptersLeft is < 1 or > 10)
+        {
+            return this.Fail(localizer, "error.settings.smartChaptersLeftRange", new { min = 1, max = 10 });
+        }
+
+        if (request.SmartDownloadChapters is < 1 or > 20)
+        {
+            return this.Fail(localizer, "error.settings.smartChaptersRange", new { min = 1, max = 20 });
+        }
+
         var sourceOrder = SourceOrderService.Parse(request.SourceOrder);
         if (request.SourceOrder is not null && sourceOrder is null)
         {

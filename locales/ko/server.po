@@ -1949,6 +1949,16 @@ msgid "error.settings.bulkHoldRange"
 msgstr "일괄 보류는 0(끄기)에서 {max}챕터 사이여야 합니다"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Smart Download refill point must be between {min} and {max} chapters
+msgid "error.settings.smartChaptersLeftRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Smart Download batch size must be between {min} and {max} chapters
+msgid "error.settings.smartChaptersRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The upgrade scan hour must be between {min} and {max}
 #, fuzzy
 msgid "error.settings.upgradesScanHourRange"

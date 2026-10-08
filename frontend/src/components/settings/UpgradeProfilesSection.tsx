@@ -17,6 +17,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { SettingsNumberInput } from './SettingsNumberInput'
 import {
   IconArrowDown,
   IconArrowUp,
@@ -344,13 +345,13 @@ function ProfileEditor({
   const [tiers, setTiers] = useState<ProfileTierDto[]>(initial.tiers)
   const [cutoff, setCutoff] = useState<QualityTierName>(initial.cutoff)
   const [upgradesEnabled, setUpgradesEnabled] = useState(initial.upgradesEnabled)
-  const [minScoreDelta, setMinScoreDelta] = useState<number | string>(initial.minScoreDelta)
+  const [minScoreDelta, setMinScoreDelta] = useState<number>(initial.minScoreDelta)
   const [maxTierScoreDrop, setMaxTierScoreDrop] = useState<number | string>(initial.maxTierScoreDrop ?? '')
-  const [upgradeUntilScore, setUpgradeUntilScore] = useState<number | string>(initial.upgradeUntilScore)
+  const [upgradeUntilScore, setUpgradeUntilScore] = useState<number>(initial.upgradeUntilScore)
   const [formatScores, setFormatScores] = useState<FormatScoreDto[]>(initial.formatScores)
-  const [resolutionWeight, setResolutionWeight] = useState<number | string>(initial.resolutionWeight)
-  const [compressionWeight, setCompressionWeight] = useState<number | string>(initial.compressionWeight)
-  const [pageTolerancePercent, setPageTolerancePercent] = useState<number | string>(initial.pageTolerancePercent)
+  const [resolutionWeight, setResolutionWeight] = useState<number>(initial.resolutionWeight)
+  const [compressionWeight, setCompressionWeight] = useState<number>(initial.compressionWeight)
+  const [pageTolerancePercent, setPageTolerancePercent] = useState<number>(initial.pageTolerancePercent)
   const [allowReplacingUnknown, setAllowReplacingUnknown] = useState(initial.allowReplacingUnknown)
 
   const groups = tierGroups(tiers)
@@ -368,13 +369,13 @@ function ProfileEditor({
     tiers,
     cutoff: effectiveCutoff ?? cutoff,
     upgradesEnabled,
-    minScoreDelta: Number(minScoreDelta) || 0,
+    minScoreDelta,
     maxTierScoreDrop: maxTierScoreDrop === '' ? null : Number(maxTierScoreDrop) || 0,
-    upgradeUntilScore: Number(upgradeUntilScore) || 0,
+    upgradeUntilScore,
     formatScores,
-    resolutionWeight: Number(resolutionWeight) || 0,
-    compressionWeight: Number(compressionWeight) || 0,
-    pageTolerancePercent: Number(pageTolerancePercent) || 0,
+    resolutionWeight,
+    compressionWeight,
+    pageTolerancePercent,
     allowReplacingUnknown,
   }
   useReportUnsaved(profileFingerprint(draft) !== profileFingerprint(initial))
@@ -503,7 +504,7 @@ function ProfileEditor({
       />
 
       <Group grow align="flex-start">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Minimum score gain`}
           description={t`Within the same tier, a candidate must beat the current file's score by at least this much. A higher tier is governed by the next field.`}
           min={0}
@@ -520,14 +521,14 @@ function ProfileEditor({
         />
       </Group>
       <Group grow align="flex-start">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Upgrade until score`}
           description={t`Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop.`}
           min={0}
           value={upgradeUntilScore}
           onChange={setUpgradeUntilScore}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Page tolerance %`}
           description={t`How much shorter a candidate's page count may be and still count as an upgrade.`}
           min={0}
@@ -548,7 +549,7 @@ function ProfileEditor({
           </Trans>
         </SettingsHelp>
         <Group grow align="flex-start">
-          <NumberInput
+          <SettingsNumberInput
             label={t`Resolution weight`}
             description={t`Scored on median page width, from 500 to 2000 pixels.`}
             min={0}
@@ -556,7 +557,7 @@ function ProfileEditor({
             value={resolutionWeight}
             onChange={setResolutionWeight}
           />
-          <NumberInput
+          <SettingsNumberInput
             label={t`Compression weight`}
             description={t`Scored on image data per pixel, adjusted so PNG and WebP compare fairly with JPG.`}
             min={0}
