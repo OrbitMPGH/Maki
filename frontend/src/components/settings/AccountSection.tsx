@@ -367,6 +367,7 @@ function TwoFactorCard() {
         >
           <PasswordInput
             label={t`Confirm your password to turn it off`}
+            autoComplete="current-password"
             value={disablePassword}
             onChange={(e) => setDisablePassword(e.currentTarget.value)}
             w={260}

@@ -1949,6 +1949,16 @@ msgid "error.settings.bulkHoldRange"
 msgstr "批量保留数必须介于 0（关闭）和 {max} 章之间"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Smart Download refill point must be between {min} and {max} chapters
+msgid "error.settings.smartChaptersLeftRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Smart Download batch size must be between {min} and {max} chapters
+msgid "error.settings.smartChaptersRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The upgrade scan hour must be between {min} and {max}
 #, fuzzy
 msgid "error.settings.upgradesScanHourRange"

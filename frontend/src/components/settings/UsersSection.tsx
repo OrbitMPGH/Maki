@@ -292,6 +292,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
       >
         <TextInput
           label={t`Username`}
+          autoComplete="off"
           required
           value={username}
           onChange={(e) => setUsername(e.currentTarget.value)}
@@ -304,6 +305,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
         <PasswordInput
           label={isNew ? t`Password` : t`New password`}
           description={isNew ? t`At least 10 characters` : t`Leave blank to keep the current one`}
+          autoComplete="new-password"
           required={isNew}
           value={password}
           onChange={(e) => setPassword(e.currentTarget.value)}

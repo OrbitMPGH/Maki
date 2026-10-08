@@ -18,6 +18,7 @@ import { QualityFormatsSection, UpgradeProfilesSection } from '../components/set
 import { useCompleteSetup } from '../api/hooks'
 import { useReaderUsed } from '../api/reader'
 import { UnsavedSettingsContext } from '../components/settings/SaveButton'
+import { useLeaveGuard, type LeaveTarget } from '../lib/useLeaveGuard'
 import { SettingsIndex } from '../components/settings/SettingsIndex'
 import { NotificationsSection } from '../components/NotificationsSection'
 import {
@@ -142,6 +143,16 @@ export default function SettingsPage() {
   const rawTab = searchParams.get('tab')
   const requested = targetTab ?? (rawTab ? (SETTINGS_TAB_ALIASES[rawTab] ?? rawTab) : null)
   const activeTab = tabs.some((t) => t.key === requested) ? requested! : (tabs[0]?.key ?? 'account')
+
+  const resolveTab = (search: string) => {
+    const params = new URLSearchParams(search)
+    const s = params.get('s')
+    const sTarget = s ? (SETTINGS_ENTRY_ALIASES[s] ?? s) : null
+    const fromTarget = sTarget ? visible.find((e) => e.id === sTarget)?.tab : undefined
+    const tabParam = params.get('tab')
+    const want = fromTarget ?? (tabParam ? (SETTINGS_TAB_ALIASES[tabParam] ?? tabParam) : null)
+    return tabs.some((x) => x.key === want) ? want! : (tabs[0]?.key ?? 'account')
+  }
   const tabEntries = useMemo(() => visible.filter((e) => e.tab === activeTab), [visible, activeTab])
 
   // Panels unmount on a tab change (`keepMounted={false}`), which used to drop half-typed edits
@@ -153,8 +164,19 @@ export default function SettingsPage() {
     else unsaved.current.delete(id)
     setUnsavedCount(unsaved.current.size)
   }, [])
-  const [pendingTab, setPendingTab] = useState<string | null>(null)
+  const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null)
   const switchTab = (value: string) => setSearchParams({ tab: value })
+
+  // Any navigation that leaves the page or lands on another tab (sidebar, command palette, Back)
+  // goes through the same prompt as the tab strip.
+  useLeaveGuard(
+    (next: LeaveTarget) => {
+      if (unsaved.current.size === 0) return false
+      if (next.pathname !== window.location.pathname) return true
+      return resolveTab(next.search) !== activeTab
+    },
+    (proceed) => setPendingLeave(() => proceed),
+  )
 
   useEffect(() => {
     if (unsavedCount === 0) return
@@ -224,9 +246,7 @@ export default function SettingsPage() {
         variant="unstyled"
         classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
         onChange={(value) => {
-          if (!value || value === activeTab) return
-          if (unsaved.current.size > 0) setPendingTab(value)
-          else switchTab(value)
+          if (value && value !== activeTab) switchTab(value)
         }}
         keepMounted={false}
       >
@@ -260,8 +280,8 @@ export default function SettingsPage() {
       </Tabs>
 
       <Modal
-        opened={pendingTab !== null}
-        onClose={() => setPendingTab(null)}
+        opened={pendingLeave !== null}
+        onClose={() => setPendingLeave(null)}
         title={t`Discard unsaved changes?`}
         size="sm"
       >
@@ -269,19 +289,20 @@ export default function SettingsPage() {
           <Text size="sm">
             <Plural
               value={unsavedCount}
-              one="A card on this tab has changes that are not saved. Leaving the tab drops them."
-              other="# cards on this tab have changes that are not saved. Leaving the tab drops them."
+              one="A card on this page has changes that are not saved. Leaving drops them."
+              other="# cards on this page have changes that are not saved. Leaving drops them."
             />
           </Text>
           <Group justify="flex-end">
-            <Button variant="default" onClick={() => setPendingTab(null)}>
+            <Button variant="default" onClick={() => setPendingLeave(null)}>
               <Trans>Keep editing</Trans>
             </Button>
             <Button
               color="var(--danger-fill)"
               onClick={() => {
-                if (pendingTab) switchTab(pendingTab)
-                setPendingTab(null)
+                const proceed = pendingLeave
+                setPendingLeave(null)
+                proceed?.()
               }}
             >
               <Trans>Discard changes</Trans>

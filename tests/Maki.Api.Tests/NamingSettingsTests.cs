@@ -126,7 +126,8 @@ public class NamingSettingsTests : IDisposable
 
         Assert.Equal("The Series Title's! (2010)", preview.SeriesFolder);
         Assert.Equal("The Series Title's! 024.cbz", preview.ChapterFile);
-        Assert.Empty(preview.Errors);
+        Assert.Empty(preview.SeriesFolderErrors);
+        Assert.Empty(preview.ChapterErrors);
     }
 
     [Fact]
@@ -138,7 +139,8 @@ public class NamingSettingsTests : IDisposable
         var preview = Assert.IsType<SettingsController.NamingPreviewResponse>(
             Assert.IsType<OkObjectResult>(result).Value);
 
-        Assert.Contains(preview.Errors, e => e.Contains("field=error.naming.fieldSeriesFolder"));
+        Assert.NotEmpty(preview.SeriesFolderErrors);
+        Assert.Empty(preview.ChapterErrors);
     }
 
     [Fact]

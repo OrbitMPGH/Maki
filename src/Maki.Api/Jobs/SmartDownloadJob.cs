@@ -36,6 +36,13 @@ public class SmartDownloadJob(
 {
     public static readonly JobKey Key = new("smart-download");
 
+    public const int MinChapters = 1, MaxChaptersLeft = 10, MaxChaptersPerBatch = 20;
+
+    /// <summary>A stored 0 (from before the save was validated) would queue nothing, so reads clamp it.</summary>
+    public static int ClampChaptersLeft(int value) => Math.Clamp(value, MinChapters, MaxChaptersLeft);
+
+    public static int ClampBatchSize(int value) => Math.Clamp(value, MinChapters, MaxChaptersPerBatch);
+
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
@@ -48,8 +55,10 @@ public class SmartDownloadJob(
             return;
         }
 
-        var limit = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5;
-        var batchSize = int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var n) ? n : 10;
+        var limit = ClampChaptersLeft(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5);
+        var batchSize = ClampBatchSize(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var n) ? n : 10);
         var maxAttempts = int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var m)
             ? m
             : 5;

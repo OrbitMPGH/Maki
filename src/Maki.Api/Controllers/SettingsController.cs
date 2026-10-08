@@ -114,9 +114,11 @@ public class SettingsController(
 
     public record NamingPreviewRequest(string? SeriesFolderFormat, string? ChapterFormat);
 
-    /// <param name="Errors">Empty when both formats are saveable.</param>
+    /// <param name="SeriesFolderErrors">Localized reasons the series folder format would be refused.</param>
+    /// <param name="ChapterErrors">Same, for the chapter file format. Both empty when the formats are saveable.</param>
     public record NamingPreviewResponse(
-        string SeriesFolder, string ChapterFile, IReadOnlyList<string> Errors);
+        string SeriesFolder, string ChapterFile,
+        IReadOnlyList<string> SeriesFolderErrors, IReadOnlyList<string> ChapterErrors);
     public record SetupStatus(bool Completed);
     /// <param name="ItemTimeoutMinutes">
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
@@ -810,19 +812,16 @@ public class SettingsController(
         var folderFormat = request.SeriesFolderFormat ?? await naming.SeriesFolderFormatAsync(ct);
         var chapterFormat = request.ChapterFormat ?? await naming.ChapterFormatAsync(ct);
 
-        var errors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat)
-            .Select(e => localizer.Get("error.naming.formatInvalid",
-                new { field = localizer.Get("error.naming.fieldSeriesFolder"), reason = localizer.Get(e.Key, e.Args) }))
-            .Concat(Maki.Core.Naming.NamingFormatter.Validate(chapterFormat)
-                .Select(e => localizer.Get("error.naming.formatInvalid",
-                    new { field = localizer.Get("error.naming.fieldChapterFormat"), reason = localizer.Get(e.Key, e.Args) })))
-            .ToList();
+        string Render(Maki.Core.Naming.NamingValidationError e) => localizer.Get(e.Key, e.Args);
+        var folderErrors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat).Select(Render).ToList();
+        var chapterErrors = Maki.Core.Naming.NamingFormatter.Validate(chapterFormat).Select(Render).ToList();
 
         return Ok(new NamingPreviewResponse(
             Maki.Core.Naming.NamingFormatter.Format(folderFormat, sample),
             Maki.Core.Naming.NamingFormatter.Format(chapterFormat, sample)
                 + Maki.Core.Naming.NamingDefaults.ChapterExtension,
-            errors));
+            folderErrors,
+            chapterErrors));
     }
 
     /// <summary>
@@ -915,8 +914,10 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2,
         await settings.GetAsync(SettingKeys.DownloadRetryEnabled, ct) != "false",
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
+        SmartDownloadJob.ClampChaptersLeft(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5),
+        SmartDownloadJob.ClampBatchSize(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10),
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
@@ -951,6 +952,16 @@ public class SettingsController(
         if (request.BulkHoldThreshold is < 0 or > 1000)
         {
             return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
+        }
+
+        if (request.SmartDownloadChaptersLeft is < SmartDownloadJob.MinChapters or > SmartDownloadJob.MaxChaptersLeft)
+        {
+            return this.Fail(localizer, "error.settings.smartChaptersLeftRange", new { min = SmartDownloadJob.MinChapters, max = SmartDownloadJob.MaxChaptersLeft });
+        }
+
+        if (request.SmartDownloadChapters is < SmartDownloadJob.MinChapters or > SmartDownloadJob.MaxChaptersPerBatch)
+        {
+            return this.Fail(localizer, "error.settings.smartChaptersRange", new { min = SmartDownloadJob.MinChapters, max = SmartDownloadJob.MaxChaptersPerBatch });
         }
 
         var sourceOrder = SourceOrderService.Parse(request.SourceOrder);

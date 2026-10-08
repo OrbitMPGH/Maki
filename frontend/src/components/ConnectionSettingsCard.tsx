@@ -143,6 +143,7 @@ function ConnectionFields({
         f.secret ? (
           <PasswordInput
             key={f.key}
+            autoComplete="new-password"
             label={f.label}
             description={f.description}
             placeholder={f.placeholder}
@@ -153,6 +154,7 @@ function ConnectionFields({
         ) : (
           <TextInput
             key={f.key}
+            autoComplete="off"
             label={f.label}
             description={f.description}
             placeholder={f.placeholder}

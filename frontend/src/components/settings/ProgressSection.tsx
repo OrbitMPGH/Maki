@@ -58,6 +58,10 @@ function useMetricOptions() {
   )
 }
 
+// UTC is stored explicitly. An empty zone means "never chosen", which the seeding below and the
+// server's X-Maki-TimeZone handling both fill with the browser's zone.
+const UTC_ZONE = 'UTC'
+
 /** What the browser thinks the user's zone is, used to prefill and as the "detect" value. */
 function browserTimeZone(): string {
   try {
@@ -138,14 +142,14 @@ export function ProgressSection() {
           label={t`Time zone`}
           description={t`Decides when your reading day ends, which is what streaks and daily goals count against.`}
           data={[
-            { value: '', label: t`UTC` },
-            ...(zone ? [{ value: zone, label: t`${zone} (this browser)` }] : []),
-            ...(settings.timeZone && settings.timeZone !== zone
+            { value: UTC_ZONE, label: t`UTC` },
+            ...(zone && zone !== UTC_ZONE ? [{ value: zone, label: t`${zone} (this browser)` }] : []),
+            ...(settings.timeZone && settings.timeZone !== zone && settings.timeZone !== UTC_ZONE
               ? [{ value: settings.timeZone, label: settings.timeZone }]
               : []),
           ]}
-          value={settings.timeZone}
-          onChange={(v) => patch({ timeZone: v ?? '' })}
+          value={settings.timeZone || UTC_ZONE}
+          onChange={(v) => patch({ timeZone: v ?? UTC_ZONE })}
           disabled={!settings.enabled}
         />
 

@@ -6,7 +6,6 @@ import {
   Card,
   Group,
   MultiSelect,
-  NumberInput,
   Select,
   Stack,
   Switch,
@@ -34,6 +33,7 @@ import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { SettingsNumberInput } from './SettingsNumberInput'
 
 const MODE_LABELS: Record<ReaderPrefs['mode'], MessageDescriptor> = {
   paged: msg`Single page`,
@@ -362,14 +362,14 @@ function ProfileEditor({
           ]}
         />
         {prefs.fit === 'original' && (
-          <NumberInput
+          <SettingsNumberInput
             label={t`Scale`}
             suffix="%"
             min={25}
             max={400}
             step={5}
             value={prefs.scale}
-            onChange={(value) => set({ scale: Number(value) || 100 })}
+            onChange={(value) => set({ scale: value })}
           />
         )}
       </Group>
@@ -387,21 +387,21 @@ function ProfileEditor({
             { value: 'oled', label: t`OLED black` },
           ]}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Page gap`}
           description={t`Continuous layout only, in pixels.`}
           min={0}
           max={64}
           value={prefs.pageGap}
-          onChange={(value) => set({ pageGap: typeof value === 'number' ? value : 0 })}
+          onChange={(value) => set({ pageGap: value })}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Preload`}
           description={t`Pages fetched ahead. Not used in Continuous layout.`}
           min={0}
           max={10}
           value={prefs.preload}
-          onChange={(value) => set({ preload: typeof value === 'number' ? value : 0 })}
+          onChange={(value) => set({ preload: value })}
         />
       </Group>
 

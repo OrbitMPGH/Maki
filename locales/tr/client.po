@@ -1521,9 +1521,8 @@ msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{unrecognizedCount, plural, one {# tanınmadı} other {# tanınmadı}}"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "{unsavedCount, plural, one {A card on this tab has changes that are not saved. Leaving the tab drops them.} other {# cards on this tab have changes that are not saved. Leaving the tab drops them.}}"
-msgstr "{unsavedCount, plural, one {Bu sekmedeki bir kartta kaydedilmemiş değişiklikler var. Sekmeden ayrılırsanız bu değişiklikler kaybolur.} other {Bu sekmedeki # kartta kaydedilmemiş değişiklikler var. Sekmeden ayrılırsanız bu değişiklikler kaybolur.}}"
+msgid "{unsavedCount, plural, one {A card on this page has changes that are not saved. Leaving drops them.} other {# cards on this page have changes that are not saved. Leaving drops them.}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

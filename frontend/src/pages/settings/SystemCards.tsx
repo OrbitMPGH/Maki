@@ -11,7 +11,6 @@ import {
   FileButton,
   Group,
   Modal,
-  NumberInput,
   Progress,
   Stack,
   Switch,
@@ -40,6 +39,7 @@ import {
   useUpdateStatus,
 } from '../../api/hooks'
 import { formatBytes, formatDateTime, formatNumber } from '../../format'
+import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 
 type RestoreTarget = { kind: 'existing'; name: string } | { kind: 'upload'; file: File }
 
@@ -55,7 +55,7 @@ export function BackupSection() {
 
   const kindLabel = (kind: string) => (kind === 'auto' ? t`Automatic` : kind === 'manual' ? t`Manual` : kind)
 
-  const [retention, setRetention] = useState<number | string>(5)
+  const [retention, setRetention] = useState<number>(5)
   const [target, setTarget] = useState<RestoreTarget | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -201,12 +201,11 @@ export function BackupSection() {
           </FileButton>
         </Group>
 
-        <NumberInput
+        <SettingsNumberInput
           label={t`Backups to keep`}
           description={t`Per kind: the newest N automatic and the newest N manual backups stay. Older ones are removed when a new backup is taken.`}
           min={1}
           max={50}
-          clampBehavior="strict"
           value={retention}
           onChange={setRetention}
           w={220}

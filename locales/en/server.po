@@ -1363,6 +1363,14 @@ msgid "error.settings.bulkHoldRange"
 msgstr "Bulk hold must be between 0 (off) and {max} chapters"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.smartChaptersLeftRange"
+msgstr "Smart Download refill point must be between {min} and {max} chapters"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.smartChaptersRange"
+msgstr "Smart Download batch size must be between {min} and {max} chapters"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.upgradesScanHourRange"
 msgstr "The upgrade scan hour must be between {min} and {max}"
 

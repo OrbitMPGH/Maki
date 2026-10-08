@@ -3187,7 +3187,8 @@ export interface NamingToken {
 export interface NamingPreview {
   seriesFolder: string
   chapterFile: string
-  errors: string[]
+  seriesFolderErrors: string[]
+  chapterErrors: string[]
 }
 
 /** The token catalogue for the picker. Static per release, so it's cached for the session. */
