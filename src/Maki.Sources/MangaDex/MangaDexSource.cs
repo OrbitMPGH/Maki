@@ -15,6 +15,9 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
 {
     public const string HttpClientName = "source-mangadex";
 
+    private const int FeedPageSize = 500;
+    private const int FeedOffsetCap = 10000;
+
     public string Name => "mangadex";
     public string DisplayName => "MangaDex";
     public string BaseUrl => "https://mangadex.org";
@@ -136,21 +139,32 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     /// <summary>
     /// Chapter number → volume map from the full feed with includeUnavailable=1: unlike
     /// the aggregate endpoint (and the default feed), this still lists delisted chapters
-    /// of licensed titles, whose volume assignment is exactly what we're after. No
-    /// language filter — volume boundaries are language-independent, and the EN feed
-    /// of a licensed title is empty.
+    /// of licensed titles, whose volume assignment is exactly what we're after. Volume
+    /// boundaries are language-independent, so the English feed is walked first, which keeps a
+    /// widely translated title from costing a request per 500 rows across every language; only
+    /// a title with no English volumes falls back to the feed of all languages.
     /// </summary>
     public async Task<IReadOnlyDictionary<decimal, int>> GetChapterVolumesAsync(
         string sourceSeriesId, CancellationToken ct = default)
+    {
+        var english = await WalkVolumesAsync(sourceSeriesId, "&translatedLanguage[]=en", ct);
+        return english.Count > 0 ? english : await WalkVolumesAsync(sourceSeriesId, string.Empty, ct);
+    }
+
+    private async Task<IReadOnlyDictionary<decimal, int>> WalkVolumesAsync(
+        string sourceSeriesId, string languageQuery, CancellationToken ct)
     {
         var map = new Dictionary<decimal, int>();
         var conflicted = new HashSet<decimal>();
         var offset = 0;
 
-        while (true)
+        // MangaDex rejects any list request whose offset + limit passes 10000, so a longer feed is
+        // read as far as it can be rather than failing the whole walk with a 400.
+        while (offset + FeedPageSize <= FeedOffsetCap)
         {
             var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
-                $"manga/{sourceSeriesId}/feed?limit=500&offset={offset}&includeUnavailable=1" +
+                $"manga/{sourceSeriesId}/feed?limit={FeedPageSize}&offset={offset}&includeUnavailable=1" +
+                languageQuery +
                 "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
                 ct);
 
@@ -178,7 +192,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
                 }
             }
 
-            offset += response.Limit;
+            offset += response.Limit > 0 ? response.Limit : FeedPageSize;
             if (offset >= response.Total || response.Data.Count == 0)
             {
                 break;

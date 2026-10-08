@@ -84,6 +84,65 @@ public class MangaDexSourceTests
     }
 
     [Fact]
+    public async Task GetChapterVolumes_walks_the_english_feed_first()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FakeHttpClientFactory.Fixture("mangadex-feed-conflicting-volumes.json")
+        });
+
+        var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
+
+        Assert.Equal(1, volumes[2m]);
+        var feed = Assert.Single(factory.Requests);
+        Assert.Contains("includeUnavailable=1", feed);
+        Assert.Contains("translatedLanguage[]=en", feed);
+    }
+
+    [Fact]
+    public async Task GetChapterVolumes_falls_back_to_every_language_when_english_has_no_volumes()
+    {
+        var empty = FeedPage(total: 0, volume: null);
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["translatedLanguage[]=en"] = empty,
+            ["feed"] = FakeHttpClientFactory.Fixture("mangadex-feed-conflicting-volumes.json")
+        });
+
+        var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
+
+        Assert.Equal(1, volumes[2m]);
+        Assert.Equal(2, factory.Requests.Count);
+        Assert.Contains("translatedLanguage[]=en", factory.Requests[0]);
+        Assert.DoesNotContain("translatedLanguage", factory.Requests[1]);
+    }
+
+    [Fact]
+    public async Task GetChapterVolumes_stops_before_the_offset_cap_and_keeps_what_it_read()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FeedPage(total: 40000, volume: "3")
+        });
+
+        var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
+
+        Assert.Equal(3, volumes[7m]);
+        Assert.Equal(20, factory.Requests.Count);
+        Assert.DoesNotContain(factory.Requests, r => r.Contains("offset=10000", StringComparison.Ordinal));
+    }
+
+    private static string FeedPage(int total, string? volume)
+    {
+        var chapter = volume is null
+            ? string.Empty
+            : "{\"id\":\"11111111-1111-1111-1111-111111111111\",\"type\":\"chapter\",\"attributes\":{" +
+              $"\"chapter\":\"7\",\"volume\":\"{volume}\",\"title\":null,\"translatedLanguage\":\"en\"," +
+              "\"externalUrl\":null,\"isUnavailable\":false,\"pages\":10,\"publishAt\":\"2018-01-01T00:00:00+00:00\"}}";
+        return $"{{\"result\":\"ok\",\"response\":\"collection\",\"limit\":500,\"offset\":0,\"total\":{total},\"data\":[{chapter}]}}";
+    }
+
+    [Fact]
     public async Task A_simplified_chinese_filter_is_requested_as_plain_zh()
     {
         var factory = new FakeHttpClientFactory(new()
