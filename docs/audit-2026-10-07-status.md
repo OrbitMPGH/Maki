@@ -24,10 +24,10 @@ States: `done <sha>`, `skipped (reason)`, `decision (question)`, `pending`.
 | A | AUTH-05 | done b657082e (kavita, prowlarr, qbittorrent PUTs left open to API keys: owner decision) |
 | A | AUTH-02 | done f418a4cf, 5b64df10 |
 | A | HOSTING-01 | done 047a1654, f5f7e0fe, 6f7524d2 |
-| B | SERIES-18 | pending |
-| B | SERIES-19 | pending |
-| B | DOWNLOADS-12 | pending |
-| B | DOWNLOADS-11 | pending |
+| B | SERIES-18 | done 48ab4d59, ce0783f6 |
+| B | SERIES-19 | done 4987621a, ad4cd931 (grab needs a search from the last hour in this process) |
+| B | DOWNLOADS-12 | done 77e5c8e5, d0d6fbd3, 3b5f435d, ac1a3e50 |
+| B | DOWNLOADS-11 | done 0525a536 |
 | C | PROGRESS-05 | done 540b0a0a, c54f13c7 |
 | C | PROGRESS-06 | done 012bb4a0, e2a4bd79 |
 | D | FE-READER-01 | done 7ba82f8a |
