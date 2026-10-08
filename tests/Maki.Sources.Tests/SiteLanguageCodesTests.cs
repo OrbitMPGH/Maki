@@ -31,6 +31,6 @@ public class SiteLanguageCodesTests
             ["""{"id":1,"number":1,"name":"Ch. 1","type":"official","language":"zh"}"""],
             SiteLanguageCodes.Parse("zh-Hans"));
 
-        Assert.Equal("zh", Assert.Single(chapters).Language);
+        Assert.Equal("zh-Hans", Assert.Single(chapters).Language);
     }
 }

@@ -298,7 +298,7 @@ public class ChapterSyncService(
             : existing.FirstOrDefault(c =>
                 c.Number is null &&
                 c.IsOneShot &&
-                c.Language == sc.Language &&
+                SourceLanguages.Same(c.Language, sc.Language) &&
                 string.Equals(c.Title?.Trim(), sc.NumberRaw.Trim(), StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
@@ -315,7 +315,7 @@ public class ChapterSyncService(
         }
 
         var untitled = existing
-            .Where(c => c.Number is null && c.IsOneShot && c.Title is null && c.Language == sc.Language)
+            .Where(c => c.Number is null && c.IsOneShot && c.Title is null && SourceLanguages.Same(c.Language, sc.Language))
             .ToList();
         string? LinkedId(Chapter c) =>
             c.SourceLinks.FirstOrDefault(l => l.SourceMappingId == mapping.Id)?.SourceChapterId;

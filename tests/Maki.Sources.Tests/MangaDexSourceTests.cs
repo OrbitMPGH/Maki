@@ -143,6 +143,19 @@ public class MangaDexSourceTests
     }
 
     [Fact]
+    public async Task Chapters_tagged_zh_are_listed_under_the_canonical_simplified_chinese_tag()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FeedPage(total: 1, volume: "1").Replace("\"en\"", "\"zh\"")
+        });
+
+        var chapters = await new MangaDexSource(factory).ListChaptersAsync("a1c7c817", "zh-Hans");
+
+        Assert.Equal("zh-Hans", Assert.Single(chapters).Language);
+    }
+
+    [Fact]
     public async Task A_simplified_chinese_filter_is_requested_as_plain_zh()
     {
         var factory = new FakeHttpClientFactory(new()

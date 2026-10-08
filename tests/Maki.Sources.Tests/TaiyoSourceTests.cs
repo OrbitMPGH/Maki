@@ -135,7 +135,7 @@ public class TaiyoSourceTests
         // taiyo-chapters-1.json reports totalPages: 24 on every page, so the walk makes 24 requests.
         Assert.Equal(24, factory.Requests.Count(u => u.Contains("chapters.getByMediaId?")));
         Assert.NotEmpty(chapters);
-        Assert.All(chapters, c => Assert.Equal("pt-br", c.Language));
+        Assert.All(chapters, c => Assert.Equal("pt-BR", c.Language));
         var ch1140 = chapters.FirstOrDefault(c => c.Number == 1140m);
         Assert.NotNull(ch1140);
         Assert.Equal("a28e4286-b9b8-42b1-8264-76506e0c4349", ch1140.SourceChapterId);

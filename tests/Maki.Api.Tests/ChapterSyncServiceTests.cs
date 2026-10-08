@@ -156,6 +156,31 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Existing_chapter_is_matched_across_spellings_of_its_language()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 1m, Language = "pt-br" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 2m, Language = "zh" });
+            db.SaveChanges();
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ => [fake.Chapter(1, language: "pt-BR"), fake.Chapter(2, language: "zh-Hans")]
+        };
+
+        var newIds = await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        Assert.Empty(newIds);
+        Assert.Equal(2, ChaptersOf(seriesId).Count);
+        Assert.Equal(2, LinksOf(seriesId).Count);
+    }
+
+    [Fact]
     public async Task Volume_wildcard_matches_a_volumeless_existing_chapter()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
