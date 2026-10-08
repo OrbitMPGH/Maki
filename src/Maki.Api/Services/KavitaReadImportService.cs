@@ -125,7 +125,7 @@ public class KavitaReadImportService(
         var userId = await kavitaUser.ResolveAsync(ct)
                      ?? throw new KavitaImportError("error.reader.kavitaNoBoundUser");
 
-        var index = await BuildLibraryIndexAsync(userId, ct);
+        var index = await BuildLibraryIndexAsync(userId, LogLevel.Information, ct);
         var kavitaSeries = await kavita.GetAllSeriesAsync(url, apiKey, ct);
 
         int matched = 0, marked = 0, unmatched = 0;
@@ -220,7 +220,7 @@ public class KavitaReadImportService(
                 return null;
             }
 
-            var index = await BuildLibraryIndexAsync(userId, ct);
+            var index = await BuildLibraryIndexAsync(userId, LogLevel.Debug, ct);
             if (index.TryGetValue(ScrobbleMatching.NormalizeTitle(series.Name ?? ""), out var byName))
             {
                 localSeriesId = byName;
@@ -263,7 +263,8 @@ public class KavitaReadImportService(
     /// root folders the Kavita-bound user can see, and a name two series share is dropped rather than
     /// resolved to whichever came first, the same rule the scrobble tick matches by.
     /// </summary>
-    private async Task<Dictionary<string, int>> BuildLibraryIndexAsync(int userId, CancellationToken ct)
+    private async Task<Dictionary<string, int>> BuildLibraryIndexAsync(
+        int userId, LogLevel collisionLevel, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -277,7 +278,12 @@ public class KavitaReadImportService(
             .Select(s => new { s.Id, s.Title, s.FolderName })
             .ToListAsync(ct);
 
-        return LibraryNameIndex.Build(rows, r => r.Id, r => [r.Title, r.FolderName])
+        return LibraryNameIndex.Build(
+                rows, r => r.Id, r => [r.Title, r.FolderName],
+                key => logger.Log(
+                    collisionLevel,
+                    "More than one library series is named '{Name}'; none will match a Kavita series of that name",
+                    key))
             .ToDictionary(kv => kv.Key, kv => kv.Value.Id);
     }
 }

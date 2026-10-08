@@ -10,7 +10,8 @@ namespace Maki.Api.Services;
 internal static class LibraryNameIndex
 {
     public static Dictionary<string, T> Build<T>(
-        IEnumerable<T> rows, Func<T, int> idOf, Func<T, IEnumerable<string?>> namesOf)
+        IEnumerable<T> rows, Func<T, int> idOf, Func<T, IEnumerable<string?>> namesOf,
+        Action<string>? onCollision = null)
     {
         var index = new Dictionary<string, T>();
         var collisions = new HashSet<string>();
@@ -41,6 +42,7 @@ internal static class LibraryNameIndex
         foreach (var key in collisions)
         {
             index.Remove(key);
+            onCollision?.Invoke(key);
         }
 
         return index;

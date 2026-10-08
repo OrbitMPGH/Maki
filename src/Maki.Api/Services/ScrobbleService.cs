@@ -1146,7 +1146,11 @@ public class ScrobbleService(
 
         // Kavita parses its series name from file names (filesystem-illegal chars
         // stripped), so index by punctuation-normalized title AND folder name.
-        return LibraryNameIndex.Build(rows, r => r.Id, r => [r.Title, r.FolderName])
+        return LibraryNameIndex.Build(
+                rows, r => r.Id, r => [r.Title, r.FolderName],
+                key => logger.LogDebug(
+                    "More than one library series is named '{Name}'; none will match a Kavita series of that name",
+                    key))
             .ToDictionary(
                 kv => kv.Key,
                 kv => new LibraryIds(
