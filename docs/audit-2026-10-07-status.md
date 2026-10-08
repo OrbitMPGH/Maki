@@ -128,10 +128,10 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | i18n sweep | SERIES-16 | pending |
 | i18n sweep | SERIES-22 | pending |
 | i18n sweep | AUTH-16 | pending |
-| FE-UX | FE-UX-01 | pending |
-| FE-UX | FE-UX-06 | pending |
-| FE-UX | FE-UX-08 | pending |
-| FE-UX | FE-UX-14 | pending |
+| FE-UX | FE-UX-01 | done 9ebd63fb, 2cb7875f (AnimeSignalsSection, FeedbackLab, ManageSignalsModal still double-toast via shared hooks: Tier 3) |
+| FE-UX | FE-UX-06 | done e8468b3b, 2cb7875f |
+| FE-UX | FE-UX-08 | done 416d3e11, 2cb7875f |
+| FE-UX | FE-UX-14 | done 59d5df06 |
 
 ## Wave 3: Tier 3 and Tier 4 per slice
 
