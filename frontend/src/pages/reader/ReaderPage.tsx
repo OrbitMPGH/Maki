@@ -61,6 +61,13 @@ export default function ReaderPage() {
   // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
   const enterAtEndRef = useRef(false)
   const leavingRef = useRef(false)
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
   // The chrome starts hidden and is summoned by a tap in the middle of the page: the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
@@ -214,6 +221,8 @@ export default function ReaderPage() {
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
       }
+      // Left the reader during the grace wait (Escape, browser back): do not pull the user back in.
+      if (!mountedRef.current) return
       // ReaderPage stays mounted across /read/:chapterId changes, so a manifest cached from an
       // earlier visit to `target` would otherwise be served as-is (staleTime is Infinity) with its
       // now-stale resumePage. Drop it so the coming mount always fetches fresh.
