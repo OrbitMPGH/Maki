@@ -24,7 +24,24 @@ public static class MigrationErrorMarker
         }
     }
 
-    /// <summary>The recorded error, or null when there is none or it has expired (and is then removed).</summary>
+    /// <summary>Whether an unexpired marker exists, even one written before it carried a detail.</summary>
+    public static bool Exists(string configDir, DateTime nowUtc)
+    {
+        var path = Path.Combine(configDir, FileName);
+        try
+        {
+            if (!File.Exists(path)) return false;
+            if (nowUtc - File.GetLastWriteTimeUtc(path) <= Lifetime) return true;
+            File.Delete(path);
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The recorded error, or null when there is none, it has expired (and is then removed), or it carries no detail.</summary>
     public static string? Read(string configDir, DateTime nowUtc)
     {
         var path = Path.Combine(configDir, FileName);
@@ -38,7 +55,7 @@ public static class MigrationErrorMarker
             }
 
             var lines = File.ReadAllText(path).Split('\n', 2);
-            return lines.Length > 1 && lines[1].Trim().Length > 0 ? lines[1].Trim() : "";
+            return lines.Length > 1 && lines[1].Trim().Length > 0 ? lines[1].Trim() : null;
         }
         catch
         {

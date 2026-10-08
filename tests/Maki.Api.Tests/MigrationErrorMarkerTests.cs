@@ -32,4 +32,13 @@ public class MigrationErrorMarkerTests : IDisposable
         Assert.Null(MigrationErrorMarker.Read(_dir, DateTime.UtcNow + MigrationErrorMarker.Lifetime + TimeSpan.FromMinutes(1)));
         Assert.False(File.Exists(Path.Combine(_dir, MigrationErrorMarker.FileName)));
     }
+
+    [Fact]
+    public void A_marker_without_a_detail_exists_but_reads_as_no_error()
+    {
+        File.WriteAllText(Path.Combine(_dir, MigrationErrorMarker.FileName), DateTime.UtcNow.ToString("O"));
+
+        Assert.True(MigrationErrorMarker.Exists(_dir, DateTime.UtcNow));
+        Assert.Null(MigrationErrorMarker.Read(_dir, DateTime.UtcNow));
+    }
 }

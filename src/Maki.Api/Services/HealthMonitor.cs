@@ -181,10 +181,13 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 Add("database", "system", pending > 0 ? "warning" : "healthy",
                     pending > 0 ? "health.check.migrationsPending" : "health.check.databaseCurrent",
                     pending > 0 ? new { count = pending } : null);
-                if (MigrationErrorMarker.Read(paths.ConfigDir, DateTime.UtcNow) is { } migrationError)
+                if (MigrationErrorMarker.Exists(paths.ConfigDir, DateTime.UtcNow))
                 {
-                    Add("migration-history", "system", "warning", "health.check.migrationFailedDetail",
-                        new { error = migrationError });
+                    if (MigrationErrorMarker.Read(paths.ConfigDir, DateTime.UtcNow) is { } migrationError)
+                        Add("migration-history", "system", "warning", "health.check.migrationFailedDetail",
+                            new { error = migrationError });
+                    else
+                        Add("migration-history", "system", "warning", "health.check.migrationFailed");
                 }
             }
             catch { Add("database", "system", "unavailable", "health.check.diagnosticsUnavailable"); }

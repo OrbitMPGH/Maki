@@ -3824,6 +3824,11 @@ msgid "health.check.databaseCurrent"
 msgstr "Veritabanına ulaşılabiliyor ve güncel"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
+#. English: A previous startup migration failed. Check the startup logs.
+msgid "health.check.migrationFailed"
+msgstr "Önceki bir başlangıç geçişi başarısız oldu. Başlangıç günlüklerini kontrol edin."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: A previous startup migration failed ({error}). Check the startup logs.
 msgid "health.check.migrationFailedDetail"
 msgstr ""

@@ -3824,6 +3824,11 @@ msgid "health.check.databaseCurrent"
 msgstr "La base de datos está accesible y actualizada"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
+#. English: A previous startup migration failed. Check the startup logs.
+msgid "health.check.migrationFailed"
+msgstr "Falló una migración de inicio anterior. Comprueba los registros de inicio."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: A previous startup migration failed ({error}). Check the startup logs.
 msgid "health.check.migrationFailedDetail"
 msgstr ""
