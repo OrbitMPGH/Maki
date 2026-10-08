@@ -9,6 +9,7 @@ using Maki.Core.Sources;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -355,15 +356,26 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
                 }
             });
 
-            IImageEncoder encoder = source.Metadata.DecodedImageFormat is { } format
-                ? source.Configuration.ImageFormatsManager.GetEncoder(format)
-                : new JpegEncoder { Quality = 90 };
+            var encoder = EncoderFor(source);
 
             using var buffer = new MemoryStream();
             await destination.SaveAsync(buffer, encoder, ct);
             return buffer.ToArray();
         }, ct);
     }
+
+    private const int ReencodeQuality = 90;
+
+    /// <summary>
+    /// The registered encoder for a format carries ImageSharp's default quality of 75, so the formats
+    /// that take a quality are given one explicitly. Anything else keeps its own encoder.
+    /// </summary>
+    private static IImageEncoder EncoderFor(Image source) => source.Metadata.DecodedImageFormat switch
+    {
+        null or JpegFormat => new JpegEncoder { Quality = ReencodeQuality },
+        WebpFormat => new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = ReencodeQuality },
+        { } format => source.Configuration.ImageFormatsManager.GetEncoder(format),
+    };
 
     // ── Plumbing ──────────────────────────────────────────────────────
 

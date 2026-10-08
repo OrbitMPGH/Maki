@@ -229,6 +229,20 @@ public class CuuTruyenSourceTests
         AssertRowsDiffer(source, result, sourceY: 0, destinationY: 0);
     }
 
+    [Fact]
+    public async Task UnscrambleAsync_ReencodesAJpegAtQuality90NotTheEncoderDefault()
+    {
+        const string drmData =
+            "EEcATQYJAhsEBgVEAAcJHgIEBE0BDAIbBAYFRAkaCAYDTQUBAAkfBwUBSQkM" +
+            "BxQCBgFIBgAJHwcAA0kOCQcUAgYB";
+
+        var bytes = FakeHttpClientFactory.BinaryFixture("cuutruyen-page.bin");
+        var unscrambled = await CuuTruyenSource.UnscrambleAsync(bytes, drmData);
+        using var result = Image.Load<Rgba32>(unscrambled);
+
+        Assert.Equal(90, result.Metadata.GetJpegMetadata().Quality);
+    }
+
     /// <summary>
     /// Proves the descrambler actually moves pixels rather than merely producing an image of the
     /// right size: the mapped destination strip must closely match the source strip it came from.
