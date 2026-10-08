@@ -4353,7 +4353,9 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   width: 3px;
   background: var(--info);
 }
-.chapter-span-line:focus-visible {
+.chapter-span-line:focus-visible,
+.chapter-span-badge:focus-visible,
+.chapter-row-selectable:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 1px;
   border-radius: var(--radius-2xs);
