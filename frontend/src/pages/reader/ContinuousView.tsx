@@ -106,7 +106,8 @@ export default function ContinuousView({
     )
   }, [seekVersion, urls])
 
-  const onPageSettled = (index: number) => {
+  const onPageSettled = (index: number, element: HTMLImageElement) => {
+    element.dataset.loaded = 'true'
     reportEnd.current()
     if (!settling.current.delete(index)) return
     pages.current[seekTarget.current]?.scrollIntoView({ block: 'start' })
@@ -270,12 +271,13 @@ export default function ContinuousView({
               style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
               // A window around the current page rather than the whole prefix: resuming at page 300
               // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
-              // pages close enough to shift the target's offset need forcing.
+              // pages close enough to shift the target's offset need forcing. Unloaded pages hold a
+              // min-height placeholder (theme.css), which is what gives lazy loading real positions.
               loading={index < 3 || Math.abs(index - pageRef.current) <= 2 ? 'eager' : 'lazy'}
               decoding="async"
               draggable={false}
-              onLoad={() => onPageSettled(index)}
-              onError={() => onPageSettled(index)}
+              onLoad={(event) => onPageSettled(index, event.currentTarget)}
+              onError={(event) => onPageSettled(index, event.currentTarget)}
             />
           )
         })}
