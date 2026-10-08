@@ -1146,39 +1146,12 @@ public class ScrobbleService(
 
         // Kavita parses its series name from file names (filesystem-illegal chars
         // stripped), so index by punctuation-normalized title AND folder name.
-        var index = new Dictionary<string, LibraryIds>();
-        var collisions = new HashSet<string>();
-        foreach (var row in rows)
-        {
-            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId, row.KitsuId, row.Incognito);
-            foreach (var name in new[] { row.Title, row.FolderName })
-            {
-                var key = ScrobbleMatching.NormalizeTitle(name ?? "");
-                if (key.Length == 0)
-                {
-                    continue;
-                }
-
-                if (index.TryGetValue(key, out var existing))
-                {
-                    if (existing.Id != ids.Id)
-                    {
-                        collisions.Add(key);
-                    }
-                }
-                else
-                {
-                    index[key] = ids;
-                }
-            }
-        }
-
-        foreach (var key in collisions)
-        {
-            index.Remove(key);
-        }
-
-        return index;
+        return LibraryNameIndex.Build(rows, r => r.Id, r => [r.Title, r.FolderName])
+            .ToDictionary(
+                kv => kv.Key,
+                kv => new LibraryIds(
+                    kv.Value.Id, kv.Value.MangaBakaId, kv.Value.AniListId, kv.Value.MalId, kv.Value.KitsuId,
+                    kv.Value.Incognito));
     }
 
     private static LibraryIds? MatchLocal(

@@ -125,7 +125,7 @@ public class KavitaReadImportService(
         var userId = await kavitaUser.ResolveAsync(ct)
                      ?? throw new KavitaImportError("error.reader.kavitaNoBoundUser");
 
-        var index = await BuildLibraryIndexAsync(ct);
+        var index = await BuildLibraryIndexAsync(userId, ct);
         var kavitaSeries = await kavita.GetAllSeriesAsync(url, apiKey, ct);
 
         int matched = 0, marked = 0, unmatched = 0;
@@ -220,7 +220,7 @@ public class KavitaReadImportService(
                 return null;
             }
 
-            var index = await BuildLibraryIndexAsync(ct);
+            var index = await BuildLibraryIndexAsync(userId, ct);
             if (index.TryGetValue(ScrobbleMatching.NormalizeTitle(series.Name ?? ""), out var byName))
             {
                 localSeriesId = byName;
@@ -258,25 +258,26 @@ public class KavitaReadImportService(
             .FirstOrDefaultAsync(ct);
     }
 
-    /// <summary>Normalized title (and folder name) → local series id, for reverse-matching Kavita.</summary>
-    private async Task<Dictionary<string, int>> BuildLibraryIndexAsync(CancellationToken ct)
+    /// <summary>
+    /// Normalized title (and folder name) → local series id, for reverse-matching Kavita. Scoped to the
+    /// root folders the Kavita-bound user can see, and a name two series share is dropped rather than
+    /// resolved to whichever came first, the same rule the scrobble tick matches by.
+    /// </summary>
+    private async Task<Dictionary<string, int>> BuildLibraryIndexAsync(int userId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        var allRootFolders = await db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.AllRootFolders)
+            .FirstOrDefaultAsync(ct);
+        db.Scope.SetUser(userId, allRootFolders);
+
         var rows = await db.Series.AsNoTracking()
             .Select(s => new { s.Id, s.Title, s.FolderName })
             .ToListAsync(ct);
 
-        var index = new Dictionary<string, int>();
-        foreach (var row in rows)
-        {
-            index.TryAdd(ScrobbleMatching.NormalizeTitle(row.Title), row.Id);
-            if (!string.IsNullOrWhiteSpace(row.FolderName))
-            {
-                index.TryAdd(ScrobbleMatching.NormalizeTitle(row.FolderName), row.Id);
-            }
-        }
-
-        return index;
+        return LibraryNameIndex.Build(rows, r => r.Id, r => [r.Title, r.FolderName])
+            .ToDictionary(kv => kv.Key, kv => kv.Value.Id);
     }
 }
