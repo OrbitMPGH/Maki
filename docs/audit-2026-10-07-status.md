@@ -30,12 +30,12 @@ States: `done <sha>`, `skipped (reason)`, `decision (question)`, `pending`.
 | B | DOWNLOADS-11 | pending |
 | C | PROGRESS-05 | pending |
 | C | PROGRESS-06 | pending |
-| D | FE-READER-01 | pending |
-| D | FE-READER-02 | pending |
-| D | FE-READER-03 | pending |
-| D | FE-READER-04 | pending |
-| D | FE-READER-05 | pending |
-| D | FE-READER-13 | pending |
+| D | FE-READER-01 | done 7ba82f8a |
+| D | FE-READER-02 | done d28b59d2, 6f6d315f |
+| D | FE-READER-03 | done c4d989c5, a262bee8 |
+| D | FE-READER-04 | done 16053ee8 (server-side clamp left for PROGRESS lane) |
+| D | FE-READER-05 | done f81d09d7 |
+| D | FE-READER-13 | done aeabffdb |
 | E | FE-SETTINGS-33 | done 9c5b9ba2 |
 | CORE | CORE-01 | pending |
 | CORE | CORE-05 | pending |
