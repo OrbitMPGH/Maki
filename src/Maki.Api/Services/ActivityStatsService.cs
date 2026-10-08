@@ -64,6 +64,20 @@ public class ActivityStatsService(
     public async Task<List<int>> YearsAsync(int userId, int utcOffsetMinutes, CancellationToken ct)
     {
         var zone = await ResolveZoneAsync(userId, utcOffsetMinutes, ct);
+        if (!currentUser.AllRootFolders)
+        {
+            var all = await EventsFor(userId).ToListAsync(ct);
+            var ids = all.Where(e => e.SeriesId != null).Select(e => e.SeriesId!.Value).Distinct().ToList();
+            var visibleIds = (await db.Series.AsNoTracking().Where(s => ids.Contains(s.Id)).Select(s => s.Id)
+                .ToListAsync(ct)).ToHashSet();
+            var visible = await HideUnseenFoldersAsync(all, visibleIds, ct);
+            return visible
+                .Select(e => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(e.Timestamp, DateTimeKind.Utc), zone).Year)
+                .Distinct()
+                .OrderByDescending(y => y)
+                .ToList();
+        }
+
         var utcYears = await EventsFor(userId).Select(e => e.Timestamp.Year).Distinct().ToListAsync(ct);
 
         var years = new HashSet<int>();
@@ -244,8 +258,6 @@ public class ActivityStatsService(
         // snapshot payload.
         var genreWeights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var tagWeights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        RemovedSeriesSnapshot? Snapshot(string? payloadJson) => ParseSnapshot(payloadJson);
-
         void AddWeights(int? seriesId, string? payloadJson, int weight)
         {
             List<string>? genres = null, tags = null;
@@ -255,7 +267,7 @@ public class ActivityStatsService(
             }
             else if (payloadJson is not null)
             {
-                var snap = Snapshot(payloadJson);
+                var snap = ParseSnapshot(payloadJson);
                 (genres, tags) = (snap?.Genres, snap?.Tags);
             }
 
@@ -290,7 +302,7 @@ public class ActivityStatsService(
             .OrderByDescending(e => e.Timestamp)
             .Select(e =>
             {
-                var snapshot = Snapshot(e.PayloadJson);
+                var snapshot = ParseSnapshot(e.PayloadJson);
                 var providerId = snapshot?.ProviderId
                     ?? (e.SeriesKey?.StartsWith("mb:", StringComparison.Ordinal) == true
                         ? e.SeriesKey[3..]

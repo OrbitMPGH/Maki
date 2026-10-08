@@ -845,4 +845,30 @@ public sealed class ActivityStatsTests : IDisposable
         Assert.Single(open.Added);
         Assert.Single(open.Removed);
     }
+
+    [Fact]
+    public async Task YearsOnlyHeldByHiddenFolderEventsAreNotOfferedToRestrictedCallers()
+    {
+        var reader = _db.SeedUser("restricted", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        var hidden = _db.SeedSeries("Hidden");
+        var granted = _db.SeedSeries("Granted");
+        using (var db = _db.NewContext())
+        {
+            db.UserRootFolders.Add(new UserRootFolder
+            {
+                UserId = reader, RootFolderId = db.Series.Single(s => s.Id == granted).RootFolderId
+            });
+            db.SaveChanges();
+        }
+
+        AddEvent(StatsEventType.SeriesAdded, new DateTime(2023, 5, 1, 0, 0, 0, DateTimeKind.Utc), 1, hidden, "Hidden");
+        AddEvent(StatsEventType.SeriesAdded, new DateTime(2024, 5, 1, 0, 0, 0, DateTimeKind.Utc), 1, granted, "Granted");
+
+        var restricted = await Activity(caller: reader, allRootFolders: false)
+            .YearsAsync(reader, 0, CancellationToken.None);
+        var open = await Activity().YearsAsync(TestUser, 0, CancellationToken.None);
+
+        Assert.Equal([2024], restricted);
+        Assert.Equal([2024, 2023], open);
+    }
 }
