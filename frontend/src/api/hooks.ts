@@ -1985,7 +1985,7 @@ export function useDeleteSeriesFiles(seriesId: number) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
-      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }
@@ -3252,8 +3252,7 @@ export function useRenameSeries(seriesId: number) {
         body: JSON.stringify({ fingerprint }),
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
-      void queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'rename-preview'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }
