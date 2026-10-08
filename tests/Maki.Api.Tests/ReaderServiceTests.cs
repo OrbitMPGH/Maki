@@ -840,6 +840,30 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.Contains(Events(), e => e.Type == StatsEventType.ReadingTime && e.Value == 120);
     }
 
+    /// <summary>Opening a watched chapter is not finishing it: only reaching the last page counts as the read.</summary>
+    [Fact]
+    public async Task OpeningAWatchedChapterDoesNotCountItAsRead()
+    {
+        var (_, chapters) = SeedFromCbz("peek.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        await reader.MarkWatchedAsync([chapters[1m]], CancellationToken.None);
+
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        var completed = await reader.SaveProgressAsync(slice!, 0, null, new(5, false), CancellationToken.None);
+
+        Assert.False(completed);
+        using (var db = _db.NewContext(TestUser))
+        {
+            var row = db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]);
+            Assert.False(row.Completed);
+            Assert.False(row.Watched);
+        }
+
+        Assert.DoesNotContain(Events(), e => e.Type == StatsEventType.ChaptersRead);
+
+        Assert.True(await reader.SaveProgressAsync(slice!, 2, null, new(60, true), CancellationToken.None));
+    }
+
     /// <summary>A watched tick is not a start, so the first genuine read redates the row.</summary>
     [Fact]
     public async Task ReadingAWatchedChapterRedatesItsStart()

@@ -385,7 +385,9 @@ public class ReaderService(
         // The resume position is free to move backwards; completion is not.
         row.PageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, slice.PageCount - 1));
         row.PageCount = slice.PageCount;
-        row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
+        // A watched row's Completed came from the tick, not from reading, so it does not carry over:
+        // opening the chapter has to reach the last page (or say completed outright) to count.
+        row.Completed = completed ?? ((row.Completed && !row.Watched) || row.PageIndex >= slice.PageCount - 1);
         var justCompleted = row.Completed && !wasCompleted;
         var reportedSeconds = Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
         row.ReadSeconds += reportedSeconds;
