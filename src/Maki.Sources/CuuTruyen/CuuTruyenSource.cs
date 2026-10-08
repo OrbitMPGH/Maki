@@ -374,7 +374,9 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
     private static IImageEncoder EncoderFor(Image source) => source.Metadata.DecodedImageFormat switch
     {
         null or JpegFormat => new JpegEncoder { Quality = ReencodeQuality },
-        WebpFormat => new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = ReencodeQuality },
+        WebpFormat => source.Metadata.GetWebpMetadata().FileFormat == WebpFileFormatType.Lossless
+            ? new WebpEncoder { FileFormat = WebpFileFormatType.Lossless }
+            : new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = ReencodeQuality },
         { } format => source.Configuration.ImageFormatsManager.GetEncoder(format),
     };
 

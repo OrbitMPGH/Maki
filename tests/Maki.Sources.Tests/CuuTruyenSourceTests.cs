@@ -244,6 +244,37 @@ public class CuuTruyenSourceTests
         Assert.Equal(90, result.Metadata.GetJpegMetadata().Quality);
     }
 
+    [Fact]
+    public async Task UnscrambleAsync_keeps_a_lossless_webp_lossless()
+    {
+        const string drmData =
+            "EEcATQYJAhsEBgVEAAcJHgIEBE0BDAIbBAYFRAkaCAYDTQUBAAkfBwUBSQkM" +
+            "BxQCBgFIBgAJHwcAA0kOCQcUAgYB";
+
+        using var original = new Image<Rgba32>(32, 1152);
+        for (var y = 0; y < original.Height; y++)
+        {
+            for (var x = 0; x < original.Width; x++)
+            {
+                original[x, y] = new Rgba32((byte)(y % 251), (byte)(x * 7), (byte)(y / 5), 255);
+            }
+        }
+
+        using var encoded = new MemoryStream();
+        await original.SaveAsync(encoded, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder
+        {
+            FileFormat = SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossless
+        });
+
+        var unscrambled = await CuuTruyenSource.UnscrambleAsync(encoded.ToArray(), drmData);
+        using var result = Image.Load<Rgba32>(unscrambled);
+
+        Assert.Equal(
+            SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossless,
+            result.Metadata.GetWebpMetadata().FileFormat);
+        Assert.Equal(original[3, 0], result[3, 300]);
+    }
+
     /// <summary>
     /// Proves the descrambler actually moves pixels rather than merely producing an image of the
     /// right size: the mapped destination strip must closely match the source strip it came from.
