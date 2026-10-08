@@ -84,7 +84,8 @@ msgstr "{0, plural, other {#개 챕터 연결 변경}}"
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, other {#개 챕터 선택됨}}"
 
-#. placeholder {0}: chapterIds.length
+#. placeholder {0}: removed.length
+#. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
@@ -8230,10 +8231,17 @@ msgid "Linked"
 msgstr "연결됨"
 
 #: src/components/LinkChaptersModal.tsx
-#: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "{chapterPhrase}을(를) {fileName}에 연결함"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Linked {linkedPhrase} to {fileName}"
+msgstr ""
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Linked {linkedPhrase} to {fileName} and unlinked {unlinkedPhrase}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -15856,6 +15864,10 @@ msgstr "알 수 없는 소스"
 #, fuzzy
 msgid "Unlink"
 msgstr "연결 해제"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Unlinked {unlinkedPhrase} from {fileName}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx

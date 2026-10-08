@@ -84,7 +84,8 @@ msgstr "{0, plural, other {# 个章节已重新关联}}"
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, other {# 个章节已选中}}"
 
-#. placeholder {0}: chapterIds.length
+#. placeholder {0}: removed.length
+#. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
@@ -8230,10 +8231,17 @@ msgid "Linked"
 msgstr "已关联"
 
 #: src/components/LinkChaptersModal.tsx
-#: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "已将 {chapterPhrase} 与 {fileName} 关联"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Linked {linkedPhrase} to {fileName}"
+msgstr ""
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Linked {linkedPhrase} to {fileName} and unlinked {unlinkedPhrase}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -15856,6 +15864,10 @@ msgstr "未知来源"
 #, fuzzy
 msgid "Unlink"
 msgstr "取消关联"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Unlinked {unlinkedPhrase} from {fileName}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx

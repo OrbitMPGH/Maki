@@ -84,7 +84,8 @@ msgstr "{0, plural, one {Ponownie powiązano # rozdział} few {Ponownie powiąza
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {Wybrano # rozdział} few {Wybrano # rozdziały} many {Wybrano # rozdziałów} other {Wybrano # rozdziału}}"
 
-#. placeholder {0}: chapterIds.length
+#. placeholder {0}: removed.length
+#. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
@@ -8230,10 +8231,17 @@ msgid "Linked"
 msgstr "Połączony"
 
 #: src/components/LinkChaptersModal.tsx
-#: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "Połączono {chapterPhrase} z {fileName}"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Linked {linkedPhrase} to {fileName}"
+msgstr ""
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Linked {linkedPhrase} to {fileName} and unlinked {unlinkedPhrase}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -15856,6 +15864,10 @@ msgstr "Nieznane źródło"
 #, fuzzy
 msgid "Unlink"
 msgstr "Odłącz"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Unlinked {unlinkedPhrase} from {fileName}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
