@@ -44,6 +44,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
+import { okButtonVars } from '../components/ui/status'
 import { useLabel } from '../i18n-context'
 import { formatDate } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -407,6 +408,7 @@ export default function RequestsPage() {
             </Button>
             <Button
               color="var(--ok)"
+              vars={okButtonVars}
               onClick={submitApprove}
               loading={approve.isPending}
               disabled={needsRootFolder && !rootFolderId}
