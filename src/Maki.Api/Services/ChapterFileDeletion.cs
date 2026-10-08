@@ -155,24 +155,14 @@ public class ChapterFileDeletion(
                 logger.LogInformation("Kept {File} on disk: another series' record still points at it", absolute);
                 kept++;
             }
+            else if (DeleteFromDisk(absolute))
+            {
+                deleted++;
+            }
             else
             {
-                try
-                {
-                    File.Delete(absolute);
-                }
-                catch (DirectoryNotFoundException)
-                {
-                    // The folder is already gone, so the file is too.
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    logger.LogWarning(ex, "Could not delete {File}, leaving its chapters linked", file.RelativePath);
-                    failed++;
-                    continue;
-                }
-
-                deleted++;
+                failed++;
+                continue;
             }
 
             foreach (var chapter in linked[file.Id])

@@ -1741,6 +1741,7 @@ export interface RelinkResult {
   moved: number
   superseded: number
   deleted: number
+  kept: number
   failed: number
   freedBytes: number
 }

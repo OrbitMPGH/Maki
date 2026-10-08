@@ -140,13 +140,13 @@ public class SourceMappingRemovalService(
                     continue;
                 }
 
-                if (target.Claimed)
+                if (target.Deletable)
                 {
-                    logger.LogInformation("Kept {File} on disk: another record still points at it", target.AbsolutePath);
+                    toDelete.Add(target);
                 }
                 else
                 {
-                    toDelete.Add(target);
+                    logger.LogInformation("Kept {File} on disk: another record still points at it", target.AbsolutePath);
                 }
 
                 archives.Invalidate(file.Id);

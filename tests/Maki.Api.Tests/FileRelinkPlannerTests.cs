@@ -535,6 +535,7 @@ public class FileRelinkPlannerTests : IDisposable
         var result = await ApplyAsync(seriesId, deleteSuperseded: true, confirmedSuperseded: [singlePath]);
 
         Assert.Equal(0, result.Deleted);
+        Assert.Equal(1, result.Kept);
         Assert.Equal(0, result.Failed);
         Assert.True(File.Exists(Path.Combine(_root, singlePath)));
         using var check = _db.NewContext();

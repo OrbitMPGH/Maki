@@ -69,7 +69,8 @@ public record RelinkPlan(
     long SupersededBytes,
     int Unrecognized);
 
-public record RelinkResult(int Moved, int Superseded, int Deleted, int Failed, long FreedBytes);
+/// <param name="Kept">Superseded files left on disk because another series' record still points at them.</param>
+public record RelinkResult(int Moved, int Superseded, int Deleted, int Kept, int Failed, long FreedBytes);
 
 /// <summary>
 /// Rebuilds a series' chapter-to-file map from what is on disk, volumes first. The incremental
@@ -193,6 +194,7 @@ public class FileRelinkPlanner(
         await db.SaveChangesAsync(ct);
 
         var deleted = 0;
+        var kept = 0;
         var failed = 0;
         long freed = 0;
         var confirmed = confirmedSuperseded.Select(LibraryPaths.ComparisonKey).ToHashSet(StringComparer.Ordinal);
@@ -215,13 +217,14 @@ public class FileRelinkPlanner(
                     continue;
                 }
 
-                if (target.Claimed)
+                if (target.Deletable)
                 {
-                    logger.LogInformation("Kept superseded {File} on disk: another record still points at it", target.AbsolutePath);
+                    toDelete.Add((target.AbsolutePath, candidate.Size));
                 }
                 else
                 {
-                    toDelete.Add((target.AbsolutePath, candidate.Size));
+                    logger.LogInformation("Kept superseded {File} on disk: another record still points at it", target.AbsolutePath);
+                    kept++;
                 }
 
                 if (candidate.Record is not null)
@@ -245,6 +248,7 @@ public class FileRelinkPlanner(
                 failed++;
             }
         }
+
         foreach (var id in touched)
         {
             archives.Invalidate(id);
@@ -258,7 +262,7 @@ public class FileRelinkPlanner(
                 series.Title, moved, plan.SupersededCount, deleted);
         }
 
-        return new RelinkResult(moved, plan.SupersededCount, deleted, failed, freed);
+        return new RelinkResult(moved, plan.SupersededCount, deleted, kept, failed, freed);
     }
 
     private async Task<Built> BuildAsync(Series series, RelinkOptions options, CancellationToken ct)
