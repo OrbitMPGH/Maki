@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text.Json;
 using Maki.Api.Hubs;
 using Maki.Core.Reading;
+using Maki.Core.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -228,6 +229,27 @@ public class HealthWorkspaceTests : IDisposable
         var op=await service.PreviewDeleteAsync(file.Id,file.Version,1,default);
         await Assert.ThrowsAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,false,false,default));
         Assert.Throws<InvalidOperationException>(()=>HealthPaths.Resolve(root,"../outside.cbz"));
+    }
+    [Fact] public void A_library_root_that_is_itself_a_link_resolves_but_links_inside_it_do_not()
+    {
+        var real=Directory.CreateTempSubdirectory("maki-health-real-").FullName;
+        var outside=Directory.CreateTempSubdirectory("maki-health-outside-").FullName;
+        var linkedRoot=Path.Combine(root,"library");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(real,"Series"));
+            if(!TestLinks.TryLinkDirectory(linkedRoot,real)) return;
+            Assert.Equal(Path.Combine(linkedRoot,"one.cbz"),HealthPaths.Resolve(linkedRoot,"one.cbz"));
+            var inner=Path.Combine(real,"escape");
+            if(!TestLinks.TryLinkDirectory(inner,outside)) return;
+            Assert.Throws<InvalidOperationException>(()=>HealthPaths.Resolve(linkedRoot,"escape/one.cbz"));
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(Path.Combine(real,"escape"));
+            TestLinks.UnlinkDirectory(linkedRoot);
+            Directory.Delete(real,true);Directory.Delete(outside,true);
+        }
     }
     [Fact] public async Task Interrupted_deletion_finishes_links_only_when_file_is_gone()
     {
