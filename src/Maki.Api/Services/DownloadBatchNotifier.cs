@@ -1,4 +1,4 @@
-﻿using Maki.Core.Entities;
+using Maki.Core.Entities;
 using Maki.Api.Localization;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
@@ -36,6 +36,7 @@ public sealed class DownloadBatchNotifier : IDisposable
     private readonly IUserLocaleResolver _locales;
     private readonly TimeProvider _time;
     private readonly ILogger<DownloadBatchNotifier> _logger;
+    private readonly IDownloadQueueLiveness? _liveness;
     private readonly Lock _lock = new();
     private readonly Dictionary<int, Batch> _batches = [];
     private readonly ITimer _sweeper;
@@ -46,7 +47,8 @@ public sealed class DownloadBatchNotifier : IDisposable
         IMessageCatalog localizer,
         IUserLocaleResolver locales,
         TimeProvider time,
-        ILogger<DownloadBatchNotifier> logger)
+        ILogger<DownloadBatchNotifier> logger,
+        IDownloadQueueLiveness? liveness = null)
     {
         _notifications = notifications;
         _inbox = inbox;
@@ -54,6 +56,7 @@ public sealed class DownloadBatchNotifier : IDisposable
         _locales = locales;
         _time = time;
         _logger = logger;
+        _liveness = liveness;
         _sweeper = time.CreateTimer(_ => _ = SweepStaleAsync(), null, SweepInterval, SweepInterval);
     }
 
@@ -242,28 +245,51 @@ public sealed class DownloadBatchNotifier : IDisposable
 
     /// <summary>
     /// Closes batches that stopped reporting outcomes. Every terminal state reports immediately
-    /// (a failure is reported when it fails, not when its retries run out) and the longest an item
-    /// can legitimately stall is a rate-limit cooldown, so an hour of silence means the batch leaked.
+    /// (a failure is reported when it fails, not when its retries run out), so an hour of silence
+    /// from a batch whose items are all settled means it leaked.
+    /// <para>
+    /// Silence alone is not enough, though: the queue is FIFO across series, so a series queued
+    /// behind a long backlog legitimately reports nothing for hours. Closing such a batch would
+    /// hand every one of its chapters back to per-chapter notifications, the flood this class
+    /// exists to stop. A quiet batch is therefore closed only once none of its pending ids is still
+    /// active in the queue; while any is, the batch counts as alive and its clocks move on, which
+    /// also keeps the rotation in <see cref="QueuedAsync"/> from cutting it.
+    /// </para>
     /// </summary>
     internal async Task SweepStaleAsync()
     {
-        List<(int SeriesId, Batch Batch)> stale;
+        List<(int SeriesId, Batch Batch, int[] Pending)> quiet;
         lock (_lock)
         {
             var cutoff = _time.GetUtcNow() - StaleAfter;
-            stale = _batches
+            quiet = _batches
                 .Where(kv => kv.Value.LastActivity <= cutoff)
-                .Select(kv => (kv.Key, kv.Value))
+                .Select(kv => (kv.Key, kv.Value, kv.Value.Pending.ToArray()))
                 .ToList();
-
-            foreach (var (seriesId, _) in stale)
-            {
-                _batches.Remove(seriesId);
-            }
         }
 
-        foreach (var (seriesId, batch) in stale)
+        foreach (var (seriesId, batch, pending) in quiet)
         {
+            var alive = _liveness is null
+                ? new HashSet<int>()
+                : await _liveness.StillActiveAsync(pending);
+
+            lock (_lock)
+            {
+                if (!ReferenceEquals(_batches.GetValueOrDefault(seriesId), batch))
+                {
+                    continue;
+                }
+
+                if (alive.Count > 0)
+                {
+                    batch.LastActivity = batch.LastReport = _time.GetUtcNow();
+                    continue;
+                }
+
+                _batches.Remove(seriesId);
+            }
+
             _logger.LogWarning(
                 "Download batch for series {SeriesId} went quiet with {Pending} item(s) unfinished; closing it",
                 seriesId, batch.Pending.Count);

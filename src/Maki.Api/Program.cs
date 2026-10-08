@@ -791,6 +791,7 @@ try
     builder.Services.AddSingleton<UpgradeScanTracker>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadQueueService>();
+    builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
