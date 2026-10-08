@@ -170,10 +170,11 @@ public class HealthWorkspaceTests : IDisposable
         var file=await SeedPages(db,4,2);
         Assert.False(HealthScanService.Analysis(file).Verified);
         Assert.Equal(0,file.VerifiedVersion);
-        var analyzed=file.AnalyzedAt;
+        var analysis=file.AnalysisJson;
         // A file nobody asked to read is current at the index version, whatever the verify one is.
         await new HealthScanService(db).AnalyzeAsync(file,root,false,default);
-        Assert.Equal(analyzed,file.AnalyzedAt);
+        Assert.Equal(analysis,file.AnalysisJson);
+        Assert.Equal(0,file.VerifiedVersion);
     }
     [Fact] public void Every_health_action_and_preview_is_admin_only()
     {
@@ -289,6 +290,22 @@ public class HealthWorkspaceTests : IDisposable
         await new HealthScanService(db).RunAsync(scan,default);
         Assert.Equal("completed",scan.Status);
         Assert.DoesNotContain(db.HealthHistory,h=>h.Kind=="scan");
+    }
+    [Fact] public async Task A_verify_of_a_file_that_cannot_be_opened_records_a_finding_and_stamps_it_analysed()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        file.AnalyzedAt=null;await db.SaveChangesAsync();
+        await using(new FileStream(Path.Combine(root,"one.cbz"),FileMode.Open,FileAccess.Read,FileShare.None))
+            await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,true);
+        Assert.NotNull(file.AnalyzedAt);
+        Assert.Contains(db.HealthFindings.Local,f=>f.Kind=="unreadable"&&f.State=="open");
+    }
+    [Fact] public async Task An_unchanged_verified_file_is_still_stamped_analysed()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        file.AnalyzedAt=null;await db.SaveChangesAsync();
+        await new HealthScanService(db).AnalyzeAsync(file,root,false,default,0,true);
+        Assert.NotNull(file.AnalyzedAt);
     }
     [Fact] public async Task Unavailable_root_does_not_resolve_prior_findings()
     {

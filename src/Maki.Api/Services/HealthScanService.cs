@@ -222,17 +222,34 @@ public class HealthScanService(MakiDbContext db)
         // not going to be read anyway.
         var stale = file.AnalyzerVersion != ArchiveHealthAnalyzer.IndexVersion ||
                     (verify && file.VerifiedVersion != ArchiveHealthAnalyzer.VerifyVersion);
-        if (!force && !stale && file.Status == "complete" && file.Size == size && file.ModifiedAt == modified) return;
+        if (!force && !stale && file.Status == "complete" && file.Size == size && file.ModifiedAt == modified)
+        {
+            // Nothing to redo, but the worker re-queues a series whose files were added after they were
+            // last analysed, so say they have been looked at.
+            file.AnalyzedAt = DateTime.UtcNow;
+            return;
+        }
         ArchiveAnalysis? analysis = null;
         string? hash = null;
         // Only a verify has a content hash to look the cache up by, and only a verify is expensive
         // enough to be worth caching. Indexing is cheaper than the lookup would be.
         if (verify && before.Exists)
         {
-            await using var stream = File.OpenRead(path);
-            hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
-            var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.VerifyVersion}"], ct);
-            if (cached != null) analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
+            try
+            {
+                await using var stream = File.OpenRead(path);
+                hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
+                var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.VerifyVersion}"], ct);
+                if (cached != null) analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Recorded as a finding with a timestamp rather than thrown: an unthrown failure
+                // is analysed once, where a thrown one leaves AnalyzedAt behind and is retried forever.
+                var denied = ex is UnauthorizedAccessException;
+                analysis = new ArchiveAnalysis("partial", null, [],
+                    [new("unreadable", "warning", denied ? "health.finding.accessDenied" : "health.finding.unreadable")]);
+            }
         }
         // Hand the hash on: checking the cache already read the whole archive, and the analyzer
         // would otherwise read and hash every file in the library a second time.
