@@ -19,8 +19,9 @@ public static partial class VolumeChapterScanner
     // The page ("p113") and volume ("v05") markers start with other letters. The lookbehind is
     // ReleaseNameParser's, keeping "Arc049" and the "9c5" of a hashed page name out; the lookahead
     // is extra because page names carry hex hashes ("x1-c3f0...") and tags like "[c2c]", where the
-    // digits run straight into another letter.
-    [GeneratedRegex(@"(?<![a-z0-9])c(?:h(?:apter)?)?\.?\s*((?>[0-9]+(?:\.[0-9]+)?))(?![a-z])", RegexOptions.IgnoreCase)]
+    // digits run straight into a hex letter. "c049p113" still reads as chapter 49. Only a page's
+    // first marker counts, so a title token like "C3 - c001 - p001.png" reads as chapter 3.
+    [GeneratedRegex(@"(?<![a-z0-9])c(?:h(?:apter)?)?\.?\s*((?>[0-9]+(?:\.[0-9]+)?))(?![a-f])", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterMarker();
 
     /// <summary>

@@ -46,10 +46,12 @@ public static partial class ReleaseNameParser
     [GeneratedRegex(@"(?<![a-z0-9])v(?:ol(?:ume)?)?\.?[\s_]*([0-9]+)(?:\s*-\s*(?:v(?:ol)?\.?[\s_]*)?([0-9]+))?", RegexOptions.IgnoreCase)]
     internal static partial Regex VolumePattern();
 
-    // The "h" is optional because a bare "c049" is the scanlation convention, and this has to read
-    // the same marker VolumeChapterScanner reads off the page names inside an archive — the two
-    // disagreeing meant an archive whose own name said c001 parsed as nothing at all while its
-    // pages parsed fine. The lookbehind is what keeps "Comic" and "Arc049" out. A range takes a bare
+    // The "h" is optional because a bare "c049" is the scanlation convention, and this has to accept
+    // the markers VolumeChapterScanner reads off the page names inside an archive: when the two
+    // disagreed, an archive whose own name said c001 parsed as nothing at all while its pages parsed
+    // fine. The scanner is stricter (it also refuses digits running into a hex letter, for hashed
+    // page names), which a file name has no need for. The lookbehind is what keeps "Comic" and
+    // "Arc049" out. A range takes a bare
     // hyphen only: Maki's own names put " - " between the number and the chapter title, and
     // "Ch.10 - 15 Years Later" is chapter 10, not 10 to 15.
     [GeneratedRegex(@"(?<![a-z0-9])c(?:h(?:apter)?)?\.?[\s_]*([0-9]+(?:\.[0-9]+)?)(?:-(?:c(?:h(?:apter)?)?\.?)?([0-9]+(?:\.[0-9]+)?))?", RegexOptions.IgnoreCase)]
