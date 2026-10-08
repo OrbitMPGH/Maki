@@ -84,12 +84,14 @@ export function ScrobbleSection() {
             <Group grow>
               <TextInput
                 label={t`Client ID`}
+                autoComplete="off"
                 value={form?.aniListClientId ?? ''}
                 onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
               />
               <TextInput
                 label={t`Client secret`}
                 type="password"
+                autoComplete="new-password"
                 value={form?.aniListClientSecret ?? ''}
                 onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
               />
@@ -114,12 +116,14 @@ export function ScrobbleSection() {
             <Group grow>
               <TextInput
                 label={t`Client ID`}
+                autoComplete="off"
                 value={form?.malClientId ?? ''}
                 onChange={(e) => set({ malClientId: e.currentTarget.value })}
               />
               <TextInput
                 label={t`Client secret`}
                 type="password"
+                autoComplete="new-password"
                 value={form?.malClientSecret ?? ''}
                 onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
               />
@@ -135,6 +139,7 @@ export function ScrobbleSection() {
           label={t`Personal Access Token`}
           description={t`From your MangaBaka settings. No OAuth needed.`}
           type="password"
+          autoComplete="new-password"
           placeholder="mb-..."
           value={form?.mangaBakaToken ?? ''}
           onChange={(e) => set({ mangaBakaToken: e.currentTarget.value })}
@@ -147,12 +152,14 @@ export function ScrobbleSection() {
         <Group grow>
           <TextInput
             label={t`Email`}
+            autoComplete="off"
             value={form?.kitsuEmail ?? ''}
             onChange={(e) => set({ kitsuEmail: e.currentTarget.value })}
           />
           <TextInput
             label={t`Password`}
             type="password"
+            autoComplete="new-password"
             value={form?.kitsuPassword ?? ''}
             onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
           />

@@ -243,12 +243,14 @@ export function OidcSection() {
         <Group grow align="flex-start">
           <TextInput
             label={t`Client ID`}
+            autoComplete="off"
             value={draft.clientId}
             onChange={(e) => setDraft({ ...draft, clientId: e.currentTarget.value })}
           />
           <TextInput
             label={t`Client secret`}
             type="password"
+            autoComplete="new-password"
             value={draft.clientSecret}
             onChange={(e) => setDraft({ ...draft, clientSecret: e.currentTarget.value })}
           />
