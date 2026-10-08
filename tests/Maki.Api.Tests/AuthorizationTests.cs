@@ -406,6 +406,45 @@ public class AuthorizationTests
         Assert.Equal(TimeSpan.FromDays(AuthRuntimeOptions.DefaultSessionDays), options.SessionLifetime);
     }
 
+    [Theory]
+    [InlineData("10.0.0.1")]
+    [InlineData("172.18.0.0/16")]
+    [InlineData("0.0.0.0/0")]
+    [InlineData("10.0.0.0/32")]
+    [InlineData("fd00::/8")]
+    [InlineData("::/128")]
+    public void TrustedProxyEntriesThatApplyAreAccepted(string entry)
+    {
+        Assert.True(AuthRuntimeOptions.TryParseTrustedProxy(entry, out var proxy, out var network));
+        Assert.True(proxy is not null || network is not null);
+    }
+
+    // Each of these used to save (only the address half was checked) and then be dropped at startup,
+    // which left the forwarded-headers middleware with no known proxy and trusting every client.
+    [Theory]
+    [InlineData("10.0.0.0/abc")]
+    [InlineData("10.0.0.0/")]
+    [InlineData("172.16.0.0/-1")]
+    [InlineData("172.16.0.0/+8")]
+    [InlineData("10.0.0.0/33")]
+    [InlineData("fd00::/129")]
+    [InlineData("not-an-address")]
+    [InlineData("not-an-address/8")]
+    [InlineData("172.16/12")]
+    [InlineData("10/8")]
+    [InlineData("10")]
+    public void TrustedProxyEntriesThatWouldNotApplyAreRefused(string entry)
+    {
+        Assert.False(AuthRuntimeOptions.TryParseTrustedProxy(entry, out _, out _));
+    }
+
+    [Fact]
+    public void TrustedProxyNetworkClearsHostBits()
+    {
+        Assert.True(AuthRuntimeOptions.TryParseTrustedProxy("172.18.5.9/16", out _, out var network));
+        Assert.Equal(System.Net.IPNetwork.Parse("172.18.0.0/16"), network);
+    }
+
     [Fact]
     public async Task SecuritySettingsAreReadBack()
     {

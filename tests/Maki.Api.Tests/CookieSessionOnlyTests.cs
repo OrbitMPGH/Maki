@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// Admin user management and the token-minting settings refuse an API key, even an admin's Full one,
+/// Admin user management, the token-minting and security settings, and backup download and restore refuse an API key, even an admin's Full one,
 /// through the real pipeline: a leaked key must not be able to create accounts, reset passwords or
 /// repoint single sign-on, each of which outlives revoking it.
 /// </summary>
@@ -78,6 +78,14 @@ public sealed class CookieSessionOnlyTests : IDisposable
             await client.PostAsJsonAsync("/api/v1/users", new { username = "minted", password = "a long password" }),
             await client.PutAsJsonAsync("/api/v1/settings/oidc", new { enabled = false }),
             await client.PostAsync("/api/v1/settings/opds/token", null),
+            await client.PutAsJsonAsync("/api/v1/settings/security", new
+            {
+                requireHttps = false, trustedProxies = "0.0.0.0/0", lockoutMaxAttempts = 0, lockoutMinutes = 1,
+                sessionDays = 30
+            }),
+            await client.GetAsync("/api/v1/system/backups/maki-backup-missing.zip"),
+            await client.PostAsync("/api/v1/system/backups/maki-backup-missing.zip/restore", null),
+            await client.PostAsync("/api/v1/system/backups/restore-upload", new MultipartFormDataContent()),
         };
 
         foreach (var response in refused)

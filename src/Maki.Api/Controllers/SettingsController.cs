@@ -2113,7 +2113,9 @@ public class SettingsController(
         AuthRuntimeOptions.LockoutMinutesFrom(await settings.GetAsync(SettingKeys.AuthLockoutMinutes, ct)),
         AuthRuntimeOptions.SessionDaysFrom(await settings.GetAsync(SettingKeys.AuthSessionDays, ct))));
 
+    // Session cookie only: lockout and the trusted-proxy list outlive revoking a leaked admin key.
     [Authorize(Policy = Policies.Admin)]
+    [CookieSessionOnly]
     [HttpPut("security")]
     public async Task<IActionResult> SetSecurity([FromBody] SecuritySettings request, CancellationToken ct)
     {
@@ -2123,8 +2125,7 @@ public class SettingsController(
             // Validated on save rather than silently ignored at startup: a typo here means forwarded
             // headers are quietly dropped, which shows up much later as every audit-log entry and
             // every rate-limit bucket carrying the proxy's address instead of the client's.
-            var address = entry.Contains('/') ? entry.Split('/', 2)[0] : entry;
-            if (!System.Net.IPAddress.TryParse(address, out _))
+            if (!AuthRuntimeOptions.TryParseTrustedProxy(entry, out _, out _))
             {
                 return this.Fail(localizer, "error.settings.trustedProxyInvalid", new { entry });
             }

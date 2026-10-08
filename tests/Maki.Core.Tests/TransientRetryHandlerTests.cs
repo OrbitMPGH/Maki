@@ -64,6 +64,16 @@ public class TransientRetryHandlerTests
     }
 
     [Fact]
+    public async Task Does_Not_Retry_A_Blocked_Destination()
+    {
+        var (client, inner) = Build(
+            () => throw new HttpRequestException("connect", new BlockedDestinationException("private")));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("https://example.test/x"));
+        Assert.Equal(1, inner.Calls);
+    }
+
+    [Fact]
     public async Task Does_Not_Retry_Success()
     {
         var (client, inner) = Build(Status(HttpStatusCode.OK));
