@@ -496,6 +496,24 @@ public class FileRelinkPlannerTests : IDisposable
     }
 
     [Fact]
+    public async Task Plan_ignores_a_series_folder_that_escapes_the_root()
+    {
+        var seriesId = SeedSeries(s => s.FolderName = Path.Combine("..", "Outside"));
+        using (var db = _db.NewContext())
+        {
+            db.RootFolders.Find(db.Series.Single(s => s.Id == seriesId).RootFolderId)!.Path = Path.Combine(_root, "lib");
+            db.SaveChanges();
+        }
+
+        Directory.CreateDirectory(Path.Combine(_root, "lib"));
+        WriteCbz(Path.Combine(_root, "Outside", "Series v01.cbz"), ["Series - c001 - p001.png"]);
+
+        var plan = await PlanAsync(seriesId);
+
+        Assert.Empty(plan.Files);
+    }
+
+    [Fact]
     public async Task Apply_keeps_a_superseded_file_another_series_records()
     {
         var (seriesId, _, singlePath) = SeedSupersededSingle();

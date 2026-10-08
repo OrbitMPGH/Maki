@@ -278,8 +278,7 @@ public class FileRelinkPlanner(
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
         {
-            var seriesDir = Path.Combine(rootFolder.Path, folder);
-            if (!Directory.Exists(seriesDir))
+            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir || !Directory.Exists(seriesDir))
             {
                 continue;
             }
