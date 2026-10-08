@@ -36,7 +36,7 @@ States: `done <sha>`, `skipped (reason)`, `decision (question)`, `pending`.
 | D | FE-READER-04 | pending |
 | D | FE-READER-05 | pending |
 | D | FE-READER-13 | pending |
-| E | FE-SETTINGS-33 | pending |
+| E | FE-SETTINGS-33 | done 9c5b9ba2 |
 | CORE | CORE-01 | pending |
 | CORE | CORE-05 | pending |
 | CORE | CORE-08 | pending |
