@@ -351,6 +351,29 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Assert.Equal(409, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
     }
 
+    [Fact]
+    public async Task Relink_waits_for_the_series_lock()
+    {
+        var seriesId = _db.SeedSeries();
+        using (var seed = _db.NewContext())
+        {
+            seed.DownloadQueue.Add(new DownloadQueueItem { SeriesId = seriesId, Status = QueueStatus.Downloading });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(userId: 1);
+        Task<IActionResult> relink;
+        using (await SeriesLocks.SeriesAsync(seriesId, CancellationToken.None))
+        {
+            relink = Controller(db).Relink(
+                seriesId, new SeriesController.RelinkRequest(null, null, DeleteSuperseded: false), CancellationToken.None);
+            await Task.Delay(200);
+            Assert.False(relink.IsCompleted);
+        }
+
+        Assert.Equal(409, Assert.IsAssignableFrom<ObjectResult>(await relink).StatusCode);
+    }
+
     private static SeriesFilesSummaryDto Summary(IActionResult result) =>
         Assert.IsType<SeriesFilesSummaryDto>(Assert.IsType<OkObjectResult>(result).Value);
 

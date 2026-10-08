@@ -64,6 +64,49 @@ public class ChapterFileDeletion(
         return claimed;
     }
 
+    /// <summary>A file about to lose its row. <see cref="AbsolutePath"/> is null when it resolves outside the root or through a linked folder.</summary>
+    public sealed record DiskTarget(string RelativePath, string? AbsolutePath, bool Claimed)
+    {
+        public bool Deletable => AbsolutePath is not null && !Claimed;
+    }
+
+    /// <summary>
+    /// Resolves <paramref name="relativePaths"/> for deletion and checks each against
+    /// <see cref="ClaimedAsync"/>. For callers that remove rows outright: they save the rows first
+    /// and only then pass each <see cref="DiskTarget.Deletable"/> path to <see cref="DeleteFromDisk"/>,
+    /// so a failed save never leaves rows behind for files already gone.
+    /// </summary>
+    public async Task<List<DiskTarget>> TargetsAsync(
+        string rootPath, IEnumerable<string> relativePaths, IReadOnlySet<int> leaving, CancellationToken ct)
+    {
+        var resolved = relativePaths
+            .Select(p => (Relative: p, Absolute: LibraryPaths.ResolveForDelete(rootPath, p)))
+            .ToList();
+        var claimed = await ClaimedAsync(resolved.Select(r => r.Absolute).OfType<string>().ToList(), leaving, ct);
+        return resolved
+            .Select(r => new DiskTarget(r.Relative, r.Absolute, r.Absolute is not null && claimed.Contains(r.Absolute)))
+            .ToList();
+    }
+
+    /// <summary>Deletes one file resolved by <see cref="TargetsAsync"/>. A folder already gone counts as deleted.</summary>
+    public bool DeleteFromDisk(string absolutePath)
+    {
+        try
+        {
+            File.Delete(absolutePath);
+        }
+        catch (DirectoryNotFoundException)
+        {
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not delete {File}", absolutePath);
+            return false;
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// Deletes <paramref name="files"/>, all belonging to <paramref name="series"/>, and marks every
     /// chapter on them removed. The caller holds the series lock. A file another row still claims
@@ -112,24 +155,14 @@ public class ChapterFileDeletion(
                 logger.LogInformation("Kept {File} on disk: another series' record still points at it", absolute);
                 kept++;
             }
+            else if (DeleteFromDisk(absolute))
+            {
+                deleted++;
+            }
             else
             {
-                try
-                {
-                    File.Delete(absolute);
-                }
-                catch (DirectoryNotFoundException)
-                {
-                    // The folder is already gone, so the file is too.
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    logger.LogWarning(ex, "Could not delete {File}, leaving its chapters linked", file.RelativePath);
-                    failed++;
-                    continue;
-                }
-
-                deleted++;
+                failed++;
+                continue;
             }
 
             foreach (var chapter in linked[file.Id])

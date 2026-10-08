@@ -75,6 +75,8 @@ public class FileRelinkPlannerTests : IDisposable
             NullLogger<KavitaScanService>.Instance);
         var planner = new FileRelinkPlanner(
             context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), scans,
+            new ChapterFileDeletion(context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+                TimeProvider.System, NullLogger<ChapterFileDeletion>.Instance),
             NullLogger<FileRelinkPlanner>.Instance);
 
         var plan = await planner.PlanAsync(loaded, RelinkOptions.None);
@@ -494,6 +496,54 @@ public class FileRelinkPlannerTests : IDisposable
     }
 
     [Fact]
+    public async Task Plan_ignores_a_series_folder_that_escapes_the_root()
+    {
+        var seriesId = SeedSeries(s => s.FolderName = Path.Combine("..", "Outside"));
+        using (var db = _db.NewContext())
+        {
+            db.RootFolders.Find(db.Series.Single(s => s.Id == seriesId).RootFolderId)!.Path = Path.Combine(_root, "lib");
+            db.SaveChanges();
+        }
+
+        Directory.CreateDirectory(Path.Combine(_root, "lib"));
+        WriteCbz(Path.Combine(_root, "Outside", "Series v01.cbz"), ["Series - c001 - p001.png"]);
+
+        var plan = await PlanAsync(seriesId);
+
+        Assert.Empty(plan.Files);
+    }
+
+    [Fact]
+    public async Task Apply_keeps_a_superseded_file_another_series_records()
+    {
+        var (seriesId, _, singlePath) = SeedSupersededSingle();
+        var otherId = SeedSeries(s =>
+        {
+            s.Title = "Other";
+            s.SortTitle = "Other";
+            s.FolderName = "Other";
+        });
+        using (var db = _db.NewContext())
+        {
+            db.ChapterFiles.Add(new ChapterFile
+            {
+                SeriesId = otherId, RelativePath = singlePath, SourceName = "manual", DateAdded = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+
+        var result = await ApplyAsync(seriesId, deleteSuperseded: true, confirmedSuperseded: [singlePath]);
+
+        Assert.Equal(0, result.Deleted);
+        Assert.Equal(1, result.Kept);
+        Assert.Equal(0, result.Failed);
+        Assert.True(File.Exists(Path.Combine(_root, singlePath)));
+        using var check = _db.NewContext();
+        Assert.DoesNotContain(check.ChapterFiles, f => f.SeriesId == seriesId && f.RelativePath == singlePath);
+        Assert.Single(check.ChapterFiles, f => f.SeriesId == otherId);
+    }
+
+    [Fact]
     public async Task Apply_without_delete_leaves_a_confirmed_superseded_file_on_disk()
     {
         var (seriesId, _, singlePath) = SeedSupersededSingle();
@@ -512,6 +562,8 @@ public class FileRelinkPlannerTests : IDisposable
             NullLogger<KavitaScanService>.Instance);
         return new FileRelinkPlanner(
             context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), scans,
+            new ChapterFileDeletion(context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+                TimeProvider.System, NullLogger<ChapterFileDeletion>.Instance),
             NullLogger<FileRelinkPlanner>.Instance);
     }
 

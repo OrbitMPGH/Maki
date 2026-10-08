@@ -969,6 +969,12 @@ msgstr "Wymaga lokalnej bazy MangaBaka (Ustawienia → Metadane → lokalna baza
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr "Twój profil gustu wymaga lokalnej bazy danych MangaBaka (Ustawienia → Metadane → lokalna baza danych)"
 
+#. A grab names a release from an earlier search; the server no longer holds that search (it expired or was never run for this series).
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: This search result has expired. Search again, then grab the release.
+msgid "error.release.searchExpired"
+msgstr ""
+
 #. Auto-resolution note when an admin approves a request but somebody else already added the
 #. series first: stored on SeriesRequest.ResolutionNote and shown verbatim next to the admin's own
 #. free-text rejection notes, so it is rendered once, in the requester's language, at write time.

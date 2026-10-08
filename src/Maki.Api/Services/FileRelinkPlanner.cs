@@ -69,7 +69,8 @@ public record RelinkPlan(
     long SupersededBytes,
     int Unrecognized);
 
-public record RelinkResult(int Moved, int Superseded, int Deleted, int Failed, long FreedBytes);
+/// <param name="Kept">Superseded files left on disk because another series' record still points at them.</param>
+public record RelinkResult(int Moved, int Superseded, int Deleted, int Kept, int Failed, long FreedBytes);
 
 /// <summary>
 /// Rebuilds a series' chapter-to-file map from what is on disk, volumes first. The incremental
@@ -80,7 +81,11 @@ public record RelinkResult(int Moved, int Superseded, int Deleted, int Failed, l
 /// now sits on a volume is reported as superseded so its space can be reclaimed.
 /// </summary>
 public class FileRelinkPlanner(
-    MakiDbContext db, ReaderArchiveCache archives, KavitaScanService kavitaScans, ILogger<FileRelinkPlanner> logger)
+    MakiDbContext db,
+    ReaderArchiveCache archives,
+    KavitaScanService kavitaScans,
+    ChapterFileDeletion deletion,
+    ILogger<FileRelinkPlanner> logger)
 {
     private sealed class Candidate
     {
@@ -189,28 +194,37 @@ public class FileRelinkPlanner(
         await db.SaveChangesAsync(ct);
 
         var deleted = 0;
+        var kept = 0;
         var failed = 0;
         long freed = 0;
         var confirmed = confirmedSuperseded.Select(LibraryPaths.ComparisonKey).ToHashSet(StringComparer.Ordinal);
         var supersededPaths = plan.Files
             .Where(f => f.Superseded && confirmed.Contains(LibraryPaths.ComparisonKey(f.RelativePath)))
             .Select(f => f.RelativePath).ToHashSet(StringComparer.Ordinal);
+        var toDelete = new List<(string AbsolutePath, long Size)>();
         if (deleteSuperseded)
         {
-            foreach (var candidate in built.Candidates.Where(c => supersededPaths.Contains(c.RelativePath)))
+            var superseded = built.Candidates.Where(c => supersededPaths.Contains(c.RelativePath)).ToList();
+            var leaving = superseded.Where(c => c.Record is not null).Select(c => c.Record!.Id).ToHashSet();
+            var targets = await deletion.TargetsAsync(rootPath, superseded.Select(c => c.RelativePath), leaving, ct);
+            foreach (var (candidate, target) in superseded.Zip(targets))
             {
-                try
+                if (target.AbsolutePath is null)
                 {
-                    File.Delete(candidate.AbsolutePath);
-                }
-                catch (DirectoryNotFoundException)
-                {
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    logger.LogWarning(ex, "Could not delete superseded file {File}", candidate.RelativePath);
+                    logger.LogWarning("Refusing to delete superseded {File}: resolves outside the root or through a linked folder",
+                        candidate.RelativePath);
                     failed++;
                     continue;
+                }
+
+                if (target.Deletable)
+                {
+                    toDelete.Add((target.AbsolutePath, candidate.Size));
+                }
+                else
+                {
+                    logger.LogInformation("Kept superseded {File} on disk: another record still points at it", target.AbsolutePath);
+                    kept++;
                 }
 
                 if (candidate.Record is not null)
@@ -218,13 +232,23 @@ public class FileRelinkPlanner(
                     archives.Invalidate(candidate.Record.Id);
                     db.ChapterFiles.Remove(candidate.Record);
                 }
-
-                freed += candidate.Size;
-                deleted++;
             }
         }
 
         await db.SaveChangesAsync(ct);
+        foreach (var (absolutePath, size) in toDelete)
+        {
+            if (deletion.DeleteFromDisk(absolutePath))
+            {
+                freed += size;
+                deleted++;
+            }
+            else
+            {
+                failed++;
+            }
+        }
+
         foreach (var id in touched)
         {
             archives.Invalidate(id);
@@ -238,7 +262,7 @@ public class FileRelinkPlanner(
                 series.Title, moved, plan.SupersededCount, deleted);
         }
 
-        return new RelinkResult(moved, plan.SupersededCount, deleted, failed, freed);
+        return new RelinkResult(moved, plan.SupersededCount, deleted, kept, failed, freed);
     }
 
     private async Task<Built> BuildAsync(Series series, RelinkOptions options, CancellationToken ct)
@@ -258,13 +282,18 @@ public class FileRelinkPlanner(
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
         {
-            var seriesDir = Path.Combine(rootFolder.Path, folder);
+            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir)
+            {
+                logger.LogWarning("Skipping series folder {Folder}: resolves outside the root or through a linked folder", folder);
+                continue;
+            }
+
             if (!Directory.Exists(seriesDir))
             {
                 continue;
             }
 
-            foreach (var file in Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories)
+            foreach (var file in LibraryPaths.EnumerateFilesNoLinks(seriesDir)
                          .Where(ComicFile.IsComic).OrderBy(f => f, StringComparer.Ordinal))
             {
                 var relativePath = Path.Combine(folder, Path.GetRelativePath(seriesDir, file));

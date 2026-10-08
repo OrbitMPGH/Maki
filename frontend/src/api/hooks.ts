@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { msg, t } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { api, getInitialize, xsrfHeader } from './client'
+import { ApiError, api, getInitialize, xsrfHeader } from './client'
 import { useSaveSettingsRecord } from './settingsRecord'
 import { useAuth } from '../auth/AuthProvider'
 import type { AnimeResume } from './animeResume'
@@ -1741,6 +1741,7 @@ export interface RelinkResult {
   moved: number
   superseded: number
   deleted: number
+  kept: number
   failed: number
   freedBytes: number
 }
@@ -2951,6 +2952,12 @@ export function useGrabRelease() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
       void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+    },
+    onError: (error, { seriesId }) => {
+      // The server forgot the search (restart or expiry), so the cached rows can no longer be grabbed.
+      if (error instanceof ApiError && error.code === 'error.release.searchExpired') {
+        void queryClient.invalidateQueries({ queryKey: ['releases', seriesId] })
+      }
     },
   })
 }

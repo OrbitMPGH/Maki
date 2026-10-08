@@ -108,6 +108,11 @@ msgstr "{0, plural, one {# fichier n'a pas pu être supprimé (verrouillé ou ac
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, one {# fichier supprimé} many {# fichiers supprimés} other {# fichiers supprimés}}"
 
+#. placeholder {0}: r.kept
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
+msgstr ""
+
 #. placeholder {0}: upgradesSummary.trashFiles
 #: src/pages/ActivityPage.tsx
 #, fuzzy

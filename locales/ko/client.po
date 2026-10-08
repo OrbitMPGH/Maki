@@ -108,6 +108,11 @@ msgstr "{0, plural, other {잠겨 있거나 권한이 없어 삭제하지 못한
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, other {#개 파일 삭제됨}}"
 
+#. placeholder {0}: r.kept
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
+msgstr ""
+
 #. placeholder {0}: upgradesSummary.trashFiles
 #: src/pages/ActivityPage.tsx
 #, fuzzy
