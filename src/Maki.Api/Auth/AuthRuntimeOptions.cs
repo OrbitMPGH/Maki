@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Net;
 using Maki.Core.Configuration;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +102,44 @@ public class AuthRuntimeOptions
         && uri.Scheme == Uri.UriSchemeHttp
         && !uri.IsLoopback
         && !uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// One <see cref="TrustedProxies"/> entry: a bare address, or a CIDR network whose prefix is a
+    /// plain integer that fits the address family. Host bits below the prefix are cleared, since
+    /// <see cref="IPNetwork"/> rejects them. Shared by the settings save and startup so an entry
+    /// that saves is one that applies.
+    /// </summary>
+    public static bool TryParseTrustedProxy(string entry, out IPAddress? proxy, out IPNetwork? network)
+    {
+        proxy = null;
+        network = null;
+
+        var slash = entry.IndexOf('/');
+        if (slash < 0)
+        {
+            return IPAddress.TryParse(entry, out proxy);
+        }
+
+        if (!IPAddress.TryParse(entry[..slash], out var address) ||
+            !int.TryParse(entry[(slash + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var prefix))
+        {
+            return false;
+        }
+
+        var bytes = address.GetAddressBytes();
+        if (prefix > bytes.Length * 8)
+        {
+            return false;
+        }
+
+        for (var bit = prefix; bit < bytes.Length * 8; bit++)
+        {
+            bytes[bit / 8] &= (byte)~(0x80 >> (bit % 8));
+        }
+
+        network = new IPNetwork(new IPAddress(bytes), prefix);
+        return true;
+    }
 
     public static int LockoutMaxAttemptsFrom(string? stored) =>
         ReadInt(stored, DefaultLockoutMaxAttempts, min: 0, max: MaxLockoutMaxAttempts);

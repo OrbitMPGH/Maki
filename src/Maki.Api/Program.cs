@@ -1388,28 +1388,29 @@ try
         forwarded.KnownIPNetworks.Clear();
         foreach (var entry in authOptions.TrustedProxies)
         {
-            if (entry.Contains('/'))
+            if (!AuthRuntimeOptions.TryParseTrustedProxy(entry, out var proxy, out var network))
             {
-                var parts = entry.Split('/', 2);
-                if (IPAddress.TryParse(parts[0], out var network) && int.TryParse(parts[1], out var prefix) && prefix >= 0)
-                {
-                    // System.Net.IPNetwork rejects host bits and oversized prefixes that the old
-                    // HttpOverrides type tolerated, so normalise rather than fail startup.
-                    var bytes = network.GetAddressBytes();
-                    prefix = Math.Min(prefix, bytes.Length * 8);
-                    for (var bit = prefix; bit < bytes.Length * 8; bit++)
-                    {
-                        bytes[bit / 8] &= (byte)~(0x80 >> (bit % 8));
-                    }
-                    forwarded.KnownIPNetworks.Add(new System.Net.IPNetwork(new IPAddress(bytes), prefix));
-                }
+                startupLog.LogWarning("Ignoring trusted proxy entry {Entry}: not an address or CIDR network", entry);
             }
-            else if (IPAddress.TryParse(entry, out var proxy))
+            else if (network is { } known)
             {
-                forwarded.KnownProxies.Add(proxy);
+                forwarded.KnownIPNetworks.Add(known);
+            }
+            else
+            {
+                forwarded.KnownProxies.Add(proxy!);
             }
         }
-        app.UseForwardedHeaders(forwarded);
+
+        // With both lists empty the middleware skips its source check and trusts every client.
+        if (forwarded.KnownProxies.Count > 0 || forwarded.KnownIPNetworks.Count > 0)
+        {
+            app.UseForwardedHeaders(forwarded);
+        }
+        else
+        {
+            startupLog.LogWarning("No usable trusted proxy entry; forwarded headers are ignored");
+        }
     }
 
     // What each request is worth a line for lives in HttpRequestLogPolicy, including the rule that
