@@ -120,6 +120,27 @@ export function useLiveEvents() {
 
   useEffect(() => {
     let summaryTimer: ReturnType<typeof setTimeout> | null = null
+    let seriesTimer: ReturnType<typeof setTimeout> | null = null
+    const importedSeries = new Set<number>()
+
+    // A bulk download fires one chapterImported per chapter. The library list is the heaviest thing
+    // they touch, so every event just marks work as pending and one timer refreshes it per second.
+    const scheduleSeriesRefresh = () => {
+      if (seriesTimer !== null) return
+      seriesTimer = setTimeout(() => {
+        seriesTimer = null
+        const ids = [...importedSeries]
+        importedSeries.clear()
+        for (const id of ids) {
+          void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
+          void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
+        }
+        if (ids.length > 0) {
+          void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
+        }
+        void queryClient.invalidateQueries({ queryKey: ['series'] })
+      }, 1000)
+    }
 
     // Events sent while the socket was down are gone, and the queue lists are patched in place from
     // events rather than refetched, so a download that finished during a blip stayed "in progress"
@@ -184,15 +205,11 @@ export function useLiveEvents() {
         }
       })
 
+      // The flush also refreshes Home's recently-added rail (keyed on ChapterFile.DateAdded, which
+      // an import just wrote) and the detail page's Read button gate (`reader-continue`).
       conn.on('chapterImported', ({ seriesId }: { seriesId: number }) => {
-        void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
-        // Home's recently-added rail is keyed on ChapterFile.DateAdded, which this import just
-        // wrote; without this the rail only catches up on the next reload.
-        void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
-        // The detail page's Read button gates on this; without it the button only appears
-        // after a manual reload once the first chapter finishes downloading.
-        void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
+        importedSeries.add(seriesId)
+        scheduleSeriesRefresh()
       })
 
       // Auto-matching finished for a series added a moment ago. The sources card, the chapter
@@ -201,9 +218,10 @@ export function useLiveEvents() {
       conn.on('sourceMatchFinished', ({ seriesId }: { seriesId: number }) => {
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
-        // Prefix match, so this covers ['series', id] (the detail row carrying the pending flag)
-        // as well as the library list.
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
+        // The detail row carries the pending flag the spinner reads, so it refreshes at once; the
+        // library list joins the coalesced refresh.
+        void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        scheduleSeriesRefresh()
         // The per-source states the card drew while it waited. Cleared here rather than when the
         // next match starts: the first `Searching` pushes of a run arrive *before* the client has
         // noticed the series is matching again, so a clear at that point would wipe them.
@@ -240,7 +258,8 @@ export function useLiveEvents() {
       conn.on('readProgressChanged', ({ seriesId }: { seriesId: number }) => {
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
+        void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        scheduleSeriesRefresh()
         void queryClient.invalidateQueries({ queryKey: ['home'] })
       })
 
@@ -283,6 +302,7 @@ export function useLiveEvents() {
       unsubscribe()
       reconnectListeners.delete(onReconnected)
       if (summaryTimer !== null) clearTimeout(summaryTimer)
+      if (seriesTimer !== null) clearTimeout(seriesTimer)
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
       connection?.off('readProgressChanged')
