@@ -124,6 +124,92 @@ public sealed class ProgressTests : IDisposable
         Assert.Equal(0, metrics.DaysRead);
     }
 
+    private void SeedChapters(int seriesId, int onDisk, int removedRead, int removedUnread = 0)
+    {
+        using var db = _db.NewContext();
+        var n = 0;
+        for (var i = 0; i < onDisk; i++)
+        {
+            var file = new ChapterFile { SeriesId = seriesId, RelativePath = $"{seriesId}-{++n}.cbz", DateAdded = Now };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = n, ChapterFileId = file.Id });
+            db.SaveChanges();
+        }
+
+        for (var i = 0; i < removedRead + removedUnread; i++)
+        {
+            var chapter = new Chapter { SeriesId = seriesId, Number = ++n, FileRemovedAt = Now };
+            db.Chapters.Add(chapter);
+            db.SaveChanges();
+            if (i < removedRead)
+            {
+                db.ChapterProgress.Add(new ChapterProgress
+                {
+                    UserId = UserId, SeriesId = seriesId, ChapterId = chapter.Id,
+                    PageCount = 20, Completed = true, StartedAt = Now, UpdatedAt = Now
+                });
+                db.SaveChanges();
+            }
+        }
+    }
+
+    private void ReadOnDisk(int seriesId)
+    {
+        using var db = _db.NewContext();
+        foreach (var chapter in db.Chapters.Where(c => c.SeriesId == seriesId && c.ChapterFileId != null).ToList())
+        {
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                UserId = UserId, SeriesId = seriesId, ChapterId = chapter.Id,
+                PageCount = 20, Completed = true, StartedAt = Now, UpdatedAt = Now
+            });
+        }
+
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task ReadChaptersWhoseFilesWereRemovedDoNotMakeAHalfReadSeriesFullyRead()
+    {
+        var series = _db.SeedSeries("Cleaned");
+        SeedChapters(series, onDisk: 50, removedRead: 50);
+
+        var metrics = await Metrics().GetAsync(UserId);
+
+        Assert.Equal(0, metrics.SeriesFullyRead);
+    }
+
+    [Fact]
+    public async Task ASeriesIsFullyReadOnceEveryRemainingChapterIsReadToo()
+    {
+        var series = _db.SeedSeries("Done");
+        SeedChapters(series, onDisk: 3, removedRead: 5);
+        ReadOnDisk(series);
+
+        var metrics = await Metrics().GetAsync(UserId);
+
+        Assert.Equal(1, metrics.SeriesFullyRead);
+    }
+
+    [Fact]
+    public async Task AChapterNeverDownloadedStaysOutOfTheFullyReadCount()
+    {
+        var series = _db.SeedSeries("Partly wanted");
+        SeedChapters(series, onDisk: 2, removedRead: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = series, Number = 3, Wanted = true });
+            db.SaveChanges();
+        }
+
+        ReadOnDisk(series);
+
+        var metrics = await Metrics().GetAsync(UserId);
+
+        Assert.Equal(1, metrics.SeriesFullyRead);
+    }
+
     // ---- Evaluation -----------------------------------------------------------------------
 
     [Fact]
