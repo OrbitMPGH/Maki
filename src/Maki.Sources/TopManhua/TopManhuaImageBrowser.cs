@@ -121,7 +121,8 @@ public sealed class TopManhuaImageBrowser(
                 var page = await context.NewPageAsync();
                 try
                 {
-                    return await CaptureAsync(page, chapterUrl, imageUrls, ct);
+                    return await CancellableBrowserCall.RunAsync(
+                        () => page.CloseAsync(), () => CaptureAsync(page, chapterUrl, imageUrls, ct), ct);
                 }
                 catch (ChallengeException) when (attempt == 0)
                 {
@@ -182,6 +183,7 @@ public sealed class TopManhuaImageBrowser(
         var deadline = DateTime.UtcNow.AddMilliseconds(CaptureTimeoutMs);
         while (captured.Count < wanted.Count && DateTime.UtcNow < deadline)
         {
+            ct.ThrowIfCancellationRequested();
             await page.WaitForTimeoutAsync(250);
         }
 

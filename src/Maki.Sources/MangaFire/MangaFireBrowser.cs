@@ -253,6 +253,7 @@ public sealed class MangaFireBrowser(
                 var expected = lastPage ?? 1;
                 for (var pageNo = 2; pageNo <= expected; pageNo++)
                 {
+                    ct.ThrowIfCancellationRequested();
                     var wait = page.WaitForResponseAsync(
                         r => IsChaptersUrl(r.Url) && r.Url.Contains($"page={pageNo}", StringComparison.Ordinal),
                         new() { Timeout = PageResponseTimeoutMs });
@@ -363,7 +364,7 @@ public sealed class MangaFireBrowser(
             var page = await context.NewPageAsync();
             try
             {
-                return await action(page);
+                return await CancellableBrowserCall.RunAsync(() => page.CloseAsync(), () => action(page), ct);
             }
             catch (ChallengeException) when (attempt == 0)
             {
