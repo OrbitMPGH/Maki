@@ -94,8 +94,8 @@ export default function ReaderToolbar({
   const { t } = useLingui()
   const { scale } = prefs
 
-  // Only the slider mirrors: it is a spatial map of the pages. The chapter chevrons stay
-  // previous-left / next-right in both directions: they're semantic controls, not positions.
+  // The slider and the chapter chevrons mirror in RTL: the left chevron goes to the next chapter,
+  // so each chevron's disabled state follows the chapter it actually opens.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -249,7 +249,7 @@ export default function ReaderToolbar({
               variant="subtle"
               color="gray"
               onClick={rtl ? onNextChapter : onPrevChapter}
-              disabled={manifest.previousChapterId === null}
+              disabled={(rtl ? manifest.nextChapterId : manifest.previousChapterId) === null}
               aria-label={backChapterLabel}
             >
               <IconChevronLeft size={18} />
@@ -291,7 +291,7 @@ export default function ReaderToolbar({
               variant="subtle"
               color="gray"
               onClick={rtl ? onPrevChapter : onNextChapter}
-              disabled={manifest.nextChapterId === null}
+              disabled={(rtl ? manifest.previousChapterId : manifest.nextChapterId) === null}
               aria-label={forwardChapterLabel}
             >
               <IconChevronRight size={18} />

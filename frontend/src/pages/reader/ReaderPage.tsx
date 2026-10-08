@@ -43,7 +43,7 @@ export default function ReaderPage() {
   const queryClient = useQueryClient()
   const { data: manifest, isLoading, isError, isFetching } = useReaderManifest(chapterId)
   const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
-    useReaderPrefs(manifest)
+    useReaderPrefs(manifest, !isFetching)
 
   const [page, setPage] = useState(0)
   // Bumped on every *explicit* jump (resume, toolbar scrub, page-strip click, Home/End) so
@@ -143,7 +143,9 @@ export default function ReaderPage() {
     setResumedFor(manifest.chapterId)
     const toEnd = enterAtEndRef.current
     enterAtEndRef.current = false
-    seekToPage(toEnd ? Math.max(0, manifest.pageCount - 1) : manifest.resumePage)
+    const lastPage = Math.max(0, manifest.pageCount - 1)
+    const saved = manifest.resumePage <= lastPage ? Math.max(0, manifest.resumePage) : 0
+    seekToPage(toEnd ? lastPage : saved)
     setZoom(1)
     setAtEnd(false)
     setFinishedFor(null)
@@ -401,7 +403,9 @@ export default function ReaderPage() {
     }
   }
 
-  if (isLoading) {
+  // A cached manifest is shown only once the fresh one has landed and the resume is applied;
+  // before that its prefs and position are a snapshot of the previous visit.
+  if (isLoading || (manifest && resumedFor !== manifest.chapterId)) {
     return (
       <div className="reader-root">
         <Center h="100dvh">
