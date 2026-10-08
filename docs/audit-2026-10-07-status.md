@@ -93,14 +93,14 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | FE-INFRA | FE-INFRA-22 | done cf8fd2c2 |
 | FE-INFRA | FE-LIBRARY-20 | done a13b0a4e, f1211048 |
 | FE-INFRA | FE-LIBRARY-37 | done cb6029df, a6786a4e |
-| HOSTING | HOSTING-02 | pending |
-| HOSTING | HOSTING-03 | pending |
-| HOSTING | HOSTING-05 | pending |
-| HOSTING | HOSTING-06 | pending |
-| HOSTING | HOSTING-08 | pending |
-| HOSTING | HOSTING-09 | pending |
-| HOSTING | HOSTING-10 | pending |
-| HOSTING | HOSTING-12 | pending |
+| HOSTING | HOSTING-02 | done 7125e0aa, 903e249a |
+| HOSTING | HOSTING-03 | done d76c9720, 2a989248 |
+| HOSTING | HOSTING-05 | done 5225ecc0 |
+| HOSTING | HOSTING-06 | done 2f4e93ac, 30873750 |
+| HOSTING | HOSTING-08 | decision (scheduled backups: Quartz job when newest zip older than BackupDays, or default check off until opted in) |
+| HOSTING | HOSTING-09 | done c2de0e39, 399a9cb1 |
+| HOSTING | HOSTING-10 | done a4f5db3c |
+| HOSTING | HOSTING-12 | done 65b64cdc, 0fae3751 |
 | SERIES | SERIES-01 | done 95fd865f |
 | SERIES | SERIES-02 | done 46688d07 |
 | SERIES | SERIES-09 | done 470d8c34, b72b4f8f |
