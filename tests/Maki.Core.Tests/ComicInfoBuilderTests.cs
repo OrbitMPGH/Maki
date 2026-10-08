@@ -126,4 +126,21 @@ public class ComicInfoBuilderTests
         doc.LoadXml(xml);
         Assert.Equal("ComicInfo", doc.DocumentElement!.Name);
     }
+
+    [Fact]
+    public void Characters_xml_cannot_carry_are_stripped_instead_of_failing_the_write()
+    {
+        var series = TestSeries();
+        series.Overview = "Dark\u0008 fantasy\u001F with \U0001F5E1 and a lone \uD800 surrogate.";
+        series.AuthorStory = "MIURA\u0001 Kentaro";
+        var info = ComicInfoBuilder.Build(series, new Chapter { Number = 1, Language = "en", Title = "Bad￾" }, 10);
+
+        var xml = ComicInfoBuilder.Serialize(info);
+
+        var doc = new System.Xml.XmlDocument();
+        doc.LoadXml(xml);
+        Assert.Equal("Dark fantasy with \U0001F5E1 and a lone  surrogate.", doc.SelectSingleNode("/ComicInfo/Summary")!.InnerText);
+        Assert.Equal("MIURA Kentaro", doc.SelectSingleNode("/ComicInfo/Writer")!.InnerText);
+        Assert.Equal("Bad", doc.SelectSingleNode("/ComicInfo/Title")!.InnerText);
+    }
 }

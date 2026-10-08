@@ -1,9 +1,11 @@
 ﻿using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
+using Maki.Core.Xml;
 
 namespace Maki.Core.ComicInfo;
 
@@ -90,8 +92,19 @@ public static class ComicInfoBuilder
         }
     }
 
+    private static readonly PropertyInfo[] TextProperties = typeof(ComicInfo)
+        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        .Where(p => p.PropertyType == typeof(string) && p.CanRead && p.CanWrite)
+        .ToArray();
+
+    /// <remarks>Strips characters XML cannot carry from every text field of <paramref name="info"/> first.</remarks>
     public static string Serialize(ComicInfo info)
     {
+        foreach (var property in TextProperties)
+        {
+            property.SetValue(info, XmlChars.Strip((string?)property.GetValue(info)));
+        }
+
         var serializer = new XmlSerializer(typeof(ComicInfo));
         var settings = new XmlWriterSettings
         {
