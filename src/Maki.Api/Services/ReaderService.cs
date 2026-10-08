@@ -412,6 +412,11 @@ public class ReaderService(
         }
 
         var justCompleted = !stillWatched && row.Completed && !wasCompleted;
+        if (justCompleted)
+        {
+            row.BulkMarked = false;
+        }
+
         var reportedSeconds = Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
         row.ReadSeconds += reportedSeconds;
         row.UpdatedAt = now;
@@ -698,6 +703,7 @@ public class ReaderService(
             row.PageIndex = pageCount.Value - 1;
             row.PageCount = pageCount.Value;
             row.Completed = true;
+            row.BulkMarked = true;
             row.Watched = false;
             row.External = false;
             row.UnreadAt = null;
@@ -770,6 +776,7 @@ public class ReaderService(
 
         var now = DateTime.UtcNow;
         row.Completed = false;
+        row.BulkMarked = false;
         row.Watched = false;
         row.PageIndex = 0;
         row.UnreadAt = now;
@@ -793,7 +800,8 @@ public class ReaderService(
         foreach (var row in rows)
         {
             row.Completed = false;
-                row.Watched = false;
+            row.BulkMarked = false;
+            row.Watched = false;
             row.PageIndex = 0;
             row.UnreadAt = now;
             row.UpdatedAt = now;

@@ -704,7 +704,7 @@ public sealed class ActivityStatsTests : IDisposable
     }
     private void AddProgress(int seriesId, int pageIndex, int pageCount, bool completed, DateTime at,
         bool watched = false, DateTime? startedAt = null, DateTime? unreadAt = null, int userId = TestUser,
-        int readSeconds = 60)
+        int readSeconds = 60, bool bulkMarked = false)
     {
         using var db = _db.NewContext();
         var chapter = new Chapter { SeriesId = seriesId, Number = db.Chapters.Count() + 1 };
@@ -721,6 +721,7 @@ public sealed class ActivityStatsTests : IDisposable
             Watched = watched,
             UnreadAt = unreadAt,
             ReadSeconds = readSeconds,
+            BulkMarked = bulkMarked,
             StartedAt = startedAt ?? at,
             UpdatedAt = at
         });
@@ -781,13 +782,15 @@ public sealed class ActivityStatsTests : IDisposable
     {
         var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
         var ticked = _db.SeedSeries("Ticked");
-        AddProgress(ticked, 19, 20, completed: true, may, readSeconds: 0);
+        AddProgress(ticked, 19, 20, completed: true, may, readSeconds: 0, bulkMarked: true);
         var read = _db.SeedSeries("Read");
         AddProgress(read, 19, 20, completed: true, may);
+        var streamed = _db.SeedSeries("Streamed");
+        AddProgress(streamed, 19, 20, completed: true, may, readSeconds: 0);
 
         var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
 
-        Assert.Equal(1, stats.Totals.SeriesStarted);
+        Assert.Equal(2, stats.Totals.SeriesStarted);
     }
 
     [Fact]

@@ -47,7 +47,8 @@ public class ReadingBehaviourServiceTests : IDisposable
         int readSeconds = 300,
         int pageCount = 20,
         DateTime? at = null,
-        int userId = 1)
+        int userId = 1,
+        bool bulkMarked = false)
     {
         using var db = _db.NewContext();
         for (var i = 1; i <= downloaded; i++)
@@ -75,7 +76,8 @@ public class ReadingBehaviourServiceTests : IDisposable
                 ReadSeconds = readSeconds,
                 StartedAt = at ?? Now,
                 UpdatedAt = at ?? Now,
-                CompletedAt = at ?? Now
+                CompletedAt = at ?? Now,
+                BulkMarked = bulkMarked
             });
             db.SaveChanges();
         }
@@ -180,12 +182,23 @@ public class ReadingBehaviourServiceTests : IDisposable
     [Fact]
     public async Task Bulk_marked_chapters_never_become_the_biggest_day()
     {
-        Seed(SeedSeries("Ticked"), downloaded: 30, read: 30, readSeconds: 0, at: Now);
+        Seed(SeedSeries("Ticked"), downloaded: 30, read: 30, readSeconds: 0, at: Now, bulkMarked: true);
         Seed(SeedSeries("Actually read"), downloaded: 2, read: 2, at: Now.AddDays(-3));
 
         var behaviour = await BehaviourAsync();
 
         Assert.Equal(2, behaviour.BiggestDayCount);
+        Assert.Equal(1, behaviour.ReadingDays);
+    }
+
+    [Fact]
+    public async Task Untimed_opds_reads_still_make_reading_days()
+    {
+        Seed(SeedSeries("Streamed"), downloaded: 4, read: 4, readSeconds: 0, at: Now);
+
+        var behaviour = await BehaviourAsync();
+
+        Assert.Equal(4, behaviour.BiggestDayCount);
         Assert.Equal(1, behaviour.ReadingDays);
     }
 

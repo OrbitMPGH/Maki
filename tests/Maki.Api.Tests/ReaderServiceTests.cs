@@ -286,11 +286,30 @@ public sealed class ReaderServiceTests : IDisposable
             var rows = db.ChapterProgress.Where(p => p.SeriesId == seriesId).ToList();
             Assert.Equal(2, rows.Count);
             Assert.All(rows, r => Assert.True(r is { Completed: true, Watched: false, PageCount: 2, PageIndex: 1 }));
+            Assert.All(rows, r => Assert.True(r.BulkMarked));
             Assert.Equal(2, db.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
         }
 
         await ReadAsync(reader, chapters[3m]);
         Assert.Equal([1], ChaptersRead());
+        using var after = _db.NewContext(TestUser);
+        Assert.False(after.ChapterProgress.Single(p => p.ChapterId == chapters[3m]).BulkMarked);
+    }
+
+    [Fact]
+    public async Task ReadingABulkMarkedChapterAfterMarkingItUnreadIsAGenuineRead()
+    {
+        var (_, chapters) = SeedFromCbz("bulkunread.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        await reader.MarkReadAsync([chapters[1m]], CancellationToken.None);
+        await reader.ClearProgressAsync(chapters[1m], CancellationToken.None);
+
+        await ReadAsync(reader, chapters[1m]);
+
+        using var db = _db.NewContext(TestUser);
+        var row = db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]);
+        Assert.True(row.Completed);
+        Assert.False(row.BulkMarked);
     }
 
     [Fact]
