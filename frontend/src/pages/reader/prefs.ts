@@ -164,6 +164,9 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const update = useCallback(
     (patch: Partial<ReaderPrefs>) => {
+      // Before the server's copy is adopted `current` is DEFAULT_PREFS, and saving that plus one
+      // change would overwrite the user's real settings.
+      if (adoptedFor.current === null) return
       setPrefs((current) => {
         const next = { ...current, ...patch }
         if (timer.current) clearTimeout(timer.current)
@@ -181,7 +184,7 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
    */
   const setSelection = useCallback(
     (next: PrefsSelection) => {
-      if (!seriesId) return
+      if (!seriesId || adoptedFor.current === null) return
 
       // Any queued knob edit belongs to the destination being left behind. Flushing it would write
       // it somewhere new; dropping it is what the user asked for by switching.

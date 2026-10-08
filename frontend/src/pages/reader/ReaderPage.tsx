@@ -403,7 +403,9 @@ export default function ReaderPage() {
     }
   }
 
-  if (isLoading) {
+  // A cached manifest is shown only once the fresh one has landed and the resume is applied;
+  // before that its prefs and position are a snapshot of the previous visit.
+  if (isLoading || (manifest && resumedFor !== manifest.chapterId)) {
     return (
       <div className="reader-root">
         <Center h="100dvh">
