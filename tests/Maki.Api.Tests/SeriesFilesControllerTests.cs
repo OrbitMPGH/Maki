@@ -435,4 +435,29 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Assert.Equal(files.Count(f => f.OnDisk && f.Status != "linked"), summary.UnlinkedOnDisk);
         Assert.Equal(4, summary.Count);
     }
+
+    [Fact]
+    public async Task A_file_backing_an_unnumbered_chapter_counts_as_linked()
+    {
+        var (seriesId, _, _, _, _) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        using (var seed = _db.NewContext())
+        {
+            var file = seed.ChapterFiles.Single(f => f.SeriesId == seriesId && f.RelativePath.StartsWith("Berserk"));
+            seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = null, IsOneShot = true, ChapterFileId = file.Id });
+            seed.SaveChanges();
+        }
+
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        using var db = _db.NewContext(userId: 1);
+        Assert.Equal(new SeriesFilesSummaryDto(3, 2),
+            Summary(await Controller(db).FilesSummary(seriesId, cache, CancellationToken.None)));
+
+        var listing = await Controller(db).Files(
+            seriesId, new UpgradeEvaluationService(db, TestQuality.Create()), cache, CancellationToken.None);
+        var files = Assert.IsAssignableFrom<IEnumerable<Maki.Api.Dtos.SeriesFileDto>>(
+            Assert.IsType<OkObjectResult>(listing).Value).ToList();
+        var linked = Assert.Single(files, f => f.RelativePath.StartsWith("Berserk"));
+        Assert.Equal("linked", linked.Status);
+        Assert.Empty(linked.MappedChapters);
+    }
 }

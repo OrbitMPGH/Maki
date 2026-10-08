@@ -30,10 +30,12 @@ import { RelinkFilesModal } from './RelinkFilesModal'
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
   const { mappedChapters } = file
-  if (mappedChapters.length === 0) return '-'
+  if (mappedChapters.length === 0) return file.status === 'linked' ? now`One-shot` : '-'
   const chapters = mappedChapters.join(', ')
   return now`Ch. ${chapters}`
 }
+
+const hasLinks = (file: SeriesFileDto) => file.mappedChapters.length > 0 || file.status === 'linked'
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { t } = useLingui()
@@ -275,7 +277,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 {mappedLabel(f)}
                               </Text>
                             </Tooltip>
-                          ) : f.mappedChapters.length === 0 && f.onDisk && canLink && !selectMode ? (
+                          ) : !hasLinks(f) && f.onDisk && canLink && !selectMode ? (
                             <Button
                               size="compact-xs"
                               variant="light"
@@ -285,7 +287,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                               <Trans>Link chapters</Trans>
                             </Button>
                           ) : (
-                            <Text size="sm" c={f.mappedChapters.length ? undefined : 'var(--ink-3)'} className="tnum">
+                            <Text size="sm" c={hasLinks(f) ? undefined : 'var(--ink-3)'} className="tnum">
                               {mappedLabel(f)}
                             </Text>
                           )}
@@ -303,12 +305,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             <Group gap={2} wrap="nowrap" justify="flex-end">
                             {canLink && (
                               <Tooltip
-                                label={f.mappedChapters.length > 0 ? t`Change linked chapters` : t`Link chapters to this file`}
+                                label={hasLinks(f) ? t`Change linked chapters` : t`Link chapters to this file`}
                                 withArrow
                               >
                                 <ActionIcon
                                   variant="subtle"
-                                  color={f.mappedChapters.length > 0 ? 'gray' : 'brand'}
+                                  color={hasLinks(f) ? 'gray' : 'brand'}
                                   disabled={!f.onDisk}
                                   onClick={() => setLinkFile(f)}
                                   aria-label={t`Link chapters to ${fileName}`}

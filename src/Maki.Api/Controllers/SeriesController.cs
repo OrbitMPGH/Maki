@@ -494,6 +494,10 @@ public class SeriesController(
             .GroupBy(c => c.ChapterFileId!.Value)
             .ToDictionary(g => g.Key, g => g.OrderBy(c => c.Number is null).ThenBy(c => c.Number).First().Language);
 
+        // A file is linked by any chapter pointing at it, numbered or not: a one-shot has no number
+        // by construction. The numbers only feed the label.
+        var linkedFileIds = chapters.Select(c => c.ChapterFileId!.Value).ToHashSet();
+
         // chapter numbers linked to each ChapterFile, ascending
         var chaptersByFile = chapters
             .GroupBy(c => c.ChapterFileId!.Value)
@@ -542,7 +546,7 @@ public class SeriesController(
             var mapped = chaptersByFile.GetValueOrDefault(record.Id, []);
 
             var status = !present ? "missing"
-                : mapped.Count > 0 ? "linked"
+                : linkedFileIds.Contains(record.Id) ? "linked"
                 : parsed.IsRecognized ? "unlinked"
                 : "unrecognized";
 
