@@ -111,14 +111,14 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | AUTH | AUTH-03 | done c9d8940e, 478f7cde |
 | AUTH | AUTH-04 | done e572a343 |
 | AUTH | AUTH-06 | done 204d4dd2 (500 only; admin exemption from root-folder scope: owner decision) |
-| PROGRESS | PROGRESS-07 | pending |
-| PROGRESS | PROGRESS-08 | pending |
-| PROGRESS | PROGRESS-09 | pending |
-| PROGRESS | PROGRESS-12 | pending |
-| PROGRESS | PROGRESS-13 | pending |
-| PROGRESS | PROGRESS-23 | pending |
-| PROGRESS | PROGRESS-24 | pending |
-| PROGRESS | FE-READER-04 (server clamp) | pending |
+| PROGRESS | PROGRESS-07 | done 4d847a6a |
+| PROGRESS | PROGRESS-08 | done ae732901 |
+| PROGRESS | PROGRESS-09 | done 4b7970dc |
+| PROGRESS | PROGRESS-12 | done 4c50d533, 52dbf5c7, 8d1aa1ba (BulkMarked column, migration) |
+| PROGRESS | PROGRESS-13 | done d55e28c5, 45ce3d1c |
+| PROGRESS | PROGRESS-23 | done 78d0ef47, 1ac83551, 8d1aa1ba |
+| PROGRESS | PROGRESS-24 | done fd22db55 |
+| PROGRESS | FE-READER-04 (server clamp) | done f3f85434, 4460c2e8 |
 | FE-READER-2 | FE-READER-11 | done 3d410c75, fc936e68 |
 | FE-READER-2 | FE-READER-14 | done 4ba0da23 |
 | FE-READER-2 | FE-READER-16 | done 14b960dd, 5cfce219 |
