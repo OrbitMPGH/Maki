@@ -1,8 +1,11 @@
+using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Indexers;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -144,6 +147,46 @@ public class ReleaseServiceTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.Equal(1, db.DownloadQueue.Count(q => q.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task Grab_endpoint_sends_the_link_the_search_returned_not_the_one_in_the_request()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await ConfigureProwlarr();
+        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        const string magnet = "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567";
+        var service = Build("[" + Release("g", "torrent", 5, magnet: magnet) + "]");
+        var searches = new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions()));
+        searches.Remember(seriesId, (await service.SearchAsync(seriesId, "berserk")).Releases);
+        var forged = new ReleaseDto("g", "Forged", 1, "Forged", 0, 0, "torrent",
+            DownloadUrl: "http://169.254.169.254/latest/meta-data", MagnetUrl: null, InfoUrl: null);
+
+        using var db = _db.NewContext();
+        var result = await new ReleaseController(service, searches, new TestLocalizer()).Grab(
+            new ReleaseController.GrabRequest(seriesId, forged), new TestCurrentUser(1), db, CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(magnet, _qbt.AddedLink);
+        Assert.Equal("g title", db.DownloadQueue.Single(q => q.SeriesId == seriesId).Title);
+    }
+
+    [Fact]
+    public async Task Grab_endpoint_refuses_a_release_no_search_returned()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        var forged = new ReleaseDto("g", "Forged", 1, "Forged", 0, 0, "torrent",
+            DownloadUrl: "http://169.254.169.254/latest/meta-data", MagnetUrl: null, InfoUrl: null);
+
+        using var db = _db.NewContext();
+        var result = await new ReleaseController(
+                Build(), new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions())), new TestLocalizer())
+            .Grab(new ReleaseController.GrabRequest(seriesId, forged), new TestCurrentUser(1), db, CancellationToken.None);
+
+        Assert.Equal(400, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
+        Assert.Null(_qbt.AddedLink);
+        Assert.Empty(db.DownloadQueue);
     }
 
     [Fact]
