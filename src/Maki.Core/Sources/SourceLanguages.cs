@@ -84,6 +84,7 @@ public static class SourceLanguages
 
     /// <summary>Whether two chapter languages are the same language, however each was spelled.</summary>
     public static bool Same(string? a, string? b) =>
+        string.Equals(a, b, StringComparison.Ordinal) ||
         string.Equals(Canonical(a), Canonical(b), StringComparison.Ordinal);
 
     /// <summary>The stored form of <paramref name="codes"/>, or null when it is just the default.</summary>
