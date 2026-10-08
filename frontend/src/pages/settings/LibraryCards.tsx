@@ -429,16 +429,15 @@ export function NamingSection() {
   const [debouncedFolder] = useDebouncedValue(folderFormat, 350)
   const [debouncedChapter] = useDebouncedValue(chapterFormat, 350)
   const preview = useNamingPreview(debouncedFolder, debouncedChapter)
-  const previewErrors = preview.data?.errors ?? []
-  const folderError = previewErrors.find((e) => e.startsWith('Series folder format:'))
-  const chapterError = previewErrors.find((e) => e.startsWith('Chapter format:'))
+  const folderError = preview.data?.seriesFolderErrors.join('; ') || undefined
+  const chapterError = preview.data?.chapterErrors.join('; ') || undefined
   const stale = debouncedFolder !== folderFormat || debouncedChapter !== chapterFormat
 
   const saveFormats = () => {
     // A stale preview doesn't block the save: the server validates too, and a commit that lands
     // inside the debounce window (closing the token picker right after inserting one) would
     // otherwise be dropped silently.
-    if (!settings || (!stale && previewErrors.length > 0)) {
+    if (!settings || (!stale && (folderError || chapterError))) {
       return
     }
 
@@ -470,7 +469,7 @@ export function NamingSection() {
           description={t`Used when adding a series, importing one, or renaming its folder`}
           value={folderFormat}
           example={preview.data?.seriesFolder}
-          error={folderError?.replace('Series folder format: ', '')}
+          error={folderError}
           onChange={setFolderDraft}
           onCommit={saveFormats}
         />
@@ -479,7 +478,7 @@ export function NamingSection() {
           description={t`Used for chapters Maki downloads, and for torrent imports unless you keep their file names below.`}
           value={chapterFormat}
           example={preview.data?.chapterFile}
-          error={chapterError?.replace('Chapter format: ', '')}
+          error={chapterError}
           onChange={setChapterDraft}
           onCommit={saveFormats}
         />
