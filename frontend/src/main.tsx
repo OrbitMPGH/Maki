@@ -90,10 +90,12 @@ const queryClient = new QueryClient({
 // A failed chunk fetch must not leave a blank page: fall back to English, then to no catalogue.
 try {
   await loadLocale(resolveInitialLocale())
-} catch {
+} catch (err) {
+  console.error('Failed to load the locale catalogue, falling back to English', err)
   try {
     await loadLocale('en')
-  } catch {
+  } catch (enErr) {
+    console.error('Failed to load the English catalogue', enErr)
     i18n.loadAndActivate({ locale: 'en', messages: {} })
   }
 }
