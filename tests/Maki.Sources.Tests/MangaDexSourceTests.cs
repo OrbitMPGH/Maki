@@ -84,6 +84,21 @@ public class MangaDexSourceTests
     }
 
     [Fact]
+    public async Task A_simplified_chinese_filter_is_requested_as_plain_zh()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FakeHttpClientFactory.Fixture("mangadex-feed-multilingual.json")
+        });
+
+        await new MangaDexSource(factory).ListChaptersAsync("a1c7c817", "zh-Hans");
+
+        var feed = Assert.Single(factory.Requests);
+        Assert.Contains("translatedLanguage[]=zh&", feed + "&");
+        Assert.DoesNotContain("zh-hans", feed);
+    }
+
+    [Fact]
     public async Task Several_languages_are_repeated_into_one_request_and_tagged_individually()
     {
         var factory = new FakeHttpClientFactory(new()
