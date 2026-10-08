@@ -573,7 +573,7 @@ function SeriesDetailBody() {
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
   const canDownload = can('DownloadChapters')
-  const canLinkFiles = can('EditMetadata')
+  const canEditMetadata = can('EditMetadata')
   const canDelete = can('DeleteSeries')
   const pendingProposalId = series?.pendingProposalId ?? null
   const { data: seriesProposals } = useTorrentProposals(seriesId, canDownload && pendingProposalId != null)
@@ -1149,7 +1149,7 @@ function SeriesDetailBody() {
                   classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
                   thumbIcon={mixed ? <IconMinus size={10} stroke={3} /> : undefined}
                   aria-label={t`Wanted for ${spanLabel}: ${wantedCount} of ${total} chapters`}
-                  disabled={setChaptersWanted.isPending}
+                  disabled={!canEditMetadata || setChaptersWanted.isPending}
                   onChange={(e) => applyWanted(ids, e.currentTarget.checked)}
               />
             </Tooltip>
@@ -2263,7 +2263,7 @@ function SeriesDetailBody() {
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
-            {!selectMode && canLinkFiles && unlinkedFilesOnDisk > 0 && (
+            {!selectMode && canEditMetadata && unlinkedFilesOnDisk > 0 && (
                 <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg">
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 240 }}>
@@ -2369,27 +2369,31 @@ function SeriesDetailBody() {
                             <Trans>Download</Trans>
                           </Button>
                       )}
-                      <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconEye size={15} />}
-                          disabled={selected.size === 0}
-                          loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true}
-                          onClick={() => applyWanted([...selected], true)}
-                      >
-                        <Trans>Want</Trans>
-                      </Button>
-                      <Button
-                          size="xs"
-                          variant="light"
-                          color="gray"
-                          leftSection={<IconEyeOff size={15} />}
-                          disabled={selected.size === 0}
-                          loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
-                          onClick={() => applyWanted([...selected], false)}
-                      >
-                        <Trans>Don't want</Trans>
-                      </Button>
+                      {canEditMetadata && (
+                          <>
+                          <Button
+                              size="xs"
+                              variant="light"
+                              leftSection={<IconEye size={15} />}
+                              disabled={selected.size === 0}
+                              loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true}
+                              onClick={() => applyWanted([...selected], true)}
+                          >
+                            <Trans>Want</Trans>
+                          </Button>
+                          <Button
+                              size="xs"
+                              variant="light"
+                              color="gray"
+                              leftSection={<IconEyeOff size={15} />}
+                              disabled={selected.size === 0}
+                              loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
+                              onClick={() => applyWanted([...selected], false)}
+                          >
+                            <Trans>Don't want</Trans>
+                          </Button>
+                          </>
+                      )}
                       {readTracking && (
                           <>
                             <Button
@@ -2427,35 +2431,39 @@ function SeriesDetailBody() {
                             </Button>
                           </>
                       )}
-                      <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconLink size={15} />}
-                          disabled={selected.size === 0}
-                          onClick={() => setLinkChapterIds([...selected])}
-                      >
-                        <Trans>Link to file</Trans>
-                      </Button>
-                      <Button
-                          size="xs"
-                          variant="light"
-                          color="var(--warn)"
-                          leftSection={<IconLinkOff size={15} />}
-                          disabled={selected.size === 0}
-                          loading={unlinkChapters.isPending}
-                          onClick={() =>
-                              unlinkChapters.mutate([...selected], {
-                                onSuccess: (r) => {
-                                  notify.ok(
-                                      plural(r.unlinked, { one: 'Unlinked # chapter', other: 'Unlinked # chapters' }),
-                                  )
-                                  exitSelectMode()
-                                },
-                              })
-                          }
-                      >
-                        <Trans>Unlink</Trans>
-                      </Button>
+                      {canEditMetadata && (
+                          <>
+                          <Button
+                              size="xs"
+                              variant="light"
+                              leftSection={<IconLink size={15} />}
+                              disabled={selected.size === 0}
+                              onClick={() => setLinkChapterIds([...selected])}
+                          >
+                            <Trans>Link to file</Trans>
+                          </Button>
+                          <Button
+                              size="xs"
+                              variant="light"
+                              color="var(--warn)"
+                              leftSection={<IconLinkOff size={15} />}
+                              disabled={selected.size === 0}
+                              loading={unlinkChapters.isPending}
+                              onClick={() =>
+                                  unlinkChapters.mutate([...selected], {
+                                    onSuccess: (r) => {
+                                      notify.ok(
+                                          plural(r.unlinked, { one: 'Unlinked # chapter', other: 'Unlinked # chapters' }),
+                                      )
+                                      exitSelectMode()
+                                    },
+                                  })
+                              }
+                          >
+                            <Trans>Unlink</Trans>
+                          </Button>
+                          </>
+                      )}
                       {canDelete && (
                           <>
                             <Button
@@ -2684,6 +2692,7 @@ function SeriesDetailBody() {
                                       <Switch
                                           size="xs"
                                           checked={c.wanted}
+                                          disabled={!canEditMetadata}
                                           aria-label={t`Want ${chapterLbl}`}
                                           onChange={(e) =>
                                               toggleWanted.mutate({ chapterId: c.id, wanted: e.currentTarget.checked })
@@ -2936,7 +2945,7 @@ function SeriesDetailBody() {
                                                 </ActionIcon>
                                               </Tooltip>
                                         )}
-                                        {!c.hasFile && canLinkFiles && (
+                                        {!c.hasFile && canEditMetadata && (
                                             <Tooltip label={t`Link to a file already on disk`} withArrow>
                                               <ActionIcon
                                                   variant="subtle"
