@@ -21,9 +21,9 @@ States: `done <sha>`, `skipped (reason)`, `decision (question)`, `pending`.
 
 | Lane | ID | State |
 |---|---|---|
-| A | AUTH-05 | pending |
-| A | AUTH-02 | pending |
-| A | HOSTING-01 | pending |
+| A | AUTH-05 | done b657082e (kavita, prowlarr, qbittorrent PUTs left open to API keys: owner decision) |
+| A | AUTH-02 | done f418a4cf, 5b64df10 |
+| A | HOSTING-01 | done 047a1654, f5f7e0fe, 6f7524d2 |
 | B | SERIES-18 | pending |
 | B | SERIES-19 | pending |
 | B | DOWNLOADS-12 | pending |
