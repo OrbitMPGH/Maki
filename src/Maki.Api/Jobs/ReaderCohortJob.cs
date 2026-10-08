@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Metadata.ReaderCohorts;
@@ -54,6 +55,7 @@ public class ReaderCohortJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Reader cohort check failed");
+            context.ReportFailure(ex);
         }
     }
 
