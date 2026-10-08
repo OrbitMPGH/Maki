@@ -888,7 +888,11 @@ public class SettingsController(
     /// </summary>
     [Authorize(Policy = Policies.ChangeContentRating)]
     [HttpPut("discover")]
-    public async Task<IActionResult> SetDiscover([FromBody] DiscoverSettings request, CancellationToken ct)
+    public async Task<IActionResult> SetDiscover(
+        [FromBody] DiscoverSettings request,
+        [FromServices] IUserSnapshotCache snapshots,
+        [FromServices] AuthEventLogger auditLog,
+        CancellationToken ct)
     {
         if (!ContentRating.IsValid(request.MaxContentRating))
         {
@@ -898,6 +902,10 @@ public class SettingsController(
         await db.Users
             .Where(u => u.Id == currentUser.UserId)
             .ExecuteUpdateAsync(u => u.SetProperty(x => x.MaxContentRating, request.MaxContentRating), ct);
+        snapshots.Evict(currentUser.UserId);
+
+        await auditLog.LogAsync(AuthEventType.UserUpdated, currentUser.UserName, currentUser.UserId,
+            HttpContext, detail: $"content rating set to \"{request.MaxContentRating}\"", ct: ct);
         return Ok(new DiscoverSettings(request.MaxContentRating));
     }
 
