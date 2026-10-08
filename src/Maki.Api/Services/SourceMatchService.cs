@@ -97,13 +97,18 @@ public partial class SourceMatchService(
             return null;
         }
 
-        var normalizedOriginal = Normalize(series.OriginalTitle);
-        var normalizedTitle = Normalize(series.Title);
-        var isGenericPrefix = normalizedOriginal.Length < normalizedTitle.Length
+        // Unicode-aware, unlike Normalize: a native-script title would otherwise normalize to
+        // nothing, and the empty string is a prefix of every title.
+        var normalizedOriginal = Compact(series.OriginalTitle);
+        var normalizedTitle = Compact(series.Title);
+        var isGenericPrefix = normalizedOriginal.Length > 0
+            && normalizedOriginal.Length < normalizedTitle.Length
             && normalizedTitle.StartsWith(normalizedOriginal, StringComparison.Ordinal);
 
         return isGenericPrefix ? null : series.OriginalTitle;
     }
+
+    private static string Compact(string title) => ScrobbleMatching.NormalizeTitle(title).Replace(" ", string.Empty);
 
     /// <summary>
     /// Sources named in the "sources.priorityorder" CSV setting, in that order, followed by any
@@ -144,15 +149,18 @@ public partial class SourceMatchService(
         string Title,
         string? OriginalTitle,
         IReadOnlyDictionary<string, string> ExternalIds,
-        IReadOnlyList<string> Authors)
+        IReadOnlyList<string> Authors,
+        IReadOnlyList<LocalizedTitle> AltTitles)
     {
         public static MatchTarget For(Series series) =>
             new(series.Title, DisambiguatingOriginalTitle(series), ExternalIdsOf(series),
-                [.. AuthorNames(series.AuthorStory).Concat(AuthorNames(series.AuthorArt)).Distinct()]);
+                [.. AuthorNames(series.AuthorStory).Concat(AuthorNames(series.AuthorArt)).Distinct()],
+                [.. series.AltTitles]);
 
         public bool SameAs(MatchTarget other) =>
             Title == other.Title &&
             OriginalTitle == other.OriginalTitle &&
+            AltTitles.SequenceEqual(other.AltTitles) &&
             Authors.SequenceEqual(other.Authors) &&
             ExternalIds.Count == other.ExternalIds.Count &&
             ExternalIds.All(pair => other.ExternalIds.TryGetValue(pair.Key, out var value) && value == pair.Value);
@@ -385,39 +393,38 @@ public partial class SourceMatchService(
         try
         {
             var results = await source.SearchAsync(target.Title, ct);
-            var verdict = await CrossIdPassAsync(source, target, results, ct);
+            var outcome = await JudgeAsync(source, priority, target, results, ct);
 
-            if (verdict.Confirmed is not null)
+            // A source with no English in it often has no use for the English title. Its own
+            // spelling of the work is only tried once that has found nothing, so a source the
+            // English title already finds costs no extra request.
+            if (outcome.Match is null)
             {
-                progress?.Report(new SourceMatchStep(source.Name, SourceMatchState.Matched));
-                return new SourceOutcome(
-                    source, priority, verdict.Confirmed, SourceMappingOrigin.CrossId, verdict.ConfirmedIds);
+                foreach (var term in NativeSearchTerms(source, target))
+                {
+                    try
+                    {
+                        var more = await source.SearchAsync(term, ct);
+                        results = [.. results.Concat(more.Where(m =>
+                            !results.Any(r => r.SourceSeriesId == m.SourceSeriesId)))];
+                    }
+                    catch (Exception ex) when (!ct.IsCancellationRequested)
+                    {
+                        logger.LogDebug(ex, "Search for {Term} on {Source} failed", term, source.Name);
+                        continue;
+                    }
+
+                    outcome = await JudgeAsync(source, priority, target, results, ct);
+                    if (outcome.Match is not null)
+                    {
+                        break;
+                    }
+                }
             }
 
-            // A result the cross-id pass ruled out is a different work, whatever its title
-            // scores — which is the whole reason to run that pass before this one. A user-made
-            // comic needs its credited author to agree as well: "Look Back" on WEBTOON CANVAS is
-            // somebody's office drama, not Fujimoto's one-shot, and the titles are identical.
-            var usable = results
-                .Where(r => !verdict.Rejected.Contains(r.SourceSeriesId))
-                .Where(r => !r.UserGenerated || AuthorsAgree(target.Authors, r.Author))
-                .ToList();
-
-            var candidates = usable
-                .Select(r => new ScrobbleCandidate(r.SourceSeriesId, r.Title, [], r.Url))
-                .ToList();
-            var best = ScrobbleMatching.BestCandidate(
-                target.Title, target.OriginalTitle, candidates, MatchThreshold);
-            if (best is null)
-            {
-                progress?.Report(new SourceMatchStep(source.Name, SourceMatchState.NoMatch));
-                return nothing;
-            }
-
-            progress?.Report(new SourceMatchStep(source.Name, SourceMatchState.Matched));
-            return new SourceOutcome(
-                source, priority, usable.First(r => r.SourceSeriesId == best.Id),
-                SourceMappingOrigin.TitleSearch, null);
+            progress?.Report(new SourceMatchStep(
+                source.Name, outcome.Match is null ? SourceMatchState.NoMatch : SourceMatchState.Matched));
+            return outcome;
         }
         catch (Exception ex)
         {
@@ -426,6 +433,106 @@ public partial class SourceMatchService(
             return nothing with { Failed = true };
         }
     }
+
+    private async Task<SourceOutcome> JudgeAsync(
+        ISource source, int priority, MatchTarget target, IReadOnlyList<SourceSeriesResult> results,
+        CancellationToken ct)
+    {
+        var verdict = await CrossIdPassAsync(source, target, results, ct);
+
+        if (verdict.Confirmed is not null)
+        {
+            return new SourceOutcome(
+                source, priority, verdict.Confirmed, SourceMappingOrigin.CrossId, verdict.ConfirmedIds);
+        }
+
+        // A result the cross-id pass ruled out is a different work, whatever its title
+        // scores, which is the whole reason to run that pass before this one. A user-made
+        // comic needs its credited author to agree as well: "Look Back" on WEBTOON CANVAS is
+        // somebody's office drama, not Fujimoto's one-shot, and the titles are identical.
+        var usable = results
+            .Where(r => !verdict.Rejected.Contains(r.SourceSeriesId))
+            .Where(r => !r.UserGenerated || AuthorsAgree(target.Authors, r.Author))
+            .ToList();
+
+        var candidates = usable
+            .Select(r => new ScrobbleCandidate(r.SourceSeriesId, r.Title, [], r.Url))
+            .ToList();
+        var best = ScrobbleMatching.BestCandidate(
+            [target.Title, .. NativeTitles(source, target)], candidates, MatchThreshold);
+        return best is null
+            ? new SourceOutcome(source, priority, null, SourceMappingOrigin.TitleSearch, null)
+            : new SourceOutcome(
+                source, priority, usable.First(r => r.SourceSeriesId == best.Id),
+                SourceMappingOrigin.TitleSearch, null);
+    }
+
+    /// <summary>
+    /// The titles to score a result against besides the English one: the original title, and for a
+    /// source that publishes no English, the alt title in the language it does publish.
+    /// </summary>
+    private static List<string> NativeTitles(ISource source, MatchTarget target)
+    {
+        var titles = new List<string>();
+        if (target.OriginalTitle is not null)
+        {
+            titles.Add(target.OriginalTitle);
+        }
+
+        if (!PublishesEnglish(source) &&
+            LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt &&
+            !titles.Contains(alt, StringComparer.OrdinalIgnoreCase))
+        {
+            titles.Insert(0, alt);
+        }
+
+        return titles;
+    }
+
+    /// <summary>
+    /// Queries for a source that publishes no English, other than the title already searched: the alt
+    /// title in the source's own language, and the original title only where its script is one the
+    /// source is written in, so a Spanish site is not asked for a Japanese title.
+    /// </summary>
+    private static List<string> NativeSearchTerms(ISource source, MatchTarget target)
+    {
+        var terms = new List<string>();
+        if (PublishesEnglish(source))
+        {
+            return terms;
+        }
+
+        if (LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt)
+        {
+            terms.Add(alt);
+        }
+
+        if (target.OriginalTitle is { } original && ScriptFits(original, source) &&
+            !terms.Contains(original, StringComparer.OrdinalIgnoreCase))
+        {
+            terms.Add(original);
+        }
+
+        return [.. terms.Where(t => !string.Equals(t, target.Title, StringComparison.OrdinalIgnoreCase))];
+    }
+
+    private static bool ScriptFits(string title, ISource source)
+    {
+        var kana = title.Any(c => c is >= '\u3040' and <= '\u30FF');
+        var hangul = title.Any(c => c is (>= '\uAC00' and <= '\uD7AF') or (>= '\u1100' and <= '\u11FF')
+            or (>= '\u3130' and <= '\u318F'));
+        var han = title.Any(c => c is (>= '\u4E00' and <= '\u9FFF') or (>= '\u3400' and <= '\u4DBF'));
+        return source.SupportedLanguages.Any(language => language.Split('-')[0].ToLowerInvariant() switch
+        {
+            "ja" => kana || han,
+            "ko" => hangul || han,
+            "zh" => han,
+            _ => false,
+        });
+    }
+
+    private static bool PublishesEnglish(ISource source) =>
+        source.SupportedLanguages.Any(l => LocalizedTitle.Matches(l, "en"));
 
     /// <summary>Runs <paramref name="work"/> once the gate has room, and always gives the slot back.</summary>
     private static async Task<T> WithGate<T>(SemaphoreSlim gate, Func<Task<T>> work, CancellationToken ct)

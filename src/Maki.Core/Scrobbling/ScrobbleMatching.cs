@@ -191,10 +191,14 @@ public static partial class ScrobbleMatching
     /// </summary>
     public static ScrobbleCandidate? BestCandidate(
         string title, string? altTitle, IReadOnlyList<ScrobbleCandidate> candidates,
+        double threshold = MatchThreshold) =>
+        BestCandidate(altTitle is null ? new[] { title } : [title, altTitle], candidates, threshold);
+
+    /// <summary>The same pick against any number of query titles, for a caller holding more than two.</summary>
+    public static ScrobbleCandidate? BestCandidate(
+        IReadOnlyList<string> queries, IReadOnlyList<ScrobbleCandidate> candidates,
         double threshold = MatchThreshold)
     {
-        var queries = altTitle is null ? new[] { title } : [title, altTitle];
-
         // Never below what the caller asked for: a caller stricter than StandaloneThreshold (the
         // scrobbler is, at 0.93) gets its own threshold on both branches, so the relaxation is
         // invisible to it.

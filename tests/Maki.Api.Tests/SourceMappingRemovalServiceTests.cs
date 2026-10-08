@@ -100,10 +100,13 @@ public class SourceMappingRemovalServiceTests : IDisposable
             };
             db.ChapterFiles.Add(file);
             db.SaveChanges();
-            db.Chapters.Add(new Chapter
+            var chapter = new Chapter
             {
                 SeriesId = seriesId, Number = 1, Language = "en", ChapterFileId = file.Id
-            });
+            };
+            db.Chapters.Add(chapter);
+            db.SaveChanges();
+            db.ChapterSourceLinks.Add(Link(chapter.Id, wrongId, "wrong-1"));
             db.SaveChanges();
         }
 
@@ -431,10 +434,13 @@ public class SourceMappingRemovalServiceTests : IDisposable
             };
             db.ChapterFiles.Add(file);
             db.SaveChanges();
-            db.Chapters.Add(new Chapter
+            var chapter = new Chapter
             {
                 SeriesId = seriesId, Number = 1, Language = "en", ChapterFileId = file.Id
-            });
+            };
+            db.Chapters.Add(chapter);
+            db.SaveChanges();
+            db.ChapterSourceLinks.Add(Link(chapter.Id, wrongId, "wrong-1"));
             db.SaveChanges();
         }
 
@@ -500,4 +506,165 @@ public class SourceMappingRemovalServiceTests : IDisposable
             Volume = volume,
             NumberRaw = numberRaw
         };
+
+    [Fact]
+    public async Task A_chapter_its_source_delisted_keeps_its_file_and_its_reads()
+    {
+        var seriesId = _db.SeedSeries(mappings: [Mapping("wrong"), Mapping("good")]);
+        var reader = _db.SeedUser("reader", Maki.Core.Security.MakiPermission.None);
+        int wrongId;
+        int delistedId;
+        using (var db = _db.NewContext())
+        {
+            var mappings = db.SourceMappings.Where(m => m.SeriesId == seriesId).ToList();
+            wrongId = mappings.Single(m => m.SourceName == "wrong").Id;
+            var goodId = mappings.Single(m => m.SourceName == "good").Id;
+            foreach (var m in mappings)
+            {
+                m.ChapterSnapshotAt = DateTime.UtcNow;
+            }
+
+            var file = new ChapterFile
+            {
+                SeriesId = seriesId, RelativePath = "Test Series/delisted.cbz", SourceName = "good",
+                DateAdded = DateTime.UtcNow
+            };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            var delisted = new Chapter { SeriesId = seriesId, Number = 1, Language = "en", ChapterFileId = file.Id };
+            var listed = new Chapter { SeriesId = seriesId, Number = 2, Language = "en" };
+            var wrongOnly = new Chapter { SeriesId = seriesId, Number = 3, Language = "en" };
+            db.Chapters.AddRange(delisted, listed, wrongOnly);
+            db.SaveChanges();
+            delistedId = delisted.Id;
+            db.ChapterSourceLinks.AddRange(
+                Link(listed.Id, goodId, "good-2"),
+                Link(wrongOnly.Id, wrongId, "wrong-3"));
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = seriesId, ChapterId = delisted.Id, PageIndex = 3, PageCount = 10,
+            });
+            db.SaveChanges();
+        }
+
+        var result = await BuildService().RemoveAsync(wrongId, deleteFiles: true);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.RemovedChapters);
+        Assert.Equal(2, result.RetainedChapters);
+        using var check = _db.NewContext();
+        Assert.Equal([1m, 2m], check.Chapters.Where(c => c.SeriesId == seriesId).OrderBy(c => c.Number)
+            .Select(c => c.Number!.Value).ToList());
+        Assert.NotNull(check.Chapters.Single(c => c.Id == delistedId).ChapterFileId);
+        Assert.Single(check.ChapterProgress.IgnoreQueryFilters().Where(p => p.ChapterId == delistedId));
+        Assert.Single(check.ChapterFiles.Where(f => f.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task Removing_the_last_source_keeps_a_delisted_chapter_with_reads_and_drops_an_empty_one()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("wrong"));
+        var reader = _db.SeedUser("reader", Maki.Core.Security.MakiPermission.None);
+        int wrongId;
+        int readId;
+        using (var db = _db.NewContext())
+        {
+            wrongId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+            var read = new Chapter { SeriesId = seriesId, Number = 1, Language = "en" };
+            var empty = new Chapter { SeriesId = seriesId, Number = 2, Language = "en" };
+            db.Chapters.AddRange(read, empty);
+            db.SaveChanges();
+            readId = read.Id;
+            db.ReaderBookmarks.Add(new ReaderBookmark
+            {
+                UserId = reader, SeriesId = seriesId, ChapterId = read.Id, PageIndex = 1, CreatedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        var result = await BuildService().RemoveAsync(wrongId, deleteFiles: false);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.RemovedChapters);
+        using var check = _db.NewContext();
+        Assert.Equal(readId, Assert.Single(check.Chapters.Where(c => c.SeriesId == seriesId)).Id);
+        Assert.Single(check.ReaderBookmarks.IgnoreQueryFilters().Where(b => b.ChapterId == readId));
+    }
+
+    [Fact]
+    public async Task A_linkless_chapter_whose_only_claim_is_a_file_from_the_removed_source_goes_with_it()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("wrong"));
+        int wrongId;
+        using (var db = _db.NewContext())
+        {
+            wrongId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+            var file = new ChapterFile
+            {
+                SeriesId = seriesId, RelativePath = "Test Series/wrong.cbz", SourceName = "wrong",
+                DateAdded = DateTime.UtcNow
+            };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 1, Language = "en", ChapterFileId = file.Id });
+            db.SaveChanges();
+        }
+
+        var result = await BuildService().RemoveAsync(wrongId, deleteFiles: false);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.RemovedChapters);
+        Assert.Equal(1, result.DetachedFiles);
+        using var check = _db.NewContext();
+        Assert.Empty(check.Chapters.Where(c => c.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task A_chapter_only_a_disabled_mapping_lists_survives_when_it_has_a_file_or_reads()
+    {
+        var seriesId = _db.SeedSeries(mappings: [Mapping("wrong"), Mapping("disabled", enabled: false)]);
+        var reader = _db.SeedUser("reader", Maki.Core.Security.MakiPermission.None);
+        int wrongId;
+        int fileChapterId;
+        int readChapterId;
+        using (var db = _db.NewContext())
+        {
+            var mappings = db.SourceMappings.Where(m => m.SeriesId == seriesId).ToList();
+            wrongId = mappings.Single(m => m.SourceName == "wrong").Id;
+            var disabled = mappings.Single(m => m.SourceName == "disabled");
+            disabled.ChapterSnapshotAt = DateTime.UtcNow;
+            var file = new ChapterFile
+            {
+                SeriesId = seriesId, RelativePath = "Test Series/kept.cbz", SourceName = "disabled",
+                DateAdded = DateTime.UtcNow
+            };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            var withFile = new Chapter { SeriesId = seriesId, Number = 1, Language = "en", ChapterFileId = file.Id };
+            var withReads = new Chapter { SeriesId = seriesId, Number = 2, Language = "en" };
+            var bare = new Chapter { SeriesId = seriesId, Number = 3, Language = "en" };
+            db.Chapters.AddRange(withFile, withReads, bare);
+            db.SaveChanges();
+            fileChapterId = withFile.Id;
+            readChapterId = withReads.Id;
+            db.ChapterSourceLinks.AddRange(
+                Link(withFile.Id, disabled.Id, "d-1"), Link(withReads.Id, disabled.Id, "d-2"),
+                Link(bare.Id, disabled.Id, "d-3"));
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                UserId = reader, SeriesId = seriesId, ChapterId = withReads.Id, PageIndex = 2, PageCount = 10,
+            });
+            db.SaveChanges();
+        }
+
+        var result = await BuildService().RemoveAsync(wrongId, deleteFiles: false);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.RemovedChapters);
+        using var check = _db.NewContext();
+        Assert.Equal(
+            new[] { fileChapterId, readChapterId }.Order(),
+            check.Chapters.Where(c => c.SeriesId == seriesId).Select(c => c.Id).AsEnumerable().Order());
+        Assert.Single(check.ChapterProgress.IgnoreQueryFilters().Where(p => p.ChapterId == readChapterId));
+    }
 }

@@ -330,8 +330,14 @@ public class LibraryImportService(
         // treat this as re-linking on-disk files into it rather than a failure. If it
         // already has files, adding another folder for it would be ambiguous, so refuse.
         var existingSeries = metadata.MangaBakaId is { } existingId
-            ? await db.Series.FirstOrDefaultAsync(s => s.MangaBakaId == existingId, ct)
+            ? await db.Series.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.MangaBakaId == existingId, ct)
             : null;
+        if (existingSeries is not null && !await db.Series.AnyAsync(s => s.Id == existingSeries.Id, ct))
+        {
+            return new ImportResult(item.FolderName, false,
+                localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
+        }
+
         if (existingSeries is not null)
         {
             using var seriesLock = new SeriesLockHandle(existingSeries.Id);

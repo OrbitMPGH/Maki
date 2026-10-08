@@ -193,7 +193,7 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     /// are set for per-file stages; done/success/error mark completion. <paramref name="operationId"/>
     /// is the id the client generated for this import run, so two admins importing at the same time
     /// can tell their own run's events apart from each other's on the shared broadcast.</summary>
-    public Task ImportProgress(
+    public virtual Task ImportProgress(
         string folderName, string stage, int? current = null, int? total = null,
         bool done = false, bool success = false, string? error = null, string? operationId = null) =>
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("importProgress",

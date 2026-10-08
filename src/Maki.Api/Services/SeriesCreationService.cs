@@ -164,7 +164,9 @@ public class SeriesCreationService(
             : null;
         if (metadata.MangaBakaId is int existingId)
         {
+            // Unfiltered: a copy in a root folder the caller was not granted is still a copy.
             var existing = await db.Series
+                .IgnoreQueryFilters()
                 .Where(s => s.MangaBakaId == existingId)
                 .Select(s => new { s.Id, s.Title })
                 .FirstOrDefaultAsync(ct);

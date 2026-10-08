@@ -494,6 +494,10 @@ public class SeriesController(
             .GroupBy(c => c.ChapterFileId!.Value)
             .ToDictionary(g => g.Key, g => g.OrderBy(c => c.Number is null).ThenBy(c => c.Number).First().Language);
 
+        // A file is linked by any chapter pointing at it, numbered or not: a one-shot has no number
+        // by construction. The numbers only feed the label.
+        var linkedFileIds = chapters.Select(c => c.ChapterFileId!.Value).ToHashSet();
+
         // chapter numbers linked to each ChapterFile, ascending
         var chaptersByFile = chapters
             .GroupBy(c => c.ChapterFileId!.Value)
@@ -542,7 +546,7 @@ public class SeriesController(
             var mapped = chaptersByFile.GetValueOrDefault(record.Id, []);
 
             var status = !present ? "missing"
-                : mapped.Count > 0 ? "linked"
+                : linkedFileIds.Contains(record.Id) ? "linked"
                 : parsed.IsRecognized ? "unlinked"
                 : "unrecognized";
 
@@ -1284,6 +1288,15 @@ public class SeriesController(
         var folders = await SeriesFolders.ForAsync(db, series, ct);
         var newFolder = Path.Combine(destination.Path, series.FolderName);
 
+        // Add and import never give two series of one root the same folder, so a move must not
+        // either. Checked again under the folder-name lock just before the save, once the files
+        // have moved and a racing add could have claimed the name.
+        if ((await SeriesCreationService.SeriesFoldersInRootAsync(db, destination.Id, id, ct))
+            .Contains(series.FolderName))
+        {
+            return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
+        }
+
         // A failure part way through puts back whatever already moved, since RootFolderId is
         // not updated and would otherwise resolve it under the old root. The series' own folder
         // moves whole; a folder it only has some files in gives up just those files, the same
@@ -1459,21 +1472,31 @@ public class SeriesController(
 
         var oldRootFolderPath = series.RootFolder.Path;
         var oldRootFolderId = series.RootFolderId;
-        series.RootFolderId = destination.Id;
-        try
+        using (await SeriesLocks.FolderNamesAsync(CancellationToken.None))
         {
-            // Cancellation must not be observed here: every file has already moved, so a
-            // cancelled save would leave the DB pointing at the old root while the files sit
-            // in the new one. CancellationToken.None keeps this write unconditional.
-            await db.SaveChangesAsync(CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            series.RootFolderId = oldRootFolderId;
-            logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
-            RollbackMoves();
+            if ((await SeriesCreationService.SeriesFoldersInRootAsync(db, destination.Id, id, CancellationToken.None))
+                .Contains(series.FolderName))
+            {
+                RollbackMoves();
+                return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
+            }
 
-            return this.ServerError(localizer, "error.series.moveSaveFailed", new { message = ex.Message });
+            series.RootFolderId = destination.Id;
+            try
+            {
+                // Cancellation must not be observed here: every file has already moved, so a
+                // cancelled save would leave the DB pointing at the old root while the files sit
+                // in the new one. CancellationToken.None keeps this write unconditional.
+                await db.SaveChangesAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                series.RootFolderId = oldRootFolderId;
+                logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
+                RollbackMoves();
+
+                return this.ServerError(localizer, "error.series.moveSaveFailed", new { message = ex.Message });
+            }
         }
 
         // Best-effort only: the move and the DB save both already succeeded, so a stray empty
