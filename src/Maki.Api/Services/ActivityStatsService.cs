@@ -424,6 +424,7 @@ public class ActivityStatsService(
             .Sum(p => p.Completed ? p.PageCount : Math.Min(p.PageIndex + 1, p.PageCount));
 
         var firstReads = await own
+            .Where(p => p.ReadSeconds > 0)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, First = g.Min(p => p.StartedAt) })
             .ToListAsync(ct);

@@ -74,7 +74,8 @@ public class ReadingBehaviourServiceTests : IDisposable
                 Completed = true,
                 ReadSeconds = readSeconds,
                 StartedAt = at ?? Now,
-                UpdatedAt = at ?? Now
+                UpdatedAt = at ?? Now,
+                CompletedAt = at ?? Now
             });
             db.SaveChanges();
         }
@@ -174,6 +175,39 @@ public class ReadingBehaviourServiceTests : IDisposable
 
         Assert.Equal(3, behaviour.BiggestDayCount);
         Assert.Equal(1, behaviour.ReadingDays);
+    }
+
+    [Fact]
+    public async Task Bulk_marked_chapters_never_become_the_biggest_day()
+    {
+        Seed(SeedSeries("Ticked"), downloaded: 30, read: 30, readSeconds: 0, at: Now);
+        Seed(SeedSeries("Actually read"), downloaded: 2, read: 2, at: Now.AddDays(-3));
+
+        var behaviour = await BehaviourAsync();
+
+        Assert.Equal(2, behaviour.BiggestDayCount);
+        Assert.Equal(1, behaviour.ReadingDays);
+    }
+
+    [Fact]
+    public async Task A_re_read_does_not_move_a_chapter_to_a_new_day()
+    {
+        var seriesId = SeedSeries("Reread");
+        Seed(seriesId, downloaded: 3, read: 3, at: Now.AddDays(-10));
+
+        using (var db = _db.NewContext())
+        {
+            foreach (var row in db.ChapterProgress.Where(p => p.SeriesId == seriesId))
+            {
+                row.UpdatedAt = Now;
+            }
+
+            db.SaveChanges();
+        }
+
+        var behaviour = await BehaviourAsync();
+
+        Assert.Equal(new DateOnly(2026, 6, 5), behaviour.BiggestDay);
     }
 
     [Fact]

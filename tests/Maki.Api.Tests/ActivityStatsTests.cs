@@ -777,6 +777,20 @@ public sealed class ActivityStatsTests : IDisposable
     }
 
     [Fact]
+    public async Task BulkMarkedChaptersDoNotCountAsASeriesStarted()
+    {
+        var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
+        var ticked = _db.SeedSeries("Ticked");
+        AddProgress(ticked, 19, 20, completed: true, may, readSeconds: 0);
+        var read = _db.SeedSeries("Read");
+        AddProgress(read, 19, 20, completed: true, may);
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(1, stats.Totals.SeriesStarted);
+    }
+
+    [Fact]
     public async Task SeriesStartedCountsFirstReadsInsideTheWindowOnly()
     {
         var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
