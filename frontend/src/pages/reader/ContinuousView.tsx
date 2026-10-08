@@ -73,7 +73,6 @@ export default function ContinuousView({
   pageRef.current = page
 
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
-  const sentinelVisible = useRef(false)
   const reportEnd = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -148,27 +147,28 @@ export default function ContinuousView({
   // center band, so the count sticks on the previous, taller page even once the strip is fully
   // scrolled. A 1px sentinel right after the last page catches that: it enters the viewport only
   // once the strip is scrolled essentially to its end, at which point the last page is current
-  // regardless of the band. Until every image has settled the strip is collapsed and the sentinel
-  // sits in view at the top, so it only counts once nothing is still waiting for its size.
+  // regardless of the band. Until the images around the viewport have settled the strip is
+  // collapsed and the sentinel sits in view at the top, so it only counts once nothing that could
+  // still move it is waiting for its size. Lazy pages that were skipped over stay unrequested, so
+  // only images at or below the viewport top are waited on.
   useEffect(() => {
     if (urls.length === 0 || !sentinel.current) return
     const target = sentinel.current
     reportEnd.current = () => {
-      if (!sentinelVisible.current) return
-      if (pages.current.slice(0, urls.length).some((element) => !element?.complete)) return
-      onPageChange(urls.length - 1)
+      const scroller = container.current?.parentElement
+      if (!scroller) return
+      const view = scroller.getBoundingClientRect()
+      const end = target.getBoundingClientRect()
+      if (end.bottom <= view.top || end.top >= view.bottom) return
+      const pending = pages.current
+        .slice(0, urls.length)
+        .some((element) => element && !element.complete && element.getBoundingClientRect().bottom >= view.top)
+      if (!pending) onPageChange(urls.length - 1)
     }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        sentinelVisible.current = entries[entries.length - 1]?.isIntersecting ?? false
-        reportEnd.current()
-      },
-      { threshold: 0 },
-    )
+    const observer = new IntersectionObserver(() => reportEnd.current(), { threshold: 0 })
     observer.observe(target)
     return () => {
       observer.disconnect()
-      sentinelVisible.current = false
       reportEnd.current = () => {}
     }
   }, [urls, onPageChange])
