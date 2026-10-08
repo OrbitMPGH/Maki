@@ -67,6 +67,10 @@ export interface NavAvailability {
   homeEnabled: boolean
   /** Holds AddSeries: decides whether /add reads "Add series" or "Request series". */
   canAdd: boolean
+  /** Holds ImportLibrary: the Import tab 403s without it. */
+  canImport: boolean
+  /** Holds UseTrackers: the Scrobble tab 403s without it. */
+  canTrack: boolean
   /** Whether the Requests tab is worth showing: an admin actions them, a requester tracks theirs. */
   requestsVisible: boolean
 }
@@ -75,7 +79,8 @@ export interface NavAvailability {
  * Hides tabs that can't work rather than showing ones that error or land nowhere:
  * Discover needs the local MangaBaka database, Home can be switched off entirely by anyone
  * who doesn't read in Maki (its route then redirects to the library), and Requests is only
- * meaningful to an admin or to someone who has to ask one.
+ * meaningful to an admin or to someone who has to ask one. Import and Scrobble need their own
+ * permission.
  *
  * Cosmetic, like every permission check in the client: every endpoint behind these tabs
  * authorizes on its own.
@@ -84,6 +89,8 @@ export function navSections({
   discoverAvailable,
   homeEnabled,
   canAdd,
+  canImport,
+  canTrack,
   requestsVisible,
   isAdmin = false,
 }: NavAvailability): typeof NAV_SECTIONS {
@@ -92,6 +99,8 @@ export function navSections({
   if (!discoverAvailable) hidden.add('/discover')
   if (!homeEnabled) hidden.add('/home')
   if (!requestsVisible) hidden.add('/requests')
+  if (!canImport) hidden.add('/import')
+  if (!canTrack) hidden.add('/scrobble')
 
   return NAV_SECTIONS.map((section) => ({
     ...section,

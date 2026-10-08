@@ -336,11 +336,15 @@ function AppShellRoutes() {
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
+  const canImport = can('ImportLibrary')
+  const canTrack = can('UseTrackers')
   const sections = navSections({
     isAdmin,
     discoverAvailable,
     homeEnabled,
     canAdd,
+    canImport,
+    canTrack,
     // An admin works the queue; anyone who has to ask for a series or a download wants to see what
     // happened to what they asked for. Someone holding both permissions never files one.
     requestsVisible: isAdmin || !canAdd || !can('DownloadChapters'),
@@ -453,10 +457,16 @@ function AppShellRoutes() {
             <Route path="/add" element={<AddSeriesPage />} />
             <Route path="/creator/:name" element={<CreatorPage />} />
             <Route path="/discover/:tab?" element={<DiscoverPage />} />
-            <Route path="/import" element={<ImportPage />} />
+            <Route
+              path="/import"
+              element={canImport ? <ImportPage /> : <Navigate to="/" replace />}
+            />
             <Route path="/activity" element={<ActivityPage />} />
             <Route path="/requests" element={<RequestsPage />} />
-            <Route path="/scrobble" element={<ScrobblePage />} />
+            <Route
+              path="/scrobble"
+              element={canTrack ? <ScrobblePage /> : <Navigate to="/" replace />}
+            />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             {/* The page was called Rewind until the all-time tab arrived. Bookmarks and any link
