@@ -112,7 +112,7 @@ public class RecommendationController(
         var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
             ? TasteView.Shelf
             : TasteView.Read;
-        var insights = await tasteInsights.GetAsync(currentUser, parsed, refresh, ct);
+        var insights = await tasteInsights.GetAsync(currentUser, parsed, refresh, await hidden.TermsAsync(ct), ct);
 
         // Groups/DriftUnavailable/Unavailable are catalogue keys, not display text; see the
         // TasteInsights doc. TasteInsightsService is a singleton whose result is cached per user,
