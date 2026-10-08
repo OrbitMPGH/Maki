@@ -132,6 +132,10 @@ function writeStored(key: string, value: string) {
  * series it has never reported (`readChapterCount === null`) counts as 0% rather than being
  * dropped: the whole library would otherwise vanish the moment the slider left 0.
  */
+function titleSortKey(s: SeriesDto): string {
+  return s.displayTitle !== s.title ? s.displayTitle.toLowerCase() : s.sortTitle
+}
+
 function readPercent(s: SeriesDto): number {
   const total = s.wantedChapterCount || s.knownChapterCount || 0
   if (total <= 0) return 0
@@ -365,7 +369,9 @@ export default function LibraryPage() {
       list = list.filter(
         (s) =>
           s.title.toLowerCase().includes(q) ||
-          (s.originalTitle?.toLowerCase().includes(q) ?? false),
+          s.displayTitle.toLowerCase().includes(q) ||
+          (s.originalTitle?.toLowerCase().includes(q) ?? false) ||
+          s.altTitles.some((alt) => alt.title.toLowerCase().includes(q)),
       )
     }
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
@@ -420,7 +426,7 @@ export default function LibraryPage() {
     list.sort((a, b) => {
       switch (sort) {
         case 'title':
-          return a.sortTitle.localeCompare(b.sortTitle)
+          return titleSortKey(a).localeCompare(titleSortKey(b))
         case 'incomplete':
           return missingCount(b) - missingCount(a)
         case 'status':
