@@ -10490,6 +10490,7 @@ msgstr "每种类型显示一个方块，点击后打开最受欢迎的作品。
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
