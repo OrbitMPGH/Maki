@@ -3,6 +3,7 @@ using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
+using Maki.Core.Http;
 using Maki.Core.Metadata;
 using Maki.Core.Quality;
 using Maki.Core.Security;
@@ -134,6 +135,13 @@ public class SearchController(
             {
                 response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             }
+            catch (HttpRequestException ex) when (IsBlockedDestination(ex))
+            {
+                logger.LogWarning(
+                    "Blocked cover proxy connection to {Host} via source {Source}: not a public address",
+                    current.Host, sourceName);
+                return this.Fail(localizer, "error.search.hostNotServed");
+            }
             catch (Exception ex) when (ex is HttpRequestException || (ex is OperationCanceledException && !ct.IsCancellationRequested))
             {
                 logger.LogDebug(ex, "Cover fetch from {Host} via source {Source} failed", current.Host, sourceName);
@@ -198,6 +206,19 @@ public class SearchController(
         }
 
         return this.Fail(localizer, "error.search.tooManyRedirects");
+    }
+
+    private static bool IsBlockedDestination(Exception? ex)
+    {
+        for (; ex is not null; ex = ex.InnerException)
+        {
+            if (ex is BlockedDestinationException)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Redirect hops the cover proxy will follow before giving up.</summary>

@@ -135,8 +135,14 @@ try
         // caller-supplied URL and validates its host against the source's allowlist; an automatic
         // redirect would sidestep that check entirely, so the proxy follows hops itself and re-checks
         // each one. CoverService only ever fetches URLs a source produced, so losing auto-redirect
-        // there is a non-event.
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
+        // there is a non-event. The allowlist checks host names only, so connections are also held
+        // to public addresses: a source domain that resolves to the LAN must not be readable.
+        .ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            var handler = PublicAddressGuard.CreateHandler();
+            handler.AllowAutoRedirect = false;
+            return handler;
+        })
         .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     // Bulk dump downloads (~350 MB nightly snapshot) bypass the rate limiter — a single

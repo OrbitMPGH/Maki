@@ -2,10 +2,13 @@ using System.Net;
 using System.Text.Json;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
+using Maki.Core.Http;
 using Maki.Core.Metadata;
 using Maki.Core.Sources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -77,6 +80,18 @@ public class SourceCoverProxyTests
     }
 
     [Fact]
+    public async Task Refuses_a_source_host_that_resolves_to_a_private_address()
+    {
+        var (controller, _) = Build((_, _) =>
+            throw new HttpRequestException("connect", new BlockedDestinationException("private")));
+
+        var result = await controller.SourceCover("src", "https://cdn.src.test/a.jpg", CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("error.search.hostNotServed", JsonSerializer.Serialize(bad.Value));
+    }
+
+    [Fact]
     public async Task Still_refuses_hosts_outside_the_source()
     {
         var (controller, _) = Build(Respond(HttpStatusCode.OK, Jpeg, "image/jpeg"));
@@ -135,5 +150,57 @@ public class SourceCoverProxyTests
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
                 Task.FromResult(upstream(request, ct));
         }
+    }
+}
+
+/// <summary>
+/// The host allowlist compares names only, so the real <c>covers</c> client must also refuse to
+/// connect anywhere but a public address, or a source domain pointed at the LAN would be readable.
+/// </summary>
+[Collection(ConfigDirCollection.Name)]
+public sealed class CoverClientAddressGuardTests : IDisposable
+{
+    private readonly string _configDir;
+    private readonly string? _previousConfigDir;
+
+    public CoverClientAddressGuardTests()
+    {
+        CookieSession.EnsureWebRoot();
+        _configDir = Path.Combine(Path.GetTempPath(), "maki-coverguard-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_configDir);
+        _previousConfigDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
+        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
+    }
+
+    public void Dispose()
+    {
+        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _previousConfigDir);
+        try
+        {
+            Directory.Delete(_configDir, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+    }
+
+    [Fact]
+    public async Task The_covers_client_refuses_to_connect_to_loopback()
+    {
+        using var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+        using var factory = new WebApplicationFactory<Program>();
+        var client = factory.Services.GetRequiredService<IHttpClientFactory>().CreateClient("covers");
+
+        var ex = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.GetAsync($"http://127.0.0.1:{port}/a.jpg"));
+        Exception? e = ex;
+        while (e is not null and not BlockedDestinationException)
+        {
+            e = e.InnerException;
+        }
+
+        Assert.NotNull(e);
     }
 }
