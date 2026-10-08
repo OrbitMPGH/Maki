@@ -75,6 +75,8 @@ public class FileRelinkPlannerTests : IDisposable
             NullLogger<KavitaScanService>.Instance);
         var planner = new FileRelinkPlanner(
             context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), scans,
+            new ChapterFileDeletion(context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+                TimeProvider.System, NullLogger<ChapterFileDeletion>.Instance),
             NullLogger<FileRelinkPlanner>.Instance);
 
         var plan = await planner.PlanAsync(loaded, RelinkOptions.None);
@@ -494,6 +496,35 @@ public class FileRelinkPlannerTests : IDisposable
     }
 
     [Fact]
+    public async Task Apply_keeps_a_superseded_file_another_series_records()
+    {
+        var (seriesId, _, singlePath) = SeedSupersededSingle();
+        var otherId = SeedSeries(s =>
+        {
+            s.Title = "Other";
+            s.SortTitle = "Other";
+            s.FolderName = "Other";
+        });
+        using (var db = _db.NewContext())
+        {
+            db.ChapterFiles.Add(new ChapterFile
+            {
+                SeriesId = otherId, RelativePath = singlePath, SourceName = "manual", DateAdded = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+
+        var result = await ApplyAsync(seriesId, deleteSuperseded: true, confirmedSuperseded: [singlePath]);
+
+        Assert.Equal(0, result.Deleted);
+        Assert.Equal(0, result.Failed);
+        Assert.True(File.Exists(Path.Combine(_root, singlePath)));
+        using var check = _db.NewContext();
+        Assert.DoesNotContain(check.ChapterFiles, f => f.SeriesId == seriesId && f.RelativePath == singlePath);
+        Assert.Single(check.ChapterFiles, f => f.SeriesId == otherId);
+    }
+
+    [Fact]
     public async Task Apply_without_delete_leaves_a_confirmed_superseded_file_on_disk()
     {
         var (seriesId, _, singlePath) = SeedSupersededSingle();
@@ -512,6 +543,8 @@ public class FileRelinkPlannerTests : IDisposable
             NullLogger<KavitaScanService>.Instance);
         return new FileRelinkPlanner(
             context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), scans,
+            new ChapterFileDeletion(context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+                TimeProvider.System, NullLogger<ChapterFileDeletion>.Instance),
             NullLogger<FileRelinkPlanner>.Instance);
     }
 
