@@ -67,14 +67,14 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | RECO/META | METADATA-04 | pending |
 | RECO/META | METADATA-07 | pending |
 | RECO/META | METADATA-09 | pending |
-| SOURCES | SOURCES-01 | pending |
-| SOURCES | SOURCES-02 | pending |
-| SOURCES | SOURCES-03 | pending |
-| SOURCES | SOURCES-07 | pending |
-| SOURCES | SOURCES-09 | pending |
-| SOURCES | SOURCES-10 | pending |
-| SOURCES | SOURCES-11 | pending |
-| SOURCES | SOURCES-12 | pending |
+| SOURCES | SOURCES-01 | done b014d5ba |
+| SOURCES | SOURCES-02 | done ef67c288 (MangaFire zh code unconfirmed) |
+| SOURCES | SOURCES-03 | done 712e082c |
+| SOURCES | SOURCES-07 | done 344434a4, 60ccc2c7 |
+| SOURCES | SOURCES-09 | done 5c4b7132 |
+| SOURCES | SOURCES-10 | done 92b8c15e, 722960e9, b17c0a1f, b336be63, 26a778a0 |
+| SOURCES | SOURCES-11 | done 9ee93b62 |
+| SOURCES | SOURCES-12 | done 3fbd0c6d |
 | FE-LIBRARY | FE-LIBRARY-01 | done 7ffe8338 |
 | FE-LIBRARY | FE-LIBRARY-14 | done cc58dfd3 |
 | FE-LIBRARY | FE-LIBRARY-15 | done 5cbb41cc |
