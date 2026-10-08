@@ -36,6 +36,7 @@ const integer = cached((l) => new Intl.NumberFormat(l))
 const shortMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'short' }))
 const longMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'long' }))
 const dateOnly = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium' }))
+const calendarDate = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium', timeZone: 'UTC' }))
 const dateAndTime = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium', timeStyle: 'short' }))
 const timeOnly = cached((l) => new Intl.DateTimeFormat(l, { timeStyle: 'short' }))
 const shortWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'short' }))
@@ -75,6 +76,15 @@ export function formatBytes(bytes: number | null | undefined): string {
 export function formatDate(value: string | number | Date): string {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '' : dateOnly().format(date)
+}
+
+/**
+ * "15 Sep 2026" for a day with no time of day, such as a chapter's release date. The server stamps
+ * those as midnight UTC, so the viewer's zone would show the previous day anywhere west of Greenwich.
+ */
+export function formatCalendarDate(value: string | number | Date): string {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : calendarDate().format(date)
 }
 
 /** "15 Sep 2026, 16:45". */
