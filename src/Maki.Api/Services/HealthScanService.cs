@@ -146,6 +146,7 @@ public class HealthScanService(MakiDbContext db)
         db.ChangeTracker.Clear();
 
         HealthScan? current = null;
+        var skippedForQueue = 0;
         foreach (var id in pending)
         {
             current = await db.HealthScans.FindAsync([scanId], ct);
@@ -158,6 +159,8 @@ public class HealthScanService(MakiDbContext db)
                     if (!await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct) &&
                         !await db.HealthOperations.AnyAsync(o => o.FileId == file.Id && o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed", ct))
                         await AnalyzeAsync(file, rootPaths[file.RootFolderId], force, ct, workers, verify);
+                    else
+                        skippedForQueue++;
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
                 {
@@ -173,18 +176,22 @@ public class HealthScanService(MakiDbContext db)
         if (current == null) return;
         current.Status = current.Error == null ? "completed" : "partial";
         current.FinishedAt = DateTime.UtcNow;
-        db.HealthHistory.Add(new()
+        var analysedNothing = current.Error == null && pending.Count > 0 && skippedForQueue == pending.Count;
+        if (!analysedNothing)
         {
-            Kind = "scan",
-            MessageKey = "health.history.scan",
-            ParamsJson = JsonSerializer.Serialize(new
+            db.HealthHistory.Add(new()
             {
-                scan = scanId,
-                completed = current.Completed,
-                total = current.Total,
-                status = current.Status,
-            }),
-        });
+                Kind = "scan",
+                MessageKey = "health.history.scan",
+                ParamsJson = JsonSerializer.Serialize(new
+                {
+                    scan = scanId,
+                    completed = current.Completed,
+                    total = current.Total,
+                    status = current.Status,
+                }),
+            });
+        }
         await db.SaveChangesAsync(ct);
         // The caller was handed a HealthScan and reads it after this returns; it detached with the
         // first Clear, so hand back what was actually written.

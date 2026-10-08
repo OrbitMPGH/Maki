@@ -259,6 +259,15 @@ public class HealthWorkspaceTests : IDisposable
         Assert.False((await db.HealthFiles.SingleAsync()).Removed);
         Assert.Contains(db.HealthFindings,f=>f.Kind=="missing"&&f.State=="open");
     }
+    [Fact] public async Task A_scan_that_only_skipped_series_with_active_downloads_leaves_no_history_row()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        db.DownloadQueue.Add(new DownloadQueueItem{SeriesId=file.SeriesId!.Value,Status=QueueStatus.Queued});
+        var scan=new HealthScan{Verify=true};db.HealthScans.Add(scan);await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        Assert.Equal("completed",scan.Status);
+        Assert.DoesNotContain(db.HealthHistory,h=>h.Kind=="scan");
+    }
     [Fact] public async Task Unavailable_root_does_not_resolve_prior_findings()
     {
         using var db=fixture.NewContext();var file=await Seed(db); var scan=new HealthScan();db.HealthScans.Add(scan);await db.SaveChangesAsync();
