@@ -18,7 +18,16 @@ export function useLeaveGuard(
     const nav = navigator as typeof navigator & { go(delta: number): void }
     const { push, replace, go } = nav
     let bypass = false
-    let expectedPops = 0
+    // A popstate this hook triggered itself. Entries expire because a go() that leaves the document
+    // (or a cancelled beforeunload prompt) never delivers one, and a stale entry would let the next
+    // real Back through unguarded.
+    let expectedPops: number[] = []
+    const expectPop = () => expectedPops.push(Date.now() + 1000)
+    const takeExpectedPop = () => {
+      const now = Date.now()
+      expectedPops = expectedPops.filter((expiry) => expiry > now)
+      return expectedPops.shift() !== undefined
+    }
     let idx: number | null = window.history.state?.idx ?? null
     const readIdx = () => {
       idx = window.history.state?.idx ?? null
@@ -56,7 +65,7 @@ export function useLeaveGuard(
     nav.go = (delta) => {
       if (!bypass && latest.current.blocks({ pathname: '', search: '' })) {
         latest.current.onBlock(() => {
-          expectedPops++
+          expectPop()
           go.call(nav, delta)
         })
         return
@@ -67,8 +76,7 @@ export function useLeaveGuard(
     // Registered in the capture phase so it runs before the router's own listener. A blocked
     // Back/Forward is stopped there and undone with history.go; the router never saw it.
     const onPop = (event: PopStateEvent) => {
-      if (expectedPops > 0) {
-        expectedPops--
+      if (takeExpectedPop()) {
         readIdx()
         return
       }
@@ -83,10 +91,10 @@ export function useLeaveGuard(
         return
       }
       event.stopImmediatePropagation()
-      expectedPops++
+      expectPop()
       window.history.go(-delta)
       latest.current.onBlock(() => {
-        expectedPops++
+        expectPop()
         window.history.go(delta)
       })
     }

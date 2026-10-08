@@ -303,7 +303,7 @@ function ConfigField({
         />
       )
     default:
-      return <TextInput {...common} value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value)} />
+      return <TextInput {...common} autoComplete="off" value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value)} />
   }
 }
 
