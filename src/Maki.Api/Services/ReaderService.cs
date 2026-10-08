@@ -284,6 +284,18 @@ public class ReaderService(
         await db.ChapterProgress.AsNoTracking().FirstOrDefaultAsync(p => p.ChapterId == chapterId, ct);
 
     /// <summary>
+    /// Where the reader opens: the saved page, or the start for a finished chapter. A position past
+    /// the end belongs to an earlier, longer file that was since replaced; handing it back would
+    /// open on page one while the write-back clamps it to the last page and marks the chapter read.
+    /// </summary>
+    public static int ResumePageFor(ChapterProgress? saved, int pageCount) =>
+        saved is null || saved.Completed || saved.PageIndex < 0 || saved.PageIndex >= pageCount
+            ? 0
+            : saved.PageIndex;
+
+    public static bool IsPageInRange(int pageIndex, int pageCount) => pageIndex >= 0 && pageIndex < pageCount;
+
+    /// <summary>
     /// A single report may not carry more reading time than this, however long the client says it
     /// was away. The built-in reader heartbeats every minute, so anything near this is already a
     /// client that lost connectivity mid-chapter; past it, it is a broken or hostile one, and an

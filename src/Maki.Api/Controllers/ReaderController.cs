@@ -204,7 +204,7 @@ public class ReaderController(
             seriesChapterCount,
             seriesReadCount,
             seriesWantedCount,
-            resumePage = saved?.Completed == true ? 0 : saved?.PageIndex ?? 0,
+            resumePage = ReaderService.ResumePageFor(saved, slice.PageCount),
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
@@ -437,6 +437,11 @@ public class ReaderController(
         if (slice is null)
         {
             return NotFound();
+        }
+
+        if (!ReaderService.IsPageInRange(request.PageIndex, slice.PageCount))
+        {
+            return this.Fail(localizer, "error.reader.pageOutOfRange");
         }
 
         var finished = await reader.SaveProgressAsync(

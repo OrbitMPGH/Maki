@@ -840,6 +840,31 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.Contains(Events(), e => e.Type == StatsEventType.ReadingTime && e.Value == 120);
     }
 
+    [Theory]
+    [InlineData(null, false, 0)]
+    [InlineData(5, false, 5)]
+    [InlineData(5, true, 0)]
+    // Saved against a longer file that has since been replaced by a shorter one.
+    [InlineData(45, false, 0)]
+    [InlineData(40, false, 0)]
+    [InlineData(39, false, 39)]
+    public void ResumePageNeverPointsPastTheChapter(int? savedPage, bool completed, int expected)
+    {
+        var saved = savedPage is int page
+            ? new ChapterProgress { PageIndex = page, Completed = completed }
+            : null;
+
+        Assert.Equal(expected, ReaderService.ResumePageFor(saved, 40));
+    }
+
+    [Theory]
+    [InlineData(-1, false)]
+    [InlineData(0, true)]
+    [InlineData(39, true)]
+    [InlineData(40, false)]
+    public void OnlyPagesInsideTheChapterCanBeSaved(int page, bool expected) =>
+        Assert.Equal(expected, ReaderService.IsPageInRange(page, 40));
+
     /// <summary>Opening a watched chapter is not finishing it: only reaching the last page counts as the read.</summary>
     [Fact]
     public async Task OpeningAWatchedChapterDoesNotCountItAsRead()

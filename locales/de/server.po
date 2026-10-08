@@ -879,6 +879,11 @@ msgid "error.reader.nothingToRead"
 msgstr "Nichts mehr zu lesen"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
+#. English: Page is outside this chapter
+msgid "error.reader.pageOutOfRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: No such reading profile
 #, fuzzy
 msgid "error.reader.profileNotFound"
