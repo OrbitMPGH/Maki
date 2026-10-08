@@ -16,6 +16,7 @@ import { IconAlertTriangle, IconBell, IconBellOff, IconCircleCheck } from '@tabl
 import { useNavigate } from 'react-router-dom'
 import {
   useInbox,
+  useInboxPrefs,
   useInboxUnread,
   useMarkAllInboxRead,
   useMarkInboxRead,
@@ -37,6 +38,7 @@ export function NotificationBell() {
   const navigate = useNavigate()
 
   const { data: unread } = useInboxUnread()
+  useInboxPrefs()
   const { data, isLoading } = useInbox()
   const markRead = useMarkInboxRead()
   const markAll = useMarkAllInboxRead()

@@ -2,7 +2,7 @@ import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/s
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
-import type { InboxPrefs, InboxPush } from './inbox'
+import { inboxPrefsQuery, type InboxPush } from './inbox'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import type { QueueHistoryDto, QueueItemDto } from './types'
 
@@ -256,7 +256,7 @@ export function useLiveEvents() {
       })
 
       // Addressed to one user's group, not a broadcast: this is somebody's own mail.
-      conn.on('inboxNotification', (item: InboxPush) => {
+      conn.on('inboxNotification', async (item: InboxPush) => {
         // The push carries the recipient's new unread count, so the badge updates without a
         // round trip. The feed is invalidated rather than patched: it is paged and filtered, and
         // splicing a row into every cached filter combination is more ways to be wrong than it is
@@ -264,10 +264,11 @@ export function useLiveEvents() {
         queryClient.setQueryData(['inbox', 'unread'], { count: item.unread })
         void queryClient.invalidateQueries({ queryKey: ['inbox', 'feed'] })
 
-        // Read from the cache rather than a hook: this handler is registered once for the app's
-        // lifetime and must not re-subscribe every time the preference changes. Absent prefs
-        // (first load, still fetching) default to showing the toast, matching the server default.
-        const prefs = queryClient.getQueryData<InboxPrefs>(['inbox', 'prefs'])
+        // Read through the query client rather than a hook: this handler is registered once for
+        // the app's lifetime and must not re-subscribe every time the preference changes. The
+        // bell keeps the query cached; ensureQueryData covers a push that beats its first fetch.
+        // If the prefs cannot be loaded the toast shows, matching the server default.
+        const prefs = await queryClient.ensureQueryData(inboxPrefsQuery).catch(() => null)
         if (prefs?.toasts === false) return
 
         notifications.show({
