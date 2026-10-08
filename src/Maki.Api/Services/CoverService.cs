@@ -27,9 +27,16 @@ public class CoverService(
     public void DeleteCover(int seriesId)
     {
         var dir = Path.GetDirectoryName(CoverPathFor(seriesId))!;
-        if (Directory.Exists(dir))
+        try
         {
-            Directory.Delete(dir, recursive: true);
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not remove the cover folder {Folder} for series {SeriesId}", dir, seriesId);
         }
     }
 
