@@ -322,6 +322,17 @@ public class ActivityStatsService(
                         r.LastProgressAt >= utcStart && r.LastProgressAt < utcEnd)
             .ToListAsync(ct);
 
+        var droppedSeriesIds = droppedRows.Where(r => r.SeriesId != null).Select(r => r.SeriesId!.Value).Distinct().ToList();
+        if (droppedSeriesIds.Count > 0)
+        {
+            var shown = (await db.Series.AsNoTracking()
+                    .Where(s => droppedSeriesIds.Contains(s.Id) && s.Incognito != IncognitoMode.Full)
+                    .Select(s => s.Id)
+                    .ToListAsync(ct))
+                .ToHashSet();
+            droppedRows = droppedRows.Where(r => r.SeriesId is not int sid || shown.Contains(sid)).ToList();
+        }
+
         // These come off ReadingState, not the event log, so their series are not necessarily in
         // seriesMeta — a series can stall in a window where it produced no events at all.
         var droppedIds = droppedRows
@@ -413,6 +424,7 @@ public class ActivityStatsService(
             .Sum(p => p.Completed ? p.PageCount : Math.Min(p.PageIndex + 1, p.PageCount));
 
         var firstReads = await own
+            .Where(p => !p.BulkMarked)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, First = g.Min(p => p.StartedAt) })
             .ToListAsync(ct);

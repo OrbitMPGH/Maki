@@ -284,6 +284,18 @@ public class ReaderService(
         await db.ChapterProgress.AsNoTracking().FirstOrDefaultAsync(p => p.ChapterId == chapterId, ct);
 
     /// <summary>
+    /// Where the reader opens: the saved page, or the start for a finished chapter. A position past
+    /// the end belongs to an earlier, longer file that was since replaced; handing it back would
+    /// open on page one while the write-back clamps it to the last page and marks the chapter read.
+    /// </summary>
+    public static int ResumePageFor(ChapterProgress? saved, int pageCount) =>
+        saved is null || saved.Completed || saved.PageIndex < 0 || saved.PageIndex >= pageCount
+            ? 0
+            : saved.PageIndex;
+
+    public static bool IsPageInRange(int pageIndex, int pageCount) => pageIndex >= 0 && pageIndex < pageCount;
+
+    /// <summary>
     /// A single report may not carry more reading time than this, however long the client says it
     /// was away. The built-in reader heartbeats every minute, so anything near this is already a
     /// client that lost connectivity mid-chapter; past it, it is a broken or hostile one, and an
@@ -333,18 +345,18 @@ public class ReaderService(
     /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct)
+        TimeReport time, CancellationToken ct, bool bulk = false)
     {
         try
         {
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, bulk, ct);
         }
         catch (DbUpdateException e) when (IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
             db.ChangeTracker.Clear();
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, bulk, ct);
         }
     }
 
@@ -355,14 +367,14 @@ public class ReaderService(
         e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct)
+        TimeReport time, bool bulk, CancellationToken ct)
     {
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
         var now = DateTime.UtcNow;
         // A watched row is deliberately not "already completed" here: it was ticked off without
-        // being read, so actually reading it must fire the completion branch below and become a
-        // genuine read. Once Watched clears, the flag is sticky again and a re-read emits nothing.
+        // being read, so finishing it must fire the completion branch below and become a genuine
+        // read. Once Watched clears, the flag is sticky again and a re-read emits nothing.
         var wasCompleted = row is { Completed: true, Watched: false };
 
         if (row is null)
@@ -376,23 +388,44 @@ public class ReaderService(
             db.ChapterProgress.Add(row);
         }
 
-        // A watched tick is not a start: the first genuine read dates the series, not the tick.
-        if (row.Watched)
-        {
-            row.StartedAt = now;
-        }
-
         // The resume position is free to move backwards; completion is not.
         row.PageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, slice.PageCount - 1));
         row.PageCount = slice.PageCount;
-        row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
-        var justCompleted = row.Completed && !wasCompleted;
+
+        // A watched row stays ticked off while it is merely opened: the reader writes page 0 a
+        // moment after mounting and an OPDS app prefetches pages, neither of which is a read. Only a
+        // save that completes the chapter (last page or an explicit completed) turns it into one.
+        var finishing = completed ?? row.PageIndex >= slice.PageCount - 1;
+        var stillWatched = row.Watched && !finishing;
+        if (!stillWatched)
+        {
+            // A watched tick is not a start: the first genuine read dates the series, not the tick.
+            // Its Completed never went false, so the read date has to be stamped here as well.
+            if (row.Watched)
+            {
+                row.StartedAt = now;
+                row.CompletedAt = now;
+            }
+
+            row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
+            // Read here, so it is no longer external, deliberately un-read, or merely watched.
+            row.External = false;
+            row.UnreadAt = null;
+            row.Watched = false;
+        }
+
+        var justCompleted = !stillWatched && row.Completed && !wasCompleted;
+        if (bulk)
+        {
+            row.BulkMarked |= justCompleted;
+        }
+        else if (!stillWatched && row.Completed && finishing)
+        {
+            row.BulkMarked = false;
+        }
+
         var reportedSeconds = Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
         row.ReadSeconds += reportedSeconds;
-        // Read here, so it is no longer external, deliberately un-read, or merely watched.
-        row.External = false;
-        row.UnreadAt = null;
-        row.Watched = false;
         row.UpdatedAt = now;
 
         // Flush on completion too: the leftover under the threshold is time spent on this chapter,
@@ -677,6 +710,7 @@ public class ReaderService(
             row.PageIndex = pageCount.Value - 1;
             row.PageCount = pageCount.Value;
             row.Completed = true;
+            row.BulkMarked = true;
             row.Watched = false;
             row.External = false;
             row.UnreadAt = null;
@@ -749,6 +783,7 @@ public class ReaderService(
 
         var now = DateTime.UtcNow;
         row.Completed = false;
+        row.BulkMarked = false;
         row.Watched = false;
         row.PageIndex = 0;
         row.UnreadAt = now;
@@ -772,6 +807,7 @@ public class ReaderService(
         foreach (var row in rows)
         {
             row.Completed = false;
+            row.BulkMarked = false;
             row.Watched = false;
             row.PageIndex = 0;
             row.UnreadAt = now;

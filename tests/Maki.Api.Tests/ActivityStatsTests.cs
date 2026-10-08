@@ -627,6 +627,26 @@ public sealed class ActivityStatsTests : IDisposable
         Assert.Equal("Mine", dropped.Title);
     }
 
+    [Fact]
+    public async Task DroppedListLeavesOutFullyIncognitoSeries()
+    {
+        var shown = _db.SeedSeries("Shown");
+        var secret = _db.SeedSeries("Secret", configure: s => s.Incognito = IncognitoMode.Full);
+        using (var db = _db.NewContext())
+        {
+            var stale = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+            db.ReadingStates.AddRange(
+                new ReadingState { UserId = TestUser, SeriesId = shown, Title = "Shown", MaxChapter = 12, LastProgressAt = stale },
+                new ReadingState { UserId = TestUser, SeriesId = secret, Title = "Secret", MaxChapter = 12, LastProgressAt = stale });
+            db.SaveChanges();
+        }
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal("Shown", Assert.Single(stats.Dropped).Title);
+        Assert.Equal(1, stats.Totals.SeriesDropped);
+    }
+
     // ---- the new headline numbers ----
 
     [Fact]
@@ -684,7 +704,7 @@ public sealed class ActivityStatsTests : IDisposable
     }
     private void AddProgress(int seriesId, int pageIndex, int pageCount, bool completed, DateTime at,
         bool watched = false, DateTime? startedAt = null, DateTime? unreadAt = null, int userId = TestUser,
-        int readSeconds = 60)
+        int readSeconds = 60, bool bulkMarked = false)
     {
         using var db = _db.NewContext();
         var chapter = new Chapter { SeriesId = seriesId, Number = db.Chapters.Count() + 1 };
@@ -701,6 +721,7 @@ public sealed class ActivityStatsTests : IDisposable
             Watched = watched,
             UnreadAt = unreadAt,
             ReadSeconds = readSeconds,
+            BulkMarked = bulkMarked,
             StartedAt = startedAt ?? at,
             UpdatedAt = at
         });
@@ -754,6 +775,22 @@ public sealed class ActivityStatsTests : IDisposable
 
         Assert.Equal(0, stats.Totals.PagesRead);
         Assert.Equal(0, stats.Totals.SeriesStarted);
+    }
+
+    [Fact]
+    public async Task BulkMarkedChaptersDoNotCountAsASeriesStarted()
+    {
+        var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
+        var ticked = _db.SeedSeries("Ticked");
+        AddProgress(ticked, 19, 20, completed: true, may, readSeconds: 0, bulkMarked: true);
+        var read = _db.SeedSeries("Read");
+        AddProgress(read, 19, 20, completed: true, may);
+        var streamed = _db.SeedSeries("Streamed");
+        AddProgress(streamed, 19, 20, completed: true, may, readSeconds: 0);
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(2, stats.Totals.SeriesStarted);
     }
 
     [Fact]

@@ -204,7 +204,7 @@ public class ReaderController(
             seriesChapterCount,
             seriesReadCount,
             seriesWantedCount,
-            resumePage = saved?.Completed == true ? 0 : saved?.PageIndex ?? 0,
+            resumePage = ReaderService.ResumePageFor(saved, slice.PageCount),
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
@@ -439,6 +439,13 @@ public class ReaderController(
             return NotFound();
         }
 
+        // A completing write from a reader holding a stale manifest is clamped by the service rather than
+        // refused, so the completion is not lost; only a plain position past the end is rejected.
+        if (request.Completed != true && !ReaderService.IsPageInRange(request.PageIndex, slice.PageCount))
+        {
+            return this.Fail(localizer, "error.reader.pageOutOfRange");
+        }
+
         var finished = await reader.SaveProgressAsync(
             slice, request.PageIndex, request.Completed,
             new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct);
@@ -490,9 +497,9 @@ public class ReaderController(
                 id = u.Id,
                 key = u.Key,
                 tier = u.Tier,
-                name = localizer.Get($"achievement.{u.Key}.name"),
+                name = localizer.AchievementName(u.Key),
                 tierName = AchievementCatalog.Find(u.Key) is { } d
-                    ? AchievementCatalog.TierName(d, u.Tier)
+                    ? localizer.AchievementTier(d, u.Tier)
                     : null,
             })];
         }
@@ -514,7 +521,7 @@ public class ReaderController(
 
         // No time: ticking a chapter off from the chapter table is not a sitting with it.
         await reader.SaveProgressAsync(
-            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct);
+            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct, bulk: true);
         return Ok(new { chapterId = id, completed = true });
     }
 

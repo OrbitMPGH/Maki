@@ -166,7 +166,7 @@ public class ReadingBehaviourService(
         }
     }
 
-    private sealed record ProgressRow(int SeriesId, int ReadSeconds, int PageCount, DateTime UpdatedAt);
+    private sealed record ProgressRow(int SeriesId, int ReadSeconds, int PageCount, DateTime FinishedAt, bool BulkMarked);
 
     private async Task<ReadingBehaviour> BuildAsync(int userId, bool allRootFolders, CancellationToken ct)
     {
@@ -196,7 +196,7 @@ public class ReadingBehaviourService(
             // anime season is not reading, and it carries no time and no page count to measure.
             var rows = await db.ChapterProgress.IgnoreQueryFilters()
                 .Where(p => p.UserId == userId && p.Completed && !p.Watched)
-                .Select(p => new ProgressRow(p.SeriesId, p.ReadSeconds, p.PageCount, p.UpdatedAt))
+                .Select(p => new ProgressRow(p.SeriesId, p.ReadSeconds, p.PageCount, p.CompletedAt ?? p.UpdatedAt, p.BulkMarked))
                 .ToListAsync(ct);
             progress = [.. rows.Where(r => visibleIds.Contains(r.SeriesId))];
 
@@ -249,11 +249,13 @@ public class ReadingBehaviourService(
             .ToList();
 
         // ---- days ----
-        // Imports are dropped here rather than everywhere: they say what was read but not when, so a
-        // single import would otherwise become the reader's "biggest day" for ever.
+        // Imports and bulk "mark read" ticks are dropped here rather than everywhere: they say what
+        // was read but not when, so a single tick would otherwise become the reader's "biggest day"
+        // for ever. Days are dated by first completion, which a re-read leaves alone. OPDS reads
+        // carry no time but are real, so they count.
         var days = progress
-            .Where(p => p.PageCount > 0)
-            .GroupBy(p => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(p.UpdatedAt, timeZone)))
+            .Where(p => p.PageCount > 0 && !p.BulkMarked)
+            .GroupBy(p => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(p.FinishedAt, timeZone)))
             .Select(g => (Day: g.Key, Count: g.Count()))
             .ToList();
         var biggest = days.Count == 0 ? default : days.MaxBy(d => d.Count);

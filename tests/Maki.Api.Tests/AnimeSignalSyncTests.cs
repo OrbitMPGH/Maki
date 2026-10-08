@@ -180,6 +180,31 @@ public class AnimeSignalSyncTests : IDisposable
         Assert.Equal(AnimeWatchStatus.Completed, row.Status);
     }
 
+    /// <summary>With no dump to ask, a sync keeps the catalogue ids an earlier pass resolved.</summary>
+    [Fact]
+    public async Task An_unavailable_dump_does_not_wipe_stored_catalogue_ids()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+        SeedRow(userId, 1, 8, AnimeWatchStatus.Completed);
+        using (var seed = _fixture.NewContext())
+        {
+            var row = seed.AnimeSignals.Single(x => x.UserId == userId);
+            row.AniListMangaId = 5;
+            row.MangaBakaId = 99L;
+            seed.SaveChanges();
+        }
+
+        var source = new FakeAnimeListSource(
+            [new AnimeListEntry(1, "Anime 1", 8, AnimeWatchStatus.Completed)], failing: 0);
+
+        var summary = await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        Assert.Equal(1, summary.Matched);
+        using var db = _fixture.NewContext();
+        Assert.Equal(99L, Assert.Single(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync()).MangaBakaId);
+    }
+
     private void SeedRow(int userId, long animeId, int? score, AnimeWatchStatus status)
     {
         using var seed = _fixture.NewContext();

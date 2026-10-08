@@ -513,6 +513,10 @@ public sealed class ProgressTests : IDisposable
     [InlineData(new[] { -4, -3, -1, 0 }, 5, 5)]
     // Ended a week ago: longest survives, current is zero.
     [InlineData(new[] { -9, -8, -7 }, 0, 3)]
+    // Skipped yesterday: reading today would still be forgiven, so the run is not shown as lost.
+    [InlineData(new[] { -4, -3, -2 }, 3, 3)]
+    // The week's grace is already spent, so a second hole cannot be forgiven.
+    [InlineData(new[] { -5, -3, -2 }, 0, 4)]
     public void StreaksForgiveOneDayAWeekAndNeverPunishToday(int[] offsets, long current, long longest)
     {
         var today = new DateOnly(2026, 6, 15);

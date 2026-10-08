@@ -392,7 +392,7 @@ public class ProgressController(
         return rows;
     }
 
-    private static AchievementDto Describe(
+    private AchievementDto Describe(
         AchievementDefinition definition, UserMetrics snapshot, List<UserAchievement> held)
     {
         var tier = definition.TierFor(snapshot);
@@ -403,14 +403,14 @@ public class ProgressController(
 
         return new AchievementDto(
             definition.Key,
-            definition.Name,
-            definition.Description,
+            localizer.AchievementName(definition.Key),
+            localizer.AchievementDescription(definition.Key),
             definition.Track.ToString(),
             definition.Icon,
             definition.Graded,
             definition.Hidden,
             tier,
-            AchievementCatalog.TierName(definition, tier),
+            localizer.AchievementTier(definition, tier),
             definition.Value(snapshot),
             tier < definition.Tiers.Count ? definition.Tiers[tier] : null,
             definition.Tiers,
@@ -421,7 +421,7 @@ public class ProgressController(
     /// The stored-row form, for the recent and unseen lists. Null when this build no longer knows the
     /// key — a retired achievement stops rendering rather than breaking the page.
     /// </summary>
-    private static AchievementDto? Describe(
+    private AchievementDto? Describe(
         UserAchievement row, UserMetrics snapshot, List<UserAchievement> held)
     {
         var definition = AchievementCatalog.Find(row.Key);
@@ -433,7 +433,7 @@ public class ProgressController(
         return Describe(definition, snapshot, held) with
         {
             Tier = row.Tier,
-            TierName = AchievementCatalog.TierName(definition, row.Tier),
+            TierName = localizer.AchievementTier(definition, row.Tier),
             UnlockedAt = row.UnlockedAt,
             UnlockId = row.Id,
         };

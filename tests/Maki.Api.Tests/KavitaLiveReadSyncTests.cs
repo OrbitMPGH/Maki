@@ -130,4 +130,27 @@ public sealed class KavitaLiveReadSyncTests : IDisposable
         Assert.Equal(1, handler.SeriesCalls);
         Assert.True(import.IsKnownUnmatched(10));
     }
+
+    [Fact]
+    public async Task A_name_two_local_series_share_matches_neither()
+    {
+        _db.SeedUser();
+        _db.SeedSeries("Nobody");
+        _db.SeedSeries("NOBODY");
+        var (_, import) = Build(new KavitaHandler(HttpStatusCode.OK));
+
+        Assert.Null(await import.MarkSeriesAsync(UserId, "http://kavita.test", "key", 10, CancellationToken.None));
+        Assert.True(import.IsKnownUnmatched(10));
+    }
+
+    [Fact]
+    public async Task A_series_in_a_root_folder_the_kavita_user_cannot_see_is_not_matched()
+    {
+        _db.SeedUser();
+        var restricted = _db.SeedUser("restricted", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        _db.SeedSeries("Nobody");
+        var (_, import) = Build(new KavitaHandler(HttpStatusCode.OK));
+
+        Assert.Null(await import.MarkSeriesAsync(restricted, "http://kavita.test", "key", 10, CancellationToken.None));
+    }
 }

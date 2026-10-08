@@ -75,7 +75,7 @@ public class ChapterProgress : IUserOwned
     /// delta is measured against.
     /// </para>
     /// <para>
-    /// Cleared the moment the chapter is actually opened, which is what turns it into a real read.
+    /// Opening the chapter leaves it set; it clears on the save that completes the chapter, which is what turns it into a real read.
     /// </para>
     /// </summary>
     public bool Watched { get; set; }
@@ -115,6 +115,15 @@ public class ChapterProgress : IUserOwned
     /// <see cref="UpdatedAt"/>, which can only be later than the real completion.
     /// </summary>
     public DateTime? CompletedAt { get; set; }
+
+    /// <summary>
+    /// Completed by a bulk mark-read or a Kavita import rather than by reading, so the date it was
+    /// completed on says nothing about when anybody read it. Reading-day statistics skip these rows
+    /// (a ticked-off back catalogue must not become the biggest day); read counts do not. Cleared
+    /// when the chapter is marked unread or genuinely completed in the reader. Rows from before the
+    /// column default to false.
+    /// </summary>
+    public bool BulkMarked { get; set; }
 }
 
 /// <summary>

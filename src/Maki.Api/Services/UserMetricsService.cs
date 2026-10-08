@@ -273,10 +273,11 @@ public class UserMetricsService(
             longest = Math.Max(longest, run);
         }
 
-        // The run is only "current" if it reaches today or yesterday. Anything older ended.
+        // The run is only "current" if it reaches today or yesterday, or if it stops a day short
+        // and reading today would still be forgiven. Anything older ended.
         var last = ordered[^1];
         var since = today.DayNumber - last.DayNumber;
-        var current = since <= 1 ? run : 0;
+        var current = since <= 1 || (since == 2 && CanUseGrace(graceUsed, today)) ? run : 0;
 
         return (current, longest);
     }
