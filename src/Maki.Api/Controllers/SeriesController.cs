@@ -273,6 +273,9 @@ public class SeriesController(
             return Forbid();
         }
 
+        // Rescan, import linking, cleanup and delete hold this lock; without it one of them could
+        // land between the planner's disk listing and its save.
+        using var seriesLock = await SeriesLocks.SeriesAsync(id, ct);
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
