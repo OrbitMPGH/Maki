@@ -505,4 +505,45 @@ public sealed class SeriesFilesControllerTests : IDisposable
 
         Assert.IsType<ConflictObjectResult>(result);
     }
+
+    [Fact]
+    public async Task Move_rolls_the_files_back_when_a_series_takes_the_folder_name_mid_move()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+
+        Task<IActionResult> move;
+        var held = await SeriesLocks.FolderNamesAsync(CancellationToken.None);
+        try
+        {
+            var db = _db.NewContext(userId: 1);
+            move = Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+            // The folder moves before the move asks for the lock to save, so the up-front check has passed.
+            var moved = Path.Combine(to, "Berserk");
+            for (var i = 0; i < 200 && !Directory.Exists(moved); i++)
+            {
+                await Task.Delay(25);
+            }
+
+            Assert.True(Directory.Exists(moved));
+            using var seed = _db.NewContext();
+            seed.Series.Add(new Series
+            {
+                Title = "Berserk (other)", SortTitle = "berserk", FolderName = "Berserk", RootFolderId = toId,
+            });
+            seed.SaveChanges();
+        }
+        finally
+        {
+            held.Dispose();
+        }
+
+        Assert.IsType<ConflictObjectResult>(await move);
+        Assert.True(File.Exists(Path.Combine(from, "Berserk", "Berserk Ch.1.cbz")));
+        Assert.True(File.Exists(Path.Combine(from, "Old Berserk", "Berserk Ch.2.cbz")));
+        Assert.False(Directory.Exists(Path.Combine(to, "Berserk")));
+        using var verify = _db.NewContext();
+        Assert.Equal(fromId, verify.Series.Single(s => s.Id == seriesId).RootFolderId);
+    }
 }

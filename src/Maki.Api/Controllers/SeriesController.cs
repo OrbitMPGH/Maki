@@ -1472,29 +1472,31 @@ public class SeriesController(
 
         var oldRootFolderPath = series.RootFolder.Path;
         var oldRootFolderId = series.RootFolderId;
-        using var folderNameLock = await SeriesLocks.FolderNamesAsync(CancellationToken.None);
-        if ((await SeriesCreationService.SeriesFoldersInRootAsync(db, destination.Id, id, CancellationToken.None))
-            .Contains(series.FolderName))
+        using (await SeriesLocks.FolderNamesAsync(CancellationToken.None))
         {
-            RollbackMoves();
-            return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
-        }
+            if ((await SeriesCreationService.SeriesFoldersInRootAsync(db, destination.Id, id, CancellationToken.None))
+                .Contains(series.FolderName))
+            {
+                RollbackMoves();
+                return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
+            }
 
-        series.RootFolderId = destination.Id;
-        try
-        {
-            // Cancellation must not be observed here: every file has already moved, so a
-            // cancelled save would leave the DB pointing at the old root while the files sit
-            // in the new one. CancellationToken.None keeps this write unconditional.
-            await db.SaveChangesAsync(CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            series.RootFolderId = oldRootFolderId;
-            logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
-            RollbackMoves();
+            series.RootFolderId = destination.Id;
+            try
+            {
+                // Cancellation must not be observed here: every file has already moved, so a
+                // cancelled save would leave the DB pointing at the old root while the files sit
+                // in the new one. CancellationToken.None keeps this write unconditional.
+                await db.SaveChangesAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                series.RootFolderId = oldRootFolderId;
+                logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
+                RollbackMoves();
 
-            return this.ServerError(localizer, "error.series.moveSaveFailed", new { message = ex.Message });
+                return this.ServerError(localizer, "error.series.moveSaveFailed", new { message = ex.Message });
+            }
         }
 
         // Best-effort only: the move and the DB save both already succeeded, so a stray empty
