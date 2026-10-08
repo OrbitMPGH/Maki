@@ -430,6 +430,9 @@ public class AuthorizationTests
     [InlineData("fd00::/129")]
     [InlineData("not-an-address")]
     [InlineData("not-an-address/8")]
+    [InlineData("172.16/12")]
+    [InlineData("10/8")]
+    [InlineData("10")]
     public void TrustedProxyEntriesThatWouldNotApplyAreRefused(string entry)
     {
         Assert.False(AuthRuntimeOptions.TryParseTrustedProxy(entry, out _, out _));

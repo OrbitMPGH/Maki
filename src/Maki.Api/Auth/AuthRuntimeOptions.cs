@@ -117,10 +117,10 @@ public class AuthRuntimeOptions
         var slash = entry.IndexOf('/');
         if (slash < 0)
         {
-            return IPAddress.TryParse(entry, out proxy);
+            return TryParseAddress(entry, out proxy);
         }
 
-        if (!IPAddress.TryParse(entry[..slash], out var address) ||
+        if (!TryParseAddress(entry[..slash], out var address) ||
             !int.TryParse(entry[(slash + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var prefix))
         {
             return false;
@@ -140,6 +140,12 @@ public class AuthRuntimeOptions
         network = new IPNetwork(new IPAddress(bytes), prefix);
         return true;
     }
+
+    // IPAddress.TryParse takes legacy IPv4 shorthand ("10" is 0.0.0.10, "172.16" is 172.0.0.16), so
+    // an IPv4 entry must read back exactly as written or "172.16/12" would quietly mean 172.0.0.0/12.
+    private static bool TryParseAddress(string text, out IPAddress? address) =>
+        IPAddress.TryParse(text, out address) &&
+        (address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork || address.ToString() == text);
 
     public static int LockoutMaxAttemptsFrom(string? stored) =>
         ReadInt(stored, DefaultLockoutMaxAttempts, min: 0, max: MaxLockoutMaxAttempts);
