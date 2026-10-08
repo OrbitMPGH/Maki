@@ -67,21 +67,37 @@ using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
 
-var paths = new AppPaths();
+AppPaths paths;
+ConfigFileProvider configFile;
+LoggingOptions loggingOptions;
+Microsoft.Extensions.Logging.ILogger startupLog;
 
-// Bring logging up on defaults first, so the restore below and anything else that runs before the
-// host lands in the log file rather than on the console alone. The configured options are not
-// knowable yet: a staged restore can replace config.json itself.
-MakiLogging.Bootstrap(paths);
+try
+{
+    paths = new AppPaths();
 
-// Apply a restore staged by a previous run before anything reads config.json or opens the DB.
-RestoreBootstrap.ApplyPendingRestore(paths, MakiLogging.CreateLogger("Restore"));
+    // Bring logging up on defaults first, so the restore below and anything else that runs before the
+    // host lands in the log file rather than on the console alone. The configured options are not
+    // knowable yet: a staged restore can replace config.json itself.
+    MakiLogging.Bootstrap(paths);
 
-var configFile = new ConfigFileProvider(paths);
-var loggingOptions = LoggingOptions.From(configFile.Config);
-MakiLogging.Configure(paths, loggingOptions);
+    // Apply a restore staged by a previous run before anything reads config.json or opens the DB.
+    RestoreBootstrap.ApplyPendingRestore(paths, MakiLogging.CreateLogger("Restore"));
 
-var startupLog = MakiLogging.CreateLogger("Startup");
+    configFile = new ConfigFileProvider(paths);
+    loggingOptions = LoggingOptions.From(configFile.Config);
+    MakiLogging.Configure(paths, loggingOptions);
+
+    startupLog = MakiLogging.CreateLogger("Startup");
+}
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Console.Error.WriteLine($"Maki could not start: {ex.Message}");
+    try { MakiLogging.CreateLogger("Startup").LogCritical(ex, "Maki terminated unexpectedly"); } catch { }
+    Log.CloseAndFlush();
+    Environment.ExitCode = 1;
+    return;
+}
 
 // ImageSharp's default allocator pools every buffer it hands out and never gives one back to the
 // OS, so RSS ratcheted to the high-water mark of whatever burst of concurrent decodes happened
@@ -1532,9 +1548,10 @@ try
 
     app.Run();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex is not HostAbortedException)
 {
     startupLog.LogCritical(ex, "Maki terminated unexpectedly");
+    Environment.ExitCode = 1;
 }
 finally
 {

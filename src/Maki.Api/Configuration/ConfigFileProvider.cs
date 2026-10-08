@@ -41,9 +41,17 @@ public class ConfigFileProvider
         this.paths = paths;
 
         var raw = File.Exists(paths.ConfigFile) ? File.ReadAllText(paths.ConfigFile) : null;
-        Config = raw is null
-            ? new ConfigFile()
-            : JsonSerializer.Deserialize<ConfigFile>(raw) ?? new ConfigFile();
+        try
+        {
+            Config = raw is null
+                ? new ConfigFile()
+                : JsonSerializer.Deserialize<ConfigFile>(raw) ?? new ConfigFile();
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException(
+                $"{paths.ConfigFile} is not valid JSON: {ex.Message}", ex);
+        }
 
         // Rewrite whenever the file is missing or still carries the retired apiKey. Leaving a dead
         // secret behind in a config file is how someone later concludes it still works and treats a
