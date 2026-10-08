@@ -15,7 +15,7 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
     {
         try
         {
-            if (JobOutcome.WasInterrupted(context, jobException)) return;
+            if (JobOutcome.WasInterrupted(context)) return;
             var failed = JobOutcome.Failed(context, jobException);
             using var scope = scopes.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();

@@ -16,11 +16,12 @@ public static class JobOutcome
         context.Result = new JobFailure(ex.Message);
 
     /// <summary>
-    /// True when the run threw only because the job was interrupted, which is what shutdown does to
-    /// any job that does not catch its own cancellation.
+    /// True when the job's token was cancelled. Only <see cref="QuartzShutdownInterrupter"/> cancels
+    /// it, and Quartz swallows the resulting cancellation, so the run reaches the listener looking
+    /// like a clean one. Whatever it reports says nothing about the job.
     /// </summary>
-    public static bool WasInterrupted(IJobExecutionContext context, JobExecutionException? jobException) =>
-        jobException?.GetBaseException() is OperationCanceledException && context.CancellationToken.IsCancellationRequested;
+    public static bool WasInterrupted(IJobExecutionContext context) =>
+        context.CancellationToken.IsCancellationRequested;
 
     public static bool Failed(IJobExecutionContext context, JobExecutionException? jobException) =>
         jobException != null || context.Result is JobFailure;

@@ -22,13 +22,13 @@ public class HealthJobListenerTests : IDisposable
     }
 
     [Fact]
-    public async Task A_run_cancelled_by_shutdown_is_not_recorded_as_a_failure()
+    public async Task A_run_cancelled_by_shutdown_leaves_the_recorded_state_alone()
     {
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
         var context = new TestJobContext(ct: cts.Token, detail: _detail);
 
-        await Listener().JobWasExecuted(context, new JobExecutionException(new OperationCanceledException()));
+        await Listener().JobWasExecuted(context, null);
 
         Assert.Null(Status());
     }
