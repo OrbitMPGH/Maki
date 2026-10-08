@@ -101,13 +101,13 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | HOSTING | HOSTING-09 | pending |
 | HOSTING | HOSTING-10 | pending |
 | HOSTING | HOSTING-12 | pending |
-| SERIES | SERIES-01 | pending |
-| SERIES | SERIES-02 | pending |
-| SERIES | SERIES-09 | pending |
-| SERIES | SERIES-13 | pending |
-| SERIES | SERIES-17 | pending |
-| SERIES | SERIES-23 | pending |
-| SERIES | DATA-02 | pending |
+| SERIES | SERIES-01 | done 95fd865f |
+| SERIES | SERIES-02 | done 46688d07 |
+| SERIES | SERIES-09 | done 470d8c34, b72b4f8f |
+| SERIES | SERIES-13 | done 668fa167, 24d4f860 (safe part; native titles drive search only on script-matched sources) |
+| SERIES | SERIES-17 | done 56cc5164 |
+| SERIES | SERIES-23 | done 1da392b0, e8a4127e |
+| SERIES | DATA-02 | done 05177281, 8722dcfa |
 | AUTH | AUTH-03 | done c9d8940e, 478f7cde |
 | AUTH | AUTH-04 | done e572a343 |
 | AUTH | AUTH-06 | done 204d4dd2 (500 only; admin exemption from root-folder scope: owner decision) |
