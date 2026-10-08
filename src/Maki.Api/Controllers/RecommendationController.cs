@@ -139,7 +139,8 @@ public class RecommendationController(
     /// <summary>
     /// Catalogue-browse rails (Popular / New / Trending / Top rated / per-type) for the Discover
     /// tab — independent of the library, but bounded by the caller's own content-rating ceiling.
-    /// Cached per ceiling; <paramref name="refresh"/> recomputes the caller's.
+    /// Cached per ceiling and shared by every reader at it, so <paramref name="refresh"/> rebuilds
+    /// only for an admin.
     /// </summary>
     [HttpGet("discover")]
     public async Task<IActionResult> Discover([FromQuery] bool refresh, CancellationToken ct)
@@ -149,7 +150,7 @@ public class RecommendationController(
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+                SharedRefresh(refresh), currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
             return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
         }
         catch (LocalCatalogueUnavailableException ex)
@@ -241,7 +242,7 @@ public class RecommendationController(
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetGenreFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+                SharedRefresh(refresh), currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
             return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
         }
         catch (LocalCatalogueUnavailableException ex)
@@ -539,6 +540,12 @@ public class RecommendationController(
     /// </summary>
     private static int RailDepth(HashSet<long> suppressed, Func<long, bool>? isHidden) =>
         suppressed.Count > 0 || isHidden is not null ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+
+    /// <summary>
+    /// The shared Discover rails are one cache for every reader at a ceiling, so a reader's refresh
+    /// button must not rebuild them for everybody.
+    /// </summary>
+    private bool SharedRefresh(bool refresh) => refresh && currentUser.Has(MakiPermission.Admin);
 
     private Task<RecommendationFilters> ScopeAsync(RecommendationFilters? filters, CancellationToken ct) =>
         hidden.ScopeAsync(filters, currentUser.MaxContentRating, ct);

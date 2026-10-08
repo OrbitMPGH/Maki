@@ -57,4 +57,25 @@ public class DiscoverRailCacheTests
         Assert.All(shallow, r => Assert.Equal(DiscoverService.RailSize, r.Items.Count));
         Assert.All(deep, r => Assert.Equal(DiscoverService.RefillRailSize, r.Items.Count));
     }
+
+    [Fact]
+    public async Task A_rebuild_in_progress_does_not_stall_readers_of_the_previous_set()
+    {
+        var store = new CountingStore();
+        var discover = Service(store);
+        var before = await discover.GetFeedsAsync(refresh: false, ContentRating.Safe);
+
+        store.Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var rebuild = discover.GetFeedsAsync(refresh: true, ContentRating.Safe);
+        await store.Entered.Task.WaitAsync(Timeout);
+
+        var during = await discover.GetFeedsAsync(refresh: false, ContentRating.Safe).WaitAsync(Timeout);
+        var refreshDuring = await discover.GetFeedsAsync(refresh: true, ContentRating.Safe).WaitAsync(Timeout);
+
+        Assert.Equal(before.Count, during.Count);
+        Assert.Equal(before.Count, refreshDuring.Count);
+        Assert.False(rebuild.IsCompleted);
+        store.Gate.SetResult();
+        await rebuild.WaitAsync(Timeout);
+    }
 }

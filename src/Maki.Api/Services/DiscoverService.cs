@@ -156,8 +156,8 @@ public record DiscoverSearchResponse(
 /// once and cached for <see cref="CacheFor"/>. The rails don't depend on the user's library, so
 /// the caches are shared across users, keyed only by the viewer's content-rating ceiling (see
 /// <see cref="Ceiling"/>) since that is the one thing about the viewer the rails do depend on. The
-/// UI's refresh button busts the caller's ceiling only. Mirrors the caching shape of
-/// <see cref="RecommendationService"/>.
+/// dump only changes on install, which re-warms them, so only an admin's refresh rebuilds a set, and
+/// other readers keep the previous one while it runs.
 /// </summary>
 public class DiscoverService(
     MangaBakaLocalStore store,
@@ -294,18 +294,26 @@ public class DiscoverService(
 
     /// <summary>
     /// One rail set per ceiling, always built to <see cref="RefillRailSize"/> and cut to the depth
-    /// asked for.
+    /// asked for. A fresh entry is served without waiting; so is an expired one while another build
+    /// of the same set is running, because a rebuild must not stall every reader of a shared page.
     /// </summary>
     private async Task<IReadOnlyList<DiscoverRail>> CachedAsync(
         RailSet set, string ceiling, bool refresh, int depth,
         Func<Task<IReadOnlyList<DiscoverRail>>> build, CancellationToken ct)
     {
+        set.Entries.TryGetValue(ceiling, out var hit);
+        if (hit is not null && (!refresh && Fresh(hit) || set.Build.CurrentCount == 0))
+        {
+            return Slice(hit.Rails, depth);
+        }
+
         await set.Build.WaitAsync(ct);
         try
         {
-            if (!refresh && set.Entries.TryGetValue(ceiling, out var hit) && Fresh(hit))
+            if (set.Entries.TryGetValue(ceiling, out var raced) && Fresh(raced)
+                && (!refresh || !ReferenceEquals(raced, hit)))
             {
-                return Slice(hit.Rails, depth);
+                return Slice(raced.Rails, depth);
             }
 
             var rails = await build();
