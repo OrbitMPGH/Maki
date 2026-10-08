@@ -14,15 +14,20 @@ public class SourceMappingRemovalServiceTests : IDisposable
     private SourceMappingRemovalService BuildService(
         SourceAvailability? availability = null,
         DownloadQueueService? queue = null,
-        DownloadBatchNotifier? batches = null) =>
-        new(
-            _db.NewContext(),
+        DownloadBatchNotifier? batches = null)
+    {
+        var context = _db.NewContext();
+        var archives = new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance);
+        return new(
+            context,
             availability ?? Sources.AllEnabled,
             queue ?? new DownloadQueueService(null!, TimeProvider.System, null!,
                 NullLogger<DownloadQueueService>.Instance),
             batches!,
-            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+            archives,
+            new ChapterFileDeletion(context, archives, TimeProvider.System, NullLogger<ChapterFileDeletion>.Instance),
             NullLogger<SourceMappingRemovalService>.Instance);
+    }
 
     private static SourceMapping Mapping(string name, bool enabled = true) => new()
     {
@@ -275,6 +280,60 @@ public class SourceMappingRemovalServiceTests : IDisposable
             Assert.False(File.Exists(absolutePath));
             using var check = _db.NewContext();
             Assert.Empty(check.ChapterFiles.Where(f => f.SeriesId == seriesId));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task File_another_series_records_keeps_its_disk_copy()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"maki-source-remove-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, "Test Series"));
+        var relativePath = Path.Combine("Test Series", "shared.cbz");
+        var absolutePath = Path.Combine(root, relativePath);
+        await File.WriteAllBytesAsync(absolutePath, [1, 2, 3]);
+
+        try
+        {
+            var seriesId = _db.SeedSeries(mappings: Mapping("wrong"));
+            var otherId = _db.SeedSeries(title: "Other Series");
+            int wrongId;
+            using (var db = _db.NewContext())
+            {
+                foreach (var series in db.Series.Include(s => s.RootFolder).Where(s => s.Id == seriesId || s.Id == otherId))
+                {
+                    series.RootFolder!.Path = root;
+                }
+
+                wrongId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+                var file = new ChapterFile
+                {
+                    SeriesId = seriesId, RelativePath = relativePath, SourceName = "wrong", DateAdded = DateTime.UtcNow
+                };
+                db.ChapterFiles.AddRange(file, new ChapterFile
+                {
+                    SeriesId = otherId, RelativePath = relativePath, SourceName = "manual", DateAdded = DateTime.UtcNow
+                });
+                db.SaveChanges();
+                db.Chapters.Add(new Chapter
+                {
+                    SeriesId = seriesId, Number = 1, Language = "en", ChapterFileId = file.Id
+                });
+                db.SaveChanges();
+            }
+
+            var result = await BuildService().RemoveAsync(wrongId, deleteFiles: true);
+
+            Assert.NotNull(result);
+            Assert.Equal(0, result.DeletedFiles);
+            Assert.Equal(0, result.FailedFileDeletions);
+            Assert.True(File.Exists(absolutePath));
+            using var check = _db.NewContext();
+            Assert.Empty(check.ChapterFiles.Where(f => f.SeriesId == seriesId));
+            Assert.Single(check.ChapterFiles.Where(f => f.SeriesId == otherId));
         }
         finally
         {

@@ -1,5 +1,4 @@
 using Maki.Core.Entities;
-using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,11 +31,22 @@ public class SourceMappingRemovalService(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     ReaderArchiveCache archives,
+    ChapterFileDeletion deletion,
     ILogger<SourceMappingRemovalService> logger)
 {
     public async Task<SourceMappingRemovalResult?> RemoveAsync(
         int mappingId, bool deleteFiles, CancellationToken ct = default)
     {
+        var seriesId = await db.SourceMappings
+            .Where(m => m.Id == mappingId)
+            .Select(m => (int?)m.SeriesId)
+            .FirstOrDefaultAsync(ct);
+        if (seriesId is null)
+        {
+            return null;
+        }
+
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId.Value, ct);
         var mapping = await db.SourceMappings
             .Include(m => m.Series!)
             .ThenInclude(s => s.RootFolder)
@@ -110,44 +120,58 @@ public class SourceMappingRemovalService(
         await CancelAffectedQueueItemsAsync(mapping, removed, ct);
 
         var failedFileDeletions = new List<string>();
-        var deletedFiles = 0;
+        var toDelete = new List<ChapterFileDeletion.DiskTarget>();
         if (deleteFiles && detachedFileIds.Count > 0)
         {
             var files = await db.ChapterFiles
                 .Where(f => detachedFileIds.Contains(f.Id))
                 .ToListAsync(ct);
-            foreach (var file in files)
+            var targets = mapping.Series.RootFolder is null
+                ? files.Select(f => new ChapterFileDeletion.DiskTarget(f.RelativePath, null, false)).ToList()
+                : await deletion.TargetsAsync(
+                    mapping.Series.RootFolder.Path, files.Select(f => f.RelativePath), detachedFileIds.ToHashSet(), ct);
+            foreach (var (file, target) in files.Zip(targets))
             {
-                var path = mapping.Series.RootFolder is null
-                    ? null
-                    : LibraryPaths.Resolve(mapping.Series.RootFolder.Path, file.RelativePath);
-                if (path is null)
+                if (target.AbsolutePath is null)
                 {
-                    logger.LogWarning("Refusing to delete {File}: path is outside the series root", file.RelativePath);
+                    logger.LogWarning("Refusing to delete {File}: resolves outside the root or through a linked folder",
+                        file.RelativePath);
                     failedFileDeletions.Add(file.RelativePath);
                     continue;
                 }
 
-                try
+                if (target.Claimed)
                 {
-                    File.Delete(path);
+                    logger.LogInformation("Kept {File} on disk: another record still points at it", target.AbsolutePath);
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                else
                 {
-                    logger.LogWarning(ex, "Could not delete detached file {File}", file.RelativePath);
-                    failedFileDeletions.Add(file.RelativePath);
-                    continue;
+                    toDelete.Add(target);
                 }
 
                 archives.Invalidate(file.Id);
                 db.ChapterFiles.Remove(file);
-                deletedFiles++;
             }
         }
 
         db.Chapters.RemoveRange(removed);
         db.SourceMappings.Remove(mapping);
         await db.SaveChangesAsync(ct);
+
+        // Rows are committed first, so a failure here orphans a file for Health to find rather than
+        // leaving a row behind for a file that is gone.
+        var deletedFiles = 0;
+        foreach (var target in toDelete)
+        {
+            if (deletion.DeleteFromDisk(target.AbsolutePath!))
+            {
+                deletedFiles++;
+            }
+            else
+            {
+                failedFileDeletions.Add(target.RelativePath);
+            }
+        }
 
         return new SourceMappingRemovalResult(
             removed.Count,
