@@ -52,6 +52,10 @@ export function useSeries() {
   return useQuery({
     queryKey: ['series'],
     queryFn: () => api<SeriesDto[]>('/series'),
+    // Mounted by the palette, Home, Library, Discover and the rails on a series page, so with the
+    // default of 0 every navigation refetched the whole list. Mutations and the live import events
+    // invalidate it, and invalidation ignores staleTime, so this only skips redundant remounts.
+    staleTime: 30_000,
   })
 }
 
@@ -1989,7 +1993,7 @@ export function useDeleteSeriesFiles(seriesId: number) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
-      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }
@@ -3256,8 +3260,7 @@ export function useRenameSeries(seriesId: number) {
         body: JSON.stringify({ fingerprint }),
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
-      void queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'rename-preview'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }

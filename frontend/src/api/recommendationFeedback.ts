@@ -103,11 +103,14 @@ const affectedKeys = [
   'taste-insights', 'taste-profile', 'series-related', 'series-similar', 'home',
   'anime-signals', 'custom-rail-items',
 ]
+const stateKeys = ['feedback-lab', 'feedback-states', 'feedback-state', 'feedback-activity', 'signal-overrides']
 const outputKeys = [
   'recommendations', 'discover-recent-activity', 'discover-side-interests',
   'discover-cohort', 'discover-rails', 'discover-feed', 'discover-genres',
   'taste-insights', 'series-related', 'series-similar', 'custom-rail-items',
 ]
+const restoresTitle = (action: string) =>
+  action === 'clear-suppression' || action === 'clear-exposure' || action === 'clear-sentiment'
 const pendingOptimistic = new Map<number, string>()
 
 function withoutTitle(value: unknown, id: number): unknown {
@@ -157,9 +160,23 @@ export function useSignalOverrides() {
   return useQuery({ queryKey: ['signal-overrides'], queryFn: () => api<SignalOverrideState[]>('/recommendations/signal-overrides') })
 }
 
+/**
+ * `lazy` refetches only the feedback state the user is looking at and marks every rail, feed and
+ * taste query stale for its next mount. A thumb, hide or dismiss already removes the title
+ * optimistically, and refetching every mounted rail and each loaded page of the recommendations feed per click is
+ * expensive on the server. Undo, franchise hides, signal overrides and the clear-suppression,
+ * clear-exposure and clear-sentiment actions use `full`, because a title coming back cannot be predicted client-side.
+ */
 function useRefreshRecommendations() {
   const client = useQueryClient()
-  return () => { for (const key of affectedKeys) void client.invalidateQueries({ queryKey: [key] }) }
+  return (scope: 'full' | 'lazy' = 'full') => {
+    for (const key of affectedKeys) {
+      void client.invalidateQueries({
+        queryKey: [key],
+        refetchType: scope === 'lazy' && !stateKeys.includes(key) ? 'none' : 'active',
+      })
+    }
+  }
 }
 
 export function useMutateFeedback() {
@@ -172,7 +189,7 @@ export function useMutateFeedback() {
       method: 'PUT', body: JSON.stringify({ action, medium, expectedRevision, clientMutationId }),
     }),
     onMutate: async (command) => {
-      if (!['hide', 'dismiss', 'mark-exposed'].includes(command.action)) return null
+      if (!['hide', 'dismiss', 'mark-exposed', 'like', 'dislike'].includes(command.action)) return null
       pendingOptimistic.set(command.id, command.clientMutationId)
       const snapshots: [readonly unknown[], unknown, unknown][] = []
       for (const key of outputKeys) {
@@ -199,7 +216,7 @@ export function useMutateFeedback() {
     },
     onSuccess: (_result, command) => {
       if (pendingOptimistic.get(command.id) === command.clientMutationId) pendingOptimistic.delete(command.id)
-      refresh()
+      refresh(restoresTitle(command.action) ? 'full' : 'lazy')
     },
   })
 }
@@ -217,7 +234,7 @@ export function useMutateFranchiseFeedback() {
     }) => api<FranchiseFeedbackResult>(`/recommendations/feedback/${id}/franchise`, {
       method: 'POST', body: JSON.stringify({ action, clientMutationId }),
     }),
-    onSuccess: refresh,
+    onSuccess: () => refresh(),
   })
 }
 
@@ -229,7 +246,7 @@ export function useUndoFeedback() {
     }) => api<FeedbackMutation>(`/recommendations/feedback/events/${eventId}/undo`, {
       method: 'POST', body: JSON.stringify({ expectedRevision, clientMutationId }),
     }),
-    onSuccess: refresh,
+    onSuccess: () => refresh(),
   })
 }
 
@@ -241,7 +258,7 @@ export function useMutateSignalOverride() {
     }) => api<SignalOverrideMutation>(`/recommendations/signal-overrides/${id}`, {
       method: 'PUT', body: JSON.stringify({ ignoreAsSeed, expectedRevision, clientMutationId }),
     }),
-    onSuccess: refresh,
+    onSuccess: () => refresh(),
   })
 }
 

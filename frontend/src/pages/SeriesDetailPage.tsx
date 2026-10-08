@@ -151,7 +151,7 @@ import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
 import { SourceCompareModal } from '../components/SourceCompareModal'
 import type { PickChapter } from '../components/SourceCompareModal'
-import { formatDate, formatReadingTime } from '../format'
+import { formatCalendarDate, formatDate, formatReadingTime } from '../format'
 import {
   contentRatingVisual,
   queueStatusVisual,
@@ -2782,7 +2782,7 @@ function SeriesDetailBody() {
                                     </Table.Td>
                                     <Table.Td>
                                       <Text size="sm" c="var(--ink-3)" className="tnum">
-                                        {c.releaseDate ? formatDate(c.releaseDate) : '-'}
+                                        {c.releaseDate ? formatCalendarDate(c.releaseDate) : '-'}
                                       </Text>
                                     </Table.Td>
                                     <Table.Td>

@@ -12,7 +12,7 @@ import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import './theme.css'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
-import { loadLocale, resolveInitialLocale } from './i18n'
+import { i18n, loadLocale, resolveInitialLocale } from './i18n'
 import App from './App.tsx'
 import { ApiError } from './api/client'
 import { syncSkeletonPulses } from './lib/skeletonSync'
@@ -87,7 +87,18 @@ const queryClient = new QueryClient({
 // Awaited before the first render rather than loaded in an effect: a catalogue that arrives after
 // mount means the app paints once in English and then swaps, which is worse than one chunk fetch on
 // a cold cache. Top-level await is fine here, main.tsx is an ES module.
-await loadLocale(resolveInitialLocale())
+// A failed chunk fetch must not leave a blank page: fall back to English, then to no catalogue.
+try {
+  await loadLocale(resolveInitialLocale())
+} catch (err) {
+  console.error('Failed to load the locale catalogue, falling back to English', err)
+  try {
+    await loadLocale('en')
+  } catch (enErr) {
+    console.error('Failed to load the English catalogue', enErr)
+    i18n.loadAndActivate({ locale: 'en', messages: {} })
+  }
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

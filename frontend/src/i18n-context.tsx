@@ -102,7 +102,7 @@ export function useLanguageSync(serverLanguage: string | undefined): void {
     if (!serverLanguage) return
     const wanted = serverLanguage as LocaleCode
     if (wanted === locale) return
-    void setLocale(wanted)
+    setLocale(wanted).catch((err) => console.error('Failed to switch language', err))
   }, [serverLanguage, locale, setLocale])
 }
 
