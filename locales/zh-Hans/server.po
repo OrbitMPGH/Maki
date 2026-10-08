@@ -2462,6 +2462,35 @@ msgid "error.system.backupUnreadable"
 msgstr "此文件不是可读取的 Maki 备份。ZIP 文件或其清单已损坏。未更改任何内容。"
 
 #: src/Maki.Api/Controllers/SystemController.cs
+#. English: That is not a valid backup name.
+msgid "error.system.backupNameInvalid"
+msgstr ""
+
+#. {name} is a backup file name, never translated.
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: Backup "{name}" was not found.
+msgid "error.system.backupNotFound"
+msgstr ""
+
+#. Shown in the response to a successful restore request, not as an error.
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: Restore staged. Restarting to apply.
+msgid "error.system.restoreStaged"
+msgstr ""
+
+#. The cause is in the server log.
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: Could not stage the restore. The server log has the details.
+msgid "error.system.restoreFailed"
+msgstr ""
+
+#. Shown when an image cache rebuild is requested while one is already in progress.
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: A rebuild is already running
+msgid "error.system.rebuildRunning"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
 #, fuzzy
 msgid "error.system.noFileUploaded"
