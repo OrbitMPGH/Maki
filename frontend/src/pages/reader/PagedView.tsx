@@ -47,12 +47,24 @@ export default function PagedView({
     if (scroller) scroller.scrollTop = 0
   }, [leadSrc])
 
+  // Scrolling can only reach the right and bottom of a transformed box, so the zoom grows from the
+  // top-left corner and the scroll position is moved to keep the viewport centre where it was.
+  const lastZoom = useRef(zoom)
+  useLayoutEffect(() => {
+    const scroller = root.current?.parentElement
+    const previous = lastZoom.current
+    lastZoom.current = zoom
+    if (!scroller || previous === zoom) return
+    const centre = scroller.clientWidth / 2
+    scroller.scrollLeft = (scroller.scrollLeft + centre) * (zoom / previous) - centre
+  }, [zoom])
+
   return (
     <div
       ref={root}
       className="reader-paged"
       data-double={spread.length > 1}
-      style={zoom === 1 ? undefined : { transform: `scale(${zoom})`, transformOrigin: 'center top' }}
+      style={zoom === 1 ? undefined : { transform: `scale(${zoom})`, transformOrigin: 'left top' }}
     >
       {ordered.map((page) => {
         const src = urls[page]
