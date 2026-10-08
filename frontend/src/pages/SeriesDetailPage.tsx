@@ -1686,6 +1686,7 @@ function SeriesDetailBody() {
                     onSetReadFileCleanup={(mode) =>
                         setReadFileCleanup.mutate({ seriesId, mode }, { onSuccess: () => notify.ok(staticT`Saved`) })
                     }
+                    canEdit={canEditMetadata}
                     canScanUpgrades={canDownload}
                     scanningUpgrades={runUpgradeScan.isPending || scanning}
                     busy={refresh.isPending || refreshMetadata.isPending || rescan.isPending}

@@ -51,6 +51,7 @@ export function SeriesActionsMenu({
                                       upgradeProfiles,
                                       readFileCleanup,
                                       readFileCleanupActive,
+                                      canEdit,
                                       canScanUpgrades,
                                       scanningUpgrades,
                                       searchingVolumes,
@@ -80,6 +81,8 @@ export function SeriesActionsMenu({
     readFileCleanup: string
     /** The choice and the instance switch combined, for the value shown inline. */
     readFileCleanupActive: boolean
+    /** EditMetadata: gates every item that changes the series itself. Notify is per user and stays. */
+    canEdit: boolean
     /** DownloadChapters: gates the "Scan for upgrades" item, same permission as "Upgrade now". */
     canScanUpgrades: boolean
     scanningUpgrades: boolean
@@ -141,113 +144,121 @@ export function SeriesActionsMenu({
             </Menu.Target>
 
             <Menu.Dropdown>
-                <Menu.Label><Trans>Series</Trans></Menu.Label>
-                <Menu.Item leftSection={<IconRefresh size={16} />} onClick={onRefreshChapters}>
-                    <Trans>Refresh chapters</Trans>
-                </Menu.Item>
-                <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
-                    <Trans>Refresh metadata and poster</Trans>
-                </Menu.Item>
+                {canEdit && (
+                    <>
+                        <Menu.Label><Trans>Series</Trans></Menu.Label>
+                        <Menu.Item leftSection={<IconRefresh size={16} />} onClick={onRefreshChapters}>
+                            <Trans>Refresh chapters</Trans>
+                        </Menu.Item>
+                        <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
+                            <Trans>Refresh metadata and poster</Trans>
+                        </Menu.Item>
 
-                <Menu.Divider />
-                <Menu.Label><Trans>Files</Trans></Menu.Label>
-                <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
-                    <Trans>Rescan files</Trans>
-                </Menu.Item>
-                <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
-                    <Trans>Move to another root folder</Trans>
-                </Menu.Item>
-                <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
-                    <Trans>Rename files</Trans>
-                </Menu.Item>
-                <Menu.Sub>
-                    <Menu.Sub.Target>
-                        <Menu.Sub.Item
-                            leftSection={<IconTrashX size={16} />}
-                            rightSection={
-                                <Text size="xs" c="var(--ink-3)">
-                                    {readFileCleanupActive ? t`On` : t`Off`}
-                                </Text>
-                            }
-                        >
-                            <Trans>Clean up read files</Trans>
-                        </Menu.Sub.Item>
-                    </Menu.Sub.Target>
-                    <Menu.Sub.Dropdown maw={264}>
-                        <Menu.Label>
-                            <Trans>Delete a chapter's file some days after everyone has read it</Trans>
-                        </Menu.Label>
-                        <Menu.RadioGroup value={readFileCleanup} onChange={onSetReadFileCleanup}>
-                            <Menu.RadioItem value="Default">
-                                <Trans>Follow the setting</Trans>
-                            </Menu.RadioItem>
-                            <Menu.RadioItem value="On">
-                                <Trans>On for this series</Trans>
-                            </Menu.RadioItem>
-                            <Menu.RadioItem value="Off">
-                                <Trans>Off for this series</Trans>
-                            </Menu.RadioItem>
-                        </Menu.RadioGroup>
-                        <Menu.Label><Trans>Read history stays, and the chapters aren't downloaded again.</Trans></Menu.Label>
-                    </Menu.Sub.Dropdown>
-                </Menu.Sub>
+                        <Menu.Divider />
+                        <Menu.Label><Trans>Files</Trans></Menu.Label>
+                        <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
+                            <Trans>Rescan files</Trans>
+                        </Menu.Item>
+                        <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
+                            <Trans>Move to another root folder</Trans>
+                        </Menu.Item>
+                        <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
+                            <Trans>Rename files</Trans>
+                        </Menu.Item>
+                        <Menu.Sub>
+                            <Menu.Sub.Target>
+                                <Menu.Sub.Item
+                                    leftSection={<IconTrashX size={16} />}
+                                    rightSection={
+                                        <Text size="xs" c="var(--ink-3)">
+                                            {readFileCleanupActive ? t`On` : t`Off`}
+                                        </Text>
+                                    }
+                                >
+                                    <Trans>Clean up read files</Trans>
+                                </Menu.Sub.Item>
+                            </Menu.Sub.Target>
+                            <Menu.Sub.Dropdown maw={264}>
+                                <Menu.Label>
+                                    <Trans>Delete a chapter's file some days after everyone has read it</Trans>
+                                </Menu.Label>
+                                <Menu.RadioGroup value={readFileCleanup} onChange={onSetReadFileCleanup}>
+                                    <Menu.RadioItem value="Default">
+                                        <Trans>Follow the setting</Trans>
+                                    </Menu.RadioItem>
+                                    <Menu.RadioItem value="On">
+                                        <Trans>On for this series</Trans>
+                                    </Menu.RadioItem>
+                                    <Menu.RadioItem value="Off">
+                                        <Trans>Off for this series</Trans>
+                                    </Menu.RadioItem>
+                                </Menu.RadioGroup>
+                                <Menu.Label><Trans>Read history stays, and the chapters aren't downloaded again.</Trans></Menu.Label>
+                            </Menu.Sub.Dropdown>
+                        </Menu.Sub>
 
-                <Menu.Divider />
+                        <Menu.Divider />
+                    </>
+                )}
                 <Menu.Label><Trans>Automation</Trans></Menu.Label>
 
-                <Menu.Sub>
-                    <Menu.Sub.Target>
-                        <Menu.Sub.Item
-                            leftSection={<IconEye size={16} />}
-                            rightSection={
-                                <Text size="xs" c="var(--ink-3)">
-                                    {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
-                                </Text>
-                            }
-                        >
-                            <Trans>Monitor</Trans>
-                        </Menu.Sub.Item>
-                    </Menu.Sub.Target>
-                    <Menu.Sub.Dropdown maw={264}>
-                        <Menu.Label><Trans>What happens to chapters released later</Trans></Menu.Label>
-                        <Menu.RadioGroup value={monitorMode} onChange={onSetMonitor}>
-                            {MONITOR_OPTIONS.map((o) => (
-                                <Menu.RadioItem key={o.value} value={o.value}>
-                                    {renderLabel(o.label)}
-                                </Menu.RadioItem>
-                            ))}
-                        </Menu.RadioGroup>
-                        <Menu.Label><Trans>Chapters already listed keep whatever you set on them.</Trans></Menu.Label>
-                    </Menu.Sub.Dropdown>
-                </Menu.Sub>
+                {canEdit && (
+                    <Menu.Sub>
+                        <Menu.Sub.Target>
+                            <Menu.Sub.Item
+                                leftSection={<IconEye size={16} />}
+                                rightSection={
+                                    <Text size="xs" c="var(--ink-3)">
+                                        {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
+                                    </Text>
+                                }
+                            >
+                                <Trans>Monitor</Trans>
+                            </Menu.Sub.Item>
+                        </Menu.Sub.Target>
+                        <Menu.Sub.Dropdown maw={264}>
+                            <Menu.Label><Trans>What happens to chapters released later</Trans></Menu.Label>
+                            <Menu.RadioGroup value={monitorMode} onChange={onSetMonitor}>
+                                {MONITOR_OPTIONS.map((o) => (
+                                    <Menu.RadioItem key={o.value} value={o.value}>
+                                        {renderLabel(o.label)}
+                                    </Menu.RadioItem>
+                                ))}
+                            </Menu.RadioGroup>
+                            <Menu.Label><Trans>Chapters already listed keep whatever you set on them.</Trans></Menu.Label>
+                        </Menu.Sub.Dropdown>
+                    </Menu.Sub>
+                )}
 
-                <Menu.Sub>
-                    <Menu.Sub.Target>
-                        <Menu.Sub.Item
-                            leftSection={<IconEyeOff size={16} />}
-                            rightSection={
-                                <Text size="xs" c="var(--ink-3)">
-                                    {renderLabel(label(incognitoOptions, incognito))}
-                                </Text>
-                            }
-                        >
-                            <Trans>Incognito</Trans>
-                        </Menu.Sub.Item>
-                    </Menu.Sub.Target>
-                    <Menu.Sub.Dropdown maw={264}>
-                        <Menu.RadioGroup value={incognito} onChange={onSetIncognito}>
-                            {incognitoOptions.map((o) => (
-                                <Menu.RadioItem key={o.value} value={o.value}>
-                                    {o.label}
-                                </Menu.RadioItem>
-                            ))}
-                        </Menu.RadioGroup>
-                        <Menu.Label>
-                            <Trans>Scrobble only skips tracker pushes.</Trans>{' '}
-                            <Trans>Full also excludes this series from Rewind stats and reading history.</Trans>
-                        </Menu.Label>
-                    </Menu.Sub.Dropdown>
-                </Menu.Sub>
+                {canEdit && (
+                    <Menu.Sub>
+                        <Menu.Sub.Target>
+                            <Menu.Sub.Item
+                                leftSection={<IconEyeOff size={16} />}
+                                rightSection={
+                                    <Text size="xs" c="var(--ink-3)">
+                                        {renderLabel(label(incognitoOptions, incognito))}
+                                    </Text>
+                                }
+                            >
+                                <Trans>Incognito</Trans>
+                            </Menu.Sub.Item>
+                        </Menu.Sub.Target>
+                        <Menu.Sub.Dropdown maw={264}>
+                            <Menu.RadioGroup value={incognito} onChange={onSetIncognito}>
+                                {incognitoOptions.map((o) => (
+                                    <Menu.RadioItem key={o.value} value={o.value}>
+                                        {o.label}
+                                    </Menu.RadioItem>
+                                ))}
+                            </Menu.RadioGroup>
+                            <Menu.Label>
+                                <Trans>Scrobble only skips tracker pushes.</Trans>{' '}
+                                <Trans>Full also excludes this series from Rewind stats and reading history.</Trans>
+                            </Menu.Label>
+                        </Menu.Sub.Dropdown>
+                    </Menu.Sub>
+                )}
 
                 <Menu.Sub>
                     <Menu.Sub.Target>
@@ -277,35 +288,37 @@ export function SeriesActionsMenu({
                     </Menu.Sub.Dropdown>
                 </Menu.Sub>
 
-                <Menu.Sub>
-                    <Menu.Sub.Target>
-                        <Menu.Sub.Item
-                            leftSection={<IconSparkles size={16} />}
-                            rightSection={
-                                <Text size="xs" c="var(--ink-3)">
-                                    {upgradeProfileLabel}
-                                </Text>
-                            }
-                        >
-                            <Trans>Quality profile</Trans>
-                        </Menu.Sub.Item>
-                    </Menu.Sub.Target>
-                    <Menu.Sub.Dropdown maw={264}>
-                        <Menu.RadioGroup
-                            value={upgradeProfileValue}
-                            onChange={(value) =>
-                                onSetUpgradeProfile(value === INSTANCE_DEFAULT ? null : Number(value))
-                            }
-                        >
-                            <Menu.RadioItem value={INSTANCE_DEFAULT}>{instanceDefaultLabel}</Menu.RadioItem>
-                            {upgradeProfiles.map((profile) => (
-                                <Menu.RadioItem key={profile.id} value={String(profile.id)}>
-                                    {profile.name}
-                                </Menu.RadioItem>
-                            ))}
-                        </Menu.RadioGroup>
-                    </Menu.Sub.Dropdown>
-                </Menu.Sub>
+                {canEdit && (
+                    <Menu.Sub>
+                        <Menu.Sub.Target>
+                            <Menu.Sub.Item
+                                leftSection={<IconSparkles size={16} />}
+                                rightSection={
+                                    <Text size="xs" c="var(--ink-3)">
+                                        {upgradeProfileLabel}
+                                    </Text>
+                                }
+                            >
+                                <Trans>Quality profile</Trans>
+                            </Menu.Sub.Item>
+                        </Menu.Sub.Target>
+                        <Menu.Sub.Dropdown maw={264}>
+                            <Menu.RadioGroup
+                                value={upgradeProfileValue}
+                                onChange={(value) =>
+                                    onSetUpgradeProfile(value === INSTANCE_DEFAULT ? null : Number(value))
+                                }
+                            >
+                                <Menu.RadioItem value={INSTANCE_DEFAULT}>{instanceDefaultLabel}</Menu.RadioItem>
+                                {upgradeProfiles.map((profile) => (
+                                    <Menu.RadioItem key={profile.id} value={String(profile.id)}>
+                                        {profile.name}
+                                    </Menu.RadioItem>
+                                ))}
+                            </Menu.RadioGroup>
+                        </Menu.Sub.Dropdown>
+                    </Menu.Sub>
+                )}
 
                 {canScanUpgrades && (
                     <Menu.Item
