@@ -490,9 +490,9 @@ public class ReaderController(
                 id = u.Id,
                 key = u.Key,
                 tier = u.Tier,
-                name = localizer.Get($"achievement.{u.Key}.name"),
+                name = localizer.AchievementName(u.Key),
                 tierName = AchievementCatalog.Find(u.Key) is { } d
-                    ? AchievementCatalog.TierName(d, u.Tier)
+                    ? localizer.AchievementTier(d, u.Tier)
                     : null,
             })];
         }
