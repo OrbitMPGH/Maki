@@ -534,9 +534,8 @@ public class RecommendationController(
     public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
 
     /// <summary>
-    /// Deeper rails only for a caller who has something to filter out of them. The Discover caches
-    /// are shared instance-wide, so a reader with no feedback asking for refill headroom would make
-    /// every reader pay a doubled catalogue scan for slack none of them use.
+    /// Refill headroom only for a caller who has something to filter out of the rails. The cached
+    /// set is built that deep either way; this only decides how much of it comes back.
     /// </summary>
     private static int RailDepth(HashSet<long> suppressed, Func<long, bool>? isHidden) =>
         suppressed.Count > 0 || isHidden is not null ? DiscoverService.RefillRailSize : DiscoverService.RailSize;

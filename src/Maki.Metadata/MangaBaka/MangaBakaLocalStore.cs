@@ -1024,7 +1024,7 @@ public class MangaBakaLocalStore(
     /// ordering. Reuses <see cref="MangaBakaRecommendation"/> so the same card/detail/add flow
     /// works — the relation and matched-genre/tag fields are left empty.
     /// </summary>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
         BrowseFeed feed, int limit, string? genre = null,
         RecommendationFilters? filters = null, CancellationToken ct = default)
     {
