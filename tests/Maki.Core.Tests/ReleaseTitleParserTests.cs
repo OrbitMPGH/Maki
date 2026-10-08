@@ -276,4 +276,13 @@ public class ReleaseTitleParserTests
         Assert.NotEmpty(parsed.TitleCandidates);
         Assert.Equal(new NumberRange(1, 1), parsed.Span.Volumes);
     }
+
+    [Fact]
+    public void Non_ascii_and_overflowing_digits_do_not_throw()
+    {
+        var parsed = ReleaseTitleParser.Parse("Title v１ + 99999999999999999999999999999999 (２０２４) (Digital)");
+
+        Assert.NotEmpty(parsed.TitleCandidates);
+        Assert.Null(parsed.Year);
+    }
 }

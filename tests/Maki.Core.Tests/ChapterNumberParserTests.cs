@@ -126,4 +126,16 @@ public class ChapterNumberParserTests
         var result = ChapterNumberParser.Parse("Chapter 10").OrSlugNumber("/chapter-11");
         Assert.Equal(10m, result.Number);
     }
+
+    // \d matches any Unicode digit but decimal.Parse only takes ASCII, so these used to throw.
+    [Theory]
+    [InlineData("１２")]
+    [InlineData("Ch. １２")]
+    [InlineData("١٢ - Title")]
+    public void Non_ascii_digits_read_as_unnumbered_rather_than_throwing(string label)
+    {
+        var result = ChapterNumberParser.Parse(label);
+        Assert.Null(result.Number);
+        Assert.True(result.IsOneShot);
+    }
 }

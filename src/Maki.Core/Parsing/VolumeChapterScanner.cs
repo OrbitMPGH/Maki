@@ -19,7 +19,7 @@ public static partial class VolumeChapterScanner
     // The page ("p113") and volume ("v05") markers start with other letters, so a
     // "c" not preceded by another letter and followed by digits is unambiguous; the
     // letter lookbehind keeps "Arc049"/"Comic" from reading as chapters.
-    [GeneratedRegex(@"(?<![a-z])c(?:h(?:apter)?)?\.?\s*(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?<![a-z])c(?:h(?:apter)?)?\.?\s*([0-9]+(?:\.[0-9]+)?)", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterMarker();
 
     /// <summary>
