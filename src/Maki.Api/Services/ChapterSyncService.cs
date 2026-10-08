@@ -129,6 +129,13 @@ public class ChapterSyncService(
                         // Enrich rather than duplicate: a volume-aware source fills in
                         // what a volume-less source couldn't provide.
                         match.Volume ??= sc.Volume;
+                        if (!string.Equals(match.Language, sc.Language, StringComparison.Ordinal))
+                        {
+                            // Same language under an older spelling: neighbour and repair queries
+                            // compare the stored string, so rows move to the canonical one as they sync.
+                            match.Language = SourceLanguages.Canonical(sc.Language);
+                        }
+
                         match.Title ??= sc.Title;
                         match.ReleaseDate ??= sc.ReleaseDate;
                     }
@@ -355,7 +362,7 @@ public class ChapterSyncService(
                 // second file or a second read of its own stays rather than losing it.
                 if (!await reads.CanMergeAsync(keeper, dup, ct))
                 {
-                    logger.LogInformation(
+                    logger.LogWarning(
                         "Kept duplicate row {DupId} ({DupLanguage}) of chapter {Number} in series {SeriesId}: its file or progress cannot move to row {KeeperId} ({KeeperLanguage})",
                         dup.Id, dup.Language, keeper.Number, keeper.SeriesId, keeper.Id, keeper.Language);
                     continue;
@@ -400,6 +407,7 @@ public class ChapterSyncService(
 
             if (merged > 0)
             {
+                keeper.Language = SourceLanguages.Canonical(keeper.Language);
                 logger.LogInformation("Merged {Count} duplicate row(s) of chapter {Number} in series {SeriesId}",
                     merged, keeper.Number, keeper.SeriesId);
             }
