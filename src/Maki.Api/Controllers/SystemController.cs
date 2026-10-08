@@ -147,6 +147,7 @@ public class SystemController(
     }
 
     [Authorize(Policy = Policies.Admin)]
+    [CookieSessionOnly]
     [HttpGet("backups/{name}")]
     public IActionResult DownloadBackup(string name)
     {
@@ -176,6 +177,7 @@ public class SystemController(
     }
 
     [Authorize(Policy = Policies.Admin)]
+    [CookieSessionOnly]
     [HttpPost("backups/{name}/restore")]
     public async Task<IActionResult> RestoreBackup(string name, CancellationToken ct)
     {
@@ -197,6 +199,7 @@ public class SystemController(
     }
 
     [Authorize(Policy = Policies.Admin)]
+    [CookieSessionOnly]
     [HttpPost("backups/restore-upload")]
     [RequestSizeLimit(1_073_741_824)] // 1 GiB
     public async Task<IActionResult> RestoreUpload(IFormFile file, CancellationToken ct)

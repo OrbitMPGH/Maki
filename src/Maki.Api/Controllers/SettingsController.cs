@@ -2113,7 +2113,9 @@ public class SettingsController(
         AuthRuntimeOptions.LockoutMinutesFrom(await settings.GetAsync(SettingKeys.AuthLockoutMinutes, ct)),
         AuthRuntimeOptions.SessionDaysFrom(await settings.GetAsync(SettingKeys.AuthSessionDays, ct))));
 
+    // Session cookie only: lockout and the trusted-proxy list outlive revoking a leaked admin key.
     [Authorize(Policy = Policies.Admin)]
+    [CookieSessionOnly]
     [HttpPut("security")]
     public async Task<IActionResult> SetSecurity([FromBody] SecuritySettings request, CancellationToken ct)
     {
