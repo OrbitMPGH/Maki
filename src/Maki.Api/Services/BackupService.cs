@@ -70,6 +70,7 @@ public class BackupService(
         var snapshotPath = Path.Combine(paths.BackupDir, $".{Guid.NewGuid():N}.db.tmp");
 
         var zipCreated = false;
+        var completed = false;
         try
         {
             SnapshotDatabase(snapshotPath);
@@ -98,6 +99,8 @@ public class BackupService(
                 await using var writer = new StreamWriter(manifestEntry.Open());
                 await writer.WriteAsync(JsonSerializer.Serialize(manifest, JsonOptions));
             }
+
+            completed = true;
         }
         catch (BackupCreateException)
         {
@@ -106,12 +109,12 @@ public class BackupService(
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SqliteException)
         {
             logger.LogError(ex, "Failed to create {Kind} backup at {Path}", kind, zipPath);
-            if (zipCreated)
-                TryDelete(zipPath);
             throw new BackupCreateException("error.system.backupFailed");
         }
         finally
         {
+            if (zipCreated && !completed)
+                TryDelete(zipPath);
             TryDelete(snapshotPath);
         }
 
