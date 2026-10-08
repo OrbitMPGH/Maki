@@ -51,7 +51,87 @@ States: `done <sha>`, `skipped (reason)`, `decision (question)`, `pending`.
 
 ## Wave 2: Tier 2 remainder
 
-Lanes: HOSTING, SERIES, AUTH, PROGRESS, RECO/META, SOURCES, FE-INFRA, FE-LIBRARY, FE-SETTINGS, FE-READER-2, i18n sweep, FE-UX (last). Rows added when the wave starts.
+Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut across the others.
+
+| Lane | ID | State |
+|---|---|---|
+| RECO/META | RECO-01 | pending |
+| RECO/META | RECO-02 | pending |
+| RECO/META | RECO-03 | pending |
+| RECO/META | RECO-04 | pending |
+| RECO/META | RECO-05 | pending |
+| RECO/META | RECO-06 | pending |
+| RECO/META | RECO-07 | pending |
+| RECO/META | METADATA-01 | pending |
+| RECO/META | METADATA-02 | pending |
+| RECO/META | METADATA-04 | pending |
+| RECO/META | METADATA-07 | pending |
+| RECO/META | METADATA-09 | pending |
+| SOURCES | SOURCES-01 | pending |
+| SOURCES | SOURCES-02 | pending |
+| SOURCES | SOURCES-03 | pending |
+| SOURCES | SOURCES-07 | pending |
+| SOURCES | SOURCES-09 | pending |
+| SOURCES | SOURCES-10 | pending |
+| SOURCES | SOURCES-11 | pending |
+| SOURCES | SOURCES-12 | pending |
+| FE-LIBRARY | FE-LIBRARY-01 | pending |
+| FE-LIBRARY | FE-LIBRARY-14 | pending |
+| FE-LIBRARY | FE-LIBRARY-15 | pending |
+| FE-LIBRARY | FE-LIBRARY-17 | pending |
+| FE-LIBRARY | FE-LIBRARY-27 | pending |
+| FE-LIBRARY | FE-LIBRARY-52 | pending |
+| FE-SETTINGS | FE-SETTINGS-01 | pending |
+| FE-SETTINGS | FE-SETTINGS-08 | pending |
+| FE-SETTINGS | FE-SETTINGS-09 | pending |
+| FE-SETTINGS | FE-SETTINGS-15 | pending |
+| FE-SETTINGS | FE-SETTINGS-16 | pending |
+| FE-SETTINGS | FE-SETTINGS-25 | pending |
+| FE-INFRA | FE-INFRA-06 | pending |
+| FE-INFRA | FE-INFRA-08 | pending |
+| FE-INFRA | FE-INFRA-15 | pending |
+| FE-INFRA | FE-INFRA-22 | pending |
+| FE-INFRA | FE-LIBRARY-20 | pending |
+| FE-INFRA | FE-LIBRARY-37 | pending |
+| HOSTING | HOSTING-02 | pending |
+| HOSTING | HOSTING-03 | pending |
+| HOSTING | HOSTING-05 | pending |
+| HOSTING | HOSTING-06 | pending |
+| HOSTING | HOSTING-08 | pending |
+| HOSTING | HOSTING-09 | pending |
+| HOSTING | HOSTING-10 | pending |
+| HOSTING | HOSTING-12 | pending |
+| SERIES | SERIES-01 | pending |
+| SERIES | SERIES-02 | pending |
+| SERIES | SERIES-09 | pending |
+| SERIES | SERIES-13 | pending |
+| SERIES | SERIES-17 | pending |
+| SERIES | SERIES-23 | pending |
+| SERIES | DATA-02 | pending |
+| AUTH | AUTH-03 | pending |
+| AUTH | AUTH-04 | pending |
+| AUTH | AUTH-06 | pending |
+| PROGRESS | PROGRESS-07 | pending |
+| PROGRESS | PROGRESS-08 | pending |
+| PROGRESS | PROGRESS-09 | pending |
+| PROGRESS | PROGRESS-12 | pending |
+| PROGRESS | PROGRESS-13 | pending |
+| PROGRESS | PROGRESS-23 | pending |
+| PROGRESS | PROGRESS-24 | pending |
+| PROGRESS | FE-READER-04 (server clamp) | pending |
+| FE-READER-2 | FE-READER-11 | pending |
+| FE-READER-2 | FE-READER-14 | pending |
+| FE-READER-2 | FE-READER-16 | pending |
+| i18n sweep | HOSTING-22 | pending |
+| i18n sweep | SERIES-06 | pending |
+| i18n sweep | SERIES-07 | pending |
+| i18n sweep | SERIES-16 | pending |
+| i18n sweep | SERIES-22 | pending |
+| i18n sweep | AUTH-16 | pending |
+| FE-UX | FE-UX-01 | pending |
+| FE-UX | FE-UX-06 | pending |
+| FE-UX | FE-UX-08 | pending |
+| FE-UX | FE-UX-14 | pending |
 
 ## Wave 3: Tier 3 and Tier 4 per slice
 
