@@ -15860,6 +15860,7 @@ msgstr "日付不明"
 msgid "Unknown source"
 msgstr "不明なソース"
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Unlink"

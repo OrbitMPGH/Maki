@@ -15860,6 +15860,7 @@ msgstr "날짜 알 수 없음"
 msgid "Unknown source"
 msgstr "알 수 없는 소스"
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Unlink"

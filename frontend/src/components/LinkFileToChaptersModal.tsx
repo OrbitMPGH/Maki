@@ -117,7 +117,10 @@ export function LinkFileToChaptersModal({
     const linkedPhrase = plural(selected.size, { one: '# chapter', other: '# chapters' })
     const unlinkedPhrase = plural(removed.length, { one: '# chapter', other: '# chapters' })
     try {
-      if (removed.length > 0) await unlink.mutateAsync(removed)
+      if (removed.length > 0) {
+        await unlink.mutateAsync(removed)
+        setInitial(new Set(selected))
+      }
       if (selected.size > 0) await link.mutateAsync({ chapterIds: [...selected], relativePath: file.relativePath })
     } catch {
       return
@@ -268,7 +271,7 @@ export function LinkFileToChaptersModal({
               <Trans>Cancel</Trans>
             </Button>
             <Button disabled={selected.size === 0 && removed.length === 0} loading={pending} onClick={() => void confirm()}>
-              <Trans>Link</Trans>
+              {selected.size === 0 ? <Trans>Unlink</Trans> : <Trans>Link</Trans>}
             </Button>
           </Group>
         </Group>

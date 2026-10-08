@@ -13005,6 +13005,7 @@ msgstr "Unknown date"
 msgid "Unknown source"
 msgstr "Unknown source"
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Unlink"
 msgstr "Unlink"
