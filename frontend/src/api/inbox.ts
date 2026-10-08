@@ -244,16 +244,18 @@ export function useClearInbox() {
   })
 }
 
+export const inboxPrefsQuery = {
+  queryKey: ['inbox', 'prefs'],
+  queryFn: () => api<InboxPrefs>('/inbox/prefs'),
+  staleTime: 60_000,
+} as const
+
 /**
  * Always comes back merged, so every event type this build knows has an entry even for a user who
  * has never opened the settings card.
  */
 export function useInboxPrefs() {
-  return useQuery({
-    queryKey: ['inbox', 'prefs'],
-    queryFn: () => api<InboxPrefs>('/inbox/prefs'),
-    staleTime: 60_000,
-  })
+  return useQuery(inboxPrefsQuery)
 }
 
 export function useSaveInboxPrefs() {
