@@ -82,7 +82,7 @@ interface Resolution {
  * - the reading profile in force, pinned or auto-selected (`PUT readingprofiles/{id}`)
  * - the user's global defaults (`PUT settings/reader`)
  */
-export function useReaderPrefs(manifest: ReaderManifest | undefined) {
+export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = true) {
   const [prefs, setPrefs] = useState<ReaderPrefs>(DEFAULT_PREFS)
   const [resolved, setResolved] = useState<Resolution>({
     source: 'Global',
@@ -94,11 +94,12 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined) {
   const { data: profiles } = useReadingProfiles()
 
   // Adopt the server's copy once per series; re-adopting on every manifest (i.e. every chapter
-  // turn) would throw away an unsaved in-session change.
+  // turn) would throw away an unsaved in-session change. Waits for the manifest fetch to settle: a
+  // reopen is served the cached manifest first, and its prefs predate whatever was saved since.
   const adoptedFor = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!manifest || adoptedFor.current === manifest.seriesId) return
+    if (!manifest || !settled || adoptedFor.current === manifest.seriesId) return
     adoptedFor.current = manifest.seriesId
     setPrefs({ ...DEFAULT_PREFS, ...manifest.prefs })
     setResolved({
@@ -107,7 +108,7 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined) {
       pinnedProfileId: manifest.pinnedProfileId,
       autoProfileId: manifest.autoProfileId,
     })
-  }, [manifest])
+  }, [manifest, settled])
 
   // Carried through so a prefs write doesn't clobber the push-back setting, which lives on the same
   // endpoint but is never edited from the reader.

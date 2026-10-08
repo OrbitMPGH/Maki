@@ -43,7 +43,7 @@ export default function ReaderPage() {
   const queryClient = useQueryClient()
   const { data: manifest, isLoading, isError, isFetching } = useReaderManifest(chapterId)
   const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
-    useReaderPrefs(manifest)
+    useReaderPrefs(manifest, !isFetching)
 
   const [page, setPage] = useState(0)
   // Bumped on every *explicit* jump (resume, toolbar scrub, page-strip click, Home/End) so
