@@ -1520,9 +1520,8 @@ msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{unrecognizedCount, plural, one {# nicht erkannt} other {# nicht erkannt}}"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "{unsavedCount, plural, one {A card on this tab has changes that are not saved. Leaving the tab drops them.} other {# cards on this tab have changes that are not saved. Leaving the tab drops them.}}"
-msgstr "{unsavedCount, plural, one {Eine Karte auf diesem Tab enthält ungespeicherte Änderungen. Wenn du den Tab verlässt, gehen sie verloren.} other {# Karten auf diesem Tab enthalten ungespeicherte Änderungen. Wenn du den Tab verlässt, gehen sie verloren.}}"
+msgid "{unsavedCount, plural, one {A card on this page has changes that are not saved. Leaving drops them.} other {# cards on this page have changes that are not saved. Leaving drops them.}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

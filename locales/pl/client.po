@@ -1520,9 +1520,8 @@ msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{unrecognizedCount, plural, one {# nierozpoznany} few {# nierozpoznane} many {# nierozpoznanych} other {# nierozpoznanego}}"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "{unsavedCount, plural, one {A card on this tab has changes that are not saved. Leaving the tab drops them.} other {# cards on this tab have changes that are not saved. Leaving the tab drops them.}}"
-msgstr "{unsavedCount, plural, one {Sekcja na tej zakładce ma niezapisane zmiany. Po opuszczeniu zakładki zmiany przepadną.} few {# sekcje na tej zakładce mają niezapisane zmiany. Po opuszczeniu zakładki zmiany przepadną.} many {# sekcji na tej zakładce ma niezapisane zmiany. Po opuszczeniu zakładki zmiany przepadną.} other {# sekcji na tej zakładce ma niezapisane zmiany. Po opuszczeniu zakładki zmiany przepadną.}}"
+msgid "{unsavedCount, plural, one {A card on this page has changes that are not saved. Leaving drops them.} other {# cards on this page have changes that are not saved. Leaving drops them.}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
