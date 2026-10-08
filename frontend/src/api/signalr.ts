@@ -8,24 +8,94 @@ import type { QueueHistoryDto, QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
 let connectionPromise: Promise<HubConnection> | null = null
+// Bumped by stopConnection so a start loop that was in flight when the account changed gives up
+// instead of handing the old account's socket to the new one.
+let generation = 0
+
+const reconnectListeners = new Set<() => void>()
+
+// 0, 2, 5, 10 and then 30 s for as long as it takes. The built-in policy gives up after four tries
+// (about 45 s), which is shorter than an update or a container restart, and once it has given up
+// nothing ever starts the connection again. A tab left open through a restart went deaf until a
+// reload without saying so.
+const RETRY_DELAYS_MS = [0, 2000, 5000, 10000, 30000]
+function retryDelay(attempt: number): number {
+  const base = RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)]
+  return base + Math.floor(Math.random() * 1000)
+}
+
+function build(): HubConnection {
+  // No credential in the URL: the handshake is same-origin, so the browser sends the session
+  // cookie with it. The hub requires an authenticated user and puts the connection in that user's
+  // group, which is how instance events reach admins only.
+  const conn = new HubConnectionBuilder()
+    .withUrl('/signalr/events')
+    .withAutomaticReconnect({
+      nextRetryDelayInMilliseconds: (ctx) => retryDelay(ctx.previousRetryCount),
+    })
+    .configureLogging(LogLevel.Warning)
+    .build()
+  conn.onreconnected(() => {
+    for (const listener of reconnectListeners) listener()
+  })
+  return conn
+}
+
+class ConnectionStopped extends Error {}
 
 function ensureConnection(): Promise<HubConnection> {
   // Cache the promise, not the connection: concurrent callers during startup
   // must not each build their own connection.
   connectionPromise ??= (async () => {
-    // No credential in the URL: the handshake is same-origin, so the browser sends the session
-    // cookie with it. The hub requires an authenticated user and puts the connection in that user's
-    // group, which is how instance events reach admins only.
-    const conn = new HubConnectionBuilder()
-      .withUrl('/signalr/events')
-      .withAutomaticReconnect()
-      .configureLogging(LogLevel.Warning)
-      .build()
-    await conn.start()
-    connection = conn
-    return conn
+    const mine = generation
+    for (let attempt = 0; ; attempt++) {
+      const conn = build()
+      try {
+        await conn.start()
+        if (mine !== generation) {
+          void conn.stop()
+          throw new ConnectionStopped()
+        }
+        connection = conn
+        return conn
+      } catch (err) {
+        if (err instanceof ConnectionStopped) throw err
+        // A rejected start used to be cached in connectionPromise for good, so a hiccup at page
+        // load (API still starting, proxy not ready) meant no live updates until a reload.
+        await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt)))
+        if (mine !== generation) throw new ConnectionStopped()
+      }
+    }
   })()
   return connectionPromise
+}
+
+/**
+ * Closes the live connection and forgets it, so the next subscriber opens a fresh one under the
+ * account that is signed in by then. Group membership on the server is fixed when a connection
+ * opens, so a socket that outlived a sign-out would keep delivering the previous account's inbox
+ * and admin events to whoever signed in next on the same tab.
+ */
+export function stopConnection(): void {
+  generation++
+  const conn = connection
+  connection = null
+  connectionPromise = null
+  if (conn) void conn.stop()
+}
+
+function subscribe(cb: (conn: HubConnection) => void): () => void {
+  let cancelled = false
+  ensureConnection()
+    .then((conn) => {
+      if (!cancelled) cb(conn)
+    })
+    .catch(() => {
+      // Only ConnectionStopped reaches here: the start loop never gives up otherwise.
+    })
+  return () => {
+    cancelled = true
+  }
 }
 
 /** Subscribes to a single hub event while the calling component is mounted. */
@@ -34,16 +104,11 @@ export function useHubEvent<T>(event: string, handler: (payload: T) => void) {
   handlerRef.current = handler
 
   useEffect(() => {
-    let cancelled = false
     const listener = (payload: T) => handlerRef.current(payload)
-
-    void ensureConnection().then((conn) => {
-      if (cancelled) return
-      conn.on(event, listener)
-    })
+    const unsubscribe = subscribe((conn) => conn.on(event, listener))
 
     return () => {
-      cancelled = true
+      unsubscribe()
       connection?.off(event, listener)
     }
   }, [event])
@@ -54,12 +119,32 @@ export function useLiveEvents() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    let cancelled = false
     let summaryTimer: ReturnType<typeof setTimeout> | null = null
 
-    void ensureConnection().then((conn) => {
-      if (cancelled) return
+    // Events sent while the socket was down are gone, and the queue lists are patched in place from
+    // events rather than refetched, so a download that finished during a blip stayed "in progress"
+    // and a Sources card waited forever for a sourceMatchFinished nobody would resend. Everything
+    // the handlers below maintain is refetched once the socket is back.
+    const onReconnected = () => {
+      for (const queryKey of [
+        ['queue'],
+        ['queue-summary'],
+        ['queue-history'],
+        ['inbox'],
+        ['series'],
+        ['chapters'],
+        ['sourcemappings'],
+        ['sourcematch-progress'],
+        ['requests'],
+        ['home'],
+        ['system', 'update'],
+      ]) {
+        void queryClient.invalidateQueries({ queryKey })
+      }
+    }
+    reconnectListeners.add(onReconnected)
 
+    const unsubscribe = subscribe((conn) => {
       conn.on('queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
         // Only the paged lists ['queue', page, pageSize] hold `items`; ['queue', 'import-plan', id] does not.
@@ -116,7 +201,7 @@ export function useLiveEvents() {
       conn.on('sourceMatchFinished', ({ seriesId }: { seriesId: number }) => {
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
-        // Prefix match, so this covers ['series', id] — the detail row carrying the pending flag —
+        // Prefix match, so this covers ['series', id] (the detail row carrying the pending flag)
         // as well as the library list.
         void queryClient.invalidateQueries({ queryKey: ['series'] })
         // The per-source states the card drew while it waited. Cleared here rather than when the
@@ -126,7 +211,7 @@ export function useLiveEvents() {
       })
 
       // One source's progress inside a match that's still running. Decoration on top of
-      // `sourceMatchFinished`, which is still what makes the real rows appear — a client that
+      // `sourceMatchFinished`, which is still what makes the real rows appear. A client that
       // misses these just sees the finished table, as it did before.
       conn.on(
         'sourceMatchProgress',
@@ -170,7 +255,7 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['requests'] })
       })
 
-      // Addressed to one user's group, not a broadcast — this is somebody's own mail.
+      // Addressed to one user's group, not a broadcast: this is somebody's own mail.
       conn.on('inboxNotification', (item: InboxPush) => {
         // The push carries the recipient's new unread count, so the badge updates without a
         // round trip. The feed is invalidated rather than patched: it is paged and filtered, and
@@ -194,7 +279,8 @@ export function useLiveEvents() {
     })
 
     return () => {
-      cancelled = true
+      unsubscribe()
+      reconnectListeners.delete(onReconnected)
       if (summaryTimer !== null) clearTimeout(summaryTimer)
       connection?.off('queueUpdated')
       connection?.off('chapterImported')

@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Maki.Api.Hubs;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -44,7 +46,8 @@ public class AuthController(
     OidcSignInService oidcSignIn,
     TimeProvider clock,
     ILogger<AuthController> logger,
-    InboxService inbox) : ControllerBase
+    InboxService inbox,
+    IHubContext<EventsHub>? hub = null) : ControllerBase
 {
     /// <summary>
     /// A real password hash to verify against when the username does not exist, so a miss costs the
@@ -227,6 +230,13 @@ public class AuthController(
         var name = currentUser.UserName;
         var id = currentUser.UserId;
         await signInManager.SignOutAsync();
+        // The hub keeps a connection in the groups it joined when it opened, so without this the
+        // socket a tab holds would keep receiving this account's events after the next sign-in.
+        if (hub is not null)
+        {
+            await EventsHub.DisconnectUserAsync(hub, id);
+        }
+
         await auditLog.LogAsync(AuthEventType.LoggedOut, name, id, HttpContext, ct: ct);
         return NoContent();
     }

@@ -57,8 +57,11 @@ export function useApplyLanguage(): ((value: string) => void) | null {
     void applied.then(() => {
       // Error messages, notification bodies and queue labels are all rendered server-side, so they
       // sit in the query cache in the language they were fetched in. Invalidating one key is not
-      // enough; almost every payload carries some.
-      void queryClient.clear()
+      // enough; almost every payload carries some. Invalidate rather than clear: clear() tears down
+      // every Query instance, including the one AuthProvider's useMe observer is attached to, and
+      // nothing re-renders AuthProvider after a language change, so a later sign-out or 401 wrote
+      // null into a Query nobody watched and the app stayed on screen as if signed in.
+      void queryClient.invalidateQueries()
     })
   }
 }

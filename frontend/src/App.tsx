@@ -46,6 +46,7 @@ import AppearanceAnnouncementModal from './components/AppearanceAnnouncementModa
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { EmptyState } from './components/ui/EmptyState'
+import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { useLanguageSync } from './i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
@@ -303,11 +304,13 @@ function AuthGate() {
   // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
   if (location.pathname.startsWith('/read/')) {
     return (
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route path="/read/:chapterId" element={<ReaderPage />} />
-        </Routes>
-      </Suspense>
+      <RouteErrorBoundary>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/read/:chapterId" element={<ReaderPage />} />
+          </Routes>
+        </Suspense>
+      </RouteErrorBoundary>
     )
   }
 
@@ -424,7 +427,10 @@ function AppShellRoutes() {
         }
       >
         {/* One boundary around the whole switch rather than one per lazy route: only a single
-            route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}
+            route is ever resolving, and a shared fallback keeps the loader identical everywhere.
+            The error boundary sits inside the shell on purpose, so a page that throws leaves the
+            nav and header standing. */}
+        <RouteErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route
@@ -461,6 +467,7 @@ function AppShellRoutes() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
+        </RouteErrorBoundary>
       </AppShell.Main>
 
       {/* Opens itself off the setup flag, latched so a language pick's cache clear can't close it. */}

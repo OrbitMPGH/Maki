@@ -9,6 +9,8 @@ using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Maki.Api.Hubs;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,7 +37,8 @@ public class AccountController(
     AuthEventLogger auditLog,
     OidcRuntimeOptions oidc,
     TimeProvider clock,
-    IUserSnapshotCache snapshots) : ControllerBase
+    IUserSnapshotCache snapshots,
+    IHubContext<EventsHub>? hub = null) : ControllerBase
 {
     private const int RecoveryCodeCount = 8;
 
@@ -387,9 +390,16 @@ public class AccountController(
         if (user is null) return Unauthorized();
 
         await userManager.UpdateSecurityStampAsync(user);
-        // Keep the caller signed in on this device — otherwise "sign out everywhere" also signs you
+        // Keep the caller signed in on this device, otherwise "sign out everywhere" also signs you
         // out here, which reads as a bug rather than a feature.
         await signInManager.RefreshSignInAsync(user);
+        // The other devices' cookies die at the next stamp check, but their live sockets would stay
+        // in this user's hub groups until a reload. This device reconnects on its own.
+        if (hub is not null)
+        {
+            await EventsHub.DisconnectUserAsync(hub, user.Id);
+        }
+
         await auditLog.LogAsync(AuthEventType.SessionsRevoked, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
         return NoContent();
     }

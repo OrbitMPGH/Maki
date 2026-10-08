@@ -19,6 +19,28 @@ import { syncSkeletonPulses } from './lib/skeletonSync'
 
 syncSkeletonPulses()
 
+// A tab that loaded index.html before an upgrade asks for hashed chunk names that no longer exist
+// on its next navigation; the import rejects and the page would go blank. Reload once so the new
+// index.html and chunks come down together. The timestamp guard stops a reload loop when the
+// chunks are genuinely unreachable; the route error boundary then shows a message instead.
+window.addEventListener('vite:preloadError', (event) => {
+  const key = 'maki.chunk-reload'
+  let last = 0
+  try {
+    last = Number(sessionStorage.getItem(key) ?? 0)
+  } catch {
+    // Storage can be unavailable in private windows; a missing guard only risks one extra reload.
+  }
+  if (Date.now() - last < 30_000) return
+  event.preventDefault()
+  try {
+    sessionStorage.setItem(key, String(Date.now()))
+  } catch {
+    // Same as above.
+  }
+  window.location.reload()
+})
+
 /**
  * One place that reports failures, so no call site can swallow one by forgetting a handler,
  * which is exactly how the series monitor toggle ended up reverting silently. Call sites only
