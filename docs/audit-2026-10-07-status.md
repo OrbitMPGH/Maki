@@ -28,8 +28,8 @@ States: `done <sha>`, `skipped (reason)`, `decision (question)`, `pending`.
 | B | SERIES-19 | pending |
 | B | DOWNLOADS-12 | pending |
 | B | DOWNLOADS-11 | pending |
-| C | PROGRESS-05 | pending |
-| C | PROGRESS-06 | pending |
+| C | PROGRESS-05 | done 540b0a0a, c54f13c7 |
+| C | PROGRESS-06 | done 012bb4a0, e2a4bd79 |
 | D | FE-READER-01 | done 7ba82f8a |
 | D | FE-READER-02 | done d28b59d2, 6f6d315f |
 | D | FE-READER-03 | done c4d989c5, a262bee8 |
