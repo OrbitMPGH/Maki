@@ -489,13 +489,47 @@ public partial class SourceMatchService(
         return titles;
     }
 
-    /// <summary>Queries for a source that publishes no English, other than the title already searched.</summary>
-    private static List<string> NativeSearchTerms(ISource source, MatchTarget target) =>
-        PublishesEnglish(source)
-            ? []
-            : [.. NativeTitles(source, target)
-                .Where(t => !string.Equals(t, target.Title, StringComparison.OrdinalIgnoreCase))
-                .Take(2)];
+    /// <summary>
+    /// Queries for a source that publishes no English, other than the title already searched: the alt
+    /// title in the source's own language, and the original title only where its script is one the
+    /// source is written in, so a Spanish site is not asked for a Japanese title.
+    /// </summary>
+    private static List<string> NativeSearchTerms(ISource source, MatchTarget target)
+    {
+        var terms = new List<string>();
+        if (PublishesEnglish(source))
+        {
+            return terms;
+        }
+
+        if (LocalizedTitle.Pick(target.AltTitles, source.SupportedLanguages) is { } alt)
+        {
+            terms.Add(alt);
+        }
+
+        if (target.OriginalTitle is { } original && ScriptFits(original, source) &&
+            !terms.Contains(original, StringComparer.OrdinalIgnoreCase))
+        {
+            terms.Add(original);
+        }
+
+        return [.. terms.Where(t => !string.Equals(t, target.Title, StringComparison.OrdinalIgnoreCase))];
+    }
+
+    private static bool ScriptFits(string title, ISource source)
+    {
+        var kana = title.Any(c => c is >= '\u3040' and <= '\u30FF');
+        var hangul = title.Any(c => c is (>= '\uAC00' and <= '\uD7AF') or (>= '\u1100' and <= '\u11FF')
+            or (>= '\u3130' and <= '\u318F'));
+        var han = title.Any(c => c is (>= '\u4E00' and <= '\u9FFF') or (>= '\u3400' and <= '\u4DBF'));
+        return source.SupportedLanguages.Any(language => language.Split('-')[0].ToLowerInvariant() switch
+        {
+            "ja" => kana || han,
+            "ko" => hangul || han,
+            "zh" => han,
+            _ => false,
+        });
+    }
 
     private static bool PublishesEnglish(ISource source) =>
         source.SupportedLanguages.Any(l => LocalizedTitle.Matches(l, "en"));

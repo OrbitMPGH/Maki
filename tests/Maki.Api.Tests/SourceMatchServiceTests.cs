@@ -1109,4 +1109,18 @@ public class SourceMatchServiceTests : IDisposable
         Assert.Equal(["senmanga"], mapped);
         Assert.Equal(1, japanese.SearchCalls);
     }
+
+    [Fact]
+    public async Task A_Latin_script_source_is_not_searched_for_the_native_title()
+    {
+        var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");
+        var spanish = new FakeSource { Name = "olympus", SupportedLanguages = ["es"], OnSearch = _ => [] };
+        var appSettings = new FakeAppSettings()
+            .Set(SettingKeys.SourcePriorityOrder, "olympus")
+            .Set(SettingKeys.SourceLanguageOrder, "es,en");
+
+        await RunAutoMatch(seriesId, Sources.AllEnabled, null, appSettings, spanish);
+
+        Assert.Equal(1, spanish.SearchCalls);
+    }
 }

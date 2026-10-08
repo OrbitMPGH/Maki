@@ -199,7 +199,6 @@ public static partial class ScrobbleMatching
         IReadOnlyList<string> queries, IReadOnlyList<ScrobbleCandidate> candidates,
         double threshold = MatchThreshold)
     {
-
         // Never below what the caller asked for: a caller stricter than StandaloneThreshold (the
         // scrobbler is, at 0.93) gets its own threshold on both branches, so the relaxation is
         // invisible to it.
