@@ -1,3 +1,4 @@
+using System.Xml;
 using System.Xml.Serialization;
 
 namespace Maki.Core.ComicInfo;
@@ -5,7 +6,8 @@ namespace Maki.Core.ComicInfo;
 /// <summary>
 /// The anansi-project ComicInfo.xml schema (v2.0), limited to the fields Kavita reads.
 /// Serialized into the root of every CBZ. Fields Maki never writes itself are still
-/// declared so that rewriting an imported file's ComicInfo.xml round-trips them.
+/// declared, and anything else an imported file carries (Characters, Teams, the Pages block)
+/// lands in <see cref="Unmodelled"/>, so rewriting its ComicInfo.xml round-trips all of it.
 /// </summary>
 [XmlRoot("ComicInfo")]
 public class ComicInfo
@@ -52,4 +54,10 @@ public class ComicInfo
     public string? ScanInformation { get; set; }
     public string? GTIN { get; set; }
     public string? PageCount { get; set; }
+
+    [XmlAnyElement]
+    public XmlElement[]? Unmodelled { get; set; }
+
+    [XmlAnyAttribute]
+    public XmlAttribute[]? UnmodelledAttributes { get; set; }
 }
