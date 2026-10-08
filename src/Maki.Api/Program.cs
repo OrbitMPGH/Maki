@@ -613,13 +613,13 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaTubeLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    var challengeLimiters = new HostRateLimiters(() => RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2));
     builder.Services.AddHttpClient(ChallengeAwareFetcher.HttpClientName, client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(challengeLimiter))
+        .AddHttpMessageHandler(() => new PerHostRateLimitingHandler(challengeLimiters))
         // 429 only: Cloudflare answers challenges with 503, and ChallengeAwareFetcher must still
         // see that itself to hand off to FlareSolverr.
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
