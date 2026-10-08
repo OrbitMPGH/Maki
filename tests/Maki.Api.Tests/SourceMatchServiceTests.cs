@@ -1020,4 +1020,93 @@ public class SourceMatchServiceTests : IDisposable
 
         Assert.Equal(["nothing"], steps.Named(SourceMatchState.NoMatch));
     }
+
+    private FakeAppSettings JapaneseFirst(params string[] order) => new FakeAppSettings()
+        .Set(SettingKeys.SourcePriorityOrder, string.Join(",", order))
+        .Set(SettingKeys.SourceLanguageOrder, "ja,en");
+
+    [Fact]
+    public async Task A_native_script_original_title_is_kept_and_searched_on_a_Japanese_source()
+    {
+        var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");
+        var queries = new List<string>();
+        var japanese = new FakeSource
+        {
+            Name = "senmanga",
+            SupportedLanguages = ["ja"],
+            OnSearch = q =>
+            {
+                lock (queries)
+                {
+                    queries.Add(q);
+                }
+
+                return q == "進撃の巨人" ? [Hit("jp1", "進撃の巨人")] : [];
+            }
+        };
+
+        var mapped = await RunAutoMatch(seriesId, Sources.AllEnabled, null, JapaneseFirst("senmanga"), japanese);
+
+        Assert.Equal(["senmanga"], mapped);
+        Assert.Equal(["Attack on Titan", "進撃の巨人"], queries);
+    }
+
+    [Fact]
+    public async Task The_alt_title_in_the_sources_language_is_searched_before_the_original_title()
+    {
+        var seriesId = _db.SeedSeries(
+            "Attack on Titan", originalTitle: "進撃の巨人",
+            configure: s => s.AltTitles = [new LocalizedTitle("Shingeki no Kyojin", "ja-Latn"), new LocalizedTitle("进击的巨人", "zh-Hans")]);
+        var queries = new List<string>();
+        var chinese = new FakeSource
+        {
+            Name = "baozi",
+            SupportedLanguages = ["zh-Hans"],
+            OnSearch = q =>
+            {
+                lock (queries)
+                {
+                    queries.Add(q);
+                }
+
+                return q == "进击的巨人" ? [Hit("zh1", "进击的巨人")] : [];
+            }
+        };
+        var appSettings = new FakeAppSettings()
+            .Set(SettingKeys.SourcePriorityOrder, "baozi")
+            .Set(SettingKeys.SourceLanguageOrder, "zh-Hans,en");
+
+        var mapped = await RunAutoMatch(seriesId, Sources.AllEnabled, null, appSettings, chinese);
+
+        Assert.Equal(["baozi"], mapped);
+        Assert.Equal(["Attack on Titan", "进击的巨人"], queries);
+    }
+
+    [Fact]
+    public async Task A_source_that_publishes_English_is_searched_once()
+    {
+        var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");
+        var english = new FakeSource { Name = "english", OnSearch = _ => [] };
+
+        await RunAutoMatch(seriesId, english);
+
+        Assert.Equal(1, english.SearchCalls);
+    }
+
+    [Fact]
+    public async Task A_Japanese_source_the_English_title_already_finds_is_searched_once()
+    {
+        var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");
+        var japanese = new FakeSource
+        {
+            Name = "senmanga",
+            SupportedLanguages = ["ja"],
+            OnSearch = _ => [Hit("jp1", "Attack on Titan")]
+        };
+
+        var mapped = await RunAutoMatch(seriesId, Sources.AllEnabled, null, JapaneseFirst("senmanga"), japanese);
+
+        Assert.Equal(["senmanga"], mapped);
+        Assert.Equal(1, japanese.SearchCalls);
+    }
 }
