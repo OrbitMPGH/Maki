@@ -87,10 +87,11 @@ public class SourceMappingRemovalService(
             .Where(c => c.SeriesId == mapping.SeriesId)
             .Include(c => c.ChapterFile)
             .ToListAsync(ct);
-        var removed = chapters.Where(c => !supportedIds.Contains(c.Id)).ToList();
-        var retained = chapters.Where(c => supportedIds.Contains(c.Id)).ToList();
+        var orphanedIds = await OrphansWorthKeepingAsync(mapping.SeriesId, chapters, ct);
+        var removed = chapters.Where(c => !supportedIds.Contains(c.Id) && !orphanedIds.Contains(c.Id)).ToList();
+        var retained = chapters.Where(c => supportedIds.Contains(c.Id) || orphanedIds.Contains(c.Id)).ToList();
 
-        await RebuildMetadataAsync(retained, remainingIds, ct);
+        await RebuildMetadataAsync(retained.Where(c => supportedIds.Contains(c.Id)).ToList(), remainingIds, ct);
 
         // A chapter number can be valid on both the wrong and correct series. Its row survives,
         // but a CBZ acquired through the mapping being removed must not remain readable as if it
@@ -180,6 +181,38 @@ public class SourceMappingRemovalService(
             deletedFiles,
             failedFileDeletions.Count,
             failedFileDeletions);
+    }
+
+    /// <summary>
+    /// Chapters no mapping lists any more (a source delisted them, or they were adopted from disk)
+    /// that still hold a file or somebody's reading state. Removing a source says nothing about
+    /// them, and the row going takes every user's progress and bookmarks with it.
+    /// </summary>
+    private async Task<HashSet<int>> OrphansWorthKeepingAsync(
+        int seriesId, IReadOnlyCollection<Chapter> chapters, CancellationToken ct)
+    {
+        var linked = (await db.ChapterSourceLinks
+                .Where(l => l.Chapter!.SeriesId == seriesId)
+                .Select(l => l.ChapterId)
+                .Distinct()
+                .ToListAsync(ct))
+            .ToHashSet();
+        var read = (await db.ChapterProgress.IgnoreQueryFilters()
+                .Where(p => p.SeriesId == seriesId)
+                .Select(p => p.ChapterId)
+                .Distinct()
+                .ToListAsync(ct))
+            .Concat(await db.ReaderBookmarks.IgnoreQueryFilters()
+                .Where(b => b.SeriesId == seriesId)
+                .Select(b => b.ChapterId)
+                .Distinct()
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        return chapters
+            .Where(c => !linked.Contains(c.Id) && (c.ChapterFileId is not null || read.Contains(c.Id)))
+            .Select(c => c.Id)
+            .ToHashSet();
     }
 
     private async Task RebuildMetadataAsync(
