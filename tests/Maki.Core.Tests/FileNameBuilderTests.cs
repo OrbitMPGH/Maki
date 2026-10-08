@@ -83,11 +83,11 @@ public class FileNameBuilderTests
     public void An_over_long_name_keeps_its_start_and_end_within_the_limit()
     {
         // About 85 CJK characters already reach 255 bytes, the ext4 limit for one name.
-        var title = string.Concat(Enumerable.Repeat("進撃の巨人", 30));
+        var title = string.Concat(Enumerable.Repeat("\u9032\u6483\u306E\u5DE8\u4EBA", 30));
         var name = FileNameSanitizer.Sanitize(title + " Vol.12 Ch.105");
 
         Assert.True(System.Text.Encoding.UTF8.GetByteCount(name) <= FileNameSanitizer.MaxBytes);
-        Assert.StartsWith("進撃の", name);
+        Assert.StartsWith("\u9032\u6483\u306E", name);
         Assert.EndsWith(" Vol.12 Ch.105", name);
     }
 
@@ -104,10 +104,10 @@ public class FileNameBuilderTests
     [Fact]
     public void Shortening_never_splits_a_surrogate_pair()
     {
-        var name = FileNameSanitizer.Sanitize(string.Concat(Enumerable.Repeat("😀", 100)));
+        var name = FileNameSanitizer.Sanitize(string.Concat(Enumerable.Repeat("\U0001F600", 100)));
 
         Assert.True(System.Text.Encoding.UTF8.GetByteCount(name) <= FileNameSanitizer.MaxBytes);
-        Assert.DoesNotContain('�', System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(name)));
+        Assert.DoesNotContain('\uFFFD', System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(name)));
     }
 
     [Fact]

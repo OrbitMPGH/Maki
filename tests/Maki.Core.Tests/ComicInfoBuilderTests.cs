@@ -133,7 +133,7 @@ public class ComicInfoBuilderTests
         var series = TestSeries();
         series.Overview = "Dark\u0008 fantasy\u001F with \U0001F5E1 and a lone \uD800 surrogate.";
         series.AuthorStory = "MIURA\u0001 Kentaro";
-        var info = ComicInfoBuilder.Build(series, new Chapter { Number = 1, Language = "en", Title = "Bad￾" }, 10);
+        var info = ComicInfoBuilder.Build(series, new Chapter { Number = 1, Language = "en", Title = "Bad\uFFFE" }, 10);
 
         var xml = ComicInfoBuilder.Serialize(info);
 

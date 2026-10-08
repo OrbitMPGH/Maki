@@ -217,9 +217,9 @@ public class ReleaseNameParserTests
     }
 
     [Theory]
-    [InlineData("Title １０１.cbz")]
-    [InlineData("Title v１.zip")]
-    [InlineData("Title c١٢.cbz")]
+    [InlineData("Title \uFF11\uFF10\uFF11.cbz")]
+    [InlineData("Title v\uFF11.zip")]
+    [InlineData("Title c\u0661\u0662.cbz")]
     public void Non_ascii_digits_are_unrecognized_rather_than_throwing(string file)
     {
         Assert.False(ReleaseNameParser.ParseFileName(file).IsRecognized);

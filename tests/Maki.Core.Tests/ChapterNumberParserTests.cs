@@ -129,9 +129,9 @@ public class ChapterNumberParserTests
 
     // \d matches any Unicode digit but decimal.Parse only takes ASCII, so these used to throw.
     [Theory]
-    [InlineData("１２")]
-    [InlineData("Ch. １２")]
-    [InlineData("١٢ - Title")]
+    [InlineData("\uFF11\uFF12")]
+    [InlineData("Ch. \uFF11\uFF12")]
+    [InlineData("\u0661\u0662 - Title")]
     public void Non_ascii_digits_read_as_unnumbered_rather_than_throwing(string label)
     {
         var result = ChapterNumberParser.Parse(label);

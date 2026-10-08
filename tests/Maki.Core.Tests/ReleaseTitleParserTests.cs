@@ -280,7 +280,7 @@ public class ReleaseTitleParserTests
     [Fact]
     public void Non_ascii_and_overflowing_digits_do_not_throw()
     {
-        var parsed = ReleaseTitleParser.Parse("Title v１ + 99999999999999999999999999999999 (２０２４) (Digital)");
+        var parsed = ReleaseTitleParser.Parse("Title v\uFF11 + 99999999999999999999999999999999 (\uFF12\uFF10\uFF12\uFF14) (Digital)");
 
         Assert.NotEmpty(parsed.TitleCandidates);
         Assert.Null(parsed.Year);
