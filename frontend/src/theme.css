@@ -5624,6 +5624,12 @@ body.reader-open {
 .reader-continuous[data-zoomed='true'] .reader-fit-original {
   max-width: none;
 }
+/* An unloaded page has no intrinsic size, so every lazy image would sit at height 0 inside the
+   first viewport and the browser would fetch them all at once. A placeholder gives the strip a
+   real length until each page reports its own size (ContinuousView sets data-loaded). */
+.reader-continuous .reader-page:not([data-loaded]) {
+  min-height: 60dvh;
+}
 
 .reader-page {
   display: block;

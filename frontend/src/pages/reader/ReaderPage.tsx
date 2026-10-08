@@ -30,6 +30,7 @@ import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
 const CHROME_HIDE_MS = 4000
+const FLUSH_WAIT_MS = 2000
 
 /**
  * The chromeless reader. Rendered outside the AppShell (see App.tsx) so it owns the whole
@@ -60,6 +61,13 @@ export default function ReaderPage() {
   // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
   const enterAtEndRef = useRef(false)
   const leavingRef = useRef(false)
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
   // The chrome starts hidden and is summoned by a tap in the middle of the page: the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
@@ -193,20 +201,28 @@ export default function ReaderPage() {
       // Same gate as the position writer: before the resume lands, `page` is 0 and not a position.
       if (manifest && tracking) {
         const done = complete || finished
-        await settleProgress()
-        const unlocked = await flushProgress(
-          manifest.chapterId,
-          done ? pageCount - 1 : shownTo,
-          done || undefined,
-          // Banked time belongs to the chapter being left, and the next chapter's clock starts
-          // from nothing, so it has to go out with this write or it is lost.
-          clock.take(),
-        ).catch(() => [] as UnlockedAchievement[])
-        if (unlocked.length > 0) onAchievementsUnlocked(unlocked)
-        void queryClient.invalidateQueries({ queryKey: ['reader-progress', manifest.seriesId] })
-        void queryClient.invalidateQueries({ queryKey: ['reader-continue', manifest.seriesId] })
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
+        // Banked time belongs to the chapter being left, and the next chapter's clock starts
+        // from nothing, so it has to go out with this write or it is lost.
+        const seconds = clock.take()
+        const { chapterId: leftId, seriesId } = manifest
+        const at = done ? pageCount - 1 : shownTo
+        // Navigation waits for the write only up to a short grace period: a hung save must not
+        // freeze the page turn. The chain keeps running after navigating, so the position still
+        // lands, and settle-then-flush stays in order.
+        const flushed = (async () => {
+          await settleProgress()
+          const unlocked = await flushProgress(leftId, at, done || undefined, seconds).catch(
+            () => [] as UnlockedAchievement[],
+          )
+          if (unlocked.length > 0) onAchievementsUnlocked(unlocked)
+          void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
+          void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
+          void queryClient.invalidateQueries({ queryKey: ['series'] })
+        })()
+        await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
       }
+      // Left the reader during the grace wait (Escape, browser back): do not pull the user back in.
+      if (!mountedRef.current) return
       // ReaderPage stays mounted across /read/:chapterId changes, so a manifest cached from an
       // earlier visit to `target` would otherwise be served as-is (staleTime is Infinity) with its
       // now-stale resumePage. Drop it so the coming mount always fetches fresh.

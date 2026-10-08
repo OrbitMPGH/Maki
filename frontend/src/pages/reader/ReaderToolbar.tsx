@@ -98,6 +98,12 @@ export default function ReaderToolbar({
   // so each chevron's disabled state follows the chapter it actually opens.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // The thumb follows the pointer through this, and the page only moves once it is released.
+  const [scrub, setScrub] = useState<number | null>(null)
+  // A cancelled touch drag never fires onChangeEnd, so any page move also drops a stuck scrub.
+  useEffect(() => {
+    setScrub(null)
+  }, [page])
 
   // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
   const autoProfile = profiles.find((p) => p.id === autoProfileId)
@@ -267,8 +273,12 @@ export default function ReaderToolbar({
             className="reader-slider"
             min={1}
             max={Math.max(1, manifest.pageCount)}
-            value={rtl ? manifest.pageCount - page : page + 1}
-            onChange={(value) => onSeek(rtl ? manifest.pageCount - value : value - 1)}
+            value={scrub ?? (rtl ? manifest.pageCount - page : page + 1)}
+            onChange={setScrub}
+            onChangeEnd={(value) => {
+              setScrub(null)
+              onSeek(rtl ? manifest.pageCount - value : value - 1)
+            }}
             label={(value) => `${rtl ? manifest.pageCount - value + 1 : value} / ${manifest.pageCount}`}
             inverted={rtl}
             style={{ flex: 1 }}
