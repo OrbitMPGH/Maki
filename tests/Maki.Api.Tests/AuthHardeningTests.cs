@@ -305,6 +305,62 @@ public sealed class AuthHardeningTests : IDisposable
     }
 
     [Fact]
+    public async Task Renaming_a_user_keeps_their_sessions_whether_it_is_another_user_or_the_admin_themselves()
+    {
+        var adminId = _db.SeedUser("admin", MakiPermission.Admin);
+        var readerId = SeedWithPassword("reader");
+        var adminStamp = StampOf(adminId);
+        var readerStamp = StampOf(readerId);
+        using var db = _db.NewContext();
+        var users = Users(db, adminId);
+
+        var other = await users.Update(readerId, new SaveUserRequest(
+            "reader2", null, null, null, null, null, null, null), default);
+        var self = await users.Update(adminId, new SaveUserRequest(
+            "admin2", null, null, null, null, null, null, null), default);
+
+        Assert.IsType<OkObjectResult>(other);
+        Assert.IsType<OkObjectResult>(self);
+        using var check = _db.NewContext();
+        Assert.Equal("reader2", check.Users.Single(u => u.Id == readerId).UserName);
+        Assert.Equal("admin2", check.Users.Single(u => u.Id == adminId).UserName);
+        Assert.Equal(readerStamp, StampOf(readerId));
+        Assert.Equal(adminStamp, StampOf(adminId));
+    }
+
+    [Fact]
+    public async Task Promoting_to_admin_or_granting_a_folder_keeps_the_users_sessions()
+    {
+        var adminId = _db.SeedUser("admin", MakiPermission.Admin);
+        var promotedId = SeedWithPassword("promoted", MakiPermission.AddSeries);
+        var grantedId = SeedWithPassword("granted");
+        int folderId;
+        using (var seed = _db.NewContext())
+        {
+            var folder = new Maki.Core.Entities.RootFolder { Path = Path.GetTempPath() };
+            seed.RootFolders.Add(folder);
+            seed.SaveChanges();
+            folderId = folder.Id;
+        }
+
+        var promotedStamp = StampOf(promotedId);
+        var grantedStamp = StampOf(grantedId);
+        using var db = _db.NewContext();
+        var users = Users(db, adminId);
+
+        await users.Update(promotedId, new SaveUserRequest(
+            "promoted", null, null, MakiPermission.Admin, null, null, null, null), default);
+        await users.Update(grantedId, new SaveUserRequest(
+            "granted", null, null, null, null, false, [folderId], null), default);
+
+        using var check = _db.NewContext();
+        Assert.True(check.Users.Single(u => u.Id == promotedId).Permissions.Grants(MakiPermission.Admin));
+        Assert.Contains(check.UserRootFolders, g => g.UserId == grantedId && g.RootFolderId == folderId);
+        Assert.Equal(promotedStamp, StampOf(promotedId));
+        Assert.Equal(grantedStamp, StampOf(grantedId));
+    }
+
+    [Fact]
     public async Task A_save_that_sends_the_current_disabled_state_keeps_the_users_sessions()
     {
         var adminId = _db.SeedUser("admin");

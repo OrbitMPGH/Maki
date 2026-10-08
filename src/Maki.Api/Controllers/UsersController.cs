@@ -143,6 +143,7 @@ public class UsersController(
         var wasAdmin = user.Permissions.Grants(MakiPermission.Admin);
         var before = user.Permissions;
         var wasDisabled = user.Disabled;
+        var stampBefore = user.SecurityStamp;
 
         if (request.Permissions is { } permissions)
         {
@@ -184,6 +185,10 @@ public class UsersController(
             {
                 return BadRequest(new { error = Describe(renamed) });
             }
+
+            // Identity rotates the stamp on a rename. A rename is not an access change, and the name
+            // claim is reloaded from the snapshot per request, so keep every session alive.
+            user.SecurityStamp = stampBefore;
         }
 
         if (request.DisplayName is not null)
@@ -231,12 +236,13 @@ public class UsersController(
         snapshots.Evict(user.Id);
         OpdsAccessService.EvictUser(user.Id);
 
-        if (revokeSessions && user.Id == currentUser.UserId)
+        if (user.Id == currentUser.UserId && user.SecurityStamp != stampBefore)
         {
             await signInManager.RefreshSignInAsync(user);
         }
 
-        if ((wasAdmin && !user.Permissions.Grants(MakiPermission.Admin)) || user.Disabled)
+        var isAdmin = user.Permissions.Grants(MakiPermission.Admin);
+        if (wasAdmin != isAdmin || user.Disabled)
         {
             await EventsHub.DisconnectUserAsync(hub, user.Id);
         }
