@@ -1270,6 +1270,12 @@ msgstr "元数据提供方找不到该系列"
 msgid "error.series.metadataRefreshFailed"
 msgstr "元数据查询失败：系列没有提供方 ID，或提供方未返回任何内容"
 
+#. The cause is in the server log. Anything already moved was put back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not move the series folder. The server log has the details.
+msgid "error.series.moveFailed"
+msgstr ""
+
 #. {message} is an exception message and is never translated. The files already moved; only the
 #. database write failed, so the move is rolled back.
 #: src/Maki.Api/Controllers/SeriesController.cs

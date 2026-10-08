@@ -1270,6 +1270,12 @@ msgstr "메타데이터 제공자에서 시리즈를 찾을 수 없습니다"
 msgid "error.series.metadataRefreshFailed"
 msgstr "메타데이터 조회 실패: 시리즈에 제공자 ID가 없거나 제공자가 아무것도 반환하지 않았습니다"
 
+#. The cause is in the server log. Anything already moved was put back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not move the series folder. The server log has the details.
+msgid "error.series.moveFailed"
+msgstr ""
+
 #. {message} is an exception message and is never translated. The files already moved; only the
 #. database write failed, so the move is rolled back.
 #: src/Maki.Api/Controllers/SeriesController.cs

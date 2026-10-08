@@ -1270,6 +1270,12 @@ msgstr "メタデータプロバイダーにシリーズが見つかりません
 msgid "error.series.metadataRefreshFailed"
 msgstr "メタデータ検索に失敗しました。シリーズにプロバイダーIDがないか、プロバイダーから何も返されませんでした"
 
+#. The cause is in the server log. Anything already moved was put back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not move the series folder. The server log has the details.
+msgid "error.series.moveFailed"
+msgstr ""
+
 #. {message} is an exception message and is never translated. The files already moved; only the
 #. database write failed, so the move is rolled back.
 #: src/Maki.Api/Controllers/SeriesController.cs

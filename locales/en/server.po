@@ -886,6 +886,11 @@ msgstr "Series not found on metadata provider"
 msgid "error.series.metadataRefreshFailed"
 msgstr "Metadata lookup failed - series has no provider id or the provider returned nothing"
 
+#. The cause is in the server log. Anything already moved was put back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.moveFailed"
+msgstr "Could not move the series folder. The server log has the details."
+
 #. {message} is an exception message and is never translated. The files already moved; only the
 #. database write failed, so the move is rolled back.
 #: src/Maki.Api/Controllers/SeriesController.cs
