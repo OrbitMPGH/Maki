@@ -109,7 +109,8 @@ const outputKeys = [
   'discover-cohort', 'discover-rails', 'discover-feed', 'discover-genres',
   'taste-insights', 'series-related', 'series-similar', 'custom-rail-items',
 ]
-const restoresTitle = (action: string) => action === 'clear-suppression' || action === 'clear-exposure'
+const restoresTitle = (action: string) =>
+  action === 'clear-suppression' || action === 'clear-exposure' || action === 'clear-sentiment'
 const pendingOptimistic = new Map<number, string>()
 
 function withoutTitle(value: unknown, id: number): unknown {
@@ -161,10 +162,10 @@ export function useSignalOverrides() {
 
 /**
  * `lazy` refetches only the feedback state the user is looking at and marks every rail, feed and
- * taste query stale for its next mount. A thumb or hide already removes the title optimistically,
- * and refetching every mounted rail and each loaded page of the recommendations feed per click is
- * expensive on the server. Undo, franchise hides, signal overrides and the clear-suppression and
- * clear-exposure actions use `full`, because a title coming back cannot be predicted client-side.
+ * taste query stale for its next mount. A thumb, hide or dismiss already removes the title
+ * optimistically, and refetching every mounted rail and each loaded page of the recommendations feed per click is
+ * expensive on the server. Undo, franchise hides, signal overrides and the clear-suppression,
+ * clear-exposure and clear-sentiment actions use `full`, because a title coming back cannot be predicted client-side.
  */
 function useRefreshRecommendations() {
   const client = useQueryClient()
@@ -188,7 +189,7 @@ export function useMutateFeedback() {
       method: 'PUT', body: JSON.stringify({ action, medium, expectedRevision, clientMutationId }),
     }),
     onMutate: async (command) => {
-      if (!['hide', 'dismiss', 'mark-exposed'].includes(command.action)) return null
+      if (!['hide', 'dismiss', 'mark-exposed', 'like', 'dislike'].includes(command.action)) return null
       pendingOptimistic.set(command.id, command.clientMutationId)
       const snapshots: [readonly unknown[], unknown, unknown][] = []
       for (const key of outputKeys) {
