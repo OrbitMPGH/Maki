@@ -389,7 +389,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // grants are read fresh on every query (a revoked folder applies immediately) and the
             // SQL carries only scalar parameters, which keeps one plan in SQLite's cache instead of
             // one per distinct grant list. The two bypass flags are evaluated left-to-right, so an
-            // admin's query never runs the subquery at all.
+            // unrestricted query or one for an all-folders account never runs the subquery. Admin does
+            // not bypass: only the AllRootFolders flag does.
             e.HasQueryFilter(s =>
                 _scope.Unrestricted ||
                 _scope.AllRootFolders ||
