@@ -77,7 +77,7 @@ import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from
 import { queueErrorMessage, queueItemLabel, queueOriginOrUnknown } from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
-import { formatBytes, formatDate, formatDateTime, formatTime } from '../format'
+import { formatBytes, formatCalendarDate, formatDateTime, formatTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const HISTORY_PAGE_SIZE = 25
@@ -810,13 +810,13 @@ export default function ActivityPage() {
                     // The daily job is the only thing that writes `lastScanDate`; a per-series scan
                     // from this same button doesn't touch it, so the label says which one this is.
                     const lastScanText = upgradesSummary.lastScanDate
-                      ? formatDate(upgradesSummary.lastScanDate)
+                      ? formatCalendarDate(upgradesSummary.lastScanDate)
                       : t`never`
                     const trashSize = formatBytes(upgradesSummary.trashBytes)
                     const trashFilesText = plural(upgradesSummary.trashFiles, { one: '# file', other: '# files' })
                     const retentionDays = upgradeSettings?.trashRetentionDays
                     const lastVolumeSearchText = upgradesSummary.lastVolumeSearchDate
-                      ? formatDate(upgradesSummary.lastVolumeSearchDate)
+                      ? formatCalendarDate(upgradesSummary.lastVolumeSearchDate)
                       : t`never`
                     return (
                       <>

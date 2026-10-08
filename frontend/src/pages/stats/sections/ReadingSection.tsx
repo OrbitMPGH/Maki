@@ -17,7 +17,7 @@ import { useStatsInsights, useStatsStanding } from '../../../api/stats'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { SectionHeader } from '../../../components/ui/SectionHeader'
-import { formatDate, formatHour, formatMonthBucket, formatNumber, formatReadingTime, monthName } from '../../../format'
+import { formatCalendarDate, formatHour, formatMonthBucket, formatNumber, formatReadingTime, monthName } from '../../../format'
 import { ActivityFeed } from '../ActivityFeed'
 import { ChartSkeleton } from '../ChartSkeleton'
 import { MidwayList } from '../MidwayList'
@@ -169,8 +169,8 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
   const comparing = previous !== null && prevActivity !== undefined
   let deltaLabel: string | undefined
   if (previous) {
-    const fromLabel = formatDate(previous.from)
-    const toLabel = formatDate(previous.to)
+    const fromLabel = formatCalendarDate(previous.from)
+    const toLabel = formatCalendarDate(previous.to)
     deltaLabel = t`vs ${fromLabel} to ${toLabel}`
   }
   const compare = (pick: (totals: ActivityTotals) => number) =>

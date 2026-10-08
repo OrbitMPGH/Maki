@@ -81,6 +81,7 @@ export function formatDate(value: string | number | Date): string {
 /**
  * "15 Sep 2026" for a day with no time of day, such as a chapter's release date. The server stamps
  * those as midnight UTC, so the viewer's zone would show the previous day anywhere west of Greenwich.
+ * Sources that store a real timestamp for it now show the UTC day instead of the viewer's.
  */
 export function formatCalendarDate(value: string | number | Date): string {
   const date = new Date(value)
