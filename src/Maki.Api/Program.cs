@@ -1276,9 +1276,9 @@ try
                 .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
         }
         try { db.Database.Migrate(); }
-        catch
+        catch (Exception ex)
         {
-            try { File.WriteAllText(Path.Combine(scope.ServiceProvider.GetRequiredService<AppPaths>().ConfigDir, "health-migration-error.txt"), DateTime.UtcNow.ToString("O")); } catch { }
+            MigrationErrorMarker.Write(scope.ServiceProvider.GetRequiredService<AppPaths>().ConfigDir, ex);
             throw;
         }
         scope.ServiceProvider.GetRequiredService<HealthOperationService>().RecoverAsync(CancellationToken.None).GetAwaiter().GetResult();

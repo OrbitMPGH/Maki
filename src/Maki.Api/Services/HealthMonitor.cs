@@ -181,9 +181,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 Add("database", "system", pending > 0 ? "warning" : "healthy",
                     pending > 0 ? "health.check.migrationsPending" : "health.check.databaseCurrent",
                     pending > 0 ? new { count = pending } : null);
-                if (File.Exists(Path.Combine(paths.ConfigDir, "health-migration-error.txt")))
+                if (MigrationErrorMarker.Read(paths.ConfigDir, DateTime.UtcNow) is { } migrationError)
                 {
-                    Add("migration-history", "system", "warning", "health.check.migrationFailed");
+                    Add("migration-history", "system", "warning", "health.check.migrationFailedDetail",
+                        new { error = migrationError });
                 }
             }
             catch { Add("database", "system", "unavailable", "health.check.diagnosticsUnavailable"); }
@@ -202,6 +203,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
             foreach (var cooled in old.Where(r => r.Id.StartsWith("cooldown:", StringComparison.Ordinal) && !checks.Any(c => c.Id == r.Id)).ToList())
                 db.HealthChecks.Remove(cooled);
+            if (!checks.Any(c => c.Id == "migration-history") && old.FirstOrDefault(r => r.Id == "migration-history") is { } migrationRow)
+                db.HealthChecks.Remove(migrationRow);
             if (!checks.Any(c => c.Id == UnmeasuredFilesId) && old.FirstOrDefault(r => r.Id == UnmeasuredFilesId) is { } measuredRow)
                 db.HealthChecks.Remove(measuredRow);
             if (!checks.Any(c => c.Id == UpgradeTrashId) && old.FirstOrDefault(r => r.Id == UpgradeTrashId) is { } trashRow)
