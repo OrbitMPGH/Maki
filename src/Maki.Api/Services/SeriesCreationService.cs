@@ -93,6 +93,7 @@ public class SeriesCreationService(
     NotificationService notifications,
     IUserLocaleResolver locales,
     IMessageCatalog catalog,
+    ILocalizer localizer,
     ILogger<SeriesCreationService> logger)
 {
     /// <param name="deferSourceMatching">
@@ -260,7 +261,7 @@ public class SeriesCreationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Post-creation history setup failed for {Title}", series.Title);
-            warnings.Add($"Could not finish library history setup: {ex.Message}");
+            warnings.Add(localizer.Get("error.seriesCreation.historyFailed"));
         }
 
         var seriesFolder = Path.Combine(rootFolder.Path, series.FolderName);
@@ -271,7 +272,7 @@ public class SeriesCreationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Could not create series folder for {Title}", series.Title);
-            warnings.Add($"Could not create the series folder ({seriesFolder}): {ex.Message}");
+            warnings.Add(localizer.Get("error.seriesCreation.folderFailed"));
         }
 
         if (metadata.CoverUrl != null)
@@ -289,7 +290,7 @@ public class SeriesCreationService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Cover setup failed for {Title}", series.Title);
-                warnings.Add($"Could not finish cover setup: {ex.Message}");
+                warnings.Add(localizer.Get("error.seriesCreation.coverFailed"));
             }
         }
 
@@ -303,7 +304,7 @@ public class SeriesCreationService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Could not schedule source matching for {Title}", series.Title);
-                warnings.Add($"Could not schedule source matching: {ex.Message}");
+                warnings.Add(localizer.Get("error.seriesCreation.sourceMatchScheduleFailed"));
             }
         }
         else
@@ -324,7 +325,7 @@ public class SeriesCreationService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
-                warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
+                warnings.Add(localizer.Get("error.seriesCreation.sourceMatchFailed"));
             }
         }
 

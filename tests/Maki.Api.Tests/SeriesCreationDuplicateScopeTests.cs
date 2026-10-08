@@ -59,7 +59,7 @@ public sealed class SeriesCreationDuplicateScopeTests : IDisposable
             stats: null!, identity: null!, appSettings: new FakeAppSettings(),
             naming: new NamingService(new FakeAppSettings()),
             notifications: new RecordingNotifications(), locales: new TestUserLocaleResolver(),
-            catalog: new TestLocalizer(), logger: NullLogger<SeriesCreationService>.Instance);
+            catalog: new TestLocalizer(), localizer: new TestLocalizer(), logger: NullLogger<SeriesCreationService>.Instance);
 
         var result = await creation.CreateAsync("42", grantedRoot, monitored: true, null, default, attributedUserId: user);
 

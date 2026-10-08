@@ -1362,6 +1362,32 @@ msgstr "サポートされていない追加元です"
 msgid "error.series.unknownTagIds"
 msgstr "1つ以上のタグIDが存在しません"
 
+#. Shown as warnings after the series row is already saved. The cause is in the server log.
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not finish cover setup. The server log has the details.
+msgid "error.seriesCreation.coverFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not create the series folder. The server log has the details.
+msgid "error.seriesCreation.folderFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not finish library history setup. The server log has the details.
+msgid "error.seriesCreation.historyFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not match sources automatically. Link a source manually from the series page.
+msgid "error.seriesCreation.sourceMatchFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not schedule source matching. Link a source manually from the series page.
+msgid "error.seriesCreation.sourceMatchScheduleFailed"
+msgstr ""
+
 #: src/Maki.Api/Services/SeriesRenameService.cs
 #. English: Series has an active download, wait for it to finish before renaming
 #, fuzzy
