@@ -44,6 +44,14 @@ public class FileNameBuilderTests
     }
 
     [Fact]
+    public void A_leading_dot_is_dropped_so_the_folder_is_not_hidden()
+    {
+        var series = new Series { Title = ".hack//G.U.+", FolderName = "x" };
+        Assert.Equal("hackG.U.+", FileNameBuilder.BuildSeriesFolderName(series));
+        Assert.Equal("hackG.U.+ Ch.1.cbz", FileNameBuilder.BuildChapterFileName(series, new Chapter { Number = 1 }));
+    }
+
+    [Fact]
     public void Relative_path_includes_series_folder()
     {
         var series = SeriesFor("Berserk");

@@ -13,9 +13,10 @@ public static class FileNameSanitizer
             result = result.Replace(c.ToString(), string.Empty);
         }
 
-        // Control chars, leading/trailing dots and spaces are invalid on Windows.
+        // Control chars and trailing dots and spaces are invalid on Windows; a leading dot hides
+        // the name on Linux, and Maki's own import and health scans skip dot folders.
         result = new string(result.Where(c => !char.IsControl(c)).ToArray());
-        result = result.Trim().TrimEnd('.');
+        result = result.Trim().Trim('.');
 
         return string.IsNullOrWhiteSpace(result) ? "_" : result;
     }
