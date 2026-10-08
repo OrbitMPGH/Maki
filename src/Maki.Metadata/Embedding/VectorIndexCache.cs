@@ -46,6 +46,14 @@ public sealed class VectorIndexCache(
 
     private volatile Loaded? _loaded;
     private readonly IdleStamp _idle = new();
+
+    // Bumped by every invalidation, so a build that was already reading when one landed cannot
+    // publish what it read.
+    private readonly object _publish = new();
+    private long _generation;
+
+    /// <summary>Test hook: runs after a build finishes reading and before it is published.</summary>
+    internal Action? AfterBuildForTest { get; set; }
     private int _warming;
 
     /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
@@ -139,7 +147,12 @@ public sealed class VectorIndexCache(
     /// <summary>Drops the cached index so the next search rebuilds it. Cheap; safe any time.</summary>
     public void Invalidate()
     {
-        _loaded = null;
+        lock (_publish)
+        {
+            _generation++;
+            _loaded = null;
+        }
+
         logger.LogDebug("Search vector index invalidated");
     }
 
@@ -154,7 +167,12 @@ public sealed class VectorIndexCache(
         await _lock.WaitAsync(ct);
         try
         {
-            _loaded = null;
+            lock (_publish)
+            {
+                _generation++;
+                _loaded = null;
+            }
+
             SqliteConnection.ClearAllPools();
 
             foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
@@ -209,8 +227,22 @@ public sealed class VectorIndexCache(
             // Stamped before the build, so a dump swapped in while it runs reads as stale next time.
             var ticks = dump.LastWriteTimeUtc.Ticks;
             var length = dump.Length;
+            long generation;
+            lock (_publish)
+            {
+                generation = _generation;
+            }
+
             var built = await Task.Run(() => Build(ct), ct);
-            _loaded = built is null ? null : new Loaded(built, ticks, length);
+            AfterBuildForTest?.Invoke();
+            lock (_publish)
+            {
+                if (generation == _generation)
+                {
+                    _loaded = built is null ? null : new Loaded(built, ticks, length);
+                }
+            }
+
             _idle.Touch();
             return built;
         }

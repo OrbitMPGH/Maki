@@ -186,6 +186,24 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task An_invalidate_landing_during_a_build_is_not_lost()
+    {
+        var store = Store();
+        store.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        cache.AfterBuildForTest = () =>
+        {
+            cache.AfterBuildForTest = null;
+            store.UpsertBatch([(2L, "h", [0f, 1f, 0f, 0f])]);
+            cache.Invalidate();
+        };
+
+        Assert.Equal(1, (await cache.GetAsync())!.Count);
+        Assert.False(cache.IsLoaded);
+        Assert.Equal(2, (await cache.GetAsync())!.Count);
+    }
+
+    [Fact]
     public async Task Franchises_LoadOnlyOnDemand_OnceAcrossConcurrentReaders()
     {
         AddFranchiseColumns();
