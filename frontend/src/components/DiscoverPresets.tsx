@@ -246,7 +246,6 @@ function HiddenContentModal({ onClose }: { onClose: () => void }) {
                     notifications.show({ color: 'var(--ok)', message: now`Hidden list saved` })
                     onClose()
                   },
-                  onError: (err) => notifications.show({ color: 'var(--danger)', message: String(err) }),
                 },
               )
             }

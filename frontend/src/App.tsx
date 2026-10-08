@@ -244,6 +244,7 @@ function ActivityButton() {
             size="xs"
             variant="filled"
             color={review > 0 ? 'var(--warn)' : 'brand'}
+            c={review > 0 ? 'var(--warn-on)' : undefined}
             // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
             // horizontally (with a floor width so single digits still read as a dot) doesn't.
             style={{

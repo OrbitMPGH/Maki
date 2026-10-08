@@ -28,6 +28,7 @@ import type { MetadataSearchResult } from '../api/types'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
+import { okButtonVars } from '../components/ui/status'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Must not exceed LibraryImportController.MaxItemsPerRequest. */
@@ -274,6 +275,7 @@ export default function ImportPage() {
           {candidates && candidates.length > 0 && (
             <Button
               color="var(--ok)"
+              vars={okButtonVars}
               leftSection={<IconPackageImport size={16} />}
               loading={doImport.isPending}
               disabled={selectedCount === 0}
@@ -320,6 +322,7 @@ export default function ImportPage() {
           </Button>
           <Button
             color="var(--ok)"
+            vars={okButtonVars}
             onClick={() => {
               setConfirmOpen(false)
               // rootFolderId must still be the root candidates were scanned from; the Select's

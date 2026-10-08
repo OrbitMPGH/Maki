@@ -168,6 +168,7 @@ import { isUnfinished } from '../lib/lucky'
 import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis } from '../lib/synopsis'
+import { onPressKey, pressable } from '../lib/pressable'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
@@ -1162,7 +1163,7 @@ function SeriesDetailBody() {
                   variant="light"
                   leftSection={<IconDeviceTv size={12} />}
                   className="chapter-span-badge"
-                  onClick={() => toggleSpanFold(span.key)}
+                  {...pressable(() => toggleSpanFold(span.key))}
               >
                 {span.label}
               </Badge>
@@ -1469,7 +1470,6 @@ function SeriesDetailBody() {
               const to = result.coveredTo
               notifications.show({ color: 'var(--ok)', message: <Trans>Marked ch. 1 to {to} watched</Trans> })
             },
-            onError: (error) => notifications.show({ color: 'var(--danger)', message: String(error) }),
           },
       )
 
@@ -1488,7 +1488,6 @@ function SeriesDetailBody() {
               notifications.show({ message: <Trans>Chapter {resumeAt} is not downloaded yet</Trans> })
             }
           },
-          onError: (error) => notifications.show({ color: 'var(--danger)', message: String(error) }),
         },
     )
   }
@@ -2685,6 +2684,10 @@ function SeriesDetailBody() {
                                           .filter(Boolean)
                                           .join(' ') || undefined}
                                       onClick={selectMode ? (e) => clickChapterRow(c.id, e.shiftKey) : undefined}
+                                      tabIndex={selectMode ? 0 : undefined}
+                                      onKeyDown={
+                                        selectMode ? onPressKey((e) => clickChapterRow(c.id, e.shiftKey)) : undefined
+                                      }
                                       aria-selected={selectMode ? isSelected : undefined}
                                   >
                                     {/* The controls in this cell stay live in select mode, so its clicks mustn't
@@ -2758,14 +2761,12 @@ function SeriesDetailBody() {
                                                                   setMarkerRef(`${span.key}:${marker.kind}`, el)
                                                               : undefined
                                                         }
-                                                        onClick={
-                                          span
-                                              ? (e) => {
-                                                e.stopPropagation()
-                                                toggleSpanFold(span.key)
-                                              }
-                                              : (e) => e.stopPropagation()
-                                        }
+                                                        {...(span
+                                                            ? pressable((e) => {
+                                                              e.stopPropagation()
+                                                              toggleSpanFold(span.key)
+                                                            })
+                                                            : { onClick: (e: { stopPropagation: () => void }) => e.stopPropagation() })}
                                                     >
                                                       {marker.label}
                                                     </Badge>
@@ -2896,6 +2897,7 @@ function SeriesDetailBody() {
                                                   size="sm"
                                                   color={watched ? 'var(--watched)' : 'var(--ok)'}
                                                   variant={watched || external ? 'light' : 'filled'}
+                                                  c={watched || external ? undefined : 'var(--ok-on)'}
                                                   leftSection={
                                                     watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
                                                   }

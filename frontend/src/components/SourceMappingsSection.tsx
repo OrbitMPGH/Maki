@@ -73,6 +73,7 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
+import { pressable } from '../lib/pressable'
 import { SOURCE_ICONS } from '../sourceIcons'
 import { useSourceLabel } from '../sourceLabels'
 
@@ -853,7 +854,7 @@ export function SourceMappingsSection({
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                onClick={() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url)}
+                {...pressable(() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url), { role: false })}
               >
                 <Group wrap="nowrap">
                   {resolved.coverUrl && (
@@ -886,7 +887,7 @@ export function SourceMappingsSection({
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                onClick={() => sourceName && link(sourceName, r.sourceSeriesId, r.url)}
+                {...pressable(() => sourceName && link(sourceName, r.sourceSeriesId, r.url), { role: false })}
               >
                 <Group wrap="nowrap">
                   {r.coverUrl && (

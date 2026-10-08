@@ -43,14 +43,19 @@
   --ok: #3fb950;
   --ok-on: #071a10;
   --warn: #d6a327;
+  --warn-on: #1f1600;
   --info: #4c8dff;
+  --info-on: #06142b;
   --danger: #f2554c;
+  --danger-on: #2a0a08;
   /* Filled danger buttons carry white text, which --danger is too light for in the dark themes. */
   --danger-fill: #c0322b;
   --watched: #b197fc;
+  --watched-on: #1a0f33;
   --suggestive: #b0bd52;
   --suggestive-soft: color-mix(in srgb, var(--suggestive) 15%, transparent);
   --neutral: #a6adbb;
+  --neutral-on: #11141c;
   --ok-soft: color-mix(in srgb, var(--ok) 15%, transparent);
   --warn-soft: color-mix(in srgb, var(--warn) 15%, transparent);
   --info-soft: color-mix(in srgb, var(--info) 15%, transparent);
@@ -268,11 +273,16 @@
   --ok: #237b36;
   --ok-on: #ffffff;
   --warn: #876000;
+  --warn-on: #ffffff;
   --info: #245fbd;
+  --info-on: #ffffff;
   --danger: #c0322b;
+  --danger-on: #ffffff;
   --watched: #7040bd;
+  --watched-on: #ffffff;
   --suggestive: #657018;
   --neutral: #606879;
+  --neutral-on: #ffffff;
   --rating: #b8860b;
   --tier-1: #7a4a1e;
   --tier-2: #6b7480;
@@ -1103,6 +1113,7 @@ body::before {
 }
 .cover-badge-read {
   background: var(--ok);
+  color: var(--ok-on);
 }
 /* Compact density (or any narrow container) can put the left and right corner badges close
    enough to overlap (a wide label + eye + status colliding). Drop the text label and shrink to
@@ -1186,7 +1197,7 @@ body::before {
   box-shadow:
     0 0 0 1.5px rgba(6, 7, 11, 0.45),
     0 2px 6px rgba(0, 0, 0, 0.35);
-  color: #fff;
+  color: var(--tone-on, #fff);
 }
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
 [data-theme='light'] .cover-state:not([data-tone='status']),
@@ -4353,7 +4364,9 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   width: 3px;
   background: var(--info);
 }
-.chapter-span-line:focus-visible {
+.chapter-span-line:focus-visible,
+.chapter-span-badge:focus-visible,
+.chapter-row-selectable:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 1px;
   border-radius: var(--radius-2xs);
@@ -6255,8 +6268,8 @@ body.reader-open {
 /* The row reuses `.cover-badge`/`.cover-ring`/`.cover-count` so both views stay identical, but
    those are styled for a poster: they ride on cover art behind a dark scrim, which is why the
    count is a hard-coded light grey. On a row that grey sits on `--surface` (#ffffff in the light
-   theme, about 1.4:1), so the count has to follow the colour scheme instead. The badges are fine
-   as they are: they paint their own opaque background. */
+   theme, about 1.4:1), so the count has to follow the colour scheme instead. The badges paint
+   their own opaque background and, through `badgeFill`, their own `-on` foreground. */
 .series-row .cover-count {
   color: var(--mantine-color-dimmed);
 }

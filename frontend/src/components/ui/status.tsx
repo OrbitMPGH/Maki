@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import {
   IconAlertTriangle,
   IconBan,
@@ -46,6 +47,24 @@ export const BADGE_COLOR: Record<string, string> = {
   red: 'var(--danger)',
   gray: 'var(--neutral)',
   grape: 'var(--watched)',
+}
+
+/** The foreground for text and icons on each `BADGE_COLOR` fill, which flips with the theme. */
+export const BADGE_ON: Record<string, string> = {
+  blue: 'var(--info-on)',
+  teal: 'var(--ok-on)',
+  yellow: 'var(--warn-on)',
+  red: 'var(--danger-on)',
+  gray: 'var(--neutral-on)',
+  grape: 'var(--watched-on)',
+}
+
+/** `vars` for a filled `color="var(--ok)"` Button: autoContrast cannot read a var(), so its label would stay white. */
+export const okButtonVars = () => ({ root: { '--button-color': 'var(--ok-on)' } })
+
+/** Fill plus its own foreground; a fill alone leaves the label white, which fails on the dark themes. */
+export function badgeFill(color: string): CSSProperties {
+  return { background: BADGE_COLOR[color], color: BADGE_ON[color] }
 }
 
 /**

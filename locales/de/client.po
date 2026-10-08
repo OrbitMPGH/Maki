@@ -4664,6 +4664,10 @@ msgstr "Konnte nicht gemessen werden"
 msgid "Couldn't load notification connections"
 msgstr "Benachrichtigungsverbindungen konnten nicht geladen werden"
 
+#: src/pages/RequestsPage.tsx
+msgid "Couldn't load requests"
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -12569,6 +12573,7 @@ msgstr ""
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
@@ -12590,6 +12595,7 @@ msgid "Retry download"
 msgstr "Download wiederholen"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Retrying…"
 msgstr "Erneuter Versuch …"

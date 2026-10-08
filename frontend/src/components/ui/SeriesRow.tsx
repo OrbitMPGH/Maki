@@ -3,7 +3,7 @@ import { IconBellOff, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import {
-  BADGE_COLOR,
+  badgeFill,
   seriesDownloadStateVisual,
   seriesProgressVisual,
   seriesStatusVisual,
@@ -80,7 +80,7 @@ export const SeriesRow = memo(function SeriesRow({
           {series.year && <span className="row-year">{series.year}</span>}
           <span
             className="cover-badge"
-            style={{ background: BADGE_COLOR[status.color], flexShrink: 0 }}
+            style={{ ...badgeFill(status.color), flexShrink: 0 }}
           >
             <status.Icon size={11} />
             {renderLabel(status.label)}
@@ -114,7 +114,7 @@ export const SeriesRow = memo(function SeriesRow({
 
         <div className="row-progress">
           {download && (
-            <span className="cover-badge" style={{ background: BADGE_COLOR[download.color], flexShrink: 0 }}>
+            <span className="cover-badge" style={{ ...badgeFill(download.color), flexShrink: 0 }}>
               <download.Icon size={11} />
               {renderLabel(download.label)}
             </span>

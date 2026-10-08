@@ -400,7 +400,6 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
           notifications.show({ message: now`Saved`, color: 'var(--ok)' })
           close()
         },
-        onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
       },
     )
   }

@@ -168,7 +168,6 @@ function SsoCard() {
               unlink.mutate(undefined, {
                 onSuccess: () =>
                   notifications.show({ message: now`Single sign-on removed from your account`, color: 'var(--ok)' }),
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
           >
@@ -192,7 +191,6 @@ function SsoCard() {
                 // The link is a top-level navigation to the provider; the confirmation it needs
                 // was just set as a cookie.
                 onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }}
           >
@@ -244,7 +242,6 @@ function PasswordCard() {
                   color: 'var(--ok)',
                 })
               },
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             },
           )
         }}
@@ -339,7 +336,6 @@ function TwoFactorCard() {
               onClick={() =>
                 start.mutate(undefined, {
                   onSuccess: setEnrolling,
-                  onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
                 })
               }
             >
@@ -361,7 +357,6 @@ function TwoFactorCard() {
                 setDisablePassword('')
                 notifications.show({ message: now`Two-factor authentication disabled`, color: 'var(--warn)' })
               },
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             })
           }}
         >
@@ -406,7 +401,6 @@ function TwoFactorCard() {
                 setEnablePassword('')
                 setRecoveryCodes(result.recoveryCodes)
               },
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             })
           }}
         >
@@ -509,7 +503,6 @@ function ApiKeysCard() {
                 setName('')
                 setKeyPassword('')
               },
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             },
           )
         }}
@@ -636,7 +629,6 @@ function SessionsCard() {
           revoke.mutate(undefined, {
             onSuccess: () =>
               notifications.show({ message: now`Other sessions signed out`, color: 'var(--ok)' }),
-            onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
           })
         }
       >

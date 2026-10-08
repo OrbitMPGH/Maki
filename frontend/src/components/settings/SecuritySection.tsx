@@ -60,7 +60,6 @@ function useSecuritySlice<S extends object>(pick: (s: SecuritySettings) => S) {
             message: now`Security settings saved. Restart Maki to apply them.`,
             color: 'var(--ok)',
           }),
-        onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
       },
     )
   }
@@ -199,7 +198,6 @@ export function OidcSection() {
               message: now`Single sign-on saved. Restart Maki to apply it.`,
               color: 'var(--ok)',
             }),
-          onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
         })
       }
       panelProps={{ id: 'oidc' }}

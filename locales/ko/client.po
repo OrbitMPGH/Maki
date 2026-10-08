@@ -4664,6 +4664,10 @@ msgstr "측정할 수 없었습니다"
 msgid "Couldn't load notification connections"
 msgstr "알림 연결을 불러오지 못했습니다"
 
+#: src/pages/RequestsPage.tsx
+msgid "Couldn't load requests"
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -12569,6 +12573,7 @@ msgstr ""
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
@@ -12590,6 +12595,7 @@ msgid "Retry download"
 msgstr "다운로드 재시도"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Retrying…"
 msgstr "다시 시도 중…"

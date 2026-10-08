@@ -200,7 +200,6 @@ export function UsersSection() {
           deleting &&
           remove.mutate(deleting.id, {
             onSuccess: () => setDeleting(null),
-            onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
           })
         }
       >
@@ -259,16 +258,15 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
     }
     if (password) body.password = password
 
-    const onError = (e: Error) => notifications.show({ message: e.message, color: 'var(--danger)' })
     const onSuccess = () => {
       notifications.show({ message: isNew ? now`User created` : now`User updated`, color: 'var(--ok)' })
       onClose()
     }
 
     if (isNew) {
-      create.mutate(body, { onSuccess, onError })
+      create.mutate(body, { onSuccess })
     } else {
-      update.mutate({ id: existing!.id, ...body }, { onSuccess, onError })
+      update.mutate({ id: existing!.id, ...body }, { onSuccess })
     }
   }
 
@@ -400,7 +398,6 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
                       notifications.show({ message: now`Two-factor turned off for this account`, color: 'var(--ok)' })
                       onClose()
                     },
-                    onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
                   })
                 }
               >
@@ -419,7 +416,6 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
                       notifications.show({ message: now`Single sign-on removed from this account`, color: 'var(--ok)' })
                       onClose()
                     },
-                    onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
                   })
                 }
               >

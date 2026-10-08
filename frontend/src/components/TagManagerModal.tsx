@@ -12,7 +12,6 @@ import {
   TextInput,
 } from '@mantine/core'
 import { IconCheck, IconPencil, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useCreateTag, useDeleteTag, useTags, useUpdateTag } from '../api/hooks'
 
@@ -30,18 +29,16 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editLabel, setEditLabel] = useState('')
 
-  const fail = (err: unknown) => notifications.show({ color: 'var(--danger)', message: String(err) })
-
   const create = () => {
     const label = newLabel.trim()
     if (!label) return
-    createTag.mutate({ label }, { onSuccess: () => setNewLabel(''), onError: fail })
+    createTag.mutate({ label }, { onSuccess: () => setNewLabel('') })
   }
 
   const saveLabel = (id: number) => {
     const label = editLabel.trim()
     if (!label) return setEditingId(null)
-    updateTag.mutate({ id, label }, { onSuccess: () => setEditingId(null), onError: fail })
+    updateTag.mutate({ id, label }, { onSuccess: () => setEditingId(null) })
   }
 
   return (
@@ -109,7 +106,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                             color={`var(--mantine-color-${c}-6)`}
                             size={20}
                             style={{ cursor: 'pointer' }}
-                            onClick={() => updateTag.mutate({ id, color: c }, { onError: fail })}
+                            onClick={() => updateTag.mutate({ id, color: c })}
                           />
                         ))}
                       </Group>
@@ -132,7 +129,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                   <ActionIcon
                     variant="subtle"
                     color="var(--danger)"
-                    onClick={() => deleteTag.mutate(id, { onError: fail })}
+                    onClick={() => deleteTag.mutate(id)}
                     aria-label={t`Delete ${label}`}
                   >
                     <IconTrash size={15} />
