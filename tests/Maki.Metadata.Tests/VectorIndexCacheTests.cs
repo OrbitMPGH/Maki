@@ -204,6 +204,35 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task A_cancelled_caller_does_not_abort_the_shared_build()
+    {
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        var built = new ManualResetEventSlim();
+        var release = new ManualResetEventSlim();
+        var builds = 0;
+        cache.AfterBuildForTest = () =>
+        {
+            Interlocked.Increment(ref builds);
+            built.Set();
+            release.Wait(TimeSpan.FromSeconds(10));
+        };
+
+        using var cts = new CancellationTokenSource();
+        var first = cache.GetAsync(cts.Token);
+        Assert.True(built.Wait(TimeSpan.FromSeconds(10)));
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+
+        var second = cache.GetAsync();
+        release.Set();
+
+        Assert.Equal(1, (await second)!.Count);
+        Assert.True(cache.IsLoaded);
+        Assert.Equal(1, builds);
+    }
+
+    [Fact]
     public async Task Franchises_LoadOnlyOnDemand_OnceAcrossConcurrentReaders()
     {
         AddFranchiseColumns();

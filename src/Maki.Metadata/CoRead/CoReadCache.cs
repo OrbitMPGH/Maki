@@ -37,6 +37,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile PairGraphIndex? _graph;
     private readonly IdleStamp _idle = new();
+    private readonly SharedBuild<PairGraphIndex> _loads = new();
 
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _graph is not null;
@@ -62,6 +63,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
         await _lock.WaitAsync(ct);
         try
         {
+            await _loads.DrainAsync();
             _graph = null;
             SqliteConnection.ClearAllPools();
 
@@ -121,6 +123,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
             return cached;
         }
 
+        Task<PairGraphIndex?> load;
         await _lock.WaitAsync(ct);
         try
         {
@@ -135,14 +138,20 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
                 return null;
             }
 
-            _graph = await Task.Run(() => Load(ct), ct);
-            _idle.Touch();
-            return _graph;
+            load = _loads.Join(() =>
+            {
+                var loaded = Load(CancellationToken.None);
+                _graph = loaded;
+                _idle.Touch();
+                return loaded;
+            });
         }
         finally
         {
             _lock.Release();
         }
+
+        return await load.WaitAsync(ct);
     }
 
     private PairGraphIndex? Load(CancellationToken ct)

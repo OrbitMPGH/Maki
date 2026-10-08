@@ -54,6 +54,7 @@ public sealed class VectorIndexCache(
 
     /// <summary>Test hook: runs after a build finishes reading and before it is published.</summary>
     internal Action? AfterBuildForTest { get; set; }
+    private readonly SharedBuild<Loaded> _builds = new();
     private int _warming;
 
     /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
@@ -69,7 +70,7 @@ public sealed class VectorIndexCache(
     /// </summary>
     public void WarmInBackground()
     {
-        if (IsCurrent || _lock.CurrentCount == 0 || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
+        if (IsCurrent || _builds.IsRunning || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
         {
             return;
         }
@@ -158,8 +159,8 @@ public sealed class VectorIndexCache(
 
     /// <summary>
     /// Replaces the vector database with <paramref name="stagedPath"/> and drops the cached index.
-    /// Runs under the build lock so a swap can never race a build that is midway through reading
-    /// the old file. The WAL sidecars belong to the file being replaced, so they go with it —
+    /// Waits out any running build under the build lock, so a swap can never race a build that is
+    /// midway through reading the old file. The WAL sidecars belong to the file being replaced, so they go with it —
     /// leaving them would let SQLite reconstruct pages of the *previous* database over the new one.
     /// </summary>
     public async Task SwapDatabaseAsync(string stagedPath, CancellationToken ct = default)
@@ -167,6 +168,7 @@ public sealed class VectorIndexCache(
         await _lock.WaitAsync(ct);
         try
         {
+            await _builds.DrainAsync();
             lock (_publish)
             {
                 _generation++;
@@ -204,54 +206,84 @@ public sealed class VectorIndexCache(
             return cached.Index;
         }
 
-        await _lock.WaitAsync(ct);
+        while (true)
+        {
+            Task<Loaded?> build;
+            bool started;
+            await _lock.WaitAsync(ct);
+            try
+            {
+                if (_loaded is { } raced && MatchesDump(raced))
+                {
+                    _idle.Touch();
+                    return raced.Index;
+                }
+
+                if (!File.Exists(options.VectorDbPath) || DumpInfo() is null)
+                {
+                    return null;
+                }
+
+                if (_loaded is not null && !_builds.IsRunning)
+                {
+                    logger.LogInformation("Rebuilding the search vectors because the dump file changed");
+                    _loaded = null;
+                }
+
+                build = _builds.Join(BuildAndPublish, out started);
+            }
+            finally
+            {
+                _lock.Release();
+            }
+
+            var loaded = await build.WaitAsync(ct);
+            // A build this caller joined part way through may have read an older dump than the one
+            // on disk now; go round again rather than hand that out.
+            if (loaded is null || started || MatchesDump(loaded) || DumpInfo() is null)
+            {
+                return loaded?.Index;
+            }
+        }
+    }
+
+    private Loaded? BuildAndPublish()
+    {
+        if (DumpInfo() is not { } dump)
+        {
+            return null;
+        }
+
+        // Stamped before the build, so a dump swapped in while it runs reads as stale next time.
+        var ticks = dump.LastWriteTimeUtc.Ticks;
+        var length = dump.Length;
+        long generation;
+        lock (_publish)
+        {
+            generation = _generation;
+        }
+
         try
         {
-            if (_loaded is { } raced && MatchesDump(raced))
-            {
-                _idle.Touch();
-                return raced.Index;
-            }
-
-            if (!File.Exists(options.VectorDbPath) || DumpInfo() is not { } dump)
-            {
-                return null;
-            }
-
-            if (_loaded is not null)
-            {
-                logger.LogInformation("Rebuilding the search vectors because the dump file changed");
-                _loaded = null;
-            }
-
-            // Stamped before the build, so a dump swapped in while it runs reads as stale next time.
-            var ticks = dump.LastWriteTimeUtc.Ticks;
-            var length = dump.Length;
-            long generation;
-            lock (_publish)
-            {
-                generation = _generation;
-            }
-
-            var built = await Task.Run(() => Build(ct), ct);
+            var built = Build(CancellationToken.None);
             AfterBuildForTest?.Invoke();
+            var loaded = built is null ? null : new Loaded(built, ticks, length);
             lock (_publish)
             {
                 if (generation == _generation)
                 {
-                    _loaded = built is null ? null : new Loaded(built, ticks, length);
+                    _loaded = loaded;
                 }
             }
 
             _idle.Touch();
-            return built;
+            return loaded;
         }
         finally
         {
             // The build reads every vector BLOB in the file end to end; none of those pages is
             // wanted again until the next rebuild.
             PageCache.DropAfterScan(options.VectorDbPath);
-            _lock.Release();
         }
     }
 

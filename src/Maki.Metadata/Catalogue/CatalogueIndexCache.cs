@@ -36,6 +36,7 @@ public sealed class CatalogueIndexCache(
     private sealed record CacheEntry(CatalogueIndexes Indexes, long StampTicks, long StampLength);
     private volatile CacheEntry? _entry;
     private readonly IdleStamp _idle = new();
+    private readonly SharedBuild<CacheEntry> _builds = new();
 
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _entry is not null;
@@ -97,7 +98,7 @@ public sealed class CatalogueIndexCache(
             return cached.Indexes;
         }
 
-        if (_lock.CurrentCount > 0 && Interlocked.CompareExchange(ref _warming, 1, 0) == 0)
+        if (!_builds.IsRunning && Interlocked.CompareExchange(ref _warming, 1, 0) == 0)
         {
             _ = Task.Run(async () =>
             {
@@ -139,44 +140,78 @@ public sealed class CatalogueIndexCache(
             return cached.Indexes;
         }
 
-        await _lock.WaitAsync(ct);
-        try
+        while (true)
         {
-            // Another caller may have rebuilt against a newer dump while this one waited. Read
-            // the stamp again so an old observation cannot trigger a redundant rebuild.
+            Task<CacheEntry?> build;
+            bool started;
+            await _lock.WaitAsync(ct);
+            try
+            {
+                // Another caller may have rebuilt against a newer dump while this one waited. Read
+                // the stamp again so an old observation cannot trigger a redundant rebuild.
+                info.Refresh();
+                if (!info.Exists)
+                {
+                    return null;
+                }
+
+                if (_entry is { } raced && Matches(raced, info))
+                {
+                    _idle.Touch();
+                    return raced.Indexes;
+                }
+
+                if (_entry is not null && !_builds.IsRunning)
+                {
+                    logger.LogInformation("Rebuilding catalogue indexes because the dump file changed");
+                }
+
+                build = _builds.Join(BuildAndPublish, out started);
+            }
+            finally
+            {
+                _lock.Release();
+            }
+
+            var entry = await build.WaitAsync(ct);
+            if (entry is null)
+            {
+                return null;
+            }
+
+            // A build this caller joined part way through may have read an older dump than the one
+            // on disk now; go round again rather than hand that out.
             info.Refresh();
-            if (!info.Exists)
+            if (started || !info.Exists || Matches(entry, info))
             {
-                return null;
+                return entry.Indexes;
             }
-
-            ticks = info.LastWriteTimeUtc.Ticks;
-            length = info.Length;
-            if (_entry is { } raced && ticks == raced.StampTicks && length == raced.StampLength)
-            {
-                _idle.Touch();
-                return raced.Indexes;
-            }
-
-            if (_entry is not null)
-            {
-                logger.LogInformation("Rebuilding catalogue indexes because the dump file changed");
-            }
-
-            var built = await Task.Run(() => Build(ct), ct);
-            if (built is null)
-            {
-                return null;
-            }
-
-            _entry = new CacheEntry(built, ticks, length);
-            _idle.Touch();
-            return built;
         }
-        finally
+    }
+
+    private static bool Matches(CacheEntry entry, FileInfo info) =>
+        info.LastWriteTimeUtc.Ticks == entry.StampTicks && info.Length == entry.StampLength;
+
+    private CacheEntry? BuildAndPublish()
+    {
+        var info = new FileInfo(dumpOptions.DatabasePath);
+        if (!info.Exists)
         {
-            _lock.Release();
+            return null;
         }
+
+        var ticks = info.LastWriteTimeUtc.Ticks;
+        var length = info.Length;
+        var built = Build(CancellationToken.None);
+        if (built is null)
+        {
+            return null;
+        }
+
+        var entry = new CacheEntry(built, ticks, length);
+        _entry = entry;
+        _idle.Touch();
+        return entry;
     }
 
     private CatalogueIndexes? Build(CancellationToken ct)
