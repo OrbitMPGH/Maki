@@ -1,14 +1,13 @@
 using AngleSharp.Html.Parser;
 
-namespace Maki.Sources.CuuTruyen;
+namespace Maki.Sources.Common;
 
 /// <summary>
-/// A direct fetch of /api/v2/* returns the JSON body as-is; through FlareSolverr the same body
-/// comes back wrapped in an HTML document (the browser renders JSON inside a &lt;pre&gt;). 00-GENERAL
-/// points at MangaFireSource for this helper, but that source is Playwright-only now, so it's
-/// reimplemented here.
+/// A direct fetch of a JSON endpoint returns the body as-is; through FlareSolverr the same body
+/// comes back wrapped in an HTML document (the browser renders JSON inside a &lt;pre&gt;). Sources
+/// that read JSON through <c>IHtmlFetcher</c> run the body through this before parsing it.
 /// </summary>
-internal static class CuuTruyenPreUnwrap
+internal static class PreUnwrap
 {
     private static readonly HtmlParser Parser = new();
 
@@ -31,6 +30,6 @@ internal static class CuuTruyenPreUnwrap
         // wrapper. Returning it as-is would fail later as a cryptic JsonException from the caller.
         var snippet = trimmed.Length > 100 ? trimmed[..100] : trimmed;
         throw new InvalidOperationException(
-            $"CuuTruyen response for {url ?? "(unknown URL)"} looks like HTML with no <pre> to unwrap: \"{snippet}\"");
+            $"Response for {url ?? "(unknown URL)"} looks like HTML with no <pre> to unwrap: \"{snippet}\"");
     }
 }

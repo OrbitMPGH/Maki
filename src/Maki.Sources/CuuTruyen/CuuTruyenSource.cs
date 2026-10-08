@@ -6,6 +6,7 @@ using Maki.Core.Http;
 using Maki.Core.Images;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
@@ -382,7 +383,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
     private async Task<JsonDocument> FetchJsonAsync(string url, CancellationToken ct)
     {
         var body = await fetcher.GetHtmlAsync(url, ct);
-        var unwrapped = await CuuTruyenPreUnwrap.UnwrapAsync(body, url, ct);
+        var unwrapped = await PreUnwrap.UnwrapAsync(body, url, ct);
         return JsonDocument.Parse(unwrapped);
     }
 

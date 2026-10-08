@@ -5,6 +5,7 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Mangakakalot;
 
@@ -179,8 +180,8 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
         for (var page = 0; page < MaxChapterPages; page++)
         {
             var offset = page * ChapterPageSize;
-            var body = await fetcher.GetHtmlAsync(
-                $"{BaseUrl}/api/manga/{seriesId}/chapters?offset={offset}&limit={ChapterPageSize}", ct);
+            var url = $"{BaseUrl}/api/manga/{seriesId}/chapters?offset={offset}&limit={ChapterPageSize}";
+            var body = await PreUnwrap.UnwrapAsync(await fetcher.GetHtmlAsync(url, ct), url, ct);
 
             using var json = JsonDocument.Parse(body);
             if (!json.RootElement.TryGetProperty("data", out var data))

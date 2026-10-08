@@ -1,4 +1,5 @@
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 using Maki.Sources.CuuTruyen;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
@@ -315,7 +316,7 @@ public class CuuTruyenSourceTests
         const string body = "<html><body><div>Just a moment...</div></body></html>";
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => CuuTruyenPreUnwrap.UnwrapAsync(body, "https://cuutruyen.net/api/v2/mangas/2637"));
+            () => PreUnwrap.UnwrapAsync(body, "https://cuutruyen.net/api/v2/mangas/2637"));
 
         Assert.Contains("https://cuutruyen.net/api/v2/mangas/2637", ex.Message);
     }
