@@ -100,6 +100,10 @@ export default function ReaderToolbar({
   const [settingsOpen, setSettingsOpen] = useState(false)
   // The thumb follows the pointer through this, and the page only moves once it is released.
   const [scrub, setScrub] = useState<number | null>(null)
+  // A cancelled touch drag never fires onChangeEnd, so any page move also drops a stuck scrub.
+  useEffect(() => {
+    setScrub(null)
+  }, [page])
 
   // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
   const autoProfile = profiles.find((p) => p.id === autoProfileId)
