@@ -186,10 +186,7 @@ public class SeriesCreationService(
         // would have hidden it. Only an absent value consults the per-rating rules.
         series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode)
             ? explicitMode
-            : IncognitoRatingRules.Resolve(
-                IncognitoRatingRules.Parse(
-                    await appSettings.GetAsync(SettingKeys.LibraryIncognitoByRating, ct)),
-                series.ContentRating);
+            : await IncognitoRatingRules.ResolveAsync(appSettings, series.ContentRating, ct);
         series.RootFolderId = rootFolder.Id;
         series.UpgradeProfileId = upgradeProfileId;
         // Two series in one folder rescan each other's files and delete them with their own, and a

@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using Maki.Api.Configuration;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
@@ -248,7 +249,48 @@ public class LibraryFolderSafetyTests : IDisposable
         Assert.Equal("Berserk [mb-8]", SeriesCreationService.FreeFolderName("Berserk", 8, n => !taken.Contains(n)));
     }
 
-    private sealed class FixedProvider(int mangaBakaId) : IMetadataProvider
+    /// <summary>
+    /// Import is the one create path that bypasses the add form, so it has to apply the per-rating
+    /// incognito default itself. It did not, and an imported pornographic title started public.
+    /// </summary>
+    [Fact]
+    public async Task ImportAppliesTheIncognitoRatingRules()
+    {
+        int rootId;
+        await using (var db = _db.NewContext())
+        {
+            var root = new RootFolder { Path = _root };
+            db.RootFolders.Add(root);
+            db.SaveChanges();
+            rootId = root.Id;
+        }
+
+        WriteComic(Path.Combine(_root, "Chainsaw Man", "Chainsaw Man c001.cbz"));
+
+        ImportResult result;
+        await using (var db = _db.NewContext())
+        {
+            var service = new LibraryImportService(
+                db, [new FixedProvider(42, contentRating: "pornographic")],
+                new CoverService(null!, new AppPaths(), _settings, NullLogger<CoverService>.Instance),
+                null!, null!, LinkService(db),
+                new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
+                _settings, new NamingService(_settings), new StatsEventService(db),
+                new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance), new TestLocalizer(),
+                new TestCurrentUser(1), new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
+                NullLogger<LibraryImportService>.Instance);
+            result = await service.ImportAsync(rootId, new ImportRequestItem("Chainsaw Man", "42"));
+        }
+
+        // Source matching is stubbed null here, so the result may not read as a success. The row
+        // is committed before that and is what this test is about.
+        await using var check = _db.NewContext();
+        var series = await check.Series.IgnoreQueryFilters().SingleAsync(s => s.MangaBakaId == 42);
+        Assert.Equal(series.Id, result.SeriesId);
+        Assert.Equal(IncognitoMode.Full, series.Incognito);
+    }
+
+    private sealed class FixedProvider(int mangaBakaId, string? contentRating = null) : IMetadataProvider
     {
         public string Name => "fake";
 
@@ -259,7 +301,8 @@ public class LibraryFolderSafetyTests : IDisposable
         public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default) =>
             Task.FromResult<SeriesMetadata?>(new SeriesMetadata
             {
-                ProviderId = providerId, Title = "Chainsaw Man", MangaBakaId = mangaBakaId
+                ProviderId = providerId, Title = "Chainsaw Man", MangaBakaId = mangaBakaId,
+                ContentRating = contentRating,
             });
     }
 }

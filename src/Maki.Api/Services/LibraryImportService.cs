@@ -407,6 +407,9 @@ public class LibraryImportService(
         }
 
         series.MonitorNewItems = await MonitorDefaults.ForNewSeriesAsync(appSettings, ct);
+        // Same per-rating default as the add path. An imported pornographic title would otherwise
+        // start public and be scrobbled before anyone looked at it.
+        series.Incognito = await IncognitoRatingRules.ResolveAsync(appSettings, series.ContentRating, ct);
         series.RootFolderId = rootFolder.Id;
         series.FolderName = seriesFolderName;
         db.Series.Add(series);

@@ -78,4 +78,13 @@ public static class IncognitoRatingRules
         contentRating is not null && rules.TryGetValue(contentRating, out var mode)
             ? mode
             : IncognitoMode.Off;
+
+    /// <summary>
+    /// <see cref="Resolve"/> against the stored rules. Every path that inserts a new series row must
+    /// go through this (or the explicit choice an add form carries); the library import once did
+    /// not, and imported pornographic titles started public.
+    /// </summary>
+    public static async Task<IncognitoMode> ResolveAsync(
+        IAppSettings settings, string? contentRating, CancellationToken ct = default) =>
+        Resolve(Parse(await settings.GetAsync(SettingKeys.LibraryIncognitoByRating, ct)), contentRating);
 }
