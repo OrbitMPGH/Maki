@@ -293,6 +293,20 @@ public sealed class VectorIndexCache(
         }
     }
 
+    private static string? StoredModelVersion(SqliteConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT value FROM main.meta WHERE key = 'model_version'";
+        try
+        {
+            return cmd.ExecuteScalar() as string;
+        }
+        catch (SqliteException)
+        {
+            return null;
+        }
+    }
+
     private VectorIndex? Build(CancellationToken ct)
     {
         var started = DateTime.UtcNow;
@@ -320,6 +334,17 @@ public sealed class VectorIndexCache(
         {
             logger.LogInformation("Search vector index empty — nothing embedded yet");
             return null;
+        }
+
+        // Served anyway: refusing would turn search off for the hours a local re-embed takes, and
+        // the nightly install replaces such a file. The log is what explains poor ranking until then.
+        if (StoredModelVersion(conn) is { } stored
+            && !string.Equals(stored, options.ModelVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogWarning(
+                "The vector database holds {Stored} vectors but this install embeds queries with {Current}; "
+                + "search ranks poorly until the prebuilt index is installed or the index is rebuilt",
+                stored, options.ModelVersion);
         }
 
         var ids = new long[total];

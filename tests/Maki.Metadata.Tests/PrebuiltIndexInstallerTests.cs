@@ -132,6 +132,23 @@ public class PrebuiltIndexInstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task Replaces_A_local_index_built_with_another_model_version()
+    {
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
+        var installer = Installer();
+        Assert.True((await installer.InstallAsync(ct: CancellationToken.None)).Installed);
+        // What a release that bumps the model version finds: as many rows as the artifact, all of
+        // them from the previous model.
+        Store().SetModelVersion("previous-model");
+        SqliteConnection.ClearAllPools();
+
+        var second = await installer.InstallAsync(ct: CancellationToken.None);
+
+        Assert.True(second.Installed, second.Reason);
+        Assert.Equal(EmbeddingModelProfile.Base.Version, Store().GetModelVersion());
+    }
+
+    [Fact]
     public async Task Force_ReinstallsEvenWhenCurrent()
     {
         Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);

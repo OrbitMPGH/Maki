@@ -122,6 +122,15 @@ public class SeriesEmbeddingIndexer(
             }
 
             store.EnsureSchema();
+            // Series vectors notice a model change through their hashes; tag names are only ever
+            // embedded once, so a full pass under a new model has to throw the old ones away.
+            var modelChanged = !string.Equals(
+                store.GetModelVersion(), options.ModelVersion, StringComparison.OrdinalIgnoreCase);
+            if (limit is null && modelChanged)
+            {
+                store.ClearTagVectors();
+            }
+
             var existing = store.GetHashes();
             var tagged = store.GetTaggedIds();
 
@@ -233,6 +242,13 @@ public class SeriesEmbeddingIndexer(
                 // Reconcile the total against what this pass actually saw — the cached count came
                 // from a separate query and can disagree if the dump was swapped in between.
                 status.SetTotal(scanned);
+
+                // Only a full pass has re-embedded every row, so only it can say the file is now
+                // this model's throughout.
+                if (modelChanged)
+                {
+                    store.SetModelVersion(options.ModelVersion);
+                }
             }
 
             status.Report(scanned, embedded);

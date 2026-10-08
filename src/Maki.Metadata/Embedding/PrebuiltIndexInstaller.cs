@@ -182,6 +182,9 @@ public class PrebuiltIndexInstaller(
                 return new PrebuiltIndexResult(false, "install.prebuiltIndex.indexingStartedMidDownload");
             }
 
+            // Checked against the manifest above; recorded in the file so the next freshness check
+            // can tell this model's vectors from another's.
+            EmbeddingStore.StampModelVersion(staging, options.ModelVersion);
             await cache.SwapDatabaseAsync(staging, ct);
             await settings.SetAsync(
                 SettingKeys.RecommendationsPrebuiltGeneratedAt,
@@ -213,6 +216,14 @@ public class PrebuiltIndexInstaller(
         if (localCount < MinRows)
         {
             return true; // nothing worth keeping
+        }
+
+        // Vectors from another model rank as noise against this model's queries, however many there
+        // are and whenever they were installed.
+        store.EnsureSchema();
+        if (!string.Equals(store.GetModelVersion(), options.ModelVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
         }
 
         var installedAt = await settings.GetAsync(SettingKeys.RecommendationsPrebuiltGeneratedAt, ct);
