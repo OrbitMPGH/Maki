@@ -383,11 +383,11 @@ public class UserMetricsService(
     }
 
     /// <summary>
-    /// Series where every chapter Maki has held a file for is read, counting chapters whose file was removed
-    /// on purpose on both sides so cleaning up read files cannot make a half-read series look finished. Fully-incognito series are excluded explicitly:
-    /// this is the one metric read from <c>ChapterProgress</c> rather than from the event log, and
-    /// those rows exist for incognito reading, so the gate that comes free everywhere else has to be
-    /// written out here.
+    /// Series where every chapter Maki has held a file for is read, counting chapters whose file was
+    /// removed on purpose on both sides so cleaning up read files cannot make a half-read series look
+    /// finished. Fully-incognito series are excluded explicitly: this is the one metric read from
+    /// <c>ChapterProgress</c> rather than from the event log, and those rows exist for incognito
+    /// reading, so the gate that comes free everywhere else has to be written out here.
     /// </summary>
     private async Task<long> FullyReadAsync(int userId, CancellationToken ct)
     {

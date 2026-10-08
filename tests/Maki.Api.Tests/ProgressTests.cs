@@ -192,6 +192,24 @@ public sealed class ProgressTests : IDisposable
         Assert.Equal(1, metrics.SeriesFullyRead);
     }
 
+    [Fact]
+    public async Task AChapterNeverDownloadedStaysOutOfTheFullyReadCount()
+    {
+        var series = _db.SeedSeries("Partly wanted");
+        SeedChapters(series, onDisk: 2, removedRead: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = series, Number = 3, Wanted = true });
+            db.SaveChanges();
+        }
+
+        ReadOnDisk(series);
+
+        var metrics = await Metrics().GetAsync(UserId);
+
+        Assert.Equal(1, metrics.SeriesFullyRead);
+    }
+
     // ---- Evaluation -----------------------------------------------------------------------
 
     [Fact]
