@@ -3800,12 +3800,6 @@ msgid "health.check.coolingDown"
 msgstr "{source} soğuma süresinde"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {source} has no cooldown
-#, fuzzy
-msgid "health.check.noCooldown"
-msgstr "{source} için soğuma süresi yok"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Background scheduler is running
 #, fuzzy
 msgid "health.check.schedulerRunning"

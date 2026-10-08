@@ -165,13 +165,12 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch { }
             var queue = services.GetRequiredService<DownloadQueueService>();
+            // Pending, not a warning: a cooldown is the app throttling itself and ends on its own,
+            // so it must not announce or count toward the badge. Sources not cooling down get no row.
             foreach (var source in sources.All)
-                Add($"cooldown:{source.Name}", "downloads",
-                    queue.CooldownRemaining(source.Name) > TimeSpan.Zero ? "warning" : "healthy",
-                    queue.CooldownRemaining(source.Name) > TimeSpan.Zero
-                        ? "health.check.coolingDown"
-                        : "health.check.noCooldown",
-                    new { source = source.Name }, "/activity");
+                if (queue.CooldownRemaining(source.Name) > TimeSpan.Zero)
+                    Add($"cooldown:{source.Name}", "downloads", "pending", "health.check.coolingDown",
+                        new { source = source.Name }, "/activity");
             try
             {
                 var scheduler = await schedulerFactory.GetScheduler(ct);
@@ -201,6 +200,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
                     await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
             }
+            foreach (var cooled in old.Where(r => r.Id.StartsWith("cooldown:", StringComparison.Ordinal) && !checks.Any(c => c.Id == r.Id)).ToList())
+                db.HealthChecks.Remove(cooled);
             if (!checks.Any(c => c.Id == UnmeasuredFilesId) && old.FirstOrDefault(r => r.Id == UnmeasuredFilesId) is { } measuredRow)
                 db.HealthChecks.Remove(measuredRow);
             if (!checks.Any(c => c.Id == UpgradeTrashId) && old.FirstOrDefault(r => r.Id == UpgradeTrashId) is { } trashRow)

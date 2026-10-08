@@ -2687,10 +2687,6 @@ msgid "health.check.coolingDown"
 msgstr "{source} is cooling down"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-msgid "health.check.noCooldown"
-msgstr "{source} has no cooldown"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.schedulerRunning"
 msgstr "Background scheduler is running"
 
