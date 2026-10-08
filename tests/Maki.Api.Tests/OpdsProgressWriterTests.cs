@@ -126,6 +126,37 @@ public sealed class OpdsProgressWriterTests : IDisposable
     }
 
     [Fact]
+    public async Task A_lone_last_page_prefetch_does_not_turn_a_watched_chapter_into_a_read()
+    {
+        var userId = _db.SeedUser("reader");
+        var chapterId = SeedChapter();
+        var seriesId = SeriesOf(chapterId);
+        using (var db = _db.NewContext(userId))
+        {
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                UserId = userId, SeriesId = seriesId, ChapterId = chapterId,
+                Completed = true, Watched = true, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        var writer = Writer();
+        writer.Enqueue(userId, true, chapterId, page: Pages - 1, pageCount: Pages);
+        await writer.FlushAsync(default);
+
+        var row = Progress(chapterId)!;
+        Assert.True(row.Completed);
+        Assert.True(row.Watched);
+    }
+
+    private int SeriesOf(int chapterId)
+    {
+        using var db = _db.NewContext();
+        return db.Chapters.Single(c => c.Id == chapterId).SeriesId;
+    }
+
+    [Fact]
     public async Task A_last_page_folded_after_an_earlier_fetch_completes_the_chapter()
     {
         var userId = _db.SeedUser("reader");

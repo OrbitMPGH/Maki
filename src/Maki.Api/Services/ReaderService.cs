@@ -373,8 +373,8 @@ public class ReaderService(
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
         var now = DateTime.UtcNow;
         // A watched row is deliberately not "already completed" here: it was ticked off without
-        // being read, so actually reading it must fire the completion branch below and become a
-        // genuine read. Once Watched clears, the flag is sticky again and a re-read emits nothing.
+        // being read, so finishing it must fire the completion branch below and become a genuine
+        // read. Once Watched clears, the flag is sticky again and a re-read emits nothing.
         var wasCompleted = row is { Completed: true, Watched: false };
 
         if (row is null)
@@ -388,25 +388,32 @@ public class ReaderService(
             db.ChapterProgress.Add(row);
         }
 
-        // A watched tick is not a start: the first genuine read dates the series, not the tick.
-        if (row.Watched)
-        {
-            row.StartedAt = now;
-        }
-
         // The resume position is free to move backwards; completion is not.
         row.PageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, slice.PageCount - 1));
         row.PageCount = slice.PageCount;
-        // A watched row's Completed came from the tick, not from reading, so it does not carry over:
-        // opening the chapter has to reach the last page (or say completed outright) to count.
-        row.Completed = completed ?? ((row.Completed && !row.Watched) || row.PageIndex >= slice.PageCount - 1);
-        var justCompleted = row.Completed && !wasCompleted;
+
+        // A watched row stays ticked off while it is merely opened: the reader writes page 0 a
+        // moment after mounting and an OPDS app prefetches pages, neither of which is a read. Only a
+        // save that completes the chapter (last page or an explicit completed) turns it into one.
+        var stillWatched = row.Watched && !(completed ?? row.PageIndex >= slice.PageCount - 1);
+        if (!stillWatched)
+        {
+            // A watched tick is not a start: the first genuine read dates the series, not the tick.
+            if (row.Watched)
+            {
+                row.StartedAt = now;
+            }
+
+            row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
+            // Read here, so it is no longer external, deliberately un-read, or merely watched.
+            row.External = false;
+            row.UnreadAt = null;
+            row.Watched = false;
+        }
+
+        var justCompleted = !stillWatched && row.Completed && !wasCompleted;
         var reportedSeconds = Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
         row.ReadSeconds += reportedSeconds;
-        // Read here, so it is no longer external, deliberately un-read, or merely watched.
-        row.External = false;
-        row.UnreadAt = null;
-        row.Watched = false;
         row.UpdatedAt = now;
 
         // Flush on completion too: the leftover under the threshold is time spent on this chapter,
@@ -786,7 +793,7 @@ public class ReaderService(
         foreach (var row in rows)
         {
             row.Completed = false;
-            row.Watched = false;
+                row.Watched = false;
             row.PageIndex = 0;
             row.UnreadAt = now;
             row.UpdatedAt = now;

@@ -75,7 +75,7 @@ public class ChapterProgress : IUserOwned
     /// delta is measured against.
     /// </para>
     /// <para>
-    /// Cleared the moment the chapter is actually opened, which is what turns it into a real read.
+    /// Opening the chapter leaves it set; it clears on the save that completes the chapter, which is what turns it into a real read.
     /// </para>
     /// </summary>
     public bool Watched { get; set; }

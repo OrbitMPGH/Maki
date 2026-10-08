@@ -865,9 +865,12 @@ public sealed class ReaderServiceTests : IDisposable
     public void OnlyPagesInsideTheChapterCanBeSaved(int page, bool expected) =>
         Assert.Equal(expected, ReaderService.IsPageInRange(page, 40));
 
-    /// <summary>Opening a watched chapter is not finishing it: only reaching the last page counts as the read.</summary>
+    /// <summary>
+    /// Opening a watched chapter is not reading it: the reader writes page 0 moments after mounting,
+    /// and that must leave the ticked-off state alone. Reaching the last page is the genuine read.
+    /// </summary>
     [Fact]
-    public async Task OpeningAWatchedChapterDoesNotCountItAsRead()
+    public async Task OpeningAWatchedChapterLeavesItTickedOffUntilItIsFinished()
     {
         var (_, chapters) = SeedFromCbz("peek.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
         var reader = Reader();
@@ -880,13 +883,34 @@ public sealed class ReaderServiceTests : IDisposable
         using (var db = _db.NewContext(TestUser))
         {
             var row = db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]);
-            Assert.False(row.Completed);
-            Assert.False(row.Watched);
+            Assert.True(row.Completed);
+            Assert.True(row.Watched);
         }
 
         Assert.DoesNotContain(Events(), e => e.Type == StatsEventType.ChaptersRead);
 
         Assert.True(await reader.SaveProgressAsync(slice!, 2, null, new(60, true), CancellationToken.None));
+        using var after = _db.NewContext(TestUser);
+        var finished = after.ChapterProgress.Single(p => p.ChapterId == chapters[1m]);
+        Assert.True(finished.Completed);
+        Assert.False(finished.Watched);
+    }
+
+    /// <summary>An explicit not-completed write (the OPDS last-page guard) cannot un-tick a watched chapter either.</summary>
+    [Fact]
+    public async Task AnExplicitNotCompletedSaveKeepsAWatchedChapterTickedOff()
+    {
+        var (_, chapters) = SeedFromCbz("guard.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        await reader.MarkWatchedAsync([chapters[1m]], CancellationToken.None);
+
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        Assert.False(await reader.SaveProgressAsync(slice!, 1, false, ReaderService.TimeReport.None, CancellationToken.None));
+
+        using var db = _db.NewContext(TestUser);
+        var row = db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]);
+        Assert.True(row.Completed);
+        Assert.True(row.Watched);
     }
 
     /// <summary>A watched tick is not a start, so the first genuine read redates the row.</summary>
@@ -904,7 +928,7 @@ public sealed class ReaderServiceTests : IDisposable
         }
 
         var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
-        await reader.SaveProgressAsync(slice!, 0, null, new(30, false), CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, new(30, false), CancellationToken.None);
 
         using var after = _db.NewContext(TestUser);
         Assert.True(after.ChapterProgress.Single(p => p.ChapterId == chapters[1m]).StartedAt > ticked.AddDays(1));

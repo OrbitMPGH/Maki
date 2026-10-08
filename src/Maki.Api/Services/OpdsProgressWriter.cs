@@ -109,7 +109,7 @@ public sealed class OpdsProgressWriter(IServiceScopeFactory scopes, ILogger<Opds
 
             var existing = await reader.ProgressAsync(key.ChapterId, ct);
             var completed = OpdsProgressPolicy.CompletionFor(
-                existing is not null || pending.LastPageAfterEarlierFetch, pending.Page, slice.PageCount);
+                existing is { Watched: false } || pending.LastPageAfterEarlierFetch, pending.Page, slice.PageCount);
             // No reading time: a page fetch says a page was asked for, not that anybody was
             // looking at it, and readers that prefetch would bill a whole chapter in one burst.
             await reader.SaveProgressAsync(slice, pending.Page, completed, ReaderService.TimeReport.None, ct);
