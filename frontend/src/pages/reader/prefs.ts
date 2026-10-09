@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/client'
+import { readerSettingsQuery } from '../../api/reader'
 import type { PrefsSource, ReaderManifest, ResolvedReaderPrefs } from '../../api/reader'
 import { useReadingProfiles, type ReadingProfile } from '../../api/readingProfiles'
 
@@ -92,6 +94,7 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
   })
   const seriesId = manifest?.seriesId
   const { data: profiles } = useReadingProfiles()
+  const queryClient = useQueryClient()
 
   // Adopt the server's copy once per series; re-adopting on every manifest (i.e. every chapter
   // turn) would throw away an unsaved in-session change. Waits for the manifest fetch to settle: a
@@ -110,24 +113,15 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
     })
   }, [manifest, settled])
 
-  // Carried through so a prefs write doesn't clobber the push-back setting, which lives on the same
-  // endpoint but is never edited from the reader.
-  const pushToKavita = useRef(false)
-  useEffect(() => {
-    void api<{ pushToKavita: boolean }>('/settings/reader')
-      .then((s) => {
-        pushToKavita.current = s.pushToKavita
-      })
-      .catch(() => {})
-  }, [])
-
   // Read through a ref so the debounced save always writes to the destination in force at the time
   // it fires, not the one captured when the first keystroke of a burst landed.
-  const target = useRef<{ resolved: Resolution; profiles: ReadingProfile[] }>({
+  const target = useRef<{ resolved: Resolution; profiles: ReadingProfile[] | undefined }>({
     resolved,
-    profiles: [],
+    profiles,
   })
-  target.current = { resolved, profiles: profiles ?? [] }
+  target.current = { resolved, profiles }
+  // An edit aimed at a profile whose list has not loaded yet, written once it has.
+  const deferred = useRef<ReaderPrefs | null>(null)
 
   const save = useCallback(
     (next: ReaderPrefs) => {
@@ -141,38 +135,62 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
         return
       }
 
-      // A profile write is a full replace, so its name and type claims have to be resent. If the
-      // list hasn't loaded the edit would blank both, so fall through to the global defaults
-      // rather than corrupting a profile.
-      const profile = known.find((p) => p.id === current.profileId)
-      if (current.source === 'Profile' && profile) {
+      // A profile write is a full replace, so its name and type claims have to be resent. Without
+      // the list the edit waits for it: writing the global defaults instead would overwrite them
+      // with this profile's values.
+      if (current.source === 'Profile') {
+        if (!known) {
+          deferred.current = next
+          return
+        }
+        const profile = known.find((p) => p.id === current.profileId)
+        if (!profile) return
         void api(`/readingprofiles/${profile.id}`, {
           method: 'PUT',
           body: JSON.stringify({ name: profile.name, prefs: next, seriesTypes: profile.seriesTypes }),
-        }).catch(() => {})
+        })
+          .then(() => queryClient.invalidateQueries({ queryKey: ['reading-profiles'] }))
+          .catch(() => {})
         return
       }
 
-      void api('/settings/reader', {
-        method: 'PUT',
-        body: JSON.stringify({ defaults: next, pushToKavita: pushToKavita.current }),
-      }).catch(() => {})
+      // The global write carries the push-back setting, which lives on the same endpoint but is
+      // never edited here. It is read fresh at write time, and a failed read drops the save rather
+      // than guessing a value that would switch push-back off.
+      void queryClient
+        .fetchQuery({ ...readerSettingsQuery, staleTime: 0 })
+        .then((settings) =>
+          api('/settings/reader', {
+            method: 'PUT',
+            body: JSON.stringify({ defaults: next, pushToKavita: settings.pushToKavita }),
+          }),
+        )
+        .then(() => queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] }))
+        .catch(() => {})
     },
-    [seriesId],
+    [seriesId, queryClient],
   )
 
+  useEffect(() => {
+    if (!profiles || !deferred.current) return
+    const next = deferred.current
+    deferred.current = null
+    save(next)
+  }, [profiles, save])
+
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const prefsRef = useRef(prefs)
+  prefsRef.current = prefs
   const update = useCallback(
     (patch: Partial<ReaderPrefs>) => {
       // Before the server's copy is adopted `current` is DEFAULT_PREFS, and saving that plus one
       // change would overwrite the user's real settings.
       if (adoptedFor.current === null) return
-      setPrefs((current) => {
-        const next = { ...current, ...patch }
-        if (timer.current) clearTimeout(timer.current)
-        timer.current = setTimeout(() => save(next), SAVE_DEBOUNCE_MS)
-        return next
-      })
+      const next = { ...prefsRef.current, ...patch }
+      prefsRef.current = next
+      setPrefs(next)
+      if (timer.current) clearTimeout(timer.current)
+      timer.current = setTimeout(() => save(next), SAVE_DEBOUNCE_MS)
     },
     [save],
   )
@@ -189,6 +207,7 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
       // Any queued knob edit belongs to the destination being left behind. Flushing it would write
       // it somewhere new; dropping it is what the user asked for by switching.
       if (timer.current) clearTimeout(timer.current)
+      deferred.current = null
 
       const request =
         next === 'series'

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import { api, authHeaders, getInitialize } from './client'
@@ -241,11 +241,13 @@ export interface ReaderSettings {
 
 export type KavitaLiveStatus = 'Off' | 'Connecting' | 'Connected' | 'NotAdmin' | 'Unreachable'
 
+export const readerSettingsQuery = queryOptions({
+  queryKey: ['settings', 'reader'],
+  queryFn: () => api<ReaderSettings>('/settings/reader'),
+})
+
 export function useReaderSettings() {
-  return useQuery({
-    queryKey: ['settings', 'reader'],
-    queryFn: () => api<ReaderSettings>('/settings/reader'),
-  })
+  return useQuery(readerSettingsQuery)
 }
 
 export function useSaveReaderSettings() {
