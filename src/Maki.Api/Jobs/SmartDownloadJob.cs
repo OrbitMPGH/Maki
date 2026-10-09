@@ -71,6 +71,11 @@ public class SmartDownloadJob(
             var backingOff = await BackingOffAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct);
             var missing = Chapter.NextWanted(Ahead(chapters, after), batchSize, backingOff);
 
+            if (missing.Count == 0)
+            {
+                continue;
+            }
+
             var queuedItemIds = new List<int>();
             foreach (var chapterId in missing)
             {
@@ -82,10 +87,20 @@ public class SmartDownloadJob(
                         queuedItemIds.Add(item.Id);
                     }
                 }
+                catch (EnqueueRefusedException ex) when (ex.Key is EnqueueRefusedException.NoMapping or EnqueueRefusedException.HealthReview)
+                {
+                    logger.LogWarning("Smart Download skipped series {SeriesId}: {Reason}", series.Id, ex.Key);
+                    break;
+                }
                 catch (InvalidOperationException ex)
                 {
-                    logger.LogError(ex, ex.Message);
+                    logger.LogWarning(ex, "Smart Download could not queue chapter {ChapterId} of series {SeriesId}", chapterId, series.Id);
                 }
+            }
+
+            if (queuedItemIds.Count == 0)
+            {
+                continue;
             }
 
             await batches.QueuedAsync(series.Id, series.Title, queuedItemIds, DownloadOrigin.SmartDownload);
