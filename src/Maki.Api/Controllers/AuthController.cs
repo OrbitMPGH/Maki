@@ -117,7 +117,10 @@ public class AuthController(
         if (user is null || user.Disabled || user.PendingSetup)
         {
             BurnPasswordTime(request.Password);
-            await auditLog.LogAsync(AuthEventType.LoginFailed, username, user?.Id, HttpContext,
+            // An unknown name is whatever was typed into the box, possibly a password, so only a
+            // masked form is kept.
+            await auditLog.LogAsync(AuthEventType.LoginFailed, user is null ? MaskUnknownName(username) : username,
+                user?.Id, HttpContext,
                 detail: user is null ? "no such user" : user.Disabled ? "account disabled" : "account unclaimed", ct: ct);
             return AuthUnauthorized("error.auth.signInFailed");
         }
@@ -135,6 +138,25 @@ public class AuthController(
             BurnPasswordTime(request.Password);
             await auditLog.LogAsync(AuthEventType.LoginFailed, username, user.Id, HttpContext,
                 detail: "password login disabled by auth.oidconly", ct: ct);
+            return AuthUnauthorized("error.auth.signInFailed");
+        }
+
+        // Identity answers a locked-out account, or one with no password hash, without hashing
+        // anything. Spending the same PBKDF2 time here keeps both indistinguishable from an unknown name.
+        var lockedOut = await userManager.IsLockedOutAsync(user);
+        if (lockedOut || !await userManager.HasPasswordAsync(user))
+        {
+            BurnPasswordTime(request.Password);
+            if (lockedOut)
+            {
+                await auditLog.LogAsync(AuthEventType.LockedOut, username, user.Id, HttpContext, ct: ct);
+            }
+            else
+            {
+                await auditLog.LogAsync(AuthEventType.LoginFailed, username, user.Id, HttpContext,
+                    detail: "no local password", ct: ct);
+            }
+
             return AuthUnauthorized("error.auth.signInFailed");
         }
 
@@ -280,9 +302,9 @@ public class AuthController(
             return this.Fail(localizer, "error.auth.passwordRequired");
         }
 
-        // Rename before setting the password so a rejected password leaves the account untouched
-        // rather than half-renamed. SetUserNameAsync also refreshes NormalizedUserName, which the
-        // unique index and every lookup depend on.
+        // SetUserNameAsync also refreshes NormalizedUserName, which the unique index and every lookup
+        // depend on. A rejected password leaves the rename in place, which is harmless: the account
+        // stays PendingSetup and the retry renames it again.
         if (!string.Equals(user.UserName, username, StringComparison.Ordinal))
         {
             var rename = await userManager.SetUserNameAsync(user, username);
@@ -707,6 +729,9 @@ public class AuthController(
     /// </summary>
     private async Task<UserLoginInfo?> OidcLoginAsync(MakiUser user) =>
         (await userManager.GetLoginsAsync(user)).FirstOrDefault(l => l.LoginProvider == AuthSchemes.Oidc);
+
+    private static string MaskUnknownName(string username) =>
+        $"{username[..Math.Min(2, username.Length)]}... ({username.Length} chars)";
 
     /// <summary>
     /// Spends the same PBKDF2 time a real verification would, so a failed lookup is not measurably

@@ -71,6 +71,19 @@ public class AccountController(
             ? this.Fail(localizer, key)
             : null;
 
+    /// <summary>
+    /// A stamp rotation kills the other devices' cookies at the next stamp check, but a socket that
+    /// is already open authenticated only at its handshake and would keep receiving this user's
+    /// events. This device's client reconnects with its refreshed cookie.
+    /// </summary>
+    private async Task DropLiveConnectionsAsync(int userId)
+    {
+        if (hub is not null)
+        {
+            await EventsHub.DisconnectUserAsync(hub, userId);
+        }
+    }
+
     [HttpPost("password")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
@@ -106,6 +119,7 @@ public class AccountController(
         // including the one making this request. Re-issuing it here keeps the user signed in on this
         // device while every other session dies, which is the behaviour a password change should have.
         await signInManager.RefreshSignInAsync(user);
+        await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.PasswordChanged, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
         return NoContent();
     }
@@ -244,6 +258,7 @@ public class AccountController(
         // reactivating whatever app still has the old one.
         await userManager.ResetAuthenticatorKeyAsync(user);
         await signInManager.RefreshSignInAsync(user);
+        await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
         return NoContent();
     }
@@ -393,13 +408,7 @@ public class AccountController(
         // Keep the caller signed in on this device, otherwise "sign out everywhere" also signs you
         // out here, which reads as a bug rather than a feature.
         await signInManager.RefreshSignInAsync(user);
-        // The other devices' cookies die at the next stamp check, but their live sockets would stay
-        // in this user's hub groups until a reload. This device reconnects on its own.
-        if (hub is not null)
-        {
-            await EventsHub.DisconnectUserAsync(hub, user.Id);
-        }
-
+        await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.SessionsRevoked, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
         return NoContent();
     }

@@ -159,6 +159,58 @@ public sealed class AuthHardeningTests : IDisposable
         Assert.Equal(1, OidcLoginCount(userId));
     }
 
+    // ---- password sign-in ----
+
+    private async Task<(IActionResult Result, MakiDbContext Db)> LoginAsync(string username, string password)
+    {
+        var db = _db.NewContext();
+        var users = IdentityTestKit.UserManager(db);
+        var controller = Auth(db, users, new TestSignInManager(users), new OidcRuntimeOptions(), 0);
+        var result = await controller.Login(new LoginRequest(username, password), new AuthRuntimeOptions(), default);
+        return (result, db);
+    }
+
+    [Fact]
+    public async Task A_failed_login_for_an_unknown_name_does_not_store_what_was_typed()
+    {
+        var (result, db) = await LoginAsync("hunter2-my-real-password", "x");
+        using var _ = db;
+
+        Assert.IsType<UnauthorizedObjectResult>(result);
+        var row = Assert.Single(db.AuthEvents);
+        Assert.DoesNotContain("hunter2", row.UserName);
+        Assert.Equal("no such user", row.Detail);
+    }
+
+    [Fact]
+    public async Task A_locked_out_account_answers_the_generic_401_and_audits_the_lockout()
+    {
+        SeedWithPassword("ada");
+        using (var seed = _db.NewContext())
+        {
+            seed.Users.Single(u => u.UserName == "ada").LockoutEnd = DateTimeOffset.UtcNow.AddHours(1);
+            seed.SaveChanges();
+        }
+
+        var (result, db) = await LoginAsync("ada", Password);
+        using var _ = db;
+
+        Assert.Equal("error.auth.signInFailed", CodeOf(result));
+        Assert.Contains(db.AuthEvents, e => e.Type == AuthEventType.LockedOut);
+    }
+
+    [Fact]
+    public async Task A_passwordless_account_answers_the_generic_401()
+    {
+        _db.SeedUser("sso", MakiPermission.None);
+
+        var (result, db) = await LoginAsync("sso", Password);
+        using var _ = db;
+
+        Assert.Equal("error.auth.signInFailed", CodeOf(result));
+        Assert.Contains(db.AuthEvents, e => e.Type == AuthEventType.LoginFailed && e.UserName == "sso");
+    }
+
     // ---- recovery codes at sign-in ----
 
     private async Task<(AuthController Controller, TestSignInManager SignIn, MakiDbContext Db, IReadOnlyList<string> Codes)>
@@ -266,6 +318,30 @@ public sealed class AuthHardeningTests : IDisposable
     {
         using var db = _db.NewContext();
         return db.Users.Single(u => u.Id == userId).SecurityStamp!;
+    }
+
+    [Fact]
+    public async Task Undefined_permission_bits_are_dropped_on_create_and_update()
+    {
+        var adminId = _db.SeedUser("admin");
+        using var db = _db.NewContext();
+        var users = Users(db, adminId);
+        var stray = (MakiPermission)(1 << 20);
+
+        var created = Assert.IsType<OkObjectResult>(await users.Create(new SaveUserRequest(
+            "reader", "Correct-Horse-9-Battery", null, MakiPermission.UseOpds | stray, null, null, null, null), default));
+        var readerId = ((UserSummaryDto)created.Value!).Id;
+        Assert.Equal(MakiPermission.UseOpds, PermissionsOf(readerId));
+
+        await users.Update(readerId, new SaveUserRequest(
+            null, null, null, MakiPermission.UseTrackers | stray, null, null, null, null), default);
+        Assert.Equal(MakiPermission.UseTrackers, PermissionsOf(readerId));
+    }
+
+    private MakiPermission PermissionsOf(int userId)
+    {
+        using var db = _db.NewContext();
+        return db.Users.Single(u => u.Id == userId).Permissions;
     }
 
     [Fact]

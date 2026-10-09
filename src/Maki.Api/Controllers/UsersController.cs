@@ -92,7 +92,7 @@ public class UsersController(
             DisplayName = request.DisplayName?.Trim(),
             // A conservative default rather than the instance-wide one: a new account should not
             // silently inherit whatever the admin set for themselves.
-            Permissions = request.Permissions ?? MakiPermissions.DefaultForNewUser,
+            Permissions = DefinedBitsOnly(request.Permissions) ?? MakiPermissions.DefaultForNewUser,
             MaxContentRating = rating ?? ContentRating.Safe,
             // Fail closed. A new user sees an empty library until they are granted a folder, rather
             // than the whole thing until someone remembers to restrict them.
@@ -145,7 +145,7 @@ public class UsersController(
         var wasDisabled = user.Disabled;
         var stampBefore = user.SecurityStamp;
 
-        if (request.Permissions is { } permissions)
+        if (DefinedBitsOnly(request.Permissions) is { } permissions)
         {
             var losingAdmin = wasAdmin && !permissions.Grants(MakiPermission.Admin);
 
@@ -242,7 +242,7 @@ public class UsersController(
         }
 
         var isAdmin = user.Permissions.Grants(MakiPermission.Admin);
-        if (wasAdmin != isAdmin || user.Disabled)
+        if (wasAdmin != isAdmin || user.Disabled || revokeSessions)
         {
             await EventsHub.DisconnectUserAsync(hub, user.Id);
         }
@@ -316,6 +316,7 @@ public class UsersController(
 
         await userManager.SetTwoFactorEnabledAsync(user, false);
         await userManager.ResetAuthenticatorKeyAsync(user);
+        await EventsHub.DisconnectUserAsync(hub, user.Id);
 
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, currentUser.UserName, currentUser.UserId,
             HttpContext, detail: $"reset two-factor for \"{user.UserName}\"", ct: ct);
@@ -379,6 +380,10 @@ public class UsersController(
 
         return Ok(events);
     }
+
+    // An undefined bit stored today becomes a real grant the day a permission is appended there.
+    private static MakiPermission? DefinedBitsOnly(MakiPermission? permissions) =>
+        permissions & (MakiPermission.Admin | MakiPermissions.AllNonAdmin);
 
     private Task<bool> IsLastAdminAsync(int userId, CancellationToken ct) =>
         adminGuard.IsLastAdminAsync(userId, ct);
