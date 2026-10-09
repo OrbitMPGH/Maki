@@ -389,31 +389,40 @@ public class FileRelinkPlanner(
     private static bool IsEvidence(Candidate candidate, RelinkConfidence confidence) =>
         Rank(candidate, confidence) <= WeakestEvidenceRank;
 
+    /// <summary>
+    /// The language rows the candidate may back, or null for any. A hand-made link says which row the
+    /// file is for; the name only speaks for unlinked files.
+    /// </summary>
+    private static HashSet<string>? LanguagesOf(
+        Candidate candidate, List<Chapter> chapters, IReadOnlySet<string> seriesLanguages)
+    {
+        HashSet<string>? languages = null;
+        if (candidate.Record is { SourceName: "Manual" } manual)
+        {
+            var linked = chapters.Where(c => c.ChapterFileId == manual.Id).Select(ChapterFileLanguage.Of)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (linked.Count > 0) languages = linked;
+        }
+
+        languages ??= ChapterFileLanguage.FromName(candidate.RelativePath, seriesLanguages);
+        if (languages is { Count: 0 } && candidate.Record is { } record)
+        {
+            languages = chapters.Where(c => c.ChapterFileId == record.Id).Select(ChapterFileLanguage.Of)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        return languages;
+    }
+
     private static void Cover(
         Candidate candidate, List<Chapter> chapters, Func<Chapter, int?>? estimator, IReadOnlySet<string> seriesLanguages)
     {
         var parsed = candidate.Parsed;
+        var languages = LanguagesOf(candidate, chapters, seriesLanguages);
         if (parsed.IsChapter)
         {
-            // A hand-made link says which row the file is for; the name only speaks for unlinked files.
-            HashSet<string>? languages = null;
-            if (candidate.Record is { SourceName: "Manual" } manual)
-            {
-                var linked = chapters.Where(c => c.ChapterFileId == manual.Id).Select(ChapterFileLanguage.Of)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                if (linked.Count > 0) languages = linked;
-            }
-
-            languages ??= ChapterFileLanguage.FromName(candidate.RelativePath, seriesLanguages);
-            if (languages is { Count: 0 } && candidate.Record is { } record)
-            {
-                languages = chapters.Where(c => c.ChapterFileId == record.Id).Select(ChapterFileLanguage.Of)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            }
-
             candidate.Languages = languages;
-            foreach (var chapter in chapters.Where(c => c.Number == parsed.Number
-                         && (languages is null || languages.Contains(ChapterFileLanguage.Of(c)))))
+            foreach (var chapter in chapters.Where(c => c.Number == parsed.Number && ChapterFileLanguage.Allows(languages, c)))
             {
                 candidate.Covers[chapter.Id] = RelinkConfidence.FileName;
             }
@@ -432,6 +441,12 @@ public class FileRelinkPlanner(
         candidate.HasMarkers = markers.Count > 0;
         foreach (var chapter in chapters)
         {
+            // An English volume does not cover the Spanish row of the same chapter.
+            if (!ChapterFileLanguage.Allows(languages, chapter))
+            {
+                continue;
+            }
+
             if (chapter.Number is { } number && markers.Contains(number))
             {
                 candidate.Covers[chapter.Id] = RelinkConfidence.PageMarkers;
@@ -622,6 +637,10 @@ public static partial class ChapterFileLanguage
 
     public static HashSet<string> SeriesLanguages(IEnumerable<Chapter> chapters) =>
         chapters.Select(Of).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Whether a file speaking <paramref name="languages"/> (null: any) may back this chapter row.</summary>
+    public static bool Allows(IReadOnlySet<string>? languages, Chapter chapter) =>
+        languages is null || languages.Contains(Of(chapter));
 
     /// <summary>
     /// Follows <c>FileNameBuilder</c>: a <c>[es]</c> tag or a trailing <c>{Chapter Language}</c> code names

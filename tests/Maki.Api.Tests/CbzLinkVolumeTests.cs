@@ -174,6 +174,28 @@ public class CbzLinkVolumeTests : IDisposable
     }
 
     [Fact]
+    public async Task A_volume_links_the_rows_in_its_own_language_only()
+    {
+        var series = SeedSeries(chapterCount: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.AddRange(
+                new Chapter { SeriesId = series.Id, Number = 1, Language = "en" },
+                new Chapter { SeriesId = series.Id, Number = 2, Language = "en" },
+                new Chapter { SeriesId = series.Id, Number = 1, Language = "de" },
+                new Chapter { SeriesId = series.Id, Number = 2, Language = "de" });
+            db.SaveChanges();
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk v01 (Digital) (Oak).cbz", 1, 2));
+
+        using var check = _db.NewContext();
+        var chapters = check.Chapters.Where(c => c.SeriesId == series.Id).ToList();
+        Assert.All(chapters.Where(c => c.Language == "en"), c => Assert.NotNull(c.ChapterFileId));
+        Assert.All(chapters.Where(c => c.Language == "de"), c => Assert.Null(c.ChapterFileId));
+    }
+
+    [Fact]
     public async Task Chapters_linked_by_contents_take_the_volume_from_the_file_name()
     {
         var series = SeedSeries();

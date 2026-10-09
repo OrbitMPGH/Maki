@@ -639,11 +639,13 @@ public class CbzLinkService(
             return [];
         }
 
+        var languages = ChapterFileLanguage.FromName(cbzPath, ChapterFileLanguage.SeriesLanguages(chapters));
         List<Chapter> targets = [];
         foreach (var number in numbers)
         {
-            var match = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
-                        ?? chapters.FirstOrDefault(c => c.Number == number && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable));
+            var match = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null && ChapterFileLanguage.Allows(languages, c))
+                        ?? chapters.FirstOrDefault(c => c.Number == number && ChapterFileLanguage.Allows(languages, c)
+                                                        && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable));
             if (match != null && !targets.Contains(match))
             {
                 targets.Add(match);
@@ -689,11 +691,12 @@ public class CbzLinkService(
             }
 
             var filled = 0;
+            var languages = ChapterFileLanguage.FromName(path, ChapterFileLanguage.SeriesLanguages(chapters));
             foreach (var number in VolumeChapterScanner.ScanCbz(path))
             {
-                var chapter = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
+                var chapter = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null && ChapterFileLanguage.Allows(languages, c))
                               ?? chapters.FirstOrDefault(c =>
-                                  c.Number == number && c.ChapterFileId != fileId &&
+                                  c.Number == number && c.ChapterFileId != fileId && ChapterFileLanguage.Allows(languages, c) &&
                                   VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable));
                 if (chapter != null)
                 {
@@ -731,14 +734,13 @@ public class CbzLinkService(
         HashSet<int> volumeFileIds, bool replaceExisting = true, IReadOnlySet<int>? displaceable = null)
     {
         List<Chapter> targets = [];
+        var languages = filePath is null
+            ? null
+            : ChapterFileLanguage.FromName(filePath, ChapterFileLanguage.SeriesLanguages(chapters));
         if (parsed.IsChapter)
         {
             // A single file replaces another single file, never a volume.
-            var languages = filePath is null
-                ? null
-                : ChapterFileLanguage.FromName(filePath, ChapterFileLanguage.SeriesLanguages(chapters));
-            bool Fits(Chapter c) => c.Number == parsed.Number
-                                    && (languages is null || languages.Contains(ChapterFileLanguage.Of(c)));
+            bool Fits(Chapter c) => c.Number == parsed.Number && ChapterFileLanguage.Allows(languages, c);
             var match = chapters.FirstOrDefault(c => Fits(c) && c.ChapterFileId == null)
                         ?? (replaceExisting
                             ? chapters.FirstOrDefault(c =>
@@ -756,6 +758,7 @@ public class CbzLinkService(
             HashSet<decimal>? markers = null;
             targets = chapters
                 .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId != chapterFileId
+                            && ChapterFileLanguage.Allows(languages, c)
                             && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable))
                 .Where(c =>
                 {

@@ -287,7 +287,7 @@ public class TorrentImportService(
         foreach (var source in sources.OrderBy(s => s.Name, StringComparer.Ordinal))
         {
             var parsed = ReleaseNameParser.ParseFileName(source.Name);
-            var covered = ChaptersCoveredBy(chapters, parsed, source.Pages, volumeFileIds);
+            var covered = ChaptersCoveredBy(chapters, parsed, source.Pages, volumeFileIds, source.Name);
 
             var upgradeCount = 0;
             var alreadyMetCount = 0;
@@ -923,8 +923,18 @@ public class TorrentImportService(
     /// </summary>
     public static List<Chapter> ChaptersCoveredBy(
         List<Chapter> chapters, ParsedReleaseFile parsed, IReadOnlyList<string> pages,
-        IReadOnlySet<int>? volumeFileIds = null)
+        IReadOnlySet<int>? volumeFileIds = null, string? fileName = null)
     {
+        // On a series with several languages a file backs the rows of its own language only, as the
+        // linker decides it. Without a file name every language counts.
+        var languages = fileName is null
+            ? null
+            : ChapterFileLanguage.FromName(fileName, ChapterFileLanguage.SeriesLanguages(chapters));
+        if (languages is not null)
+        {
+            chapters = chapters.Where(c => ChapterFileLanguage.Allows(languages, c)).ToList();
+        }
+
         if (volumeFileIds is { Count: > 0 })
         {
             chapters = chapters.Where(c => c.ChapterFileId is not { } fileId || !volumeFileIds.Contains(fileId)).ToList();
