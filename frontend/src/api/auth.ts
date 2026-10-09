@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { stopConnection } from './signalr'
-import { api } from './client'
+import { api, invalidateInitialize } from './client'
 import { useSaveSettingsRecord } from './settingsRecord'
 
 type SetupDoneHandler = () => void
@@ -106,6 +106,9 @@ export function dropAccountData(qc: QueryClient): void {
   // The live socket is account data too: it is in the old account's hub groups and would keep
   // delivering that account's inbox and admin events to whoever signs in next on this tab.
   stopConnection()
+  // The sign-in page reads SSO state from the bootstrap payload, which an admin may have changed
+  // since this tab loaded it.
+  invalidateInitialize()
   qc.removeQueries({
     predicate: (query) =>
       query.queryKey.length !== ME_QUERY_KEY.length ||

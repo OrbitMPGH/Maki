@@ -12296,6 +12296,14 @@ msgstr "the series' sources"
 msgid "The server logs will say why."
 msgstr "The server logs will say why."
 
+#: src/api/client.ts
+msgid "The server returned an error ({status})."
+msgstr "The server returned an error ({status})."
+
+#: src/api/client.ts
+msgid "The server sent a response Maki could not read ({status})."
+msgstr "The server sent a response Maki could not read ({status})."
+
 #: src/components/settings/AccountSection.tsx
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "The single biggest improvement if Maki is reachable from the internet."

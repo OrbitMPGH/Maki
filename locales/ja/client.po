@@ -14983,6 +14983,14 @@ msgstr "シリーズのソース"
 msgid "The server logs will say why."
 msgstr "理由はサーバーログで確認できます。"
 
+#: src/api/client.ts
+msgid "The server returned an error ({status})."
+msgstr ""
+
+#: src/api/client.ts
+msgid "The server sent a response Maki could not read ({status})."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
