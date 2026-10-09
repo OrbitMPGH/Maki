@@ -177,26 +177,6 @@ public class MangaBakaDumpService(
     ];
 
     /// <summary>
-    /// Indexes the columns the Discover rails filter and sort on. The dump ships with <b>no indexes
-    /// at all</b>, so without these every rail is a full scan of ~558k rows across ~3.5 GB plus a
-    /// sort: measured at 11s for the six-rail set, and far worse whenever the page cache is cold or
-    /// the disk is busy, which is what makes the endpoint's tail latency unbounded.
-    ///
-    /// <para>
-    /// Measured 17.25s to 0.43s over the six rails, a 40x improvement, with every rail reporting an
-    /// index rather than a scan. Costs ~15s to build and ~13 MB.
-    /// </para>
-    ///
-    /// <para>
-    /// All are <b>partial</b> indexes over the rails' common quality gate (active, not a novel,
-    /// rated, has a cover). That predicate is duplicated from <c>MangaBakaLocalStore.GetBrowseAsync</c>
-    /// and must stay in step with it: SQLite will only use a partial index when the query's WHERE
-    /// provably implies the index's, so a rail that drops one of these conditions silently falls back
-    /// to a full scan rather than failing. The <c>title NOT LIKE</c> clause is deliberately left out
-    /// - it excludes few rows and a LIKE in the predicate would stop the planner matching it.
-    /// </para>
-    /// </summary>
-    /// <summary>
     /// The subset of <see cref="BrowseIndexNames"/> this dump has the columns for. A dump variant
     /// that drops a column simply gets fewer indexes; that is a slower rail, never a failed refresh.
     /// </summary>
@@ -313,6 +293,11 @@ public class MangaBakaDumpService(
     /// <para>
     /// Measured 17.25s to 0.43s over the six rails, a 40x improvement, with every rail reporting an
     /// index rather than a scan. Costs ~15s to build and ~13 MB.
+    /// </para>
+    ///
+    /// <para>
+    /// All are <b>partial</b> indexes over the rails' common quality gate (see <c>BrowseGate</c>), which
+    /// must stay in step with <c>MangaBakaLocalStore.GetBrowseAsync</c>.
     /// </para>
     ///
     /// <para>

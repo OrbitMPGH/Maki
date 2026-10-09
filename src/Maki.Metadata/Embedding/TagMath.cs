@@ -30,7 +30,6 @@ public static class TagMath
         _ => Unweighted,
     };
 
-    /// <summary>Numeric strength of a weight class. Tunable without touching stored blobs.</summary>
     /// <summary>
     /// The <c>name_path</c> roots that describe what a story <em>is</em>, as opposed to what its
     /// cast looks like. Taken straight from MangaBaka's own taxonomy rather than invented here:
@@ -117,6 +116,7 @@ public static class TagMath
         return formatBoost != 1.0 && FormatCategories.Contains(category) ? formatBoost : 1.0;
     }
 
+    /// <summary>Numeric strength of a weight class. Tunable without touching stored blobs.</summary>
     public static double ClassWeight(byte cls) => cls switch
     {
         Core => 1.0,

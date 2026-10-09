@@ -189,7 +189,6 @@ public class SemanticRecommender(
         return members;
     }
 
-    /// <summary>One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the centroid.</summary>
     /// <summary>
     /// One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the
     /// centroid, and also for a seed the dump has no title for, which is why
@@ -1137,13 +1136,6 @@ public class SemanticRecommender(
         }
     }
 
-    /// <summary>
-    /// One pass over the index, cosining every surviving row against every query. Structured this
-    /// way (row outer, query inner) so a row's packed bytes are read once and reused across the
-    /// queries — nine queries cost far less than nine scans. A rejected row is
-    /// <see cref="float.NegativeInfinity"/> in every channel, which also keeps it out of the
-    /// rankings below without a second membership test.
-    /// </summary>
     /// <summary>
     /// One pass over every row, answering both spaces. The filter predicate is the expensive part
     /// and it is identical for both, so scanning twice would pay for it twice; the behavioural
