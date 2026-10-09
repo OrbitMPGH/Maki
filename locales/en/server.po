@@ -2883,6 +2883,10 @@ msgstr "Last backup: {at}"
 msgid "health.check.backupUnreadable"
 msgstr "Backup directory cannot be inspected"
 
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.backupScheduleOff"
+msgstr "Scheduled backups are off, so Maki will not warn about an old backup"
+
 #. {root} is a root folder's id, a number the admin sees elsewhere in the UI.
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.repairStaging"

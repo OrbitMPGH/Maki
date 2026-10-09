@@ -678,6 +678,9 @@ public static class SettingKeys
     /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
     public const string BackupRetention = "backup.retention";
 
+    /// <summary>"true" when Maki takes its own backup whenever the newest one is older than the health freshness window. Off by default.</summary>
+    public const string BackupScheduled = "backup.scheduled";
+
     /// <summary>The health page's scan options, as a serialized <c>HealthOptions</c>.</summary>
     public const string HealthOptions = "health.options";
 
