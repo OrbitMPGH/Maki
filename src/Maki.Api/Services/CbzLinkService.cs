@@ -196,7 +196,7 @@ public class CbzLinkService(
         {
             // One event per adoption batch; value = ChapterFile rows created, so a file that
             // already had a row is never counted as downloaded again.
-            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title, created);
+            await stats.StageAsync(StatsEventType.ChapterDownloaded, series.Id, series.Title, created, ct: ct);
         }
 
         await db.SaveChangesAsync(ct);

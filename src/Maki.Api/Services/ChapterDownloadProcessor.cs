@@ -362,7 +362,7 @@ public class ChapterDownloadProcessor(
             // a 200-chapter series to a better source would post 200 phantom downloads.
             if (isNewFile)
             {
-                stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
+                await stats.StageAsync(StatsEventType.ChapterDownloaded, series.Id, series.Title, ct: CancellationToken.None);
             }
 
             // One save for the file row, the chapter's link and Completed, so none lands without the others.
