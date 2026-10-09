@@ -141,6 +141,8 @@ export function useLogin() {
   return useMutation({
     mutationFn: (body: { username: string; password: string }) =>
       api<Me & LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+    // The form shows the failure inline.
+    meta: { silent: true },
     onSuccess: (result) => {
       // Two-factor is still pending, so there is no session yet and nothing to cache.
       if (result.requiresTwoFactor) return
@@ -155,6 +157,8 @@ export function useVerifyTwoFactor() {
   return useMutation({
     mutationFn: (body: { code: string; rememberMachine: boolean }) =>
       api<Me>('/auth/2fa', { method: 'POST', body: JSON.stringify(body) }),
+    // The form shows the failure inline.
+    meta: { silent: true },
     onSuccess: (me) => {
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, me)
@@ -167,6 +171,8 @@ export function useSetup() {
   return useMutation({
     mutationFn: (body: { username: string; password: string; displayName?: string }) =>
       api<Me>('/auth/setup', { method: 'POST', body: JSON.stringify(body) }),
+    // The form shows the failure inline.
+    meta: { silent: true },
     onSuccess: (me) => {
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, me)

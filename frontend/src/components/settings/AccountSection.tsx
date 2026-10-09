@@ -53,7 +53,6 @@ export function SignInSection() {
     <SettingsSection
       id="sign-in"
       title={<Trans>Sign-in</Trans>}
-      panelProps={{ id: 'account' }}
       description={
         <Trans>
           Your password, two-factor code and single sign-on link. Changing your password signs out
@@ -132,6 +131,18 @@ function SsoCard() {
       notifications.show({ message: now`Single sign-on linked to your account`, color: 'var(--ok)' })
     } else if (linkResult.error) {
       notifications.show({ message: linkResult.error, color: 'var(--danger)' })
+    }
+    // Dropped once shown so a reload does not repeat it.
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('oidcLinked') || params.has('oidcLinkError')) {
+      params.delete('oidcLinked')
+      params.delete('oidcLinkError')
+      const query = params.toString()
+      window.history.replaceState(
+        window.history.state,
+        '',
+        window.location.pathname + (query ? `?${query}` : '') + window.location.hash,
+      )
     }
   }, [linkResult])
 
@@ -450,6 +461,8 @@ function TwoFactorCard() {
         onClose={() => setRecoveryCodes(null)}
         title={t`Save your recovery codes`}
         centered
+        closeOnClickOutside={false}
+        closeOnEscape={false}
       >
         <Stack>
           <Alert color="var(--warn)" variant="light">
@@ -461,6 +474,9 @@ function TwoFactorCard() {
           <Code block>{recoveryCodes?.join('\n')}</Code>
           <Button variant="default" onClick={() => void codesCopy.copy(recoveryCodes?.join('\n') ?? '')}>
             {codesCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy codes</Trans>}
+          </Button>
+          <Button onClick={() => setRecoveryCodes(null)}>
+            <Trans>I have saved them</Trans>
           </Button>
         </Stack>
       </Modal>
@@ -576,6 +592,8 @@ function ApiKeysCard() {
         title={t`Your new API key`}
         centered
         size="lg"
+        closeOnClickOutside={false}
+        closeOnEscape={false}
       >
         <Stack>
           <Alert color="var(--warn)" variant="light">
@@ -589,6 +607,9 @@ function ApiKeysCard() {
           </Code>
           <Button variant="default" onClick={() => void secretCopy.copy(created?.secret ?? '')}>
             {secretCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
+          </Button>
+          <Button onClick={() => setCreated(null)}>
+            <Trans>I have copied it</Trans>
           </Button>
         </Stack>
       </Modal>

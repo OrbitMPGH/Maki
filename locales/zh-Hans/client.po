@@ -3721,6 +3721,10 @@ msgstr "更改自己的内容分级"
 msgid "Change the chapter range"
 msgstr "更改章节范围"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Change the issuer URL?"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Change this title only"
@@ -7229,6 +7233,14 @@ msgstr "我确认永久删除此归档及其所有文件链接。"
 #, fuzzy
 msgid "I confirm removing the file links for this missing archive."
 msgstr "我确认移除此缺失归档的文件链接。"
+
+#: src/components/settings/AccountSection.tsx
+msgid "I have copied it"
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
+msgid "I have saved them"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -12182,6 +12194,10 @@ msgstr "移除系列？"
 msgid "Remove single sign-on"
 msgstr "移除单点登录"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Remove single sign-on for {editName}?"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove source only"
@@ -12423,6 +12439,10 @@ msgid "Require HTTPS"
 msgstr "要求 HTTPS"
 
 #: src/components/settings/SecuritySection.tsx
+msgid "Require HTTPS from a plain HTTP address?"
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Require single sign-on"
 msgstr "要求单点登录"
@@ -12468,6 +12488,10 @@ msgstr "恢复默认值"
 #, fuzzy
 msgid "Reset two-factor"
 msgstr "重置双重身份验证"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Reset two-factor for {editName}?"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -12850,6 +12874,10 @@ msgstr "在每个作品文件夹中保存 cover.jpg"
 #, fuzzy
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "将 cover.jpg 保存到每个系列的资料库文件夹"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Save anyway"
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -14017,6 +14045,10 @@ msgstr "单点登录"
 msgid "Single sign-on linked to your account"
 msgstr "已与你的账户关联的单点登录"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Single sign-on logins are tied to the issuer. After a restart, people who signed in through the old one are matched again by their verified email where they have one, and otherwise have to link single sign-on again."
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Single sign-on removed from this account"
@@ -15092,6 +15124,10 @@ msgstr "整个目录"
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
 msgstr "这些文件夹中有尚未关联的漫画。导入后会将它们关联到现有系列。"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Their second factor is turned off and the authenticator reset, so a password is all that protects the account until they set it up again."
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -15132,6 +15168,10 @@ msgstr "这些规则需要使用规则视图。删除部分规则即可切回。
 #, fuzzy
 msgid "They come from the catalogue, so a library the dump does not cover has none."
 msgstr "它们来自目录，因此转储未覆盖的资料库不会有这些内容。"
+
+#: src/components/settings/UsersSection.tsx
+msgid "They will have to link single sign-on again, or use a password, to sign in."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -16968,6 +17008,14 @@ msgstr "你"
 #, fuzzy
 msgid "you · {readChapter}"
 msgstr "你 · {readChapter}"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are on this page over plain HTTP. After a restart, signing in at this address will be refused. Open Maki through its HTTPS address first, or make sure you can reach it that way."
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address, and getting back in needs a TLS proxy in front of Maki or an edit to the database."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

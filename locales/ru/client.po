@@ -3721,6 +3721,10 @@ msgstr "Изменить собственный рейтинг контента"
 msgid "Change the chapter range"
 msgstr "Изменить диапазон глав"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Change the issuer URL?"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Change this title only"
@@ -7229,6 +7233,14 @@ msgstr "Я подтверждаю безвозвратное удаление э
 #, fuzzy
 msgid "I confirm removing the file links for this missing archive."
 msgstr "Я подтверждаю удаление файловых связей для этого отсутствующего архива."
+
+#: src/components/settings/AccountSection.tsx
+msgid "I have copied it"
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
+msgid "I have saved them"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -12182,6 +12194,10 @@ msgstr "Удалить серию?"
 msgid "Remove single sign-on"
 msgstr "Удалить единый вход"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Remove single sign-on for {editName}?"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove source only"
@@ -12423,6 +12439,10 @@ msgid "Require HTTPS"
 msgstr "Требовать HTTPS"
 
 #: src/components/settings/SecuritySection.tsx
+msgid "Require HTTPS from a plain HTTP address?"
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Require single sign-on"
 msgstr "Требовать единый вход"
@@ -12468,6 +12488,10 @@ msgstr "Сбросить настройки"
 #, fuzzy
 msgid "Reset two-factor"
 msgstr "Сбросить двухфакторную аутентификацию"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Reset two-factor for {editName}?"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -12850,6 +12874,10 @@ msgstr "Сохранять cover.jpg в папке каждой серии"
 #, fuzzy
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Сохранять cover.jpg в папке библиотеки каждой серии"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Save anyway"
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -14017,6 +14045,10 @@ msgstr "Единый вход"
 msgid "Single sign-on linked to your account"
 msgstr "Единый вход связан с вашим аккаунтом"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Single sign-on logins are tied to the issuer. After a restart, people who signed in through the old one are matched again by their verified email where they have one, and otherwise have to link single sign-on again."
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Single sign-on removed from this account"
@@ -15092,6 +15124,10 @@ msgstr "Весь каталог"
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
 msgstr "В их папках есть комиксы, которые ещё не привязаны. Импорт добавит их в существующие серии."
 
+#: src/components/settings/UsersSection.tsx
+msgid "Their second factor is turned off and the authenticator reset, so a password is all that protects the account until they set it up again."
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -15132,6 +15168,10 @@ msgstr "Для этих правил нужен режим правил. Уда�
 #, fuzzy
 msgid "They come from the catalogue, so a library the dump does not cover has none."
 msgstr "Они поступают из каталога, поэтому для библиотеки, которую дамп не охватывает, их нет."
+
+#: src/components/settings/UsersSection.tsx
+msgid "They will have to link single sign-on again, or use a password, to sign in."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -16968,6 +17008,14 @@ msgstr "Ты"
 #, fuzzy
 msgid "you · {readChapter}"
 msgstr "вы · {readChapter}"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are on this page over plain HTTP. After a restart, signing in at this address will be refused. Open Maki through its HTTPS address first, or make sure you can reach it that way."
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address, and getting back in needs a TLS proxy in front of Maki or an edit to the database."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

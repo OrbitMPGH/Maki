@@ -3047,6 +3047,10 @@ msgstr "Change own content rating"
 msgid "Change the chapter range"
 msgstr "Change the chapter range"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Change the issuer URL?"
+msgstr "Change the issuer URL?"
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Change this title only"
 msgstr "Change this title only"
@@ -5929,6 +5933,14 @@ msgstr "I confirm permanent deletion of this archive and all its file links."
 #: src/pages/HealthPage.tsx
 msgid "I confirm removing the file links for this missing archive."
 msgstr "I confirm removing the file links for this missing archive."
+
+#: src/components/settings/AccountSection.tsx
+msgid "I have copied it"
+msgstr "I have copied it"
+
+#: src/components/settings/AccountSection.tsx
+msgid "I have saved them"
+msgstr "I have saved them"
 
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -9997,6 +10009,10 @@ msgstr "Remove series?"
 msgid "Remove single sign-on"
 msgstr "Remove single sign-on"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Remove single sign-on for {editName}?"
+msgstr "Remove single sign-on for {editName}?"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove source only"
 msgstr "Remove source only"
@@ -10195,6 +10211,10 @@ msgid "Require HTTPS"
 msgstr "Require HTTPS"
 
 #: src/components/settings/SecuritySection.tsx
+msgid "Require HTTPS from a plain HTTP address?"
+msgstr "Require HTTPS from a plain HTTP address?"
+
+#: src/components/settings/SecuritySection.tsx
 msgid "Require single sign-on"
 msgstr "Require single sign-on"
 
@@ -10231,6 +10251,10 @@ msgstr "Reset to defaults"
 #: src/components/settings/UsersSection.tsx
 msgid "Reset two-factor"
 msgstr "Reset two-factor"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Reset two-factor for {editName}?"
+msgstr "Reset two-factor for {editName}?"
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Reset zoom"
@@ -10547,6 +10571,10 @@ msgstr "Save a cover.jpg into each series folder"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Save a cover.jpg into each series' library folder"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Save anyway"
+msgstr "Save anyway"
 
 #: src/components/DiscoverPresets.tsx
 msgid "Save as a rail…"
@@ -11506,6 +11534,10 @@ msgstr "Single sign-on"
 msgid "Single sign-on linked to your account"
 msgstr "Single sign-on linked to your account"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Single sign-on logins are tied to the issuer. After a restart, people who signed in through the old one are matched again by their verified email where they have one, and otherwise have to link single sign-on again."
+msgstr "Single sign-on logins are tied to the issuer. After a restart, people who signed in through the old one are matched again by their verified email where they have one, and otherwise have to link single sign-on again."
+
 #: src/components/settings/UsersSection.tsx
 msgid "Single sign-on removed from this account"
 msgstr "Single sign-on removed from this account"
@@ -12391,6 +12423,10 @@ msgstr "The whole catalogue"
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
 msgstr "Their folders have comics that are not linked yet. Importing links them into the existing series."
 
+#: src/components/settings/UsersSection.tsx
+msgid "Their second factor is turned off and the authenticator reset, so a password is all that protects the account until they set it up again."
+msgstr "Their second factor is turned off and the authenticator reset, so a password is all that protects the account until they set it up again."
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
@@ -12423,6 +12459,10 @@ msgstr "These rules need the rules view. Remove some to switch back."
 #: src/pages/discover/TasteTab.tsx
 msgid "They come from the catalogue, so a library the dump does not cover has none."
 msgstr "They come from the catalogue, so a library the dump does not cover has none."
+
+#: src/components/settings/UsersSection.tsx
+msgid "They will have to link single sign-on again, or use a password, to sign in."
+msgstr "They will have to link single sign-on again, or use a password, to sign in."
 
 #: src/components/settings/UsersSection.tsx
 msgid "They will no longer be able to sign in. This can't be undone."
@@ -13927,6 +13967,14 @@ msgstr "You"
 #: src/components/AnimeCoverageBar.tsx
 msgid "you · {readChapter}"
 msgstr "you · {readChapter}"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are on this page over plain HTTP. After a restart, signing in at this address will be refused. Open Maki through its HTTPS address first, or make sure you can reach it that way."
+msgstr "You are on this page over plain HTTP. After a restart, signing in at this address will be refused. Open Maki through its HTTPS address first, or make sure you can reach it that way."
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address, and getting back in needs a TLS proxy in front of Maki or an edit to the database."
+msgstr "You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address, and getting back in needs a TLS proxy in front of Maki or an edit to the database."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "You bail around"
