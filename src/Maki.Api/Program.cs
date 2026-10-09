@@ -1484,6 +1484,29 @@ try
         o.MessageTemplate = "{RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0} ms";
     });
 
+    if (authOptions.RequireHttps)
+    {
+        // No UseHttpsRedirection: Kestrel binds plain http only and TLS is the proxy's job, so the
+        // middleware could never find an https port to redirect to.
+        app.UseHsts();
+    }
+
+    app.UseMiddleware<SecurityHeadersMiddleware>();
+
+    // ExceptionHandlerMiddleware clears the response headers when it handles an exception, which would
+    // take Strict-Transport-Security and the security headers set above with it. Restored on the way out.
+    app.Use(async (context, next) =>
+    {
+        var kept = context.Response.Headers.ToList();
+        context.Response.OnStarting(() =>
+        {
+            foreach (var (name, value) in kept)
+                context.Response.Headers.TryAdd(name, value);
+            return Task.CompletedTask;
+        });
+        await next();
+    });
+
     // Inside request logging so the 500 line still carries the status, and the handler leaves the
     // exception handled so neither the logger nor Kestrel reports it a second time.
     app.UseExceptionHandler(errorApp => errorApp.Run(context =>
@@ -1503,15 +1526,6 @@ try
                 context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
         }
     });
-
-    app.UseMiddleware<SecurityHeadersMiddleware>();
-
-    if (authOptions.RequireHttps)
-    {
-        // No UseHttpsRedirection: Kestrel binds plain http only and TLS is the proxy's job, so the
-        // middleware could never find an https port to redirect to.
-        app.UseHsts();
-    }
 
     // Before authentication, and that ordering is load-bearing.
     //
