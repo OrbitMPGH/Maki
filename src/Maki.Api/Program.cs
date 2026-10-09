@@ -191,7 +191,8 @@ try
     builder.Services.AddSingleton<MangaBakaLocalStore>();
     // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
     // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
-    // DiscoverCacheWarmJob builds them so the cost never lands on a keystroke.
+    // DiscoverCacheWarmJob builds them at startup and after a dump install so the cost never lands
+    // on a keystroke.
     builder.Services.AddSingleton<CatalogueIndexCache>();
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();

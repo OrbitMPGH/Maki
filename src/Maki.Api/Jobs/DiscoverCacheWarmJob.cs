@@ -48,25 +48,35 @@ public class DiscoverCacheWarmJob(
                 await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
             }
 
-            // The scheduled runs only refresh indexes somebody already has loaded: building them
-            // for an instance nobody is browsing costs ~17s of CPU and an RSS spike, only for the
-            // idle unload to drop them again. A run triggered after a dump install builds them.
-            if (context.Trigger.Key.Name == ScheduledTriggerName && !searchIndex.IsLoaded && !catalogueIndex.IsLoaded)
-            {
-                return;
-            }
-
-            if (!searchIndex.IsLoaded || !catalogueIndex.IsLoaded)
-            {
-                build.MarkBuilt();
-            }
+            // A run triggered after a dump install, and the first scheduled run after startup, build
+            // both indexes so the cost never lands on the first keystroke. Later scheduled runs only
+            // refresh an index somebody already has loaded: building one for an instance nobody is
+            // browsing costs ~9s of CPU and an RSS spike, only for the idle unload to drop it again.
+            var everything = context.Trigger.Key.Name != ScheduledTriggerName || context.PreviousFireTimeUtc is null;
 
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
-            await searchIndex.GetAsync(context.CancellationToken);
+            if (everything || searchIndex.IsLoaded)
+            {
+                if (!searchIndex.IsCurrent)
+                {
+                    build.MarkBuilt();
+                }
+
+                await searchIndex.GetAsync(context.CancellationToken);
+            }
+
             // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
             // dump, which would otherwise land on whichever keystroke arrived first.
-            await catalogueIndex.GetAsync(context.CancellationToken);
+            if (everything || catalogueIndex.IsLoaded)
+            {
+                if (!catalogueIndex.IsCurrent)
+                {
+                    build.MarkBuilt();
+                }
+
+                await catalogueIndex.GetAsync(context.CancellationToken);
+            }
         }
         catch (LocalCatalogueUnavailableException)
         {

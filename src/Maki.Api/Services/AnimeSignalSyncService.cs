@@ -425,7 +425,8 @@ public class AnimeSignalSyncService(
         }
 
         var matched = await ResolveCatalogueIdsAsync(db, userId, ct);
-        // The seed snapshot is cached per signal revision, so rows that changed under it have to move it.
+        // The seed snapshot is cached per signal revision, so the revision moves on every sync that read
+        // a list or removed rows, whether or not the stored rows ended up different.
         if (fetchedAny || removed > 0)
         {
             await RecommendationFeedbackService.BumpAsync(db, userId, feedback: false, signal: true, ct);
