@@ -334,47 +334,7 @@ public class ChapterDownloadProcessor(
             await db.SaveChangesAsync(CancellationToken.None);
             seriesLock.Dispose();
 
-            // Downloads from this source are flowing again — reset its escalating rate-limit backoff.
-            queue.ClearRateLimitBackoff(mapping.SourceName);
-
-            await BroadcastAsync(item, chapter, series, mapping.SourceName);
-            await events.ChapterImported(series.Id, chapter.Id, series.RootFolderId);
-
-            // Part of a batch (series add, search-missing, refresh)? The batch sends one summary
-            // when every chapter in it has settled, instead of a ping per chapter.
-            if (!await batches.CompletedAsync(series.Id, item.Id))
-            {
-                var label = chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
-                            ?? chapter.Title;
-
-                var locale = await locales.DefaultAsync(ct);
-                notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
-                    NotificationEventType.ChapterDownloaded,
-                    Title: localizer.GetFor(locale, "notify.chapter.downloaded.title"),
-                    Body: localizer.GetFor(locale, "notify.chapter.downloaded.body", new
-                    {
-                        series = series.Title,
-                        hasChapter = label is null ? "no" : "yes",
-                        chapter = label ?? string.Empty,
-                    }),
-                    SeriesTitle: series.Title,
-                    SeriesId: series.Id,
-                    ChapterNumber: label));
-
-                // Only what nobody asked for. A chapter somebody clicked Download on needs no
-                // notification — they watched it happen and the queue already showed them.
-                if (item.IsAutomatic)
-                {
-                    inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
-                        Key: "inbox.chapter.downloaded",
-                        Params: InboxMessage.Args(new { chapter = label }),
-                        SeriesId: series.Id,
-                        ChapterId: chapter.Id,
-                        Url: $"/series/{series.Id}"), series.Id);
-                }
-            }
-
-            kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
+            await AnnounceImportAsync(item, chapter, series, rootFolder, mapping, ct);
 
             TryDeleteDirectory(workingDir);
             logger.LogInformation("Imported {Series} {Chapter} from {Source}",
@@ -450,6 +410,66 @@ public class ChapterDownloadProcessor(
             var (key, detail) = DownloadFailureReason.Classify(ex);
             await FailAsync(item, key, ct, detail: detail);
             return DownloadOutcome.Settled;
+        }
+    }
+
+    /// <summary>
+    /// Everything that follows a saved import. The chapter is already in the library and the row is
+    /// Completed, so a failure here (the hub's audience query, the locale read) is logged and left
+    /// there: letting it reach <c>ProcessAsync</c>'s catch-all would overwrite Completed with Failed
+    /// and have the retry job download the chapter again.
+    /// </summary>
+    private async Task AnnounceImportAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, RootFolder rootFolder, SourceMapping mapping,
+        CancellationToken ct)
+    {
+        try
+        {
+            // Downloads from this source are flowing again — reset its escalating rate-limit backoff.
+            queue.ClearRateLimitBackoff(mapping.SourceName);
+
+            await BroadcastAsync(item, chapter, series, mapping.SourceName);
+            await events.ChapterImported(series.Id, chapter.Id, series.RootFolderId);
+
+            // Part of a batch (series add, search-missing, refresh)? The batch sends one summary
+            // when every chapter in it has settled, instead of a ping per chapter.
+            if (!await batches.CompletedAsync(series.Id, item.Id))
+            {
+                var label = chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
+                            ?? chapter.Title;
+
+                var locale = await locales.DefaultAsync(ct);
+                notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
+                    NotificationEventType.ChapterDownloaded,
+                    Title: localizer.GetFor(locale, "notify.chapter.downloaded.title"),
+                    Body: localizer.GetFor(locale, "notify.chapter.downloaded.body", new
+                    {
+                        series = series.Title,
+                        hasChapter = label is null ? "no" : "yes",
+                        chapter = label ?? string.Empty,
+                    }),
+                    SeriesTitle: series.Title,
+                    SeriesId: series.Id,
+                    ChapterNumber: label));
+
+                // Only what nobody asked for. A chapter somebody clicked Download on needs no
+                // notification — they watched it happen and the queue already showed them.
+                if (item.IsAutomatic)
+                {
+                    inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
+                        Key: "inbox.chapter.downloaded",
+                        Params: InboxMessage.Args(new { chapter = label }),
+                        SeriesId: series.Id,
+                        ChapterId: chapter.Id,
+                        Url: $"/series/{series.Id}"), series.Id);
+                }
+            }
+
+            kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
+        }
+        catch (Exception ex) when (!(ex is OperationCanceledException && ct.IsCancellationRequested))
+        {
+            logger.LogWarning(ex, "Queue item {Id} was imported but announcing it failed", item.Id);
         }
     }
 
