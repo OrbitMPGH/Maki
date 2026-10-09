@@ -294,108 +294,111 @@ export default function ReaderPage() {
     }
   }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage])
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
-      const target = event.target as HTMLElement | null
-      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
-
-      // The sheet is read, not driven: while it is up the only keys that do anything close it.
-      if (shortcutsOpen) {
-        if (event.key === 'Escape' || event.key === '?') {
-          event.preventDefault()
-          setShortcutsOpen(false)
-        }
-        return
-      }
-
-      // In right-to-left reading the left arrow advances; in left-to-right it goes back.
-      const forwardKey = prefs.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
-      const backKey = prefs.direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
-
-      switch (event.key) {
-        case forwardKey:
-          event.preventDefault()
-          next()
-          break
-        case backKey:
-          event.preventDefault()
-          previous()
-          break
-        case ' ':
-          // Continuous mode keeps the browser's native space-to-scroll, except on the end screen,
-          // where there is nothing to scroll.
-          if (prefs.mode !== 'vertical' || atEnd) {
-            event.preventDefault()
-            if (event.shiftKey) previous()
-            else next()
-          }
-          break
-        case 'Home':
-          event.preventDefault()
-          seekToPage(0)
-          break
-        case 'End':
-          event.preventDefault()
-          seekToPage(Math.max(0, pageCount - 1))
-          break
-        case 'f':
-          toggleFullscreen()
-          break
-        case 'd':
-          update({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })
-          break
-        case 'b':
-          toggleBookmark.mutate(page)
-          break
-        case 't':
-          setStripOpen((open) => !open)
-          break
-        case '1':
-          update({ mode: 'paged' })
-          break
-        case '2':
-          update({ mode: 'double' })
-          break
-        case '3':
-          update({ mode: 'vertical' })
-          break
-        case '+':
-        case '=':
-          setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))
-          break
-        case '-':
-          setZoom((z) => Math.max(1, z - ZOOM_STEP))
-          break
-        case '0':
-          setZoom(1)
-          break
-        case '?':
-          setShortcutsOpen(true)
-          break
-        case 'Escape':
-          if (!document.fullscreenElement && manifest) navigate(`/series/${manifest.seriesId}`)
-          break
-      }
+  // The listener is registered once and reads the latest handler, so it is not torn down and
+  // re-added on every render (a page change in continuous mode re-renders on each scroll step).
+  const onKey = useRef<(event: KeyboardEvent) => void>(() => {})
+  onKey.current = (event: KeyboardEvent) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
+    const target = event.target as HTMLElement | null
+    if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+    // Space on a control reached by keyboard presses that control, it does not turn the page.
+    if (
+      event.key === ' ' &&
+      target?.matches(':focus-visible') &&
+      target.closest('button, a, [role="button"], [role="slider"], [contenteditable="true"]')
+    ) {
+      return
     }
 
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [
-    shortcutsOpen,
-    atEnd,
-    next,
-    previous,
-    pageCount,
-    prefs,
-    update,
-    toggleFullscreen,
-    manifest,
-    navigate,
-    page,
-    toggleBookmark,
-    seekToPage,
-  ])
+    // The sheet is read, not driven: while it is up the only keys that do anything close it.
+    if (shortcutsOpen) {
+      if (event.key === 'Escape' || event.key === '?') {
+        event.preventDefault()
+        setShortcutsOpen(false)
+      }
+      return
+    }
+
+    // In right-to-left reading the left arrow advances; in left-to-right it goes back.
+    const forwardKey = prefs.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
+    const backKey = prefs.direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
+
+    // Caps Lock and Shift upper-case letters; the named keys (ArrowLeft, Home) are longer than 1.
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
+
+    switch (key) {
+      case forwardKey:
+        event.preventDefault()
+        next()
+        break
+      case backKey:
+        event.preventDefault()
+        previous()
+        break
+      case ' ':
+        // Continuous mode keeps the browser's native space-to-scroll, except on the end screen,
+        // where there is nothing to scroll.
+        if (prefs.mode !== 'vertical' || atEnd) {
+          event.preventDefault()
+          if (event.shiftKey) previous()
+          else next()
+        }
+        break
+      case 'Home':
+        event.preventDefault()
+        setAtEnd(false)
+        seekToPage(0)
+        break
+      case 'End':
+        event.preventDefault()
+        setAtEnd(false)
+        seekToPage(Math.max(0, pageCount - 1))
+        break
+      case 'f':
+        toggleFullscreen()
+        break
+      case 'd':
+        update({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })
+        break
+      case 'b':
+        toggleBookmark.mutate(page)
+        break
+      case 't':
+        setStripOpen((open) => !open)
+        break
+      case '1':
+        update({ mode: 'paged' })
+        break
+      case '2':
+        update({ mode: 'double' })
+        break
+      case '3':
+        update({ mode: 'vertical' })
+        break
+      case '+':
+      case '=':
+        setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))
+        break
+      case '-':
+        setZoom((z) => Math.max(1, z - ZOOM_STEP))
+        break
+      case '0':
+        setZoom(1)
+        break
+      case '?':
+        setShortcutsOpen(true)
+        break
+      case 'Escape':
+        if (!document.fullscreenElement && manifest) navigate(`/series/${manifest.seriesId}`)
+        break
+    }
+  }
+
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => onKey.current(event)
+    window.addEventListener('keydown', listener)
+    return () => window.removeEventListener('keydown', listener)
+  }, [])
 
   /** Tap zones: outer thirds page, the middle toggles the chrome. */
   const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
