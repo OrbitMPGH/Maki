@@ -172,6 +172,7 @@ import { cleanSynopsis } from '../lib/synopsis'
 import { onPressKey, pressable } from '../lib/pressable'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
+import { scrollBehavior } from '../lib/scrollBehavior'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
@@ -3141,7 +3142,7 @@ function SeriesDetailBody() {
                             onChange={(page) => {
                               setChapterPage(page)
                               selectAnchor.current = null
-                              chapterTable?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                              chapterTable?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
                             }}
                         />
                       </Group>
