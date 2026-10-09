@@ -2,6 +2,7 @@ using Maki.Api.Configuration;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace Maki.Api.Services;
 
@@ -186,12 +187,19 @@ public class ImageCacheRebuildService(
             return;
         }
 
+        // A folder written after this snapshot may belong to a series created since, so it is left alone.
+        var snapshotAt = DateTime.UtcNow;
         var live = db.Series.IgnoreQueryFilters().Select(s => s.Id).ToHashSet();
         foreach (var dir in Directory.GetDirectories(paths.MediaCoverDir))
         {
             if (ct.IsCancellationRequested)
             {
                 return;
+            }
+
+            if (Directory.GetLastWriteTimeUtc(dir) >= snapshotAt)
+            {
+                continue;
             }
 
             if (int.TryParse(Path.GetFileName(dir), out var id) && live.Contains(id))
@@ -240,7 +248,18 @@ public class ImageCacheRebuildService(
             try
             {
                 var ok = await metadataRefresh.RefreshCoverAsync(series, ct);
+                await db.SaveChangesAsync(ct);
                 status.ReportCover(downloaded: ok, failed: !ok, skipped: false);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                // The series was deleted mid-pass; drop it so the next save does not trip on it again.
+                foreach (var entry in ex.Entries)
+                {
+                    entry.State = EntityState.Detached;
+                }
+
+                status.ReportCover(downloaded: false, failed: false, skipped: true);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -262,7 +281,7 @@ public class ImageCacheRebuildService(
     /// <summary>
     /// Whether a poster on disk is worth keeping. A zero-byte or truncated file is the usual
     /// leftover of a download that died halfway, and it looks identical to a good one to
-    /// <c>File.Exists</c>, so the header is decoded rather than trusted.
+    /// <c>File.Exists</c>, so the whole image is decoded rather than trusted.
     /// </summary>
     internal static bool IsUsableCover(string path)
     {
@@ -274,12 +293,29 @@ public class ImageCacheRebuildService(
                 return false;
             }
 
-            Image.Identify(path);
-            return true;
+            using var image = Image.Load(path);
+            // The JPEG decoder returns what it got from a cut-off file, so the end marker is checked too.
+            return image.Metadata.DecodedImageFormat is not JpegFormat || EndsWithJpegMarker(path);
         }
         catch
         {
             return false;
         }
+    }
+
+    private static bool EndsWithJpegMarker(string path)
+    {
+        using var stream = File.OpenRead(path);
+        var tail = Math.Min(stream.Length, 16);
+        stream.Seek(-tail, SeekOrigin.End);
+        var bytes = new byte[tail];
+        stream.ReadExactly(bytes);
+        var end = bytes.Length;
+        while (end > 0 && bytes[end - 1] == 0)
+        {
+            end--;
+        }
+
+        return end >= 2 && bytes[end - 2] == 0xFF && bytes[end - 1] == 0xD9;
     }
 }
