@@ -511,33 +511,33 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | PROGRESS | PROGRESS-04 | nit | done 71138ce0 |
 | PROGRESS | PROGRESS-21 | nit | done 59b0d22c |
 | PROGRESS | PROGRESS-36 | nit | done 59b0d22c, a927697b, 907d10d4 (partial: d, e, f skipped) |
-| RECO | RECO-19 | low | pending |
-| RECO | RECO-08 | low | pending |
-| RECO | RECO-14 | low | pending |
-| RECO | RECO-21 | low | pending |
-| RECO | RECO-22 | low | pending |
-| RECO | RECO-13 | low | pending |
-| RECO | RECO-15 | low | pending |
-| RECO | RECO-11 | low | pending |
-| RECO | RECO-10 | low | pending |
-| RECO | RECO-12 | low | pending |
-| RECO | RECO-24 | low | pending |
-| RECO | RECO-23 | low | pending |
-| RECO | RECO-29 | low | pending |
-| RECO | RECO-09 | low | pending |
-| RECO | RECO-34 | low | pending |
-| RECO | RECO-20 | nit | pending |
-| RECO | RECO-16 | nit | pending |
-| RECO | RECO-26 | nit | pending |
-| RECO | RECO-28 | nit | pending |
-| RECO | RECO-17 | nit | pending |
-| RECO | RECO-32 | nit | pending |
-| RECO | RECO-25 | nit | pending |
-| RECO | RECO-27 | nit | pending |
-| RECO | RECO-18 | nit | pending |
-| RECO | RECO-30 | nit | pending |
-| RECO | RECO-31 | nit | pending |
-| RECO | RECO-33 | nit | pending |
+| RECO | RECO-19 | low | done a4f665d3 |
+| RECO | RECO-08 | low | done 7907e866 |
+| RECO | RECO-14 | low | done 92ab6d4e |
+| RECO | RECO-21 | low | done 3fc3d04b |
+| RECO | RECO-22 | low | done 51848b48 (instance switches still wait 60 s) |
+| RECO | RECO-13 | low | done 9e70ba8b, 818ebb82 |
+| RECO | RECO-15 | low | done cdf7e5da |
+| RECO | RECO-11 | low | done 7da4dd5e |
+| RECO | RECO-10 | low | done 3c9ca0cf |
+| RECO | RECO-12 | low | done 57e92fa6 |
+| RECO | RECO-24 | low | done 9881e8b1 (partial) |
+| RECO | RECO-23 | low | done 7f4fd4cb |
+| RECO | RECO-29 | low | done b11301d6 |
+| RECO | RECO-09 | low | done 2dec52ce (Intl.ListFormat on the client) |
+| RECO | RECO-34 | low | done 72c8dafd, 761927a2 (never-show rails still lack an end-to-end test) |
+| RECO | RECO-20 | nit | skipped (already fixed by b956feea) |
+| RECO | RECO-16 | nit | done cdf7e5da |
+| RECO | RECO-26 | nit | done c1a19d7a |
+| RECO | RECO-28 | nit | done 39553041 |
+| RECO | RECO-17 | nit | done cdf7e5da |
+| RECO | RECO-32 | nit | done 19fa5ab5, 818ebb82 |
+| RECO | RECO-25 | nit | done cdf7e5da |
+| RECO | RECO-27 | nit | done 39553041 (partial) |
+| RECO | RECO-18 | nit | done cdf7e5da |
+| RECO | RECO-30 | nit | done 57e92fa6 |
+| RECO | RECO-31 | nit | done 34ba8b03 (grouped route removed) |
+| RECO | RECO-33 | nit | done 1f15adc6 |
 | SERIES | SERIES-28 | low | pending |
 | SERIES | SERIES-21 | low | pending |
 | SERIES | SERIES-20 | low | pending |
