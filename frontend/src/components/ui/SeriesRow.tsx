@@ -42,6 +42,10 @@ export const SeriesRow = memo(function SeriesRow({
     readTracking,
   )
   const { readChapterCount } = series
+  const readTip = t`${readChapterCount} of ${have} downloaded read`
+  const monitoredTip = series.monitored ? t`Monitored` : t`Not monitored`
+  const mutedTip = t`Notifications muted`
+  const unreadTip = unread ? plural(unread, { one: '# unread', other: '# unread' }) : ''
 
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
   const thumbH = thumbSize * 1.5
@@ -65,7 +69,7 @@ export const SeriesRow = memo(function SeriesRow({
         style={{ width: thumbSize, height: thumbH, flexShrink: 0 }}
       >
         {series.coverUrl ? (
-          <img src={series.coverUrl} alt={series.displayTitle} loading="lazy" decoding="async" />
+          <img src={series.coverUrl} alt="" loading="lazy" decoding="async" />
         ) : (
           <div className="row-cover-placeholder">{series.displayTitle}</div>
         )}
@@ -90,7 +94,9 @@ export const SeriesRow = memo(function SeriesRow({
           <span
             className="cover-badge cover-badge-circle"
             data-dim={series.monitored || undefined}
-            data-tip={series.monitored ? t`Monitored` : t`Not monitored`}
+            data-tip={monitoredTip}
+            role="img"
+            aria-label={monitoredTip}
             style={{ flexShrink: 0 }}
           >
             {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
@@ -100,7 +106,9 @@ export const SeriesRow = memo(function SeriesRow({
             <span
               className="cover-badge cover-badge-circle"
               data-dim
-              data-tip={t`Notifications muted`}
+              data-tip={mutedTip}
+              role="img"
+              aria-label={mutedTip}
               style={{ flexShrink: 0 }}
             >
               <IconBellOff size={12} />
@@ -122,7 +130,9 @@ export const SeriesRow = memo(function SeriesRow({
           {readPct !== null && (
             <span
               className="cover-ring"
-              data-tip={t`${readChapterCount} of ${have} downloaded read`}
+              data-tip={readTip}
+              role="img"
+              aria-label={readTip}
               style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
             />
           )}
@@ -131,7 +141,9 @@ export const SeriesRow = memo(function SeriesRow({
           {unread !== null && unread > 0 && (
             <span
               className="cover-badge cover-badge-unread"
-              data-tip={plural(unread, { one: '# unread', other: '# unread' })}
+              data-tip={unreadTip}
+              role="img"
+              aria-label={unreadTip}
               style={{ flexShrink: 0 }}
             >
               {unread}

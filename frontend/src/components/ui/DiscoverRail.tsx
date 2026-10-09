@@ -148,7 +148,7 @@ export const RecommendationCard = memo(function RecommendationCard({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />
@@ -231,7 +231,7 @@ export const RecommendationRow = memo(function RecommendationRow({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />
@@ -341,7 +341,7 @@ export const EngineCard = memo(function EngineCard({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />

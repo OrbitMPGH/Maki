@@ -64,7 +64,7 @@ const AnimeResumeCard = memo(function AnimeResumeCard({
   }
 
   return (
-    <Link to={`/series/${item.seriesId}`} className="cover-card" aria-label={title}>
+    <Link to={`/series/${item.seriesId}`} className="cover-card">
       <AnimeResumePoster item={item} />
     </Link>
   )
@@ -76,7 +76,7 @@ function AnimeResumePoster({ item, children }: { item: HomeAnimeResumeItem; chil
   return (
     <div className="cover-poster">
       {item.coverUrl ? (
-        <img src={item.coverUrl} alt={item.seriesTitle} loading="lazy" decoding="async" />
+        <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
       ) : (
         <div className="cover-placeholder">{item.seriesTitle}</div>
       )}

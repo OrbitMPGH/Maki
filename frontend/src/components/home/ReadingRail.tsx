@@ -44,7 +44,7 @@ const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem 
     >
       <div className="cover-poster">
         {item.coverUrl ? (
-          <img src={item.coverUrl} alt={item.seriesTitle} loading="lazy" decoding="async" />
+          <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
         ) : (
           <div className="cover-placeholder">{item.seriesTitle}</div>
         )}
