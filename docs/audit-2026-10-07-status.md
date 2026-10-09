@@ -55,18 +55,18 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 
 | Lane | ID | State |
 |---|---|---|
-| RECO/META | RECO-01 | pending |
-| RECO/META | RECO-02 | pending |
-| RECO/META | RECO-03 | pending |
-| RECO/META | RECO-04 | pending |
-| RECO/META | RECO-05 | pending |
-| RECO/META | RECO-06 | pending |
-| RECO/META | RECO-07 | pending |
-| RECO/META | METADATA-01 | pending |
-| RECO/META | METADATA-02 | pending |
-| RECO/META | METADATA-04 | pending |
-| RECO/META | METADATA-07 | pending |
-| RECO/META | METADATA-09 | pending |
+| RECO/META | RECO-01 | done be62a02f |
+| RECO/META | RECO-02 | done 4d0c5c90 |
+| RECO/META | RECO-03 | done 6727883d |
+| RECO/META | RECO-04 | done 2bf65a11 |
+| RECO/META | RECO-05 | done 8ccb0b50, e93d9e4f |
+| RECO/META | RECO-06 | done 6a8a5fff, 9ad6fcb5 (reader refresh is now a no-op) |
+| RECO/META | RECO-07 | done 4245f741 (rails built 80 deep, reverses documented choice) |
+| RECO/META | METADATA-01 | done a3f7bb2e, e5c94f5c |
+| RECO/META | METADATA-02 | done c2454bd2, b1fa6a11 (SharedBuild) |
+| RECO/META | METADATA-04 | done 2adf8681 (pool membership needs run-reco-suite check) |
+| RECO/META | METADATA-07 | done 87e17050, 9a6d8d33 |
+| RECO/META | METADATA-09 | done 1e1aa45d |
 | SOURCES | SOURCES-01 | done b014d5ba |
 | SOURCES | SOURCES-02 | done ef67c288 (MangaFire zh code unconfirmed) |
 | SOURCES | SOURCES-03 | done 712e082c |
