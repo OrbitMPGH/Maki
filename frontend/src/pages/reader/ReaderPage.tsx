@@ -4,8 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { notifications } from '@mantine/notifications'
 import { IconTrophy } from '@tabler/icons-react'
-import { Trans } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import {
   flushProgress,
   useBookmarks,
@@ -40,6 +39,7 @@ const FLUSH_WAIT_MS = 2000
 export default function ReaderPage() {
   const { chapterId: param } = useParams()
   const chapterId = Number(param)
+  const { t } = useLingui()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: manifest, isLoading, isError, isFetching } = useReaderManifest(chapterId)
@@ -114,7 +114,7 @@ export default function ReaderPage() {
           title: achievement.tierName
             ? `${achievement.name} · ${achievement.tierName}`
             : achievement.name,
-          message: now`Achievement unlocked`,
+          message: t`Achievement unlocked`,
           icon: <IconTrophy size={18} />,
           autoClose: 6000,
         })
@@ -122,7 +122,7 @@ export default function ReaderPage() {
 
       markSeenMutate(unlocked.map((a) => a.id))
     },
-    [markSeenMutate],
+    [markSeenMutate, t],
   )
 
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
