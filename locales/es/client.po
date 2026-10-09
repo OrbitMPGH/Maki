@@ -1172,6 +1172,10 @@ msgstr "{review, plural, one {# descarga a la espera de una decisión de importa
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Medido a partir de # capítulo en {series} series de tu biblioteca: {bpp} bits por píxel, equivalente en JPG.} many {Medido a partir de # capítulos en {series} series de tu biblioteca: {bpp} bits por píxel, equivalente en JPG.} other {Medido a partir de # capítulos en {series} series de tu biblioteca: {bpp} bits por píxel, equivalente en JPG.}}"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{searchCap}+ matches"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -5198,6 +5202,7 @@ msgstr "Eliminar usuario"
 msgid "Deleted \"{name}\""
 msgstr "Se eliminó \"{name}\""
 
+#: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Deleted saved filter {name}."
 msgstr ""
@@ -6124,6 +6129,10 @@ msgstr "No se pudo cargar este autor"
 #. placeholder {0}: errorText(err)
 #: src/pages/LibraryPage.tsx
 msgid "Failed to restore filter: {0}"
+msgstr ""
+
+#: src/components/DiscoverPresets.tsx
+msgid "Failed to restore filter: {detail}"
 msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
@@ -15842,6 +15851,7 @@ msgid "Underscore (_)"
 msgstr "Guion bajo (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx

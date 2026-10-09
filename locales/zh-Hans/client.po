@@ -1172,6 +1172,10 @@ msgstr "{review, plural, other {# 个下载正在等待导入决定}}"
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {根据你资料库中 {series} 个系列的 # 个章节测得：每像素 {bpp} 位，按 JPG 折算。}}"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{searchCap}+ matches"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -5198,6 +5202,7 @@ msgstr "删除用户"
 msgid "Deleted \"{name}\""
 msgstr "已删除“{name}”"
 
+#: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Deleted saved filter {name}."
 msgstr ""
@@ -6124,6 +6129,10 @@ msgstr "无法加载此创作者"
 #. placeholder {0}: errorText(err)
 #: src/pages/LibraryPage.tsx
 msgid "Failed to restore filter: {0}"
+msgstr ""
+
+#: src/components/DiscoverPresets.tsx
+msgid "Failed to restore filter: {detail}"
 msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
@@ -15842,6 +15851,7 @@ msgid "Underscore (_)"
 msgstr "下划线（_）"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx

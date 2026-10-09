@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
+import { errorText } from '../lib/errorText'
 import {
   ActionIcon,
   Alert,
@@ -220,14 +221,15 @@ export function CatalogueBrowser({
   const search = useDiscoverSearch(searchRequest, hydrated, minChars)
   // Paged by raising `limit`, so the previous page stays on screen while the wider one loads.
   // Dropping back to skeletons would shorten the document and bounce the reader to the top.
-  const browse = useDiscoverFeed(browseRequest, true)
+  const browse = useDiscoverFeed(browseRequest, true, true)
 
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
 
+  const searchCap = PAGE_SIZE
   const items = searching ? (search.data?.items ?? []) : (browse.data ?? [])
-  const loading = searching ? search.isFetching && !search.data : browse.isFetching && !browse.data
+  const loading = !hydrated || (searching ? search.isFetching && !search.data : browse.isFetching && !browse.data)
   const error = searching ? search.error : browse.error
   const credits = search.data?.credits ?? []
   const corrected = search.data?.correctedQuery ?? null
@@ -245,7 +247,7 @@ export function CatalogueBrowser({
           message: catalogue.isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
       onError: (err) => {
-        const detail = err instanceof Error ? err.message : String(err)
+        const detail = errorText(err)
         notifications.show({ color: 'var(--danger)', message: now`Failed to save default: ${detail}` })
       },
     })
@@ -375,7 +377,11 @@ export function CatalogueBrowser({
             <Group gap="xs">
               {searching ? (
                 <Text c="var(--ink-3)" size="sm">
-                  <Plural value={items.length} one="# match" other="# matches" />
+                  {items.length >= PAGE_SIZE ? (
+                    <Trans>{searchCap}+ matches</Trans>
+                  ) : (
+                    <Plural value={items.length} one="# match" other="# matches" />
+                  )}
                 </Text>
               ) : (
                 <Text c="var(--ink-3)" size="sm">
@@ -416,7 +422,7 @@ export function CatalogueBrowser({
 
           {error && (
             <Alert color="var(--warn)" variant="light" mb="md">
-              {String(error)}
+              {errorText(error)}
             </Alert>
           )}
 
@@ -424,7 +430,7 @@ export function CatalogueBrowser({
             <PosterSkeletons density={prefs.density} viewMode={prefs.viewMode} />
           )}
 
-          {!loading && items.length === 0 && (
+          {!loading && !error && items.length === 0 && (
             <EmptyState
               title={searching ? t`No matches` : t`Nothing here`}
               description={

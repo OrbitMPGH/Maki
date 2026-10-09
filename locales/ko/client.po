@@ -1172,6 +1172,10 @@ msgstr "{review, plural, other {가져오기 결정 대기 중인 다운로드 #
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {라이브러리의 시리즈 {series}개에 걸친 챕터 #개에서 측정: 픽셀당 {bpp}비트, JPG 환산.}}"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{searchCap}+ matches"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -5198,6 +5202,7 @@ msgstr "사용자 삭제"
 msgid "Deleted \"{name}\""
 msgstr "\"{name}\" 삭제됨"
 
+#: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Deleted saved filter {name}."
 msgstr ""
@@ -6124,6 +6129,10 @@ msgstr "이 작가를 불러오지 못했습니다"
 #. placeholder {0}: errorText(err)
 #: src/pages/LibraryPage.tsx
 msgid "Failed to restore filter: {0}"
+msgstr ""
+
+#: src/components/DiscoverPresets.tsx
+msgid "Failed to restore filter: {detail}"
 msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
@@ -15842,6 +15851,7 @@ msgid "Underscore (_)"
 msgstr "밑줄 (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx

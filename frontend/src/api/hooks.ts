@@ -670,7 +670,7 @@ export function useDiscoverGenres(refreshNonce = 0, enabled = true) {
  * that the browser clamps the scroll position to the top. Callers that swap between unrelated
  * feeds leave it off, since holding the previous feed's rows would flash the wrong rail.
  */
-export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPrevious = false) {
+export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPrevious = false, inlineError = false) {
   return useQuery({
     queryKey: ['discover-feed', request],
     queryFn: () =>
@@ -682,6 +682,7 @@ export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPreviou
     staleTime: 5 * 60 * 1000,
     retry: false,
     ...(keepPrevious ? { placeholderData: keepPreviousData } : {}),
+    meta: { silent: inlineError },
   })
 }
 
@@ -741,6 +742,7 @@ export function useDiscoverSearch(
     enabled,
     staleTime: 5 * 60 * 1000,
     retry: false,
+    meta: { silent: true },
   })
 }
 
@@ -782,6 +784,7 @@ export function useCreator(request: CreatorRequest | null) {
     },
     staleTime: 5 * 60 * 1000,
     retry: false,
+    meta: { silent: true },
   })
 }
 

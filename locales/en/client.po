@@ -960,6 +960,10 @@ msgstr "{review, plural, one {# download waiting for an import decision} other {
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{searchCap}+ matches"
+msgstr "{searchCap}+ matches"
+
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
 msgstr "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -4265,6 +4269,7 @@ msgstr "Delete user"
 msgid "Deleted \"{name}\""
 msgstr "Deleted \"{name}\""
 
+#: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Deleted saved filter {name}."
 msgstr "Deleted saved filter {name}."
@@ -5022,6 +5027,10 @@ msgstr "Failed to load this creator"
 #: src/pages/LibraryPage.tsx
 msgid "Failed to restore filter: {0}"
 msgstr "Failed to restore filter: {0}"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Failed to restore filter: {detail}"
+msgstr "Failed to restore filter: {detail}"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
@@ -12997,6 +13006,7 @@ msgid "Underscore (_)"
 msgstr "Underscore (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx
