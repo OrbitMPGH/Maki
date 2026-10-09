@@ -648,16 +648,26 @@ export default function LibraryPage() {
     // to nothing.
     const name = BULK_ACTION_LABELS[action] ? _(BULK_ACTION_LABELS[action]) : action
     setBusy(action)
+    let stopped = false
+    const progress = (done: number) => (
+      <Group gap="xs" wrap="nowrap" justify="space-between">
+        <Text size="sm">{`${name}: ${done}/${total}`}</Text>
+        <Button size="xs" variant="subtle" style={{ flexShrink: 0 }} onClick={() => { stopped = true }}>
+          <Trans>Stop</Trans>
+        </Button>
+      </Group>
+    )
     notifications.show({
       id: 'bulk-action',
       loading: true,
-      message: `${name}: 0/${total}`,
+      message: progress(0),
       autoClose: false,
       withCloseButton: false,
     })
     let ok = 0
     const errors: string[] = []
     for (const id of ids) {
+      if (stopped) break
       try {
         await fn(id)
         ok++
@@ -668,7 +678,7 @@ export default function LibraryPage() {
       notifications.update({
         id: 'bulk-action',
         loading: true,
-        message: `${name}: ${done}/${total}`,
+        message: progress(done),
         autoClose: false,
         withCloseButton: false,
       })
@@ -681,7 +691,9 @@ export default function LibraryPage() {
       // The fixed wording is translated; `firstError` carries a raw exception message untouched.
       message: errors.length
         ? now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`
-        : now`${name}: ${ok}/${total} succeeded`,
+        : stopped
+          ? now`${name}: stopped after ${ok}/${total}`
+          : now`${name}: ${ok}/${total} succeeded`,
       autoClose: 8000,
       withCloseButton: true,
     })
