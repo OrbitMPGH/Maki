@@ -126,7 +126,11 @@ public static class ComicInfoBuilder
         .ToArray();
 
     // XmlAnyElement matches names case-sensitively, so "<summary>" in an imported file lands in
-    // Unmodelled; written back beside the modelled <Summary> it would make a duplicate field.
+    // Unmodelled; written back beside the modelled <Summary> it would make a duplicate field. Its
+    // text moves into the modelled property when that is empty, so the value is not lost.
+    private static readonly Dictionary<string, PropertyInfo> TextByElement = TextProperties.ToDictionary(
+        p => p.GetCustomAttribute<XmlElementAttribute>()?.ElementName ?? p.Name, StringComparer.OrdinalIgnoreCase);
+
     private static readonly HashSet<string> ModelledElements = new(
         typeof(ComicInfo).GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.GetCustomAttribute<XmlAnyElementAttribute>() is null &&
@@ -137,6 +141,16 @@ public static class ComicInfoBuilder
     /// <remarks>Strips characters XML cannot carry from every text field of <paramref name="info"/> first.</remarks>
     public static string Serialize(ComicInfo info)
     {
+        foreach (var element in info.Unmodelled ?? [])
+        {
+            if (TextByElement.TryGetValue(element.LocalName, out var property) &&
+                string.IsNullOrWhiteSpace((string?)property.GetValue(info)) &&
+                !string.IsNullOrWhiteSpace(element.InnerText))
+            {
+                property.SetValue(info, element.InnerText.Trim());
+            }
+        }
+
         info.Unmodelled = info.Unmodelled?.Where(e => !ModelledElements.Contains(e.LocalName)).ToArray();
         foreach (var property in TextProperties)
         {

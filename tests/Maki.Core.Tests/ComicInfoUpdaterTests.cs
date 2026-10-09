@@ -142,6 +142,22 @@ public class ComicInfoUpdaterTests : IDisposable
     }
 
     [Fact]
+    public void A_differently_cased_element_fills_an_empty_modelled_field_before_it_is_dropped()
+    {
+        var path = CreateCbz("Berserk v01.cbz", "<ComicInfo><publisher>Dark Horse</publisher><TRANSLATOR>Duane</TRANSLATOR></ComicInfo>");
+
+        ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null);
+
+        var info = ReadComicInfo(path);
+        Assert.Equal("Dark Horse", info.Publisher);
+        Assert.Equal("Duane", info.Translator);
+        using var archive = ZipFile.OpenRead(path);
+        using var reader = new StreamReader(archive.Entries.Single(e => e.Name == "ComicInfo.xml").Open());
+        var root = System.Xml.Linq.XDocument.Parse(reader.ReadToEnd()).Root!;
+        Assert.Single(root.Elements().Where(e => e.Name.LocalName.Equals("publisher", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Fact]
     public void Creates_comicinfo_when_archive_has_none()
     {
         var path = CreateCbz("Berserk 010.5.cbz", comicInfoXml: null);
