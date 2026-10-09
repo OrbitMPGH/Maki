@@ -2998,6 +2998,9 @@ export function useMetadataSettings() {
   return useQuery({
     queryKey: ['settings', 'metadata'],
     queryFn: () => api<MetadataSettings>('/settings/metadata'),
+    // The shell reads a failure here as "Discover is unavailable", so a failed load heals when the
+    // user comes back to the tab (and when the live connection returns) instead of sticking.
+    refetchOnWindowFocus: (query) => query.state.status === 'error',
   })
 }
 

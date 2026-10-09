@@ -159,6 +159,7 @@ export function useLiveEvents() {
         ['requests'],
         ['home'],
         ['system', 'update'],
+        ['settings', 'metadata'],
       ]) {
         void queryClient.invalidateQueries({ queryKey })
       }
