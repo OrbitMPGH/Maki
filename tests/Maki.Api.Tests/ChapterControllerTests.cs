@@ -45,6 +45,7 @@ public class ChapterControllerTests : IDisposable
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         // Only the re-download action reaches these; nothing here exercises it.
         new SourceRegistry([]),
+        new SourceAvailability(new FakeAppSettings(), new SourceRegistry([])),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         new DownloadBatchNotifier(
             new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),

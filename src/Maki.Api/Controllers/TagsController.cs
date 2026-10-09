@@ -20,7 +20,9 @@ public class TagsController(ILocalizer localizer, MakiDbContext db) : Controller
     public async Task<IActionResult> List(CancellationToken ct)
     {
         // Read the join table directly — the skip navigation would need SQL APPLY (unsupported).
+        // Scoped through db.Series so a restricted caller's counts match the grid they can see.
         var counts = await db.SeriesTags
+            .Where(x => db.Series.Any(s => s.Id == x.SeriesId))
             .GroupBy(x => x.TagId)
             .Select(g => new { TagId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.TagId, x => x.Count, ct);
@@ -164,5 +166,5 @@ public class TagsController(ILocalizer localizer, MakiDbContext db) : Controller
     }
 
     private Task<int> SeriesCount(int tagId, CancellationToken ct) =>
-        db.SeriesTags.CountAsync(x => x.TagId == tagId, ct);
+        db.SeriesTags.CountAsync(x => x.TagId == tagId && db.Series.Any(s => s.Id == x.SeriesId), ct);
 }

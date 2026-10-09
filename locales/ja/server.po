@@ -1085,6 +1085,11 @@ msgid "error.requests.chapterRangeInvalid"
 msgstr "最後の章を最初の章より前にすることはできません"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: This series is above your content rating limit
+msgid "error.requests.contentRating"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Series not found on metadata provider
 #, fuzzy
 msgid "error.requests.metadataNotFound"
@@ -1121,6 +1126,11 @@ msgstr "シリーズが必要です"
 #, fuzzy
 msgid "error.requests.seriesRequired"
 msgstr "依頼するシリーズが必要です"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: The series this request is for is no longer in the library. Reject the request instead.
+msgid "error.requests.seriesGone"
+msgstr ""
 
 #. Shown as the requester's name when the account no longer exists.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs

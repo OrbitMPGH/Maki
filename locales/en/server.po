@@ -767,6 +767,10 @@ msgid "error.requests.chapterRangeInvalid"
 msgstr "The last chapter can't be lower than the first"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.contentRating"
+msgstr "This series is above your content rating limit"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "error.requests.metadataNotFound"
 msgstr "Series not found on metadata provider"
 
@@ -791,6 +795,10 @@ msgstr "A series is required"
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "error.requests.seriesRequired"
 msgstr "A series to request is required"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.seriesGone"
+msgstr "The series this request is for is no longer in the library. Reject the request instead."
 
 #. Shown as the requester's name when the account no longer exists.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs

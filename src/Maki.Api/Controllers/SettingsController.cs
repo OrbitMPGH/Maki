@@ -694,7 +694,7 @@ public class SettingsController(
                     return this.Fail(localizer, "error.settings.unknownContentRating", new { rating });
                 }
 
-                if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode))
+                if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode) || !Enum.IsDefined(parsedMode))
                 {
                     return this.Fail(localizer, "error.settings.unknownIncognitoMode", new { mode });
                 }
