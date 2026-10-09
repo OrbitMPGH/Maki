@@ -102,8 +102,7 @@ export function SeriesHero({
         return { highest, total, missing }
     }, [series, chapters])
 
-    // What "Download all wanted" would actually queue, so the button can say so rather than making
-    // the user open the Chapters tab to find out.
+    // Wanted chapters with no file yet, queued or not; the page's download button excludes the queued ones.
     const missingWanted = useMemo(
         () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt).length,
         [chapters],

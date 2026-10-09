@@ -129,6 +129,7 @@ export function useDismissAnimeResume(seriesId: number) {
       void queryClient.invalidateQueries({ queryKey: ['anime-resume'] })
       void queryClient.invalidateQueries({ queryKey: ['home', 'from-anime'] })
     },
+    meta: { silent: true },
   })
 }
 

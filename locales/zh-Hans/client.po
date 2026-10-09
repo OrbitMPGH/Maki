@@ -911,15 +911,14 @@ msgstr "{missingCount, plural, other {新增 # 个你没有的章节}}"
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} 必须先记录章节快照，Maki 才能安全清理列表。之后移除来源时会使用已保存的快照，不会请求来源。"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
 msgstr "{missingWanted, plural, other {# 个想要，未获取}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "{missingWanted} wanted chapter(s) are missing"
-msgstr "缺少 {missingWanted} 个想要的章节"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -1187,6 +1186,10 @@ msgstr "{selectedCount, plural, other {导入 # 个文件夹？}}"
 #, fuzzy
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr "{selectedCount, plural, other {导入已选 # 个}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -15210,10 +15213,6 @@ msgstr "这会从磁盘永久删除 {count, plural, other {这些文件}}。章�
 msgid "This permanently deletes the archive. Chapter records and reading history remain."
 msgstr "这会永久删除归档。章节记录和阅读历史会保留。"
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
-msgstr ""
-
 #: src/api/queue.ts
 #, fuzzy
 msgid "This queue item has no chapter to find a source for"
@@ -15841,11 +15840,9 @@ msgstr "下划线（_）"
 msgid "Undo"
 msgstr "撤销"
 
-#. placeholder {0}: String(error)
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Undo failed: {0}"
-msgstr "撤销失败：{0}"
+msgid "Undo failed: {reason}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

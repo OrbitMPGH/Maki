@@ -911,15 +911,14 @@ msgstr "{missingCount, plural, other {없는 챕터 #개 추가}}"
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames}에 챕터 스냅샷을 저장해야 Maki가 목록을 안전하게 정리할 수 있습니다. 이후 소스에서 제거된 항목은 저장된 스냅샷을 사용하므로 소스 요청을 보내지 않습니다."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
 msgstr "{missingWanted, plural, other {#개 원함, 가져오지 않음}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "{missingWanted} wanted chapter(s) are missing"
-msgstr "원하는 챕터 {missingWanted}개가 누락됨"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -1187,6 +1186,10 @@ msgstr "{selectedCount, plural, other {폴더 #개 가져올까요?}}"
 #, fuzzy
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr "{selectedCount, plural, other {선택 항목 #개 가져오기}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -15210,10 +15213,6 @@ msgstr "이 작업은 디스크에서 {count, plural, other {이 파일들}}을 
 msgid "This permanently deletes the archive. Chapter records and reading history remain."
 msgstr "보관 파일을 영구 삭제합니다. 챕터 기록과 읽기 기록은 유지됩니다."
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
-msgstr ""
-
 #: src/api/queue.ts
 #, fuzzy
 msgid "This queue item has no chapter to find a source for"
@@ -15841,11 +15840,9 @@ msgstr "밑줄 (_)"
 msgid "Undo"
 msgstr "실행 취소"
 
-#. placeholder {0}: String(error)
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Undo failed: {0}"
-msgstr "실행 취소 실패: {0}"
+msgid "Undo failed: {reason}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

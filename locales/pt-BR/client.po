@@ -911,15 +911,14 @@ msgstr "{missingCount, plural, one {adiciona # capítulo que você não tem} man
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} precisa registrar um snapshot de capítulo antes que Maki possa limpar a lista com segurança. Remoções posteriores de fontes usam os snapshots armazenados e não fazem solicitações às fontes."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
 msgstr "{missingWanted, plural, one {# desejado, não baixado} many {# desejados, não baixados} other {# desejados, não baixados}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "{missingWanted} wanted chapter(s) are missing"
-msgstr "{missingWanted} capítulo(s) desejado(s) estão faltando"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -1187,6 +1186,10 @@ msgstr "{selectedCount, plural, one {Importar # pasta?} many {Importar # pastas?
 #, fuzzy
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr "{selectedCount, plural, one {Importar # selecionado} many {Importar # selecionados}other {Importar # selecionados}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -15210,10 +15213,6 @@ msgstr "Isto exclui permanentemente {count, plural, one {o arquivo} many {estes 
 msgid "This permanently deletes the archive. Chapter records and reading history remain."
 msgstr "Isto exclui permanentemente o arquivo. Os registros de capítulos e o histórico de leitura permanecem."
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
-msgstr ""
-
 #: src/api/queue.ts
 #, fuzzy
 msgid "This queue item has no chapter to find a source for"
@@ -15841,11 +15840,9 @@ msgstr "Sublinhado (_)"
 msgid "Undo"
 msgstr "Desfazer"
 
-#. placeholder {0}: String(error)
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Undo failed: {0}"
-msgstr "Falha ao desfazer: {0}"
+msgid "Undo failed: {reason}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
