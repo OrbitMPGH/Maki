@@ -27,10 +27,13 @@ import { SettingsNumberInput } from '../../components/settings/SettingsNumberInp
 /** The record minus the Kavita library filter, which the Kavita card saves on its own. */
 const withoutLibraries = (s: ScrobbleSettings) => JSON.stringify({ ...s, libraryIds: null })
 
+/** The cards only show connection state; the live sync log polls faster on the Scrobble page. */
+const SETTINGS_STATUS_POLL_MS = 30_000
+
 export function ScrobbleSection() {
   const { t } = useLingui()
   const { data } = useScrobbleSettings()
-  const { data: status } = useScrobbleStatus()
+  const { data: status } = useScrobbleStatus(SETTINGS_STATUS_POLL_MS)
   const save = useSaveScrobbleSettings()
   const [form, setForm] = useState<ScrobbleSettings | null>(null)
 

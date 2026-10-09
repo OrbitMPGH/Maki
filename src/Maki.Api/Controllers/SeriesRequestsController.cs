@@ -66,6 +66,7 @@ public class SeriesRequestsController(
         };
 
         var rows = await query
+            .AsNoTracking()
             // Pending first, then newest — the queue an admin works through, not a chronology.
             .OrderBy(r => r.Status == SeriesRequestStatus.Pending || r.Status == SeriesRequestStatus.Processing ? 0 : 1)
             .ThenByDescending(r => r.Created)

@@ -118,11 +118,11 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpGet]
     public async Task<IActionResult> Overview(CancellationToken ct) => Ok(new
     {
-        checks = (await db.HealthChecks.OrderBy(c => c.Category).ThenBy(c => c.Id).ToListAsync(ct))
+        checks = (await db.HealthChecks.AsNoTracking().OrderBy(c => c.Category).ThenBy(c => c.Id).ToListAsync(ct))
             .Select(Rendered),
         openFindings = await db.HealthFindings.CountAsync(f => f.State == "open", ct),
         files = await db.HealthFiles.CountAsync(f => !f.Removed, ct),
-        scans = await db.HealthScans.OrderByDescending(s => s.Id).Take(10).ToListAsync(ct),
+        scans = await db.HealthScans.AsNoTracking().OrderByDescending(s => s.Id).Take(10).ToListAsync(ct),
         roots = await db.RootFolders.Select(r => new { r.Id, r.Path }).ToListAsync(ct)
     });
 
@@ -200,9 +200,11 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         if (rootId != null) query = query.Where(f => f.RootFolderId == rootId);
         if (kind != null || state != null) query = query.Where(f => db.HealthFindings.Any(i => i.FileId == f.Id && i.Version == f.Version && (kind == null || i.Kind == kind) && (state == null || i.State == state)));
         var total = await query.CountAsync(ct);
-        var files = await query.OrderBy(f => f.RelativePath).Skip((Math.Max(page, 1) - 1) * 30).Take(30).ToListAsync(ct);
+        var files = await query.AsNoTracking().OrderBy(f => f.RelativePath).Skip((Math.Max(page, 1) - 1) * 30).Take(30)
+            .Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt })
+            .ToListAsync(ct);
         var ids = files.Select(f => f.Id).ToArray();
-        var findings = await db.HealthFindings.Where(f => ids.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct);
+        var findings = await db.HealthFindings.AsNoTracking().Where(f => ids.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct);
         return Ok(new { total, items = files.Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt, findings = findings.Where(i => i.FileId == f.Id && i.Version == f.Version).Select(Rendered) }) });
     }
 
@@ -222,7 +224,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             chapters,
             mappings,
             match = await matches.MatchAsync(file, ct),
-            findings = (await db.HealthFindings.Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct))
+            findings = (await db.HealthFindings.AsNoTracking().Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct))
                 .Select(Rendered),
         });
     }

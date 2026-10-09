@@ -208,8 +208,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // ChapterFile, forever.
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.ChapterFileId);
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.SeriesId);
+        // The workspace polls the default file order every few seconds. A partial index on the
+        // filtered column is what lets SQLite read it already sorted; a (Removed, RelativePath)
+        // index still sorts in a temp B-tree for WHERE NOT Removed ORDER BY RelativePath.
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.RelativePath).HasFilter("NOT \"Removed\"");
         modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
         modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
+        modelBuilder.Entity<HealthFinding>().HasIndex(x => x.State).HasFilter("\"State\" = 'open'");
         modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);
         modelBuilder.Entity<HealthOperation>().HasIndex(x => new { x.FileId, x.Status });
         modelBuilder.Entity<HealthHistory>().HasIndex(x => x.CreatedAt);
@@ -475,8 +480,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // Chapter numbers have at most 3 decimal places, well within double precision.
             e.Property(c => c.Number).HasConversion<double?>();
             e.HasIndex(c => new { c.SeriesId, c.Number, c.Volume, c.Language });
-            // Narrows the library list's per-series tallies by series and file link; they also read FileRemovedAt, which is not in the index.
-            e.HasIndex(c => new { c.SeriesId, c.ChapterFileId, c.Wanted });
+            // Covers the library list's per-series tallies, which read only these columns.
+            e.HasIndex(c => new { c.SeriesId, c.ChapterFileId, c.Wanted, c.FileRemovedAt });
             e.HasOne(c => c.ChapterFile).WithMany().HasForeignKey(c => c.ChapterFileId).OnDelete(DeleteBehavior.SetNull);
         });
 

@@ -3,6 +3,7 @@ using System;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    partial class MakiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261009142237_HealthWorkspaceIndexes")]
+    partial class HealthWorkspaceIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -143,7 +146,7 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("ChapterFileId");
 
-                    b.HasIndex("SeriesId", "ChapterFileId", "Wanted", "FileRemovedAt");
+                    b.HasIndex("SeriesId", "ChapterFileId", "Wanted");
 
                     b.HasIndex("SeriesId", "Number", "Volume", "Language");
 
@@ -2378,6 +2381,10 @@ namespace Maki.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("UserId");
+
                     b.ToTable("AuthEvents");
                 });
 
@@ -2510,10 +2517,6 @@ namespace Maki.Data.Migrations
                         .IsUnique();
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex(new[] { "UserId", "Scope" }, "IX_UserApiKeys_Opds_Live_UserId")
-                        .IsUnique()
-                        .HasFilter("RevokedAt IS NULL AND Scope = 1");
 
                     b.ToTable("UserApiKeys");
                 });

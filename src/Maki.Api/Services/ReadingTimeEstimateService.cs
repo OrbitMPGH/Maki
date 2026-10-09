@@ -85,7 +85,7 @@ public class ReadingTimeEstimateService(MakiDbContext db)
     }
 
     private IQueryable<ChapterProgress> TimedChapters() =>
-        db.ChapterProgress.Where(progress =>
+        db.ChapterProgress.OwnedByScopeUser(db).Where(progress =>
             progress.Completed &&
             !progress.Watched &&
             progress.ReadSeconds > 0);
