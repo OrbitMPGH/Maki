@@ -96,7 +96,23 @@ public static class UserSettingsStore
         }
         else if (row is null)
         {
-            db.UserSettings.Add(new UserSetting { UserId = userId, Key = key, Value = value });
+            var added = new UserSetting { UserId = userId, Key = key, Value = value };
+            db.UserSettings.Add(added);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException)
+            {
+                // A concurrent first write of the same key won the insert; write over theirs.
+                db.Entry(added).State = EntityState.Detached;
+                var raced = await db.UserSettings.FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key, ct);
+                if (raced is null) throw;
+                raced.Value = value;
+                await db.SaveChangesAsync(ct);
+            }
+
+            return;
         }
         else
         {
