@@ -81,7 +81,7 @@ public class ImageCacheRebuildService(
 
     /// <summary>
     /// What the caches hold right now. Memoized in the status singleton because it walks the whole
-    /// thumbnail folder and decodes every poster header, and the settings card polls.
+    /// thumbnail folder and checks every poster's header and tail, and the settings card polls.
     /// </summary>
     public async Task<ImageCacheUsage> UsageAsync(CancellationToken ct)
     {
@@ -281,7 +281,7 @@ public class ImageCacheRebuildService(
     /// <summary>
     /// Whether a poster on disk is worth keeping. A zero-byte or truncated file is the usual
     /// leftover of a download that died halfway, and it looks identical to a good one to
-    /// <c>File.Exists</c>, so the whole image is decoded rather than trusted.
+    /// <c>File.Exists</c>, so the header and the end of the file are checked rather than trusted.
     /// </summary>
     internal static bool IsUsableCover(string path)
     {
@@ -293,9 +293,10 @@ public class ImageCacheRebuildService(
                 return false;
             }
 
-            using var image = Image.Load(path);
-            // The JPEG decoder returns what it got from a cut-off file, so the end marker is checked too.
-            return image.Metadata.DecodedImageFormat is not JpegFormat || EndsWithJpegMarker(path);
+            // Maki writes every poster as a JPEG itself. A cut-off one still has a readable header,
+            // so the end marker is what tells it apart.
+            var identified = Image.Identify(path);
+            return identified.Metadata.DecodedImageFormat is not JpegFormat || EndsWithJpegMarker(path);
         }
         catch
         {
