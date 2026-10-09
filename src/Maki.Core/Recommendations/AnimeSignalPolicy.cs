@@ -126,13 +126,6 @@ public static class AnimeSignalPolicy
     public static double SeedScaleOf(AnimeSignalStrength strength) =>
         RatingSeedScale * RatingShareOf(strength);
 
-    /// <summary>
-    /// What an unscored but completed anime stands in at, on the 0-1 pre-scale range.
-    /// <see cref="AnimeSignalGrouping.Group"/> drops unscored rows before they reach the policy, so
-    /// nothing the seed builder or the panel passes lands here.
-    /// </summary>
-    public const double UnscoredCredit = 0.8;
-
     /// <summary>The lowest score that still reads as enthusiasm. 5 and 6 are neutral and ignored.</summary>
     public const int PositiveScoreFloor = 7;
 
@@ -148,9 +141,9 @@ public static class AnimeSignalPolicy
     public const int AvoidScoreCeiling = 4;
 
     /// <summary>
-    /// What a drop with no score pushes with at a full share, before the level scales it. Below the
-    /// 1.0 a thumbs down carries: abandoning a show is a weaker statement than rejecting a
-    /// recommendation outright, and a lot of them are about time rather than taste.
+    /// The least a drop pushes with at a full share, before the level scales it, whatever its score
+    /// says. Below the 1.0 a thumbs down carries: abandoning a show is a weaker statement than
+    /// rejecting a recommendation outright, and a lot of them are about time rather than taste.
     /// </summary>
     public const double DroppedStrength = 0.75;
 
@@ -160,7 +153,7 @@ public static class AnimeSignalPolicy
     /// between "positive" and "neutral" as somebody dragged a dial would be describing the dial
     /// rather than their watch history. The level scales how hard it pushes, never whether it does.
     /// </summary>
-    public static AnimeSignalRole RoleOf(AnimeWatchStatus status, double? score)
+    public static AnimeSignalRole RoleOf(AnimeWatchStatus status, double score)
     {
         if (status == AnimeWatchStatus.Dropped || RawAvoidStrengthOf(status, score) > 0)
         {
@@ -172,9 +165,7 @@ public static class AnimeSignalPolicy
             return AnimeSignalRole.Neutral;
         }
 
-        return score is null
-            ? status == AnimeWatchStatus.Completed ? AnimeSignalRole.Positive : AnimeSignalRole.Neutral
-            : score >= PositiveScoreFloor ? AnimeSignalRole.Positive : AnimeSignalRole.Neutral;
+        return score >= PositiveScoreFloor ? AnimeSignalRole.Positive : AnimeSignalRole.Neutral;
     }
 
     /// <summary>
@@ -198,7 +189,7 @@ public static class AnimeSignalPolicy
     /// The avoidance strength in (0, 1] at a full share, or 0 for anything that is not a complaint.
     /// A drop adds its own floor on top of whatever the score said.
     /// </summary>
-    private static double RawAvoidStrengthOf(AnimeWatchStatus status, double? score)
+    private static double RawAvoidStrengthOf(AnimeWatchStatus status, double score)
     {
         // Planning is not evidence either way: nobody drops a show they never started, and a score
         // on an unwatched entry is somebody rating the premise.
@@ -207,7 +198,7 @@ public static class AnimeSignalPolicy
             return 0;
         }
 
-        var rated = score is { } s ? AvoidStrengthOfScore(s) : 0;
+        var rated = AvoidStrengthOfScore(score);
         return status == AnimeWatchStatus.Dropped ? Math.Max(rated, DroppedStrength) : rated;
     }
 
@@ -222,15 +213,15 @@ public static class AnimeSignalPolicy
     /// </para>
     /// </summary>
     public static double AvoidStrengthOf(
-        AnimeWatchStatus status, double? score, AnimeSignalStrength strength) =>
+        AnimeWatchStatus status, double score, AnimeSignalStrength strength) =>
         RawAvoidStrengthOf(status, score) * RatingShareOf(strength);
 
     /// <summary>The positive seed weight, or 0 when the entry is not a positive one.</summary>
     public static double SeedWeightOf(
-        AnimeWatchStatus status, double? score, AnimeSignalStrength strength) =>
+        AnimeWatchStatus status, double score, AnimeSignalStrength strength) =>
         RoleOf(status, score) != AnimeSignalRole.Positive
             ? 0
-            : (score is { } s ? s / 10.0 : UnscoredCredit) * SeedScaleOf(strength);
+            : score / 10.0 * SeedScaleOf(strength);
 
     /// <summary>Round-trips the stored setting value. Anything unrecognised falls back to the default.</summary>
     public static AnimeSignalStrength ParseStrength(string? raw) => raw?.ToLowerInvariant() switch
