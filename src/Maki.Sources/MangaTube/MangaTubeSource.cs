@@ -13,7 +13,8 @@ namespace Maki.Sources.MangaTube;
 /// Series id is the slug ("one_piece"); chapter id is the numeric chapter id as a string.
 /// Licensed titles either shorten their public chapter list (<c>limitChapters</c>) or 401 the
 /// chapters call entirely (<c>{"error":["licence-check"]}</c>). The latter is a stable site
-/// state and reads as zero chapters, not a sync failure.
+/// state and reads as zero chapters. A mapping that already has chapter links then fails its
+/// sync with the generic "listed no chapters" error and keeps its previous list.
 /// </summary>
 public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
 {
@@ -97,7 +98,8 @@ public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
 
         // A fully licensed-out title 401s here rather than 200ing an empty list. That is a
         // stable site state (the title lost its public chapters, not a broken request), so it
-        // reads as zero chapters instead of throwing out of a monitored series' sync.
+        // reads as zero chapters. ChapterSyncService keeps the previous links when a mapping
+        // that has some lists nothing, which is the intended result here too.
         if (response.Status == HttpStatusCode.Unauthorized)
         {
             return [];
