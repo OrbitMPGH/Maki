@@ -388,7 +388,7 @@ public class RecommendationFeedbackTests : IDisposable
             genresJson: """["Action","Comedy"]""", coverUrl: "https://covers.example/dandadan.jpg"));
 
         var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), new TestLocalizer(), db,
-            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new NotReadyRecommender(),
             new FakeAppSettings(),
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
@@ -422,7 +422,7 @@ public class RecommendationFeedbackTests : IDisposable
         var service = Catalogued(db, 1, dump => dump.AddSeries(5548, "Landmine"));
 
         var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), new TestLocalizer(), db,
-            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new NotReadyRecommender(),
             new FakeAppSettings(),
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
@@ -562,7 +562,7 @@ public class RecommendationFeedbackTests : IDisposable
     {
         using var db = _fixture.NewContext(1);
         var controller = new RecommendationFeedbackController(Service(db, 1), new TestCurrentUser(1), new TestLocalizer(), db,
-            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new NotReadyRecommender(),
             new FakeAppSettings(),
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
