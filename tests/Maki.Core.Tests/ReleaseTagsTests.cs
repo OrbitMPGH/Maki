@@ -89,6 +89,9 @@ public class ReleaseTagsTests
     [InlineData("Chapters 1-50")]
     [InlineData("es")]
     [InlineData("pt-br")]
+    [InlineData("pt-BR")]
+    [InlineData("zh-Hans")]
+    [InlineData("zh-hans")]
     public void Group_is_null_for_release_and_language_noise(string tag)
     {
         Assert.Null(ReleaseTags.Group([tag]));

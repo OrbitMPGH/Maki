@@ -24,11 +24,12 @@ public static partial class ReleaseTags
     [GeneratedRegex(@"^(?:v|vol\.?|volumes?|c|ch\.?|chapters?)\s*[0-9]+(?:[.-](?:v|c|ch\.?)?[0-9]+)?$", RegexOptions.IgnoreCase)]
     private static partial Regex VersionMarkerPattern();
 
-    // Two lowercase letters, optionally with a lowercase region suffix, are Maki's own
-    // language-suffix tags ("es", "pt-br", "zh-hans"). Case-sensitive on purpose: an uppercase or
-    // capitalised group name like "TCB" or "Ao" doesn't match and still survives as a group, and
-    // no source declares a three-letter code, so "lfp" is a group.
-    [GeneratedRegex(@"^[a-z]{2}(?:-[a-z]{2,4})?$")]
+    // Two lowercase letters, optionally with a region ("pt-BR", "pt-br") or script ("zh-Hans",
+    // "zh-hans") suffix, are Maki's own language-suffix tags, in either the canonical or the older
+    // all-lowercase spelling. Case-sensitive on purpose: an uppercase or capitalised group name
+    // like "TCB" or "Ao" doesn't match and still survives as a group, and no source declares a
+    // three-letter code, so "lfp" is a group.
+    [GeneratedRegex(@"^[a-z]{2}(?:-(?:[a-z]{2,4}|[A-Z]{2}|[A-Z][a-z]{3}))?$")]
     private static partial Regex LanguageTagPattern();
 
     // These describe the release, not who made it.
