@@ -452,13 +452,13 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | HOSTING | HOSTING-51 | nit | done 5d4d9608, 75957f9e |
 | HOSTING | HOSTING-14 | nit | skipped (window is milliseconds) |
 | HOSTING | HOSTING-49 | nit | skipped (theoretical) |
-| HOSTING | HOSTING-50 | nit | pending (owner decided 2026-10-09: precompress assets in the Vite build; lane audit/w4-hosting) |
+| HOSTING | HOSTING-50 | nit | done 6c41eb64, 4c71303d (owner decided 2026-10-09: Vite emits .br and .gz siblings, served by content negotiation; runtime compression stays for API responses) |
 | HOSTING | HOSTING-25 | nit | done c7a42239 |
-| HOSTING | HOSTING-43 | nit | pending (owner decided 2026-10-09: share the JSON converters with SignalR; lane audit/w4-hosting) |
+| HOSTING | HOSTING-43 | nit | done 42089164 (owner decided 2026-10-09: MVC and SignalR share one converter list) |
 | HOSTING | HOSTING-45 | nit | skipped (too large) |
 | HOSTING | HOSTING-46 | nit | done e6b572f1, 75957f9e |
 | HOSTING | HOSTING-48 | nit | done 9f199317 |
-| HOSTING | HOSTING-41 | nit | pending (owner decided 2026-10-09: one exception handler, keyed 500 body, one log line; lane audit/w4-hosting) |
+| HOSTING | HOSTING-41 | nit | done 8139df2a, 019b9f5e (owner decided 2026-10-09: one exception handler, keyed 500 body, one stack trace; Kestrel client faults keep their status) |
 | HOSTING | HOSTING-42 | nit | done 42896055 |
 | HOSTING | HOSTING-35 | nit | done fa68c82e |
 | HOSTING | HOSTING-44 | nit | done eef1bbd1, 703f8a7f |
