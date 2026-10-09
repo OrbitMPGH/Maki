@@ -132,6 +132,11 @@ msgstr "{0, plural, one {# more chapter is in the same volume file and loses it 
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr "{0, plural, one {# page} other {# pages}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+msgstr "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{0, plural, one {# season} other {# seasons}}"
@@ -1734,6 +1739,10 @@ msgstr "Account"
 #: src/api/inbox.ts
 msgid "Account security"
 msgstr "Account security"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed or a single sign-on link you removed since then comes back, so redo those afterwards. API keys you revoked since the backup stay revoked."
+msgstr "Accounts are restored too, exactly as they were in that backup. A password you changed or a single sign-on link you removed since then comes back, so redo those afterwards. API keys you revoked since the backup stay revoked."
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -7691,6 +7700,10 @@ msgstr "New profile"
 #: src/components/rails/CustomRailEditor.tsx
 msgid "New rail"
 msgstr "New rail"
+
+#: src/components/settings/AccountSection.tsx
+msgid "New recovery codes"
+msgstr "New recovery codes"
 
 #: src/pages/RequestsPage.tsx
 msgid "New series"

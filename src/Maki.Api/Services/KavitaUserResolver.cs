@@ -23,7 +23,9 @@ namespace Maki.Api.Services;
 public class KavitaUserResolver(IServiceScopeFactory scopeFactory, SettingsService settings)
 {
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(1);
-    private (DateTime At, int? UserId)? _cached;
+    private sealed record CacheEntry(DateTime At, int? UserId);
+
+    private volatile CacheEntry? _cached;
 
     /// <summary>
     /// The bound user, or null when there is nobody to attribute Kavita's reading to — in which case
@@ -54,7 +56,7 @@ public class KavitaUserResolver(IServiceScopeFactory scopeFactory, SettingsServi
             .Select(u => (int?)u.Id)
             .FirstOrDefaultAsync(ct);
 
-        _cached = (DateTime.UtcNow, resolved);
+        _cached = new CacheEntry(DateTime.UtcNow, resolved);
         return resolved;
     }
 

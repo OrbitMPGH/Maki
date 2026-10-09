@@ -113,7 +113,9 @@ public class AccountApiKeyScopeTests : IDisposable
     [Fact]
     public async Task The_full_scope_is_accepted()
     {
-        var userId = _db.SeedUser("alice");
+        // The controller's clock is stopped at 2026-07-30; a passwordless account needs a recent sign-in.
+        var userId = _db.SeedUser("alice", configure: u =>
+            u.LastLoginAt = new DateTime(2026, 7, 29, 23, 55, 0, DateTimeKind.Utc));
         var request = new CreateApiKeyRequest("a script", UserApiKeyScope.Full);
 
         var result = await Controller(userId).CreateApiKey(request, CancellationToken.None);

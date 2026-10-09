@@ -3,7 +3,6 @@ import { t } from '@lingui/core/macro'
 
 interface InitializeInfo {
   apiRoot: string
-  version: string
   /** True while the account the multi-user migration created has never been claimed. */
   setupNeeded: boolean
   /**

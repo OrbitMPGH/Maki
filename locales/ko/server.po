@@ -26,6 +26,19 @@ msgstr "인증 앱의 코드가 필요합니다"
 msgid "error.account.incorrectPassword"
 msgstr "비밀번호가 올바르지 않습니다"
 
+#. Single sign-on accounts have no password to confirm, so minting a key or OPDS token needs a fresh sign-in.
+#: src/Maki.Api/Auth/AccountCredentials.cs
+#. English: Sign out and sign in again, then try this within 10 minutes. Creating a key or token needs a recent sign-in.
+msgid "error.account.recentSignInRequired"
+msgstr ""
+
+#. An authenticator code that was already used, so the next one is needed. Shown only after the
+#. password was verified, so it says nothing about which accounts exist.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: That code was already used. Wait for the next one and try again
+msgid "error.account.totpReplayed"
+msgstr ""
+
 #. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
 #. sign-in-time 2FA prompt.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -115,6 +128,11 @@ msgstr "2단계 인증이 이미 활성화되어 있습니다"
 #, fuzzy
 msgid "error.account.twoFactorDelegatedToSso"
 msgstr "이 계정은 2단계 인증을 직접 처리하는 SSO를 통해 로그인합니다."
+
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Two-factor authentication is not turned on
+msgid "error.account.twoFactorNotEnabled"
+msgstr ""
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -2500,6 +2518,11 @@ msgstr ""
 #, fuzzy
 msgid "error.system.backupUnreadable"
 msgstr "이 파일은 읽을 수 있는 Maki 백업이 아닙니다. ZIP 파일이나 매니페스트가 손상되었습니다. 변경 사항은 없습니다."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed.
+msgid "error.system.backupTooLarge"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: That is not a valid backup name.
