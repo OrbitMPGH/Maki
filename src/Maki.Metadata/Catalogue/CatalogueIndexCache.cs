@@ -37,6 +37,7 @@ public sealed class CatalogueIndexCache(
     private sealed record CacheEntry(CatalogueIndexes Indexes, long StampTicks, long StampLength);
     private volatile CacheEntry? _entry;
     private readonly IdleStamp _idle = new();
+    private readonly LoadFailureMemo _failed = new();
     private readonly SharedBuild<CacheEntry> _builds = new();
 
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
@@ -54,6 +55,7 @@ public sealed class CatalogueIndexCache(
     public void Invalidate()
     {
         _entry = null;
+        _failed.Clear();
         logger.LogDebug("Catalogue indexes invalidated");
     }
 
@@ -104,7 +106,8 @@ public sealed class CatalogueIndexCache(
             return cached.Indexes;
         }
 
-        if (!_builds.IsRunning && Interlocked.CompareExchange(ref _warming, 1, 0) == 0)
+        if (!_builds.IsRunning && !_failed.ShouldSkip(dumpOptions.DatabasePath)
+            && Interlocked.CompareExchange(ref _warming, 1, 0) == 0)
         {
             _ = Task.Run(async () =>
             {
@@ -167,6 +170,11 @@ public sealed class CatalogueIndexCache(
                     return raced.Indexes;
                 }
 
+                if (_failed.ShouldSkip(dumpOptions.DatabasePath))
+                {
+                    return null;
+                }
+
                 if (_entry is not null && !_builds.IsRunning)
                 {
                     logger.LogInformation("Rebuilding catalogue indexes because the dump file changed");
@@ -208,6 +216,7 @@ public sealed class CatalogueIndexCache(
 
         var ticks = info.LastWriteTimeUtc.Ticks;
         var length = info.Length;
+        var observed = new LoadFailureMemo.Stamp(ticks, length);
         CatalogueIndexes? built;
         try
         {
@@ -217,14 +226,17 @@ public sealed class CatalogueIndexCache(
         {
             // Logged here because every caller may have stopped waiting by now.
             logger.LogWarning(ex, "Building the catalogue indexes failed");
+            _failed.Record(observed);
             throw;
         }
 
         if (built is null)
         {
+            _failed.Record(observed);
             return null;
         }
 
+        _failed.Clear();
         var entry = new CacheEntry(built, ticks, length);
         _entry = entry;
         _idle.Touch();

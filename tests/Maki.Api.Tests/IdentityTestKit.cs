@@ -27,6 +27,7 @@ internal static class IdentityTestKit
             null!,
             NullLogger<UserManager<MakiUser>>.Instance);
         users.RegisterTokenProvider(TokenOptions.DefaultProvider, new AlwaysValidTokenProvider());
+        users.RegisterTokenProvider(TokenOptions.DefaultAuthenticatorProvider, new KnownCodeTokenProvider());
         return users;
     }
 
@@ -35,6 +36,21 @@ internal static class IdentityTestKit
 
     public static ClaimsPrincipal Principal(int userId) =>
         new(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"));
+
+    /// <summary>The one authenticator code <see cref="KnownCodeTokenProvider"/> accepts.</summary>
+    public const string ValidAuthenticatorCode = "123456";
+
+    private sealed class KnownCodeTokenProvider : IUserTwoFactorTokenProvider<MakiUser>
+    {
+        public Task<string> GenerateAsync(string purpose, UserManager<MakiUser> manager, MakiUser user) =>
+            Task.FromResult(ValidAuthenticatorCode);
+
+        public Task<bool> ValidateAsync(string purpose, string token, UserManager<MakiUser> manager, MakiUser user) =>
+            Task.FromResult(token == ValidAuthenticatorCode);
+
+        public Task<bool> CanGenerateTwoFactorTokenAsync(UserManager<MakiUser> manager, MakiUser user) =>
+            Task.FromResult(false);
+    }
 
     private sealed class AlwaysValidTokenProvider : IUserTwoFactorTokenProvider<MakiUser>
     {
@@ -67,8 +83,29 @@ internal class TestSignInManager(UserManager<MakiUser> users, MakiUser? twoFacto
 
     public override Task RefreshSignInAsync(MakiUser user) => Task.CompletedTask;
 
+    public override Task<bool> IsTwoFactorClientRememberedAsync(MakiUser user) => Task.FromResult(false);
+
     public override Task SignInWithClaimsAsync(MakiUser user, bool isPersistent, IEnumerable<Claim> additionalClaims) =>
         Task.CompletedTask;
+
+    public override async Task<SignInResult> TwoFactorAuthenticatorSignInAsync(
+        string code, bool isPersistent, bool rememberClient)
+    {
+        var user = twoFactorUser!;
+        if (await UserManager.IsLockedOutAsync(user))
+        {
+            return SignInResult.LockedOut;
+        }
+
+        if (await UserManager.VerifyTwoFactorTokenAsync(user, UserManager.Options.Tokens.AuthenticatorTokenProvider, code))
+        {
+            await UserManager.ResetAccessFailedCountAsync(user);
+            return SignInResult.Success;
+        }
+
+        await UserManager.AccessFailedAsync(user);
+        return SignInResult.Failed;
+    }
 
     public override Task<MakiUser?> GetTwoFactorAuthenticationUserAsync() => Task.FromResult(twoFactorUser);
 

@@ -48,10 +48,11 @@ import type {
   UpdateStatusDto,
 } from './types'
 
-export function useSeries() {
+export function useSeries(enabled = true) {
   return useQuery({
     queryKey: ['series'],
     queryFn: () => api<SeriesDto[]>('/series'),
+    enabled,
     // Mounted by the palette, Home, Library, Discover and the rails on a series page, so with the
     // default of 0 every navigation refetched the whole list. Mutations and the live import events
     // invalidate it, and invalidation ignores staleTime, so this only skips redundant remounts.
@@ -128,8 +129,8 @@ export function useSeriesDetail(id: number) {
     queryFn: () => api<SeriesDto>(`/series/${id}`),
     meta: { inlineNotFound: true },
     // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
-    // would otherwise leave the Sources card spinning with nothing to end it, so poll while — and
-    // only while — there is something to wait for.
+    // would otherwise leave the Sources card spinning with nothing to end it, so poll while, and
+    // only while, there is something to wait for.
     refetchInterval: (query) => (query.state.data?.sourceMatchPending ? 3000 : false),
   })
 }
@@ -137,7 +138,7 @@ export function useSeriesDetail(id: number) {
 export function useMetadataSearch(query: string) {
   return useQuery({
     queryKey: ['metadata-search', query],
-    queryFn: () => api<MetadataSearchResult[]>(`/search/metadata?query=${encodeURIComponent(query)}`),
+    queryFn: ({ signal }) => api<MetadataSearchResult[]>(`/search/metadata?query=${encodeURIComponent(query)}`, { signal }),
     enabled: query.trim().length > 1,
     staleTime: 5 * 60 * 1000,
   })
@@ -146,7 +147,7 @@ export function useMetadataSearch(query: string) {
 export interface RecommendationItem {
   providerId: string
   title: string
-  /** Full-size cover art (~460x690). For the detail card only — poster cards use `thumbUrl`. */
+  /** Full-size cover art (~460x690). For the detail card only, poster cards use `thumbUrl`. */
   coverUrl: string | null
   /** 167x250 cover for poster cards, with `thumbUrlHiDpi` (334x500) as the preferred card source.
    * Null on the title-search fallback path, which has no thumbnail; fall back to `coverUrl` there. */
@@ -166,7 +167,7 @@ export interface RecommendationItem {
   /**
    * The three "why" flavours, and deliberately three rather than one: co-recommended is what
    * readers *said* (submitted "if you liked X try Y" pairs), co-read is what they *did* (finished
-   * both), and taste-match is neither — it is proximity in the behavioural space learned from
+   * both), and taste-match is neither, it is proximity in the behavioural space learned from
    * reading lists, which is what lets a pick that reads as unrelated on paper be explained.
    *
    * All three are false on the catalogue and cohort rails, which hydrate straight from the dump.
@@ -340,7 +341,9 @@ export interface BehaviourSeries {
   seriesId: number
   title: string
   coverUrl: string | null
-  /** Median seconds per chapter for savoured and devoured, the completion fraction (0 to 1) for abandoned. */
+  /** Pre-formatted server-side, because the three lists measure different things. */
+  value: string
+  /** The number behind `value`, for pages that format it themselves. */
   measure: number
 }
 
@@ -418,7 +421,7 @@ export interface TasteProfile {
   /**
    * Which population the catalogue badges were weighted by: `readers` once the reader-cohort
    * artifact is installed, `popularity` while only the rank proxy is available, null when there is
-   * no baseline at all. Separate from the boolean because the two fail independently — the index
+   * no baseline at all. Separate from the boolean because the two fail independently, the index
    * can be built while the artifact is absent.
    */
   catalogueBaselineSource: 'readers' | 'popularity' | null
@@ -501,8 +504,6 @@ export interface DiscoverRail {
   items: RecommendationItem[]
   /** A line under the heading saying where the rail came from. Null on the catalogue rails. */
   subtitle?: string | null
-  /** Titles named in {@link subtitle}'s `{list}` or `{titles}` marker; join them with `railSubtitle`. */
-  subtitleTitles?: string[] | null
   /**
    * Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
    * "Show more" to page the recommender instead of {@link useDiscoverFeed}, whose `feed` vocabulary
@@ -511,9 +512,25 @@ export interface DiscoverRail {
   seedIds?: number[] | null
   /** Filters that must remain attached when a personalised rail is expanded. */
   filters?: RecommendationFilters | null
+  /**
+   * Set only on a per-seed rail from `GET recommendations/discover/recent/grouped`: the one library
+   * series this rail's picks were attributed to, and how far through it the reader is. Nothing in
+   * the app renders that route today; the flat rail is what Discover shows.
+   */
+  seed?: DiscoverSeedState | null
   /** Set on a custom catalogue rail, so "Show more" keeps its order and owned-series setting. */
   sort?: BrowseSort
   excludeOwned?: boolean
+}
+
+/** A seed series as the Discover page draws it: the title, the position, and which state that is. */
+export interface DiscoverSeedState {
+  title: string
+  chaptersRead: number
+  /** Chapters on disk, the denominator the reader can actually reach, not the provider's count. */
+  chaptersAvailable: number
+  /** `reading`, `caught-up` (nothing left but the series continues), or `finished`. */
+  state: 'reading' | 'caught-up' | 'finished'
 }
 
 /** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */
@@ -562,7 +579,7 @@ export function useDiscover(refreshNonce = 0, enabled = true) {
  * recently. Separate from {@link useDiscover} because that endpoint is cached once for the whole
  * instance and has no viewer in scope.
  *
- * Resolves to `null` when there is no reading history to seed with — an ordinary state for a new
+ * Resolves to `null` when there is no reading history to seed with, an ordinary state for a new
  * account, and the caller just leaves the row out. `meta.silent` because the row is an extra on a
  * page that works without it: the local MangaBaka database being absent already raises one toast
  * from the rails query, and a second saying the same thing helps nobody.
@@ -607,8 +624,8 @@ export const READER_COHORT_FEED = 'ReaderCohorts'
  * the catalogue rails for the same reason the recent-activity one is.
  *
  * A POST because the same endpoint serves the rail and its filtered "Show more" view. Resolves to
- * `null` when there is nothing to show — no artifact, an empty library, or a reader whose finished
- * series no cohort has enough of — and the caller leaves the row out. `meta.silent` for the same
+ * `null` when there is nothing to show, no artifact, an empty library, or a reader whose finished
+ * series no cohort has enough of, and the caller leaves the row out. `meta.silent` for the same
  * reason as the recent-activity rail: it is an extra on a page that works without it.
  */
 export function useDiscoverCohort(
@@ -657,10 +674,11 @@ export function useDiscoverGenres(refreshNonce = 0, enabled = true) {
 export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPrevious = false) {
   return useQuery({
     queryKey: ['discover-feed', request],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<RecommendationItem[]>('/recommendations/discover/feed', {
         method: 'POST',
         body: JSON.stringify(request),
+        signal,
       }),
     enabled: request != null,
     staleTime: 5 * 60 * 1000,
@@ -717,10 +735,11 @@ export function useDiscoverSearch(
   const enabled = ready && (request?.query.trim().length ?? 0) >= minChars
   return useQuery({
     queryKey: ['discover-search', request],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<DiscoverSearchResponse>('/recommendations/discover/search', {
         method: 'POST',
         body: JSON.stringify(request),
+        signal,
       }),
     enabled,
     staleTime: 5 * 60 * 1000,
@@ -1131,10 +1150,11 @@ export function useRecommendationTags() {
 export function useDiscoverCount(request: DiscoverFeedRequest | null) {
   return useQuery({
     queryKey: ['discover-count', request],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<{ count: number | null }>('/recommendations/discover/count', {
         method: 'POST',
         body: JSON.stringify(request),
+        signal,
       }),
     enabled: request != null,
     staleTime: 5 * 60 * 1000,
@@ -1279,7 +1299,7 @@ export function useSaveRecommendationDefaults() {
 
 /**
  * The Discover search tab's saved filter panel. The catalogue-filter half of the Recommended
- * defaults and nothing else — no seeds, no obscurity, no diversity, and a separate setting, so
+ * defaults and nothing else, no seeds, no obscurity, no diversity, and a separate setting, so
  * saving one panel never rewrites the other.
  */
 export interface SearchDefaults {
@@ -1843,7 +1863,7 @@ export function useSetChaptersWanted() {
   })
 }
 
-/** Queues a hand-picked set of chapters, ignoring their wanted flag — see ChapterController. */
+/** Queues a hand-picked set of chapters, ignoring their wanted flag, see ChapterController. */
 export function useDownloadChapters() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -1989,7 +2009,7 @@ export function useDeleteSeriesFiles(seriesId: number) {
 export function useQueue(page = 1, pageSize = 200) {
   return useQuery({
     queryKey: ['queue', page, pageSize],
-    queryFn: () => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`),
+    queryFn: ({ signal }) => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`, { signal }),
     refetchInterval: 10_000,
   })
 }
@@ -2006,7 +2026,7 @@ export function useQueueSummary() {
 export function useQueueHistory(page: number, pageSize = 25) {
   return useQuery({
     queryKey: ['queue-history', page, pageSize],
-    queryFn: () => api<QueueHistoryDto>(`/queue/history?page=${page}&pageSize=${pageSize}`),
+    queryFn: ({ signal }) => api<QueueHistoryDto>(`/queue/history?page=${page}&pageSize=${pageSize}`, { signal }),
     placeholderData: keepPreviousData,
     refetchInterval: 10_000,
   })
@@ -2202,7 +2222,7 @@ export interface SetIncognitoResult {
   incognito: string
 }
 
-/** "Off" | "ScrobbleOnly" | "Full" — see SeriesDto.incognito. */
+/** "Off" | "ScrobbleOnly" | "Full", see SeriesDto.incognito. */
 export function useSetIncognito() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2222,7 +2242,7 @@ export interface SetSeriesNotificationsResult {
   notificationMode: string
 }
 
-/** "Default" | "All" | "Reading" | "Muted" — see SeriesDto.notificationMode. */
+/** "Default" | "All" | "Reading" | "Muted", see SeriesDto.notificationMode. */
 export function useSetSeriesNotificationMode() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2436,10 +2456,11 @@ export function useHealth() {
 }
 
 /** Cached, instant: reflects the last CheckForUpdatesJob run (or a manual check-now). */
-export function useUpdateStatus() {
+export function useUpdateStatus(enabled = true) {
   return useQuery({
     queryKey: ['system', 'update'],
     queryFn: () => api<UpdateStatusDto>('/system/update'),
+    enabled,
   })
 }
 
@@ -2584,7 +2605,7 @@ export function useSources() {
 
 /**
  * Where each source has got to in a source match that is still running. Pushed over the hub by
- * `sourceMatchProgress` and written straight into the cache in `signalr.ts` — there is no endpoint
+ * `sourceMatchProgress` and written straight into the cache in `signalr.ts`, there is no endpoint
  * behind it, so the query never fetches and an empty map simply means nothing has been pushed yet
  * (a match that finished, or a hub connection that came up mid-match).
  */
@@ -2609,9 +2630,10 @@ export interface SourceSearchResult {
 export function useSourceSearch(sourceName: string, query: string) {
   return useQuery({
     queryKey: ['source-search', sourceName, query],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<SourceSearchResult[]>(
         `/search/source?sourceName=${encodeURIComponent(sourceName)}&query=${encodeURIComponent(query)}`,
+        { signal },
       ),
     enabled: sourceName.length > 0 && query.trim().length > 1,
     staleTime: 5 * 60 * 1000,
@@ -2976,6 +2998,9 @@ export function useMetadataSettings() {
   return useQuery({
     queryKey: ['settings', 'metadata'],
     queryFn: () => api<MetadataSettings>('/settings/metadata'),
+    // The shell reads a failure here as "Discover is unavailable", so a failed load heals when the
+    // user comes back to the tab (and when the live connection returns) instead of sticking.
+    refetchOnWindowFocus: (query) => query.state.status === 'error',
   })
 }
 
@@ -3059,7 +3084,7 @@ export type ContentRating = 'safe' | 'suggestive' | 'erotica' | 'pornographic'
 /** Least to most explicit, mirroring the server's `ContentRating.All` order. */
 export const CONTENT_RATINGS: ContentRating[] = ['safe', 'suggestive', 'erotica', 'pornographic']
 
-/** Ratings at or below `max` — what a content-rating filter should offer as options. */
+/** Ratings at or below `max`, what a content-rating filter should offer as options. */
 export function allowedContentRatings(max: ContentRating | string | undefined | null): ContentRating[] {
   const index = CONTENT_RATINGS.indexOf(max as ContentRating)
   return CONTENT_RATINGS.slice(0, index < 0 ? 1 : index + 1)
@@ -3118,7 +3143,7 @@ export interface LibrarySettings {
   writeCoverToFolder?: boolean
   /**
    * Naming format for a series' folder, e.g. "{Series TitleYear}". Always filled in on read.
-   * Leave it out of a write to keep the stored format — same contract as incognitoByRating, and
+   * Leave it out of a write to keep the stored format, same contract as incognitoByRating, and
    * the reason the setup wizard's partial saves don't blank it.
    */
   seriesFolderFormat?: string
@@ -3512,7 +3537,7 @@ export interface ScrobbleStatus {
 export function useAppVersion() {
   return useQuery({
     queryKey: ['app-version'],
-    queryFn: async () => (await getInitialize()).version,
+    queryFn: async () => (await api<{ version: string }>('/system/status')).version,
     staleTime: Infinity,
   })
 }
@@ -3674,6 +3699,9 @@ export interface ScrobbleSettings {
   kitsuClientSecret: string | null
   kitsuEmail: string | null
   kitsuPassword: string | null
+  /** The server never echoes the secrets back; these say whether one is stored. */
+  kitsuPasswordSet: boolean
+  mangaBakaTokenSet: boolean
   intervalMinutes: number
   planToRead: boolean
   libraryIds: string | null
@@ -3979,7 +4007,7 @@ export function useRebuildImageCache() {
 
 // ---- Reading activity ------------------------------------------------------
 // One window of a reader's activity. Feeds the Stats page's Overview tab, and the Rewind
-// slideshow off the same payload — "Rewind" is a consumer of this, not a shape of its own.
+// slideshow off the same payload, "Rewind" is a consumer of this, not a shape of its own.
 
 /** userId targets another account; admin-only server-side, and ignored for anyone else. */
 const forUser = (userId?: number) => (userId ? `?userId=${userId}` : '')
@@ -4099,7 +4127,7 @@ export function useActivityStats(from: string, to: string, userId?: number, enab
 
 // ---- Library composition ---------------------------------------------------
 // Distinct from `useLibraryStats` above, which tallies the series list the client already holds.
-// This is the server-side view: sizes, sources, growth — things no page has in memory.
+// This is the server-side view: sizes, sources, growth, things no page has in memory.
 
 export interface LibraryCompositionTotals {
   seriesCount: number

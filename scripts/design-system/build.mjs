@@ -99,8 +99,9 @@ const lightVars = propsOf(":root[data-theme='light']")
 // --- Themes (theme-context.tsx) -----------------------------------------------------------------
 
 // Appearance is a background times an accent. The design system shows one theme per accent on
-// the default dark ground (:root, night) plus the light theme; the other grounds mix their
-// surfaces from the accent with color-mix, which the token reader cannot evaluate.
+// the :root reference ground (night) plus the light theme. The app's default ground is tinted,
+// and like the other grounds it mixes its surfaces from the accent with color-mix, which the
+// token reader cannot evaluate.
 const accentEntries = [...themeContext.matchAll(/\{\s*id:\s*'(\w+)',\s*label:\s*msg`([^`]+)`,\s*swatch:/g)]
   .map(([, id, label]) => ({ id, label }))
 const defaultAccent = /const DEFAULT_ACCENT[^=]*=\s*'(\w+)'/.exec(themeContext)?.[1] ?? 'indigo'

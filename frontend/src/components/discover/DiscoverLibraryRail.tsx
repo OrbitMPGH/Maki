@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useRef, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
@@ -10,6 +11,7 @@ import {
   type MangaBakaDetail,
   type RecommendationItem,
 } from '../../api/hooks'
+import { ApiError } from '../../api/client'
 import { useUpgradeProfiles } from '../../api/upgrades'
 import { useCreateSeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
@@ -151,7 +153,7 @@ export function DiscoverLibraryRail({
           // 410 means this mutation id belongs to an add that committed and was then deleted. The
           // id is sticky so a retry cannot double-add; keeping it after a 410 would make every
           // later press fail the same way, so adding again becomes a genuinely new operation.
-          if (error.message.startsWith('API 410')) addMutationId.current = null
+          if (error instanceof ApiError && error.status === 410) addMutationId.current = null
         },
       },
     )
@@ -335,17 +337,17 @@ export function DiscoverLibraryRail({
 
       {addSeries.isError && (
         <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(addSeries.error)}
+          {errorText(addSeries.error)}
         </Alert>
       )}
       {applyAnimeResume.isError && (
         <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(applyAnimeResume.error)}
+          {errorText(applyAnimeResume.error)}
         </Alert>
       )}
       {createRequest.isError && (
         <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(createRequest.error)}
+          {errorText(createRequest.error)}
         </Alert>
       )}
     </Paper>

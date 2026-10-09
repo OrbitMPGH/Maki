@@ -83,7 +83,11 @@ public class MangaBakaDumpService(
 
         // Published as "<hex sha1>  <filename>" over the compressed file.
         var sha1Line = await client.GetStringAsync(dumpPath + ".sha1", ct);
-        var expectedSha1 = sha1Line.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+        var expectedSha1 = sha1Line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (string.IsNullOrEmpty(expectedSha1))
+        {
+            throw new InvalidOperationException($"MangaBaka dump checksum response from {dumpPath}.sha1 was empty");
+        }
 
         var installedSha1 = await settings.GetAsync(SettingKeys.MangaBakaDumpSha1, ct);
         if (string.Equals(expectedSha1, installedSha1, StringComparison.OrdinalIgnoreCase) &&
@@ -172,26 +176,6 @@ public class MangaBakaDumpService(
         "ix_title_nocase", "ix_ext_anilist", "ix_ext_mal", "ix_ext_kitsu",
     ];
 
-    /// <summary>
-    /// Indexes the columns the Discover rails filter and sort on. The dump ships with <b>no indexes
-    /// at all</b>, so without these every rail is a full scan of ~558k rows across ~3.5 GB plus a
-    /// sort: measured at 11s for the six-rail set, and far worse whenever the page cache is cold or
-    /// the disk is busy, which is what makes the endpoint's tail latency unbounded.
-    ///
-    /// <para>
-    /// Measured 17.25s to 0.43s over the six rails, a 40x improvement, with every rail reporting an
-    /// index rather than a scan. Costs ~15s to build and ~13 MB.
-    /// </para>
-    ///
-    /// <para>
-    /// All are <b>partial</b> indexes over the rails' common quality gate (active, not a novel,
-    /// rated, has a cover). That predicate is duplicated from <c>MangaBakaLocalStore.GetBrowseAsync</c>
-    /// and must stay in step with it: SQLite will only use a partial index when the query's WHERE
-    /// provably implies the index's, so a rail that drops one of these conditions silently falls back
-    /// to a full scan rather than failing. The <c>title NOT LIKE</c> clause is deliberately left out
-    /// - it excludes few rows and a LIKE in the predicate would stop the planner matching it.
-    /// </para>
-    /// </summary>
     /// <summary>
     /// The subset of <see cref="BrowseIndexNames"/> this dump has the columns for. A dump variant
     /// that drops a column simply gets fewer indexes; that is a slower rail, never a failed refresh.
@@ -309,6 +293,11 @@ public class MangaBakaDumpService(
     /// <para>
     /// Measured 17.25s to 0.43s over the six rails, a 40x improvement, with every rail reporting an
     /// index rather than a scan. Costs ~15s to build and ~13 MB.
+    /// </para>
+    ///
+    /// <para>
+    /// All are <b>partial</b> indexes over the rails' common quality gate (see <c>BrowseGate</c>), which
+    /// must stay in step with <c>MangaBakaLocalStore.GetBrowseAsync</c>.
     /// </para>
     ///
     /// <para>
@@ -462,17 +451,24 @@ public class MangaBakaDumpService(
 
     private async Task SwapIntoPlaceAsync(string stagingPath, CancellationToken ct)
     {
-        // Readers use Pooling=False, but an in-flight query may still hold the old file
-        // open for a moment — retry the move instead of failing the whole refresh.
+        // Readers use Pooling=False, but an in-flight query or an index build can hold the old
+        // file open for several seconds, so retry the move instead of failing the whole refresh.
         SqliteConnection.ClearAllPools();
         for (var attempt = 1; ; attempt++)
         {
             try
             {
+                // A journal or WAL left by an interrupted write belongs to the file being replaced;
+                // SQLite would replay it onto the new one on first open.
+                foreach (var suffix in new[] { "-journal", "-wal", "-shm" })
+                {
+                    File.Delete(options.DatabasePath + suffix);
+                }
+
                 File.Move(stagingPath, options.DatabasePath, overwrite: true);
                 return;
             }
-            catch (IOException) when (attempt < 5)
+            catch (IOException) when (attempt < 15)
             {
                 await Task.Delay(TimeSpan.FromSeconds(2), ct);
             }

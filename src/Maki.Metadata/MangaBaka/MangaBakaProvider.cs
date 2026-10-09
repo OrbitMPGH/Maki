@@ -30,7 +30,7 @@ public class MangaBakaProvider(
             {
                 return await localStore.SearchAsync(query, maxContentRating, ct: ct);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogWarning(ex, "Local MangaBaka search failed for {Query}; falling back to API", query);
             }
@@ -69,7 +69,7 @@ public class MangaBakaProvider(
                 // Series newer than the nightly dump can only be resolved by the API.
                 logger.LogDebug("MangaBaka series {Id} not in local dump; trying API", providerId);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogWarning(ex, "Local MangaBaka lookup failed for {Id}; falling back to API", providerId);
             }

@@ -69,6 +69,8 @@ public class CoReadInstaller(
 {
     public const string HttpClientName = "coread-graph";
 
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     /// <summary>
     /// The schema this build understands. Bumped only when the <c>pair</c> table's shape changes in
     /// a way <c>CoReadCache</c> could not read; a newer artifact is refused rather than half-read.
@@ -152,6 +154,12 @@ public class CoReadInstaller(
 
         Directory.CreateDirectory(options.StagingDirectory);
         var staging = Path.Combine(options.StagingDirectory, "coread-edges.db.partial");
+
+        if (!_installGate.Wait(0))
+        {
+            return new CoReadResult(false, "install.alreadyRunning");
+        }
+
         try
         {
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
@@ -175,6 +183,7 @@ public class CoReadInstaller(
         finally
         {
             TryDelete(staging);
+            _installGate.Release();
         }
     }
 
@@ -239,32 +248,13 @@ public class CoReadInstaller(
         using var conn = new SqliteConnection($"Data Source={staging};Mode=ReadOnly;Pooling=False");
         conn.Open();
 
-        using (var check = conn.CreateCommand())
-        {
-            check.CommandText = "PRAGMA quick_check";
-            check.CommandTimeout = 600;
-            var result = check.ExecuteScalar()?.ToString();
-            if (!string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException($"downloaded graph failed its integrity check ({result})");
-            }
-        }
+        ArtifactChecks.RequireIntegrity(conn, "graph");
 
         // The fetcher's working database is what this is most likely to be by mistake, and it holds
         // one row per user per series read. Refusing it here does not undo a publish, but it does
         // stop every install that would otherwise have downloaded and kept a copy, and it makes the
         // mistake loud instead of silent.
-        using (var personal = conn.CreateCommand())
-        {
-            personal.CommandText =
-                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('user_entry', 'user_state', 'pending_user')";
-            if (personal.ExecuteScalar() is long found && found > 0)
-            {
-                throw new InvalidOperationException(
-                    "downloaded file holds per-user reading tables; this is the fetcher's working "
-                    + "database, not an export, and it must not be distributed");
-            }
-        }
+        ArtifactChecks.RefusePerUserTables(conn, "fetcher's");
 
         using (var shape = conn.CreateCommand())
         {

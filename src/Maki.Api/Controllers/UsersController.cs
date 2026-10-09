@@ -51,7 +51,6 @@ public class UsersController(
     {
         var users = await db.Users.AsNoTracking().OrderBy(u => u.Id).ToListAsync(ct);
         var grants = await db.UserRootFolders.AsNoTracking().ToListAsync(ct);
-        var allFolders = await db.RootFolders.Select(r => r.Id).ToListAsync(ct);
         var linked = (await db.UserLogins.AsNoTracking()
             .Where(l => l.LoginProvider == AuthSchemes.Oidc)
             .Select(l => l.UserId)
@@ -59,9 +58,7 @@ public class UsersController(
 
         return Ok(users.Select(u => UserDtoMapper.ToSummary(
             u,
-            u.AllRootFolders
-                ? allFolders
-                : grants.Where(g => g.UserId == u.Id).Select(g => g.RootFolderId).ToList(),
+            grants.Where(g => g.UserId == u.Id).Select(g => g.RootFolderId).ToList(),
             linked.Contains(u.Id))));
     }
 
@@ -89,10 +86,10 @@ public class UsersController(
         var user = new MakiUser
         {
             UserName = username,
-            DisplayName = request.DisplayName?.Trim(),
+            DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? null : request.DisplayName.Trim(),
             // A conservative default rather than the instance-wide one: a new account should not
             // silently inherit whatever the admin set for themselves.
-            Permissions = request.Permissions ?? MakiPermissions.DefaultForNewUser,
+            Permissions = DefinedBitsOnly(request.Permissions) ?? MakiPermissions.DefaultForNewUser,
             MaxContentRating = rating ?? ContentRating.Safe,
             // Fail closed. A new user sees an empty library until they are granted a folder, rather
             // than the whole thing until someone remembers to restrict them.
@@ -145,7 +142,7 @@ public class UsersController(
         var wasDisabled = user.Disabled;
         var stampBefore = user.SecurityStamp;
 
-        if (request.Permissions is { } permissions)
+        if (DefinedBitsOnly(request.Permissions) is { } permissions)
         {
             var losingAdmin = wasAdmin && !permissions.Grants(MakiPermission.Admin);
 
@@ -242,7 +239,7 @@ public class UsersController(
         }
 
         var isAdmin = user.Permissions.Grants(MakiPermission.Admin);
-        if (wasAdmin != isAdmin || user.Disabled)
+        if (wasAdmin != isAdmin || user.Disabled || revokeSessions)
         {
             await EventsHub.DisconnectUserAsync(hub, user.Id);
         }
@@ -316,6 +313,8 @@ public class UsersController(
 
         await userManager.SetTwoFactorEnabledAsync(user, false);
         await userManager.ResetAuthenticatorKeyAsync(user);
+        await TotpReplayGuard.ClearAsync(userManager, user);
+        await EventsHub.DisconnectUserAsync(hub, user.Id);
 
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, currentUser.UserName, currentUser.UserId,
             HttpContext, detail: $"reset two-factor for \"{user.UserName}\"", ct: ct);
@@ -380,6 +379,10 @@ public class UsersController(
         return Ok(events);
     }
 
+    // An undefined bit stored today becomes a real grant the day a permission is appended there.
+    private static MakiPermission? DefinedBitsOnly(MakiPermission? permissions) =>
+        permissions & (MakiPermission.Admin | MakiPermissions.AllNonAdmin);
+
     private Task<bool> IsLastAdminAsync(int userId, CancellationToken ct) =>
         adminGuard.IsLastAdminAsync(userId, ct);
 
@@ -409,10 +412,10 @@ public class UsersController(
         await db.SaveChangesAsync(ct);
     }
 
+    // The stored grants even for an all-folders account, so unticking "All root folders" in the editor
+    // brings back the selection that was kept rather than every folder.
     private async Task<IReadOnlyList<int>> RootFolderIdsAsync(MakiUser user, CancellationToken ct) =>
-        user.AllRootFolders
-            ? await db.RootFolders.Select(r => r.Id).ToListAsync(ct)
-            : await db.UserRootFolders.Where(g => g.UserId == user.Id).Select(g => g.RootFolderId).ToListAsync(ct);
+        await db.UserRootFolders.Where(g => g.UserId == user.Id).Select(g => g.RootFolderId).ToListAsync(ct);
 
     private static string Describe(IdentityResult result) =>
         string.Join("; ", result.Errors.Select(e => e.Description));

@@ -4,7 +4,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { api } from './client'
 
 /**
- * Mirrors `InboxEventType` on the server, in camelCase. Append only — the values are persisted as
+ * Mirrors `InboxEventType` on the server, in camelCase. Append only, the values are persisted as
  * preference keys, so renaming one drops everybody's stored setting for it.
  */
 export type InboxEventType =
@@ -72,7 +72,7 @@ export interface InboxPrefs {
 /**
  * What arrives over SignalR: the row, plus the recipient's new unread count.
  * <p>
- * No `coverUrl` — the push only drives the badge and the toast, neither of which shows one, and the
+ * No `coverUrl`, the push only drives the badge and the toast, neither of which shows one, and the
  * feed is refetched anyway. Resolving a poster on the raise path would mean a query per recipient.
  */
 export interface InboxPush extends Omit<InboxItem, 'read' | 'coverUrl'> {
@@ -80,7 +80,7 @@ export interface InboxPush extends Omit<InboxItem, 'read' | 'coverUrl'> {
 }
 
 /**
- * Grouping for the settings card and the page's filter chips. Purely presentational — the server
+ * Grouping for the settings card and the page's filter chips. Purely presentational, the server
  * knows nothing about these buckets, and an event type missing from here simply isn't offered.
  */
 /**

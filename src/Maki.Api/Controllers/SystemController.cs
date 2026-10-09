@@ -26,6 +26,8 @@ public class SystemController(
     Maki.Api.Localization.ILocalizer localizer,
     ILogger<SystemController> logger) : ControllerBase
 {
+    private const long RestoreUploadLimit = 1_073_741_824; // 1 GiB
+
     /// <summary>
     /// Open health issues for the header indicator.
     /// </summary>
@@ -219,8 +221,8 @@ public class SystemController(
     [Authorize(Policy = Policies.Admin)]
     [CookieSessionOnly]
     [HttpPost("backups/restore-upload")]
-    [RequestSizeLimit(1_073_741_824)] // 1 GiB
-    [RequestFormLimits(MultipartBodyLengthLimit = 1_073_741_824)]
+    [RequestSizeLimit(RestoreUploadLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = RestoreUploadLimit)]
     public async Task<IActionResult> RestoreUpload(IFormFile file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)

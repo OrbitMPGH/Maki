@@ -26,6 +26,19 @@ msgstr "認証アプリのコードが必要です"
 msgid "error.account.incorrectPassword"
 msgstr "パスワードが正しくありません"
 
+#. Single sign-on accounts have no password to confirm, so minting a key or OPDS token needs a fresh sign-in.
+#: src/Maki.Api/Auth/AccountCredentials.cs
+#. English: Sign out and sign in again, then try this within 10 minutes. Creating a key or token needs a recent sign-in.
+msgid "error.account.recentSignInRequired"
+msgstr ""
+
+#. An authenticator code that was already used, so the next one is needed. Shown only after the
+#. password was verified, so it says nothing about which accounts exist.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: That code was already used. Wait for the next one and try again
+msgid "error.account.totpReplayed"
+msgstr ""
+
 #. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
 #. sign-in-time 2FA prompt.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -115,6 +128,11 @@ msgstr "二要素認証はすでに有効です"
 #, fuzzy
 msgid "error.account.twoFactorDelegatedToSso"
 msgstr "このアカウントはシングルサインオンでログインし、二要素認証もIDプロバイダー側で処理されます。"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Two-factor authentication is not turned on
+msgid "error.account.twoFactorNotEnabled"
+msgstr ""
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -2501,6 +2519,11 @@ msgstr ""
 msgid "error.system.backupUnreadable"
 msgstr "このファイルは読み取り可能なMakiバックアップではありません。ZIPファイルまたはマニフェストが破損しています。変更はありません。"
 
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed.
+msgid "error.system.backupTooLarge"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: That is not a valid backup name.
 msgid "error.system.backupNameInvalid"
@@ -4812,6 +4835,12 @@ msgstr "読書履歴に共通する傾向がまだ十分にありません。"
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "カタログに登録されたシリーズが{min}件以上必要です。現在、この表示では{count}件あります。"
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An install of this download is already running.
+msgid "install.alreadyRunning"
+msgstr ""
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: Already using this model.
 #, fuzzy
@@ -4841,6 +4870,11 @@ msgstr "インデックスを作成中です。完了後にもう一度お試し
 #, fuzzy
 msgid "install.embeddingModel.notAvailable"
 msgstr "埋め込みモデルを利用できません"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: The model switch failed. Check the server log for details.
+msgid "install.embeddingModel.switchFailed"
+msgstr ""
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: A model switch is already in progress.
