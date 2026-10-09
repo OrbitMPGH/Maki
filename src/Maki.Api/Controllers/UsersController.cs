@@ -89,7 +89,7 @@ public class UsersController(
         var user = new MakiUser
         {
             UserName = username,
-            DisplayName = request.DisplayName?.Trim(),
+            DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? null : request.DisplayName.Trim(),
             // A conservative default rather than the instance-wide one: a new account should not
             // silently inherit whatever the admin set for themselves.
             Permissions = DefinedBitsOnly(request.Permissions) ?? MakiPermissions.DefaultForNewUser,
