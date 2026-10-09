@@ -21,6 +21,7 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
     public string DisplayName => "MangaKatana";
     public string BaseUrl => "https://mangakatana.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 

@@ -40,6 +40,7 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "Atsumaru";
     public string BaseUrl => "https://atsu.moe";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
