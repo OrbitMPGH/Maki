@@ -176,6 +176,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
     {
         var seriesId = NormalizeSeriesId(sourceSeriesId);
         var chapters = new List<SourceChapter>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
 
         for (var page = 0; page < MaxChapterPages; page++)
         {
@@ -189,6 +190,8 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
                 break;
             }
 
+            var parsedOnPage = 0;
+            var newOnPage = 0;
             if (data.TryGetProperty("chapters", out var list) && list.ValueKind == JsonValueKind.Array)
             {
                 foreach (var entry in list.EnumerateArray())
@@ -197,8 +200,18 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
                     if (chapter is not null)
                     {
                         chapters.Add(chapter);
+                        parsedOnPage++;
+                        if (seen.Add(chapter.SourceChapterId))
+                        {
+                            newOnPage++;
+                        }
                     }
                 }
+            }
+
+            if (parsedOnPage > 0 && newOnPage == 0)
+            {
+                break;
             }
 
             var hasMore = data.TryGetProperty("pagination", out var pagination)

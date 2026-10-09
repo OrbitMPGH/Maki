@@ -111,6 +111,7 @@ public class NaverWebtoonSource(IHttpClientFactory httpClientFactory) : ISource
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
         var chapters = new List<SourceChapter>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         var page = 1;
 
         for (var i = 0; i < MaxListPages && page != 0; i++)
@@ -128,6 +129,8 @@ public class NaverWebtoonSource(IHttpClientFactory httpClientFactory) : ISource
                     $"Naver Webtoon title {sourceSeriesId} is adult-restricted and requires a login");
             }
 
+            var parsedOnPage = 0;
+            var newOnPage = 0;
             if (root.TryGetProperty("articleList", out var list) && list.ValueKind == JsonValueKind.Array)
             {
                 foreach (var item in list.EnumerateArray())
@@ -136,8 +139,18 @@ public class NaverWebtoonSource(IHttpClientFactory httpClientFactory) : ISource
                     if (chapter is not null)
                     {
                         chapters.Add(chapter);
+                        parsedOnPage++;
+                        if (seen.Add(chapter.SourceChapterId))
+                        {
+                            newOnPage++;
+                        }
                     }
                 }
+            }
+
+            if (parsedOnPage > 0 && newOnPage == 0)
+            {
+                break;
             }
 
             page = root.TryGetProperty("pageInfo", out var pageInfo) &&
