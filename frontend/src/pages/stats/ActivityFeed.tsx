@@ -91,8 +91,16 @@ function collapseChurn(entries: FeedEntry[]): FeedEntry[] {
 
     const ordered = [...group].sort((a, b) => a.at.localeCompare(b.at))
     const latest = ordered[ordered.length - 1]
-    // One round trip is an add and a remove, so pairs, not events.
-    const cycles = Math.floor(ordered.length / 2)
+    // A re-add is an add that follows a removal; an add then a remove has not been re-added.
+    let cycles = 0
+    let removedSince = false
+    for (const e of ordered) {
+      if (e.kind === 'removed') removedSince = true
+      else if (e.kind === 'added' && removedSince) {
+        cycles++
+        removedSince = false
+      }
+    }
     out.push({
       ...latest,
       note: cycles > 0 ? plural(cycles, { one: 're-added #×', other: 're-added #×' }) : undefined,

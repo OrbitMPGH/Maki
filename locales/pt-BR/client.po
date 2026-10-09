@@ -775,9 +775,8 @@ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 msgstr "{kind, select, both {Roteiro · Arte} story {Roteiro} art {Arte} other {}}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
-#, fuzzy
-msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
-msgstr "{kind, select, up {Aumento de {pct}% em relação ao período anterior.} down {Queda de {pct}% em relação ao período anterior.} flat {Quase igual ao período anterior.} none {} other {}}"
+msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -1026,9 +1025,8 @@ msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it
 msgstr "{pending, plural, one {Ainda falta # capítulo. Ele aparecerá aqui após o download.} many {Ainda faltam # capítulos. Eles aparecerão aqui após o download.} other {Ainda faltam # capítulos. Eles aparecerão aqui após o download.}}"
 
 #: src/pages/stats/sections/RhythmSection.tsx
-#, fuzzy
-msgid "{perSittingMedian} ch per sitting"
-msgstr "{perSittingMedian} cap. por sessão"
+msgid "{perSitting} ch per sitting"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -1726,9 +1724,8 @@ msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{dis
 msgstr "<0>{seriesCount, plural, one {# série} many {# séries} other {# séries}}</0> e <1>{diskSize}</1> no disco."
 
 #: src/pages/stats/sections/ProgressSection.tsx
-#, fuzzy
-msgid "<0>{streak}</0> day streak, best <1>{best}</1>"
-msgstr "<0>{streak}</0> dias seguidos de leitura, recorde de <1>{best}</1>"
+msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4379,14 +4376,6 @@ msgstr "Conecte um rastreador do AniList ou MyAnimeList para usar isso."
 #, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
 msgstr "Conecte um rastreador do AniList ou MyAnimeList para usar isso. <0>Abrir configurações de rastreador</0>"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#: src/pages/stats/sections/ReadingSection.tsx
-#: src/pages/stats/sections/RhythmSection.tsx
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "Conecte isso em Configurações e o Maki começará a registrar os capítulos que você lê. Downloads e alterações na biblioteca são registrados de qualquer forma."
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -9716,6 +9705,10 @@ msgstr "Nenhum perfil de qualidade ainda. As séries sem perfil usam o que estiv
 msgid "No reading time recorded."
 msgstr "Nenhum tempo de leitura registrado."
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "No reading tracked yet"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No release-year data yet"
@@ -11615,6 +11608,10 @@ msgstr "Ler {nextChapter}"
 msgid "Read {nextChapterLabel}"
 msgstr "Ler {nextChapterLabel}"
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Read a few chapters and this fills in."
@@ -11772,14 +11769,6 @@ msgstr "O progresso de leitura e os favoritos das linhas de capítulos removidas
 #, fuzzy
 msgid "Reading progress from Kavita…"
 msgstr "Progresso de leitura do Kavita…"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#: src/pages/stats/sections/ReadingSection.tsx
-#: src/pages/stats/sections/RhythmSection.tsx
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Reading stats need Kavita"
-msgstr "As estatísticas de leitura precisam do Kavita"
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -17123,9 +17112,12 @@ msgid "You put down"
 msgstr "Você parou de ler"
 
 #: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {the same as the crowd}}"
-msgstr "Sua média de avaliação difere da dos outros leitores em {meanGapValue} {meanGapKind, select, above {pontos acima} below {pontos abaixo} other {pontos}}"
+msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {points from the crowd}}"
+msgstr ""
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "You rate the same as the crowd"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

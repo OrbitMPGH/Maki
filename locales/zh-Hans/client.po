@@ -775,9 +775,8 @@ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 msgstr "{kind, select, both {剧情 · 绘画} story {剧情} art {绘画} other {}}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
-#, fuzzy
-msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
-msgstr "{kind, select, up {比上一时段增加 {pct}%。} down {比上一时段减少 {pct}%。} flat {与上一时段大致相同。} none {} other {}}"
+msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -1026,9 +1025,8 @@ msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it
 msgstr "{pending, plural, other {还有 # 个章节待获取。下载后会显示在这里。}}"
 
 #: src/pages/stats/sections/RhythmSection.tsx
-#, fuzzy
-msgid "{perSittingMedian} ch per sitting"
-msgstr "每次阅读 {perSittingMedian} 章"
+msgid "{perSitting} ch per sitting"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -1726,9 +1724,8 @@ msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{dis
 msgstr "磁盘上有 <0>{seriesCount, plural, other {# 个系列}}</0>，共 <1>{diskSize}</1>。"
 
 #: src/pages/stats/sections/ProgressSection.tsx
-#, fuzzy
-msgid "<0>{streak}</0> day streak, best <1>{best}</1>"
-msgstr "<0>{streak}</0> 天连续阅读，最佳记录为 <1>{best}</1>"
+msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4379,14 +4376,6 @@ msgstr "连接 AniList 或 MyAnimeList 跟踪器以使用此功能。"
 #, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
 msgstr "连接 AniList 或 MyAnimeList 跟踪器以使用此功能。<0>打开跟踪器设置</0>"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#: src/pages/stats/sections/ReadingSection.tsx
-#: src/pages/stats/sections/RhythmSection.tsx
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "在“设置”中连接后，Maki 就会开始记录你阅读的章节。无论是否连接，下载和资料库更改都会被记录。"
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -9716,6 +9705,10 @@ msgstr "还没有质量配置。没有指定配置的系列会使用实例默认
 msgid "No reading time recorded."
 msgstr "没有记录阅读时间。"
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "No reading tracked yet"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No release-year data yet"
@@ -11615,6 +11608,10 @@ msgstr "阅读 {nextChapter}"
 msgid "Read {nextChapterLabel}"
 msgstr "阅读 {nextChapterLabel}"
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Read a few chapters and this fills in."
@@ -11772,14 +11769,6 @@ msgstr "已移除章节行的阅读进度和书签也会被删除。"
 #, fuzzy
 msgid "Reading progress from Kavita…"
 msgstr "正在读取 Kavita 的阅读进度……"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#: src/pages/stats/sections/ReadingSection.tsx
-#: src/pages/stats/sections/RhythmSection.tsx
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Reading stats need Kavita"
-msgstr "阅读统计需要 Kavita"
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -17123,9 +17112,12 @@ msgid "You put down"
 msgstr "你放下了"
 
 #: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {the same as the crowd}}"
-msgstr "你的评分与大众相比相差 {meanGapValue} {meanGapKind, select, above {分，高于平均值} below {分，低于平均值} other {分}}"
+msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {points from the crowd}}"
+msgstr ""
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "You rate the same as the crowd"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

@@ -775,9 +775,8 @@ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 msgstr "{kind, select, both {ストーリー · 作画} story {ストーリー} art {作画} other {}}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
-#, fuzzy
-msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
-msgstr "{kind, select, up {前の期間より{pct}%増加。} down {前の期間より{pct}%減少。} flat {前の期間とほぼ同じ。} none {} other {}}"
+msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -1026,9 +1025,8 @@ msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it
 msgstr "{pending, plural, other {あと # 章がリクエストされています。ダウンロードされるとここに表示されます。}}"
 
 #: src/pages/stats/sections/RhythmSection.tsx
-#, fuzzy
-msgid "{perSittingMedian} ch per sitting"
-msgstr "1回の読書で{perSittingMedian}章"
+msgid "{perSitting} ch per sitting"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -1726,9 +1724,8 @@ msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{dis
 msgstr "<0>{seriesCount, plural, other {# 件のシリーズ}}</0>、<1>{diskSize}</1>をディスク上に保存"
 
 #: src/pages/stats/sections/ProgressSection.tsx
-#, fuzzy
-msgid "<0>{streak}</0> day streak, best <1>{best}</1>"
-msgstr "<0>{streak}</0>日連続で読書、最長<1>{best}</1>日"
+msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4379,14 +4376,6 @@ msgstr "これを使うにはAniListまたはMyAnimeListのトラッカーを連
 #, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
 msgstr "これを使うにはAniListまたはMyAnimeListのトラッカーを連携してください。<0>トラッカー設定を開く</0>"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#: src/pages/stats/sections/ReadingSection.tsx
-#: src/pages/stats/sections/RhythmSection.tsx
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "設定で接続すると、Maki が読んだ章を記録します。ダウンロードとライブラリの変更は接続しなくても記録されます。"
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -9716,6 +9705,10 @@ msgstr "品質プロファイルはまだありません。プロファイルの
 msgid "No reading time recorded."
 msgstr "記録された読書時間はありません。"
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "No reading tracked yet"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No release-year data yet"
@@ -11615,6 +11608,10 @@ msgstr "{nextChapter}を読む"
 msgid "Read {nextChapterLabel}"
 msgstr "{nextChapterLabel} を読む"
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Read a few chapters and this fills in."
@@ -11772,14 +11769,6 @@ msgstr "削除した章行の読書進捗とブックマークも削除されま
 #, fuzzy
 msgid "Reading progress from Kavita…"
 msgstr "Kavitaから読書進捗を取得中…"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#: src/pages/stats/sections/ReadingSection.tsx
-#: src/pages/stats/sections/RhythmSection.tsx
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Reading stats need Kavita"
-msgstr "読書統計には Kavita が必要です"
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -17123,9 +17112,12 @@ msgid "You put down"
 msgstr "途中で置いた作品"
 
 #: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {the same as the crowd}}"
-msgstr "全体より{meanGapValue}ポイント{meanGapKind, select, above {高く評価しています} below {低く評価しています} other {同じ評価です}}"
+msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {points from the crowd}}"
+msgstr ""
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "You rate the same as the crowd"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

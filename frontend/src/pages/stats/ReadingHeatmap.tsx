@@ -4,6 +4,7 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import type { HeatmapDay } from '../../api/hooks'
 import { Panel } from '../../components/ui/Panel'
 import { formatDate, monthName } from '../../format'
+import { isoDate } from './StatsRange'
 
 const WEEKS = 53
 const DAYS_IN_WEEK = 7
@@ -29,17 +30,13 @@ const SHADES = [
   'var(--brand)',
 ]
 
-function isoDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 /**
  * A GitHub-style year of reading. Columns are weeks, rows are weekdays starting Monday, with the
  * grid ending on the current week so today sits in the last column.
  */
 export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
   const { i18n } = useLingui()
-  const { columns, monthLabels } = useMemo(() => {
+  const { columns, monthLabels, todayKey } = useMemo(() => {
     const byDate = new Map(days.map((d) => [d.date.slice(0, 10), d]))
 
     const today = new Date()
@@ -71,7 +68,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
       cols.push(column)
     }
 
-    return { columns: cols, monthLabels: labels }
+    return { columns: cols, monthLabels: labels, todayKey: isoDate(today) }
     // monthName is locale-bound: without i18n.locale here, a language switch would leave the
     // previous language's month names cached until days changed too.
   }, [days, i18n.locale])
@@ -101,6 +98,21 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
                   // midnight, which would shift the printed date back a day west of UTC.
                   const cellDate = formatDate(`${cell.date}T00:00:00`)
                   const nothingRead = cell.chapters === 0 && cell.seconds === 0
+                  // The last column runs to Sunday; days that have not happened are not missed days.
+                  if (cell.date > todayKey) {
+                    return (
+                      <Box
+                        key={cell.date}
+                        style={{
+                          width: 11,
+                          height: 11,
+                          borderRadius: 'var(--radius-2xs)',
+                          background: SHADES[0],
+                          opacity: 0.4,
+                        }}
+                      />
+                    )
+                  }
                   return (
                     <Tooltip
                       key={cell.date}

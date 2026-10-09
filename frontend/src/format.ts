@@ -33,6 +33,7 @@ function cached<T>(build: (locale: string) => T): () => T {
 
 const decimal = cached((l) => new Intl.NumberFormat(l, { maximumFractionDigits: 1 }))
 const integer = cached((l) => new Intl.NumberFormat(l))
+const dayAndMonth = cached((l) => new Intl.DateTimeFormat(l, { day: 'numeric', month: 'short' }))
 const shortMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'short' }))
 const longMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'long' }))
 const dateOnly = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium' }))
@@ -44,10 +45,16 @@ const longWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'long' }
 const hourOnly = cached((l) => new Intl.DateTimeFormat(l, { hour: 'numeric', minute: '2-digit' }))
 const percents = cached(() => new Map<number, Intl.NumberFormat>())
 const signedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
+const signedPercent = cached((l) => new Intl.NumberFormat(l, { style: 'percent', signDisplay: 'exceptZero' }))
 
 /** "1 234" / "1,234", whichever the language groups with. */
 export function formatNumber(value: number): string {
   return integer().format(value)
+}
+
+/** Up to one decimal in the active language: "2.5" or "2,5", and "3" rather than "3.0". */
+export function formatDecimal(value: number): string {
+  return decimal().format(value)
 }
 
 /**
@@ -143,6 +150,11 @@ export function formatPercent(fraction: number, digits = 0): string {
   return format.format(fraction)
 }
 
+/** A 0..1 change as a whole percentage with a sign: "+12%", "-3%", and "0%" once it rounds to nothing. */
+export function formatSignedPercent(fraction: number): string {
+  return signedPercent().format(fraction)
+}
+
 /** A signed one-decimal number: "+4.2", "-1.0", "0.0". The sign is whatever `Intl` produces. */
 export function formatSignedDecimal(value: number, digits = 1): string {
   const formats = signedDecimals()
@@ -163,6 +175,13 @@ export function formatMonthBucket(bucket: string): string {
   const [year, month] = bucket.split('-')
   const name = monthName(Number(month), 'short')
   return name ? `${name} ${year.slice(2)}` : bucket
+}
+
+/** "2026-03-14" as the stats buckets carry it, rendered "14 Mar" or "Mar 14" by language. */
+export function formatDayBucket(bucket: string): string {
+  const [year, month, day] = bucket.split('-').map(Number)
+  if (!year || !month || !day) return bucket
+  return dayAndMonth().format(new Date(year, month - 1, day))
 }
 
 /**

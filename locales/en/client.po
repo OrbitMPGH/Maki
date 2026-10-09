@@ -644,8 +644,8 @@ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 msgstr "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
-msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
-msgstr "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
+msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
+msgstr "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "{kind} to {relatedTo}"
@@ -846,8 +846,8 @@ msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it
 msgstr "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
 
 #: src/pages/stats/sections/RhythmSection.tsx
-msgid "{perSittingMedian} ch per sitting"
-msgstr "{perSittingMedian} ch per sitting"
+msgid "{perSitting} ch per sitting"
+msgstr "{perSitting} ch per sitting"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "{primeShare} of minutes"
@@ -1410,8 +1410,8 @@ msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{dis
 msgstr "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
 
 #: src/pages/stats/sections/ProgressSection.tsx
-msgid "<0>{streak}</0> day streak, best <1>{best}</1>"
-msgstr "<0>{streak}</0> day streak, best <1>{best}</1>"
+msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
+msgstr "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
@@ -3594,13 +3594,6 @@ msgstr "Connect an AniList or MyAnimeList tracker to use this."
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
 msgstr "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#: src/pages/stats/sections/ReadingSection.tsx
-#: src/pages/stats/sections/RhythmSection.tsx
-#: src/pages/stats/sections/TasteSection.tsx
-msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 
 #: src/components/TrackerSyncControls.tsx
 msgid "Connect on the Scrobble page to import."
@@ -7972,6 +7965,10 @@ msgstr "No quality profiles yet. Series without one use whatever the instance de
 msgid "No reading time recorded."
 msgstr "No reading time recorded."
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "No reading tracked yet"
+msgstr "No reading tracked yet"
+
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "No release-year data yet"
 msgstr "No release-year data yet"
@@ -9536,6 +9533,10 @@ msgstr "Read {nextChapter}"
 msgid "Read {nextChapterLabel}"
 msgstr "Read {nextChapterLabel}"
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
+msgstr "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Read a few chapters and this fills in."
 msgstr "Read a few chapters and this fills in."
@@ -9666,13 +9667,6 @@ msgstr "Reading progress and bookmarks for removed chapter rows will also be del
 #: src/pages/settings/ReadingCards.tsx
 msgid "Reading progress from Kavita…"
 msgstr "Reading progress from Kavita…"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-#: src/pages/stats/sections/ReadingSection.tsx
-#: src/pages/stats/sections/RhythmSection.tsx
-#: src/pages/stats/sections/TasteSection.tsx
-msgid "Reading stats need Kavita"
-msgstr "Reading stats need Kavita"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Reading the folder and every volume archive…"
@@ -14066,8 +14060,12 @@ msgid "You put down"
 msgstr "You put down"
 
 #: src/pages/stats/sections/TasteSection.tsx
-msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {the same as the crowd}}"
-msgstr "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {the same as the crowd}}"
+msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {points from the crowd}}"
+msgstr "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {points from the crowd}}"
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "You rate the same as the crowd"
+msgstr "You rate the same as the crowd"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "You rated this one yourself, so the anime is not counted again"
