@@ -12,6 +12,31 @@ namespace Maki.Api.Services;
 
 public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> logger) : BackgroundService
 {
+    private bool _zoneWarned;
+
+    /// <summary>
+    /// The configured scan time zone, or the host's own when that id is unknown here. Options can be
+    /// saved on one host and restored onto another with a different zone database, and a throw would
+    /// stop every scan on the pass.
+    /// </summary>
+    private TimeZoneInfo ResolveZone(string? id)
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(id ?? TimeZoneInfo.Local.Id);
+        }
+        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            if (!_zoneWarned)
+            {
+                _zoneWarned = true;
+                logger.LogWarning("Health scan time zone {Zone} is not known on this host, using the host's own", id);
+            }
+
+            return TimeZoneInfo.Local;
+        }
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -31,7 +56,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                 var baseline = DateTime.Parse(baselineText, null, System.Globalization.DateTimeStyles.RoundtripKind);
                 if (options.AutomaticScanning)
                 {
-                    var zone = TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone ?? TimeZoneInfo.Local.Id);
+                    var zone = ResolveZone(options.TimeZone);
                     var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zone);
                     var date = local.ToString("yyyy-MM-dd");
                     if (local.Hour >= options.ScanHour && await settings.GetAsync(SettingKeys.HealthLastScheduled, stoppingToken) != date)
