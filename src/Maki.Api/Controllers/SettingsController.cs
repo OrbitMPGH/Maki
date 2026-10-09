@@ -2016,7 +2016,9 @@ public class SettingsController(
         /// Stands in for <c>KitsuPassword</c>, which is never sent back: a third-party password that
         /// is often reused would otherwise be readable by any of the caller's API keys.
         /// </summary>
-        bool KitsuPasswordSet = false);
+        bool KitsuPasswordSet = false,
+        /// <summary>Stands in for <c>MangaBakaToken</c>, which is never sent back, for the same reason.</summary>
+        bool MangaBakaTokenSet = false);
 
     /// <summary>
     /// Both halves of the scrobble configuration in one response, because one card in the UI shows
@@ -2049,7 +2051,7 @@ public class SettingsController(
             admin ? await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct) : null,
-            mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken),
+            null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientId, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientSecret, ct) : null,
             mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuEmail),
@@ -2060,7 +2062,8 @@ public class SettingsController(
             mine.GetValueOrDefault(SettingKeys.ScrobblePlanToRead) == "true",
             admin ? await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct) : null,
             IsAdmin: admin,
-            KitsuPasswordSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword))));
+            KitsuPasswordSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword)),
+            MangaBakaTokenSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken))));
     }
 
     [Authorize(Policy = Policies.UseTrackers)]
@@ -2068,10 +2071,14 @@ public class SettingsController(
     public async Task<IActionResult> SetScrobble([FromBody] ScrobbleSettings request, CancellationToken ct)
     {
         // The caller's own remote accounts, always writable.
-        await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        if (request.MangaBakaToken is not null)
+        {
+            await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        }
+
         await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
-        // Null means "leave it": GET never returns the password, so a client that did not touch the
-        // field sends nothing back.
+        // Null means "leave it" for the token and the password: GET never returns either, so a client
+        // that did not touch the field sends nothing back.
         if (request.KitsuPassword is not null)
         {
             await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);

@@ -145,7 +145,7 @@ export function ScrobbleSection() {
           description={t`From your MangaBaka settings. No OAuth needed.`}
           type="password"
           autoComplete="new-password"
-          placeholder="mb-..."
+          placeholder={form?.mangaBakaTokenSet ? t`Saved` : 'mb-...'}
           value={form?.mangaBakaToken ?? ''}
           onChange={(e) => set({ mangaBakaToken: e.currentTarget.value })}
         />

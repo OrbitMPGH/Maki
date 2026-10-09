@@ -34,8 +34,8 @@ public sealed class ScrobbleSettingsSecretTests : IDisposable
     private static SettingsController.ScrobbleSettings Body(IActionResult result) =>
         Assert.IsType<SettingsController.ScrobbleSettings>(Assert.IsType<OkObjectResult>(result).Value);
 
-    private static SettingsController.ScrobbleSettings Request(string? password) =>
-        new(null, null, null, null, null, null, null, "me@example.com", password, 30, false, null);
+    private static SettingsController.ScrobbleSettings Request(string? password, string? token = null) =>
+        new(null, null, null, null, token, null, null, "me@example.com", password, 30, false, null);
 
     [Fact]
     public async Task The_kitsu_password_is_never_returned_only_whether_one_is_set()
@@ -61,5 +61,23 @@ public sealed class ScrobbleSettingsSecretTests : IDisposable
 
         await Controller(userId).SetScrobble(Request(""), default);
         Assert.False(Body(await Controller(userId).GetScrobble(default)).KitsuPasswordSet);
+    }
+
+    [Fact]
+    public async Task The_mangabaka_token_is_never_returned_and_follows_the_same_null_and_empty_rules()
+    {
+        var userId = _db.SeedUser("reader", MakiPermission.UseTrackers);
+
+        var saved = Body(await Controller(userId).SetScrobble(Request(null, "mb-secret"), default));
+        Assert.Null(saved.MangaBakaToken);
+        Assert.True(saved.MangaBakaTokenSet);
+
+        await Controller(userId).SetScrobble(Request(null, null), default);
+        Assert.True(Body(await Controller(userId).GetScrobble(default)).MangaBakaTokenSet);
+
+        await Controller(userId).SetScrobble(Request(null, ""), default);
+        var read = Body(await Controller(userId).GetScrobble(default));
+        Assert.False(read.MangaBakaTokenSet);
+        Assert.Null(read.MangaBakaToken);
     }
 }
