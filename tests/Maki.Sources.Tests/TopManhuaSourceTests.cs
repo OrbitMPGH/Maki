@@ -28,7 +28,7 @@ public class TopManhuaSourceTests
     }
 
     [Fact]
-    public async Task A_search_card_without_an_absolute_link_is_skipped_not_fatal()
+    public async Task A_search_card_without_a_link_is_skipped_and_a_relative_one_resolves_against_the_site()
     {
         const string search = """
             <div class="c-tabs-item">
@@ -41,7 +41,8 @@ public class TopManhuaSourceTests
 
         var results = await source.SearchAsync("anjo");
 
-        Assert.Equal("anjo", Assert.Single(results).SourceSeriesId);
+        Assert.Equal(["relative", "anjo"], results.Select(r => r.SourceSeriesId));
+        Assert.All(results, r => Assert.StartsWith("https://www.topmanhua.fan/manhua/", r.Url));
     }
 
     [Fact]

@@ -23,6 +23,33 @@ internal static class UrlText
         return slug.ToString().Trim(separator);
     }
 
+    /// <summary>
+    /// A scraped href resolved against <paramref name="baseUrl"/>, or null unless it is http(s) and, with
+    /// <paramref name="requireSiteHost"/>, on the site's own host. <c>Uri.TryCreate(href, UriKind.Absolute)</c>
+    /// reads "/path" as a file:/// URI on Linux, so it cannot be used to tell a relative href from an absolute one.
+    /// </summary>
+    public static Uri? ResolveHref(string baseUrl, string? href, bool requireSiteHost = true)
+    {
+        var baseUri = new Uri(baseUrl);
+        if (string.IsNullOrWhiteSpace(href) || !Uri.TryCreate(baseUri, href.Trim(), out var uri) ||
+            uri.Scheme is not ("http" or "https"))
+        {
+            return null;
+        }
+
+        if (!requireSiteHost)
+        {
+            return uri;
+        }
+
+        var baseHost = baseUri.Host;
+        return uri.Host.Equals(baseHost, StringComparison.OrdinalIgnoreCase) ||
+               uri.Host.Equals($"www.{baseHost}", StringComparison.OrdinalIgnoreCase) ||
+               baseHost.Equals($"www.{uri.Host}", StringComparison.OrdinalIgnoreCase)
+            ? uri
+            : null;
+    }
+
     /// <summary>The unescaped value of query parameter <paramref name="key"/> (case-insensitive), or null.</summary>
     public static string? QueryValue(string query, string key)
     {

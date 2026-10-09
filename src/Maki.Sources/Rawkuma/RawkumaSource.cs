@@ -293,9 +293,9 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         host.Equals("rawkuma.net", StringComparison.OrdinalIgnoreCase) ||
         host.Equals("www.rawkuma.net", StringComparison.OrdinalIgnoreCase);
 
-    private static string? LastPathSegment(string? href)
+    private string? LastPathSegment(string? href)
     {
-        if (string.IsNullOrEmpty(href) || !Uri.TryCreate(href, UriKind.Absolute, out var uri))
+        if (UrlText.ResolveHref(BaseUrl, href, requireSiteHost: false) is not { } uri)
         {
             return null;
         }

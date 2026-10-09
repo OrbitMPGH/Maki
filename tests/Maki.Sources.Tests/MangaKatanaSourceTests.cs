@@ -56,4 +56,23 @@ public class MangaKatanaSourceTests
 
         Assert.Contains("manga/slug.123/c1", ex.Message);
     }
+
+    [Fact]
+    public async Task Search_resolves_relative_hrefs_and_skips_cards_that_are_not_on_the_site()
+    {
+        const string search = """
+            <div id="book_list">
+              <div class="item"><div class="text"><h3><a>No link</a></h3></div></div>
+              <div class="item"><div class="text"><h3><a href="/manga/relative.1">Relative</a></h3></div></div>
+              <div class="item"><div class="text"><h3><a href="https://elsewhere.test/manga/other.2">Elsewhere</a></h3></div></div>
+              <div class="item"><div class="text"><h3><a href="https://mangakatana.com/manga/full.3">Full</a></h3></div></div>
+            </div>
+            """;
+        var source = new MangaKatanaSource(new FakeHttpClientFactory(new() { ["search=anjo"] = search }));
+
+        var results = await source.SearchAsync("anjo");
+
+        Assert.Equal(["relative.1", "full.3"], results.Select(r => r.SourceSeriesId));
+        Assert.All(results, r => Assert.StartsWith("https://mangakatana.com/manga/", r.Url));
+    }
 }

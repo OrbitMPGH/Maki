@@ -3,6 +3,7 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.TopManhua;
 
@@ -46,7 +47,7 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
                 continue;
             }
             var href = link.GetAttribute("href");
-            if (!Uri.TryCreate(href, UriKind.Absolute, out var hrefUri))
+            if (UrlText.ResolveHref(BaseUrl, href) is not { } hrefUri)
             {
                 continue;
             }
@@ -62,7 +63,7 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             var titleText = link.HasChildNodes ? link.FirstChild!.TextContent.Trim() : link.TextContent.Trim();
             var cover = item.QuerySelector("img")?.GetAttribute("src");
             
-            results.Add(new SourceSeriesResult(seriesId, titleText, href, cover));
+            results.Add(new SourceSeriesResult(seriesId, titleText, hrefUri.AbsoluteUri, cover));
         }
         
         return results;
