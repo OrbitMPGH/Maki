@@ -984,6 +984,7 @@ try
     builder.Services.AddSignalR()
         .AddJsonProtocol(o => Maki.Api.Json.MakiJson.ApplyConverters(o.PayloadSerializerOptions));
     builder.Services.AddExceptionHandler<UnhandledExceptionHandler>();
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
@@ -1530,14 +1531,22 @@ try
     // lazy chunks point at hashes that no longer exist.
     var spaFiles = new StaticFileOptions
     {
-        OnPrepareResponse = c => c.Context.Response.Headers.CacheControl =
-            c.Context.Request.Path.StartsWithSegments("/assets")
-                ? "public, max-age=31536000, immutable"
-                : "no-cache"
+        FileProvider = new PrecompressedFileProvider(
+            app.Environment.WebRootFileProvider, app.Services.GetRequiredService<IHttpContextAccessor>()),
+        OnPrepareResponse = c =>
+        {
+            c.Context.Response.Headers.CacheControl =
+                c.Context.Request.Path.StartsWithSegments("/assets")
+                    ? "public, max-age=31536000, immutable"
+                    : "no-cache";
+            PrecompressedFileProvider.Apply(c);
+        }
     };
-    app.UseResponseCompression();
     app.UseDefaultFiles();
     app.UseStaticFiles(spaFiles);
+    // After the static files on purpose: they answer from the Vite build's precompressed siblings and
+    // never reach it, so runtime compression is left to API responses.
+    app.UseResponseCompression();
 
     app.UseRateLimiter();
 

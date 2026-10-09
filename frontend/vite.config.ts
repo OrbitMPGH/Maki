@@ -1,11 +1,50 @@
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, loadEnv } from 'vite'
+import { brotliCompressSync, constants, gzipSync } from 'node:zlib'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import { lingui, linguiTransformerBabelPreset } from '@lingui/vite-plugin'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// Writes a .br and a .gz beside each text asset so the API serves them as they are instead of
+// compressing every response; PrecompressedFileProvider on the API side picks them by Accept-Encoding.
+const COMPRESSIBLE = /\.(?:js|css|html|svg|json|webmanifest|txt|xml)$/
+const MIN_BYTES = 1024
+
+function precompress(): Plugin {
+  let outDir = ''
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const full = path.join(dir, name)
+      return statSync(full).isDirectory() ? walk(full) : [full]
+    })
+  return {
+    name: 'maki:precompress',
+    apply: 'build',
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir)
+    },
+    closeBundle() {
+      for (const file of walk(outDir)) {
+        if (!COMPRESSIBLE.test(file)) continue
+        const source = readFileSync(file)
+        if (source.length < MIN_BYTES) continue
+        const br = brotliCompressSync(source, {
+          params: {
+            [constants.BROTLI_PARAM_QUALITY]: constants.BROTLI_MAX_QUALITY,
+            [constants.BROTLI_PARAM_SIZE_HINT]: source.length,
+          },
+        })
+        const gz = gzipSync(source, { level: constants.Z_BEST_COMPRESSION })
+        if (br.length < source.length) writeFileSync(`${file}.br`, br)
+        if (gz.length < source.length) writeFileSync(`${file}.gz`, gz)
+      }
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -15,6 +54,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      precompress(),
       // Turns an imported `.po` into runtime messages, so there is no `lingui compile` step and no
       // generated catalogs to keep in step with the source ones.
       lingui(),
