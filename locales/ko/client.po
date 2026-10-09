@@ -5496,6 +5496,11 @@ msgstr "다음 챕터 다운로드"
 msgid "Download order"
 msgstr "다운로드 순서"
 
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Download queue"
@@ -9496,6 +9501,11 @@ msgstr "이 기간에 읽은 챕터 없음."
 #, fuzzy
 msgid "No checks have run yet. Use Check now."
 msgstr "아직 확인을 실행하지 않았습니다. 지금 확인을 사용하세요."
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13564,6 +13574,10 @@ msgstr "완료된 시리즈"
 msgid "Series folder format"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Series has no root folder"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
 msgstr ""
@@ -14795,6 +14809,10 @@ msgstr "현재 파일은 바로 삭제되지 않고 휴지통으로 이동하므
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
 msgstr ""
 
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr ""
@@ -14960,6 +14978,10 @@ msgstr "샘플 다운로드에 실패했습니다"
 #, fuzzy
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "선택한 시리즈는 Maki에서 제거되고 모니터링도 중지됩니다."
+
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

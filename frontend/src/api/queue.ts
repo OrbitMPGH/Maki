@@ -74,6 +74,17 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.disk': msg`Could not write the chapter to disk`,
   'error.download.invalidPage': msg`A page the source sent is not a readable image`,
   'error.download.notListed': msg`No source has this chapter right now`,
+  'error.torrentImport.notInQbittorrent': msg`The download is no longer in qBittorrent`,
+  'error.torrentImport.pathNotAccessible': msg({
+    message: `Download path not accessible from Maki: {path}`,
+    comment: `{path} is a filesystem path and is never translated.`,
+  }),
+  'error.torrentImport.noComicsFound': msg({
+    message: `No comics found in the completed download ({detail})`,
+    comment: `{detail} is a summary of the folder's contents and is not translated.`,
+  }),
+  'error.torrentImport.noRootFolder': msg`Series has no root folder`,
+  'error.torrentImport.seriesChanged': msg`The series was deleted or moved while this download was being imported, so nothing was imported`,
   'error.upgrades.volumeGuard': msg`Held back for review, {file}: {reason}`,
 }
 

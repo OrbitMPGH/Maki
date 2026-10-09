@@ -5496,6 +5496,11 @@ msgstr "Загрузить следующие главы"
 msgid "Download order"
 msgstr "Порядок загрузки"
 
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Download queue"
@@ -9496,6 +9501,11 @@ msgstr "В этом периоде главы не прочитаны."
 #, fuzzy
 msgid "No checks have run yet. Use Check now."
 msgstr "Проверки ещё не выполнялись. Используйте «Проверить сейчас»."
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13564,6 +13574,10 @@ msgstr "серия завершена"
 msgid "Series folder format"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Series has no root folder"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
 msgstr ""
@@ -14795,6 +14809,10 @@ msgstr "Текущий файл перемещается в корзину, а �
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
 msgstr ""
 
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr ""
@@ -14960,6 +14978,10 @@ msgstr "Не удалось загрузить образец"
 #, fuzzy
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "Выбранные серии будут удалены из Maki и перестанут отслеживаться."
+
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

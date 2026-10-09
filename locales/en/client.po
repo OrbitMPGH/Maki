@@ -4506,6 +4506,11 @@ msgstr "Download next chapters"
 msgid "Download order"
 msgstr "Download order"
 
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr "Download path not accessible from Maki: {path}"
+
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Download queue"
@@ -7784,6 +7789,11 @@ msgstr "No chapters read in this period."
 #: src/pages/HealthPage.tsx
 msgid "No checks have run yet. Use Check now."
 msgstr "No checks have run yet. Use Check now."
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr "No comics found in the completed download ({detail})"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "No creator shows up often enough yet."
@@ -11125,6 +11135,10 @@ msgstr "series finished"
 msgid "Series folder format"
 msgstr "Series folder format"
 
+#: src/api/queue.ts
+msgid "Series has no root folder"
+msgstr "Series has no root folder"
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
 msgstr "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
@@ -12139,6 +12153,10 @@ msgstr "The current file moves to trash rather than being deleted outright, so t
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
 msgstr "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
 
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
+msgstr "The download is no longer in qBittorrent"
+
 #: src/pages/settings/registry.ts
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
 msgstr "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
@@ -12275,6 +12293,10 @@ msgstr "The sample download failed"
 #: src/pages/LibraryPage.tsx
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "The selected series will be removed from Maki and stop being monitored."
+
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr "The series was deleted or moved while this download was being imported, so nothing was imported"
 
 #: src/pages/HealthPage.tsx
 msgid "the series' sources"
