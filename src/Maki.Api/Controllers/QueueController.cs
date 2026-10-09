@@ -410,29 +410,58 @@ public class QueueController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Remove(int id, CancellationToken ct)
     {
-        var item = await db.DownloadQueue.FindAsync([id], ct);
-        if (item is null)
+        var seriesId = await db.DownloadQueue.AsNoTracking()
+            .Where(q => q.Id == id)
+            .Select(q => (int?)q.SeriesId)
+            .FirstOrDefaultAsync(ct);
+        if (seriesId is null)
         {
             return NotFound();
         }
 
-        queue.CancelWork(item.Id);
-
-        if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
+        if (await RemoveOrCancelAsync(id, ct))
         {
-            db.DownloadQueue.Remove(item);
-        }
-        else
-        {
-            item.Status = QueueStatus.Cancelled;
+            // The item will never report an outcome now, so let go of it — otherwise it holds its
+            // series' download batch open and the batch's summary never fires.
+            await batches.DiscardAsync(seriesId.Value, id);
         }
 
-        await db.SaveChangesAsync(ct);
-
-        // The item will never report an outcome now, so let go of it — otherwise it holds its
-        // series' download batch open and the batch's summary never fires.
-        await batches.DiscardAsync(item.SeriesId, item.Id);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Removes a pending row or cancels an in-flight one, but only while it is still in the status it
+    /// was read in. A worker finishing the row in between must keep its Completed (the file is
+    /// already in the library), and a worker that claimed a Queued row must not find it deleted under
+    /// it. A lost race re-reads and tries again; a row that has settled by itself is left as it is.
+    /// </summary>
+    /// <returns>True when this call removed or cancelled the row.</returns>
+    private async Task<bool> RemoveOrCancelAsync(int id, CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var status = await db.DownloadQueue.AsNoTracking()
+                .Where(q => q.Id == id)
+                .Select(q => (QueueStatus?)q.Status)
+                .FirstOrDefaultAsync(ct);
+            if (status is null or QueueStatus.Completed or QueueStatus.Cancelled)
+            {
+                return false;
+            }
+
+            queue.CancelWork(id);
+
+            var row = db.DownloadQueue.Where(q => q.Id == id && q.Status == status);
+            var affected = status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving
+                ? await row.ExecuteDeleteAsync(ct)
+                : await row.ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Cancelled), ct);
+            if (affected > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -443,31 +472,21 @@ public class QueueController(
     [HttpDelete]
     public async Task<IActionResult> Clear(CancellationToken ct)
     {
-        var items = await db.DownloadQueue
+        var items = await db.DownloadQueue.AsNoTracking()
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
+            .Select(q => new { q.Id, q.SeriesId })
             .ToListAsync(ct);
 
+        var cleared = 0;
         foreach (var item in items)
         {
-            queue.CancelWork(item.Id);
-
-            if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
+            if (await RemoveOrCancelAsync(item.Id, ct))
             {
-                db.DownloadQueue.Remove(item);
-            }
-            else
-            {
-                item.Status = QueueStatus.Cancelled;
+                cleared++;
+                await batches.DiscardAsync(item.SeriesId, item.Id);
             }
         }
 
-        await db.SaveChangesAsync(ct);
-
-        foreach (var item in items)
-        {
-            await batches.DiscardAsync(item.SeriesId, item.Id);
-        }
-
-        return Ok(new QueueClearDto(items.Count));
+        return Ok(new QueueClearDto(cleared));
     }
 }
