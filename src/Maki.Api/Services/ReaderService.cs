@@ -711,6 +711,14 @@ public class ReaderService(
             .Where(p => ids.Contains(p.ChapterId))
             .ToDictionaryAsync(p => p.ChapterId, ct);
 
+        var slices = await SlicesAsync(
+            chapters
+                .Where(c => !(existing.TryGetValue(c.Id, out var known) && known is { Completed: true, Watched: false }) &&
+                            (c.SharesFile || c.MeasuredPages is not > 0))
+                .Select(c => c.Id)
+                .ToList(),
+            ct);
+
         var now = DateTime.UtcNow;
         var read = 0;
         var changed = new HashSet<int>();
@@ -726,7 +734,7 @@ public class ReaderService(
 
             var pageCount = !chapter.SharesFile && chapter.MeasuredPages is > 0 and var measured
                 ? measured
-                : (await SliceAsync(chapter.Id, ct))?.PageCount;
+                : slices.GetValueOrDefault(chapter.Id)?.PageCount;
             if (pageCount is not > 0)
             {
                 continue;
