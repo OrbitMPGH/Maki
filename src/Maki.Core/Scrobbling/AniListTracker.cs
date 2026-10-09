@@ -268,17 +268,48 @@ public class AniListTracker(
         int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
         CancellationToken ct = default)
     {
-        object variables = volume > 0
-            ? new { mediaId = int.Parse(remoteId), status = InternalToStatus[status], progress = chapter, progressVolumes = volume }
-            : new { mediaId = int.Parse(remoteId), status = InternalToStatus[status], progress = chapter };
+        var mediaId = int.Parse(remoteId);
+
+        // A re-read is REPEATING on AniList, which we read as Reading. Writing CURRENT back would
+        // end the re-read, so a push on such an entry leaves the status alone.
+        var keepStatus = status == ScrobbleStatus.Reading && await IsRepeatingAsync(userId, mediaId, ct);
+
+        var variables = new Dictionary<string, object> { ["mediaId"] = mediaId, ["progress"] = chapter };
+        if (volume > 0)
+        {
+            variables["progressVolumes"] = volume;
+        }
+
+        if (!keepStatus)
+        {
+            variables["status"] = InternalToStatus[status];
+        }
+
         await QueryAsync(
             userId,
-            """
-            mutation($mediaId:Int,$status:MediaListStatus,$progress:Int,$progressVolumes:Int){
-              SaveMediaListEntry(mediaId:$mediaId,status:$status,progress:$progress,
-                                 progressVolumes:$progressVolumes){ id } }
-            """,
+            keepStatus
+                ? """
+                  mutation($mediaId:Int,$progress:Int,$progressVolumes:Int){
+                    SaveMediaListEntry(mediaId:$mediaId,progress:$progress,
+                                       progressVolumes:$progressVolumes){ id } }
+                  """
+                : """
+                  mutation($mediaId:Int,$status:MediaListStatus,$progress:Int,$progressVolumes:Int){
+                    SaveMediaListEntry(mediaId:$mediaId,status:$status,progress:$progress,
+                                       progressVolumes:$progressVolumes){ id } }
+                  """,
             variables, auth: true, ct);
+    }
+
+    private async Task<bool> IsRepeatingAsync(int userId, int mediaId, CancellationToken ct)
+    {
+        var data = await QueryAsync(
+            userId,
+            "query($id:Int){ Media(id:$id, type:MANGA){ mediaListEntry{ status } } }",
+            new { id = mediaId }, auth: true, ct);
+        return data.TryGetProperty("Media", out var media) && media.ValueKind == JsonValueKind.Object &&
+               media.TryGetProperty("mediaListEntry", out var entry) && entry.ValueKind == JsonValueKind.Object &&
+               GetString(entry, "status") == "REPEATING";
     }
 
     public async Task UpdateRatingAsync(
