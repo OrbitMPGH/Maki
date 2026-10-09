@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Maki.Api.Tests;
 
+[Collection(ConfigDirCollection.Name)]
 public class JsonListConverterTests
 {
     [Fact]
@@ -27,6 +28,33 @@ public class JsonListConverterTests
 
             Assert.Empty(format.Conditions);
             Assert.Contains(logger.Warnings, w => w.Contains(nameof(FormatCondition)));
+        }
+        finally
+        {
+            DataDiagnostics.Logger = previous;
+        }
+    }
+
+    [Fact]
+    public async Task Unreadable_genres_read_as_empty_and_log_a_warning()
+    {
+        var logger = new CapturingLogger();
+        var previous = DataDiagnostics.Logger;
+        DataDiagnostics.Logger = logger;
+        try
+        {
+            using var fixture = new TestDb();
+            var id = fixture.SeedSeries();
+            using (var db = fixture.NewContext())
+            {
+                db.Database.ExecuteSql($"UPDATE Series SET Genres = 'not json' WHERE Id = {id}");
+            }
+
+            using var read = fixture.NewContext();
+            var loaded = await read.Series.SingleAsync(s => s.Id == id);
+
+            Assert.Empty(loaded.Genres);
+            Assert.Contains(logger.Warnings, w => w.Contains("string list"));
         }
         finally
         {

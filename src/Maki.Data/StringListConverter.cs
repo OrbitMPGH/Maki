@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Logging;
 
 namespace Maki.Data;
 
@@ -22,8 +23,10 @@ internal static class StringListConverter
         {
             return JsonSerializer.Deserialize<List<string>>(json, (JsonSerializerOptions?)null) ?? [];
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            DataDiagnostics.Logger?.LogWarning(ex,
+                "Stored string list could not be read and was treated as empty; saving this row would overwrite it");
             return [];
         }
     }
