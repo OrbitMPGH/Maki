@@ -139,7 +139,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 
 | Lane | ID | Tier | State |
 |---|---|---|---|
-| HOSTING-08 job | HOSTING-08 | medium | pending |
+| HOSTING-08 job | HOSTING-08 | medium | done a17238bd, 0cb22018, 5ae81857 (setting backup.scheduled, default off) |
 | AUTH | AUTH-07 | low | pending |
 | AUTH | AUTH-08 | low | pending |
 | AUTH | AUTH-12 | low | pending |
