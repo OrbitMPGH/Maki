@@ -150,6 +150,19 @@ public class FileNameBuilderTests
         Assert.Equal("Berserk Vol.3 Ch.24 (es).cbz", name);
     }
 
+    [Theory]
+    [InlineData("{Chapter.Language}")]
+    [InlineData("{chapter_language}")]
+    [InlineData("{ChapterLanguage}")]
+    public void A_language_token_spelled_with_other_separators_gets_no_suffix(string token)
+    {
+        var name = FileNameBuilder.BuildChapterFileName(
+            SeriesFor("Berserk"),
+            new Chapter { Number = 24, Language = "es" },
+            "{Series Title} {Chapter VolChap} " + token);
+        Assert.Equal("Berserk Ch.24 es.cbz", name);
+    }
+
     [Fact]
     public void The_suffix_reaches_the_relative_path_too()
     {
