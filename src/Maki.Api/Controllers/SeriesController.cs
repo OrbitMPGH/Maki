@@ -739,19 +739,31 @@ public class SeriesController(
             .Where(k => k.Length > 0)
             .ToHashSet();
 
-        var states = await db.ScrobbleSyncStates.AsNoTracking().ToListAsync(ct);
-        var unmatched = await db.ScrobbleUnmatched.AsNoTracking().ToListAsync(ct);
-        var allMappings = await db.ScrobbleMappings.AsNoTracking().ToListAsync(ct);
-
         bool Matches(string title) => keys.Contains(ScrobbleMatching.NormalizeTitle(title));
 
         // Link this library series to its Kavita series by matching the stored title on any
         // scrobble row. Mappings count too (a review/manual match carries the title but may
-        // have no sync state yet), so a just-resolved series is visible immediately.
-        var kavitaIds = states.Where(s => Matches(s.Title)).Select(s => s.KavitaSeriesId)
-            .Concat(unmatched.Where(u => Matches(u.Title)).Select(u => u.KavitaSeriesId))
-            .Concat(allMappings.Where(m => m.Title.Length > 0 && Matches(m.Title)).Select(m => m.KavitaSeriesId))
+        // have no sync state yet), so a just-resolved series is visible immediately. Only the
+        // title and id columns are read for the match; the full rows are fetched for the hits.
+        var stateTitles = await db.ScrobbleSyncStates.AsNoTracking()
+            .Select(s => new { s.KavitaSeriesId, s.Title }).ToListAsync(ct);
+        var unmatchedTitles = await db.ScrobbleUnmatched.AsNoTracking()
+            .Select(u => new { u.KavitaSeriesId, u.Title }).ToListAsync(ct);
+        var mappingTitles = await db.ScrobbleMappings.AsNoTracking()
+            .Select(m => new { m.KavitaSeriesId, m.Title }).ToListAsync(ct);
+
+        var kavitaIds = stateTitles.Where(s => Matches(s.Title)).Select(s => s.KavitaSeriesId)
+            .Concat(unmatchedTitles.Where(u => Matches(u.Title)).Select(u => u.KavitaSeriesId))
+            .Concat(mappingTitles.Where(m => m.Title.Length > 0 && Matches(m.Title)).Select(m => m.KavitaSeriesId))
             .ToHashSet();
+
+        var kavitaIdList = kavitaIds.ToList();
+        var states = await db.ScrobbleSyncStates.AsNoTracking()
+            .Where(s => kavitaIdList.Contains(s.KavitaSeriesId)).ToListAsync(ct);
+        var unmatched = await db.ScrobbleUnmatched.AsNoTracking()
+            .Where(u => kavitaIdList.Contains(u.KavitaSeriesId)).ToListAsync(ct);
+        var allMappings = await db.ScrobbleMappings.AsNoTracking()
+            .Where(m => kavitaIdList.Contains(m.KavitaSeriesId)).ToListAsync(ct);
 
         var kavitaConfigured =
             !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
