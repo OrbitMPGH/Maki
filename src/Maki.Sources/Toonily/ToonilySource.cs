@@ -1,11 +1,11 @@
 using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Toonily;
 
@@ -109,23 +109,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
         string.Join("&", form.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
     /// <summary>Title lowercased with every run of non-[a-z0-9] collapsed to a single hyphen.</summary>
-    internal static string SearchSlug(string title)
-    {
-        var slug = new StringBuilder(title.Length);
-        foreach (var c in title.ToLowerInvariant())
-        {
-            if (char.IsAsciiLetterOrDigit(c))
-            {
-                slug.Append(c);
-            }
-            else if (slug.Length > 0 && slug[^1] != '-')
-            {
-                slug.Append('-');
-            }
-        }
-
-        return slug.ToString().Trim('-');
-    }
+    internal static string SearchSlug(string title) => UrlText.Slugify(title, '-');
 
     private IReadOnlyList<SourceSeriesResult> ToResults(IReadOnlyList<MadaraParser.ArchiveItem> items)
     {
@@ -214,8 +198,9 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
 
     private SourceChapter? ToChapter(string seriesId, MadaraParser.ChapterItem item)
     {
-        var chapterId = SourceUrl.PathTail(
-            new Uri(item.Href), BaseUrl, $"/serie/{seriesId}/", firstSegmentOnly: true);
+        var chapterId = Uri.TryCreate(new Uri(BaseUrl), item.Href, out var hrefUri)
+            ? SourceUrl.PathTail(hrefUri, BaseUrl, $"/serie/{seriesId}/", firstSegmentOnly: true)
+            : null;
         if (chapterId is null)
         {
             return null;
@@ -286,8 +271,8 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var html = await fetcher.GetHtmlAsync(
-            $"{BaseUrl}/serie/{chapter.SourceSeriesId}/{chapter.SourceChapterId}/", ct);
+        var seriesId = NormalizeSeriesId(chapter.SourceSeriesId);
+        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/serie/{seriesId}/{chapter.SourceChapterId}/", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         // The CDN 403s a page request with no Referer.

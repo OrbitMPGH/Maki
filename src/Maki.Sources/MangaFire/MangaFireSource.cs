@@ -195,6 +195,12 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
             .Select(url => new PageRequest(url!, headers))
             .ToList();
 
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"No page images found for MangaFire chapter {chapter.SourceChapterId}");
+        }
+
         return new ChapterPages(pages);
     }
 

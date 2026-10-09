@@ -50,4 +50,14 @@ public class MangaPillSourceTests
             Assert.Equal("https://mangapill.com/", p.Headers!["Referer"]);
         });
     }
+
+    [Fact]
+    public async Task GetPages_throws_when_the_chapter_page_has_no_images()
+    {
+        var source = SourceFor(new() { ["chapters/1-20385000/berserk-chapter-385"] = "<html><body></body></html>" });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(
+            new Maki.Core.Sources.SourceChapter(
+                "mangapill", "1/berserk", "1-20385000/berserk-chapter-385", "385", 385, null, null, "en", null)));
+    }
 }

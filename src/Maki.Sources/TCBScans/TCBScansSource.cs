@@ -28,7 +28,10 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
 
     public string Name => "tcbscans";
     public string DisplayName => "TCB Scans";
-    public string BaseUrl => "https://tcbonepiecechapters.com";
+    public string BaseUrl => DefaultBaseUrl(Environment.GetEnvironmentVariable("MAKI_SOURCE_TCBSCANS_BASEURL"));
+
+    public static string DefaultBaseUrl(string? overrideUrl) =>
+        string.IsNullOrWhiteSpace(overrideUrl) ? "https://tcbonepiecechapters.com" : overrideUrl.TrimEnd('/');
     public SourceCapabilities Capabilities => SourceCapabilities.None;
     public SourceKind Kind => SourceKind.Scanlator;
 
@@ -100,6 +103,11 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
             .Select(src => new PageRequest(src!, headers))
             .ToList();
 
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for TCB Scans chapter {chapter.SourceChapterId}");
+        }
+
         return new ChapterPages(pages);
     }
 
@@ -126,6 +134,11 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
 
             var cover = link.QuerySelector("img")?.GetAttribute("src");
             catalog.Add(new SourceSeriesResult(seriesId, title, $"{BaseUrl}/mangas/{seriesId}", cover));
+        }
+
+        if (catalog.Count == 0)
+        {
+            throw new InvalidOperationException("TCB Scans's catalog page listed no series");
         }
 
         return catalog;

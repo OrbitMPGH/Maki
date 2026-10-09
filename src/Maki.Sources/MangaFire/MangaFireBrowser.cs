@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Maki.Core;
 using Maki.Core.Configuration;
 using Maki.Core.Http;
@@ -93,20 +92,22 @@ public sealed class MangaFireBrowser(
     /// </summary>
     private async Task ShutdownAsync()
     {
-        if (_context != null)
-        {
-            await _context.CloseAsync();
-            _context = null;
-        }
-
-        if (_browser != null)
-        {
-            await _browser.CloseAsync();
-            _browser = null;
-        }
-
-        _playwright?.Dispose();
+        var context = _context;
+        var browser = _browser;
+        var playwright = _playwright;
+        _context = null;
+        _browser = null;
         _playwright = null;
+
+        try
+        {
+            await BrowserSupport.CloseQuietlyAsync(context);
+            await BrowserSupport.CloseQuietlyAsync(browser);
+        }
+        finally
+        {
+            playwright?.Dispose();
+        }
     }
 
     /// <summary>Search-results JSON for a keyword (the <c>/api/titles?keyword=…</c> payload).</summary>
@@ -361,7 +362,18 @@ public sealed class MangaFireBrowser(
         for (var attempt = 0; ; attempt++)
         {
             var context = await EnsureContextAsync(ct);
-            var page = await context.NewPageAsync();
+            IPage page;
+            try
+            {
+                page = await context.NewPageAsync();
+            }
+            catch (PlaywrightException) when (attempt == 0)
+            {
+                logger.LogWarning("MangaFire browser could not open a page; relaunching it");
+                await ShutdownAsync();
+                continue;
+            }
+
             try
             {
                 return await CancellableBrowserCall.RunAsync(() => page.CloseAsync(), () => action(page), ct);
@@ -382,6 +394,12 @@ public sealed class MangaFireBrowser(
 
     private async Task<IBrowserContext> EnsureContextAsync(CancellationToken ct)
     {
+        if (_browser is { IsConnected: false })
+        {
+            logger.LogWarning("The MangaFire browser process is gone; relaunching it");
+            await ShutdownAsync();
+        }
+
         if (_context != null)
         {
             return _context;
@@ -420,7 +438,7 @@ public sealed class MangaFireBrowser(
             // and Cloudflare answers it with an outright "Access denied" block (not a solvable challenge)
             // wherever the egress IP's reputation is anything short of pristine. Restate the hints so
             // they agree with the UA FlareSolverr earned the clearance cookie with.
-            ExtraHTTPHeaders = ClientHintsFor(session.UserAgent),
+            ExtraHTTPHeaders = BrowserSupport.ClientHintsFor(session.UserAgent),
         });
 
         await context.AddInitScriptAsync("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});");
@@ -431,16 +449,23 @@ public sealed class MangaFireBrowser(
         await context.AddInitScriptAsync("try { localStorage.clear(); sessionStorage.clear(); } catch (e) { }");
 
         // only the JSON responses matter — skip images/media/fonts to cut nav time and bandwidth.
-        await context.RouteAsync("**/*", route =>
+        await context.RouteAsync("**/*", async route =>
         {
-            var type = route.Request.ResourceType;
-            if (type is "image" or "media" or "font")
+            try
             {
-                _ = route.AbortAsync();
+                var type = route.Request.ResourceType;
+                if (type is "image" or "media" or "font")
+                {
+                    await route.AbortAsync();
+                }
+                else
+                {
+                    await route.ContinueAsync();
+                }
             }
-            else
+            catch (PlaywrightException)
             {
-                _ = route.ContinueAsync();
+                // the page closed under the request; nothing left to route
             }
         });
 
@@ -456,36 +481,11 @@ public sealed class MangaFireBrowser(
         return _context;
     }
 
-    /// <summary>Sec-CH-UA headers consistent with <paramref name="userAgent"/>, replacing the shell's own.</summary>
-    private static Dictionary<string, string> ClientHintsFor(string userAgent)
-    {
-        var major = Regex.Match(userAgent, @"Chrome/(\d+)").Groups[1].Value;
-        var platform = userAgent.Contains("Windows", StringComparison.Ordinal) ? "Windows"
-            : userAgent.Contains("Macintosh", StringComparison.Ordinal) ? "macOS"
-            : userAgent.Contains("Android", StringComparison.Ordinal) ? "Android"
-            : "Linux";
-
-        var headers = new Dictionary<string, string>
-        {
-            ["sec-ch-ua-mobile"] = "?0",
-            ["sec-ch-ua-platform"] = $"\"{platform}\"",
-        };
-
-        if (major.Length > 0)
-        {
-            headers["sec-ch-ua"] = $"\"Chromium\";v=\"{major}\", \"Google Chrome\";v=\"{major}\", \"Not=A?Brand\";v=\"24\"";
-        }
-
-        return headers;
-    }
-
     private async Task ResetContextAsync()
     {
-        if (_context != null)
-        {
-            await _context.CloseAsync();
-            _context = null;
-        }
+        var context = _context;
+        _context = null;
+        await BrowserSupport.CloseQuietlyAsync(context);
     }
 
     /// <summary>

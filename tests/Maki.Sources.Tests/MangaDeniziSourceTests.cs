@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Maki.Core.Http;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 using Maki.Sources.MangaDenizi;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -112,6 +113,29 @@ public class MangaDeniziSourceTests
             using var decoded = Image.Load(p.Data!);
             Assert.True(decoded.Width > 0 && decoded.Height > 0);
         });
+    }
+
+    [Fact]
+    public async Task GetPages_hands_an_unscrambled_page_to_the_downloader_as_a_plain_url_without_fetching_it()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["reader/solo-leveling/000"] =
+                """{"pages":[{"image_url":"https://img.mangadenizi.net/a.webp","scramble":null},{"image_url":"https://img.mangadenizi.net/b.webp"}]}"""
+        });
+        var source = new MangaDeniziSource(factory);
+        var chapter = new SourceChapter(
+            "mangadenizi", "solo-leveling", "solo-leveling/000", "0", 0m, null, null, "tr", null);
+
+        var pages = await source.GetPagesAsync(chapter);
+
+        Assert.All(pages.Pages, p =>
+        {
+            Assert.Null(p.Data);
+            Assert.Equal("https://mangadenizi.net/", p.Headers!["Referer"]);
+            Assert.Equal(BrowserUserAgent.Value, p.Headers["User-Agent"]);
+        });
+        Assert.DoesNotContain(factory.Requests, r => r.Contains(".webp"));
     }
 
     [Theory]

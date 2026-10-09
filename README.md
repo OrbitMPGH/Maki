@@ -148,7 +148,7 @@ Sources are built into Maki, so there are no extensions to install.
 | MangaPill | |
 | Weeb Central | |
 | MangaFire | Language filter, requires [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) |
-| TCB Scans | |
+| TCB Scans | Domain override via `MAKI_SOURCE_TCBSCANS_BASEURL` |
 | Asura Scans | Manhwa/manhua |
 | Flame Comics | Manhwa/manhua |
 | TopManhua | Manhwa/manhua, requires FlareSolverr |

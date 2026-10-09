@@ -152,15 +152,19 @@ public partial class MangaLivreSource(IHttpClientFactory httpClientFactory) : IS
             }
 
             var chapterSlug = SourceUrl.PathTail(uri, BaseUrl, $"/manga/{sourceSeriesId}/", firstSegmentOnly: true);
-            var slugMatch = chapterSlug is null ? null : ChapterSlugRegex().Match(chapterSlug);
-            if (chapterSlug is null || slugMatch is not { Success: true })
+            if (chapterSlug is null)
             {
                 continue;
             }
 
-            decimal? number = slugMatch.Groups[2].Success
-                ? decimal.Parse($"{slugMatch.Groups[1].Value}.{slugMatch.Groups[2].Value}", CultureInfo.InvariantCulture)
-                : decimal.Parse(slugMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+            var slugMatch = ChapterSlugRegex().Match(chapterSlug);
+            decimal? number = null;
+            if (slugMatch.Success)
+            {
+                number = slugMatch.Groups[2].Success
+                    ? decimal.Parse($"{slugMatch.Groups[1].Value}.{slugMatch.Groups[2].Value}", CultureInfo.InvariantCulture)
+                    : decimal.Parse(slugMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+            }
 
             var label = link!.TextContent.Trim();
             var dateText = box.QuerySelector(".chapter-date")?.TextContent.Trim();
@@ -173,7 +177,7 @@ public partial class MangaLivreSource(IHttpClientFactory httpClientFactory) : IS
                 label,
                 number,
                 Volume: null,
-                Title: null,
+                Title: number is null && label.Length > 0 ? label : null,
                 Language: "pt-BR",
                 releaseDate,
                 Url: href));
@@ -219,6 +223,11 @@ public partial class MangaLivreSource(IHttpClientFactory httpClientFactory) : IS
             .Where(src => !string.IsNullOrEmpty(src))
             .Select(src => new PageRequest(src!))
             .ToList();
+
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for Manga Livre chapter {chapter.SourceChapterId}");
+        }
 
         return new ChapterPages(pages);
     }

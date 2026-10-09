@@ -372,7 +372,7 @@ try
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
-    const string browserUa = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+    const string browserUa = BrowserUserAgent.Value;
     foreach (var (name, baseUrl) in new[]
              {
                  (MangaPillSource.HttpClientName, "https://mangapill.com/"),
@@ -409,10 +409,18 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
-    // MangaDenizi fetches its own page images through this client.
-    builder.Services.AddHttpClient(MangaDeniziSource.HttpClientName)
+    // MangaDenizi fetches its scrambled page images through this client (absolute URLs, so no
+    // BaseAddress), at the same 1 req/s as its API client.
+    var mangaDeniziImageLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(MangaDeniziSource.ImageHttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
         .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true));
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDeniziImageLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
     // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
@@ -473,12 +481,14 @@ try
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // TCB Scans — plain HTML, English-only; wants a Referer on every request.
+    // The domain rotates on DMCA takedowns, so MAKI_SOURCE_TCBSCANS_BASEURL overrides it.
     var tcbLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    var tcbBaseUrl = TCBScansSource.DefaultBaseUrl(Environment.GetEnvironmentVariable("MAKI_SOURCE_TCBSCANS_BASEURL")) + "/";
     builder.Services.AddHttpClient(TCBScansSource.HttpClientName, client =>
         {
-            client.BaseAddress = new Uri("https://tcbonepiecechapters.com/");
+            client.BaseAddress = new Uri(tcbBaseUrl);
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
-            client.DefaultRequestHeaders.Referrer = new Uri("https://tcbonepiecechapters.com/");
+            client.DefaultRequestHeaders.Referrer = new Uri(tcbBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(tcbLimiter))
@@ -521,7 +531,7 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(baoziLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    // Manga Livre — Brazilian Portuguese, standard Madara/WordPress theme, no Cloudflare.
+    // Manga Livre, Brazilian Portuguese, WordPress/Madara search with a customised chapter markup, no Cloudflare.
     var mangaLivreLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
     builder.Services.AddHttpClient(MangaLivreSource.HttpClientName, client =>
         {
@@ -606,11 +616,8 @@ try
     builder.Services.AddHttpClient(ManhuaguiSource.HttpClientName, client =>
         {
             client.BaseAddress = new Uri(manhuaguiBaseUrl);
-            // The plan pins this exact UA string (tested live); the shared browserUa const is a
-            // slightly older Chrome build number.
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36");
-            client.DefaultRequestHeaders.Referrer = new Uri("https://www.manhuagui.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri(manhuaguiBaseUrl);
             client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("zh-CN,zh;q=0.9");
             client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
             client.Timeout = TimeSpan.FromSeconds(30);
@@ -675,6 +682,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(taiyoLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
