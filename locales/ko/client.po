@@ -2133,6 +2133,10 @@ msgstr ""
 msgid "Accounts, permissions, lockout and session rules, and single sign-on."
 msgstr ""
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed, an API key you revoked or a single sign-on link you removed since then comes back, so redo those afterwards."
+msgstr ""
+
 #: src/api/inbox.ts
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
