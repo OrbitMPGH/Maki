@@ -139,8 +139,9 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(3);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter))
-        .AddHttpMessageHandler(() => new TransientRetryHandler());
+        // Retry outside the limiter, so every attempt takes its own token.
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter));
 
     builder.Services.AddHttpClient("covers", client =>
         {
@@ -181,8 +182,8 @@ try
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36");
             client.Timeout = TimeSpan.FromSeconds(20);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter))
-        .AddHttpMessageHandler(() => new TransientRetryHandler());
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter));
     builder.Services.AddSingleton<MalReviewClient>();
 
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
@@ -965,7 +966,6 @@ try
         {
             o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
             o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcDateTimeConverter());
-            o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcNullableDateTimeConverter());
         });
     builder.Services.AddSignalR();
     builder.Services.AddEndpointsApiExplorer();
