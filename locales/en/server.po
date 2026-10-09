@@ -3377,6 +3377,11 @@ msgstr "Nothing recurs across enough of your reading to name a group yet."
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "Needs at least {min} series the catalogue knows about. So far this view has {count}."
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.alreadyRunning"
+msgstr "An install of this download is already running."
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 msgid "install.embeddingModel.alreadyOn"
 msgstr "Already using this model."

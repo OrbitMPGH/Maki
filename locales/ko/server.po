@@ -4745,6 +4745,12 @@ msgstr "그룹으로 이름 붙일 만큼 반복해서 읽은 작품이 아직 �
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "카탈로그에서 확인되는 시리즈가 최소 {min}개 필요합니다. 이 보기에는 현재 {count}개가 있습니다."
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An install of this download is already running.
+msgid "install.alreadyRunning"
+msgstr ""
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: Already using this model.
 #, fuzzy

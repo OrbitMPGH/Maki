@@ -4745,6 +4745,12 @@ msgstr "Aún no hay suficientes patrones recurrentes en tus lecturas para formar
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "Necesita al menos {min} series que estén en el catálogo. Esta vista tiene {count} por ahora."
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An install of this download is already running.
+msgid "install.alreadyRunning"
+msgstr ""
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: Already using this model.
 #, fuzzy

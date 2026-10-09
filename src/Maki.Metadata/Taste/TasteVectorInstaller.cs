@@ -77,6 +77,8 @@ public class TasteVectorInstaller(
 {
     public const string HttpClientName = "taste-vectors";
 
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     /// <summary>
     /// The schema this build understands. Bumped only when <c>item_vectors</c> changes shape in a
     /// way <see cref="VectorIndexCache"/> could not read; a newer artifact is refused, not half-read.
@@ -170,6 +172,12 @@ public class TasteVectorInstaller(
 
         Directory.CreateDirectory(options.StagingDirectory);
         var staging = Path.Combine(options.StagingDirectory, "taste-vectors.db.partial");
+
+        if (!_installGate.Wait(0))
+        {
+            return new TasteVectorResult(false, "install.alreadyRunning");
+        }
+
         try
         {
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
@@ -197,6 +205,7 @@ public class TasteVectorInstaller(
         finally
         {
             TryDelete(staging);
+            _installGate.Release();
         }
     }
 

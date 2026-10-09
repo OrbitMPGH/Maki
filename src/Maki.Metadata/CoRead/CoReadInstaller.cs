@@ -69,6 +69,8 @@ public class CoReadInstaller(
 {
     public const string HttpClientName = "coread-graph";
 
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     /// <summary>
     /// The schema this build understands. Bumped only when the <c>pair</c> table's shape changes in
     /// a way <c>CoReadCache</c> could not read; a newer artifact is refused rather than half-read.
@@ -152,6 +154,12 @@ public class CoReadInstaller(
 
         Directory.CreateDirectory(options.StagingDirectory);
         var staging = Path.Combine(options.StagingDirectory, "coread-edges.db.partial");
+
+        if (!_installGate.Wait(0))
+        {
+            return new CoReadResult(false, "install.alreadyRunning");
+        }
+
         try
         {
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
@@ -175,6 +183,7 @@ public class CoReadInstaller(
         finally
         {
             TryDelete(staging);
+            _installGate.Release();
         }
     }
 

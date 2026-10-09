@@ -70,6 +70,8 @@ public class RecoGraphInstaller(
 {
     public const string HttpClientName = "reco-graph";
 
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     /// <summary>
     /// The schema this build understands. Bumped only when the <c>pair</c> table's shape changes in
     /// a way <see cref="RecoGraphCache.ReadPairs"/> could not read; a newer artifact is refused
@@ -153,6 +155,12 @@ public class RecoGraphInstaller(
 
         Directory.CreateDirectory(options.StagingDirectory);
         var staging = Path.Combine(options.StagingDirectory, "reco-edges.db.partial");
+
+        if (!_installGate.Wait(0))
+        {
+            return new RecoGraphResult(false, "install.alreadyRunning");
+        }
+
         try
         {
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
@@ -176,6 +184,7 @@ public class RecoGraphInstaller(
         finally
         {
             TryDelete(staging);
+            _installGate.Release();
         }
     }
 

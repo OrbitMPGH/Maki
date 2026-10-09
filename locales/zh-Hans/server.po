@@ -4745,6 +4745,12 @@ msgstr "阅读记录中重复出现的内容还不足以形成一个主题。"
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "至少需要 {min} 部目录中已收录的作品。目前此视图中有 {count} 部。"
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An install of this download is already running.
+msgid "install.alreadyRunning"
+msgstr ""
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: Already using this model.
 #, fuzzy

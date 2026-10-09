@@ -75,6 +75,8 @@ public class ReaderCohortInstaller(
 {
     public const string HttpClientName = "reader-cohorts";
 
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     /// <summary>
     /// The schema this build understands. Bumped only when <c>cohort_item</c> or <c>item_global</c>
     /// change shape in a way <see cref="ReaderCohortCache"/> could not read; a newer artifact is
@@ -168,6 +170,12 @@ public class ReaderCohortInstaller(
 
         Directory.CreateDirectory(options.StagingDirectory);
         var staging = Path.Combine(options.StagingDirectory, "reader-cohorts.db.partial");
+
+        if (!_installGate.Wait(0))
+        {
+            return new ReaderCohortResult(false, "install.alreadyRunning");
+        }
+
         try
         {
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
@@ -191,6 +199,7 @@ public class ReaderCohortInstaller(
         finally
         {
             TryDelete(staging);
+            _installGate.Release();
         }
     }
 

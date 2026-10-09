@@ -4745,6 +4745,12 @@ msgstr "Na razie żaden motyw nie powtarza się wystarczająco często w Twoich 
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "Wymaga co najmniej {min} serii znanych katalogowi. Ta sekcja zawiera na razie {count}."
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An install of this download is already running.
+msgid "install.alreadyRunning"
+msgstr ""
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: Already using this model.
 #, fuzzy

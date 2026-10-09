@@ -64,6 +64,8 @@ public class PrebuiltIndexInstaller(
 {
     public const string HttpClientName = "prebuilt-index";
 
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     /// <summary>
     /// Where the artifact for the configured model is published, unless overridden in settings.
     /// Each model has its own release tag, so a base install and a large install fetch different
@@ -170,6 +172,12 @@ public class PrebuiltIndexInstaller(
 
         Directory.CreateDirectory(options.StagingDirectory);
         var staging = Path.Combine(options.StagingDirectory, "embeddings.db.partial");
+
+        if (!_installGate.Wait(0))
+        {
+            return new PrebuiltIndexResult(false, "install.alreadyRunning");
+        }
+
         try
         {
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
@@ -202,6 +210,7 @@ public class PrebuiltIndexInstaller(
         finally
         {
             TryDelete(staging);
+            _installGate.Release();
         }
     }
 
