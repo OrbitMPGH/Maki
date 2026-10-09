@@ -278,58 +278,58 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-INFRA | FE-INFRA-12 | nit | pending |
 | FE-INFRA | FE-INFRA-25 | nit | pending |
 | FE-INFRA | FE-INFRA-26 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-39 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-53 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-21 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-41 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-26 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-48 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-55 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-38 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-11 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-02 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-04 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-05 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-16 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-18 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-19 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-23 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-25 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-28 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-29 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-31 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-33 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-34 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-42 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-43 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-51 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-57 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-07 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-40 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-46 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-58 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-03 | low | pending |
-| FE-LIBRARY | FE-LIBRARY-12 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-35 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-60 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-08 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-44 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-13 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-30 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-47 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-54 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-59 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-06 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-22 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-50 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-09 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-10 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-24 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-36 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-45 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-49 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-56 | nit | pending |
-| FE-LIBRARY | FE-LIBRARY-61 | nit | pending |
+| FE-LIBRARY | FE-LIBRARY-39 | low | done fcd2d073 |
+| FE-LIBRARY | FE-LIBRARY-53 | low | done 45cf9479 |
+| FE-LIBRARY | FE-LIBRARY-21 | low | done 66efa0f4, a096b3d6 |
+| FE-LIBRARY | FE-LIBRARY-41 | low | done fcd2d073 |
+| FE-LIBRARY | FE-LIBRARY-26 | low | done eca567f3 |
+| FE-LIBRARY | FE-LIBRARY-48 | low | done 45cf9479, 944031d7 |
+| FE-LIBRARY | FE-LIBRARY-55 | low | done 45cf9479 |
+| FE-LIBRARY | FE-LIBRARY-38 | low | done fcd2d073 |
+| FE-LIBRARY | FE-LIBRARY-11 | low | skipped (chapter rows render inline over ~40 closures; a memoised ChapterRow is a risky refactor for an unmeasured slowdown that only shows with the opt-in All page size) |
+| FE-LIBRARY | FE-LIBRARY-02 | low | done 9ebd63fb |
+| FE-LIBRARY | FE-LIBRARY-04 | low | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-05 | low | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-16 | low | done 9ebd63fb, 2cb7875f |
+| FE-LIBRARY | FE-LIBRARY-18 | low | done 734fb2e6 |
+| FE-LIBRARY | FE-LIBRARY-19 | low | done 734fb2e6 |
+| FE-LIBRARY | FE-LIBRARY-23 | low | done 734fb2e6 |
+| FE-LIBRARY | FE-LIBRARY-25 | low | done 734fb2e6 |
+| FE-LIBRARY | FE-LIBRARY-28 | low | done 37e132f5 |
+| FE-LIBRARY | FE-LIBRARY-29 | low | done 37e132f5 |
+| FE-LIBRARY | FE-LIBRARY-31 | low | done 37e132f5 |
+| FE-LIBRARY | FE-LIBRARY-33 | low | done 37e132f5, 9ebd63fb |
+| FE-LIBRARY | FE-LIBRARY-34 | low | done 37e132f5 |
+| FE-LIBRARY | FE-LIBRARY-42 | low | done fcd2d073 |
+| FE-LIBRARY | FE-LIBRARY-43 | low | done fcd2d073 |
+| FE-LIBRARY | FE-LIBRARY-51 | low | done 79668398 |
+| FE-LIBRARY | FE-LIBRARY-57 | low | done 79668398 |
+| FE-LIBRARY | FE-LIBRARY-07 | low | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-40 | low | done fcd2d073 |
+| FE-LIBRARY | FE-LIBRARY-46 | low | done ff388c94 |
+| FE-LIBRARY | FE-LIBRARY-58 | low | done 79668398 |
+| FE-LIBRARY | FE-LIBRARY-03 | low | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-12 | nit | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-35 | nit | done eca567f3 |
+| FE-LIBRARY | FE-LIBRARY-60 | nit | done ff388c94 |
+| FE-LIBRARY | FE-LIBRARY-08 | nit | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-44 | nit | done ff388c94 |
+| FE-LIBRARY | FE-LIBRARY-13 | nit | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-30 | nit | done 37e132f5 |
+| FE-LIBRARY | FE-LIBRARY-47 | nit | done ff388c94 |
+| FE-LIBRARY | FE-LIBRARY-54 | nit | done 45cf9479 |
+| FE-LIBRARY | FE-LIBRARY-59 | nit | done ff388c94 |
+| FE-LIBRARY | FE-LIBRARY-06 | nit | done e8468b3b |
+| FE-LIBRARY | FE-LIBRARY-22 | nit | done 734fb2e6, 5098fee9, 652dfea7 |
+| FE-LIBRARY | FE-LIBRARY-50 | nit | done 45cf9479 |
+| FE-LIBRARY | FE-LIBRARY-09 | nit | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-10 | nit | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-24 | nit | done 734fb2e6 |
+| FE-LIBRARY | FE-LIBRARY-36 | nit | done eca567f3 |
+| FE-LIBRARY | FE-LIBRARY-45 | nit | done ff388c94 |
+| FE-LIBRARY | FE-LIBRARY-49 | nit | done 67c86fff |
+| FE-LIBRARY | FE-LIBRARY-56 | nit | done 79668398 |
+| FE-LIBRARY | FE-LIBRARY-61 | nit | done 79668398 |
 | FE-READER | FE-READER-08 | low | done 1c28fad9 |
 | FE-READER | FE-READER-24 | low | done d3762af8 |
 | FE-READER | FE-READER-20 | low | done 2a8da8e9 |
