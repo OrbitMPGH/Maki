@@ -155,15 +155,9 @@ public class ImportListsController(
             return this.Conflict(localizer, "error.importLists.disabled");
         }
 
-        if (request.Full)
-        {
-            return importLists.StartFullRun(currentUser.UserId, request.Service) is null
-                ? this.Conflict(localizer, "error.importLists.running")
-                : Accepted(new { started = true });
-        }
-
-        var result = await importLists.RunUserAsync(currentUser.UserId, request.Service, full: false, ct);
-        return result is null ? this.Conflict(localizer, "error.importLists.running") : Ok(result);
+        return importLists.StartRun(currentUser.UserId, request.Service, request.Full) is null
+            ? this.Conflict(localizer, "error.importLists.running")
+            : Accepted(new { started = true });
     }
 
     /// <summary>Forgets an unmatched or ignored entry so the next run tries it again.</summary>

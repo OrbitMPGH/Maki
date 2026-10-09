@@ -5,9 +5,10 @@ namespace Maki.Core.Entities;
 /// <summary>
 /// Where one anime sits on a watcher's list. Narrower than <c>ScrobbleStatus</c> on purpose: that
 /// one describes what Maki may push back to a tracker, while this one only has to describe what a
-/// reader already did, and "dropped" is the part that carries the most meaning here.
+/// reader already did, and "dropped" is the part that carries the most meaning here. Stored as an
+/// integer: append only, never renumber or reuse.
 /// </summary>
-public enum AnimeWatchStatus { Watching, Completed, OnHold, Dropped, Planning }
+public enum AnimeWatchStatus { Watching = 0, Completed = 1, OnHold = 2, Dropped = 3, Planning = 4 }
 
 /// <summary>
 /// One entry from a connected tracker's <em>anime</em> list, plus whatever manga it was matched to.

@@ -97,7 +97,7 @@ public class AchievementService(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             // Another call got there first — the completion path and a page load racing. The rows are
             // already recorded, so there is nothing to repair; this call simply has nothing new to
@@ -261,13 +261,4 @@ public class AchievementService(
             .Where(a => a.UserId == userId && a.SeenAt == null && keys.Contains(a.Key))
             .ExecuteUpdateAsync(s => s.SetProperty(a => a.SeenAt, now), ct);
     }
-
-    /// <summary>
-    /// SQLite reports a unique-index conflict with an extended result code. Matching the extended
-    /// codes and never the primary 19 is the same discipline the reading-progress writer uses: 19 also
-    /// covers foreign-key and NOT NULL failures, which no retry can fix and which must not be
-    /// swallowed as a benign race.
-    /// </summary>
-    private static bool IsUniqueViolation(DbUpdateException e) =>
-        e.InnerException is Microsoft.Data.Sqlite.SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 }

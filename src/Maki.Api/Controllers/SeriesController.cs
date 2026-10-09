@@ -332,10 +332,9 @@ public class SeriesController(
 
         var readCounts = await ReadChapterCountsBySeriesAsync(ct);
 
-        // Flat join-table read scoped to these series in SQL, since SeriesTags has no visibility filter of its own.
+        // Flat join-table read; the SeriesTag query filter keeps it to series the caller can see.
         var tagIdsBySeries = (await db.SeriesTags
                 .AsNoTracking()
-                .Where(x => db.Series.Any(s => s.Id == x.SeriesId))
                 .ToListAsync(ct))
             .GroupBy(x => x.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
