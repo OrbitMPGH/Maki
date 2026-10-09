@@ -42,7 +42,7 @@ public sealed class VectorIndexCache(
     /// popularity, genres and content rating from the dump, so a nightly swap has to rebuild it,
     /// the same way <see cref="Catalogue.CatalogueIndexCache"/> is stamped.
     /// </summary>
-    private sealed record Loaded(VectorIndex Index, long DumpTicks, long DumpLength);
+    private sealed record Loaded(VectorIndex Index, long DumpTicks, long DumpLength, long Generation);
 
     private volatile Loaded? _loaded;
     private readonly IdleStamp _idle = new();
@@ -245,8 +245,9 @@ public sealed class VectorIndexCache(
 
             var loaded = await build.WaitAsync(ct);
             // A build this caller joined part way through may have read an older dump than the one
-            // on disk now; go round again rather than hand that out.
-            if (loaded is null || started || MatchesDump(loaded) || DumpInfo() is null)
+            // on disk now, or started before an invalidation; go round again rather than hand that out.
+            if (loaded is null || started || DumpInfo() is null
+                || MatchesDump(loaded) && loaded.Generation == Interlocked.Read(ref _generation))
             {
                 return loaded?.Index;
             }
@@ -273,7 +274,7 @@ public sealed class VectorIndexCache(
         {
             var built = Build(CancellationToken.None);
             AfterBuildForTest?.Invoke();
-            var loaded = built is null ? null : new Loaded(built, ticks, length);
+            var loaded = built is null ? null : new Loaded(built, ticks, length, generation);
             lock (_publish)
             {
                 if (generation == _generation)

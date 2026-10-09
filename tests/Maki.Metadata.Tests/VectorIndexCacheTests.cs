@@ -204,6 +204,27 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task A_caller_arriving_after_an_invalidate_does_not_take_the_build_it_outdated()
+    {
+        var store = Store();
+        store.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        Task<VectorIndex?>? late = null;
+        cache.AfterBuildForTest = () =>
+        {
+            cache.AfterBuildForTest = null;
+            store.UpsertBatch([(2L, "h", [0f, 1f, 0f, 0f])]);
+            cache.Invalidate();
+            // Joins the build that is still running, which read the file before the invalidate.
+            late = cache.GetAsync();
+        };
+
+        Assert.Equal(1, (await cache.GetAsync())!.Count);
+        Assert.NotNull(late);
+        Assert.Equal(2, (await late!)!.Count);
+    }
+
+    [Fact]
     public async Task A_cancelled_caller_does_not_abort_the_shared_build()
     {
         Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
