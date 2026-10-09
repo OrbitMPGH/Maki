@@ -362,7 +362,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
             }
         });
 
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json")
         };
@@ -479,12 +479,20 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
             }
 
             var urlMatch = MeilisearchUrlPattern().Match(js);
-            return new MeilisearchConfig(
-                keyMatch.Groups[1].Value, urlMatch.Success ? urlMatch.Groups[1].Value : DefaultMeilisearchUrl);
+            var searchUrl = urlMatch.Success && IsTaiyoUrl(urlMatch.Groups[1].Value)
+                ? urlMatch.Groups[1].Value
+                : DefaultMeilisearchUrl;
+            return new MeilisearchConfig(keyMatch.Groups[1].Value, searchUrl);
         }
 
         throw new InvalidOperationException($"Could not find the Meilisearch public key in {BaseUrl}'s bundle");
     }
+
+    /// <summary>The bundle is scraped, so its search host is only trusted under https on taiyo.moe.</summary>
+    private static bool IsTaiyoUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttps
+        && (uri.Host == "taiyo.moe" || uri.Host.EndsWith(".taiyo.moe", StringComparison.Ordinal));
 
     private async Task<JsonElement> TrpcGetAsync(string procedure, object arg, CancellationToken ct)
     {

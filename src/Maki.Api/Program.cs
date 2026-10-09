@@ -665,6 +665,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
         .AddHttpMessageHandler(() => new RateLimitingHandler(taiyoLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
