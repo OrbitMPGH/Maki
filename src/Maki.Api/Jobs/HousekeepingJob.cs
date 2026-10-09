@@ -65,8 +65,8 @@ public class HousekeepingJob(
         // Two kinds of garbage, and only the first used to be collected:
         //   1. whole directories for ChapterFile rows that no longer exist;
         //   2. files inside a *live* directory left by an earlier version of the same archive —
-        //      the name is "{ArchiveSize}-{stamp}-{page}.jpg", so a re-download at a different size
-        //      orphans every thumbnail it had without the directory ever going away.
+        //      the name is "{ArchiveSize}-{stamp}-{page}[.full].jpg", so a re-download at a different
+        //      size or write time orphans every render it had without the directory ever going away.
         if (Directory.Exists(paths.ReaderCacheDir))
         {
             var sizeByFileId = await db.ChapterFiles
@@ -90,14 +90,7 @@ public class HousekeepingJob(
                         continue;
                     }
 
-                    var prefix = currentSize + "-";
-                    foreach (var thumb in Directory.GetFiles(dir, "*.jpg"))
-                    {
-                        if (!Path.GetFileName(thumb).StartsWith(prefix, StringComparison.Ordinal))
-                        {
-                            File.Delete(thumb);
-                        }
-                    }
+                    PruneReaderCacheDir(dir, currentSize);
                 }
                 catch (Exception ex)
                 {
@@ -210,6 +203,34 @@ public class HousekeepingJob(
         if (aged + capped > 0)
         {
             logger.LogDebug("Pruned {Aged} aged and {Capped} over-cap inbox notification(s)", aged, capped);
+        }
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex ReaderCacheName =
+        new(@"^(\d+)-(\d+)-\d+(\.full)?\.jpg$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Keeps the renders of the file's current version: its size and the newest write-time stamp
+    /// present. Anything else, including names from before the stamp existed, is regenerable.
+    /// </summary>
+    internal static void PruneReaderCacheDir(string dir, string currentSize)
+    {
+        var files = new List<(string Path, bool Sized, long Stamp)>();
+        foreach (var file in Directory.GetFiles(dir, "*.jpg"))
+        {
+            var match = ReaderCacheName.Match(System.IO.Path.GetFileName(file));
+            files.Add(match.Success
+                ? (file, match.Groups[1].Value == currentSize, long.TryParse(match.Groups[2].Value, out var stamp) ? stamp : -1)
+                : (file, false, -1));
+        }
+
+        var newest = files.Where(f => f.Sized).Select(f => f.Stamp).DefaultIfEmpty(-1).Max();
+        foreach (var (path, sized, stamp) in files)
+        {
+            if (!sized || stamp != newest)
+            {
+                File.Delete(path);
+            }
         }
     }
 }
