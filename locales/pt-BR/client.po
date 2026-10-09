@@ -2073,7 +2073,7 @@ msgid "A watched anime counts for as much as a manga you rated yourself."
 msgstr "Um anime assistido conta tanto quanto um mangá que você mesmo avaliou."
 
 #: src/pages/settings/SystemCards.tsx
-msgid "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. There is no schedule, so take one yourself before big changes."
+msgid "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. Scheduled backups are off unless you turn them on below, so take one yourself before big changes."
 msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -3068,6 +3068,10 @@ msgstr "Voltar à série"
 msgid "Back up now"
 msgstr "Fazer backup agora"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Back up on a schedule"
+msgstr ""
+
 #: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -3962,6 +3966,10 @@ msgstr "Verificado após cada atualização noturna do catálogo. Siga alguém p
 #, fuzzy
 msgid "Checking for a new metadata snapshot"
 msgstr "Verificando um novo snapshot de metadados"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Checks every hour and takes a backup when the newest one is older than the backup freshness set on the Health page (7 days by default)."
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -10945,7 +10953,7 @@ msgid "per chapter"
 msgstr "por capítulo"
 
 #: src/pages/settings/SystemCards.tsx
-msgid "Per kind: the newest N automatic and the newest N manual backups stay. Older ones are removed when a new backup is taken."
+msgid "Per kind: the newest N automatic, manual and scheduled backups stay. Older ones are removed when a new backup is taken."
 msgstr ""
 
 #: src/components/NamingTokenModal.tsx
@@ -13028,6 +13036,10 @@ msgstr "Verificando o banco de dados do MangaBaka para encontrar correspondênci
 #, fuzzy
 msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
 msgstr "Examina uma pasta raiz em busca de séries que o Maki ainda não conhece, associa-as aos metadados, renomeia cada pasta com o título em inglês e vincula os arquivos de quadrinhos existentes aos capítulos. Os arquivos mantêm os nomes originais; PDFs permanecem como estão e nunca são convertidos."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Scheduled"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy

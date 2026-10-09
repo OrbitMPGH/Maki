@@ -2073,7 +2073,7 @@ msgid "A watched anime counts for as much as a manga you rated yourself."
 msgstr "看过的动画与自己评分的漫画权重相同。"
 
 #: src/pages/settings/SystemCards.tsx
-msgid "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. There is no schedule, so take one yourself before big changes."
+msgid "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. Scheduled backups are off unless you turn them on below, so take one yourself before big changes."
 msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -3068,6 +3068,10 @@ msgstr "返回系列"
 msgid "Back up now"
 msgstr "立即备份"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Back up on a schedule"
+msgstr ""
+
 #: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -3962,6 +3966,10 @@ msgstr "每晚目录更新后检查。在创作者页面上即可关注对方。
 #, fuzzy
 msgid "Checking for a new metadata snapshot"
 msgstr "正在检查新的元数据快照"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Checks every hour and takes a backup when the newest one is older than the backup freshness set on the Health page (7 days by default)."
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -10945,7 +10953,7 @@ msgid "per chapter"
 msgstr "每章"
 
 #: src/pages/settings/SystemCards.tsx
-msgid "Per kind: the newest N automatic and the newest N manual backups stay. Older ones are removed when a new backup is taken."
+msgid "Per kind: the newest N automatic, manual and scheduled backups stay. Older ones are removed when a new backup is taken."
 msgstr ""
 
 #: src/components/NamingTokenModal.tsx
@@ -13028,6 +13036,10 @@ msgstr "正在 MangaBaka 数据库中扫描匹配项……"
 #, fuzzy
 msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
 msgstr "扫描根文件夹，查找 Maki 尚未收录的系列，将它们与元数据匹配，把每个文件夹重命名为英文标题，并将现有漫画文件关联到章节。文件会保留原名；PDF 会保持原样，不会转换。"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Scheduled"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy

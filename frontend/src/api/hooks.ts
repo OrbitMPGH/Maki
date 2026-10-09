@@ -3910,6 +3910,7 @@ export function useUploadRestore() {
 
 export interface BackupRetentionSettings {
   retention: number
+  scheduled: boolean
 }
 
 export function useBackupSettings() {
