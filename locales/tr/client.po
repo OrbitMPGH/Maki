@@ -4677,6 +4677,10 @@ msgstr ""
 msgid "Couldn't load this rail"
 msgstr "Bu bölümü yükleyemedik"
 
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Couldn't load your library"
@@ -12607,6 +12611,7 @@ msgstr "Kuyruktaki indirmeleri yeniden dener ve iptal eder"
 msgid "Retry download"
 msgstr "İndirmeyi yeniden dene"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy

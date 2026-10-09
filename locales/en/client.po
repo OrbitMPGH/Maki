@@ -3833,6 +3833,10 @@ msgstr "Couldn't load requests"
 msgid "Couldn't load this rail"
 msgstr "Couldn't load this rail"
 
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
+msgstr "Couldn't load this section"
+
 #: src/pages/HomePage.tsx
 msgid "Couldn't load your library"
 msgstr "Couldn't load your library"
@@ -10343,6 +10347,7 @@ msgstr "Retry and cancel queued downloads"
 msgid "Retry download"
 msgstr "Retry download"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Retrying…"

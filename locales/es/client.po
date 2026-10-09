@@ -4677,6 +4677,10 @@ msgstr ""
 msgid "Couldn't load this rail"
 msgstr "No se pudo cargar esta sección"
 
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Couldn't load your library"
@@ -12607,6 +12611,7 @@ msgstr "Reintentar y cancelar descargas en cola"
 msgid "Retry download"
 msgstr "Reintentar descarga"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
