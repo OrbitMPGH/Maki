@@ -74,7 +74,7 @@ public sealed class AuthHardeningTests : IDisposable
 
     private AuthController Auth(
         MakiDbContext db, UserManager<MakiUser> users, SignInManager<MakiUser> signIn, OidcRuntimeOptions oidc,
-        int userId, IAuthenticationService? authentication = null)
+        int userId, IAuthenticationService? authentication = null, IPasswordHasher<MakiUser>? hasher = null)
     {
         var services = new ServiceCollection();
         services.AddDataProtection();
@@ -84,7 +84,7 @@ public sealed class AuthHardeningTests : IDisposable
         }
 
         return new AuthController(
-            new TestLocalizer(), db, users, signIn, new PasswordHasher<MakiUser>(), new NoopAntiforgery(),
+            new TestLocalizer(), db, users, signIn, hasher ?? new PasswordHasher<MakiUser>(), new NoopAntiforgery(),
             new TestCurrentUser(userId), new AuthEventLogger(db, _clock), oidc, null!, _clock,
             NullLogger<AuthController>.Instance, Inbox())
         {
@@ -161,24 +161,41 @@ public sealed class AuthHardeningTests : IDisposable
 
     // ---- password sign-in ----
 
-    private async Task<(IActionResult Result, MakiDbContext Db)> LoginAsync(string username, string password)
+    private sealed class CountingHasher : IPasswordHasher<MakiUser>
+    {
+        private readonly PasswordHasher<MakiUser> _inner = new();
+        public int Verifies { get; private set; }
+
+        public string HashPassword(MakiUser user, string password) => _inner.HashPassword(user, password);
+
+        public PasswordVerificationResult VerifyHashedPassword(MakiUser user, string hashedPassword, string providedPassword)
+        {
+            Verifies++;
+            return _inner.VerifyHashedPassword(user, hashedPassword, providedPassword);
+        }
+    }
+
+    private async Task<(IActionResult Result, MakiDbContext Db, CountingHasher Hasher)> LoginAsync(
+        string username, string password)
     {
         var db = _db.NewContext();
         var users = IdentityTestKit.UserManager(db);
-        var controller = Auth(db, users, new TestSignInManager(users), new OidcRuntimeOptions(), 0);
+        var hasher = new CountingHasher();
+        var controller = Auth(db, users, new TestSignInManager(users), new OidcRuntimeOptions(), 0, hasher: hasher);
         var result = await controller.Login(new LoginRequest(username, password), new AuthRuntimeOptions(), default);
-        return (result, db);
+        return (result, db, hasher);
     }
 
     [Fact]
     public async Task A_failed_login_for_an_unknown_name_does_not_store_what_was_typed()
     {
-        var (result, db) = await LoginAsync("hunter2-my-real-password", "x");
+        var (result, db, hasher) = await LoginAsync("hunter2-my-real-password", "x");
         using var _ = db;
 
         Assert.IsType<UnauthorizedObjectResult>(result);
         var row = Assert.Single(db.AuthEvents);
-        Assert.DoesNotContain("hunter2", row.UserName);
+        Assert.Equal("?", row.UserName);
+        Assert.Equal(1, hasher.Verifies);
         Assert.Equal("no such user", row.Detail);
     }
 
@@ -192,11 +209,12 @@ public sealed class AuthHardeningTests : IDisposable
             seed.SaveChanges();
         }
 
-        var (result, db) = await LoginAsync("ada", Password);
+        var (result, db, hasher) = await LoginAsync("ada", Password);
         using var _ = db;
 
         Assert.Equal("error.auth.signInFailed", CodeOf(result));
         Assert.Contains(db.AuthEvents, e => e.Type == AuthEventType.LockedOut);
+        Assert.Equal(1, hasher.Verifies);
     }
 
     [Fact]
@@ -204,11 +222,12 @@ public sealed class AuthHardeningTests : IDisposable
     {
         _db.SeedUser("sso", MakiPermission.None);
 
-        var (result, db) = await LoginAsync("sso", Password);
+        var (result, db, hasher) = await LoginAsync("sso", Password);
         using var _ = db;
 
         Assert.Equal("error.auth.signInFailed", CodeOf(result));
         Assert.Contains(db.AuthEvents, e => e.Type == AuthEventType.LoginFailed && e.UserName == "sso");
+        Assert.Equal(1, hasher.Verifies);
     }
 
     // ---- recovery codes at sign-in ----

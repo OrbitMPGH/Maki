@@ -92,6 +92,8 @@ public class AuthController(
             user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName));
     }
 
+    private const string UnknownName = "?";
+
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
@@ -117,9 +119,9 @@ public class AuthController(
         if (user is null || user.Disabled || user.PendingSetup)
         {
             BurnPasswordTime(request.Password);
-            // An unknown name is whatever was typed into the box, possibly a password, so only a
-            // masked form is kept.
-            await auditLog.LogAsync(AuthEventType.LoginFailed, user is null ? MaskUnknownName(username) : username,
+            // An unknown name is whatever was typed into the box, possibly a password, so nothing of
+            // it is kept, not even its length.
+            await auditLog.LogAsync(AuthEventType.LoginFailed, user is null ? UnknownName : username,
                 user?.Id, HttpContext,
                 detail: user is null ? "no such user" : user.Disabled ? "account disabled" : "account unclaimed", ct: ct);
             return AuthUnauthorized("error.auth.signInFailed");
@@ -729,9 +731,6 @@ public class AuthController(
     /// </summary>
     private async Task<UserLoginInfo?> OidcLoginAsync(MakiUser user) =>
         (await userManager.GetLoginsAsync(user)).FirstOrDefault(l => l.LoginProvider == AuthSchemes.Oidc);
-
-    private static string MaskUnknownName(string username) =>
-        $"{username[..Math.Min(2, username.Length)]}... ({username.Length} chars)";
 
     /// <summary>
     /// Spends the same PBKDF2 time a real verification would, so a failed lookup is not measurably
