@@ -295,6 +295,69 @@ public class SeriesRequestsControllerTests : IDisposable
         Assert.IsType<ConflictObjectResult>(result);
     }
 
+    [Fact]
+    public async Task A_new_series_above_the_requesters_rating_ceiling_is_refused()
+    {
+        _metadata.ContentRating = "pornographic";
+
+        var result = await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1"), default);
+
+        Assert.Equal(403, ((ObjectResult)result).StatusCode);
+        using var db = _db.NewContext();
+        Assert.Empty(db.SeriesRequests.IgnoreQueryFilters().ToList());
+    }
+
+    [Fact]
+    public async Task The_resolved_filter_leaves_out_requests_still_being_approved()
+    {
+        await AsReader().Create(new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1"), default);
+        using (var db = _db.NewContext())
+        {
+            foreach (var (providerId, status) in new[]
+                     {
+                         ("2", SeriesRequestStatus.Processing), ("3", SeriesRequestStatus.Approved)
+                     })
+            {
+                db.SeriesRequests.Add(new SeriesRequest
+                {
+                    UserId = _reader,
+                    Kind = SeriesRequestKind.NewSeries,
+                    MetadataProviderId = providerId,
+                    Title = providerId,
+                    Status = status,
+                    Created = T0.UtcDateTime
+                });
+            }
+
+            await db.SaveChangesAsync();
+        }
+
+        var resolved = Body<List<SeriesRequestDto>>(await AsAdmin().List("resolved", default));
+
+        Assert.Equal(["3"], resolved.Select(r => r.Title));
+    }
+
+    [Fact]
+    public async Task A_chapters_request_whose_series_was_deleted_is_not_approved()
+    {
+        var seriesId = SeedSeriesWithChapters(1m, 2m);
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("Chapters", SeriesId: seriesId), default));
+        using (var db = _db.NewContext())
+        {
+            db.Series.Remove(db.Series.Single(s => s.Id == seriesId));
+            await db.SaveChangesAsync();
+        }
+
+        var result = await AsAdmin().Approve(created.Id, new ApproveSeriesRequestBody(), default);
+
+        var body = Assert.IsType<ConflictObjectResult>(result).Value;
+        Assert.Equal("error.requests.seriesGone", body!.GetType().GetProperty("code")!.GetValue(body));
+        using var check = _db.NewContext();
+        Assert.Equal(SeriesRequestStatus.Pending, check.SeriesRequests.IgnoreQueryFilters().Single().Status);
+    }
+
     // ---- approving ----
 
     [Fact]
@@ -818,6 +881,8 @@ public class SeriesRequestsControllerTests : IDisposable
         /// </summary>
         public string? ThrowForProviderId { get; set; }
 
+        public string ContentRating { get; set; } = "safe";
+
         public Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
             string query, string maxContentRating, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<MetadataSearchResult>>([]);
@@ -835,6 +900,7 @@ public class SeriesRequestsControllerTests : IDisposable
                 Title = $"Series {providerId}",
                 MangaBakaId = int.Parse(providerId),
                 Year = 2020,
+                ContentRating = ContentRating,
             });
         }
     }

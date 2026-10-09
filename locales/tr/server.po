@@ -1079,6 +1079,11 @@ msgid "error.requests.chapterRangeInvalid"
 msgstr "Son bölüm, ilk bölümden daha küçük olamaz"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: This series is above your content rating limit
+msgid "error.requests.contentRating"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Series not found on metadata provider
 #, fuzzy
 msgid "error.requests.metadataNotFound"
@@ -1115,6 +1120,11 @@ msgstr "Bir seri gerekli"
 #, fuzzy
 msgid "error.requests.seriesRequired"
 msgstr "İstenecek bir seri gerekli"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: The series this request is for is no longer in the library. Reject the request instead.
+msgid "error.requests.seriesGone"
+msgstr ""
 
 #. Shown as the requester's name when the account no longer exists.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs

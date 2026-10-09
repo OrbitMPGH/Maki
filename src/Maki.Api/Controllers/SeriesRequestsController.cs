@@ -59,7 +59,8 @@ public class SeriesRequestsController(
         query = status.ToLowerInvariant() switch
         {
             "pending" => query.Where(r => r.Status == SeriesRequestStatus.Pending),
-            "resolved" => query.Where(r => r.Status != SeriesRequestStatus.Pending),
+            "resolved" => query.Where(r =>
+                r.Status != SeriesRequestStatus.Pending && r.Status != SeriesRequestStatus.Processing),
             _ => query,
         };
 
@@ -117,12 +118,23 @@ public class SeriesRequestsController(
                 return this.Fail(localizer, "error.requests.seriesRequired");
             }
 
-            if (await submitter.FillNewSeriesAsync(request, body.MetadataProviderId, ct) is { } failed)
+            if (await submitter.FillNewSeriesAsync(
+                    request, body.MetadataProviderId, ct, currentUser.MaxContentRating) is { } failed)
             {
                 if (failed.Error == SeriesRequestSubmitError.SeriesAlreadyExists)
                 {
                     const string key = "error.requests.seriesAlreadyExists";
-                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = failed.ExistingSeriesId });
+                    // The id is only worth handing back when this user can open that series.
+                    int? visibleId = failed.ExistingSeriesId is int existingId &&
+                                     await db.Series.AnyAsync(s => s.Id == existingId, ct)
+                        ? existingId
+                        : null;
+                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = visibleId });
+                }
+
+                if (failed.Error == SeriesRequestSubmitError.ContentRatingTooHigh)
+                {
+                    return this.Forbidden(localizer, "error.requests.contentRating");
                 }
 
                 return this.Fail(localizer, "error.requests.metadataNotFound");
@@ -357,10 +369,16 @@ public class SeriesRequestsController(
                 }
             }
 
-            queued = request.SeriesId is int seriesId
-                ? await QueueRangeAsync(
-                    seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct)
-                : 0;
+            if (request.SeriesId is not int seriesId)
+            {
+                // A chapters request whose series was deleted since: nothing to queue, so approving
+                // it would only tell the requester their chapters are on the way.
+                await ReleaseClaimAsync(request);
+                return this.Conflict(localizer, "error.requests.seriesGone");
+            }
+
+            queued = await QueueRangeAsync(
+                seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct);
 
             request.Status = SeriesRequestStatus.Approved;
             request.ApprovalClaimedAtUtc = null;

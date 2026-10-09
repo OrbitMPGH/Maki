@@ -5,6 +5,7 @@ using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ public enum SeriesRequestSubmitError
     MetadataNotFound,
     SeriesAlreadyExists,
     AlreadyPending,
+    ContentRatingTooHigh,
 }
 
 public record SeriesRequestSubmitResult(
@@ -41,12 +43,17 @@ public class SeriesRequestSubmitter(
     /// has to see the title that provider id actually resolves to.
     /// </summary>
     public async Task<SeriesRequestSubmitResult?> FillNewSeriesAsync(
-        SeriesRequest request, string metadataProviderId, CancellationToken ct)
+        SeriesRequest request, string metadataProviderId, CancellationToken ct, string? maxContentRating = null)
     {
         var metadata = await metadataProviders.First().GetAsync(metadataProviderId, ct);
         if (metadata is null)
         {
             return new(null, SeriesRequestSubmitError.MetadataNotFound);
+        }
+
+        if (maxContentRating is not null && !ContentRating.Permits(metadata.ContentRating, maxContentRating))
+        {
+            return new(null, SeriesRequestSubmitError.ContentRatingTooHigh);
         }
 
         if (metadata.MangaBakaId is int mangaBakaId)
