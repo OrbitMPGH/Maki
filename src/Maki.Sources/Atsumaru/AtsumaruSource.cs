@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Atsumaru;
 
@@ -191,9 +192,7 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
         var pages = new List<PageRequest>();
         foreach (var page in pageArray
                      .EnumerateArray()
-                     .OrderBy(p => p.TryGetProperty("number", out var n) && n.ValueKind == JsonValueKind.Number
-                         ? n.GetInt32()
-                         : int.MaxValue))
+                     .OrderBy(p => p.TryGetProperty("number", out var n) ? JsonRead.Int(n) ?? int.MaxValue : int.MaxValue))
         {
             var url = ImageUrl(String(page, "image"));
             if (url is not null)

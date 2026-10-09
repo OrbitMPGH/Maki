@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.ComicWalker;
 
@@ -222,7 +223,7 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
                     $"Unsupported drmMode '{drmMode}' on episode {chapter.SourceChapterId}");
             }
 
-            var page = manuscript.TryGetProperty("page", out var pageEl) ? pageEl.GetInt32() : 0;
+            var page = manuscript.TryGetProperty("page", out var pageEl) ? JsonRead.Int(pageEl) ?? 0 : 0;
             var imageUrl = manuscript.TryGetProperty("drmImageUrl", out var imageUrlEl) ? imageUrlEl.GetString() : null;
             var drmHash = manuscript.TryGetProperty("drmHash", out var drmHashEl) ? drmHashEl.GetString() : null;
             if (string.IsNullOrEmpty(imageUrl) || string.IsNullOrEmpty(drmHash))

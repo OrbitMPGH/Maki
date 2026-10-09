@@ -284,7 +284,10 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
         {
             if (int.TryParse(property.Name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var position))
             {
-                counts[position] = property.Value.GetInt32();
+                if (JsonRead.Int(property.Value) is { } count)
+                {
+                    counts[position] = count;
+                }
             }
         }
 

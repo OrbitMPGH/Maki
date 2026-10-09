@@ -219,7 +219,7 @@ public class OlympusSource : ISource
         }
 
         var pages = pagesEl.EnumerateArray()
-            .Select(p => p.GetString())
+            .Select(JsonRead.Text)
             .Where(url => !string.IsNullOrEmpty(url))
             .Select(url => new PageRequest(url!, new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" }))
             .ToList();
