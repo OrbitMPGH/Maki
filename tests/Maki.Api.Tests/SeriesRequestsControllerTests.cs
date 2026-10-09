@@ -309,7 +309,7 @@ public class SeriesRequestsControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task The_resolved_filter_leaves_out_requests_still_being_approved()
+    public async Task The_resolved_and_pending_filters_split_on_requests_still_being_approved()
     {
         await AsReader().Create(new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1"), default);
         using (var db = _db.NewContext())
@@ -336,6 +336,9 @@ public class SeriesRequestsControllerTests : IDisposable
         var resolved = Body<List<SeriesRequestDto>>(await AsAdmin().List("resolved", default));
 
         Assert.Equal(["3"], resolved.Select(r => r.Title));
+
+        var pending = Body<List<SeriesRequestDto>>(await AsAdmin().List("pending", default));
+        Assert.Equal(["2", "Series 1"], pending.Select(r => r.Title).Order(StringComparer.Ordinal));
     }
 
     [Fact]

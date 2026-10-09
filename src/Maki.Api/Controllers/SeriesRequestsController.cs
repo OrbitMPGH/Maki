@@ -58,7 +58,8 @@ public class SeriesRequestsController(
 
         query = status.ToLowerInvariant() switch
         {
-            "pending" => query.Where(r => r.Status == SeriesRequestStatus.Pending),
+            "pending" => query.Where(r =>
+                r.Status == SeriesRequestStatus.Pending || r.Status == SeriesRequestStatus.Processing),
             "resolved" => query.Where(r =>
                 r.Status != SeriesRequestStatus.Pending && r.Status != SeriesRequestStatus.Processing),
             _ => query,
@@ -66,7 +67,7 @@ public class SeriesRequestsController(
 
         var rows = await query
             // Pending first, then newest — the queue an admin works through, not a chronology.
-            .OrderBy(r => r.Status == SeriesRequestStatus.Pending ? 0 : 1)
+            .OrderBy(r => r.Status == SeriesRequestStatus.Pending || r.Status == SeriesRequestStatus.Processing ? 0 : 1)
             .ThenByDescending(r => r.Created)
             .Take(500)
             .ToListAsync(ct);
