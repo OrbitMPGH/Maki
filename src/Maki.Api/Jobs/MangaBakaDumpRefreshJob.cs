@@ -39,13 +39,20 @@ public class MangaBakaDumpRefreshJob(
             // that is already on disk: the browse indexes did not exist before this release, and
             // RefreshAsync short-circuits on an unchanged SHA1, so an existing install would
             // otherwise keep full-scanning until MangaBaka published a new dump. No-ops once built.
-            await dumpService.EnsureBrowseIndexesAsync(context.CancellationToken);
+            var backfilled = await dumpService.EnsureBrowseIndexesAsync(context.CancellationToken);
+            if (!installed && !backfilled)
+            {
+                build.NothingBuilt();
+            }
 
             if (installed)
             {
                 // Rail caches were built off the old (or no) dump; re-warm against the new one.
                 var scheduler = await schedulerFactory.GetScheduler(context.CancellationToken);
-                await scheduler.TriggerJob(DiscoverCacheWarmJob.Key, context.CancellationToken);
+                await scheduler.TriggerJob(
+                    DiscoverCacheWarmJob.Key,
+                    new JobDataMap { [DiscoverCacheWarmJob.IndexesKey] = true },
+                    context.CancellationToken);
                 await scheduler.TriggerJob(FollowedCreatorReleaseJob.Key, context.CancellationToken);
             }
         }

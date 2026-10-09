@@ -32,9 +32,11 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
 
     /// <summary>
     /// Waits for the other builds to finish. Dispose the result to let the next one in; a
-    /// cancelled wait throws, which every caller already treats as shutdown.
+    /// cancelled wait throws, which every caller already treats as shutdown. A job whose check
+    /// found nothing to build calls <see cref="BuildLease.NothingBuilt"/> so the release skips the
+    /// compaction there is nothing to compact after.
     /// </summary>
-    public async Task<IDisposable> EnterAsync(string what, CancellationToken ct)
+    public async Task<BuildLease> EnterAsync(string what, CancellationToken ct)
     {
         if (!await _gate.WaitAsync(0, ct))
         {
@@ -50,7 +52,7 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
             }
         }
 
-        return new Lease(this);
+        return new BuildLease(this);
     }
 
     /// <summary>
@@ -71,9 +73,9 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
     /// it would only have to be done again.
     /// </para>
     /// </summary>
-    private void Release()
+    private void Release(bool built)
     {
-        if (Volatile.Read(ref _waiting) == 0)
+        if (built && Volatile.Read(ref _waiting) == 0)
         {
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
@@ -82,9 +84,13 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
         _gate.Release();
     }
 
-    private sealed class Lease(ArtifactBuildGate owner) : IDisposable
+    public sealed class BuildLease(ArtifactBuildGate owner) : IDisposable
     {
         private int _released;
+        private volatile bool _built = true;
+
+        /// <summary>The check found nothing newer, so releasing this lease does not collect.</summary>
+        public void NothingBuilt() => _built = false;
 
         public void Dispose()
         {
@@ -92,7 +98,7 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
             // release twice and let two builds in at once.
             if (Interlocked.Exchange(ref _released, 1) == 0)
             {
-                owner.Release();
+                owner.Release(_built);
             }
         }
     }

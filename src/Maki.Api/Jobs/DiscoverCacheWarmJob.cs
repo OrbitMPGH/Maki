@@ -33,6 +33,13 @@ public class DiscoverCacheWarmJob(
 {
     public static readonly JobKey Key = new("discover-cache-warm");
 
+    /// <summary>Job-data flag set after a new dump installs: rebuild the in-memory indexes against it.</summary>
+    public const string IndexesKey = "indexes";
+
+    // The idle unloader drops both indexes within the hour, so rebuilding them on every 12-hour
+    // pass only builds, holds and compacts for nothing. Once per process, then after a new dump.
+    private static int _indexesPrimed;
+
     public async Task Execute(IJobExecutionContext context)
     {
         try
@@ -46,16 +53,20 @@ public class DiscoverCacheWarmJob(
                 await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
             }
 
-            // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
-            // the first natural-language query doesn't wear it.
-            await searchIndex.GetAsync(context.CancellationToken);
-            // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
-            // dump, which would otherwise land on whichever keystroke arrived first.
-            await catalogueIndex.GetAsync(context.CancellationToken);
+            var forced = context.MergedJobDataMap.TryGetValue(IndexesKey, out var flag) && flag is true;
+            if (Interlocked.Exchange(ref _indexesPrimed, 1) == 0 || forced)
+            {
+                // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
+                // the first natural-language query doesn't wear it.
+                await searchIndex.GetAsync(context.CancellationToken);
+                // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
+                // dump, which would otherwise land on whichever keystroke arrived first.
+                await catalogueIndex.GetAsync(context.CancellationToken);
+            }
         }
-        catch (InvalidOperationException)
+        catch (LocalCatalogueUnavailableException)
         {
-            // No local MangaBaka database — nothing to warm.
+            // No local MangaBaka database - nothing to warm.
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {

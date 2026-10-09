@@ -40,6 +40,11 @@ public class TasteVectorJob(
             using var build = await gate.EnterAsync(nameof(TasteVectorJob), context.CancellationToken);
 
             var result = await installer.InstallAsync(force, context.CancellationToken);
+            if (!result.Installed)
+            {
+                build.NothingBuilt();
+            }
+
             if (result.Installed)
             {
                 logger.LogInformation("Behavioural vectors: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
