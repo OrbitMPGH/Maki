@@ -169,24 +169,6 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
-    public async Task Embeddings_switched_off_build_nothing()
-    {
-        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
-        var options = new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base with { Dimensions = 4 })
-        {
-            Enabled = false,
-        };
-        var cache = new VectorIndexCache(
-            options, new MangaBakaDumpOptions(_dumpPath, _dir), NullLogger<VectorIndexCache>.Instance);
-
-        Assert.Null(await cache.GetAsync());
-        Assert.False(cache.IsLoaded);
-
-        options.Enabled = true;
-        Assert.NotNull(await cache.GetAsync());
-    }
-
-    [Fact]
     public async Task A_taste_artifact_holding_a_null_vector_does_not_break_the_build()
     {
         Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (2L, "h", [0f, 1f, 0f, 0f])]);

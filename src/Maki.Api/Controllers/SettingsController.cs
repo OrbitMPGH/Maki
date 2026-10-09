@@ -1857,7 +1857,14 @@ public class SettingsController(
             "false",
             StringComparison.OrdinalIgnoreCase);
 
-        var layer = (await vectorIndexCache.GetAsync(ct))?.Taste;
+        // A status line must not build the whole index to render itself. When it is cold, start a
+        // background build (unless embeddings are off) and report what is loaded now.
+        var layer = vectorIndexCache.TryGetLoaded()?.Taste;
+        if (layer is null && modelSwitcher.CurrentModel != EmbeddingModelProfile.OffKind)
+        {
+            vectorIndexCache.WarmInBackground();
+        }
+
         var generatedAt =
             DateTime.TryParse(
                 await settings.GetAsync(SettingKeys.RecommendationsTasteVectorsGeneratedAt, ct),
