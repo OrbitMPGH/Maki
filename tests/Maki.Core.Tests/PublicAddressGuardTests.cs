@@ -130,6 +130,92 @@ public class PublicAddressGuardTests
         Assert.Equal(1, inner.Calls);
     }
 
+    private sealed class RedirectingHandler(Func<Uri, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        public List<Uri> Seen { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Seen.Add(request.RequestUri!);
+            return Task.FromResult(respond(request.RequestUri!));
+        }
+    }
+
+    private static HttpResponseMessage Redirect(string to, HttpStatusCode status = HttpStatusCode.Found)
+    {
+        var response = new HttpResponseMessage(status);
+        response.Headers.Location = new Uri(to, UriKind.RelativeOrAbsolute);
+        return response;
+    }
+
+    private static HttpClient FollowingClient(HttpMessageHandler inner) =>
+        new(new ProxiedTargetGuardHandler(new FixedProxy(new Uri("http://proxy.test:3128")), followRedirects: true)
+        {
+            InnerHandler = inner
+        });
+
+    [Fact]
+    public async Task A_redirect_to_a_private_address_is_refused_on_a_proxied_client()
+    {
+        var inner = new RedirectingHandler(uri => uri.Host == "8.8.8.8" ? Redirect("http://10.0.0.5/secret") : new HttpResponseMessage(HttpStatusCode.OK));
+        using var client = FollowingClient(inner);
+
+        await Assert.ThrowsAsync<BlockedDestinationException>(() => client.GetAsync("http://8.8.8.8/start"));
+        Assert.Equal([new Uri("http://8.8.8.8/start")], inner.Seen);
+    }
+
+    [Fact]
+    public async Task A_redirect_to_localhost_is_refused_before_it_is_sent()
+    {
+        var inner = new RedirectingHandler(_ => Redirect("http://localhost/admin"));
+        using var client = FollowingClient(inner);
+
+        await Assert.ThrowsAsync<BlockedDestinationException>(() => client.GetAsync("http://8.8.8.8/start"));
+        Assert.Single(inner.Seen);
+    }
+
+    [Fact]
+    public async Task Public_redirects_are_followed_including_relative_ones()
+    {
+        var inner = new RedirectingHandler(uri => uri.AbsolutePath switch
+        {
+            "/start" => Redirect("/middle"),
+            "/middle" => Redirect("http://8.8.4.4/end", HttpStatusCode.PermanentRedirect),
+            _ => new HttpResponseMessage(HttpStatusCode.OK)
+        });
+        using var client = FollowingClient(inner);
+
+        using var response = await client.GetAsync("http://8.8.8.8/start");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(["http://8.8.8.8/start", "http://8.8.8.8/middle", "http://8.8.4.4/end"], inner.Seen.Select(u => u.ToString()));
+    }
+
+    [Fact]
+    public async Task A_redirect_loop_stops_after_five_hops()
+    {
+        var inner = new RedirectingHandler(_ => Redirect("http://8.8.8.8/again"));
+        using var client = FollowingClient(inner);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("http://8.8.8.8/start"));
+        Assert.Equal(6, inner.Seen.Count);
+    }
+
+    [Fact]
+    public async Task Redirects_are_left_alone_unless_the_handler_was_asked_to_follow_them()
+    {
+        var inner = new RedirectingHandler(_ => Redirect("http://10.0.0.5/secret"));
+        using var client = new HttpClient(new ProxiedTargetGuardHandler(new FixedProxy(new Uri("http://proxy.test:3128")))
+        {
+            InnerHandler = inner
+        });
+
+        using var response = await client.GetAsync("http://8.8.8.8/start");
+
+        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+        Assert.Single(inner.Seen);
+    }
+
     [Fact]
     public async Task Requests_that_do_not_go_through_a_proxy_are_left_to_the_connect_check()
     {

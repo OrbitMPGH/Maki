@@ -362,8 +362,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(2);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler());
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true));
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
@@ -406,8 +406,8 @@ try
 
     // MangaDenizi fetches its own page images through this client.
     builder.Services.AddHttpClient(MangaDeniziSource.HttpClientName)
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler());
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true));
 
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
     // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
@@ -417,8 +417,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler())
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -657,8 +657,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(60);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler())
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 

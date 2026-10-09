@@ -153,6 +153,17 @@ public static class PublicAddressGuard
     /// </summary>
     public static SocketsHttpHandler CreateHandler() => new() { ConnectCallback = ConnectAsync };
 
+    /// <summary>
+    /// <see cref="CreateHandler"/> with automatic redirects off, for clients whose
+    /// <see cref="ProxiedTargetGuardHandler"/> follows and re-checks them.
+    /// </summary>
+    public static SocketsHttpHandler CreateManualRedirectHandler()
+    {
+        var handler = CreateHandler();
+        handler.AllowAutoRedirect = false;
+        return handler;
+    }
+
     private static async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, CancellationToken ct)
     {
         var endpoint = context.DnsEndPoint;
@@ -252,17 +263,72 @@ public static class PublicAddressGuard
 /// Checks the target of every plain-http request that goes through a proxy. Such requests share one
 /// pooled connection to the proxy whatever their destination, so <see cref="PublicAddressGuard.CreateHandler"/>
 /// only sees the first one. Add it after the guarded primary handler on every client that uses it.
+/// <para>
+/// With <paramref name="followRedirects"/> the handler follows up to five redirects itself and checks
+/// each hop, which needs the primary handler built by
+/// <see cref="PublicAddressGuard.CreateManualRedirectHandler"/>. A redirect that
+/// <c>SocketsHttpHandler</c> follows on its own would reuse the proxy connection unchecked.
+/// </para>
 /// </summary>
-/// <remarks>A redirect that <c>SocketsHttpHandler</c> follows by itself is not seen here.</remarks>
-public sealed class ProxiedTargetGuardHandler(IWebProxy? proxy = null) : DelegatingHandler
+public sealed class ProxiedTargetGuardHandler(IWebProxy? proxy = null, bool followRedirects = false) : DelegatingHandler
 {
+    private const int MaxRedirects = 5;
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        for (var hop = 0; ; hop++)
+        {
+            await CheckAsync(request, ct);
+            var response = await base.SendAsync(request, ct);
+            if (!followRedirects || !IsRedirect(response.StatusCode) || response.Headers.Location is not { } location)
+            {
+                return response;
+            }
+
+            var next = location.IsAbsoluteUri ? location : new Uri(request.RequestUri!, location);
+            var keepsMethod = response.StatusCode is HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+            var downgrade = request.RequestUri!.Scheme == Uri.UriSchemeHttps && next.Scheme == Uri.UriSchemeHttp;
+            if (downgrade || (keepsMethod && request.Content is not null))
+            {
+                return response;
+            }
+
+            if (hop >= MaxRedirects)
+            {
+                response.Dispose();
+                throw new HttpRequestException($"Too many redirects from '{request.RequestUri}'");
+            }
+
+            response.Dispose();
+            PublicAddressGuard.EnsureAllowed(next);
+            request = Follow(request, next, keepsMethod);
+        }
+    }
+
+    private async ValueTask CheckAsync(HttpRequestMessage request, CancellationToken ct)
     {
         if (PublicAddressGuard.ProxiedPlainHttpTarget(request, proxy ?? HttpClient.DefaultProxy) is { } target)
         {
             await PublicAddressGuard.EnsureTargetPublicAsync(target, ct);
         }
+    }
 
-        return await base.SendAsync(request, ct);
+    private static bool IsRedirect(HttpStatusCode status) => status is
+        HttpStatusCode.MovedPermanently or HttpStatusCode.Found or HttpStatusCode.SeeOther or
+        HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+
+    private static HttpRequestMessage Follow(HttpRequestMessage previous, Uri next, bool keepsMethod)
+    {
+        var method = keepsMethod || previous.Method == HttpMethod.Head ? previous.Method : HttpMethod.Get;
+        var request = new HttpRequestMessage(method, next) { Version = previous.Version, VersionPolicy = previous.VersionPolicy };
+        foreach (var header in previous.Headers)
+        {
+            if (!header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+            {
+                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
+
+        return request;
     }
 }
