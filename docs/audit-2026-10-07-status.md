@@ -462,29 +462,29 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | HOSTING | HOSTING-42 | nit | done 42896055 |
 | HOSTING | HOSTING-35 | nit | done fa68c82e |
 | HOSTING | HOSTING-44 | nit | done eef1bbd1, 703f8a7f |
-| METADATA | METADATA-12 | low | pending |
-| METADATA | METADATA-13 | low | pending |
-| METADATA | METADATA-15 | low | pending |
-| METADATA | METADATA-17 | low | pending |
-| METADATA | METADATA-23 | low | pending |
-| METADATA | METADATA-24 | low | pending |
-| METADATA | METADATA-10 | low | pending |
-| METADATA | METADATA-11 | low | pending |
-| METADATA | METADATA-18 | low | pending |
-| METADATA | METADATA-03 | low | pending |
-| METADATA | METADATA-14 | low | pending |
-| METADATA | METADATA-05 | low | pending |
-| METADATA | METADATA-06 | low | pending |
-| METADATA | METADATA-16 | low | pending |
-| METADATA | METADATA-20 | low | pending |
-| METADATA | METADATA-22 | low | pending |
-| METADATA | METADATA-19 | low | pending |
-| METADATA | METADATA-08 | low | pending |
-| METADATA | METADATA-21 | low | pending |
-| METADATA | METADATA-28 | low | pending |
-| METADATA | METADATA-27 | low | pending |
-| METADATA | METADATA-25 | nit | pending |
-| METADATA | METADATA-26 | nit | pending |
+| METADATA | METADATA-12 | low | done 5961fc2e, 3ec2c387 |
+| METADATA | METADATA-13 | low | done 5961fc2e |
+| METADATA | METADATA-15 | low | done 968d5400 |
+| METADATA | METADATA-17 | low | done 4cd1d49d |
+| METADATA | METADATA-23 | low | done 968d5400 |
+| METADATA | METADATA-24 | low | done d40b598d |
+| METADATA | METADATA-10 | low | done e78eec04 |
+| METADATA | METADATA-11 | low | done 7b2885f0 |
+| METADATA | METADATA-18 | low | done b4df95f1 |
+| METADATA | METADATA-03 | low | done 128f4617 |
+| METADATA | METADATA-14 | low | done 76fc517e, 8f569062, 94860047 |
+| METADATA | METADATA-05 | low | done fab5861c (ArrayPool part left; empty-channel path no longer allocates) |
+| METADATA | METADATA-06 | low | done 418cd4bf |
+| METADATA | METADATA-16 | low | done 016375a2, 3d6cde5f |
+| METADATA | METADATA-20 | low | done 876c98eb |
+| METADATA | METADATA-22 | low | done 99af3675, 8d0ae457 |
+| METADATA | METADATA-19 | low | done b4df95f1 |
+| METADATA | METADATA-08 | low | done 167d4d1b, 5367f6f9 (index still builds while embeddings are off; gating it broke never-show and tag filters) |
+| METADATA | METADATA-21 | low | done 5ad60dd1, 016375a2 (shared checks and failure memo; no base class) |
+| METADATA | METADATA-28 | low | done 8a91df93, 5961fc2e, 158ebb32 and others (no Invalidate-during-build test) |
+| METADATA | METADATA-27 | low | done 7983e1e1 |
+| METADATA | METADATA-25 | nit | done 60bb0d95 (COLLATE, LIKE ESCAPE, HtmlDecode, DropAfterScan left alone) |
+| METADATA | METADATA-26 | nit | done 8720e872 |
 | PROGRESS | PROGRESS-27 | low | done eccdea66 |
 | PROGRESS | PROGRESS-10 | low | done 363e5bc7 |
 | PROGRESS | PROGRESS-22 | low | done 71138ce0 |
