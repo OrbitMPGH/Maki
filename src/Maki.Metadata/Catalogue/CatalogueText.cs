@@ -132,10 +132,9 @@ public static class CatalogueText
     /// because they are phonemic ("Ippo" is not "Ipo").
     /// </para>
     /// <para>
-    /// It is lossy on English words that happen to contain those pairs, so "Young" keys the same as
-    /// "Yong". That is why this only ever picks which spelling of a resolved name to prefer, and
-    /// never merges two names' works together: a wrong merge would be invisible, while a wrong
-    /// preference just shows the other spelling's page.
+    /// It is lossy on names that happen to contain those pairs, so "Young" keys the same as "Yong".
+    /// <see cref="CreditIndex"/> accepts that: it keys creators by this value and merges their works
+    /// on purpose, having measured how many names the merge fixes against how many it wrongly joins.
     /// </para>
     /// </summary>
     public static string RomanizationKey(string? text)
