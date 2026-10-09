@@ -251,7 +251,7 @@ public sealed class TopManhuaImageBrowser(
             // The headless shell advertises itself in the client hints ("HeadlessChrome") even
             // though the UA header is overridden above — restate them so they agree with the UA
             // FlareSolverr earned the clearance cookie with (see MangaFireBrowser for the same fix).
-            ExtraHTTPHeaders = BrowserSupport.ClientHintsFor(session.UserAgent),
+            ExtraHTTPHeaders = BrowserSupport.ClientHintsFor(session.UserAgent, brandSecond: true),
         });
 
         await context.AddInitScriptAsync("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});");

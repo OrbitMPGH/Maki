@@ -5,8 +5,11 @@ namespace Maki.Sources.Common;
 
 internal static class BrowserSupport
 {
-    /// <summary>Sec-CH-UA headers consistent with <paramref name="userAgent"/>, replacing the headless shell's own.</summary>
-    public static Dictionary<string, string> ClientHintsFor(string userAgent)
+    /// <summary>
+    /// Sec-CH-UA headers consistent with <paramref name="userAgent"/>, replacing the headless shell's own.
+    /// <paramref name="brandSecond"/> keeps TopManhua's original brand order, which its fingerprint was tuned on.
+    /// </summary>
+    public static Dictionary<string, string> ClientHintsFor(string userAgent, bool brandSecond = false)
     {
         var major = Regex.Match(userAgent, @"Chrome/(\d+)").Groups[1].Value;
         var platform = userAgent.Contains("Windows", StringComparison.Ordinal) ? "Windows"
@@ -22,7 +25,9 @@ internal static class BrowserSupport
 
         if (major.Length > 0)
         {
-            headers["sec-ch-ua"] = $"\"Chromium\";v=\"{major}\", \"Google Chrome\";v=\"{major}\", \"Not=A?Brand\";v=\"24\"";
+            headers["sec-ch-ua"] = brandSecond
+                ? $"\"Chromium\";v=\"{major}\", \"Not_A Brand\";v=\"24\", \"Google Chrome\";v=\"{major}\""
+                : $"\"Chromium\";v=\"{major}\", \"Google Chrome\";v=\"{major}\", \"Not=A?Brand\";v=\"24\"";
         }
 
         return headers;
