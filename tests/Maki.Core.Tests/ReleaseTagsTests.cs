@@ -92,6 +92,9 @@ public class ReleaseTagsTests
     [InlineData("pt-BR")]
     [InlineData("zh-Hans")]
     [InlineData("zh-hans")]
+    [InlineData("eng")]
+    [InlineData("ENG")]
+    [InlineData("jpn")]
     public void Group_is_null_for_release_and_language_noise(string tag)
     {
         Assert.Null(ReleaseTags.Group([tag]));
@@ -103,6 +106,12 @@ public class ReleaseTagsTests
     public void Group_keeps_a_lowercase_three_letter_group(string tag)
     {
         Assert.Equal(tag, ReleaseTags.Group([tag]));
+    }
+
+    [Fact]
+    public void Group_skips_a_three_letter_language_tag_ahead_of_the_group()
+    {
+        Assert.Equal("1r0n", ReleaseTags.Group(["eng", "Digital", "1r0n"]));
     }
 
     [Fact]

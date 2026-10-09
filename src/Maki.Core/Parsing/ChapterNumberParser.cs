@@ -118,7 +118,8 @@ public static partial class ChapterNumberParser
     }
 
     // A comma is a decimal separator only with one or two digits after it; "1,000" stays unparsed.
-    // "9,10" and "10,11" are two chapters in one row ("Ch.9,10"), and take the first.
+    // A single digit is always a decimal ("4,5" is 4.5). Two digits that continue the number
+    // ("9,10", "10,11") are two chapters in one row ("Ch.9,10") and take the first.
     private static decimal? TryParseNumber(string digits) =>
         decimal.TryParse(CommaDecimal().Replace(digits, CommaNumber), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number)
             ? number
@@ -128,7 +129,8 @@ public static partial class ChapterNumberParser
     {
         var whole = match.Groups[1].Value;
         var after = match.Groups[2].Value;
-        var consecutive = decimal.TryParse(whole, NumberStyles.None, CultureInfo.InvariantCulture, out var first) &&
+        var consecutive = after.Length == 2 && after[0] != '0' &&
+                          decimal.TryParse(whole, NumberStyles.None, CultureInfo.InvariantCulture, out var first) &&
                           decimal.TryParse(after, NumberStyles.None, CultureInfo.InvariantCulture, out var second) &&
                           second == first + 1;
         return consecutive ? whole : $"{whole}.{after}";

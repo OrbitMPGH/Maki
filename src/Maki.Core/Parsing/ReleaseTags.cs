@@ -32,7 +32,8 @@ public static partial class ReleaseTags
     [GeneratedRegex(@"^[a-z]{2}(?:-(?:[a-z]{2,4}|[A-Z]{2}|[A-Z][a-z]{3}))?$")]
     private static partial Regex LanguageTagPattern();
 
-    // These describe the release, not who made it.
+    // These describe the release, not who made it. The three-letter codes are ISO 639-2 language
+    // tags, which the two-letter pattern above deliberately leaves alone.
     private static readonly HashSet<string> NoiseTokens = new(StringComparer.OrdinalIgnoreCase)
     {
         "BW", "c2c", "Censored", "Chapter", "Chapters", "Color", "Colored", "Colour", "Coloured",
@@ -40,7 +41,9 @@ public static partial class ReleaseTags
         "Digital-Compilation", "English", "Fan", "Fanmade", "Fixed", "HD", "Manga", "Manhua",
         "Manhwa", "Official", "Omnibus", "One-shot", "Oneshot", "Ongoing", "Raw", "Raws", "rip",
         "Remastered", "Scan", "scanned", "Scanlation", "Tankobon", "Tankoubon", "Uncensored",
-        "Volume", "Volumes", "web", "web-dl", "webdl", "webrip", "Webtoon"
+        "Volume", "Volumes", "web", "web-dl", "webdl", "webrip", "Webtoon",
+        "ara", "chi", "deu", "eng", "fra", "fre", "ger", "ind", "ita", "jp", "jpn", "kor", "pol",
+        "por", "rus", "spa", "tha", "tur", "vie", "zh", "zho"
     };
 
     public static bool IsDigital(IReadOnlyList<string> tags) =>
