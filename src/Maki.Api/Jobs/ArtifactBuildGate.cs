@@ -29,12 +29,18 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
     private int _waiting;
+    private int _built;
+    private int _collections;
+
+    internal int Collections => Volatile.Read(ref _collections);
 
     /// <summary>
     /// Waits for the other builds to finish. Dispose the result to let the next one in; a
-    /// cancelled wait throws, which every caller already treats as shutdown.
+    /// cancelled wait throws, which every caller already treats as shutdown. Call
+    /// <see cref="BuildLease.MarkBuilt"/> when the run actually built or installed something, so a
+    /// check that found the artifact current does not pay for a collection.
     /// </summary>
-    public async Task<IDisposable> EnterAsync(string what, CancellationToken ct)
+    public async Task<BuildLease> EnterAsync(string what, CancellationToken ct)
     {
         if (!await _gate.WaitAsync(0, ct))
         {
@@ -50,11 +56,12 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
             }
         }
 
-        return new Lease(this);
+        return new BuildLease(this);
     }
 
     /// <summary>
-    /// Hands the gate on, and collects first when this was the last build in the queue.
+    /// Hands the gate on, and collects first when a build has finished since the last collection
+    /// and this was the last one in the queue.
     ///
     /// <para>
     /// An index build churns through far more heap than it keeps, and most of that churn is large
@@ -68,23 +75,29 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
     /// A forced blocking compaction is normally the wrong tool. It is the right one at exactly this
     /// point: the build that just finished is the expensive thing, the queue behind it is empty, and
     /// the alternative is carrying its holes for an hour. Skipped when another build is waiting -
-    /// it would only have to be done again.
+    /// it would only have to be done again, and the pending flag carries to whichever build is last.
     /// </para>
     /// </summary>
     private void Release()
     {
-        if (Volatile.Read(ref _waiting) == 0)
+        if (Volatile.Read(ref _waiting) == 0 && Interlocked.Exchange(ref _built, 0) == 1)
         {
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            Interlocked.Increment(ref _collections);
         }
 
         _gate.Release();
     }
 
-    private sealed class Lease(ArtifactBuildGate owner) : IDisposable
+    public sealed class BuildLease : IDisposable
     {
+        private readonly ArtifactBuildGate _owner;
         private int _released;
+
+        internal BuildLease(ArtifactBuildGate owner) => _owner = owner;
+
+        public void MarkBuilt() => Volatile.Write(ref _owner._built, 1);
 
         public void Dispose()
         {
@@ -92,7 +105,7 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
             // release twice and let two builds in at once.
             if (Interlocked.Exchange(ref _released, 1) == 0)
             {
-                owner.Release();
+                _owner.Release();
             }
         }
     }

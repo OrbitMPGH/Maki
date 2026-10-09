@@ -64,4 +64,40 @@ public class ArtifactBuildGateTests
         var next = await gate.EnterAsync("next", CancellationToken.None);
         next.Dispose();
     }
+
+    [Fact]
+    public async Task ACheckThatBuiltNothingDoesNotCollect()
+    {
+        var gate = Gate();
+        (await gate.EnterAsync("check", CancellationToken.None)).Dispose();
+
+        Assert.Equal(0, gate.Collections);
+    }
+
+    [Fact]
+    public async Task ABuildCollectsOnceItIsTheLastInTheQueue()
+    {
+        var gate = Gate();
+        var lease = await gate.EnterAsync("build", CancellationToken.None);
+        lease.MarkBuilt();
+        lease.Dispose();
+        Assert.Equal(1, gate.Collections);
+
+        (await gate.EnterAsync("check", CancellationToken.None)).Dispose();
+        Assert.Equal(1, gate.Collections);
+    }
+
+    [Fact]
+    public async Task ABuildFollowedByAWaitingCheckStillCollectsAtTheEnd()
+    {
+        var gate = Gate();
+        var build = await gate.EnterAsync("build", CancellationToken.None);
+        var check = gate.EnterAsync("check", CancellationToken.None);
+        build.MarkBuilt();
+        build.Dispose();
+        Assert.Equal(0, gate.Collections);
+
+        (await check.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None)).Dispose();
+        Assert.Equal(1, gate.Collections);
+    }
 }

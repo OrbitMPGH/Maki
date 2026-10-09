@@ -56,6 +56,11 @@ public class DiscoverCacheWarmJob(
                 return;
             }
 
+            if (!searchIndex.IsLoaded || !catalogueIndex.IsLoaded)
+            {
+                build.MarkBuilt();
+            }
+
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
             await searchIndex.GetAsync(context.CancellationToken);
