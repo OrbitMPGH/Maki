@@ -191,6 +191,18 @@ public static class PublicAddressGuard
         }
     }
 
+    /// <summary>The destination of a plain-http request that goes through a proxy, or null when it does not.</summary>
+    internal static Uri? ProxiedPlainHttpTarget(HttpRequestMessage request, IWebProxy proxy)
+    {
+        var target = request.RequestUri;
+        if (target is null || target.Scheme != Uri.UriSchemeHttp || proxy.IsBypassed(target))
+        {
+            return null;
+        }
+
+        return proxy.GetProxy(target) is { } via && via != target ? target : null;
+    }
+
     internal static async ValueTask EnsureTargetPublicAsync(Uri? target, CancellationToken ct)
     {
         if (target is null || !IsAllowedUrl(target))
@@ -233,5 +245,24 @@ public static class PublicAddressGuard
         return proxy != null && proxy != target &&
                proxy.Port == context.DnsEndPoint.Port &&
                proxy.IdnHost.Equals(context.DnsEndPoint.Host, StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+/// <summary>
+/// Checks the target of every plain-http request that goes through a proxy. Such requests share one
+/// pooled connection to the proxy whatever their destination, so <see cref="PublicAddressGuard.CreateHandler"/>
+/// only sees the first one. Add it after the guarded primary handler on every client that uses it.
+/// </summary>
+/// <remarks>A redirect that <c>SocketsHttpHandler</c> follows by itself is not seen here.</remarks>
+public sealed class ProxiedTargetGuardHandler(IWebProxy? proxy = null) : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        if (PublicAddressGuard.ProxiedPlainHttpTarget(request, proxy ?? HttpClient.DefaultProxy) is { } target)
+        {
+            await PublicAddressGuard.EnsureTargetPublicAsync(target, ct);
+        }
+
+        return await base.SendAsync(request, ct);
     }
 }

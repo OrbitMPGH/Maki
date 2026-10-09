@@ -97,6 +97,49 @@ public class PublicAddressGuardTests
         Assert.IsType<BlockedDestinationException>(ex);
     }
 
+    private sealed class FixedProxy(Uri? via) : IWebProxy
+    {
+        public ICredentials? Credentials { get; set; }
+        public Uri? GetProxy(Uri destination) => via;
+        public bool IsBypassed(Uri host) => via is null;
+    }
+
+    private sealed class OkHandler : HttpMessageHandler
+    {
+        public int Calls { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Calls++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        }
+    }
+
+    [Fact]
+    public async Task Proxied_plain_http_requests_are_checked_one_by_one()
+    {
+        var inner = new OkHandler();
+        using var client = new HttpClient(new ProxiedTargetGuardHandler(new FixedProxy(new Uri("http://proxy.test:3128")))
+        {
+            InnerHandler = inner
+        });
+
+        (await client.GetAsync("http://8.8.8.8/ok")).Dispose();
+        await Assert.ThrowsAsync<BlockedDestinationException>(() => client.GetAsync("http://10.0.0.5/secret"));
+        await Assert.ThrowsAsync<BlockedDestinationException>(() => client.GetAsync("http://127.0.0.1/secret"));
+        Assert.Equal(1, inner.Calls);
+    }
+
+    [Fact]
+    public async Task Requests_that_do_not_go_through_a_proxy_are_left_to_the_connect_check()
+    {
+        var inner = new OkHandler();
+        using var client = new HttpClient(new ProxiedTargetGuardHandler(new FixedProxy(null)) { InnerHandler = inner });
+
+        (await client.GetAsync("http://10.0.0.5/direct")).Dispose();
+        Assert.Equal(1, inner.Calls);
+    }
+
     [Fact]
     public async Task EnsureTargetPublicAsync_refuses_a_non_http_target()
     {
