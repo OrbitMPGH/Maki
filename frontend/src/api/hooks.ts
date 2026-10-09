@@ -2125,7 +2125,8 @@ export function useClearQueue() {
 export function useReorderQueue() {
   const queryClient = useQueryClient()
   // Queue list pages are keyed ['queue', page, pageSize]; this predicate keeps the reorder off
-  // ['queue', 'import-plan', id], whose cached value has no `items`.
+  // the per-series ['queue', 'series', id] lists. The import plan, ['import-plan', id], sits outside
+  // the ['queue'] prefix and has no `items`.
   const isQueuePage = (q: { queryKey: readonly unknown[] }) => typeof q.queryKey[1] === 'number'
   return useMutation({
     mutationFn: (orderedIds: number[]) =>

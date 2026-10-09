@@ -178,7 +178,7 @@ export function useLiveEvents() {
       listen(conn, 'queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
         // Only the paged lists ['queue', page, pageSize] and the per-series ['queue', 'series', id]
-        // hold `items`; ['queue', 'import-plan', id] does not.
+        // hold `items`; the import plan, keyed ['import-plan', id], is outside this prefix.
         const patch = (old: QueueHistoryDto | undefined) => {
           if (!old || !Array.isArray(old.items)) return old
           if (isDone) {
