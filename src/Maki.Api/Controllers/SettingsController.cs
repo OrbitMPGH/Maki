@@ -158,7 +158,7 @@ public class SettingsController(
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
-    public record BackupSettings(int Retention, bool Scheduled = false);
+    public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
     /// <param name="UserId">
@@ -1150,8 +1150,12 @@ public class SettingsController(
             SettingKeys.BackupRetention,
             request.Retention.ToString(CultureInfo.InvariantCulture),
             ct);
-        await settings.SetAsync(SettingKeys.BackupScheduled, request.Scheduled ? "true" : "false", ct);
-        return Ok(request);
+        if (request.Scheduled is { } scheduled)
+        {
+            await settings.SetAsync(SettingKeys.BackupScheduled, scheduled ? "true" : "false", ct);
+        }
+
+        return await GetBackup(ct);
     }
 
     /// <summary>
