@@ -249,6 +249,4 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
             DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed)
             ? parsed
             : null;
-
 }
-

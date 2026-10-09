@@ -213,7 +213,6 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
         return $"{CdnUrl}/uploads/images/series/{seriesId}/{Uri.EscapeDataString(cover)}{query}";
     }
 
-    /// <summary>Descriptions are stored as rendered HTML, tags and all.</summary>
     private static DateTime? UnixTime(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
             ? DateTimeOffset.FromUnixTimeSeconds(value.GetInt64()).UtcDateTime
