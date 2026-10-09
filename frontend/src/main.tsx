@@ -65,11 +65,17 @@ function reportError(error: unknown, meta?: Record<string, unknown>) {
   })
 }
 
+function isFinalClientError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false
+  return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // A 404 won't change on a second try; retrying only delays the page's not-found state.
-      retry: (failureCount, error) => failureCount < 1 && !(error instanceof ApiError && error.status === 404),
+      // A 4xx (not-found, forbidden, validation) won't change on a second try; retrying only delays
+      // the page's own state. Timeouts and rate limits are the 4xx worth another go.
+      retry: (failureCount, error) => failureCount < 1 && !isFinalClientError(error),
       refetchOnWindowFocus: false,
     },
   },
