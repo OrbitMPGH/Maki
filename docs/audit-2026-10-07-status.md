@@ -571,30 +571,30 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | SERIES | SERIES-38 | nit | done df34afee (partial) |
 | SERIES | SERIES-12 | nit | skipped (owner decision: admins stay scoped) |
 | SERIES | SERIES-40 | nit | done e60abca7 |
-| SOURCES | SOURCES-26 | low | pending |
-| SOURCES | SOURCES-17 | low | pending |
-| SOURCES | SOURCES-21 | low | pending |
-| SOURCES | SOURCES-22 | low | pending |
-| SOURCES | SOURCES-24 | low | pending |
-| SOURCES | SOURCES-20 | low | pending |
-| SOURCES | SOURCES-06 | low | pending |
-| SOURCES | SOURCES-18 | low | pending |
-| SOURCES | SOURCES-19 | low | pending |
-| SOURCES | SOURCES-33 | low | pending |
-| SOURCES | SOURCES-23 | low | pending |
-| SOURCES | SOURCES-05 | low | pending |
-| SOURCES | SOURCES-04 | low | pending |
-| SOURCES | SOURCES-15 | low | pending |
-| SOURCES | SOURCES-25 | low | pending |
-| SOURCES | SOURCES-08 | low | pending |
-| SOURCES | SOURCES-27 | low | pending |
-| SOURCES | SOURCES-14 | low | pending |
-| SOURCES | SOURCES-16 | low | pending |
-| SOURCES | SOURCES-13 | low | pending |
-| SOURCES | SOURCES-32 | low | pending |
-| SOURCES | SOURCES-30 | nit | pending |
-| SOURCES | SOURCES-28 | nit | pending |
-| SOURCES | SOURCES-29 | nit | pending |
-| SOURCES | SOURCES-34 | nit | pending |
-| SOURCES | SOURCES-35 | nit | pending |
-| SOURCES | SOURCES-31 | nit | pending |
+| SOURCES | SOURCES-26 | low | done e0153f3a |
+| SOURCES | SOURCES-17 | low | done 023e4931, cd9cf9ee, e30da49b, 123451bb, 63c60a6f |
+| SOURCES | SOURCES-21 | low | done 9e710734 (comments only; surfacing a licensed-out state needs a new exception contract, owner may revisit) |
+| SOURCES | SOURCES-22 | low | done a6aa4de2 |
+| SOURCES | SOURCES-24 | low | done 7fbfa56d |
+| SOURCES | SOURCES-20 | low | done 0db1e819 |
+| SOURCES | SOURCES-06 | low | done cd9cf9ee (URLs trimmed; moving MadaraParser to Common for TopManhua needs its live markup checked) |
+| SOURCES | SOURCES-18 | low | done e30da49b |
+| SOURCES | SOURCES-19 | low | done da8c381a |
+| SOURCES | SOURCES-33 | low | done 0db1e819 (non-numeric slugs kept; the _1 vs _10 sub-chapter convention is unconfirmed on the site) |
+| SOURCES | SOURCES-23 | low | done 452c7a79, 023e4931, cd9cf9ee |
+| SOURCES | SOURCES-05 | low | done 6f768338, 7a0682e8 |
+| SOURCES | SOURCES-04 | low | done 6f768338 |
+| SOURCES | SOURCES-15 | low | done 123451bb |
+| SOURCES | SOURCES-25 | low | done d4afb81d, a50a787c, 561a0969, 73bd3110 |
+| SOURCES | SOURCES-08 | low | done 77204f8d, ddccae11 (MangaDenizi; CuuTruyen and GigaViewer keep their own image clients, a per-page transform contract is a design decision) |
+| SOURCES | SOURCES-27 | low | done e53b9193 |
+| SOURCES | SOURCES-14 | low | done 14ea499b |
+| SOURCES | SOURCES-16 | low | done 123451bb, 7fbfa56d, c24359cd, 6f768338, 2caa2b8d, 7ba35a70 |
+| SOURCES | SOURCES-13 | low | done 023e4931, d7b0c3a2, 69422890 |
+| SOURCES | SOURCES-32 | low | done d7b0c3a2 |
+| SOURCES | SOURCES-30 | nit | skipped (needs three favicon files under frontend/public/source-icons plus sourceIcons.ts entries; owner adds the files) |
+| SOURCES | SOURCES-28 | nit | done d4afb81d, 023e4931 |
+| SOURCES | SOURCES-29 | nit | done a19153d2 |
+| SOURCES | SOURCES-34 | nit | done 245452e2 |
+| SOURCES | SOURCES-35 | nit | done cbd19b60 (Content tags for Atsumaru, MangaKatana and MangaPill rest on the sites' reputation, unconfirmed live) |
+| SOURCES | SOURCES-31 | nit | done 178432ad, 20b06084, 9278bd40, 3270dc61 |
