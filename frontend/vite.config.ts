@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
         // package. A relative `../../locales/...` specifier resolves fine in dev and on some
         // platforms' production builds, but Rolldown's module resolution for a path that escapes
         // the package root was observed to fail only in the Linux/musl Docker build, not on the
-        // Windows machine building the same commit — an alias resolves to an absolute path up
+        // Windows machine building the same commit, an alias resolves to an absolute path up
         // front and sidesteps that boundary check entirely.
         '@locales': path.resolve(__dirname, '../locales'),
       },

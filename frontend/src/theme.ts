@@ -23,7 +23,7 @@ const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
  * Content-first, cinematic dark UI for a self-hosted collection manager. The
  * dark scale is overridden to a cohesive near-black elevation ramp so every
  * Mantine surface picks up the look for free; `brand` (indigo/periwinkle by default) is
- * the single accent. Semantic status hues live in ./status.ts.
+ * the single accent. Semantic status hues live in ./components/ui/status.tsx.
  */
 
 const brand: MantineColorsTuple = [
@@ -95,8 +95,8 @@ const amber: MantineColorsTuple = [
 export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, emerald, amber }
 
 // Near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
-// 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the default; the others are
-// selectable grounds whose CSS side lives in theme.css under [data-ground].
+// 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the base ramp (`tinted` is the
+// default ground, see theme-context.tsx); the others are selectable grounds whose CSS side lives in theme.css under [data-ground].
 const dark: MantineColorsTuple = [
   '#c7cad4',
   '#a9adba',
@@ -305,6 +305,3 @@ const themeBase: MantineThemeOverride = {
     }),
   },
 }
-
-/** Default (indigo) theme, kept as a named export for any non-dynamic consumers. */
-export const theme = createAppTheme()

@@ -394,7 +394,7 @@ export const EngineCard = memo(function EngineCard({
  *
  * Use it for rows the *recommender* produced: Discover's "based on your recent activity", the
  * series page's "more like this", Home's "you might like". Catalogue rows (Trending, Popular, a
- * genre) stay on {@link DiscoverRailRow} — they are rankings, not claims about the reader — and so
+ * genre) stay on {@link DiscoverRailRow}, they are rankings, not claims about the reader, and so
  * does the reader-cohort rail, whose items hydrate from the dump and carry none of the per-item
  * grounds this card is built to show.
  */
@@ -431,8 +431,8 @@ export function DiscoverRailRow({
   /**
    * Rails hide the reason line by default: a catalogue rail is a row of covers you skim, and every
    * card carrying "Because: Action, Drama" is noise where the rail's own heading already said why
-   * these are here. A rail whose picks need defending individually — "More like this", where the
-   * whole point is which parts of the seed a candidate picked up — opts in.
+   * these are here. A rail whose picks need defending individually, "More like this", where the
+   * whole point is which parts of the seed a candidate picked up, opts in.
    */
   showReason?: boolean
 }) {

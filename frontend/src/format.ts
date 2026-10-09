@@ -65,7 +65,7 @@ export function formatBytes(bytes: number | null | undefined): string {
   if (bytes <= 0) return '0 B'
 
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  // Clamped at both ends. A value under 1 — a transfer rate of 0.4 B/s on a stalled download, say —
+  // Clamped at both ends. A value under 1 (a transfer rate of 0.4 B/s on a stalled download, say)
   // gives a negative exponent, and units[-1] is undefined rather than out of range, so it renders
   // as "410 undefined" instead of failing.
   const unit = Math.min(units.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(1024))))

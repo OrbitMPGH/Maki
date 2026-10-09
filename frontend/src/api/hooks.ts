@@ -129,8 +129,8 @@ export function useSeriesDetail(id: number) {
     queryFn: () => api<SeriesDto>(`/series/${id}`),
     meta: { inlineNotFound: true },
     // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
-    // would otherwise leave the Sources card spinning with nothing to end it, so poll while — and
-    // only while — there is something to wait for.
+    // would otherwise leave the Sources card spinning with nothing to end it, so poll while, and
+    // only while, there is something to wait for.
     refetchInterval: (query) => (query.state.data?.sourceMatchPending ? 3000 : false),
   })
 }
@@ -147,7 +147,7 @@ export function useMetadataSearch(query: string) {
 export interface RecommendationItem {
   providerId: string
   title: string
-  /** Full-size cover art (~460x690). For the detail card only — poster cards use `thumbUrl`. */
+  /** Full-size cover art (~460x690). For the detail card only, poster cards use `thumbUrl`. */
   coverUrl: string | null
   /** 167x250 cover for poster cards, with `thumbUrlHiDpi` (334x500) as the preferred card source.
    * Null on the title-search fallback path, which has no thumbnail; fall back to `coverUrl` there. */
@@ -167,7 +167,7 @@ export interface RecommendationItem {
   /**
    * The three "why" flavours, and deliberately three rather than one: co-recommended is what
    * readers *said* (submitted "if you liked X try Y" pairs), co-read is what they *did* (finished
-   * both), and taste-match is neither — it is proximity in the behavioural space learned from
+   * both), and taste-match is neither, it is proximity in the behavioural space learned from
    * reading lists, which is what lets a pick that reads as unrelated on paper be explained.
    *
    * All three are false on the catalogue and cohort rails, which hydrate straight from the dump.
@@ -421,7 +421,7 @@ export interface TasteProfile {
   /**
    * Which population the catalogue badges were weighted by: `readers` once the reader-cohort
    * artifact is installed, `popularity` while only the rank proxy is available, null when there is
-   * no baseline at all. Separate from the boolean because the two fail independently — the index
+   * no baseline at all. Separate from the boolean because the two fail independently, the index
    * can be built while the artifact is absent.
    */
   catalogueBaselineSource: 'readers' | 'popularity' | null
@@ -527,7 +527,7 @@ export interface DiscoverRail {
 export interface DiscoverSeedState {
   title: string
   chaptersRead: number
-  /** Chapters on disk — the denominator the reader can actually reach, not the provider's count. */
+  /** Chapters on disk, the denominator the reader can actually reach, not the provider's count. */
   chaptersAvailable: number
   /** `reading`, `caught-up` (nothing left but the series continues), or `finished`. */
   state: 'reading' | 'caught-up' | 'finished'
@@ -579,7 +579,7 @@ export function useDiscover(refreshNonce = 0, enabled = true) {
  * recently. Separate from {@link useDiscover} because that endpoint is cached once for the whole
  * instance and has no viewer in scope.
  *
- * Resolves to `null` when there is no reading history to seed with — an ordinary state for a new
+ * Resolves to `null` when there is no reading history to seed with, an ordinary state for a new
  * account, and the caller just leaves the row out. `meta.silent` because the row is an extra on a
  * page that works without it: the local MangaBaka database being absent already raises one toast
  * from the rails query, and a second saying the same thing helps nobody.
@@ -624,8 +624,8 @@ export const READER_COHORT_FEED = 'ReaderCohorts'
  * the catalogue rails for the same reason the recent-activity one is.
  *
  * A POST because the same endpoint serves the rail and its filtered "Show more" view. Resolves to
- * `null` when there is nothing to show — no artifact, an empty library, or a reader whose finished
- * series no cohort has enough of — and the caller leaves the row out. `meta.silent` for the same
+ * `null` when there is nothing to show, no artifact, an empty library, or a reader whose finished
+ * series no cohort has enough of, and the caller leaves the row out. `meta.silent` for the same
  * reason as the recent-activity rail: it is an extra on a page that works without it.
  */
 export function useDiscoverCohort(
@@ -1299,7 +1299,7 @@ export function useSaveRecommendationDefaults() {
 
 /**
  * The Discover search tab's saved filter panel. The catalogue-filter half of the Recommended
- * defaults and nothing else — no seeds, no obscurity, no diversity, and a separate setting, so
+ * defaults and nothing else, no seeds, no obscurity, no diversity, and a separate setting, so
  * saving one panel never rewrites the other.
  */
 export interface SearchDefaults {
@@ -1863,7 +1863,7 @@ export function useSetChaptersWanted() {
   })
 }
 
-/** Queues a hand-picked set of chapters, ignoring their wanted flag — see ChapterController. */
+/** Queues a hand-picked set of chapters, ignoring their wanted flag, see ChapterController. */
 export function useDownloadChapters() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2222,7 +2222,7 @@ export interface SetIncognitoResult {
   incognito: string
 }
 
-/** "Off" | "ScrobbleOnly" | "Full" — see SeriesDto.incognito. */
+/** "Off" | "ScrobbleOnly" | "Full", see SeriesDto.incognito. */
 export function useSetIncognito() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2242,7 +2242,7 @@ export interface SetSeriesNotificationsResult {
   notificationMode: string
 }
 
-/** "Default" | "All" | "Reading" | "Muted" — see SeriesDto.notificationMode. */
+/** "Default" | "All" | "Reading" | "Muted", see SeriesDto.notificationMode. */
 export function useSetSeriesNotificationMode() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2605,7 +2605,7 @@ export function useSources() {
 
 /**
  * Where each source has got to in a source match that is still running. Pushed over the hub by
- * `sourceMatchProgress` and written straight into the cache in `signalr.ts` — there is no endpoint
+ * `sourceMatchProgress` and written straight into the cache in `signalr.ts`, there is no endpoint
  * behind it, so the query never fetches and an empty map simply means nothing has been pushed yet
  * (a match that finished, or a hub connection that came up mid-match).
  */
@@ -3081,7 +3081,7 @@ export type ContentRating = 'safe' | 'suggestive' | 'erotica' | 'pornographic'
 /** Least to most explicit, mirroring the server's `ContentRating.All` order. */
 export const CONTENT_RATINGS: ContentRating[] = ['safe', 'suggestive', 'erotica', 'pornographic']
 
-/** Ratings at or below `max` — what a content-rating filter should offer as options. */
+/** Ratings at or below `max`, what a content-rating filter should offer as options. */
 export function allowedContentRatings(max: ContentRating | string | undefined | null): ContentRating[] {
   const index = CONTENT_RATINGS.indexOf(max as ContentRating)
   return CONTENT_RATINGS.slice(0, index < 0 ? 1 : index + 1)
@@ -3140,7 +3140,7 @@ export interface LibrarySettings {
   writeCoverToFolder?: boolean
   /**
    * Naming format for a series' folder, e.g. "{Series TitleYear}". Always filled in on read.
-   * Leave it out of a write to keep the stored format — same contract as incognitoByRating, and
+   * Leave it out of a write to keep the stored format, same contract as incognitoByRating, and
    * the reason the setup wizard's partial saves don't blank it.
    */
   seriesFolderFormat?: string
@@ -4001,7 +4001,7 @@ export function useRebuildImageCache() {
 
 // ---- Reading activity ------------------------------------------------------
 // One window of a reader's activity. Feeds the Stats page's Overview tab, and the Rewind
-// slideshow off the same payload — "Rewind" is a consumer of this, not a shape of its own.
+// slideshow off the same payload, "Rewind" is a consumer of this, not a shape of its own.
 
 /** userId targets another account; admin-only server-side, and ignored for anyone else. */
 const forUser = (userId?: number) => (userId ? `?userId=${userId}` : '')
@@ -4121,7 +4121,7 @@ export function useActivityStats(from: string, to: string, userId?: number, enab
 
 // ---- Library composition ---------------------------------------------------
 // Distinct from `useLibraryStats` above, which tallies the series list the client already holds.
-// This is the server-side view: sizes, sources, growth — things no page has in memory.
+// This is the server-side view: sizes, sources, growth, things no page has in memory.
 
 export interface LibraryCompositionTotals {
   seriesCount: number
