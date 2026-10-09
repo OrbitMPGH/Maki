@@ -73,15 +73,16 @@ public class SearchController(
         var disabled = await sourceAvailability.DisabledAsync(ct);
         foreach (var source in sourceRegistry.All)
         {
-            if (disabled.Contains(source.Name))
-            {
-                continue;
-            }
-
             var seriesId = await source.ResolveSeriesIdFromUrlAsync(target, ct);
             if (seriesId is null)
             {
                 continue;
+            }
+
+            // Recognised but switched off: say so, rather than claiming no source knows the URL.
+            if (disabled.Contains(source.Name))
+            {
+                return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = source.Name });
             }
 
             try
