@@ -5,6 +5,7 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Rawkuma;
 
@@ -317,8 +318,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
     /// </summary>
     private static JsonElement ParseJson(string body, string url)
     {
-        var trimmed = body.TrimStart();
-        var json = trimmed.StartsWith('<') ? UnwrapPre(trimmed, url) : body;
+        var json = PreUnwrap.Unwrap(body, url);
         try
         {
             using var doc = JsonDocument.Parse(json);
@@ -328,17 +328,6 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         {
             throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
         }
-    }
-
-    private static string UnwrapPre(string html, string url)
-    {
-        var pre = Parser.ParseDocument(html).QuerySelector("pre");
-        if (pre is null)
-        {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(html)}");
-        }
-
-        return pre.TextContent;
     }
 
     private static string Truncate(string body) => body.Length <= 100 ? body : body[..100];
