@@ -207,6 +207,11 @@ public class ImageCacheRebuildService(
                 continue;
             }
 
+            if (int.TryParse(Path.GetFileName(dir), out var orphanId))
+            {
+                CoverVersionCache.Remove(orphanId);
+            }
+
             try
             {
                 Directory.Delete(dir, recursive: true);

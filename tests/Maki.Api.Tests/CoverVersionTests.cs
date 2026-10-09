@@ -17,12 +17,14 @@ public class CoverVersionTests : IDisposable
     public CoverVersionTests()
     {
         Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
+        CoverVersionCache.Clear();
         _covers = new CoverService(_http, new AppPaths(), new FakeAppSettings(), NullLogger<CoverService>.Instance);
     }
 
     public void Dispose()
     {
         Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorEnv);
+        CoverVersionCache.Clear();
         try
         {
             Directory.Delete(_configDir, recursive: true);
@@ -80,5 +82,30 @@ public class CoverVersionTests : IDisposable
         var url = SeriesDto.CoverUrlFor(9, Path.Combine(_configDir, "nope.jpg"), stamp);
 
         Assert.Equal(stamp.Ticks.ToString(), Version(url));
+    }
+
+    [Fact]
+    public async Task A_second_call_for_a_series_does_not_touch_the_file_again()
+    {
+        var path = (await _covers.DownloadCoverAsync(1, "https://cdn.test/a.png"))!;
+        CoverVersionCache.Clear();
+        var first = Version(SeriesDto.CoverUrlFor(1, path));
+
+        // Changing the file behind the cache's back is only visible if the second call stats it.
+        File.SetLastWriteTimeUtc(path, new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        Assert.Equal(first, Version(SeriesDto.CoverUrlFor(1, path)));
+    }
+
+    [Fact]
+    public async Task Deleting_the_cover_forgets_its_version()
+    {
+        var path = (await _covers.DownloadCoverAsync(1, "https://cdn.test/a.png"))!;
+        var stamp = new DateTime(2026, 5, 6, 0, 0, 0, DateTimeKind.Utc);
+        Assert.NotEqual(stamp.Ticks.ToString(), Version(SeriesDto.CoverUrlFor(1, path, stamp)));
+
+        _covers.DeleteCover(1);
+
+        Assert.Equal(stamp.Ticks.ToString(), Version(SeriesDto.CoverUrlFor(1, path, stamp)));
     }
 }
