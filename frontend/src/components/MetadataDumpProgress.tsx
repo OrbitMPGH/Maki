@@ -4,7 +4,7 @@ import { notifications } from '@mantine/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import { DUMP_PROGRESS_KEY, useDumpProgress, type DumpProgress } from '../api/hooks'
 import { useHubEvent } from '../api/signalr'
-import { formatBytes, formatReadingTime } from '../format'
+import { formatBytes, formatPercent, formatReadingTime } from '../format'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
@@ -71,7 +71,7 @@ export function DumpProgressBar({ progress }: { progress: DumpProgress }) {
         </Text>
         {percent !== null && (
           <Text size="sm" c="var(--ink-3)">
-            {percent.toFixed(0)}%
+            {formatPercent(percent / 100)}
           </Text>
         )}
       </Group>

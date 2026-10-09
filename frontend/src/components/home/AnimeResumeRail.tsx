@@ -55,7 +55,7 @@ const AnimeResumeCard = memo(function AnimeResumeCard({
           onClick={() => onOpen(catalogue)}
         />
         <AnimeResumePoster item={item}>
-          <span className="discover-corner" data-add="true" data-tip={t`View & add`} aria-hidden="true">
+          <span className="discover-corner" data-add="true" data-tip={t`View and add`} aria-hidden="true">
             <IconPlus size={16} />
           </span>
         </AnimeResumePoster>
@@ -64,7 +64,7 @@ const AnimeResumeCard = memo(function AnimeResumeCard({
   }
 
   return (
-    <Link to={`/series/${item.seriesId}`} className="cover-card" aria-label={title}>
+    <Link to={`/series/${item.seriesId}`} className="cover-card">
       <AnimeResumePoster item={item} />
     </Link>
   )
@@ -76,9 +76,9 @@ function AnimeResumePoster({ item, children }: { item: HomeAnimeResumeItem; chil
   return (
     <div className="cover-poster">
       {item.coverUrl ? (
-        <img src={item.coverUrl} alt={item.seriesTitle} loading="lazy" decoding="async" />
+        <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
       ) : (
-        <div className="cover-placeholder">{item.seriesTitle}</div>
+        <div className="cover-placeholder" aria-hidden>{item.seriesTitle}</div>
       )}
       <div className="cover-scrim" />
 

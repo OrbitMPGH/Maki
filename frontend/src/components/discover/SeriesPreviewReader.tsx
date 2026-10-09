@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
 import { IconArrowLeft, IconX } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { previewPageUrl, useSeriesPreview } from '../../api/preview'
 import { useReaderSettings } from '../../api/reader'
 import { useReadingProfiles } from '../../api/readingProfiles'
@@ -201,7 +202,7 @@ export function SeriesPreviewReader({
               <Button onClick={onClose} leftSection={<IconArrowLeft size={16} />}>
                 <Trans>Back to the series</Trans>
               </Button>
-              <Button variant="subtle" color="gray" className="reader-end-quiet" onClick={() => setAtEnd(false)}>
+              <Button variant="subtle" color="var(--neutral)" className="reader-end-quiet" onClick={() => setAtEnd(false)}>
                 <Trans>Stay here</Trans>
               </Button>
             </Group>
@@ -218,9 +219,12 @@ export function SeriesPreviewReader({
             {!source ? (
               <Trans>Looking for a source…</Trans>
             ) : pageCount > 0 ? (
-              <Trans>
-                Fetching from {source}, {readyPages} of {pageCount} pages
-              </Trans>
+              <>
+                {plural(pageCount, {
+                  one: `Fetching from ${source}, ${readyPages} of # page`,
+                  other: `Fetching from ${source}, ${readyPages} of # pages`,
+                })}
+              </>
             ) : (
               <Trans>Fetching from {source}…</Trans>
             )}
@@ -277,7 +281,7 @@ export function SeriesPreviewReader({
       <div className="reader-root" data-preview style={{ background: prefs.background }}>
         <div className="reader-bar reader-bar-top" data-visible onClick={(e) => e.stopPropagation()}>
           <Group gap="sm" wrap="nowrap" px="md" h="100%">
-            <ActionIcon variant="subtle" color="gray" aria-label={t`Close preview`} onClick={onClose}>
+            <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`Close preview`} onClick={onClose}>
               <IconX size={18} />
             </ActionIcon>
             <div style={{ minWidth: 0, flex: 1 }}>
@@ -295,6 +299,7 @@ export function SeriesPreviewReader({
               </Text>
             </div>
             <SegmentedControl
+              aria-label={t`Reading mode`}
               size="xs"
               value={mode}
               onChange={(value) => setModeChoice(value as PreviewMode)}

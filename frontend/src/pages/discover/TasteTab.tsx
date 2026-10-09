@@ -57,7 +57,7 @@ import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { Panel } from '../../components/ui/Panel'
 import { TagChip } from '../../components/ui/TagChip'
 import { SignalsCard } from './FeedbackLab'
-import { formatNumber, formatReadingTime } from '../../format'
+import { formatFixedDecimal, formatNumber, formatPercent, formatReadingTime } from '../../format'
 import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
 
@@ -80,11 +80,11 @@ const HEAD = 6
 const NOTEWORTHY = 1.25
 
 function percent(share: number): string {
-  return `${Math.round(share * 100)}%`
+  return formatPercent(share)
 }
 
 function ratio(value: number): string {
-  return `${value >= 10 ? Math.round(value) : value.toFixed(1)}x`
+  return `${value >= 10 ? formatNumber(Math.round(value)) : formatFixedDecimal(value, 1)}x`
 }
 
 function TasteSkeleton() {
@@ -325,7 +325,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
         data={data}
         dataKey="bucket"
         series={[{ name: 'similarity', color: 'var(--brand)', label: t`Similarity to start` }]}
-        valueFormatter={(v) => v.toFixed(2)}
+        valueFormatter={(v) => formatFixedDecimal(v, 2)}
         yAxisProps={{ domain: [0, 1] }}
         withTooltip
         gridAxis="y"
@@ -621,6 +621,7 @@ export function TasteTab() {
         count={insights?.groups.length ? insights.groups.length : undefined}
         action={
           <SegmentedControl
+            aria-label={t`View`}
             size="xs"
             value={view}
             onChange={(v) => setView(v as TasteView)}

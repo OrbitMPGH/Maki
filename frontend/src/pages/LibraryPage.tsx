@@ -5,7 +5,6 @@ import {
   ActionIcon,
   Badge,
   Button,
-  Checkbox,
   Drawer,
   Group,
   Indicator,
@@ -96,6 +95,7 @@ import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
+import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } from '../components/ui/viewPrefs'
 import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
@@ -253,7 +253,7 @@ const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
   Refresh: msg`Refresh`,
   Metadata: msg`Metadata`,
   // ComicInfo is the file format's name and is deliberately absent: the fallback shows the key.
-  Delete: msg`Delete`,
+  Remove: msg`Remove`,
   'Set monitoring': msg`Set monitoring`,
   'Quality profile': msg`Quality profile`,
   Move: msg`Move`,
@@ -746,7 +746,7 @@ export default function LibraryPage() {
           {label}
         </Text>
         {value.length > 1 && (
-          <SegmentedControl size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
+          <SegmentedControl aria-label={t`Match mode for ${label}`} size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
         )}
       </Group>
       {description && (
@@ -755,6 +755,7 @@ export default function LibraryPage() {
         </Text>
       )}
       <MultiSelect
+        aria-label={label}
         data={data}
         value={value}
         onChange={onChange}
@@ -960,9 +961,10 @@ export default function LibraryPage() {
                 </Button>
                 <Text size="xs" c="var(--ink-3)" className="tnum">
                   {filtersActive ? (
-                    <Trans>
-                      {visibleCount} of {totalCount} series match
-                    </Trans>
+                    plural(totalCount, {
+                      one: `${visibleCount} of # series match`,
+                      other: `${visibleCount} of # series match`,
+                    })
                   ) : (
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
@@ -1011,10 +1013,10 @@ export default function LibraryPage() {
                   setMoveFiles(true)
                   setMoveModalOpen(true)
                 })}
-                {can('DeleteSeries') && bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => {
+                {can('DeleteSeries') && bulkBtn('Remove', <Trans>Remove</Trans>, <IconTrash size={15} />, () => {
                   setDeleteFiles(false)
                   setDeleteModalOpen(true)
-                }, 'red')}
+                }, 'var(--danger)')}
                 <Button
                   visibleFrom="sm"
                   size="xs"
@@ -1031,6 +1033,7 @@ export default function LibraryPage() {
             <Stack className="library-toolbar" gap="sm">
               <Group className="library-toolbar-row" gap="sm" wrap="wrap">
                 <TextInput
+                  aria-label={t`Filter library…`}
                   className="library-search"
                   placeholder={t`Filter library…`}
                   leftSection={<IconSearch size={16} />}
@@ -1081,6 +1084,7 @@ export default function LibraryPage() {
                   </ActionIcon>
                 </Tooltip>
                 <Select
+                  aria-label={t`Sort by`}
                   className="library-sort"
                   data={sortOptions}
                   value={sort}
@@ -1093,9 +1097,10 @@ export default function LibraryPage() {
                 />
                 <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm" hidden={isLoading}>
                   {filtersActive ? (
-                    <Trans>
-                      {visibleCount} of {totalCount} series match
-                    </Trans>
+                    plural(totalCount, {
+                      one: `${visibleCount} of # series match`,
+                      other: `${visibleCount} of # series match`,
+                    })
                   ) : (
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
@@ -1130,7 +1135,7 @@ export default function LibraryPage() {
                 {f.name}
               </TagChip>
               <ActionIcon
-                size="xs"
+                size={24}
                 variant="subtle"
                 color="var(--ink-4)"
                 aria-label={t`Delete saved filter`}
@@ -1177,9 +1182,10 @@ export default function LibraryPage() {
       >
         <Stack gap="sm" pb="xl">
           <Text size="sm" c="var(--ink-3)">
-            <Trans>
-              {shownCount} of {totalSeriesShown} series shown.
-            </Trans>{' '}
+            {plural(totalSeriesShown, {
+              one: `${shownCount} of # series shown.`,
+              other: `${shownCount} of # series shown.`,
+            })}{' '}
             <Trans>Changes apply straight to the grid behind this panel.</Trans>
           </Text>
           <Select
@@ -1290,6 +1296,7 @@ export default function LibraryPage() {
               <Trans>Leave both boxes empty to ignore.</Trans>
             </Text>
             <SegmentedControl
+              aria-label={t`Chapters`}
               size="xs"
               fullWidth
               value={chapterMode}
@@ -1351,6 +1358,7 @@ export default function LibraryPage() {
                 <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
               </Text>
               <RangeSlider
+                thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
                 min={0}
                 max={100}
                 step={5}
@@ -1429,7 +1437,7 @@ export default function LibraryPage() {
       <Modal
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
-        title={t`Tag ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
       >
         <Stack gap="md">
           <Text size="sm" c="var(--ink-3)">
@@ -1493,7 +1501,7 @@ export default function LibraryPage() {
       <Modal
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
-        title={t`Auto-match sources for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>
@@ -1540,43 +1548,26 @@ export default function LibraryPage() {
         </Group>
       </Modal>
 
-      <Modal
+      <RemoveSeriesDialog
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        title={t`Delete ${selectedCount} series?`}
+        title={plural(selectedCount, { one: 'Remove # series?', other: 'Remove # series?' })}
+        deleteFiles={deleteFiles}
+        onDeleteFilesChange={setDeleteFiles}
+        onConfirm={() => {
+          setDeleteModalOpen(false)
+          void runBulk('Remove', (id) =>
+            api(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
+          ).then(exitSelectMode)
+        }}
       >
-        <Text size="sm" mb="md">
-          <Trans>The selected series will be removed from Maki and stop being monitored.</Trans>
-        </Text>
-        <Checkbox
-          label={t`Also delete the folders and files on disk`}
-          checked={deleteFiles}
-          onChange={(e) => setDeleteFiles(e.currentTarget.checked)}
-          mb="lg"
-        />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={() => setDeleteModalOpen(false)}>
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button
-            color="var(--danger-fill)"
-            leftSection={<IconTrash size={16} />}
-            onClick={() => {
-              setDeleteModalOpen(false)
-              void runBulk('Delete', (id) =>
-                api(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
-              ).then(exitSelectMode)
-            }}
-          >
-            <Trans>Delete</Trans>
-          </Button>
-        </Group>
-      </Modal>
+        <Trans>The selected series will be removed from Maki and stop being monitored.</Trans>
+      </RemoveSeriesDialog>
 
       <Modal
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
-        title={t`Set monitoring for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>Applies to chapters released later.</Trans>{' '}
@@ -1587,6 +1578,7 @@ export default function LibraryPage() {
           </Trans>
         </Text>
         <SegmentedControl
+          aria-label={t`Monitoring`}
           fullWidth
           value={monitorMode}
           onChange={setMonitorMode}
@@ -1621,7 +1613,7 @@ export default function LibraryPage() {
       <Modal
         opened={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
-        title={t`Set quality profile for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>
@@ -1630,6 +1622,7 @@ export default function LibraryPage() {
           </Trans>
         </Text>
         <Select
+          aria-label={t`Quality profile`}
           data={[
             { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
             ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
@@ -1692,12 +1685,13 @@ export default function LibraryPage() {
       <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
-        title={t`Set notifications for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>Yours alone - this changes what lands in your bell, not anybody else's.</Trans>
         </Text>
         <SegmentedControl
+          aria-label={t`Notifications`}
           fullWidth
           value={notifyMode}
           onChange={(v) => setNotifyMode(v as SeriesNotificationMode)}
@@ -1746,7 +1740,7 @@ export default function LibraryPage() {
       <Modal
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        title={t`Move ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
       >
         <Stack gap="md">
           <Text size="sm" c="var(--ink-3)">

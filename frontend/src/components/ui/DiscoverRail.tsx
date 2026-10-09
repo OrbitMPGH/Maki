@@ -94,7 +94,7 @@ function DiscoverSub({ item }: { item: RecommendationItem }) {
       <span className="discover-sub-status">{year ? t`${year}, ${status}` : status}</span>
       {totalChapters ? (
         <span className="discover-sub-chapters">
-          <Trans>{totalChapters} ch</Trans>
+          <Trans>{totalChapters} ch.</Trans>
         </span>
       ) : null}
     </div>
@@ -148,12 +148,12 @@ export const RecommendationCard = memo(function RecommendationCard({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="cover-placeholder">{item.title}</div>
+          <div className="cover-placeholder" aria-hidden>{item.title}</div>
         )}
         <div className="cover-scrim" />
 
@@ -167,7 +167,7 @@ export const RecommendationCard = memo(function RecommendationCard({
           <span
             className="discover-corner"
             data-add="true"
-            data-tip={t`View & add`}
+            data-tip={t`View and add`}
             aria-hidden="true"
           >
             <IconPlus size={16} stroke={2} />
@@ -231,12 +231,12 @@ export const RecommendationRow = memo(function RecommendationRow({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="row-cover-placeholder">{item.title}</div>
+          <div className="row-cover-placeholder" aria-hidden>{item.title}</div>
         )}
       </div>
 
@@ -262,12 +262,12 @@ export const RecommendationRow = memo(function RecommendationRow({
           {item.rating != null && (
             <span className="cover-badge" style={{ flexShrink: 0 }}>
               <IconStar size={11} style={{ color: 'var(--rating)' }} />
-              {(item.rating / 10).toFixed(1)}
+              {formatFixedDecimal(item.rating / 10, 1)}
             </span>
           )}
           {totalChapters != null && (
             <span className="cover-count tnum">
-              <Trans>{totalChapters} ch</Trans>
+              <Trans>{totalChapters} ch.</Trans>
             </span>
           )}
         </div>
@@ -341,12 +341,12 @@ export const EngineCard = memo(function EngineCard({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="cover-placeholder">{item.title}</div>
+          <div className="cover-placeholder" aria-hidden>{item.title}</div>
         )}
         <div className="cover-scrim" />
 
@@ -357,7 +357,7 @@ export const EngineCard = memo(function EngineCard({
             <IconCheck size={14} stroke={2.2} />
           </span>
         ) : (
-          <span className="discover-corner" data-add="true" data-tip={t`View & add`} aria-hidden="true">
+          <span className="discover-corner" data-add="true" data-tip={t`View and add`} aria-hidden="true">
             <IconPlus size={16} stroke={2} />
           </span>
         )}

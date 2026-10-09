@@ -13,7 +13,6 @@ import {
   Badge,
   Box,
   Button,
-  Checkbox,
   Divider,
   Group,
   Loader,
@@ -142,6 +141,7 @@ import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
+import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
@@ -172,6 +172,7 @@ import { cleanSynopsis } from '../lib/synopsis'
 import { onPressKey, pressable } from '../lib/pressable'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
+import { scrollBehavior } from '../lib/scrollBehavior'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
@@ -1141,10 +1142,13 @@ function SeriesDetailBody() {
             <Tooltip
                 label={
                   mixed
-                      ? t`${wantedCount} of ${total} chapters wanted · click to want all`
+                      ? plural(total, {
+                          one: `${wantedCount} of # chapter wanted · click to want all`,
+                          other: `${wantedCount} of # chapters wanted · click to want all`,
+                        })
                       : allWanted
-                          ? t`All ${total} chapters wanted`
-                          : t`None of the ${total} chapters wanted`
+                          ? plural(total, { one: 'All # chapter wanted', other: 'All # chapters wanted' })
+                          : plural(total, { one: 'None of the # chapter wanted', other: 'None of the # chapters wanted' })
                 }
                 withArrow
             >
@@ -1153,7 +1157,10 @@ function SeriesDetailBody() {
                   checked={allWanted}
                   classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
                   thumbIcon={mixed ? <IconMinus size={10} stroke={3} /> : undefined}
-                  aria-label={t`Wanted for ${spanLabel}: ${wantedCount} of ${total} chapters`}
+                  aria-label={plural(total, {
+                    one: `Wanted for ${spanLabel}: ${wantedCount} of # chapter`,
+                    other: `Wanted for ${spanLabel}: ${wantedCount} of # chapters`,
+                  })}
                   disabled={!canEditMetadata || setChaptersWanted.isPending}
                   onChange={(e) => applyWanted(ids, e.currentTarget.checked)}
               />
@@ -1178,7 +1185,10 @@ function SeriesDetailBody() {
           </Table.Td>
           <Table.Td>
             <Text size="sm" c="var(--ink-3)" className="tnum">
-              <Trans>{total} chapters · {downloadedCount} downloaded</Trans>
+              {plural(total, {
+                one: `# chapter · ${downloadedCount} downloaded`,
+                other: `# chapters · ${downloadedCount} downloaded`,
+              })}
               {watchedCount > 0 && (
                   <>
                     {' · '}
@@ -1218,7 +1228,7 @@ function SeriesDetailBody() {
               {readTracking && (
                   <Menu shadow="md" position="bottom-end" withinPortal>
                     <Menu.Target>
-                      <ActionIcon variant="subtle" color="gray" aria-label={t`Actions for ${spanLabel}`}>
+                      <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`Actions for ${spanLabel}`}>
                         <IconDotsVertical size={17} />
                       </ActionIcon>
                     </Menu.Target>
@@ -1258,7 +1268,7 @@ function SeriesDetailBody() {
               <Tooltip label={t`Expand`} withArrow>
                 <ActionIcon
                     variant="subtle"
-                    color="gray"
+                    color="var(--neutral)"
                     onClick={() => toggleSpanFold(span.key)}
                     aria-label={t`Expand ${spanLabel}`}
                 >
@@ -1808,7 +1818,7 @@ function SeriesDetailBody() {
             )}
             <div className="series-split">
               <Panel className="series-detail-synopsis" edge="brand">
-                <Title order={3} fz={17}>
+                <Title order={3} fz="var(--type-section)">
                   <Trans>Synopsis</Trans>
                 </Title>
                 {series.overview ? (
@@ -1824,7 +1834,7 @@ function SeriesDetailBody() {
                 {(series.animeStart || series.animeEnd) && (
                     <>
                       <Divider my="md" color="var(--hairline)" />
-                      <Title order={4} fz={14} mb={10}>
+                      <Title order={4} fz="var(--type-body)" mb={10}>
                         <Trans>Anime coverage</Trans>
                       </Title>
                       <AnimeCoverageBar
@@ -1842,7 +1852,7 @@ function SeriesDetailBody() {
                 <Stack gap="md">
                   {series.genres.length > 0 && (
                       <div>
-                        <Title order={4} fz={14} mb={10}>
+                        <Title order={4} fz="var(--type-body)" mb={10}>
                           <Trans>Genres</Trans>
                         </Title>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
@@ -1860,7 +1870,7 @@ function SeriesDetailBody() {
                   {(providerTags.length > 0 || series.metadataTags.length > 0) && (
                       <div>
                         <Divider my="md" color="var(--hairline)" />
-                        <Title order={4} fz={14} mb={10}>
+                        <Title order={4} fz="var(--type-body)" mb={10}>
                           <Trans>Tags</Trans>
                         </Title>
                         <div ref={tagListRef}>
@@ -1886,7 +1896,7 @@ function SeriesDetailBody() {
                   {series.links.length > 0 && (
                       <div>
                         <Divider mb="sm" color="var(--hairline)" />
-                        <Title order={4} fz={14} mb={10}>
+                        <Title order={4} fz="var(--type-body)" mb={10}>
                           <Trans>Open on</Trans>
                         </Title>
                         <Group gap="xs" wrap="wrap">
@@ -1971,7 +1981,7 @@ function SeriesDetailBody() {
                   </Text>
                 </Panel>
                 <Panel className="series-detail-metadata-panel" edge="strong" edgeSide="left">
-                  <Title order={3} fz={17} mb="sm">
+                  <Title order={3} fz="var(--type-section)" mb="sm">
                     <Trans>Metadata</Trans>
                   </Title>
                   <div className="series-records">
@@ -2037,12 +2047,18 @@ function SeriesDetailBody() {
         <Modal
             opened={downloadAllConfirmOpen}
             onClose={() => setDownloadAllConfirmOpen(false)}
-            title={t`Download ${missingWanted} wanted chapters?`}
+            title={plural(missingWanted, {
+              one: 'Download # wanted chapter?',
+              other: 'Download # wanted chapters?',
+            })}
             centered
         >
           <Stack gap="sm">
             <Text mt="sm" size="sm">
-              <Trans>This will add {missingWanted} chapters to the download queue.</Trans>
+              {plural(missingWanted, {
+                one: 'This will add # chapter to the download queue.',
+                other: 'This will add # chapters to the download queue.',
+              })}
             </Text>
             <Group justify="flex-end">
               <Button variant="default" onClick={() => setDownloadAllConfirmOpen(false)}>
@@ -2055,7 +2071,7 @@ function SeriesDetailBody() {
                     queueAllWanted()
                   }}
               >
-                <Trans>Download {missingWanted} chapters</Trans>
+                {plural(missingWanted, { one: 'Download # chapter', other: 'Download # chapters' })}
               </Button>
             </Group>
           </Stack>
@@ -2202,6 +2218,7 @@ function SeriesDetailBody() {
                         />
                     ) : (
                         <SegmentedControl
+                            aria-label={t`Filter chapters`}
                             size="xs"
                             value={chapterFilter}
                             onChange={setChapterFilter}
@@ -2254,7 +2271,7 @@ function SeriesDetailBody() {
                           <ActionIcon
                               size="sm"
                               variant="subtle"
-                              color="gray"
+                              color="var(--neutral)"
                               aria-label={t`Clear chapter search`}
                               onClick={() => setChapterSearch('')}
                           >
@@ -2390,7 +2407,7 @@ function SeriesDetailBody() {
                           <Button
                               size="xs"
                               variant="light"
-                              color="gray"
+                              color="var(--neutral)"
                               leftSection={<IconEyeOff size={15} />}
                               disabled={selected.size === 0}
                               loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
@@ -2427,7 +2444,7 @@ function SeriesDetailBody() {
                             <Button
                                 size="xs"
                                 variant="light"
-                                color="gray"
+                                color="var(--neutral)"
                                 leftSection={<IconEyeOff size={15} />}
                                 disabled={selected.size === 0}
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'unread'}
@@ -2722,8 +2739,8 @@ function SeriesDetailBody() {
                                       <Group gap={6} wrap="nowrap">
                                         {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                                             <Tooltip label={t`Contained in a volume/compilation file`} withArrow>
-                                              <Badge size="sm" color="indigo" variant="light" className="tnum">
-                                                <Trans>Vol.{fileVolume}</Trans>
+                                              <Badge size="sm" color="var(--watched)" variant="light" className="tnum">
+                                                <Trans>Vol. {fileVolume}</Trans>
                                               </Badge>
                                             </Tooltip>
                                         )}
@@ -2731,7 +2748,7 @@ function SeriesDetailBody() {
                                           {c.isOneShot || c.number === null
                                               ? chapterLabel(c)
                                               : c.fileVolume !== null
-                                                  ? <Trans>Ch.{chapterNumber}</Trans>
+                                                  ? <Trans>Ch. {chapterNumber}</Trans>
                                                   : chapterLabel(c)}
                                         </Text>
                                       </Group>
@@ -2811,7 +2828,7 @@ function SeriesDetailBody() {
                                             return (
                                                 <Stack gap={4} align="flex-start">
                                                   <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                                                    <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="gray">
+                                                    <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
                                                       {origin.label}
                                                     </Badge>
                                                   </Tooltip>
@@ -2871,7 +2888,7 @@ function SeriesDetailBody() {
                                                 )
                                                 return (
                                                     <Tooltip label={t`Read file cleanup is on for this series`} withArrow>
-                                                      <Badge size="sm" color="gray" variant="light" leftSection={<IconClock size={12} />}>
+                                                      <Badge size="sm" color="var(--neutral)" variant="light" leftSection={<IconClock size={12} />}>
                                                         {daysLeft === 0
                                                             ? t`File removed soon`
                                                             : plural(daysLeft, {
@@ -2885,12 +2902,12 @@ function SeriesDetailBody() {
                                             </>
                                         ) : c.fileRemovedAt ? (
                                             <Tooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
-                                              <Badge size="sm" color="gray" variant="light" leftSection={<IconTrash size={12} />}>
+                                              <Badge size="sm" color="var(--neutral)" variant="light" leftSection={<IconTrash size={12} />}>
                                                 <Trans>File removed</Trans>
                                               </Badge>
                                             </Tooltip>
                                         ) : (
-                                            <Badge size="sm" color="gray" variant="light">
+                                            <Badge size="sm" color="var(--neutral)" variant="light">
                                               <Trans>Missing</Trans>
                                             </Badge>
                                         )}
@@ -2965,7 +2982,7 @@ function SeriesDetailBody() {
                                             <Tooltip label={t`Link to a file already on disk`} withArrow>
                                               <ActionIcon
                                                   variant="subtle"
-                                                  color="gray"
+                                                  color="var(--neutral)"
                                                   onClick={() => setLinkChapterIds([c.id])}
                                                   aria-label={t`Link ${chapterLbl} to a file`}
                                               >
@@ -2994,7 +3011,7 @@ function SeriesDetailBody() {
                                               <Menu.Target>
                                                 <ActionIcon
                                                     variant="subtle"
-                                                    color="gray"
+                                                    color="var(--neutral)"
                                                     aria-label={t`More actions for ${chapterLbl}`}
                                                 >
                                                   <IconDotsVertical size={17} />
@@ -3126,7 +3143,7 @@ function SeriesDetailBody() {
                             onChange={(page) => {
                               setChapterPage(page)
                               selectAnchor.current = null
-                              chapterTable?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                              chapterTable?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
                             }}
                         />
                       </Group>
@@ -3143,49 +3160,27 @@ function SeriesDetailBody() {
         </Tabs.Panel>
 
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
-        <Modal
-            opened={deleteSeriesModalOpen}
-            onClose={() => setDeleteSeriesModalOpen(false)}
-            title={t`Remove series?`}
-            centered
+        <RemoveSeriesDialog
+          opened={deleteSeriesModalOpen}
+          onClose={() => setDeleteSeriesModalOpen(false)}
+          title={<Trans>Remove series?</Trans>}
+          deleteFiles={deleteSeriesFiles}
+          onDeleteFilesChange={setDeleteSeriesFiles}
+          loading={deleteSeries.isPending}
+          onConfirm={() =>
+            deleteSeries.mutate(
+              { id: series.id, deleteFiles: deleteSeriesFiles },
+              {
+                onSuccess: () => {
+                  notify.ok(staticT`Series removed`)
+                  navigate('/library')
+                },
+              },
+            )
+          }
         >
-          <Stack gap="md">
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
-            </Text>
-            <Checkbox
-                label={t`Also delete files on disk`}
-                checked={deleteSeriesFiles}
-                onChange={(e) => setDeleteSeriesFiles(e.currentTarget.checked)}
-            />
-            <Text size="sm" c="var(--danger)">
-              <Trans>This action cannot be undone.</Trans>
-            </Text>
-            <Group justify="flex-end">
-              <Button variant="default" onClick={() => setDeleteSeriesModalOpen(false)}>
-                <Trans>Cancel</Trans>
-              </Button>
-              <Button
-                  color="var(--danger-fill)"
-                  leftSection={<IconTrash size={16} />}
-                  loading={deleteSeries.isPending}
-                  onClick={() =>
-                      deleteSeries.mutate(
-                          { id: series.id, deleteFiles: deleteSeriesFiles },
-                          {
-                            onSuccess: () => {
-                              notify.ok(staticT`Series removed`)
-                              navigate('/library')
-                            },
-                          },
-                      )
-                  }
-              >
-                <Trans>Remove</Trans>
-              </Button>
-            </Group>
-          </Stack>
-        </Modal>
+          <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
+        </RemoveSeriesDialog>
 
         <Modal
             opened={requestModalOpen}
@@ -3253,6 +3248,13 @@ function SeriesDetailBody() {
 function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
   const { seconds, style, remainingChapters, sampleChapters, seriesSpecific } = estimate
   const readingTime = formatReadingTime(seconds)
+  const chaptersLeft = plural(remainingChapters, { one: '# chapter left', other: '# chapters left' })
+  const basis = seriesSpecific
+    ? plural(sampleChapters, {
+        one: 'based on # chapter from this series',
+        other: 'based on # chapters from this series',
+      })
+    : plural(sampleChapters, { one: 'based on # similar read', other: 'based on # similar reads' })
   return (
       <Stack gap={1}>
         <Text size="sm" fw={650} className="tnum">
@@ -3260,25 +3262,9 @@ function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
         </Text>
         <Text size="xs" c="var(--ink-3)">
           {style === 'scrolling' ? (
-              seriesSpecific ? (
-                  <Trans>
-                    Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from
-                    this series
-                  </Trans>
-              ) : (
-                  <Trans>
-                    Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads
-                  </Trans>
-              )
-          ) : seriesSpecific ? (
-              <Trans>
-                Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this
-                series
-              </Trans>
+              <Trans>Scrolling pace · {chaptersLeft} · {basis}</Trans>
           ) : (
-              <Trans>
-                Paged pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads
-              </Trans>
+              <Trans>Paged pace · {chaptersLeft} · {basis}</Trans>
           )}
         </Text>
       </Stack>

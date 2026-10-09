@@ -46,12 +46,12 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
   const { newChapterCount } = item
 
   return (
-    <Link to={`/series/${item.seriesId}`} className="cover-card" aria-label={item.seriesTitle}>
+    <Link to={`/series/${item.seriesId}`} className="cover-card">
       <div className="cover-poster">
         {item.coverUrl ? (
-          <img src={item.coverUrl} alt={item.seriesTitle} loading="lazy" decoding="async" />
+          <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
         ) : (
-          <div className="cover-placeholder">{item.seriesTitle}</div>
+          <div className="cover-placeholder" aria-hidden>{item.seriesTitle}</div>
         )}
         <div className="cover-scrim" />
 

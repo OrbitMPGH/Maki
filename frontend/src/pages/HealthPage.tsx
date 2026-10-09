@@ -335,9 +335,10 @@ export default function HealthPage() {
             <Alert key={scan.id} title={scanTitle} mb="lg">
               <Group justify="space-between">
                 <Text>
-                  <Trans>
-                    {completed} / {total} files inspected
-                  </Trans>
+                  {plural(total, {
+                    one: `${completed} / # file inspected`,
+                    other: `${completed} / # files inspected`,
+                  })}
                 </Text>
                 <Button size="xs" variant="default" onClick={() => run(`/scans/${scan.id}/cancel`)}>
                   <Trans>Cancel scan</Trans>
@@ -391,6 +392,7 @@ export default function HealthPage() {
                 onChange={(e) => refilter(() => setSearch(e.currentTarget.value))}
               />
               <Select
+                aria-label={t`Filter by root folder`}
                 placeholder={t`All roots`}
                 clearable
                 value={root}
@@ -398,6 +400,7 @@ export default function HealthPage() {
                 data={overview.data?.roots.map((r) => ({ value: String(r.id), label: r.path })) ?? []}
               />
               <Select
+                aria-label={t`Filter by finding`}
                 placeholder={t`All findings`}
                 clearable
                 value={kind}
@@ -407,6 +410,7 @@ export default function HealthPage() {
                   .map(([value, label]) => ({ value, label: renderLabel(label) }))}
               />
               <Select
+                aria-label={t`Filter by state`}
                 placeholder={t`All states`}
                 clearable
                 value={state}
@@ -844,7 +848,7 @@ function ChecksPanel({
   return (
     <Panel edge={edge} className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>System checks</Trans>
         </Title>
         <Switch
@@ -1160,10 +1164,11 @@ function FileReview({
 
             <div className="health-review-column">
               <Panel p="md">
-                <Title order={4} fz={15} mb="sm">
+                <Title order={4} fz="var(--type-subhead)" mb="sm">
                   <Trans>Request replacement</Trans>
                 </Title>
                 <Select
+                  aria-label={t`Request replacement`}
                   allowDeselect={false}
                   value={mapping}
                   onChange={(value) => setMapping(value ?? AUTOMATIC)}
@@ -1219,7 +1224,7 @@ function FileReview({
               </Panel>
 
               <Panel p="md">
-                <Title order={4} fz={15} mb="sm">
+                <Title order={4} fz="var(--type-subhead)" mb="sm">
                   {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
                 </Title>
                 <Text size="xs" c="var(--ink-4)" mb="sm">
@@ -1304,7 +1309,7 @@ function UnlinkedPanel({
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={4} fz={15}>
+        <Title order={4} fz="var(--type-subhead)">
           <Trans>Not linked to any chapter</Trans>
         </Title>
         <Badge variant="light" color="var(--neutral)">
@@ -1760,7 +1765,7 @@ function OptionsPanel() {
   return (
     <Panel edge="strong" className="health-area-options" p="lg">
       <Stack>
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>Health settings</Trans>
         </Title>
         {action.error && <Alert color="var(--danger)">{action.error.message}</Alert>}
@@ -1830,7 +1835,7 @@ function CachePanel() {
   return (
     <Panel className="health-area-cache" p="lg">
       <Stack>
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>Image cache and backups</Trans>
         </Title>
         {cache.data && (

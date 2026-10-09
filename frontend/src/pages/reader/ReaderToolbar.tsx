@@ -27,6 +27,7 @@ import {
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
@@ -225,9 +226,10 @@ export default function ReaderToolbar({
                     <Text fz="xs" c="var(--ink-3)" truncate className="tnum">
                       {/* Named, since the bottom bar's bare page count sits right under it. */}
                       {chaptersRead < seriesChapterCount ? (
-                        <Trans>
-                          {chaptersRead}/{seriesChapterCount} chapters read
-                        </Trans>
+                        plural(seriesChapterCount, {
+                          one: `${chaptersRead}/# chapter read`,
+                          other: `${chaptersRead}/# chapters read`,
+                        })
                       ) : (
                         <Trans>all read</Trans>
                       )}
@@ -369,6 +371,7 @@ export default function ReaderToolbar({
                     <Trans>Layout</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Layout`}
                     fullWidth
                     size="xs"
                     value={prefs.mode}
@@ -385,6 +388,7 @@ export default function ReaderToolbar({
                     <Trans>Direction</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Direction`}
                     fullWidth
                     size="xs"
                     value={prefs.direction}
@@ -400,6 +404,7 @@ export default function ReaderToolbar({
                     <Trans>Fit</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Fit`}
                     fullWidth
                     size="xs"
                     value={prefs.fit}
@@ -418,6 +423,7 @@ export default function ReaderToolbar({
                       <Trans>Scale ({scale}%)</Trans>
                     </Text>
                     <Slider
+                      thumbLabel={t`Scale`}
                       size="xs"
                       min={25}
                       max={400}
@@ -432,6 +438,7 @@ export default function ReaderToolbar({
                     <Trans>Background</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Background`}
                     fullWidth
                     size="xs"
                     value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
@@ -480,6 +487,7 @@ export default function ReaderToolbar({
                     <Trans>Reading profile</Trans>
                   </Text>
                   <Select
+                    aria-label={t`Reading profile`}
                     size="xs"
                     comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
                     allowDeselect={false}

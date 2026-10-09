@@ -104,7 +104,7 @@ export function RootFoldersSection() {
                       variant="subtle"
                       color="var(--danger)"
                       onClick={() => setDeleting({ id: f.id, path: f.path })}
-                      aria-label={t`Delete root folder`}
+                      aria-label={t`Remove root folder`}
                     >
                       <IconTrash size={16} />
                     </ActionIcon>
@@ -570,6 +570,7 @@ export function NamingSection() {
         </Trans>
       </SettingsHelp>
       <Radio.Group
+        aria-label={t`Folder naming on import`}
         value={settings?.folderNamingMode ?? 'rename'}
         onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
       >

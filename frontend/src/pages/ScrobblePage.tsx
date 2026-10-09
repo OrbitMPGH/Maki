@@ -8,6 +8,7 @@ import {
   Group,
   ScrollArea,
   SimpleGrid,
+  Skeleton,
   Stack,
   Table,
   Text,
@@ -23,6 +24,7 @@ import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
+import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { statusToken, trackerConnectionVisual, trackerStatusVisual } from '../components/ui/status'
 import { StatusDot } from '../components/ui/StatusDot'
 import { useLabel } from '../i18n-context'
@@ -162,6 +164,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
       )}
       <Group mt="sm" gap="xs">
         <TextInput
+          aria-label={t`Paste series URL or numeric id…`}
           size="xs"
           style={{ flex: '1 1 12rem' }}
           placeholder={t`Paste series URL or numeric id…`}
@@ -190,7 +193,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
 export default function ScrobblePage() {
   const { t } = useLingui()
   const renderLabel = useLabel()
-  const { data, error } = useScrobbleStatus()
+  const { data, error, isRefetching, refetch } = useScrobbleStatus()
   const syncNow = useScrobbleSyncNow()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -214,46 +217,64 @@ export default function ScrobblePage() {
   const lastSync = fmtTime(data?.lastSyncAt)
   const nextSync = fmtTime(data?.nextSyncAt)
 
+  const header = (
+    <PageHeader
+      compact
+      title={t`Scrobble`}
+      description={
+        <Trans>
+          Reads reading progress from Kavita and pushes forward-only updates to your trackers every{' '}
+          <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Remote progress is never
+          lowered and completed entries are never demoted. Configure credentials in Settings.
+        </Trans>
+      }
+      actions={
+        <Group gap="sm">
+          <Text size="xs" c="var(--ink-3)" ta="right" className="tnum">
+            {data?.running ? (
+              <Trans>
+                sync running… · last {lastSync} · next {nextSync}
+              </Trans>
+            ) : (
+              <Trans>
+                last {lastSync} · next {nextSync}
+              </Trans>
+            )}
+          </Text>
+          <Button
+            leftSection={<IconRefresh size={16} />}
+            loading={syncNow.isPending || data?.running}
+            disabled={!anyTrackerConnected}
+            onClick={() =>
+              syncNow.mutate(undefined, {
+                onSuccess: (r) => notifications.show({ message: r.message }),
+              })
+            }
+          >
+            <Trans>Sync now</Trans>
+          </Button>
+        </Group>
+      }
+    />
+  )
+
+  if (error && !data) {
+    return (
+      <SurfaceFrame pageStyle="operational">
+        {header}
+        <EmptyState
+          title={t`Couldn't load scrobbling`}
+          description={errorText(error)}
+          actionLabel={isRefetching ? t`Retrying…` : t`Retry`}
+          onAction={() => void refetch()}
+        />
+      </SurfaceFrame>
+    )
+  }
+
   return (
     <SurfaceFrame pageStyle="operational">
-      <PageHeader
-        compact
-        title={t`Scrobble`}
-        description={
-          <Trans>
-            Reads reading progress from Kavita and pushes forward-only updates to your trackers every{' '}
-            <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Remote progress is never
-            lowered and completed entries are never demoted. Configure credentials in Settings.
-          </Trans>
-        }
-        actions={
-          <Group gap="sm">
-            <Text size="xs" c="var(--ink-3)" ta="right" className="tnum">
-              {data?.running ? (
-                <Trans>
-                  sync running… · last {lastSync} · next {nextSync}
-                </Trans>
-              ) : (
-                <Trans>
-                  last {lastSync} · next {nextSync}
-                </Trans>
-              )}
-            </Text>
-            <Button
-              leftSection={<IconRefresh size={16} />}
-              loading={syncNow.isPending || data?.running}
-              disabled={!anyTrackerConnected}
-              onClick={() =>
-                syncNow.mutate(undefined, {
-                  onSuccess: (r) => notifications.show({ message: r.message }),
-                })
-              }
-            >
-              <Trans>Sync now</Trans>
-            </Button>
-          </Group>
-        }
-      />
+      {header}
 
       {error && (
         <Alert color="var(--danger)" variant="light" mb="md">
@@ -261,15 +282,17 @@ export default function ScrobblePage() {
         </Alert>
       )}
 
-      <Title order={4} mb="sm">
+      <Title order={2} size="h4" mb="sm">
         <Trans>Connections</Trans>
       </Title>
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} mb="lg">
-        {data?.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)}
+        {data
+          ? data.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)
+          : Array.from({ length: 5 }, (_, i) => <Skeleton key={i} h={96} aria-hidden />)}
       </SimpleGrid>
 
       <Group gap="xs" mb="sm">
-        <Title order={4}>
+        <Title order={2} size="h4">
           <Trans>Needs review</Trans>
         </Title>
         {data && data.unmatched.length > 0 && (
@@ -278,22 +301,28 @@ export default function ScrobblePage() {
           </Badge>
         )}
       </Group>
-      {data && data.unmatched.length > 0 ? (
+      {!data ? (
+        <Skeleton h={72} mb="lg" aria-hidden />
+      ) : data.unmatched.length > 0 ? (
         <Stack gap="sm" mb="lg">
           {data.unmatched.map((u) => (
             <UnmatchedCard key={`${u.kavitaSeriesId}-${u.service}`} item={u} />
           ))}
         </Stack>
       ) : (
-        <Text size="sm" c="var(--ink-3)" mb="lg">
-          <Trans>Nothing needs review.</Trans>
-        </Text>
+        <Box mb="lg">
+          <EmptyState compact mood="pleased" title={t`Nothing needs review.`} />
+        </Box>
       )}
 
-      <Title order={4} mb="sm">
+      <Title order={2} size="h4" mb="sm">
         <Trans>Recent syncs</Trans>
       </Title>
-      {data && data.recent.length > 0 ? (
+      {!data ? (
+        <Box mb="lg">
+          <TableSkeleton columns={5} rows={4} />
+        </Box>
+      ) : data.recent.length > 0 ? (
         <Panel p={0} className="table-panel" mb="lg">
           <Table.ScrollContainer minWidth={600}>
             <Table className="panel-table scrobble-recent-table" highlightOnHover>
@@ -333,10 +362,10 @@ export default function ScrobblePage() {
                           </Tooltip>
                         ) : volume ? (
                           <Trans>
-                            ch {chapter} · vol {volume}
+                            ch. {chapter} · vol. {volume}
                           </Trans>
                         ) : (
-                          <Trans>ch {chapter}</Trans>
+                          <Trans>ch. {chapter}</Trans>
                         )}
                       </Table.Td>
                       <Table.Td>
@@ -369,12 +398,14 @@ export default function ScrobblePage() {
         </Box>
       )}
 
-      <Title order={4} mb="sm">
+      <Title order={2} size="h4" mb="sm">
         <Trans>Activity log</Trans>
       </Title>
       <Panel p="sm">
         <ScrollArea.Autosize mah={320}>
-          {data && data.log.length > 0 ? (
+          {!data ? (
+            <Skeleton h={48} aria-hidden />
+          ) : data.log.length > 0 ? (
             <Stack gap={2}>
               {dedupeKeys(data.log.map((l) => `${l.timestamp}-${l.service}-${l.message}`)).map((key, i) => {
                 const l = data.log[i]
@@ -405,9 +436,7 @@ export default function ScrobblePage() {
               })}
             </Stack>
           ) : (
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>Empty.</Trans>
-            </Text>
+            <EmptyState compact mood="asleep" title={t`No activity yet.`} />
           )}
         </ScrollArea.Autosize>
       </Panel>

@@ -233,7 +233,7 @@ function ActivityButton() {
         component={Link}
         to="/activity"
         variant="subtle"
-        color="gray"
+        color="var(--neutral)"
         aria-label={t`Activity`}
         pos="relative"
         style={{ overflow: 'visible' }}
@@ -422,7 +422,7 @@ function AppShellRoutes() {
           <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />
           </span>
-          <Text fz="1.125rem" lh={1} c="var(--ink-hi)" className="brand-wordmark">
+          <Text fz="var(--type-section)" lh={1} c="var(--ink-hi)" className="brand-wordmark">
             Maki
           </Text>
         </Group>

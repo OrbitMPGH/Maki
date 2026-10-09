@@ -14,6 +14,7 @@ import {
 import { IconCheck, IconPencil, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useCreateTag, useDeleteTag, useTags, useUpdateTag } from '../api/hooks'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 
 const COLORS = ['blue', 'grape', 'teal', 'orange', 'violet', 'cyan', 'pink', 'lime', 'indigo', 'red', 'gray']
 
@@ -28,6 +29,8 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
   const [newLabel, setNewLabel] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editLabel, setEditLabel] = useState('')
+  const [deleting, setDeleting] = useState<{ id: number; label: string; seriesCount: number } | null>(null)
+  const deletingSeriesCount = deleting?.seriesCount ?? 0
 
   const create = () => {
     const label = newLabel.trim()
@@ -46,6 +49,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
       <Stack gap="sm">
         <Group gap="xs">
           <TextInput
+            aria-label={t`New tag…`}
             placeholder={t`New tag…`}
             value={newLabel}
             onChange={(e) => setNewLabel(e.currentTarget.value)}
@@ -75,6 +79,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
               {editingId === id ? (
                 <>
                   <TextInput
+                    aria-label={t`Rename ${label}`}
                     value={editLabel}
                     onChange={(e) => setEditLabel(e.currentTarget.value)}
                     onKeyDown={(e) => e.key === 'Enter' && saveLabel(id)}
@@ -129,7 +134,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                   <ActionIcon
                     variant="subtle"
                     color="var(--danger)"
-                    onClick={() => deleteTag.mutate(id)}
+                    onClick={() => setDeleting({ id, label, seriesCount })}
                     aria-label={t`Delete ${label}`}
                   >
                     <IconTrash size={15} />
@@ -140,6 +145,26 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
           )
         })}
       </Stack>
+
+      <ConfirmDialog
+        opened={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title={<Trans>Delete this tag?</Trans>}
+        confirmLabel={<Trans>Delete tag</Trans>}
+        loading={deleteTag.isPending}
+        onConfirm={() => deleting && deleteTag.mutate(deleting.id, { onSuccess: () => setDeleting(null) })}
+      >
+        <Stack gap="xs">
+          <Text size="sm" fw={600}>{deleting?.label}</Text>
+          <Text size="sm">
+            <Plural
+              value={deletingSeriesCount}
+              one="It is removed from # series. This cannot be undone."
+              other="It is removed from # series. This cannot be undone."
+            />
+          </Text>
+        </Stack>
+      </ConfirmDialog>
     </Modal>
   )
 }

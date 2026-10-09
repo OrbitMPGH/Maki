@@ -274,6 +274,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                 {t`Day by day`}
               </p>
               <SegmentedControl
+                aria-label={t`Day by day`}
                 size="xs"
                 value={metric}
                 onChange={(v) => setMetric(v as 'chapters' | 'time')}
@@ -321,7 +322,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
               title={t`Most read`}
               items={activity.topRead.map((s) => {
                 const { count } = s
-                return { ...s, value: plural(count, { one: '# ch', other: '# ch' }) }
+                return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
               })}
               emptyText={t`No chapters read in this period.`}
             />
@@ -338,7 +339,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
               title={t`Barely touched`}
               items={activity.leastRead.map((s) => {
                 const { count } = s
-                return { ...s, value: plural(count, { one: '# ch', other: '# ch' }) }
+                return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
               })}
               emptyText={t`Everything you started, you kept reading.`}
             />

@@ -206,6 +206,7 @@ export default function CommandPalette({ navItems }: Props) {
       >
         <Stack gap={0}>
           <TextInput
+            aria-label={t`Jump to a series, page or setting…`}
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.currentTarget.value)}

@@ -17,6 +17,7 @@ import {
 } from '../ui/status'
 import { relationPhrase } from '../ui/DiscoverRail'
 import { useLabel } from '../../i18n-context'
+import { formatFixedDecimal } from '../../format'
 
 /** How long one pick holds the band before the next takes it. */
 const ROTATE_MS = 7000
@@ -223,7 +224,7 @@ export function DiscoverHero({
                     style={{ '--band': `var(--${band.token})` } as CSSProperties}
                   >
                     <IconStar size={18} />
-                    <span className="hero-score-n figure">{(score / 10).toFixed(1)}</span>
+                    <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
                   </span>
                 )}
                 {score != null && figures.length > 0 && (
@@ -251,7 +252,7 @@ export function DiscoverHero({
                     <Badge
                       size="sm"
                       variant="outline"
-                      color="gray"
+                      color="var(--neutral)"
                       leftSection={
                         <MetadataSiteIcon
                           site={r.source.toLowerCase()}
@@ -260,7 +261,7 @@ export function DiscoverHero({
                         />
                       }
                     >
-                      {(r.rating / 10).toFixed(1)}
+                      {formatFixedDecimal(r.rating / 10, 1)}
                     </Badge>
                   </Tooltip>
                 ))}
@@ -356,7 +357,7 @@ export function DiscoverHero({
                         {p.rating != null && (
                           <span className="discover-hero-strip-rating tnum">
                             <IconStar size={11} />
-                            {(p.rating / 10).toFixed(1)}
+                            {formatFixedDecimal(p.rating / 10, 1)}
                           </span>
                         )}
                       </span>

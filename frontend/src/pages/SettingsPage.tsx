@@ -52,6 +52,7 @@ import {
 } from './settings/DownloadCards'
 import { ImportListSettingsSection, KavitaCard, ScrobbleSection } from './settings/IntegrationCards'
 import { BackupSection, ImageCacheSection, UpdatesSection } from './settings/SystemCards'
+import { scrollBehavior } from '../lib/scrollBehavior'
 
 /**
  * Every card, keyed by its registry id. The registry decides order, tab and who may see it; this
@@ -207,7 +208,7 @@ export default function SettingsPage() {
 
     const el = document.getElementById(`setting-${target}`)
     if (!el) return
-    const show = () => el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    const show = () => el.scrollIntoView({ block: 'center', behavior: scrollBehavior() })
     // Cards above the target fill in as their queries resolve (the source table, the indexer list),
     // which pushes it down after the first scroll lands. Re-anchoring twice costs nothing and is
     // what makes a deep link arrive at the card rather than somewhere above it.

@@ -189,6 +189,7 @@ export function CustomRailForm({
               <Trans>Show on</Trans>
             </Text>
             <SegmentedControl
+              aria-label={t`Show on`}
               value={placement}
               onChange={(v) => changePlacement(v as CustomRailPlacement)}
               data={[
@@ -203,6 +204,7 @@ export function CustomRailForm({
               <Trans>Titles from</Trans>
             </Text>
             <SegmentedControl
+              aria-label={t`Titles from`}
               value={source}
               onChange={(v) => changeSource(v as CustomRailSource)}
               data={sourceOptions}

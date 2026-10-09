@@ -525,9 +525,9 @@ function Pill({ color, label, clear, onClear }: {
 }) {
   return (
     <Badge
-      size="sm" variant="light" color={color} pr={3}
+      size="sm" variant="light" color={color} pr={3} style={{ overflow: 'visible' }}
       rightSection={
-        <ActionIcon size={14} variant="transparent" color={color} aria-label={clear} onClick={onClear}>
+        <ActionIcon size={24} m={-5} variant="transparent" color={color} aria-label={clear} onClick={onClear}>
           <IconX size={12} />
         </ActionIcon>
       }

@@ -33,20 +33,16 @@ const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem 
   // Kavita-imported rows carry no slice length, so there is no honest fraction to draw.
   const resumePct =
     item.pageCount > 0 ? Math.min(100, (item.page / item.pageCount) * 100) : null
-  const { seriesTitle, chapterLabel, unreadChapters, pageCount } = item
+  const { chapterLabel, unreadChapters, pageCount } = item
   const pageNumber = item.page + 1
 
   return (
-    <Link
-      to={`/read/${item.chapterId}`}
-      className="cover-card"
-      aria-label={t`${seriesTitle} - ${chapterLabel}`}
-    >
+    <Link to={`/read/${item.chapterId}`} className="cover-card">
       <div className="cover-poster">
         {item.coverUrl ? (
-          <img src={item.coverUrl} alt={item.seriesTitle} loading="lazy" decoding="async" />
+          <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
         ) : (
-          <div className="cover-placeholder">{item.seriesTitle}</div>
+          <div className="cover-placeholder" aria-hidden>{item.seriesTitle}</div>
         )}
         <div className="cover-scrim" />
 

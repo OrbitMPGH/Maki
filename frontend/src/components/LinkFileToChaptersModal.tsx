@@ -183,7 +183,7 @@ export function LinkFileToChaptersModal({
                 leftSection={<IconSearch size={14} />}
                 rightSection={
                   query ? (
-                    <ActionIcon size="sm" variant="subtle" color="gray" aria-label={t`Clear search`} onClick={() => setQuery('')}>
+                    <ActionIcon size={24} variant="subtle" color="var(--neutral)" aria-label={t`Clear search`} onClick={() => setQuery('')}>
                       <IconX size={12} />
                     </ActionIcon>
                   ) : null
@@ -241,11 +241,11 @@ export function LinkFileToChaptersModal({
                           )}
                         </Group>
                         {onOtherFile ? (
-                          <Badge size="sm" variant="outline" color="gray" style={{ flexShrink: 0 }}>
+                          <Badge size="sm" variant="outline" color="var(--neutral)" style={{ flexShrink: 0 }}>
                             <Trans>On another file</Trans>
                           </Badge>
                         ) : !c.hasFile ? (
-                          <Badge size="sm" variant="light" color="gray" style={{ flexShrink: 0 }}>
+                          <Badge size="sm" variant="light" color="var(--neutral)" style={{ flexShrink: 0 }}>
                             <Trans>Missing</Trans>
                           </Badge>
                         ) : null}

@@ -543,6 +543,7 @@ export default function ImportPage() {
                             </Text>
                           ) : (
                             <Select
+                              aria-label={t`Metadata match for ${folderName}`}
                               data={[
                                 { value: '', label: t`- skip -` },
                                 ...c.matches.map((m) => ({

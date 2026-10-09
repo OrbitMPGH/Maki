@@ -61,6 +61,7 @@ export function ReleaseSearchModal({
       <Group gap="xs" mb="md" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
+          aria-label={t`Search query`}
           placeholder={t`Search query`}
           value={input}
           onChange={(e) => setInput(e.target.value)}
