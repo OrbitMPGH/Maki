@@ -220,6 +220,30 @@ public class BackupRestoreTests : IDisposable
         Assert.False(File.Exists(copy));
     }
 
+    [Fact]
+    public void Sidecar_copies_are_purged_with_the_database_copy_and_the_rename_restarts_the_clock()
+    {
+        ReleaseLiveDb();
+        File.SetLastWriteTimeUtc(_paths.DatabasePath, DateTime.UtcNow.AddDays(-30));
+        Directory.CreateDirectory(_paths.RestorePendingDir);
+        File.WriteAllBytes(Path.Combine(_paths.RestorePendingDir, "maki.db"), ValidDatabase(_configDir, LastKnownMigration));
+
+        RestoreBootstrap.ApplyPendingRestore(_paths, NullLogger.Instance);
+
+        var main = _paths.DatabasePath + RestoreBootstrap.PreRestoreSuffix;
+        Assert.True(File.GetLastWriteTimeUtc(main) > DateTime.UtcNow.AddMinutes(-5));
+
+        var wal = _paths.DatabasePath + "-wal" + RestoreBootstrap.PreRestoreSuffix;
+        File.WriteAllText(wal, "wal");
+        File.SetLastWriteTimeUtc(wal, DateTime.UtcNow);
+        File.SetLastWriteTimeUtc(main, DateTime.UtcNow.AddDays(-8));
+
+        RestoreBootstrap.PurgeStalePreRestoreCopies(_paths, TimeSpan.FromDays(7), NullLogger.Instance);
+
+        Assert.False(File.Exists(main));
+        Assert.False(File.Exists(wal));
+    }
+
     private void ReleaseLiveDb()
     {
         _db.Database.CloseConnection();
