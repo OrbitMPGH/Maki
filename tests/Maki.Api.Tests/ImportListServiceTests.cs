@@ -205,6 +205,23 @@ public class ImportListServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_missing_dump_still_adds_entries_that_already_carry_a_MangaBaka_id()
+    {
+        var user = Adder();
+        _store.Available = false;
+        _tracker.Entries = [Entry("r1", mangaBaka: 101), Entry("r2", aniList: 5001)];
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Added);
+        Assert.Equal(0, result.Errors);
+        Assert.True(result.DumpUnavailable);
+        Assert.Equal(new int?[] { 101 }, LibraryIds());
+        using var db = _db.NewContext();
+        Assert.DoesNotContain(db.ImportListSkips, x => x.RemoteId == "r2");
+    }
+
+    [Fact]
     public async Task An_unresolvable_entry_is_recorded_once_as_unmatched()
     {
         var user = Adder();
