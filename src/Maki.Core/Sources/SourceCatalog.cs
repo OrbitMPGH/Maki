@@ -18,6 +18,8 @@ namespace Maki.Core.Sources;
 /// </remarks>
 public sealed class SourceCatalog(TimeSpan ttl)
 {
+    private static readonly TimeSpan EmptyTtl = TimeSpan.FromMinutes(1);
+
     private readonly SemaphoreSlim _lock = new(1, 1);
     private List<SourceSeriesResult> _entries = [];
     private DateTime _fetchedAt = DateTime.MinValue;
@@ -77,7 +79,7 @@ public sealed class SourceCatalog(TimeSpan ttl)
         }
     }
 
-    private bool IsFresh => _entries.Count > 0 && DateTime.UtcNow - _fetchedAt < ttl;
+    private bool IsFresh => DateTime.UtcNow - _fetchedAt < (_entries.Count > 0 ? ttl : EmptyTtl);
 
     internal static int ScoreOf(string query, string candidate) =>
         candidate.Length == 0 ? 0
