@@ -14982,6 +14982,10 @@ msgid "The source answered with an error"
 msgstr "来源返回了错误"
 
 #: src/api/queue.ts
+msgid "The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The source refused the request"
 msgstr "来源拒绝了请求"

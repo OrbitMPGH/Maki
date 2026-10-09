@@ -12293,6 +12293,10 @@ msgid "The source answered with an error"
 msgstr "The source answered with an error"
 
 #: src/api/queue.ts
+msgid "The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)"
+msgstr "The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)"
+
+#: src/api/queue.ts
 msgid "The source refused the request"
 msgstr "The source refused the request"
 

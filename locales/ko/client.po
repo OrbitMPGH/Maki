@@ -14982,6 +14982,10 @@ msgid "The source answered with an error"
 msgstr "소스가 오류로 응답했습니다"
 
 #: src/api/queue.ts
+msgid "The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The source refused the request"
 msgstr "소스가 요청을 거부했습니다"
