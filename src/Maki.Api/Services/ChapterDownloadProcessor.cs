@@ -241,10 +241,19 @@ public class ChapterDownloadProcessor(
 
             // 6. Atomic move into the library.
             await SetStatusAsync(item, QueueStatus.Importing, ct);
-            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
 
             // Released right after the save below; the using covers every other way out.
             using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+            // The series was loaded when the item was claimed. A rename or move that held the lock
+            // meanwhile changed where the folder is, so the path is built from what it is now.
+            await db.Entry(series).ReloadAsync(ct);
+            if (series.RootFolderId != rootFolder.Id)
+            {
+                rootFolder = await db.RootFolders.FindAsync([series.RootFolderId], ct) ?? rootFolder;
+            }
+
+            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
             if (item.UpgradeInfoJson is not null)
             {
                 return await ApplyUpgradeAsync(item, chapter, series, rootFolder, mapping, source, sourceChapterId,
