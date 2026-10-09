@@ -1425,12 +1425,13 @@ export interface MangaReview {
 }
 
 /** Rich detail for a Discover recommendation. `id` is a MangaBaka id; null disables the query. */
-export function useRecommendationDetail(id: string | null) {
+export function useRecommendationDetail(id: string | null, inlineError = false) {
   return useQuery({
     queryKey: ['recommendation-detail', id],
     queryFn: () => api<MangaBakaDetail>(`/recommendations/detail/${id}`),
     enabled: id != null,
     staleTime: 30 * 60 * 1000,
+    meta: { silent: inlineError },
   })
 }
 

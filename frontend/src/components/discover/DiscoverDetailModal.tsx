@@ -73,7 +73,7 @@ export function DiscoverDetailModal({
   /** Shows a dice beside the close button that swaps in another random pick. */
   onReroll?: () => void
 }) {
-  const { data: detail, isLoading, isError, refetch } = useRecommendationDetail(item?.providerId ?? null)
+  const { data: detail, isLoading, isError, refetch } = useRecommendationDetail(item?.providerId ?? null, true)
   const { scope: diceScope, tumble } = useDiceTumble()
   const rerolling = useRef(false)
   const rerollTimer = useRef<number | undefined>(undefined)
