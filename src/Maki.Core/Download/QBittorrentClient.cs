@@ -38,7 +38,7 @@ public class QBittorrentClient
     }
 
     private readonly SemaphoreSlim _loginLock = new(1, 1);
-    private string? _authenticatedFor;
+    private (string BaseUrl, string Username)? _authenticatedFor;
 
     public QBittorrentClient()
     {
@@ -82,13 +82,8 @@ public class QBittorrentClient
             ["category"] = category
         };
 
-        var response = await SendAsync(baseUrl, HttpMethod.Post, "torrents/add", fields, ct);
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            await EnsureLoginAsync(baseUrl, username, password, force: true, ct);
-            response = await SendAsync(baseUrl, HttpMethod.Post, "torrents/add", fields, ct);
-        }
-
+        using var response = await SendAuthenticatedAsync(
+            baseUrl, username, password, HttpMethod.Post, "torrents/add", fields, ct);
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadAsStringAsync(ct);
         if (body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
@@ -102,23 +97,34 @@ public class QBittorrentClient
     {
         await EnsureLoginAsync(baseUrl, username, password, force: false, ct);
 
-        var response = await SendAsync(
-            baseUrl, HttpMethod.Get, $"torrents/info?category={Uri.EscapeDataString(category)}", null, ct);
-        if (response.StatusCode == HttpStatusCode.Forbidden)
-        {
-            await EnsureLoginAsync(baseUrl, username, password, force: true, ct);
-            response = await SendAsync(
-                baseUrl, HttpMethod.Get, $"torrents/info?category={Uri.EscapeDataString(category)}", null, ct);
-        }
-
+        using var response = await SendAuthenticatedAsync(
+            baseUrl, username, password, HttpMethod.Get,
+            $"torrents/info?category={Uri.EscapeDataString(category)}", null, ct);
         response.EnsureSuccessStatusCode();
         var torrents = await response.Content.ReadFromJsonAsync<List<QbtTorrent>>(cancellationToken: ct);
         return torrents ?? [];
     }
 
+    /// <summary>Sends a request, logging in again and repeating it once when the session has expired (403).</summary>
+    private async Task<HttpResponseMessage> SendAuthenticatedAsync(
+        string baseUrl, string username, string password, HttpMethod method, string path,
+        IReadOnlyDictionary<string, string>? formFields, CancellationToken ct)
+    {
+        var response = await SendAsync(baseUrl, method, path, formFields, ct);
+        if (response.StatusCode != HttpStatusCode.Forbidden)
+        {
+            return response;
+        }
+
+        response.Dispose();
+        await EnsureLoginAsync(baseUrl, username, password, force: true, ct);
+        return await SendAsync(baseUrl, method, path, formFields, ct);
+    }
+
     private async Task EnsureLoginAsync(string baseUrl, string username, string password, bool force, CancellationToken ct)
     {
-        if (!force && _authenticatedFor == baseUrl)
+        var session = (baseUrl, username);
+        if (!force && _authenticatedFor == session)
         {
             return;
         }
@@ -126,7 +132,7 @@ public class QBittorrentClient
         await _loginLock.WaitAsync(ct);
         try
         {
-            if (!force && _authenticatedFor == baseUrl)
+            if (!force && _authenticatedFor == session)
             {
                 return;
             }
@@ -144,7 +150,7 @@ public class QBittorrentClient
                     "qBittorrent login failed (check username/password). Status code: " + response.StatusCode);
             }
 
-            _authenticatedFor = baseUrl;
+            _authenticatedFor = session;
         }
         finally
         {
