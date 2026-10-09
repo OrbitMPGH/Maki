@@ -44,9 +44,10 @@ public record ReaderPrefsSpec(
     public const string DirectionLtr = "ltr";
 
     /// <summary>
-    /// Right-to-left is the default: everything Maki packages is tagged
-    /// <c>Manga = "YesAndRightToLeft"</c> in its ComicInfo. Manhwa and manhua want vertical +
-    /// left-to-right, which is exactly what the per-series override is for.
+    /// Right-to-left is the default: manga, and a series with no type, is tagged
+    /// <c>Manga = "YesAndRightToLeft"</c> in its ComicInfo. Manhwa and manhua are tagged
+    /// <c>Yes</c> and want vertical + left-to-right, which is what the per-series override and the
+    /// type-matched reading profiles are for.
     /// </summary>
     public const string DirectionRtl = "rtl";
 
