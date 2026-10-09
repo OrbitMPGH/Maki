@@ -52,10 +52,6 @@ public class RecommendationController(
         {
             return this.Fail(localizer, ex.Key);
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 
     /// <summary>
@@ -157,10 +153,6 @@ public class RecommendationController(
         {
             return this.Fail(localizer, ex.Key);
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 
     /// <summary>Small personalised rows for the visible library's recurring minority interests.</summary>
@@ -174,9 +166,9 @@ public class RecommendationController(
             return Ok(LocalizeRails(
                 rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
         }
-        catch (InvalidOperationException ex)
+        catch (LocalCatalogueUnavailableException)
         {
-            return BadRequest(new { error = ex.Message });
+            return Ok(new List<DiscoverRail>());
         }
     }
 
@@ -202,9 +194,9 @@ public class RecommendationController(
                 ? null
                 : LocalizeRail(rail with { Items = HiddenContentService.Without(rail.Items, isHidden) }));
         }
-        catch (InvalidOperationException ex)
+        catch (LocalCatalogueUnavailableException)
         {
-            return BadRequest(new { error = ex.Message });
+            return Ok(null);
         }
     }
 
@@ -227,9 +219,9 @@ public class RecommendationController(
             return Ok(LocalizeRails(
                 rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
         }
-        catch (InvalidOperationException ex)
+        catch (LocalCatalogueUnavailableException)
         {
-            return BadRequest(new { error = ex.Message });
+            return Ok(new List<DiscoverRail>());
         }
     }
 
@@ -248,10 +240,6 @@ public class RecommendationController(
         catch (LocalCatalogueUnavailableException ex)
         {
             return this.Fail(localizer, ex.Key);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -272,9 +260,9 @@ public class RecommendationController(
         {
             return this.Fail(localizer, ex.Key);
         }
-        catch (InvalidOperationException ex)
+        catch (UnknownFeedException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return this.Fail(localizer, "error.recommendation.unknownFeed", new { feed = ex.Feed });
         }
     }
 
@@ -294,10 +282,6 @@ public class RecommendationController(
         catch (LocalCatalogueUnavailableException ex)
         {
             return this.Fail(localizer, ex.Key);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -324,10 +308,6 @@ public class RecommendationController(
         catch (LocalCatalogueUnavailableException ex)
         {
             return this.Fail(localizer, ex.Key);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 

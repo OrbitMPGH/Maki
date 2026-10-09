@@ -966,6 +966,12 @@ msgstr "Le nom est requis"
 msgid "error.recommendation.needsLocalDb"
 msgstr "Les recommandations nécessitent la base de données MangaBaka locale (Paramètres → Métadonnées → base de données locale)"
 
+#. {feed} is the feed name the client sent; thrown by DiscoverService.GetFeedAsync.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: Unknown feed "{feed}"
+msgid "error.recommendation.unknownFeed"
+msgstr ""
+
 #. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
 #. sections that still work with no local database.
 #: src/Maki.Api/Controllers/RecommendationController.cs

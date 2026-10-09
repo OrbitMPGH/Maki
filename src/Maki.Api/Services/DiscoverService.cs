@@ -46,6 +46,12 @@ public record DiscoverRail(
     [property: JsonIgnore] object? TitleArgs = null,
     [property: JsonIgnore] object? SubtitleArgs = null);
 
+/// <summary>A Discover feed name that is not a <see cref="BrowseFeed"/>; the controller renders it.</summary>
+public sealed class UnknownFeedException(string feed) : InvalidOperationException(feed)
+{
+    public string Feed { get; } = feed;
+}
+
 /// <summary>
 /// A Discover/recommendation request that cannot be served because the local MangaBaka database is
 /// not installed. Carries the catalogue key rather than a sentence: <see cref="DiscoverService"/> and
@@ -482,7 +488,7 @@ public class DiscoverService(
 
         if (!Enum.TryParse<BrowseFeed>(request.Feed, ignoreCase: true, out var feed))
         {
-            throw new InvalidOperationException($"Unknown feed '{request.Feed}'.");
+            throw new UnknownFeedException(request.Feed);
         }
 
         // 600 rather than 300: the in-memory path already scans and sorts the whole index whatever
