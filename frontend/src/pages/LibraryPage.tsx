@@ -746,7 +746,7 @@ export default function LibraryPage() {
           {label}
         </Text>
         {value.length > 1 && (
-          <SegmentedControl aria-label={label} size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
+          <SegmentedControl aria-label={t`Match mode for ${label}`} size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
         )}
       </Group>
       {description && (
