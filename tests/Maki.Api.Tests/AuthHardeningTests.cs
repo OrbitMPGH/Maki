@@ -387,6 +387,32 @@ public sealed class AuthHardeningTests : IDisposable
         Assert.Equal(8, await users.CountRecoveryCodesAsync(user));
     }
 
+    [Theory]
+    [InlineData(-5, true)]
+    [InlineData(-30, false)]
+    [InlineData(null, false)]
+    public async Task A_passwordless_account_mints_an_api_key_only_after_a_recent_sign_in(
+        int? minutesSinceSignIn, bool allowed)
+    {
+        var userId = _db.SeedUser("sso", MakiPermission.None, configure: u =>
+            u.LastLoginAt = minutesSinceSignIn is { } m ? _clock.GetUtcNow().UtcDateTime.AddMinutes(m) : null);
+        using var db = _db.NewContext(userId);
+
+        var result = await Account(db, userId).CreateApiKey(
+            new CreateApiKeyRequest("script", UserApiKeyScope.Full, null), default);
+
+        if (allowed)
+        {
+            Assert.IsType<OkObjectResult>(result);
+        }
+        else
+        {
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
+            Assert.Equal("error.account.recentSignInRequired", CodeOf(result));
+            Assert.Empty(db.UserApiKeys);
+        }
+    }
+
     [Fact]
     public async Task A_rejected_new_password_leaves_the_old_one_working()
     {

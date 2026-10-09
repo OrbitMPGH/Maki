@@ -459,9 +459,14 @@ public class SettingsController(
             return Unauthorized();
         }
 
-        return await AccountCredentials.ConfirmPasswordAsync(users, signIn, user, password) is { } key
-            ? this.Fail(localizer, key)
-            : null;
+        if (await AccountCredentials.ConfirmForMintAsync(users, signIn, user, password, TimeProvider.System) is { } key)
+        {
+            return key == AccountCredentials.RecentSignInRequiredKey
+                ? this.Forbidden(localizer, key)
+                : this.Fail(localizer, key);
+        }
+
+        return null;
     }
 
     private Task<UserApiKey?> CurrentOpdsKeyAsync(CancellationToken ct) =>

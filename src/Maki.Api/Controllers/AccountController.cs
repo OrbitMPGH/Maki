@@ -322,8 +322,9 @@ public class AccountController(
     }
 
     /// <summary>
-    /// Requires the account password when there is one: a key outlives the session that minted it,
-    /// through a password change and "sign out everywhere" alike.
+    /// Requires the account password when there is one, or a sign-in within the last ten minutes when
+    /// there is not: a key outlives the session that minted it, through a password change and "sign
+    /// out everywhere" alike.
     /// </summary>
     [HttpPost("apikeys")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
@@ -352,9 +353,12 @@ public class AccountController(
         var user = await LoadAsync();
         if (user is null) return Unauthorized();
 
-        if (await ConfirmPasswordAsync(user, request.Password) is { } refused)
+        if (await AccountCredentials.ConfirmForMintAsync(userManager, signInManager, user, request.Password, clock)
+            is { } refusal)
         {
-            return refused;
+            return refusal == AccountCredentials.RecentSignInRequiredKey
+                ? this.Forbidden(localizer, refusal)
+                : this.Fail(localizer, refusal);
         }
 
         var secret = ApiKeyCrypto.Generate();
