@@ -335,7 +335,7 @@ function AppShellRoutes() {
   const navigate = useNavigate()
   const [opened, { toggle, close }] = useDisclosure()
   const { data: setup } = useSetupStatus()
-  const { data: metadata } = useMetadataSettings()
+  const { data: metadata, isError: metadataFailed } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
   const { t } = useLingui()
@@ -344,7 +344,9 @@ function AppShellRoutes() {
 
   // Both default to "available" while their settings load, so a tab doesn't flash away and back
   // on every visit. HomePage takes the opposite default for its own data, see the note there.
-  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : true
+  // A failed settings request counts as unavailable, so the start page falls through to Home or the
+  // library instead of waiting on an answer that is not coming.
+  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : !metadataFailed
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
@@ -461,7 +463,7 @@ function AppShellRoutes() {
               element={
                 <StartPageRedirect
                   discoverAvailable={discoverAvailable}
-                  discoverKnown={metadata !== undefined}
+                  discoverKnown={metadata !== undefined || metadataFailed}
                 />
               }
             />
