@@ -3405,7 +3405,7 @@ msgstr "Torrenta nie ma już w qBittorrent"
 
 #. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
 #: src/Maki.Api/Services/DownloadWorkerHostedService.cs
-#. English: Gave up after the download time limit, Maki will try again
+#. English: Gave up after the download time limit
 msgid "error.download.itemTimedOut"
 msgstr ""
 

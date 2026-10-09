@@ -2422,7 +2422,7 @@ msgstr "The torrent is no longer in qBittorrent"
 #. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
 #: src/Maki.Api/Services/DownloadWorkerHostedService.cs
 msgid "error.download.itemTimedOut"
-msgstr "Gave up after the download time limit, Maki will try again"
+msgstr "Gave up after the download time limit"
 
 #. A repair was approved with a source that has since been disabled or removed.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs

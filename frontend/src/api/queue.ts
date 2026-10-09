@@ -74,7 +74,7 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.disk': msg`Could not write the chapter to disk`,
   'error.download.invalidPage': msg`A page the source sent is not a readable image`,
   'error.download.notListed': msg`No source has this chapter right now`,
-  'error.download.itemTimedOut': msg`Gave up after the download time limit, Maki will try again`,
+  'error.download.itemTimedOut': msg`Gave up after the download time limit`,
   'error.download.repairSourceGone': msg`The approved repair source is no longer available, request a new replacement`,
   'error.download.repairNotAccepting': msg`The repair is no longer accepting candidates`,
   'error.torrentImport.copyFailed': msg({

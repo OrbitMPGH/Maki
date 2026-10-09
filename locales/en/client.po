@@ -5485,8 +5485,8 @@ msgid "Fully read owned"
 msgstr "Fully read owned"
 
 #: src/api/queue.ts
-msgid "Gave up after the download time limit, Maki will try again"
-msgstr "Gave up after the download time limit, Maki will try again"
+msgid "Gave up after the download time limit"
+msgstr "Gave up after the download time limit"
 
 #: src/components/discover/RecommenderDials.tsx
 msgid "gems"

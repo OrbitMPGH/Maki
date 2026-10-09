@@ -6693,7 +6693,7 @@ msgid "Fully read owned"
 msgstr "所蔵分を完読"
 
 #: src/api/queue.ts
-msgid "Gave up after the download time limit, Maki will try again"
+msgid "Gave up after the download time limit"
 msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
