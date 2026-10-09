@@ -274,6 +274,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                 {t`Day by day`}
               </p>
               <SegmentedControl
+                aria-label={t`Day by day`}
                 size="xs"
                 value={metric}
                 onChange={(v) => setMetric(v as 'chapters' | 'time')}

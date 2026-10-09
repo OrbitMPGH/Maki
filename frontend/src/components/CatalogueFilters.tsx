@@ -392,6 +392,7 @@ export function CatalogueFilters({
             </Trans>
           </Text>
           <RangeSlider
+            thumbFromLabel={t`Earliest year`} thumbToLabel={t`Latest year`}
             min={YEAR_MIN}
             max={YEAR_MAX}
             value={years}

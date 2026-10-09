@@ -299,6 +299,7 @@ export function SeriesPreviewReader({
               </Text>
             </div>
             <SegmentedControl
+              aria-label={t`Reading mode`}
               size="xs"
               value={mode}
               onChange={(value) => setModeChoice(value as PreviewMode)}

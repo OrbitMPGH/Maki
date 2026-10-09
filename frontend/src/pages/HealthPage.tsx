@@ -392,6 +392,7 @@ export default function HealthPage() {
                 onChange={(e) => refilter(() => setSearch(e.currentTarget.value))}
               />
               <Select
+                aria-label={t`Filter by root folder`}
                 placeholder={t`All roots`}
                 clearable
                 value={root}
@@ -399,6 +400,7 @@ export default function HealthPage() {
                 data={overview.data?.roots.map((r) => ({ value: String(r.id), label: r.path })) ?? []}
               />
               <Select
+                aria-label={t`Filter by finding`}
                 placeholder={t`All findings`}
                 clearable
                 value={kind}
@@ -408,6 +410,7 @@ export default function HealthPage() {
                   .map(([value, label]) => ({ value, label: renderLabel(label) }))}
               />
               <Select
+                aria-label={t`Filter by state`}
                 placeholder={t`All states`}
                 clearable
                 value={state}
@@ -1165,6 +1168,7 @@ function FileReview({
                   <Trans>Request replacement</Trans>
                 </Title>
                 <Select
+                  aria-label={t`Request replacement`}
                   allowDeselect={false}
                   value={mapping}
                   onChange={(value) => setMapping(value ?? AUTOMATIC)}

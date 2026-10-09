@@ -164,6 +164,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
       )}
       <Group mt="sm" gap="xs">
         <TextInput
+          aria-label={t`Paste series URL or numeric id…`}
           size="xs"
           style={{ flex: '1 1 12rem' }}
           placeholder={t`Paste series URL or numeric id…`}

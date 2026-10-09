@@ -174,6 +174,7 @@ export function RatingImportModal({
               <Group key={i.seriesId} justify="space-between" wrap="nowrap" gap="sm">
                 <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
                   <Checkbox
+                    aria-label={i.title}
                     size="xs"
                     checked={selected.has(i.seriesId)}
                     onChange={() => toggle(i.seriesId)}

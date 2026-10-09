@@ -256,6 +256,7 @@ function LibraryStep() {
         description={<Trans>What happens to a series folder you already have when you import it into Maki.</Trans>}
       >
         <Radio.Group
+          aria-label={t`Existing folders on import`}
           value={settings?.folderNamingMode ?? 'rename'}
           onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
         >

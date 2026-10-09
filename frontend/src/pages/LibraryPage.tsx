@@ -746,7 +746,7 @@ export default function LibraryPage() {
           {label}
         </Text>
         {value.length > 1 && (
-          <SegmentedControl size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
+          <SegmentedControl aria-label={label} size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
         )}
       </Group>
       {description && (
@@ -755,6 +755,7 @@ export default function LibraryPage() {
         </Text>
       )}
       <MultiSelect
+        aria-label={label}
         data={data}
         value={value}
         onChange={onChange}
@@ -1032,6 +1033,7 @@ export default function LibraryPage() {
             <Stack className="library-toolbar" gap="sm">
               <Group className="library-toolbar-row" gap="sm" wrap="wrap">
                 <TextInput
+                  aria-label={t`Filter library…`}
                   className="library-search"
                   placeholder={t`Filter library…`}
                   leftSection={<IconSearch size={16} />}
@@ -1082,6 +1084,7 @@ export default function LibraryPage() {
                   </ActionIcon>
                 </Tooltip>
                 <Select
+                  aria-label={t`Sort by`}
                   className="library-sort"
                   data={sortOptions}
                   value={sort}
@@ -1293,6 +1296,7 @@ export default function LibraryPage() {
               <Trans>Leave both boxes empty to ignore.</Trans>
             </Text>
             <SegmentedControl
+              aria-label={t`Chapters`}
               size="xs"
               fullWidth
               value={chapterMode}
@@ -1354,6 +1358,7 @@ export default function LibraryPage() {
                 <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
               </Text>
               <RangeSlider
+                thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
                 min={0}
                 max={100}
                 step={5}
@@ -1573,6 +1578,7 @@ export default function LibraryPage() {
           </Trans>
         </Text>
         <SegmentedControl
+          aria-label={t`Monitoring`}
           fullWidth
           value={monitorMode}
           onChange={setMonitorMode}
@@ -1616,6 +1622,7 @@ export default function LibraryPage() {
           </Trans>
         </Text>
         <Select
+          aria-label={t`Quality profile`}
           data={[
             { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
             ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
@@ -1684,6 +1691,7 @@ export default function LibraryPage() {
           <Trans>Yours alone - this changes what lands in your bell, not anybody else's.</Trans>
         </Text>
         <SegmentedControl
+          aria-label={t`Notifications`}
           fullWidth
           value={notifyMode}
           onChange={(v) => setNotifyMode(v as SeriesNotificationMode)}

@@ -48,6 +48,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
       <Stack gap="sm">
         <Group gap="xs">
           <TextInput
+            aria-label={t`New tag…`}
             placeholder={t`New tag…`}
             value={newLabel}
             onChange={(e) => setNewLabel(e.currentTarget.value)}
@@ -77,6 +78,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
               {editingId === id ? (
                 <>
                   <TextInput
+                    aria-label={t`Rename ${label}`}
                     value={editLabel}
                     onChange={(e) => setEditLabel(e.currentTarget.value)}
                     onKeyDown={(e) => e.key === 'Enter' && saveLabel(id)}

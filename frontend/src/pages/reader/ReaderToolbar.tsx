@@ -371,6 +371,7 @@ export default function ReaderToolbar({
                     <Trans>Layout</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Layout`}
                     fullWidth
                     size="xs"
                     value={prefs.mode}
@@ -387,6 +388,7 @@ export default function ReaderToolbar({
                     <Trans>Direction</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Direction`}
                     fullWidth
                     size="xs"
                     value={prefs.direction}
@@ -402,6 +404,7 @@ export default function ReaderToolbar({
                     <Trans>Fit</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Fit`}
                     fullWidth
                     size="xs"
                     value={prefs.fit}
@@ -420,6 +423,7 @@ export default function ReaderToolbar({
                       <Trans>Scale ({scale}%)</Trans>
                     </Text>
                     <Slider
+                      aria-label={t`Scale`}
                       size="xs"
                       min={25}
                       max={400}
@@ -434,6 +438,7 @@ export default function ReaderToolbar({
                     <Trans>Background</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Background`}
                     fullWidth
                     size="xs"
                     value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
@@ -482,6 +487,7 @@ export default function ReaderToolbar({
                     <Trans>Reading profile</Trans>
                   </Text>
                   <Select
+                    aria-label={t`Reading profile`}
                     size="xs"
                     comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
                     allowDeselect={false}

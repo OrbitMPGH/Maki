@@ -87,6 +87,7 @@ function ReviewControls({
         }}
       >
         <TextInput
+          aria-label={t`Paste id or URL`}
           className="scrobble-review-input"
           size="xs"
           placeholder={t`Paste id or URL`}

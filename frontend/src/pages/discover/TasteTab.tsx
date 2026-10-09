@@ -621,6 +621,7 @@ export function TasteTab() {
         count={insights?.groups.length ? insights.groups.length : undefined}
         action={
           <SegmentedControl
+            aria-label={t`View`}
             size="xs"
             value={view}
             onChange={(v) => setView(v as TasteView)}

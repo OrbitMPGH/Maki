@@ -1084,6 +1084,7 @@ function MappingLanguages({
 
   return (
     <MultiSelect
+      aria-label={t`Chapter languages`}
       size="xs"
       w={150}
       data={languageOptions}

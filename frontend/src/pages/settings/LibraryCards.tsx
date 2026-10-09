@@ -570,6 +570,7 @@ export function NamingSection() {
         </Trans>
       </SettingsHelp>
       <Radio.Group
+        aria-label={t`Folder naming on import`}
         value={settings?.folderNamingMode ?? 'rename'}
         onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
       >

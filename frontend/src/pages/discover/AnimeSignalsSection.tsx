@@ -255,6 +255,7 @@ function AnimeSignalStrengthControl({
       <Text size="xs" fw={500}><Trans>How much they count</Trans></Text>
       <Tooltip label={tooltipLabel} multiline w={300}>
         <SegmentedControl
+          aria-label={t`How much they count`}
           size="xs"
           value={value}
           disabled={pending}

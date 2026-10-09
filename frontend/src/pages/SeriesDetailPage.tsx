@@ -2218,6 +2218,7 @@ function SeriesDetailBody() {
                         />
                     ) : (
                         <SegmentedControl
+                            aria-label={t`Filter chapters`}
                             size="xs"
                             value={chapterFilter}
                             onChange={setChapterFilter}

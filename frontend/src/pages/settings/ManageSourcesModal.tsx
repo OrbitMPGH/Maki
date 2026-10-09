@@ -443,6 +443,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
           style={{ flex: '1 1 200px', minWidth: 160 }}
         />
         <SegmentedControl
+          aria-label={t`Filter by state`}
           value={stateFilter}
           onChange={(value) => setStateFilter(value as StateFilter)}
           data={[

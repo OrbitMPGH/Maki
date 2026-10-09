@@ -108,6 +108,7 @@ function StartPageSelect() {
  * first paint does not have to wait for the settings round trip.
  */
 export function LanguageSection() {
+  const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const { locale, locales } = useLanguageChoice()
   const options = useLanguageOptions()
@@ -127,6 +128,7 @@ export function LanguageSection() {
       }
     >
       <Select
+        aria-label={t`Interface language`}
         data={options}
         value={ui?.language ?? ''}
         onChange={(value) => value !== null && apply?.(value)}
@@ -189,6 +191,7 @@ export function TitleLanguageSection() {
       }
     >
       <Select
+        aria-label={t`Title language`}
         data={options}
         value={primary}
         onChange={(value) =>

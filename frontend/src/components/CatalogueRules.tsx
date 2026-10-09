@@ -183,6 +183,7 @@ export function TermFilters({ controls }: { controls: TermFilterControls }) {
           withArrow
         >
           <SegmentedControl
+            aria-label={t`Rule editor view`}
             size="xs"
             value={state.view}
             onChange={switchView}
@@ -266,6 +267,7 @@ function SimpleTerms({ state, setState }: TermFilterControls) {
               <Trans>Tags to include</Trans>
             </span>
             <SegmentedControl
+              aria-label={t`Tags to include`}
               size="xs"
               value={state.tagMode}
               onChange={(v) => setState({ ...state, tagMode: v as 'all' | 'any' })}

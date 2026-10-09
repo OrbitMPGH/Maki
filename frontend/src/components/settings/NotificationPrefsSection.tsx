@@ -72,6 +72,7 @@ export function NotificationPrefsSection() {
         </Trans>
       </Text>
       <SegmentedControl
+        aria-label={t`Which series notify me`}
         fullWidth
         value={seriesDefaultOptions.some((o) => o.value === prefs.seriesDefault)
           ? prefs.seriesDefault
