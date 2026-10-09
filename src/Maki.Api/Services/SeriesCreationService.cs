@@ -187,7 +187,7 @@ public class SeriesCreationService(
                 : await MonitorDefaults.ForNewSeriesAsync(appSettings, ct);
         // An explicit choice from the add form wins, including an explicit "Off" over a rule that
         // would have hidden it. Only an absent value consults the per-rating rules.
-        series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode)
+        series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode) && Enum.IsDefined(explicitMode)
             ? explicitMode
             : await IncognitoRatingRules.ResolveAsync(appSettings, series.ContentRating, ct);
         series.RootFolderId = rootFolder.Id;

@@ -1692,7 +1692,7 @@ public class SeriesController(
     [HttpPost("{id:int}/monitormode")]
     public async Task<IActionResult> SetMonitorMode(int id, [FromBody] MonitorModeRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownMonitorMode", new { mode = request.Mode });
         }
@@ -1791,7 +1791,7 @@ public class SeriesController(
     [HttpPost("{id:int}/incognito")]
     public async Task<IActionResult> SetIncognito(int id, [FromBody] IncognitoRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownIncognitoMode", new { mode = request.Mode });
         }
@@ -1865,7 +1865,7 @@ public class SeriesController(
     public async Task<IActionResult> SetNotificationMode(
         int id, [FromBody] SetSeriesNotificationsRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownNotificationMode", new { mode = request.Mode });
         }
@@ -1897,7 +1897,7 @@ public class SeriesController(
     public async Task<IActionResult> SetNotificationModeBulk(
         [FromBody] BulkSeriesNotificationsRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownNotificationMode", new { mode = request.Mode });
         }
