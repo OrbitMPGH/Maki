@@ -127,7 +127,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     "/settings?tab=system&s=backup");
             }
             catch { Add("backup", "system", "unavailable", "health.check.backupUnreadable"); }
-            var failed = await db.DownloadQueue.CountAsync(q => q.Status == QueueStatus.Failed, ct);
+            var failedSince = DateTime.UtcNow.AddDays(-30);
+            var failed = await db.DownloadQueue.CountAsync(
+                q => q.Status == QueueStatus.Failed && (q.CompletedAt ?? q.QueuedAt) >= failedSince, ct);
             foreach (var root in roots)
             {
                 try

@@ -147,11 +147,15 @@ public class HousekeepingJob(
             logger.LogWarning(ex, "Upgrade trash purge failed");
         }
 
-        // Completed/cancelled queue rows older than 30 days.
+        RestoreBootstrap.PurgeStalePreRestoreCopies(paths, TimeSpan.FromDays(7), logger);
+
+        // Settled queue rows whose last activity is older than 30 days. Failed rows go too, or the
+        // downloads health check would stay yellow over a failure from months ago.
         var cutoff = DateTime.UtcNow.AddDays(-30);
         await db.DownloadQueue
-            .Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled) &&
-                        q.QueuedAt < cutoff)
+            .Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled ||
+                         q.Status == QueueStatus.Failed) &&
+                        (q.CompletedAt ?? q.QueuedAt) < cutoff)
             .ExecuteDeleteAsync(ct);
 
         await PruneInboxAsync(ct);

@@ -76,6 +76,32 @@ public static class RestoreBootstrap
         logger.LogInformation("Restore complete");
     }
 
+    /// <summary>
+    /// Deletes the rollback copies a restore leaves behind once they are older than
+    /// <paramref name="maxAge"/>. They hold the old database in full, secrets included, outside
+    /// backup retention, so they cannot stay forever.
+    /// </summary>
+    public static void PurgeStalePreRestoreCopies(AppPaths paths, TimeSpan maxAge, ILogger logger)
+    {
+        var cutoff = DateTime.UtcNow - maxAge;
+        foreach (var suffix in Sidecars)
+        {
+            var copy = paths.DatabasePath + suffix + PreRestoreSuffix;
+            try
+            {
+                if (File.Exists(copy) && File.GetLastWriteTimeUtc(copy) < cutoff)
+                {
+                    File.Delete(copy);
+                    logger.LogInformation("Deleted old pre-restore database copy {Path}", copy);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "Could not delete {Path}", copy);
+            }
+        }
+    }
+
     /// <summary>Migration ids known to this build, read off the <see cref="MigrationAttribute"/> on
     /// every migration class in <c>Maki.Data</c>. This runs before the host is built (BackupService,
     /// which owns the real check via <c>db.Database.GetMigrations()</c>, is not available this
