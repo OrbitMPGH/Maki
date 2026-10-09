@@ -1293,15 +1293,15 @@ public class SemanticRecommender(
         return kept;
     }
 
-    /// <summary>Best score per row across a set of channels, with no evidence reading as 0.</summary>
+    /// <summary>Best score per row across a set of channels, with no evidence reading as 0. No channels gives an empty array, which every reader treats as 0.</summary>
     private static float[] BestPerRow(float[][] channels, int rows)
     {
-        var best = new float[rows];
         if (channels.Length == 0)
         {
-            return best;
+            return [];
         }
 
+        var best = new float[rows];
         for (var row = 0; row < rows; row++)
         {
             var top = float.NegativeInfinity;
