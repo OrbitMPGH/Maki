@@ -403,7 +403,7 @@ public class DownloadQueueService(
         e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
     /// <summary>
-    /// Queues a chapter for download. Returns as soon as the row exists — finding which mapping
+    /// Queues a chapter for download. Returns as soon as the row exists, because finding which mapping
     /// actually has this chapter means listing each source's catalog over the network, too slow to
     /// make "Download this chapter" or "Search missing" wait on. The item shows up immediately as
     /// <see cref="QueueStatus.Resolving"/>; <see cref="ResolveAndActivateAsync"/> fills in the real
@@ -412,7 +412,7 @@ public class DownloadQueueService(
     /// <param name="origin">
     /// What triggered this. Recorded on the row because every path funnels through here and is
     /// otherwise indistinguishable afterwards, and because the in-app inbox notifies on automatic
-    /// downloads only — somebody who clicked Download watched it happen.
+    /// downloads only: somebody who clicked Download watched it happen.
     /// </param>
     /// <param name="queuedByUserId">
     /// Who the download is for, when that is one person. For a request approval that is the

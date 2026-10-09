@@ -464,7 +464,7 @@ public class ChapterDownloadProcessor(
     {
         try
         {
-            // Downloads from this source are flowing again — reset its escalating rate-limit backoff.
+            // Downloads from this source are flowing again, so reset its escalating rate-limit backoff.
             queue.ClearRateLimitBackoff(mapping.SourceName);
 
             await BroadcastAsync(item, chapter, series, mapping.SourceName);
@@ -492,7 +492,7 @@ public class ChapterDownloadProcessor(
                     ChapterNumber: label));
 
                 // Only what nobody asked for. A chapter somebody clicked Download on needs no
-                // notification — they watched it happen and the queue already showed them.
+                // notification: they watched it happen and the queue already showed them.
                 if (item.IsAutomatic)
                 {
                     inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(

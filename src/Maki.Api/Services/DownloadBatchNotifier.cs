@@ -65,7 +65,7 @@ public sealed class DownloadBatchNotifier : IDisposable
 
     /// <summary>
     /// Opens a batch over the queue items just enqueued for a series, announcing the count. If a
-    /// batch of the same kind is already open for the series the items join it silently — a second
+    /// batch of the same kind is already open for the series the items join it silently, since a second
     /// "queued" ping for the same download run is noise, and the summary counts everything either way.
     /// </summary>
     /// <param name="origin">

@@ -421,7 +421,7 @@ public class QueueController(
 
         if (await RemoveOrCancelAsync(id, ct))
         {
-            // The item will never report an outcome now, so let go of it — otherwise it holds its
+            // The item will never report an outcome now, so let go of it, otherwise it holds its
             // series' download batch open and the batch's summary never fires.
             await batches.DiscardAsync(seriesId.Value, id);
         }
