@@ -48,7 +48,7 @@ public class SourceMappingController(
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
     {
-        var mappings = await db.SourceMappings.Where(m => m.SeriesId == seriesId).ToListAsync(ct);
+        var mappings = await db.SourceMappings.AsNoTracking().Where(m => m.SeriesId == seriesId).ToListAsync(ct);
         return Ok(mappings);
     }
 
