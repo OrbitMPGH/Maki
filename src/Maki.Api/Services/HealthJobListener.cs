@@ -10,6 +10,8 @@ using Maki.Core.Notifications;
 namespace Maki.Api.Services;
 public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobListener> logger) : JobListenerSupport
 {
+    private static readonly TimeSpan RestampAfter = TimeSpan.FromMinutes(5);
+
     public override string Name => "health-job-history";
     public override async Task JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
     {
@@ -24,7 +26,10 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
             if (row == null) { row = new HealthCheckRecord { Id = id, Category = "job" }; db.HealthChecks.Add(row); }
             var status = failed ? "error" : "healthy";
             var previous = row.Status;
-            var notify = HealthTransitions.Observe(row, status, false, DateTime.UtcNow);
+            var now = DateTime.UtcNow;
+            // The 15 second poll would otherwise commit a write per run to restamp the same row.
+            if (previous == status && now - row.CheckedAt < RestampAfter) return;
+            var notify = HealthTransitions.Observe(row, status, false, now);
             row.MessageKey = failed ? "health.check.jobFailed" : "health.check.jobSucceeded";
             row.ParamsJson = JsonSerializer.Serialize(new { job = context.JobDetail.Key.ToString() });
             row.Message = string.Empty;

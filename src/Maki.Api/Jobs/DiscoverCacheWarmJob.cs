@@ -80,7 +80,7 @@ public class DiscoverCacheWarmJob(
         }
         catch (LocalCatalogueUnavailableException)
         {
-            // No local MangaBaka database — nothing to warm.
+            // No local MangaBaka database - nothing to warm.
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {

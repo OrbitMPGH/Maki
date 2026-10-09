@@ -55,6 +55,33 @@ public class HealthJobListenerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_repeat_run_with_the_same_status_does_not_restamp_the_row_until_it_is_stale()
+    {
+        var listener = Listener();
+        await listener.JobWasExecuted(new TestJobContext(detail: _detail), null);
+
+        DateTime Stamp()
+        {
+            using var db = _fixture.NewContext();
+            return db.HealthChecks.Single(c => c.Id == $"job:{_detail.Key}").CheckedAt;
+        }
+
+        var first = Stamp();
+        await listener.JobWasExecuted(new TestJobContext(detail: _detail), null);
+        Assert.Equal(first, Stamp());
+
+        using (var db = _fixture.NewContext())
+        {
+            var row = db.HealthChecks.Single(c => c.Id == $"job:{_detail.Key}");
+            row.CheckedAt = DateTime.UtcNow.AddMinutes(-6);
+            db.SaveChanges();
+        }
+
+        await listener.JobWasExecuted(new TestJobContext(detail: _detail), null);
+        Assert.True(Stamp() > DateTime.UtcNow.AddMinutes(-1));
+    }
+
+    [Fact]
     public async Task A_clean_run_is_healthy()
     {
         await Listener().JobWasExecuted(new TestJobContext(detail: _detail), null);

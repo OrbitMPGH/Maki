@@ -2479,6 +2479,12 @@ msgstr "Baza danych w tej kopii zapasowej jest uszkodzona lub nie pochodzi z Mak
 msgid "error.system.backupTooNew"
 msgstr "Kopia zapasowa pochodzi z nowszej wersji (migracja „{migration}” nie jest znana tej kompilacji). Zaktualizuj Maki przed jej przywróceniem."
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is from a version too old to restore directly (migration "{migration}" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade.
+msgid "error.system.backupTooOld"
+msgstr ""
+
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
 #, fuzzy
@@ -4149,12 +4155,6 @@ msgstr "Harmonogram w tle działa"
 #, fuzzy
 msgid "health.check.schedulerPaused"
 msgstr "Harmonogram w tle jest wstrzymany"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# oczekująca migracja bazy danych} few {# oczekujące migracje bazy danych} many {# oczekujących migracji bazy danych} other {# oczekującej migracji bazy danych}}"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date

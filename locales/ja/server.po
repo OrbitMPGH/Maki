@@ -2479,6 +2479,12 @@ msgstr "バックアップ内のデータベースが破損しているか、Mak
 msgid "error.system.backupTooNew"
 msgstr "このバックアップはより新しいバージョンで作成されています（マイグレーション「{migration}」はこのビルドでは未対応です）。復元する前に Maki を更新してください。"
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is from a version too old to restore directly (migration "{migration}" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade.
+msgid "error.system.backupTooOld"
+msgstr ""
+
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
 #, fuzzy
@@ -4149,12 +4155,6 @@ msgstr "バックグラウンドスケジューラーは実行中です"
 #, fuzzy
 msgid "health.check.schedulerPaused"
 msgstr "バックグラウンドスケジューラーは一時停止中です"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, other {#件のデータベースマイグレーションが保留中}}"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date

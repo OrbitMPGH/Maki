@@ -18,6 +18,9 @@ public class PublicAddressGuardTests
     [InlineData("169.254.169.254")]
     [InlineData("100.64.0.1")]
     [InlineData("100.127.255.255")]
+    [InlineData("192.0.0.8")]
+    [InlineData("198.18.0.1")]
+    [InlineData("198.19.255.254")]
     [InlineData("224.0.0.1")]
     [InlineData("239.255.255.250")]
     [InlineData("255.255.255.255")]
@@ -45,6 +48,8 @@ public class PublicAddressGuardTests
     [InlineData("8.8.8.8")]
     [InlineData("172.32.0.1")]
     [InlineData("100.128.0.1")]
+    [InlineData("192.0.1.1")]
+    [InlineData("198.20.0.1")]
     [InlineData("2606:4700::6810:84e5")]
     [InlineData("::ffff:8.8.8.8")]
     [InlineData("2002:0808:0808::1")] // 6to4 wrapping 8.8.8.8

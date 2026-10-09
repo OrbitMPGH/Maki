@@ -2479,6 +2479,12 @@ msgstr "O banco de dados deste backup está danificado ou não é um banco de da
 msgid "error.system.backupTooNew"
 msgstr "O backup é de uma versão mais recente (a migração \"{migration}\" é desconhecida nesta compilação). Atualize o Maki antes de restaurá-lo."
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is from a version too old to restore directly (migration "{migration}" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade.
+msgid "error.system.backupTooOld"
+msgstr ""
+
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
 #, fuzzy
@@ -4149,12 +4155,6 @@ msgstr "O agendador em segundo plano está em execução"
 #, fuzzy
 msgid "health.check.schedulerPaused"
 msgstr "O agendador em segundo plano está pausado"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# migração do banco de dados pendente} many {# migrações do banco de dados pendentes}other {# migrações do banco de dados pendentes}}"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date

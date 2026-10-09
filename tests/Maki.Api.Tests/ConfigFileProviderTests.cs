@@ -23,6 +23,21 @@ public class ConfigFileProviderTests : IDisposable
     }
 
     [Fact]
+    public void A_key_in_another_case_is_honoured_and_not_erased()
+    {
+        var paths = new AppPaths();
+        Directory.CreateDirectory(_configDir);
+        File.WriteAllText(paths.ConfigFile, "{ \"port\": 9123, \"loglevel\": \"Debug\" }");
+
+        var provider = new ConfigFileProvider(paths);
+
+        Assert.Equal(9123, provider.Config.Port);
+        Assert.Equal("Debug", provider.Config.LogLevel);
+        Assert.Contains("9123", File.ReadAllText(paths.ConfigFile));
+        Assert.False(File.Exists(paths.ConfigFile + ".tmp"));
+    }
+
+    [Fact]
     public void A_malformed_config_file_is_reported_by_name()
     {
         var paths = new AppPaths();

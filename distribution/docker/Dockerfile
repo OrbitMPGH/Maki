@@ -145,7 +145,9 @@ ENV MAKI_RUNTIME=docker
 VOLUME /config
 EXPOSE 8990
 
+# The port is configurable in config.json, so read it from there and fall back to the default.
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s \
-    CMD curl -f http://localhost:8990/initialize.json || exit 1
+    CMD p=$(grep -ioE '"port"[[:space:]]*:[[:space:]]*[0-9]+' /config/config.json 2>/dev/null | grep -oE '[0-9]+$'); \
+        curl -f "http://localhost:${p:-8990}/initialize.json" || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]

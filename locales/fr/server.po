@@ -2479,6 +2479,12 @@ msgstr "La base de données de cette sauvegarde est endommagée ou n'est pas une
 msgid "error.system.backupTooNew"
 msgstr "La sauvegarde provient d'une version plus récente (migration « {migration} » inconnue de cette version). Mettez Maki à jour avant de la restaurer."
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is from a version too old to restore directly (migration "{migration}" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade.
+msgid "error.system.backupTooOld"
+msgstr ""
+
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
 #, fuzzy
@@ -4149,12 +4155,6 @@ msgstr "Le planificateur en arrière-plan est en cours d'exécution"
 #, fuzzy
 msgid "health.check.schedulerPaused"
 msgstr "Le planificateur en arrière-plan est en pause"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# migration de base de données en attente} many {# migrations de base de données en attente} other {# migrations de base de données en attente}}"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date

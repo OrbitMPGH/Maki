@@ -400,11 +400,11 @@ public class MangaBakaDumpService(
     /// the slow endpoint.
     /// </para>
     /// </summary>
-    public async Task EnsureBrowseIndexesAsync(CancellationToken ct = default)
+    public async Task<bool> EnsureBrowseIndexesAsync(CancellationToken ct = default)
     {
         if (!File.Exists(options.DatabasePath))
         {
-            return;
+            return false;
         }
 
         await using var conn = new SqliteConnection($"Data Source={options.DatabasePath};Pooling=False");
@@ -420,7 +420,7 @@ public class MangaBakaDumpService(
         // complete set must leave the file untouched.
         if (expected.IsSubsetOf(existing))
         {
-            return;
+            return false;
         }
 
         logger.LogInformation(
@@ -430,6 +430,7 @@ public class MangaBakaDumpService(
         BuildBrowseIndexes(conn, logger, onlyMissing: true);
         logger.LogInformation(
             "MangaBaka browse indexes built in {Elapsed:F1}s", (DateTime.UtcNow - started).TotalSeconds);
+        return true;
     }
 
     /// <summary>Indexes every title variant of non-merged series into the FTS5 search table.</summary>
