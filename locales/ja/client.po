@@ -10158,6 +10158,10 @@ msgstr "手持ちのものを上回るものはありません"
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "ファイルにこれらの章の説明がないため、現在のリンクを信頼します。"
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Nothing in the queue"
@@ -10551,6 +10555,10 @@ msgstr "one-shot"
 #, fuzzy
 msgid "Ongoing"
 msgstr "連載中"
+
+#: src/pages/HealthPage.tsx
+msgid "Only {scanRootPath}, the root chosen on the Files tab"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

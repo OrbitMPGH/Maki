@@ -8333,6 +8333,10 @@ msgstr "Nothing in it beats what you have"
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "Nothing in the file explains these chapters, so the link you have today is trusted."
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr "Nothing in the history yet."
+
 #: src/pages/ActivityPage.tsx
 msgid "Nothing in the queue"
 msgstr "Nothing in the queue"
@@ -8662,6 +8666,10 @@ msgstr "One-shot"
 #: src/pages/stats/labels.ts
 msgid "Ongoing"
 msgstr "Ongoing"
+
+#: src/pages/HealthPage.tsx
+msgid "Only {scanRootPath}, the root chosen on the Files tab"
+msgstr "Only {scanRootPath}, the root chosen on the Files tab"
 
 #: src/components/NotificationsSection.tsx
 msgid "Only for tagged series"

@@ -10158,6 +10158,10 @@ msgstr "В нём нет ничего лучше того, что у вас ес
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "В файле нет данных об этих главах, поэтому текущая привязка считается верной."
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Nothing in the queue"
@@ -10551,6 +10555,10 @@ msgstr "Ваншот"
 #, fuzzy
 msgid "Ongoing"
 msgstr "Продолжается"
+
+#: src/pages/HealthPage.tsx
+msgid "Only {scanRootPath}, the root chosen on the Files tab"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

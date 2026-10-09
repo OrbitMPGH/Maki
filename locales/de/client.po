@@ -10158,6 +10158,10 @@ msgstr "Nichts darin ist besser als das, was du hast"
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "Die Datei enthält keine Informationen zu diesen Kapiteln, daher bleibt die aktuelle Zuordnung bestehen."
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Nothing in the queue"
@@ -10551,6 +10555,10 @@ msgstr "One-Shot"
 #, fuzzy
 msgid "Ongoing"
 msgstr "Laufend"
+
+#: src/pages/HealthPage.tsx
+msgid "Only {scanRootPath}, the root chosen on the Files tab"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

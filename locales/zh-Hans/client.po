@@ -10158,6 +10158,10 @@ msgstr "其中没有比你现有文件更好的"
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "文件中没有信息可以确定这些章节，因此保留当前关联。"
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Nothing in the queue"
@@ -10551,6 +10555,10 @@ msgstr "单话"
 #, fuzzy
 msgid "Ongoing"
 msgstr "连载中"
+
+#: src/pages/HealthPage.tsx
+msgid "Only {scanRootPath}, the root chosen on the Files tab"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

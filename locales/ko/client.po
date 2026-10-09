@@ -10158,6 +10158,10 @@ msgstr "현재 가진 것보다 나은 항목이 없습니다"
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "파일에서 이 챕터를 확인할 수 없어 현재 연결을 신뢰합니다."
 
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Nothing in the queue"
@@ -10551,6 +10555,10 @@ msgstr "One-shot"
 #, fuzzy
 msgid "Ongoing"
 msgstr "연재 중"
+
+#: src/pages/HealthPage.tsx
+msgid "Only {scanRootPath}, the root chosen on the Files tab"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
