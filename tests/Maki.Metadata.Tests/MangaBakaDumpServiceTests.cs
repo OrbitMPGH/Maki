@@ -104,6 +104,19 @@ public class MangaBakaDumpServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Refresh_names_an_empty_checksum_response()
+    {
+        var service = CreateService(new Dictionary<string, byte[]>
+        {
+            ["series.sqlite.zst.sha1"] = "   "u8.ToArray()
+        });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.RefreshAsync());
+
+        Assert.Contains("checksum response", ex.Message);
+    }
+
+    [Fact]
     public async Task Refresh_removes_the_old_files_journal_sidecars_before_swapping()
     {
         var installedPath = Path.Combine(_workDir, "mangabaka.db");

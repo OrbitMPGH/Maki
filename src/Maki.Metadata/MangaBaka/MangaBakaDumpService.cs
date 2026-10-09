@@ -83,7 +83,11 @@ public class MangaBakaDumpService(
 
         // Published as "<hex sha1>  <filename>" over the compressed file.
         var sha1Line = await client.GetStringAsync(dumpPath + ".sha1", ct);
-        var expectedSha1 = sha1Line.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+        var expectedSha1 = sha1Line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (string.IsNullOrEmpty(expectedSha1))
+        {
+            throw new InvalidOperationException($"MangaBaka dump checksum response from {dumpPath}.sha1 was empty");
+        }
 
         var installedSha1 = await settings.GetAsync(SettingKeys.MangaBakaDumpSha1, ct);
         if (string.Equals(expectedSha1, installedSha1, StringComparison.OrdinalIgnoreCase) &&
