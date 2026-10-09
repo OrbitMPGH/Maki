@@ -57,7 +57,7 @@ public class ReadFileCleanupService(
 
         var progress = await db.ChapterProgress.IgnoreQueryFilters().AsNoTracking()
             .Where(p => p.SeriesId == seriesId)
-            .Select(p => new { p.UserId, p.ChapterId, p.Completed, p.Watched, p.CompletedAt, p.UpdatedAt })
+            .Select(p => new { p.UserId, p.ChapterId, p.Completed, p.Watched, p.CompletedAt, p.UpdatedAt, p.PageIndex, p.PageCount })
             .ToListAsync(ct);
         var readers = progress.Select(p => p.UserId).Distinct().ToList();
         if (readers.Count == 0)
@@ -66,11 +66,19 @@ public class ReadFileCleanupService(
         }
 
         // A watched tick is "seen elsewhere", not read here, so it never makes a file due.
-        // A re-read keeps the first completion stamp but moves UpdatedAt, so the later of the two
-        // is when the chapter was last read.
+        // A re-read to the end keeps the first completion stamp but moves UpdatedAt, so for a row
+        // sitting at its end the later of the two is when the chapter was last read. Any other save
+        // on a completed row (a chapter merely opened, an OPDS prefetch) says nothing about that.
         var read = progress
             .Where(p => p.Completed && !p.Watched && p.CompletedAt != null)
-            .Select(p => new { p.UserId, p.ChapterId, LastRead = p.CompletedAt!.Value > p.UpdatedAt ? p.CompletedAt!.Value : p.UpdatedAt })
+            .Select(p => new
+            {
+                p.UserId,
+                p.ChapterId,
+                LastRead = p.PageCount > 0 && p.PageIndex >= p.PageCount - 1 && p.UpdatedAt > p.CompletedAt!.Value
+                    ? p.UpdatedAt
+                    : p.CompletedAt!.Value,
+            })
             .ToList();
         var finished = read.ToLookup(p => p.ChapterId);
 
