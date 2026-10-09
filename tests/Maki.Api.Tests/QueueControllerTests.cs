@@ -2,6 +2,9 @@ using Maki.Api.Controllers;
 using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Security;
+using Maki.Data;
+using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -32,16 +35,16 @@ public class QueueControllerTests : IDisposable
 
     // importer/events are only reached by the import-decision endpoints, which have their own
     // tests; everything here settles before either is touched.
-    private QueueController Controller() => new(
-        new TestLocalizer(), _db.NewContext(), _queue, _batches, null!, null!, null!,
+    private QueueController Controller(MakiDbContext? db = null) => new(
+        new TestLocalizer(), db ?? _db.NewContext(), _queue, _batches, null!, null!, null!,
         NullLogger<QueueController>.Instance);
 
-    private int SeedItem(QueueStatus status)
+    private int SeedItem(QueueStatus status, int? seriesId = null)
     {
         using var db = _db.NewContext();
         var item = new DownloadQueueItem
         {
-            SeriesId = _seriesId, Status = status, Protocol = AcquisitionProtocol.Torrent,
+            SeriesId = seriesId ?? _seriesId, Status = status, Protocol = AcquisitionProtocol.Torrent,
             Title = "release", QueuedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         };
         db.DownloadQueue.Add(item);
@@ -82,6 +85,31 @@ public class QueueControllerTests : IDisposable
 
         Assert.Equal(2, all.Total);
         Assert.Equal(0, none.Total);
+    }
+
+    [Fact]
+    public async Task List_by_series_hides_a_series_in_an_ungranted_root_folder()
+    {
+        var reader = _db.SeedUser("restricted", MakiPermission.None, allRootFolders: false);
+        var hiddenSeries = _db.SeedSeries("Hidden");
+        using (var db = _db.NewContext())
+        {
+            var grantedRoot = db.Series.Single(s => s.Id == _seriesId).RootFolderId;
+            db.UserRootFolders.Add(new UserRootFolder { UserId = reader, RootFolderId = grantedRoot });
+            db.SaveChanges();
+        }
+        SeedItem(QueueStatus.Queued, hiddenSeries);
+        var visibleItem = SeedItem(QueueStatus.Queued, _seriesId);
+
+        using var scoped = _db.NewContext(reader, allRootFolders: false);
+        var hidden = Assert.IsType<QueueHistoryDto>(Assert.IsType<OkObjectResult>(
+            await Controller(scoped).List(seriesId: hiddenSeries, ct: CancellationToken.None)).Value);
+        var visible = Assert.IsType<QueueHistoryDto>(Assert.IsType<OkObjectResult>(
+            await Controller(scoped).List(seriesId: _seriesId, ct: CancellationToken.None)).Value);
+
+        Assert.Equal(0, hidden.Total);
+        Assert.Empty(hidden.Items);
+        Assert.Equal(visibleItem, Assert.Single(visible.Items).Id);
     }
 
     [Fact]
