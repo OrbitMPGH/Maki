@@ -2934,7 +2934,7 @@ body::before {
   padding: 1px 7px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand);
+  color: var(--brand-fg);
   font-size: 11px;
   font-weight: var(--fw-semibold);
   white-space: nowrap;
@@ -4606,7 +4606,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   cursor: pointer;
 }
 .stats-series-link:hover {
-  color: var(--brand);
+  color: var(--brand-fg);
   text-decoration: underline;
 }
 
@@ -8046,7 +8046,7 @@ body.reader-open {
   height: 30px;
   border-radius: var(--mantine-radius-md);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand);
+  color: var(--brand-fg);
 }
 .layout-edit-badge {
   font-size: 11px;
@@ -8058,7 +8058,7 @@ body.reader-open {
   border: 1px solid var(--border);
 }
 .layout-edit-badge[data-tone='brand'] {
-  color: var(--brand);
+  color: var(--brand-fg);
   border-color: color-mix(in srgb, var(--brand) 40%, transparent);
 }
 .layout-edit-badge[data-tone='warn'] {
@@ -8100,7 +8100,7 @@ body.reader-open {
   cursor: pointer;
 }
 .layout-edit-add:hover {
-  color: var(--brand);
+  color: var(--brand-fg);
   border-color: var(--brand);
 }
 
