@@ -195,7 +195,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DATA | DATA-13 | low | done b03f93fd |
 | DATA | DATA-01 | low | skipped (already fixed by c2de0e39, 399a9cb1: MigrationErrorMarker expires after 7 days) |
 | DATA | DATA-08 | low | done bc365743, 79d4c05d |
-| DATA | DATA-12 | low | pending (owner decided 2026-10-09: cleanup and keeplast use max(CompletedAt, UpdatedAt), the first-completion stamp stays; lane audit/w4-reader) |
+| DATA | DATA-12 | low | done 108fb6ca, 73af4ce9 (owner decided 2026-10-09: cleanup and keeplast count a re-read to the end; the first-completion stamp stays) |
 | DATA | DATA-03 | low | done 2c4313e8 |
 | DATA | DATA-14 | low | done 77cb6d67, 33bdd262 (HealthScans only; the history, operations and file-version journals stay unpruned on purpose) |
 | DATA | DATA-06 | low | done b73fe53a, a55ccaf5 |
@@ -209,7 +209,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DBPERF | DBPERF-10 | low | done 6d71be0b |
 | DBPERF | DBPERF-12 | low | done 3c9ca0cf (already on audit-fixes) |
 | DBPERF | DBPERF-15 | low | done 253738de (title and id projection; normalised-key column left, disproportionate for a low) |
-| DBPERF | DBPERF-11 | low | pending (owner decided 2026-10-09: evaluate achievements off the request, unlock toast through the inbox hub; lane audit/w4-reader) |
+| DBPERF | DBPERF-11 | low | done 7feeea88, 3223afb1, ac63c214 (owner decided 2026-10-09: achievements evaluated off the request, unlock toast through the inbox hub; dead seen endpoint removed) |
 | DBPERF | DBPERF-16 | low | done b4857564 (tag links untracked; a lean list DTO without Overview needs a SeriesRow change, owner may revisit) |
 | DBPERF | DBPERF-13 | low | done 3b817c70, ba3ada8e |
 | DBPERF | DBPERF-01 | low | done 8dbe98ba |
@@ -334,7 +334,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-READER | FE-READER-24 | low | done d3762af8 |
 | FE-READER | FE-READER-20 | low | done 2a8da8e9 |
 | FE-READER | FE-READER-07 | low | done 1c28fad9, dd7ed05b |
-| FE-READER | FE-READER-10 | low | pending (owner decided 2026-10-09: skip the write on open until page, time or completion changes; lane audit/w4-reader) |
+| FE-READER | FE-READER-10 | low | done 638f7309, 3223afb1 (owner decided 2026-10-09: no write on open until page, time or completion changes) |
 | FE-READER | FE-READER-06 | low | done dd7ed05b (Next chapter completes only from the last page) |
 | FE-READER | FE-READER-09 | low | done d1b40371, dd7ed05b, 0d142894 |
 | FE-READER | FE-READER-34 | low | done d7e48f3c |
@@ -353,7 +353,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-READER | FE-READER-29 | nit | done d3762af8 |
 | FE-READER | FE-READER-28 | nit | done d852dae9 |
 | FE-READER | FE-READER-30 | nit | done 4efc724f |
-| FE-READER | FE-READER-33 | nit | pending (owner decided 2026-10-09: drop the unused manifest fields; lane audit/w4-reader) |
+| FE-READER | FE-READER-33 | nit | done 398ec8e2 (owner decided 2026-10-09: unused manifest fields dropped) |
 | FE-READER | FE-READER-35 | nit | done 40e82886 |
 | FE-READER | FE-READER-32 | nit | done 1c28fad9 |
 | FE-SETTINGS | FE-SETTINGS-23 | low | done f8cb0007, 70c6eabc, 371679e3 |
