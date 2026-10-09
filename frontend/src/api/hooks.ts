@@ -3517,11 +3517,11 @@ export function useAppVersion() {
   })
 }
 
-export function useScrobbleStatus() {
+export function useScrobbleStatus(refetchInterval = 5000) {
   return useQuery({
     queryKey: ['scrobble', 'status'],
     queryFn: () => api<ScrobbleStatus>('/scrobble/status'),
-    refetchInterval: 5000,
+    refetchInterval,
   })
 }
 
