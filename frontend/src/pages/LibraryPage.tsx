@@ -5,7 +5,6 @@ import {
   ActionIcon,
   Badge,
   Button,
-  Checkbox,
   Drawer,
   Group,
   Indicator,
@@ -96,6 +95,7 @@ import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
+import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } from '../components/ui/viewPrefs'
 import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
@@ -253,7 +253,7 @@ const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
   Refresh: msg`Refresh`,
   Metadata: msg`Metadata`,
   // ComicInfo is the file format's name and is deliberately absent: the fallback shows the key.
-  Delete: msg`Delete`,
+  Remove: msg`Remove`,
   'Set monitoring': msg`Set monitoring`,
   'Quality profile': msg`Quality profile`,
   Move: msg`Move`,
@@ -1011,7 +1011,7 @@ export default function LibraryPage() {
                   setMoveFiles(true)
                   setMoveModalOpen(true)
                 })}
-                {can('DeleteSeries') && bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => {
+                {can('DeleteSeries') && bulkBtn('Remove', <Trans>Remove</Trans>, <IconTrash size={15} />, () => {
                   setDeleteFiles(false)
                   setDeleteModalOpen(true)
                 }, 'red')}
@@ -1540,38 +1540,21 @@ export default function LibraryPage() {
         </Group>
       </Modal>
 
-      <Modal
+      <RemoveSeriesDialog
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        title={t`Delete ${selectedCount} series?`}
+        title={plural(selectedCount, { one: 'Remove # series?', other: 'Remove # series?' })}
+        deleteFiles={deleteFiles}
+        onDeleteFilesChange={setDeleteFiles}
+        onConfirm={() => {
+          setDeleteModalOpen(false)
+          void runBulk('Remove', (id) =>
+            api(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
+          ).then(exitSelectMode)
+        }}
       >
-        <Text size="sm" mb="md">
-          <Trans>The selected series will be removed from Maki and stop being monitored.</Trans>
-        </Text>
-        <Checkbox
-          label={t`Also delete the folders and files on disk`}
-          checked={deleteFiles}
-          onChange={(e) => setDeleteFiles(e.currentTarget.checked)}
-          mb="lg"
-        />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={() => setDeleteModalOpen(false)}>
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button
-            color="var(--danger-fill)"
-            leftSection={<IconTrash size={16} />}
-            onClick={() => {
-              setDeleteModalOpen(false)
-              void runBulk('Delete', (id) =>
-                api(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
-              ).then(exitSelectMode)
-            }}
-          >
-            <Trans>Delete</Trans>
-          </Button>
-        </Group>
-      </Modal>
+        <Trans>The selected series will be removed from Maki and stop being monitored.</Trans>
+      </RemoveSeriesDialog>
 
       <Modal
         opened={monitorModalOpen}

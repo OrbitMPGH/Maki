@@ -13,7 +13,6 @@ import {
   Badge,
   Box,
   Button,
-  Checkbox,
   Divider,
   Group,
   Loader,
@@ -142,6 +141,7 @@ import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
+import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
@@ -3143,49 +3143,27 @@ function SeriesDetailBody() {
         </Tabs.Panel>
 
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
-        <Modal
-            opened={deleteSeriesModalOpen}
-            onClose={() => setDeleteSeriesModalOpen(false)}
-            title={t`Remove series?`}
-            centered
+        <RemoveSeriesDialog
+          opened={deleteSeriesModalOpen}
+          onClose={() => setDeleteSeriesModalOpen(false)}
+          title={<Trans>Remove series?</Trans>}
+          deleteFiles={deleteSeriesFiles}
+          onDeleteFilesChange={setDeleteSeriesFiles}
+          loading={deleteSeries.isPending}
+          onConfirm={() =>
+            deleteSeries.mutate(
+              { id: series.id, deleteFiles: deleteSeriesFiles },
+              {
+                onSuccess: () => {
+                  notify.ok(staticT`Series removed`)
+                  navigate('/library')
+                },
+              },
+            )
+          }
         >
-          <Stack gap="md">
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
-            </Text>
-            <Checkbox
-                label={t`Also delete files on disk`}
-                checked={deleteSeriesFiles}
-                onChange={(e) => setDeleteSeriesFiles(e.currentTarget.checked)}
-            />
-            <Text size="sm" c="var(--danger)">
-              <Trans>This action cannot be undone.</Trans>
-            </Text>
-            <Group justify="flex-end">
-              <Button variant="default" onClick={() => setDeleteSeriesModalOpen(false)}>
-                <Trans>Cancel</Trans>
-              </Button>
-              <Button
-                  color="var(--danger-fill)"
-                  leftSection={<IconTrash size={16} />}
-                  loading={deleteSeries.isPending}
-                  onClick={() =>
-                      deleteSeries.mutate(
-                          { id: series.id, deleteFiles: deleteSeriesFiles },
-                          {
-                            onSuccess: () => {
-                              notify.ok(staticT`Series removed`)
-                              navigate('/library')
-                            },
-                          },
-                      )
-                  }
-              >
-                <Trans>Remove</Trans>
-              </Button>
-            </Group>
-          </Stack>
-        </Modal>
+          <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
+        </RemoveSeriesDialog>
 
         <Modal
             opened={requestModalOpen}
