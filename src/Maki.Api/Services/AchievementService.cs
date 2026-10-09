@@ -122,7 +122,7 @@ public class AchievementService(
     /// <summary>
     /// One inbox row per achievement, at the highest tier earned in this pass — not one per tier.
     /// Crossing several rungs at once is normal (the evaluator awards every rung up to the one
-    /// earned) and the reader's toast already collapses them the same way; three rows saying
+    /// earned), and the toast is built from the row, so one reads better than three rows saying
     /// Bronze, Silver, Gold of the same badge is a worse record of the same fact.
     /// </summary>
     private void NotifyUnlocks(int userId, List<UserAchievement> unlocked)
@@ -227,38 +227,4 @@ public class AchievementService(
     /// </summary>
     public async Task<bool> EnabledForAsync(int userId, CancellationToken ct = default) =>
         ProgressSpec.Parse(await userSettings.GetAsync(userId, SettingKeys.UserGamification, ct)).Enabled;
-
-    /// <summary>
-    /// Marks unlocks as shown, so the reader's toast fires once.
-    /// <para>
-    /// Acknowledging any row marks <em>every</em> unseen tier of the same achievement, not just the
-    /// id passed in. Crossing several tiers at once is normal — the evaluator awards every rung up
-    /// to the one earned — and the UI deliberately collapses those into a single "Archivist · Gold"
-    /// toast. Marking only the acknowledged row would leave the lower tiers unseen, and the next
-    /// page load would announce the same achievement again at Silver, then at Bronze.
-    /// </para>
-    /// </summary>
-    public async Task MarkSeenAsync(int userId, IReadOnlyCollection<int> ids, CancellationToken ct = default)
-    {
-        if (ids.Count == 0)
-        {
-            return;
-        }
-
-        var keys = await db.UserAchievements.IgnoreQueryFilters()
-            .Where(a => a.UserId == userId && ids.Contains(a.Id))
-            .Select(a => a.Key)
-            .Distinct()
-            .ToListAsync(ct);
-
-        if (keys.Count == 0)
-        {
-            return;
-        }
-
-        var now = clock.GetUtcNow().UtcDateTime;
-        await db.UserAchievements.IgnoreQueryFilters()
-            .Where(a => a.UserId == userId && a.SeenAt == null && keys.Contains(a.Key))
-            .ExecuteUpdateAsync(s => s.SetProperty(a => a.SeenAt, now), ct);
-    }
 }

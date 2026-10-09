@@ -81,13 +81,18 @@ public class AchievementEvaluationQueue(IServiceScopeFactory scopes, ILogger<Ach
 
         try
         {
-            await using var scope = scopes.CreateAsyncScope();
-            scope.ServiceProvider.GetRequiredService<UserMetricsService>().Invalidate(userId);
-            await scope.ServiceProvider.GetRequiredService<AchievementService>().EvaluateAsync(userId, ct);
+            await EvaluateUserAsync(userId, ct);
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (Exception e) when (!ct.IsCancellationRequested)
         {
             logger.LogWarning(e, "Achievement evaluation failed for user {UserId}", userId);
         }
+    }
+
+    protected virtual async Task EvaluateUserAsync(int userId, CancellationToken ct)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<UserMetricsService>().Invalidate(userId);
+        await scope.ServiceProvider.GetRequiredService<AchievementService>().EvaluateAsync(userId, ct);
     }
 }

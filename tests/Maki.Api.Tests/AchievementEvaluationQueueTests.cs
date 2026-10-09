@@ -120,6 +120,7 @@ public sealed class AchievementEvaluationQueueTests : IDisposable
     [Fact]
     public async Task A_cached_snapshot_does_not_hide_the_chapter_that_was_just_finished()
     {
+        _db.SetUserConfig(UserId, (SettingKeys.UserTimeZone, "UTC"));
         var queue = Queue();
         await using (var scope = _services.CreateAsyncScope())
         {
@@ -131,5 +132,33 @@ public sealed class AchievementEvaluationQueueTests : IDisposable
         await queue.FlushAsync(default);
 
         Assert.Contains(_inbox.Raised, r => r.Type == InboxEventType.AchievementUnlocked);
+    }
+
+    private sealed class ReenqueueingQueue(IServiceScopeFactory scopes)
+        : AchievementEvaluationQueue(scopes, NullLogger<AchievementEvaluationQueue>.Instance)
+    {
+        public int Passes { get; private set; }
+
+        protected override Task EvaluateUserAsync(int userId, CancellationToken ct)
+        {
+            if (++Passes == 1)
+            {
+                Enqueue(userId);
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task A_completion_that_lands_during_an_evaluation_queues_a_second_pass()
+    {
+        var queue = new ReenqueueingQueue(_services.GetRequiredService<IServiceScopeFactory>());
+
+        queue.Enqueue(UserId);
+        await queue.FlushAsync(default);
+
+        Assert.Equal(2, queue.Passes);
+        Assert.Equal(0, queue.Pending);
     }
 }
