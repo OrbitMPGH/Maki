@@ -769,11 +769,6 @@ msgstr "{kind, select, both {Story · Zeichnung} story {Story} art {Zeichnung} o
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {Um {pct}% mehr als im vorherigen Zeitraum.} down {Um {pct}% weniger als im vorherigen Zeitraum.} flat {Etwa gleich wie im vorherigen Zeitraum.} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{kind} von {relatedTo}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -5847,6 +5842,7 @@ msgstr "Epoche"
 msgid "Erotica"
 msgstr "Erotik"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -12013,6 +12009,10 @@ msgstr "Verwandte Serien"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "verwandte Serien, mehr wie dieses, ähnlich, Empfehlungen, Rails, Fortsetzungen, Spin-offs"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -16606,6 +16606,7 @@ msgstr "Gewünschte Kapitel können durch die bestehende Automatisierung erneut 
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Gewünscht für {spanLabel}: {wantedCount} von {total} Kapiteln"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

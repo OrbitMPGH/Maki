@@ -34,6 +34,7 @@ function cached<T>(build: (locale: string) => T): () => T {
 const decimal = cached((l) => new Intl.NumberFormat(l, { maximumFractionDigits: 1 }))
 const integer = cached((l) => new Intl.NumberFormat(l))
 const shortMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'short' }))
+const monthYear = cached((l) => new Intl.DateTimeFormat(l, { month: 'short', year: '2-digit' }))
 const longMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'long' }))
 const dateOnly = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium' }))
 const calendarDate = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium', timeZone: 'UTC' }))
@@ -44,6 +45,7 @@ const longWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'long' }
 const hourOnly = cached((l) => new Intl.DateTimeFormat(l, { hour: 'numeric', minute: '2-digit' }))
 const percents = cached(() => new Map<number, Intl.NumberFormat>())
 const signedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
+const fixedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
 
 /** "1 234" / "1,234", whichever the language groups with. */
 export function formatNumber(value: number): string {
@@ -158,11 +160,23 @@ export function formatSignedDecimal(value: number, digits = 1): string {
   return format.format(value)
 }
 
-/** "2026-03" as the stats buckets carry it, rendered "Mar 26". */
+/** A number with exactly `digits` decimals in the language's own separator: "7.0", "7,0". */
+export function formatFixedDecimal(value: number, digits = 1): string {
+  const formats = fixedDecimals()
+  let format = formats.get(digits)
+  if (!format) {
+    format = new Intl.NumberFormat(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits })
+    formats.set(digits, format)
+  }
+  return format.format(value)
+}
+
+/** "2026-03" as the stats buckets carry it, rendered "Mar 26" or in the language's own order. */
 export function formatMonthBucket(bucket: string): string {
-  const [year, month] = bucket.split('-')
-  const name = monthName(Number(month), 'short')
-  return name ? `${name} ${year.slice(2)}` : bucket
+  const [year, month] = bucket.split('-').map(Number)
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return bucket
+  // Local time for the same reason as monthName.
+  return monthYear().format(new Date(year, month - 1, 1))
 }
 
 /**
@@ -181,8 +195,8 @@ export function formatReadingTime(seconds: number): string {
 
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.round((seconds % 3600) / 60)
-  if (hours === 0) return m(minutes)
-  // 59m30s rounds to 60 minutes; carry it rather than printing "3h 60m".
+  // 59m30s rounds to 60 minutes; carry it rather than printing "60m" or "3h 60m".
   if (minutes === 60) return h(hours + 1)
+  if (hours === 0) return m(minutes)
   return minutes === 0 ? h(hours) : `${h(hours)} ${m(minutes)}`
 }

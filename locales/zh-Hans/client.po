@@ -769,11 +769,6 @@ msgstr "{kind, select, both {剧情 · 绘画} story {剧情} art {绘画} other
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {比上一时段增加 {pct}%。} down {比上一时段减少 {pct}%。} flat {与上一时段大致相同。} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{kind}：{relatedTo}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -5847,6 +5842,7 @@ msgstr "年代"
 msgid "Erotica"
 msgstr "情色"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -12013,6 +12009,10 @@ msgstr "相关系列"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "相关系列，更多类似内容，相似，推荐，横栏，续作，衍生作"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -16606,6 +16606,7 @@ msgstr "现有自动化任务可能会再次下载想要的章节。"
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "{spanLabel} 想要：{total} 个章节中的 {wantedCount} 个"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

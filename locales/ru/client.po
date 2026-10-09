@@ -769,11 +769,6 @@ msgstr "{kind, select, both {Сюжет · Рисунок} story {Сюжет} ar
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {На {pct}% больше, чем за прошлый период.} down {На {pct}% меньше, чем за прошлый период.} flat {Примерно столько же, сколько за прошлый период.} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{kind} к {relatedTo}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -5847,6 +5842,7 @@ msgstr "Эпоха"
 msgid "Erotica"
 msgstr "Эротика"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -12013,6 +12009,10 @@ msgstr "Связанные серии"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "связанные серии, похожее, похожие, рекомендации, ленты, сиквелы, спин-оффы"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -16606,6 +16606,7 @@ msgstr "Запрошенные главы могут быть загружены
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Запрошено для {spanLabel}: {wantedCount} из {total} глав"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

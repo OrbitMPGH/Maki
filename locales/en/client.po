@@ -635,10 +635,6 @@ msgstr "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-msgid "{kind} to {relatedTo}"
-msgstr "{kind} to {relatedTo}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 msgid "{label} - page {pageNumber}"
@@ -4794,6 +4790,7 @@ msgstr "Era"
 msgid "Erotica"
 msgstr "Erotica"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -9853,6 +9850,10 @@ msgstr "Related series"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr "Related to {relatedTo}"
+
 #: src/pages/DiscoverPage.tsx
 msgid "Related to your library"
 msgstr "Related to your library"
@@ -13624,6 +13625,7 @@ msgstr "Wanted chapters may be downloaded again by existing automation."
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 msgid "Warning"
 msgstr "Warning"

@@ -187,14 +187,14 @@ function HealthButton() {
         </Group>
         <Stack gap="xs">
           {health.map((issue, i) => (
-            <Group key={i} gap="xs" wrap="nowrap" align="flex-start">
+            <Group key={`${issue.type}-${i}`} gap="xs" wrap="nowrap" align="flex-start">
               <Badge
                 size="xs"
                 color={issue.severity === 'error' ? 'var(--danger)' : 'var(--warn)'}
                 variant="light"
                 mt={2}
               >
-                {issue.severity}
+                {issue.severity === 'error' ? <Trans>Error</Trans> : <Trans>Warning</Trans>}
               </Badge>
               <Text size="xs" c="var(--ink-3)">
                 {issue.message}

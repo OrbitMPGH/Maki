@@ -769,11 +769,6 @@ msgstr "{kind, select, both {ストーリー · 作画} story {ストーリー} 
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {前の期間より{pct}%増加。} down {前の期間より{pct}%減少。} flat {前の期間とほぼ同じ。} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{relatedTo}の{kind}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -5847,6 +5842,7 @@ msgstr "時代"
 msgid "Erotica"
 msgstr "エロティカ"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -12013,6 +12009,10 @@ msgstr "関連シリーズ"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "関連シリーズ、これに似た作品、類似、推薦、レール、続編、スピンオフ"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -16606,6 +16606,7 @@ msgstr "希望した章は既存の自動化によって再度ダウンロード
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "{spanLabel}の希望：{total}章中{wantedCount}章"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

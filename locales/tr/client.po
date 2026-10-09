@@ -769,11 +769,6 @@ msgstr "{kind, select, both {Hikâye · Çizim} story {Hikâye} art {Çizim} oth
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {Önceki döneme göre %{pct} artış.} down {Önceki döneme göre %{pct} düşüş.} flat {Önceki dönemle yaklaşık aynı.} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{relatedTo} için {kind}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -5847,6 +5842,7 @@ msgstr "Dönem"
 msgid "Erotica"
 msgstr "Erotika"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -12013,6 +12009,10 @@ msgstr "İlgili seriler"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "ilgili seriler, buna benzer, benzer, öneriler, raylar, devam serileri, türev seriler"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -16606,6 +16606,7 @@ msgstr "İstenen bölümler mevcut otomasyon tarafından yeniden indirilebilir."
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "{spanLabel} için isteniyor: {total} bölümden {wantedCount} tanesi"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

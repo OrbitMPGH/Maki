@@ -13,6 +13,7 @@ import {
 } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
 import type { RecommendationItem } from '../../api/hooks'
+import { formatFixedDecimal } from '../../format'
 import { Rail } from './Rail'
 import { t as now } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -45,7 +46,8 @@ export function relationPhrase(kind: string, relatedTo: string): string {
     case 'Main story':
       return now`Main story of ${relatedTo}`
     default:
-      return now`${kind} to ${relatedTo}`
+      // An unknown wire value is not interpolated: it is English and would stay English.
+      return now`Related to ${relatedTo}`
   }
 }
 
@@ -78,7 +80,7 @@ function RatingChip({ rating }: { rating: number }) {
   return (
     <span className="cover-badge discover-rating">
       <IconStarFilled size={12} style={{ color: 'var(--rating)' }} />
-      {(rating / 10).toFixed(1)}
+      {formatFixedDecimal(rating / 10)}
     </span>
   )
 }
