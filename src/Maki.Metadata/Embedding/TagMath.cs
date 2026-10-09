@@ -19,7 +19,7 @@ public static class TagMath
     public const byte Defining = 3;
     public const byte Core = 4;
 
-    private const int EntrySize = 5; // int32 id + byte class
+    internal const int EntrySize = 5; // int32 id + byte class
 
     public static byte ClassOf(string? weight) => weight switch
     {

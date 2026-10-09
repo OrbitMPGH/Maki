@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Metadata.Catalogue;
@@ -554,17 +555,19 @@ public class SemanticSearcher(
     /// </summary>
     private static double ScoreAgainstQueryTags(byte[]? candidateBlob, TagMath.Profile profile, Func<int, double> idf)
     {
-        if (candidateBlob is null || profile.IsEmpty)
+        if (candidateBlob is null || candidateBlob.Length % TagMath.EntrySize != 0 || profile.IsEmpty)
         {
             return 0;
         }
 
+        // Walked in place: this runs once per catalogue row per query, and Unpack builds a list each call.
         var dot = 0.0;
-        foreach (var (id, cls) in TagMath.Unpack(candidateBlob))
+        for (var i = 0; i < candidateBlob.Length; i += TagMath.EntrySize)
         {
+            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob.AsSpan(i));
             if (profile.IdfWeight.TryGetValue(id, out var wanted))
             {
-                dot += wanted * TagMath.ClassWeight(cls) * idf(id);
+                dot += wanted * TagMath.ClassWeight(candidateBlob[i + 4]) * idf(id);
             }
         }
 
