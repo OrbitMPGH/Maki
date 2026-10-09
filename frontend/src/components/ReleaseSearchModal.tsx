@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { Alert, Badge, Button, Center, Group, Loader, Modal, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
@@ -94,7 +95,7 @@ export function ReleaseSearchModal({
       )}
       {error && (
         <Alert color="var(--danger)" variant="light">
-          {String(error)}
+          {errorText(error)}
         </Alert>
       )}
       {releases && releases.length === 0 && !isFetching && (

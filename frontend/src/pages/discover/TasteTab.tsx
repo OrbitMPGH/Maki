@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -563,7 +564,7 @@ export function TasteTab() {
   if (error) {
     return (
       <Alert color="var(--danger)" icon={<IconAlertCircle size={16} />} title={t`Could not read your profile`}>
-        {String(error)}
+        {errorText(error)}
       </Alert>
     )
   }

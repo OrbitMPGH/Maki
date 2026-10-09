@@ -1,4 +1,5 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
+import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -767,7 +768,7 @@ function RecommendedTab() {
 
       {error && (
         <Alert color="var(--warn)" variant="light">
-          {String(error)}
+          {errorText(error)}
         </Alert>
       )}
       {isFetching && !data && (
@@ -1041,7 +1042,7 @@ function FeedExpandModal({
 
       {error && (
         <Alert color="var(--warn)" variant="light">
-          {String(error)}
+          {errorText(error)}
         </Alert>
       )}
 
@@ -1277,7 +1278,7 @@ function DiscoverBrowseTab({
       title={t`Catalogue unavailable`}
     >
       <Stack gap="sm" align="flex-start">
-        <Text size="sm">{String(error)}</Text>
+        <Text size="sm">{errorText(error)}</Text>
         <Button
           size="xs"
           variant="default"

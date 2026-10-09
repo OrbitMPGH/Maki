@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useRef, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
@@ -336,17 +337,17 @@ export function DiscoverLibraryRail({
 
       {addSeries.isError && (
         <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(addSeries.error)}
+          {errorText(addSeries.error)}
         </Alert>
       )}
       {applyAnimeResume.isError && (
         <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(applyAnimeResume.error)}
+          {errorText(applyAnimeResume.error)}
         </Alert>
       )}
       {createRequest.isError && (
         <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(createRequest.error)}
+          {errorText(createRequest.error)}
         </Alert>
       )}
     </Paper>

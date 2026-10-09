@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
 import {
@@ -633,7 +634,7 @@ export default function LibraryPage() {
         await fn(id)
         ok++
       } catch (err) {
-        errors.push(String(err))
+        errors.push(errorText(err))
       }
       const done = ok + errors.length
       notifications.update({

@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useEffect, useState } from 'react'
 import {
   Alert,
@@ -256,7 +257,7 @@ export default function ScrobblePage() {
 
       {error && (
         <Alert color="var(--danger)" variant="light" mb="md">
-          {String(error)}
+          {errorText(error)}
         </Alert>
       )}
 
