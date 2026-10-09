@@ -122,7 +122,7 @@ public class ReaderCohortService(
     /// Applied per candidate before it takes a slot, so filters narrow the ranking rather than
     /// deleting rows from an already-cut page. Null accepts everything.
     /// </param>
-    public async Task<IReadOnlyList<long>> GetCandidatesAsync(
+    public virtual async Task<IReadOnlyList<long>> GetCandidatesAsync(
         ICurrentUser scope, IReadOnlySet<long> owned, Func<long, bool>? accept, int limit,
         CancellationToken ct = default)
     {
