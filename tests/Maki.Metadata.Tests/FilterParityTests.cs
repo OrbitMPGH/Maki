@@ -33,8 +33,8 @@ public class FilterParityTests : IDisposable
                 status TEXT, year INTEGER, total_chapters TEXT, genres TEXT, authors TEXT, artists TEXT,
                 popularity_global_current INTEGER);
             INSERT INTO series VALUES (1, 'active', 80, 'safe', 'manga', 'completed', 1999, '12', '["Action"]', NULL, NULL, 3);
-            INSERT INTO series VALUES (2, 'active', 70, 'safe', 'manga', 'completed', 2015, '30', '["Romance","Ecchi"]', NULL, NULL, 4);
-            INSERT INTO series VALUES (3, 'active', 60, 'safe', 'manga', 'completed', 2001, '5', NULL, NULL, NULL, 5);
+            INSERT INTO series VALUES (2, 'active', 70, 'safe', 'manhwa', 'releasing', 2015, '30', '["Romance","Ecchi"]', NULL, NULL, 4);
+            INSERT INTO series VALUES (3, 'active', 60, 'safe', 'manga', 'completed', NULL, NULL, NULL, NULL, NULL, 5);
             INSERT INTO series VALUES (4, 'active', 65, NULL, 'manga', 'completed', 2002, '8', '["Action"]', NULL, NULL, 6);
             INSERT INTO series VALUES (5, 'active', 90, 'pornographic', 'manga', 'completed', 2003, '9', '["Action"]', NULL, NULL, 7);
             """;
@@ -88,6 +88,37 @@ public class FilterParityTests : IDisposable
 
         Assert.Equal([1L, 2L, 3L], index);
         Assert.Equal(index, sql);
+    }
+
+    // Rows by id: 1 manga 1999 12ch, 2 manhwa releasing 2015 30ch, 3 no year or chapter count,
+    // 4 manga 2002 8ch, 5 manga 2003 9ch. A NULL column fails a bound on both paths.
+    [Fact]
+    public async Task Year_bounds_agree_including_a_null_year()
+    {
+        await AssertParity(new RecommendationFilters(YearMin: 2000), [2, 4, 5]);
+        await AssertParity(new RecommendationFilters(YearMax: 2002), [1, 4]);
+    }
+
+    [Fact]
+    public async Task Type_and_status_agree()
+    {
+        await AssertParity(new RecommendationFilters(Types: ["manhwa"]), [2]);
+        await AssertParity(new RecommendationFilters(Statuses: ["releasing"]), [2]);
+    }
+
+    [Fact]
+    public async Task Chapter_bounds_agree_including_a_null_count()
+    {
+        await AssertParity(new RecommendationFilters(MinChapters: 10), [1, 2]);
+        await AssertParity(new RecommendationFilters(MaxChapters: 10), [4, 5]);
+    }
+
+    private async Task AssertParity(RecommendationFilters filters, long[] expected)
+    {
+        var (sql, index) = await Both(filters);
+
+        Assert.Equal(expected, index);
+        Assert.Equal(expected, sql);
     }
 
     private async Task<(List<long> Sql, List<long> Index)> Both(RecommendationFilters filters)

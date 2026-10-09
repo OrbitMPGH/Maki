@@ -131,7 +131,7 @@ everything, defeating the point.
    skips only this gate.
 4. **Download** to `{ConfigDir}/cache/embeddings.db.partial`, decompress, then verify: sha256
    against the manifest, `PRAGMA quick_check`, the file's own `meta` `model_version` (when it has
-   one) against this build's model, vector width, and a row count within 5% of the stated count.
+   one) against this build's model, vector width, and a row count of at least 95% of the stated count (a lower bound only).
    Only one install runs at a time; a second answers `install.alreadyRunning` rather than sharing
    the staging file.
 5. **Quiesce**: refuse the install while `EmbeddingIndexStatus.Running`, before and again after the

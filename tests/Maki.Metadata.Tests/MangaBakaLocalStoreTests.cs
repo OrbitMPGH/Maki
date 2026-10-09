@@ -57,6 +57,21 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Related_keeps_unrated_series_only_when_the_ceiling_allows_every_rating()
+    {
+        _db.AddSeries(1, "Seed", sequels: "[2,3,4]")
+            .AddSeries(2, "Rated", rating: 70, contentRating: "safe")
+            .AddSeries(3, "Unrated", rating: 70, contentRating: null)
+            .AddSeries(4, "Explicit", rating: 70, contentRating: "pornographic");
+
+        var everything = await Store.GetRelatedAsync([1], [], [.. ContentRating.All]);
+        var capped = await Store.GetRelatedAsync([1], [], ContentRating.Allowed(ContentRating.Erotica));
+
+        Assert.Equal(["2", "3", "4"], everything.Select(r => r.ProviderId).Order());
+        Assert.Equal(["2"], capped.Select(r => r.ProviderId));
+    }
+
+    [Fact]
     public async Task Similar_does_not_treat_a_placeholder_credit_as_a_shared_author()
     {
         _db.AddSeries(1, "Seed", genresJson: """["Action"]""", authorsJson: """["Anthology"]""")
