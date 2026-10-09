@@ -57,6 +57,21 @@ public class RecommendationService(
     ILogger<RecommendationService> logger)
 {
     private const int PageSize = 40;
+
+    /// <summary>Matches the custom rails' seed cap, so a bound request cannot build a megabyte cache key.</summary>
+    internal const int MaxSeeds = 100;
+
+    /// <summary>The page ceiling; the pool is a few hundred rows, so no real pager gets near it.</summary>
+    internal const int MaxPage = 1000;
+
+    /// <summary>Clamps the dials, seed count and page of a request bound from a POST body.</summary>
+    internal static RecommendationRequest Normalize(RecommendationRequest request) => request with
+    {
+        SeedIds = request.SeedIds?.Distinct().Take(MaxSeeds).ToList(),
+        Obscurity = Math.Clamp(double.IsFinite(request.Obscurity) ? request.Obscurity : 0, -1, 1),
+        Diversity = Math.Clamp(double.IsFinite(request.Diversity) ? request.Diversity : 0, 0, 1),
+        Page = Math.Clamp(request.Page, 0, MaxPage),
+    };
     private const int PoolSize = 200;
 
     /// <summary>
@@ -140,6 +155,7 @@ public class RecommendationService(
         RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default,
         PoolOrigin origin = PoolOrigin.Interactive)
     {
+        request = Normalize(request);
         if (!await store.IsAvailableAsync(ct))
         {
             throw new LocalCatalogueUnavailableException("error.recommendation.needsLocalDb");
