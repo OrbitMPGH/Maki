@@ -224,6 +224,11 @@ public partial class MangaLivreSource(IHttpClientFactory httpClientFactory) : IS
             .Select(src => new PageRequest(src!))
             .ToList();
 
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for Manga Livre chapter {chapter.SourceChapterId}");
+        }
+
         return new ChapterPages(pages);
     }
 

@@ -103,6 +103,11 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
             .Select(src => new PageRequest(src!, headers))
             .ToList();
 
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for TCB Scans chapter {chapter.SourceChapterId}");
+        }
+
         return new ChapterPages(pages);
     }
 

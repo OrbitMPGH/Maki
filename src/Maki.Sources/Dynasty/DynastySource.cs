@@ -172,16 +172,19 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
         var root = await GetJsonAsync($"chapters/{chapter.SourceChapterId}.json", ct);
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
 
-        var pages = new List<PageRequest>();
-        if (root.TryGetProperty("pages", out var pageArray) && pageArray.ValueKind == JsonValueKind.Array)
+        if (!root.TryGetProperty("pages", out var pageArray) || pageArray.ValueKind != JsonValueKind.Array)
         {
-            foreach (var page in pageArray.EnumerateArray())
+            throw new InvalidOperationException(
+                $"No page list in the response for chapters/{chapter.SourceChapterId}.json");
+        }
+
+        var pages = new List<PageRequest>();
+        foreach (var page in pageArray.EnumerateArray())
+        {
+            var url = String(page, "url");
+            if (!string.IsNullOrEmpty(url))
             {
-                var url = String(page, "url");
-                if (!string.IsNullOrEmpty(url))
-                {
-                    pages.Add(new PageRequest($"{BaseUrl}{url}", headers));
-                }
+                pages.Add(new PageRequest($"{BaseUrl}{url}", headers));
             }
         }
 

@@ -163,6 +163,12 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             .Select(url => url!)
             .ToList();
 
+        if (urls.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"No page images found for TopManhua chapter {chapter.SourceChapterId}");
+        }
+
         // Plain requests to the image CDN (img-r2.2xstorage.com) get a Cloudflare bot-management
         // block even with matching headers — it tracks the client's TLS/HTTP2 fingerprint, which a
         // .NET HttpClient can't spoof. Fetch through a real Chromium loading the chapter page

@@ -106,6 +106,11 @@ public class MangaPillSource(IHttpClientFactory httpClientFactory) : ISource
             .Select(src => new PageRequest(src!, headers))
             .ToList();
 
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for MangaPill chapter {chapter.SourceChapterId}");
+        }
+
         return new ChapterPages(pages);
     }
 }

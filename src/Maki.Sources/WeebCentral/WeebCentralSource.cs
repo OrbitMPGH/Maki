@@ -189,6 +189,11 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
             .Select(src => new PageRequest(src!, headers))
             .ToList();
 
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for WeebCentral chapter {chapter.SourceChapterId}");
+        }
+
         return new ChapterPages(pages);
     }
 }
