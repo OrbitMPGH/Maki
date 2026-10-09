@@ -325,7 +325,7 @@ public class TasteVectorInstaller(
         stats.CommandText = $"""
             SELECT COUNT(*),
                    COALESCE(SUM(CASE WHEN scale IS NULL OR NOT (scale > 0) THEN 1 ELSE 0 END), 0),
-                   COALESCE(SUM(CASE WHEN length(vec) != {dimensions} THEN 1 ELSE 0 END), 0)
+                   COALESCE(SUM(CASE WHEN vec IS NULL OR length(vec) != {dimensions} THEN 1 ELSE 0 END), 0)
             FROM item_vectors
             """;
         stats.CommandTimeout = 600;

@@ -646,8 +646,7 @@ public sealed class VectorIndexCache(
                     continue;
                 }
 
-                var blob = (byte[])reader["vec"];
-                if (blob.Length != dimensions)
+                if (reader.GetValue(2) is not byte[] blob || blob.Length != dimensions)
                 {
                     continue;
                 }
@@ -670,8 +669,9 @@ public sealed class VectorIndexCache(
 
             return covered == 0 ? null : new TasteLayer(data, scales, dimensions, covered);
         }
-        catch (SqliteException ex)
+        catch (Exception ex)
         {
+            // Any failure here costs only the behavioural channel; it must never take the whole index with it.
             logger.LogWarning(ex, "Could not read taste vectors at {Path}; the channel stays off", path);
             return null;
         }
