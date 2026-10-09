@@ -1,4 +1,8 @@
 using Maki.Api.Services;
+using Maki.Metadata.Catalogue;
+using Maki.Metadata.Tests;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging.Abstractions;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Xunit;
@@ -9,9 +13,86 @@ namespace Maki.Api.Tests;
 /// Places where the content-rating ceiling has to be applied before hydration: the cohort rail's
 /// draw, so a restricted reader does not get a short rail, and the creator work counts.
 /// </summary>
-public class ContentCeilingTests
+public sealed class ContentCeilingTests : IDisposable
 {
     private const int Dim = 4;
+
+    private readonly DumpDbBuilder _dump = new();
+
+    public void Dispose()
+    {
+        _dump.Dispose();
+        SqliteConnection.ClearAllPools();
+    }
+
+    private DiscoverService Discover()
+    {
+        var options = new MangaBakaDumpOptions(_dump.Path, Path.GetTempPath());
+        var embedding = new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base);
+        return new DiscoverService(
+            new MangaBakaLocalStore(options, new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance),
+            null!,
+            new VectorIndexCache(embedding, options, NullLogger<VectorIndexCache>.Instance),
+            new CatalogueIndexCache(options, NullLogger<CatalogueIndexCache>.Instance),
+            NullLogger<DiscoverService>.Instance);
+    }
+
+    private void SeedCreator()
+    {
+        _dump.AddSeries(100, "Safe Work", contentRating: "safe", authorsJson: """["Circle A"]""")
+            .AddSeries(101, "Adult Work", contentRating: "pornographic", authorsJson: """["Circle B"]""")
+            .AddSeries(103, "Unscored Work", contentRating: "suggestive", authorsJson: """["Circle C"]""");
+    }
+
+    [Fact]
+    public async Task ACreatorWithOnlyAdultWorksIsNotFoundForARestrictedCeiling()
+    {
+        SeedCreator();
+        var request = new CreatorRequest("Circle B", Filters: new RecommendationFilters(ContentRatings: ContentRating.All));
+
+        Assert.Null(await Discover().GetCreatorAsync(request, default, ContentRating.Safe));
+        Assert.NotNull(await Discover().GetCreatorAsync(request, default, ContentRating.Pornographic));
+    }
+
+    [Fact]
+    public async Task APickedRatingFilterNeverHidesACreatorFromAnUnrestrictedUser()
+    {
+        SeedCreator();
+        var request = new CreatorRequest(
+            "Circle B", Filters: new RecommendationFilters(ContentRatings: [ContentRating.Safe]));
+
+        var profile = await Discover().GetCreatorAsync(request, default, ContentRating.Pornographic);
+
+        Assert.NotNull(profile);
+        Assert.Equal(1, profile.WorkCount);
+    }
+
+    [Fact]
+    public async Task AnUnscoredWorkInsideTheCeilingKeepsItsCreatorVisible()
+    {
+        SeedCreator();
+        var request = new CreatorRequest("Circle C");
+
+        var profile = await Discover().GetCreatorAsync(request, default, ContentRating.Suggestive);
+
+        Assert.NotNull(profile);
+        Assert.Equal(1, profile.WorkCount);
+    }
+
+    [Fact]
+    public async Task WorksTheIndexLacksAreCountedFromTheDump()
+    {
+        SeedCreator();
+        var index = Build();
+
+        var inIndexOnly = await Discover().VisibleWorkCountAsync(
+            index, [100L], ContentRating.Allowed(ContentRating.Safe), default);
+        var withUnscored = await Discover().VisibleWorkCountAsync(
+            index, [100L, 103L], ContentRating.Allowed(ContentRating.Suggestive), default);
+
+        Assert.Equal(1, inIndexOnly);
+        Assert.Equal(2, withUnscored);
+    }
 
     [Fact]
     public void ARestrictedCeilingRemovesOverCeilingTitlesFromTheDraw()
@@ -40,16 +121,6 @@ public class ContentCeilingTests
     public void AnUnrestrictedCeilingLeavesTheFiltersAlone()
     {
         Assert.Null(ReaderCohortRailService.WithCeiling(null, ContentRating.Pornographic));
-    }
-
-    [Fact]
-    public void ACreditCountsOnlyTheWorksInsideTheCeiling()
-    {
-        var index = Build();
-
-        Assert.Equal(1, DiscoverService.VisibleWorkCount(index, [100L, 101L, 102L, 999L], ContentRating.Allowed(ContentRating.Safe)));
-        Assert.Equal(2, DiscoverService.VisibleWorkCount(index, [100L, 101L, 102L], ContentRating.Allowed(ContentRating.Erotica)));
-        Assert.Equal(0, DiscoverService.VisibleWorkCount(index, [102L], ContentRating.Allowed(ContentRating.Safe)));
     }
 
     private static VectorIndex Build()

@@ -302,7 +302,7 @@ public class RecommendationController(
         {
             var clamped = await ScopeAsync(request.Filters, ct);
 
-            var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct);
+            var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct, currentUser.MaxContentRating);
             return profile is null ? this.NotFoundMessage(localizer, "error.recommendation.creatorNotFound") : Ok(profile);
         }
         catch (LocalCatalogueUnavailableException ex)

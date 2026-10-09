@@ -537,7 +537,8 @@ public class DiscoverService(
     }
 
     /// <summary>One creator or publisher and their works, for the creator page.</summary>
-    public async Task<CreatorProfile?> GetCreatorAsync(CreatorRequest request, CancellationToken ct = default)
+    public async Task<CreatorProfile?> GetCreatorAsync(
+        CreatorRequest request, CancellationToken ct = default, string? maxContentRating = null)
     {
         await EnsureAvailableAsync(ct);
 
@@ -555,10 +556,10 @@ public class DiscoverService(
         var works = catalogue.Credits.WorksOf(nameId, role);
         var vector = await vectorIndex.GetAsync(ct);
         var visibleWorks = works.Length;
-        if (vector is not null && request.Filters?.ContentRatings is { Count: > 0 } ceiling &&
-            ceiling.Count < ContentRating.All.Length)
+        var allowed = ContentRating.Allowed(maxContentRating);
+        if (allowed.Count < ContentRating.All.Length)
         {
-            visibleWorks = VisibleWorkCount(vector, works, ceiling);
+            visibleWorks = await VisibleWorkCountAsync(vector, works, allowed, ct);
             if (visibleWorks == 0)
             {
                 return null;
@@ -610,7 +611,7 @@ public class DiscoverService(
         var wanted = CreditIndex.ParseRole(role);
         var take = Math.Clamp(limit, 1, 50);
         var allowed = ContentRating.Allowed(maxContentRating);
-        if (allowed.Count == ContentRating.All.Length || await vectorIndex.GetAsync(ct) is not { } index)
+        if (allowed.Count == ContentRating.All.Length)
         {
             return catalogue.Credits
                 .Suggest(query, wanted, take)
@@ -621,37 +622,52 @@ public class DiscoverService(
                 .ToList();
         }
 
-        return catalogue.Credits
-            .Suggest(query, wanted, 50)
-            .Select(m => (Match: m, Visible: VisibleWorkCount(index, catalogue.Credits.WorksOf(m.NameId, wanted), allowed)))
-            .Where(x => x.Visible > 0)
-            .Take(take)
-            .Select(x => new ResolvedCredit(
-                catalogue.Credits.NameAt(x.Match.NameId),
-                catalogue.Credits.RoleLabelsAt(x.Match.NameId),
-                x.Visible))
-            .ToList();
-    }
-
-    /// <summary>How many of <paramref name="works"/> the index holds inside <paramref name="ratings"/>.</summary>
-    internal static int VisibleWorkCount(VectorIndex index, IReadOnlyList<long> works, IReadOnlyList<string> ratings)
-    {
-        var plan = index.Plan(new RecommendationFilters(ContentRatings: ratings));
-        if (plan.Impossible)
+        var index = await vectorIndex.GetAsync(ct);
+        var suggestions = new List<ResolvedCredit>();
+        foreach (var match in catalogue.Credits.Suggest(query, wanted, 50))
         {
-            return 0;
-        }
-
-        var count = 0;
-        foreach (var id in works)
-        {
-            if (index.TryGetRow(id, out var row) && index.Matches(row, plan))
+            var visible = await VisibleWorkCountAsync(index, catalogue.Credits.WorksOf(match.NameId, wanted), allowed, ct);
+            if (visible > 0)
             {
-                count++;
+                suggestions.Add(new ResolvedCredit(
+                    catalogue.Credits.NameAt(match.NameId), catalogue.Credits.RoleLabelsAt(match.NameId), visible));
+                if (suggestions.Count == take)
+                {
+                    break;
+                }
             }
         }
 
-        return count;
+        return suggestions;
+    }
+
+    /// <summary>
+    /// How many of <paramref name="works"/> sit inside <paramref name="ratings"/>. The vector index
+    /// answers for the titles it holds; the rest (unscored works, novels, or everything when the
+    /// index is not built) are counted from the dump's own content rating.
+    /// </summary>
+    internal async Task<int> VisibleWorkCountAsync(
+        VectorIndex? index, IReadOnlyList<long> works, IReadOnlyList<string> ratings, CancellationToken ct)
+    {
+        var count = 0;
+        var missing = new List<long>();
+        var plan = index?.Plan(new RecommendationFilters(ContentRatings: ratings));
+        foreach (var id in works)
+        {
+            if (index is not null && index.TryGetRow(id, out var row))
+            {
+                if (!plan!.Impossible && index.Matches(row, plan))
+                {
+                    count++;
+                }
+            }
+            else
+            {
+                missing.Add(id);
+            }
+        }
+
+        return missing.Count == 0 ? count : count + await store.CountWithinRatingsAsync(missing, ratings, ct);
     }
 
     /// <summary>Feeds whose ordering the vector index can reproduce exactly.</summary>
