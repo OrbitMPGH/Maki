@@ -125,14 +125,17 @@ export default function StatsPage() {
                 aria-label={t`Reader`}
               />
             )}
-            <Button
-              leftSection={<IconPlayerPlay size={16} />}
-              onClick={() => setIntroOpen(true)}
-              disabled={!canPlayRewind}
-              title={t`Play the ${rewindYear} retrospective`}
-            >
-              <Trans>Play Rewind</Trans>
-            </Button>
+            {/* Written in the second person, so it only plays for the signed-in reader's own year. */}
+            {viewUserId === undefined && (
+              <Button
+                leftSection={<IconPlayerPlay size={16} />}
+                onClick={() => setIntroOpen(true)}
+                disabled={!canPlayRewind}
+                title={t`Play the ${rewindYear} retrospective`}
+              >
+                <Trans>Play Rewind</Trans>
+              </Button>
+            )}
           </>
         }
       />

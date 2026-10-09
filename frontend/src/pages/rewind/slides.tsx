@@ -255,7 +255,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
             <Reveal delay={0.95}>
               <Stack gap={6} mt="md" align="flex-start" className="rewind-list">
                 {stats.topRead.slice(1, 5).map((s, i) => (
-                  <Text key={s.title} className="rewind-list-line">
+                  <Text key={s.seriesId ?? s.title} className="rewind-list-line">
                     <span className="rewind-rank tnum">{i + 2}</span>
                     <Thumb url={s.coverUrl} />
                     <span className="rewind-list-title">{s.title}</span>
@@ -368,7 +368,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
             <Reveal delay={0.65}>
               <Stack gap={4} align="center">
                 {stats.finished.slice(0, 5).map((s) => (
-                  <Text key={s.title} className="rewind-list-line">
+                  <Text key={s.seriesId ?? s.title} className="rewind-list-line">
                     {s.title}
                   </Text>
                 ))}
@@ -400,7 +400,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
               {stats.dropped.slice(0, 4).map((s) => {
                 const { title, maxChapter } = s
                 return (
-                  <Text key={title} className="rewind-list-line">
+                  <Text key={s.seriesId ?? title} className="rewind-list-line">
                     {title}{' '}
                     <span className="rewind-dim">
                       - <Trans>stalled at ch {maxChapter}</Trans>

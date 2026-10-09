@@ -141,7 +141,7 @@ public sealed class AuthHardeningTests : IDisposable
         var result = await controller.OidcLinkComplete(default);
 
         var redirect = Assert.IsType<RedirectResult>(result);
-        Assert.Equal("/settings?oidcLinkError=error.auth.ssoAlreadyLinked", redirect.Url);
+        Assert.Equal("/settings?oidcLinkError=alreadyLinked", redirect.Url);
         Assert.Equal(1, OidcLoginCount(userId));
     }
 

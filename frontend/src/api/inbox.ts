@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api } from './client'
+import { useSaveSettingsRecord } from './settingsRecord'
 
 /**
  * Mirrors `InboxEventType` on the server, in camelCase. Append only, the values are persisted as
@@ -82,6 +83,7 @@ export interface InboxPush extends Omit<InboxItem, 'read' | 'coverUrl'> {
 /**
  * Grouping for the settings card and the page's filter chips. Purely presentational, the server
  * knows nothing about these buckets, and an event type missing from here simply isn't offered.
+ * `accountSecurity` is left out on purpose: a sign-in alert stays on and has no filter chip.
  */
 /**
  * `id` is the filter value and the React key; `label` is what a reader sees. They were one string
@@ -180,7 +182,7 @@ export const INBOX_ADMIN_ONLY: InboxEventType[] = [
   'upgradeRestoreFailed',
 ]
 
-export function useInbox(filter?: { unreadOnly?: boolean; type?: InboxEventType | null }) {
+export function useInbox(filter?: { unreadOnly?: boolean; type?: InboxEventType | null }, enabled = true) {
   const unreadOnly = filter?.unreadOnly ?? false
   const type = filter?.type ?? null
 
@@ -196,6 +198,7 @@ export function useInbox(filter?: { unreadOnly?: boolean; type?: InboxEventType 
       return api<InboxPage>(`/inbox${qs ? `?${qs}` : ''}`)
     },
     getNextPageParam: (last) => last.nextCursor,
+    enabled,
   })
 }
 
@@ -259,14 +262,13 @@ export function useInboxPrefs() {
 }
 
 export function useSaveInboxPrefs() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (prefs: InboxPrefs) =>
-      api<InboxPrefs>('/inbox/prefs', { method: 'PUT', body: JSON.stringify(prefs) }),
-    onSuccess: (saved) => queryClient.setQueryData(['inbox', 'prefs'], saved),
+  return useSaveSettingsRecord<InboxPrefs>(['inbox', 'prefs'], '/inbox/prefs', undefined, {
+    optimistic: true,
+    merge: (current, patch) => ({ ...current, ...patch, types: { ...current.types, ...patch.types } }),
   })
 }
 
 function invalidateInbox(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: ['inbox'] })
+  void queryClient.invalidateQueries({ queryKey: ['inbox', 'feed'] })
+  void queryClient.invalidateQueries({ queryKey: ['inbox', 'unread'] })
 }

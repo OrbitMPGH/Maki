@@ -291,7 +291,7 @@ export default function LibrarySection(_props: StatsSectionProps) {
             <TagChips>
               {stats.topGenres.map((g) => (
                 <TagChip key={g.name}>
-                  {g.name} <span className="tnum">{g.count}</span>
+                  {g.name} <span className="tnum">{formatNumber(g.count)}</span>
                 </TagChip>
               ))}
             </TagChips>

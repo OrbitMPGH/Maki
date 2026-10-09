@@ -385,57 +385,60 @@ function ProfileEditor({
   const toggleGrouped = (index: number) =>
     setTiers((current) => current.map((row, i) => (i === index ? { ...row, grouped: !row.grouped } : row)))
 
-  const tierRow = (row: ProfileTierDto, index: number) => (
-    <Group key={row.tier} gap="xs" wrap="nowrap" justify="space-between">
-      <Group gap="xs" wrap="nowrap">
-        <Group gap={2} wrap="nowrap">
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            color="var(--neutral)"
-            disabled={index === 0}
-            onClick={() => setTiers((current) => moveTier(current, index, -1))}
-            aria-label={t`Move up`}
-          >
-            <IconArrowUp size={14} />
-          </ActionIcon>
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            color="var(--neutral)"
-            disabled={index === tiers.length - 1}
-            onClick={() => setTiers((current) => moveTier(current, index, 1))}
-            aria-label={t`Move down`}
-          >
-            <IconArrowDown size={14} />
-          </ActionIcon>
-        </Group>
-        <Text size="sm" fw={500} w={100}>
-          {renderLabel(QUALITY_TIER_LABELS[row.tier])}
-        </Text>
-        {index > 0 && (
-          <Tooltip label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}>
+  const tierRow = (row: ProfileTierDto, index: number) => {
+    const tierLabel = renderLabel(QUALITY_TIER_LABELS[row.tier])
+    return (
+      <Group key={row.tier} gap="xs" wrap="nowrap" justify="space-between">
+        <Group gap="xs" wrap="nowrap">
+          <Group gap={2} wrap="nowrap">
             <ActionIcon
               size="sm"
-              variant={row.grouped ? 'light' : 'subtle'}
-              color={row.grouped ? undefined : 'var(--neutral)'}
-              onClick={() => toggleGrouped(index)}
-              aria-label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}
-              aria-pressed={row.grouped}
+              variant="subtle"
+              color="var(--neutral)"
+              disabled={index === 0}
+              onClick={() => setTiers((current) => moveTier(current, index, -1))}
+              aria-label={t`Move ${tierLabel} up`}
             >
-              {row.grouped ? <IconLink size={14} /> : <IconLinkOff size={14} />}
+              <IconArrowUp size={14} />
             </ActionIcon>
-          </Tooltip>
-        )}
+            <ActionIcon
+              size="sm"
+              variant="subtle"
+              color="var(--neutral)"
+              disabled={index === tiers.length - 1}
+              onClick={() => setTiers((current) => moveTier(current, index, 1))}
+              aria-label={t`Move ${tierLabel} down`}
+            >
+              <IconArrowDown size={14} />
+            </ActionIcon>
+          </Group>
+          <Text size="sm" fw={500} w={100}>
+            {renderLabel(QUALITY_TIER_LABELS[row.tier])}
+          </Text>
+          {index > 0 && (
+            <Tooltip label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}>
+              <ActionIcon
+                size="sm"
+                variant={row.grouped ? 'light' : 'subtle'}
+                color={row.grouped ? undefined : 'var(--neutral)'}
+                onClick={() => toggleGrouped(index)}
+                aria-label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}
+                aria-pressed={row.grouped}
+              >
+                {row.grouped ? <IconLink size={14} /> : <IconLinkOff size={14} />}
+              </ActionIcon>
+            </Tooltip>
+          )}
+        </Group>
+        <Switch
+          size="sm"
+          label={t`Allowed`}
+          checked={row.allowed}
+          onChange={(e) => setTierAllowed(row.tier, e.currentTarget.checked)}
+        />
       </Group>
-      <Switch
-        size="sm"
-        label={t`Allowed`}
-        checked={row.allowed}
-        onChange={(e) => setTierAllowed(row.tier, e.currentTarget.checked)}
-      />
-    </Group>
-  )
+    )
+  }
 
   return (
     <Stack gap="sm" mt="sm">
@@ -596,6 +599,7 @@ function ProfileEditor({
                   <Table.Td w={120}>
                     <NumberInput
                       size="xs"
+                      aria-label={t`Score for ${format.name}`}
                       value={scoreOf(formatScores, format.id)}
                       onChange={(value) =>
                         setFormatScores((current) => withScore(current, format.id, Number(value) || 0))

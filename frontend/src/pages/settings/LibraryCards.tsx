@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLabel } from '../../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
@@ -20,6 +20,7 @@ import {
 import { IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { RecommendationModelSwitch } from '../../components/RecommendationModelSwitch'
 import { NamingFormatInput } from '../../components/NamingFormatInput'
 import { CONTENT_RATINGS } from '../../components/ContentRatingCards'
@@ -48,7 +49,7 @@ import {
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
-import { formatBytes, formatDateTime } from '../../format'
+import { formatBytes, formatDateTime, formatNumber } from '../../format'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
@@ -56,6 +57,7 @@ export function RootFoldersSection() {
   const { data: rootFolders } = useRootFolders()
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
+  const [deleting, setDeleting] = useState<{ id: number; path: string } | null>(null)
 
   const add = () => {
     if (!newPath.trim()) return
@@ -101,10 +103,7 @@ export function RootFoldersSection() {
                     <ActionIcon
                       variant="subtle"
                       color="var(--danger)"
-                      onClick={() =>
-                        deleteFolder.mutate(f.id, {
-                        })
-                      }
+                      onClick={() => setDeleting({ id: f.id, path: f.path })}
                       aria-label={t`Delete root folder`}
                     >
                       <IconTrash size={16} />
@@ -135,10 +134,33 @@ export function RootFoldersSection() {
           </Button>
         </Group>
       </Stack>
+
+      <ConfirmDialog
+        opened={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title={<Trans>Remove this root folder?</Trans>}
+        confirmLabel={<Trans>Remove folder</Trans>}
+        loading={deleteFolder.isPending}
+        onConfirm={() =>
+          deleting &&
+          deleteFolder.mutate(deleting.id, {
+            onSuccess: () => setDeleting(null),
+          })
+        }
+      >
+        <Stack gap="xs">
+          <Text size="sm" ff="monospace">{deleting?.path}</Text>
+          <Text size="sm">
+            <Trans>
+              Files on disk are not touched. Every user's access to this folder is removed, and
+              adding it back later starts with no grants.
+            </Trans>
+          </Text>
+        </Stack>
+      </ConfirmDialog>
     </SettingsSection>
   )
 }
-
 
 export function MetadataSection() {
   const { t } = useLingui()
@@ -173,8 +195,7 @@ export function MetadataSection() {
           description={t`Off answers from the API instead and turns Discover off. The copy on disk is kept and still refreshed.`}
           checked={settings?.useLocalDb ?? true}
           onChange={(e) =>
-            save.mutate(e.currentTarget.checked, {
-            })
+            save.mutate(e.currentTarget.checked)
           }
         />
         {downloading && progress && <DumpProgressBar progress={progress} />}
@@ -229,7 +250,7 @@ export function MetadataSection() {
 export function RecommendationIndexSection() {
   const { t } = useLingui()
   const { data: status } = useRecommendationIndex()
-  const setModel = useSetEmbeddingModel()  
+  const setModel = useSetEmbeddingModel()
 
   const selectModel = (kind: string) =>
     setModel.mutate(kind, {
@@ -290,7 +311,6 @@ function useLibraryPatch() {
   }
   return { settings, patch }
 }
-
 
 /** What a series starts with when it is added or imported: the specials rule and the incognito rules. */
 export function NewSeriesDefaultsSection() {
@@ -375,7 +395,6 @@ export function NewSeriesDefaultsSection() {
     </SettingsSection>
   )
 }
-
 
 /** What Maki writes into and next to the files: ComicInfo.xml and the folder poster. */
 export function LibraryFilesSection() {
@@ -500,9 +519,10 @@ export function NamingSection() {
       >
         <Text size="sm" mb="md">
           <Trans>
-            Applies the series folder format and chapter file format above to all {seriesCount} series
-            in the library, renaming folders and files on disk to match. Series already matching
-            the format are left alone. This can take a while for a large library.
+            Applies the series folder format and chapter file format above to all{' '}
+            <Plural value={seriesCount} one="# series" other="# series" /> in the library, renaming
+            folders and files on disk to match. Series already matching the format are left alone.
+            This can take a while for a large library.
           </Trans>
         </Text>
         <Group justify="flex-end">
@@ -523,7 +543,10 @@ export function NamingSection() {
                     // categories to do it.
                     message:
                       failed > 0
-                        ? now`Renamed ${renamed}, ${failed} failed`
+                        ? plural(renamed, {
+                            one: `Renamed # series, ${formatNumber(failed)} failed`,
+                            other: `Renamed # series, ${formatNumber(failed)} failed`,
+                          })
                         : plural(renamed, { one: 'Renamed # series', other: 'Renamed # series' }),
                     color: failed > 0 ? 'var(--warn)' : 'var(--ok)',
                   })
