@@ -12,6 +12,8 @@ public class HealthScanService(MakiDbContext db)
 {
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<int, CancellationTokenSource> Running = new();
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    private static readonly TimeSpan BusyCacheFor = TimeSpan.FromSeconds(5);
+    private const int ProgressFlushEvery = 25;
     /// <summary>
     /// The stored analysis, with every list guaranteed present. Rows written by an older analyzer
     /// deserialize with nulls where its shape differed, and they stay readable until the next scan
@@ -147,17 +149,39 @@ public class HealthScanService(MakiDbContext db)
 
         HealthScan? current = null;
         var skippedForQueue = 0;
-        foreach (var id in pending)
+        // Which series have a download in flight and which files have an open operation is the same
+        // answer for every file of a series, so ask once per few seconds instead of once per file.
+        var busySeries = new HashSet<int?>();
+        var busyFiles = new HashSet<int>();
+        var busyReadAt = DateTime.MinValue;
+        var unwritten = 0;
+        for (var position = 0; position < pending.Count; position++)
         {
+            var id = pending[position];
             current = await db.HealthScans.FindAsync([scanId], ct);
             if (current == null || current.Status == "cancelled") return;
             var file = await db.HealthFiles.FindAsync([id], ct);
+            var errored = false;
             if (file != null)
             {
                 try
                 {
-                    if (!await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct) &&
-                        !await db.HealthOperations.AnyAsync(o => o.FileId == file.Id && o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed", ct))
+                    if (DateTime.UtcNow - busyReadAt > BusyCacheFor)
+                    {
+                        busySeries = (await db.DownloadQueue
+                            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+                            .Select(q => q.SeriesId)
+                            .Distinct()
+                            .ToListAsync(ct)).Select(seriesId => (int?)seriesId).ToHashSet();
+                        busyFiles = (await db.HealthOperations
+                            .Where(o => o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed")
+                            .Select(o => o.FileId)
+                            .Distinct()
+                            .ToListAsync(ct)).ToHashSet();
+                        busyReadAt = DateTime.UtcNow;
+                    }
+
+                    if (!busySeries.Contains(file.SeriesId) && !busyFiles.Contains(file.Id))
                         await AnalyzeAsync(file, rootPaths[file.RootFolderId], force, ct, workers, verify);
                     else
                         skippedForQueue++;
@@ -165,10 +189,21 @@ public class HealthScanService(MakiDbContext db)
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
                 {
                     current.Error = $"{current.Error} File {file.Id}: {ex.Message}".Trim();
+                    errored = true;
                 }
             }
-            current.Completed++;
-            await db.SaveChangesAsync(ct);
+
+            // A file that was only looked at and skipped changed nothing, so its count rides along
+            // with the next write instead of taking a commit of its own.
+            unwritten++;
+            var touched = errored || db.ChangeTracker.Entries().Any(e => e.Entity is not HealthScan && e.State != EntityState.Unchanged);
+            if (touched || unwritten >= ProgressFlushEvery || position == pending.Count - 1)
+            {
+                current.Completed += unwritten;
+                unwritten = 0;
+                await db.SaveChangesAsync(ct);
+            }
+
             db.ChangeTracker.Clear();
         }
 

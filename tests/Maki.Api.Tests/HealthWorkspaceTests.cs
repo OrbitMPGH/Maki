@@ -147,6 +147,19 @@ public class HealthWorkspaceTests : IDisposable
         // is what made a real library climb for the whole run.
         Assert.True(db.ChangeTracker.Entries().Count() <= 4, $"{db.ChangeTracker.Entries().Count()} entities still tracked");
     }
+    [Fact] public async Task A_scan_counts_files_it_skips_for_an_active_download()
+    {
+        using var db=fixture.NewContext(); var file=await Seed(db,true);
+        var chapter=db.Chapters.First(c=>c.SeriesId==file.SeriesId);
+        db.DownloadQueue.Add(new DownloadQueueItem { SeriesId=file.SeriesId!.Value, ChapterId=chapter.Id, Status=QueueStatus.Queued });
+        var scan=new HealthScan(); db.HealthScans.Add(scan); await db.SaveChangesAsync();
+        var analysedAt=file.AnalyzedAt;
+        await new HealthScanService(db).RunAsync(scan,default);
+        Assert.Equal("completed",scan.Status);
+        Assert.True(scan.Total > 0);
+        Assert.Equal(scan.Total,scan.Completed);
+        Assert.Equal(analysedAt,db.HealthFiles.AsNoTracking().Single(f=>f.Id==file.Id).AnalyzedAt);
+    }
     [Fact] public async Task A_verified_file_is_not_downgraded_by_a_later_index_pass()
     {
         using var db=fixture.NewContext();
