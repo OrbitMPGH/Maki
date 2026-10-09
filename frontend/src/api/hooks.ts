@@ -4279,8 +4279,6 @@ export interface ProgressSummary {
   total: number
   recent: Achievement[]
   goals: ReadingGoal[]
-  /** Unlocks the user has not been shown yet. */
-  unseen: Achievement[]
 }
 
 export interface HeatmapDay {
@@ -4371,15 +4369,6 @@ export function useDeleteReadingGoal() {
   return useMutation({
     mutationFn: (id: number) => api(`/progress/goals/${id}`, { method: 'DELETE' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress'] }),
-  })
-}
-
-export function useMarkAchievementsSeen() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (ids: number[]) =>
-      api('/progress/achievements/seen', { method: 'POST', body: JSON.stringify({ ids }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress', 'summary'] }),
   })
 }
 

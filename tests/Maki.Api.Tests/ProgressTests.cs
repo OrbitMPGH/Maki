@@ -375,39 +375,6 @@ public sealed class ProgressTests : IDisposable
         Assert.Empty(_db.NewContext().UserAchievements.ToList());
     }
 
-    [Fact]
-    public async Task AcknowledgingOneTierSilencesTheWholeAchievement()
-    {
-        // Crossing several rungs at once is the normal case, and the UI collapses them into one
-        // toast. If only the acknowledged row were stamped, the next page load would announce the
-        // same achievement again one tier down, and again the load after that.
-        SeedRead(null, 3000, Now);
-
-        using (var db = _db.NewContext())
-        {
-            await Achievements(db).EvaluateAsync(UserId);
-        }
-
-        var top = _db.NewContext().UserAchievements
-            .Where(a => a.Key == "reader")
-            .OrderByDescending(a => a.Tier)
-            .First();
-
-        using (var db = _db.NewContext())
-        {
-            await Achievements(db).MarkSeenAsync(UserId, [top.Id]);
-        }
-
-        Assert.Empty(_db.NewContext().UserAchievements
-            .Where(a => a.Key == "reader" && a.SeenAt == null)
-            .ToList());
-
-        // Only that achievement, though — an unrelated one must still be waiting to be shown.
-        Assert.NotEmpty(_db.NewContext().UserAchievements
-            .Where(a => a.Key != "reader" && a.SeenAt == null)
-            .ToList());
-    }
-
     // ---- Per-user isolation ----------------------------------------------------------------
 
     [Fact]

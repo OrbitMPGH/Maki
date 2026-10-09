@@ -3,17 +3,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../../api/client'
-import { notifications } from '@mantine/notifications'
-import { IconTrophy } from '@tabler/icons-react'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Trans } from '@lingui/react/macro'
 import {
   flushProgress,
   useBookmarks,
   useReaderManifest,
   useToggleBookmark,
 } from '../../api/reader'
-import type { UnlockedAchievement } from '../../api/reader'
-import { useMarkAchievementsSeen } from '../../api/hooks'
 import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
 import ShortcutSheet from './ShortcutSheet'
@@ -40,7 +36,6 @@ const FLUSH_WAIT_MS = 2000
 export default function ReaderPage() {
   const { chapterId: param } = useParams()
   const chapterId = Number(param)
-  const { t } = useLingui()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const {
@@ -123,30 +118,6 @@ export default function ReaderPage() {
   )
   usePreload(urls, preloadPages, measure)
 
-  /**
-   * Achievements ride back on the write that completes a chapter, so the toast needs no second
-   * request and no hub subscription. Acknowledging them is what stops the same unlock announcing
-   * itself on every page turn after the one that earned it.
-   */
-  const { mutate: markSeenMutate } = useMarkAchievementsSeen()
-  const onAchievementsUnlocked = useCallback(
-    (unlocked: UnlockedAchievement[]) => {
-      for (const achievement of unlocked) {
-        notifications.show({
-          title: achievement.tierName
-            ? `${achievement.name} · ${achievement.tierName}`
-            : achievement.name,
-          message: t`Achievement unlocked`,
-          icon: <IconTrophy size={18} />,
-          autoClose: 6000,
-        })
-      }
-
-      markSeenMutate(unlocked.map((a) => a.id))
-    },
-    [markSeenMutate, t],
-  )
-
   const invalidateProgress = useCallback(
     (seriesId: number) => {
       void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
@@ -174,7 +145,6 @@ export default function ReaderPage() {
     finished,
     tracking,
     clock,
-    onAchievementsUnlocked,
     onFlushed,
   )
 
@@ -256,10 +226,7 @@ export default function ReaderPage() {
         // lands, and settle-then-flush stays in order.
         const flushed = (async () => {
           await settleProgress()
-          const unlocked = await flushProgress(leftId, at, done || undefined, seconds).catch(
-            () => [] as UnlockedAchievement[],
-          )
-          if (unlocked.length > 0) onAchievementsUnlocked(unlocked)
+          await flushProgress(leftId, at, done || undefined, seconds).catch(() => {})
           invalidateProgress(seriesId)
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
@@ -283,7 +250,6 @@ export default function ReaderPage() {
       clock,
       finished,
       settleProgress,
-      onAchievementsUnlocked,
     ],
   )
 

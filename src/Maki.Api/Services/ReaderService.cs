@@ -410,8 +410,8 @@ public class ReaderService(
         row.PageIndex = ClampPage(pageIndex, slice.PageCount);
         row.PageCount = slice.PageCount;
 
-        // A watched row stays ticked off while it is merely opened: the reader writes page 0 a
-        // moment after mounting and an OPDS app prefetches pages, neither of which is a read. Only a
+        // A watched row stays ticked off while it is merely opened: a reader that
+        // saves a position without finishing and an OPDS app that prefetches pages are not reads. Only a
         // save that completes the chapter (last page or an explicit completed) turns it into one.
         var finishing = completed ?? row.PageIndex >= slice.PageCount - 1;
         var stillWatched = row.Watched && !finishing;

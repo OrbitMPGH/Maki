@@ -33,7 +33,6 @@ public record ResolvedReaderPrefs(
     ReaderPrefsSpec Prefs,
     ReaderPrefsSource Source,
     int? ProfileId,
-    string? ProfileName,
     int? PinnedProfileId,
     int? AutoProfileId);
 
@@ -89,7 +88,7 @@ public class ReadingProfileService(MakiDbContext db, IUserSettings userSettings)
         if (readerPrefsJson is { Length: > 0 } own)
         {
             return new ResolvedReaderPrefs(
-                ReaderPrefsSpec.Parse(own), ReaderPrefsSource.Series, null, null, null, auto?.Id);
+                ReaderPrefsSpec.Parse(own), ReaderPrefsSource.Series, null, null, auto?.Id);
         }
 
         // A pinned id that no longer resolves means the profile was deleted between the SetNull and
@@ -103,11 +102,11 @@ public class ReadingProfileService(MakiDbContext db, IUserSettings userSettings)
         {
             return new ResolvedReaderPrefs(
                 ReaderPrefsSpec.Parse(effective.PrefsJson), ReaderPrefsSource.Profile,
-                effective.Id, effective.Name, pinned?.Id, auto?.Id);
+                effective.Id, pinned?.Id, auto?.Id);
         }
 
         var global = ReaderPrefsSpec.Parse(await userSettings.GetAsync(SettingKeys.ReaderPrefs, ct));
-        return new ResolvedReaderPrefs(global, ReaderPrefsSource.Global, null, null, null, auto?.Id);
+        return new ResolvedReaderPrefs(global, ReaderPrefsSource.Global, null, null, auto?.Id);
     }
 
     /// <summary>

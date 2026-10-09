@@ -9,8 +9,6 @@ export interface ReaderManifest {
   seriesTitle: string
   label: string
   number: number | null
-  volume: number | null
-  language: string
   pageCount: number
   /** Downloaded chapters in the series, and how many of them are read. Same pair the series page draws. */
   seriesChapterCount: number
@@ -34,13 +32,10 @@ export interface ReaderManifest {
   prefsSource: PrefsSource
   /** The profile in force, when `prefsSource` is `Profile`. */
   profileId: number | null
-  profileName: string | null
   /** Set when the user pinned that profile by hand rather than the series' type selecting it. */
   pinnedProfileId: number | null
   /** What the series' type selects, whether or not it won. Labels the picker's "Auto" entry. */
   autoProfileId: number | null
-  /** manga | manhwa | manhua | oel | other, or null when the series has no type yet. */
-  seriesType: string | null
   /** Identifies the file behind the pages; page URLs carry it so they can be cached until a re-download. */
   pageVersion: string
 }
@@ -53,7 +48,6 @@ export interface ResolvedReaderPrefs {
   prefs: ReaderPrefs
   source: PrefsSource
   profileId: number | null
-  profileName: string | null
   pinnedProfileId: number | null
   autoProfileId: number | null
 }
@@ -168,33 +162,16 @@ export function useContinueReading(seriesId: number, enabled = true) {
  * server adds up. Only ever send time the caller has consumed from its clock, or a retry counts
  * the same stretch twice.
  */
-export interface UnlockedAchievement {
-  id: number
-  key: string
-  tier: number
-  name: string
-  tierName: string | null
-}
-
-interface SaveProgressResult {
-  chapterId: number
-  pageIndex: number
-  completed: boolean
-  /** Non-empty only on the write that completes a chapter. */
-  unlocked: UnlockedAchievement[]
-}
-
 export async function saveProgress(
   chapterId: number,
   pageIndex: number,
   completed?: boolean,
   seconds?: number,
-): Promise<UnlockedAchievement[]> {
-  const result = await api<SaveProgressResult>(`/reader/chapter/${chapterId}/progress`, {
+): Promise<void> {
+  await api(`/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     body: JSON.stringify({ pageIndex, completed, seconds }),
   })
-  return result?.unlocked ?? []
 }
 
 /**
@@ -211,18 +188,15 @@ export async function flushProgress(
   pageIndex: number,
   completed?: boolean,
   seconds?: number,
-): Promise<UnlockedAchievement[]> {
+): Promise<void> {
   const init = await getInitialize()
-  const response = await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
+  await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
     body: JSON.stringify({ pageIndex, completed, seconds, final: true }),
   })
-  if (!response.ok) return []
-  const result = (await response.json()) as SaveProgressResult
-  return result?.unlocked ?? []
 }
 
 export interface ReaderSettings {

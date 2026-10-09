@@ -303,7 +303,10 @@ export function useLiveEvents() {
         if (prefs?.toasts === false) return
         // The reader owns the whole viewport and the toast stack sits over its bottom bar and tap
         // zone; the badge and feed above are already updated, so the mail is there afterwards.
-        if (window.location.pathname.startsWith('/read/')) return
+        // Unlocks and level-ups are the exception: they are raised moments after the chapter's
+        // last page, and the reader is where somebody is when they land.
+        const earned = item.type === 'achievementUnlocked' || item.type === 'levelUp'
+        if (window.location.pathname.startsWith('/read/') && !earned) return
 
         notifications.show({
           title: item.title,

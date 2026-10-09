@@ -57,7 +57,7 @@ public class ReadFileCleanupService(
 
         var progress = await db.ChapterProgress.IgnoreQueryFilters().AsNoTracking()
             .Where(p => p.SeriesId == seriesId)
-            .Select(p => new { p.UserId, p.ChapterId, p.Completed, p.Watched, p.CompletedAt })
+            .Select(p => new { p.UserId, p.ChapterId, p.Completed, p.Watched, p.CompletedAt, p.UpdatedAt, p.PageIndex, p.PageCount })
             .ToListAsync(ct);
         var readers = progress.Select(p => p.UserId).Distinct().ToList();
         if (readers.Count == 0)
@@ -66,7 +66,20 @@ public class ReadFileCleanupService(
         }
 
         // A watched tick is "seen elsewhere", not read here, so it never makes a file due.
-        var read = progress.Where(p => p.Completed && !p.Watched && p.CompletedAt != null).ToList();
+        // A re-read to the end keeps the first completion stamp but moves UpdatedAt, so for a row
+        // sitting at its end the later of the two is when the chapter was last read. Any other save
+        // on a completed row (a chapter merely opened, an OPDS prefetch) says nothing about that.
+        var read = progress
+            .Where(p => p.Completed && !p.Watched && p.CompletedAt != null)
+            .Select(p => new
+            {
+                p.UserId,
+                p.ChapterId,
+                LastRead = p.PageCount > 0 && p.PageIndex >= p.PageCount - 1 && p.UpdatedAt > p.CompletedAt!.Value
+                    ? p.UpdatedAt
+                    : p.CompletedAt!.Value,
+            })
+            .ToList();
         var finished = read.ToLookup(p => p.ChapterId);
 
         // Each reader's most recent finish, so they can look back at where they stopped. A bulk write
@@ -81,7 +94,7 @@ public class ReadFileCleanupService(
                 .ToDictionaryAsync(c => c.Id, c => c.Number ?? decimal.MinValue, ct);
             kept = read
                 .GroupBy(p => p.UserId)
-                .Select(g => g.MaxBy(p => (p.CompletedAt!.Value.Ticks / TimeSpan.TicksPerSecond,
+                .Select(g => g.MaxBy(p => (p.LastRead.Ticks / TimeSpan.TicksPerSecond,
                     numbers.GetValueOrDefault(p.ChapterId, decimal.MinValue)))!.ChapterId)
                 .ToHashSet();
         }
@@ -99,7 +112,7 @@ public class ReadFileCleanupService(
                     break;
                 }
 
-                var at = finishes.Max(p => p.CompletedAt!.Value).AddDays(options.Days);
+                var at = finishes.Max(p => p.LastRead).AddDays(options.Days);
                 fileDue = fileDue is { } sofar && sofar > at ? sofar : at;
             }
 

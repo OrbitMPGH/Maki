@@ -184,7 +184,6 @@ public sealed class ControllerAuthorizationInventoryTests
         "ProgressController.DeleteGoal",
         "ProgressController.SaveGoal",
         "ProgressController.SaveSettings",
-        "ProgressController.Seen",
         "ReaderController.MarkRead",
         "ReaderController.MarkUnread",
         "ReaderController.SaveProgress",

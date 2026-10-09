@@ -75,13 +75,15 @@ public sealed class ReadFileCleanupTests : IDisposable
         return (seriesId, ids);
     }
 
-    private void Finish(int userId, int seriesId, int chapterId, int daysAgo, bool watched = false)
+    private void Finish(int userId, int seriesId, int chapterId, int daysAgo, bool watched = false, int? reReadDaysAgo = null,
+        bool reReadToEnd = true)
     {
         using var db = _db.NewContext();
         db.ChapterProgress.Add(new ChapterProgress
         {
             UserId = userId, SeriesId = seriesId, ChapterId = chapterId, Completed = true, Watched = watched,
-            StartedAt = Now, UpdatedAt = Now, CompletedAt = Now.AddDays(-daysAgo),
+            PageCount = reReadDaysAgo is null ? 0 : 10, PageIndex = reReadDaysAgo is null || !reReadToEnd ? 0 : 9,
+            StartedAt = Now, UpdatedAt = Now.AddDays(-(reReadDaysAgo ?? daysAgo)), CompletedAt = Now.AddDays(-daysAgo),
         });
         db.SaveChanges();
     }
@@ -116,6 +118,43 @@ public sealed class ReadFileCleanupTests : IDisposable
         var due = await Service(db).ScheduleAsync(seriesId, On7 with { KeepLast = true }, default);
 
         Assert.Equal([ch[1m], ch[2m]], due.Keys.Order());
+    }
+
+    [Fact]
+    public async Task A_chapter_re_read_to_its_end_today_keeps_its_file_and_keep_last()
+    {
+        var (seriesId, ch) = Seed(ReadFileCleanup.Default, [1m], [2m], [3m]);
+        Finish(1, seriesId, ch[1m], daysAgo: 60, reReadDaysAgo: 0);
+        Finish(1, seriesId, ch[2m], daysAgo: 40);
+        Finish(1, seriesId, ch[3m], daysAgo: 30);
+
+        using var db = _db.NewContext();
+        var service = Service(db);
+
+        var due = await service.ScheduleAsync(seriesId, On7, default);
+        Assert.Equal(Now.AddDays(7), due[ch[1m]]);
+        Assert.Equal(Now.AddDays(-33), due[ch[2m]]);
+
+        var kept = await service.ScheduleAsync(seriesId, On7 with { KeepLast = true }, default);
+        Assert.Equal([ch[2m], ch[3m]], kept.Keys.Order());
+    }
+
+    [Fact]
+    public async Task A_chapter_merely_opened_today_stays_due_and_keep_last_stays_on_the_frontier()
+    {
+        var (seriesId, ch) = Seed(ReadFileCleanup.Default, [1m], [2m], [3m]);
+        Finish(1, seriesId, ch[1m], daysAgo: 60, reReadDaysAgo: 0, reReadToEnd: false);
+        Finish(1, seriesId, ch[2m], daysAgo: 40);
+        Finish(1, seriesId, ch[3m], daysAgo: 30);
+
+        using var db = _db.NewContext();
+        var service = Service(db);
+
+        var due = await service.ScheduleAsync(seriesId, On7, default);
+        Assert.Equal(Now.AddDays(-53), due[ch[1m]]);
+
+        var kept = await service.ScheduleAsync(seriesId, On7 with { KeepLast = true }, default);
+        Assert.Equal([ch[1m], ch[2m]], kept.Keys.Order());
     }
 
     [Fact]
