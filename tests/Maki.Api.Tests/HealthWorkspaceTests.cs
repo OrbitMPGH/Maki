@@ -171,15 +171,34 @@ public class HealthWorkspaceTests : IDisposable
         var waiting=new ChapterFile { SeriesId=analysed.SeriesId,RelativePath="two.cbz",Size=1,DateAdded=start.AddDays(3) };
         db.ChapterFiles.Add(waiting); await db.SaveChangesAsync();
 
-        var first=await HealthWorker.AdvanceBaselineAsync(db,settings,start,default);
+        var first=await HealthWorker.AdvanceBaselineAsync(db,settings,start,start.AddDays(30),default);
         Assert.Equal(start.AddDays(3),first);
         Assert.Equal(start.AddDays(3).ToString("O"),await settings.GetAsync(Maki.Core.Configuration.SettingKeys.HealthIncrementalSince));
 
         db.HealthFiles.Add(new HealthFile { RootFolderId=file.RootFolderId,RelativePath="two.cbz",ChapterFileId=waiting.Id,AnalyzedAt=start.AddDays(4) });
         await db.SaveChangesAsync();
-        Assert.Equal(first,await HealthWorker.AdvanceBaselineAsync(db,settings,first,default));
-        var older=await HealthWorker.AdvanceBaselineAsync(db,settings,start,default);
+        Assert.Equal(first,await HealthWorker.AdvanceBaselineAsync(db,settings,first,start.AddDays(30),default));
+        var older=await HealthWorker.AdvanceBaselineAsync(db,settings,start,start.AddDays(30),default);
         Assert.Equal(start.AddDays(3),older);
+    }
+    [Fact] public async Task The_incremental_baseline_never_passes_the_margin_behind_now()
+    {
+        using var db=fixture.NewContext(); var file=await Seed(db,true);
+        var settings=new FakeAppSettings();
+        var start=new DateTime(2026,1,1,0,0,0,DateTimeKind.Utc);
+        var now=start.AddDays(10);
+        db.ChapterFiles.Single(f=>f.Id==file.ChapterFileId).DateAdded=now.AddMinutes(-10);
+        file.AnalyzedAt=now;
+        await db.SaveChangesAsync();
+
+        var moved=await HealthWorker.AdvanceBaselineAsync(db,settings,start,now,default);
+        Assert.Equal(now-HealthWorker.BaselineMargin,moved);
+        Assert.Equal(moved.ToString("O"),await settings.GetAsync(Maki.Core.Configuration.SettingKeys.HealthIncrementalSince));
+
+        db.ChapterFiles.Add(new ChapterFile { SeriesId=file.SeriesId!.Value,RelativePath="late.cbz",Size=1,DateAdded=now.AddMinutes(-30) });
+        await db.SaveChangesAsync();
+        Assert.Equal(moved,await HealthWorker.AdvanceBaselineAsync(db,settings,moved,now,default));
+        Assert.Contains("late.cbz",await HealthWorker.UnanalysedSince(db,moved).Select(f=>f.RelativePath).ToListAsync());
     }
     [Fact] public async Task A_verified_file_is_not_downgraded_by_a_later_index_pass()
     {
