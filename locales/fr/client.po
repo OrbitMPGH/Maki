@@ -13184,9 +13184,8 @@ msgid "Search"
 msgstr "Rechercher"
 
 #: src/components/CommandPalette.tsx
-#, fuzzy
-msgid "Search (Ctrl+K)"
-msgstr "Rechercher (Ctrl+K)"
+msgid "Search ({shortcut})"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

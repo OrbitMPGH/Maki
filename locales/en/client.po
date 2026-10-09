@@ -10818,8 +10818,8 @@ msgid "Search"
 msgstr "Search"
 
 #: src/components/CommandPalette.tsx
-msgid "Search (Ctrl+K)"
-msgstr "Search (Ctrl+K)"
+msgid "Search ({shortcut})"
+msgstr "Search ({shortcut})"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search by chapter number or title"
