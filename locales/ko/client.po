@@ -4607,6 +4607,10 @@ msgstr "Kavita 라이브러리를 불러오지 못했습니다: {kavitaLibraries
 msgid "Could not load library stats"
 msgstr "라이브러리 통계를 불러오지 못했습니다."
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "Could not load your progress. The server logs will say why."
@@ -15688,6 +15692,7 @@ msgid "Try a shorter or alternative query."
 msgstr "더 짧거나 다른 검색어를 사용해 보세요."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"

@@ -4607,6 +4607,10 @@ msgstr "Nie udało się wczytać bibliotek z Kavita: {kavitaLibrariesErrorMessag
 msgid "Could not load library stats"
 msgstr "Nie udało się wczytać statystyk biblioteki"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "Could not load your progress. The server logs will say why."
@@ -15688,6 +15692,7 @@ msgid "Try a shorter or alternative query."
 msgstr "Spróbuj krótszego lub innego zapytania."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"

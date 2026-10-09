@@ -1,7 +1,8 @@
-import { Button, Center, Stack, Text, VisuallyHidden } from '@mantine/core'
+import { Button, Center, Group, Stack, Text, VisuallyHidden } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ApiError } from '../../api/client'
 import { notifications } from '@mantine/notifications'
 import { IconTrophy } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -42,7 +43,14 @@ export default function ReaderPage() {
   const { t } = useLingui()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data: manifest, isLoading, isError, isFetching } = useReaderManifest(chapterId)
+  const {
+    data: manifest,
+    error,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useReaderManifest(chapterId)
   const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
     useReaderPrefs(manifest, !isFetching)
 
@@ -149,7 +157,9 @@ export default function ReaderPage() {
    * snapshot from the previous visit: applying it would jump to page 1 and then save that.
    */
   useEffect(() => {
-    if (!manifest || isFetching || resumedFor === manifest.chapterId) return
+    // A failed refetch leaves the cached manifest in place, and its resumePage is the previous
+    // visit's snapshot: resuming from it would start writing that position back.
+    if (!manifest || isFetching || isError || resumedFor === manifest.chapterId) return
     setResumedFor(manifest.chapterId)
     const toEnd = enterAtEndRef.current
     enterAtEndRef.current = false
@@ -160,7 +170,7 @@ export default function ReaderPage() {
     setAtEnd(false)
     setFinishedFor(null)
     leavingRef.current = false
-  }, [manifest, isFetching, resumedFor, seekToPage])
+  }, [manifest, isFetching, isError, resumedFor, seekToPage])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
   useEffect(() => {
@@ -432,7 +442,7 @@ export default function ReaderPage() {
 
   // A cached manifest is shown only once the fresh one has landed and the resume is applied;
   // before that its prefs and position are a snapshot of the previous visit.
-  if (isLoading || (manifest && resumedFor !== manifest.chapterId)) {
+  if (!isError && (isLoading || (manifest && resumedFor !== manifest.chapterId))) {
     return (
       <div className="reader-root">
         <Center h="100dvh">
@@ -443,16 +453,29 @@ export default function ReaderPage() {
   }
 
   if (isError || !manifest) {
+    // Only a 404 means the file is the problem; anything else (network, 401, 500) is worth retrying.
+    const unreadable = !isError || (error instanceof ApiError && error.status === 404)
     return (
       <div className="reader-root">
         <Center h="100dvh">
           <Stack align="center" gap="sm">
             <Text c="var(--ink-3)">
-              <Trans>This chapter has no readable file.</Trans>
+              {unreadable ? (
+                <Trans>This chapter has no readable file.</Trans>
+              ) : (
+                <Trans>Could not load this chapter.</Trans>
+              )}
             </Text>
-            <Button component={Link} to="/library" variant="light">
-              <Trans>Back to library</Trans>
-            </Button>
+            <Group gap="xs">
+              {!unreadable && (
+                <Button variant="light" loading={isFetching} onClick={() => void refetch()}>
+                  <Trans>Try again</Trans>
+                </Button>
+              )}
+              <Button component={Link} to="/library" variant="light">
+                <Trans>Back to library</Trans>
+              </Button>
+            </Group>
           </Stack>
         </Center>
       </div>
