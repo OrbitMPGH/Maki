@@ -260,24 +260,24 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DOWNLOADS | DOWNLOADS-32 | nit | done dd02082e |
 | DOWNLOADS | DOWNLOADS-35 | nit | skipped (behaviour change, timezone-dependent tests) |
 | DOWNLOADS | DOWNLOADS-31 | nit | done c49ba63e |
-| FE-INFRA | FE-INFRA-14 | low | pending |
-| FE-INFRA | FE-INFRA-04 | low | pending |
-| FE-INFRA | FE-INFRA-13 | low | pending |
-| FE-INFRA | FE-INFRA-16 | low | pending |
-| FE-INFRA | FE-INFRA-17 | low | pending |
-| FE-INFRA | FE-INFRA-24 | low | pending |
-| FE-INFRA | FE-INFRA-10 | low | pending |
-| FE-INFRA | FE-INFRA-21 | low | pending |
-| FE-INFRA | FE-INFRA-23 | low | pending |
-| FE-INFRA | FE-INFRA-11 | low | pending |
-| FE-INFRA | FE-INFRA-18 | low | pending |
-| FE-INFRA | FE-INFRA-20 | low | pending |
-| FE-INFRA | FE-INFRA-19 | low | pending |
-| FE-INFRA | FE-INFRA-27 | nit | pending |
-| FE-INFRA | FE-INFRA-09 | nit | pending |
-| FE-INFRA | FE-INFRA-12 | nit | pending |
-| FE-INFRA | FE-INFRA-25 | nit | pending |
-| FE-INFRA | FE-INFRA-26 | nit | pending |
+| FE-INFRA | FE-INFRA-14 | low | done 639d65f0, 4710e58b |
+| FE-INFRA | FE-INFRA-04 | low | done 9b633198, c236d1fb |
+| FE-INFRA | FE-INFRA-13 | low | done 510074b5, 051bfa38 |
+| FE-INFRA | FE-INFRA-16 | low | done 639d65f0 |
+| FE-INFRA | FE-INFRA-17 | low | done 639d65f0 |
+| FE-INFRA | FE-INFRA-24 | low | done fdadd942, 353716e5 |
+| FE-INFRA | FE-INFRA-10 | low | done 5dcd7708, b301cbc2 |
+| FE-INFRA | FE-INFRA-21 | low | done 74e89237, 32a10587, b301cbc2 |
+| FE-INFRA | FE-INFRA-23 | low | done b981c767 (no Mantine chunk group) |
+| FE-INFRA | FE-INFRA-11 | low | done 510074b5, 20bad74d, 5dcd7708 |
+| FE-INFRA | FE-INFRA-18 | low | done 80a64e52 |
+| FE-INFRA | FE-INFRA-20 | low | done 74e89237 |
+| FE-INFRA | FE-INFRA-19 | low | done 60d9c75f |
+| FE-INFRA | FE-INFRA-27 | nit | done 6682d202, b301cbc2 (queue summary already scoped server-side) |
+| FE-INFRA | FE-INFRA-09 | nit | done 659d7a60 (overlapping setLocale race left) |
+| FE-INFRA | FE-INFRA-12 | nit | done 659d7a60, c236d1fb |
+| FE-INFRA | FE-INFRA-25 | nit | done 7349acbe, 20bad74d |
+| FE-INFRA | FE-INFRA-26 | nit | done f9fce1d7, a440cd45, b301cbc2 (page-component em dashes belong to their lanes; UrlBase in ConfigFileProvider.cs left) |
 | FE-LIBRARY | FE-LIBRARY-39 | low | done fcd2d073 |
 | FE-LIBRARY | FE-LIBRARY-53 | low | done 45cf9479 |
 | FE-LIBRARY | FE-LIBRARY-21 | low | done 66efa0f4, a096b3d6 |
