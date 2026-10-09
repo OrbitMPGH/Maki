@@ -502,18 +502,10 @@ export function SourceMappingsSection({
                     }
                     withArrow
                   >
-                    <NumberInput
-                      size="xs"
-                      w={70}
-                      min={1}
-                      max={99}
+                    <PriorityInput
                       value={m.priority}
-                      onChange={(v) => {
-                        const priority = typeof v === 'number' ? v : Number(v)
-                        if (Number.isFinite(priority) && priority !== m.priority) {
-                          updateMapping.mutate({ ...m, priority })
-                        }
-                      }}
+                      label={t`Priority for ${sourceName}`}
+                      onCommit={(priority) => updateMapping.mutate({ ...m, priority })}
                     />
                   </Tooltip>
                 </Table.Td>
@@ -1016,6 +1008,43 @@ function signedNumber(i18n: { number: (n: number) => string }, n: number) {
  * one adds its own row per chapter number and its own wanted/missing count, and each downloads to
  * its own file. Hence the warning rather than a bare picker.
  */
+/** Holds a draft while typing and saves once, on blur or Enter, so a two-digit value is one write. */
+function PriorityInput({
+  value,
+  label,
+  onCommit,
+}: {
+  value: number
+  label: string
+  onCommit: (priority: number) => void
+}) {
+  const [draft, setDraft] = useState<number | string>(value)
+  useEffect(() => setDraft(value), [value])
+
+  const commit = () => {
+    const parsed = typeof draft === 'number' ? draft : draft === '' ? NaN : Number(draft)
+    const priority = Number.isFinite(parsed) ? Math.min(99, Math.max(1, Math.round(parsed))) : value
+    setDraft(priority)
+    if (priority !== value) onCommit(priority)
+  }
+
+  return (
+    <NumberInput
+      size="xs"
+      w={70}
+      min={1}
+      max={99}
+      aria-label={label}
+      value={draft}
+      onChange={setDraft}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+      }}
+    />
+  )
+}
+
 function MappingLanguages({
   mapping,
   supported,
@@ -1054,7 +1083,7 @@ function MappingLanguages({
   }
 
   return (
-    <MultiSelect
+    <MultiSelect
       size="xs"
       w={150}
       data={languageOptions}
