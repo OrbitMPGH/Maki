@@ -203,7 +203,7 @@ function LibraryStep() {
                   variant="subtle"
                   color="var(--danger)"
                   onClick={() => setDeleting({ id: f.id, path: f.path })}
-                  aria-label={t`Delete root folder`}
+                  aria-label={t`Remove root folder`}
                 >
                   <IconTrash size={16} />
                 </ActionIcon>
