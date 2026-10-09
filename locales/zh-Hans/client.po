@@ -10766,6 +10766,7 @@ msgstr "第 {pageIndex}/{pageCount} 页"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "第 {pageNumber}/{pageCount} 页"

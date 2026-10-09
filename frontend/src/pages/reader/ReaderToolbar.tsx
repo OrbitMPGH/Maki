@@ -41,6 +41,7 @@ const OVERLAY_Z = 500
 export default function ReaderToolbar({
   manifest,
   page,
+  pageLabel,
   onSeek,
   onPrevChapter,
   onNextChapter,
@@ -66,6 +67,8 @@ export default function ReaderToolbar({
 }: {
   manifest: ReaderManifest
   page: number
+  /** The page counter's text: one number, or a range when a double-page spread is up. */
+  pageLabel: string
   onSeek: (page: number) => void
   onPrevChapter: () => void
   onNextChapter: () => void
@@ -293,7 +296,7 @@ export default function ReaderToolbar({
             c="var(--ink-3)"
             style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
           >
-            {page + 1} / {manifest.pageCount}
+            {pageLabel} / {manifest.pageCount}
           </Text>
 
           <Tooltip label={forwardChapterLabel} withArrow zIndex={OVERLAY_Z}>

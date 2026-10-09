@@ -1,4 +1,4 @@
-import { Button, Center, Stack, Text } from '@mantine/core'
+import { Button, Center, Stack, Text, VisuallyHidden } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -90,6 +90,8 @@ export default function ReaderPage() {
   const spreadIndex = useMemo(() => spreadIndexOf(spreads, page), [spreads, page])
   // `page` is a spread's first index; the position on record is the furthest page on screen.
   const shownTo = useMemo(() => Math.max(page, ...(spreads[spreadIndex] ?? [])), [spreads, spreadIndex, page])
+  // "4-5" while a spread shows two pages, so the last spread can say it reached the final page.
+  const pageNumber = shownTo > page ? `${page + 1}-${shownTo + 1}` : `${page + 1}`
 
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
@@ -467,6 +469,7 @@ export default function ReaderPage() {
       <ReaderToolbar
         manifest={manifest}
         page={page}
+        pageLabel={pageNumber}
         onSeek={seekToPage}
         onPrevChapter={() => void goToChapter(manifest.previousChapterId, false)}
         onNextChapter={() => void goToChapter(manifest.nextChapterId, true)}
@@ -573,8 +576,16 @@ export default function ReaderPage() {
 
       {prefs.showPageNumber && !chrome && !atEnd && (
         <div className="reader-page-badge">
-          {page + 1} / {manifest.pageCount}
+          {pageNumber} / {manifest.pageCount}
         </div>
+      )}
+
+      {!atEnd && (
+        <VisuallyHidden role="status" aria-live="polite">
+          <Trans>
+            Page {pageNumber} of {pageCount}
+          </Trans>
+        </VisuallyHidden>
       )}
     </div>
   )
