@@ -208,8 +208,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // ChapterFile, forever.
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.ChapterFileId);
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.SeriesId);
+        // The workspace polls the open count and the default file order every few seconds.
+        modelBuilder.Entity<HealthFile>().HasIndex(x => new { x.Removed, x.RelativePath });
         modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
         modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
+        modelBuilder.Entity<HealthFinding>().HasIndex(x => x.State).HasFilter("\"State\" = 'open'");
         modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);
         modelBuilder.Entity<HealthOperation>().HasIndex(x => new { x.FileId, x.Status });
         modelBuilder.Entity<HealthHistory>().HasIndex(x => x.CreatedAt);
