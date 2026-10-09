@@ -28,6 +28,7 @@ public class DownloadWorkerHostedService(
     private const int DefaultItemTimeoutMinutes = 120;
     private static readonly TimeSpan CooldownPollInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan WorkerRestartDelay = TimeSpan.FromSeconds(10);
+    private const int MaxRecoveryAttempts = 6;
 
     private volatile int _concurrency = DefaultConcurrentChapters;
 
@@ -40,8 +41,10 @@ public class DownloadWorkerHostedService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // A transient database error here (another startup task holding the write lock) must not
-        // fault the service: the default host behaviour would stop the whole application.
-        await SuperviseAsync("startup recovery", RecoverAsync, stoppingToken);
+        // fault the service: the default host behaviour would stop the whole application. Bounded,
+        // because no worker starts until it returns, and SweepOrphanedAsync re-queues whatever
+        // recovery did not get to.
+        await SuperviseAsync("startup recovery", RecoverAsync, stoppingToken, maxAttempts: MaxRecoveryAttempts);
         await RefreshSettingsAsync(stoppingToken);
 
         var workers = Enumerable.Range(0, MaxConcurrentChapters)
@@ -60,9 +63,10 @@ public class DownloadWorkerHostedService(
     /// Everything here is retryable (a transient DB error, a bad row), so log it and start over
     /// after a pause rather than losing a worker permanently.
     /// </summary>
-    private async Task SuperviseAsync(string name, Func<CancellationToken, Task> loop, CancellationToken ct)
+    private async Task SuperviseAsync(
+        string name, Func<CancellationToken, Task> loop, CancellationToken ct, int? maxAttempts = null)
     {
-        while (!ct.IsCancellationRequested)
+        for (var attempt = 1; !ct.IsCancellationRequested; attempt++)
         {
             try
             {
@@ -75,6 +79,12 @@ public class DownloadWorkerHostedService(
             }
             catch (Exception ex)
             {
+                if (attempt >= maxAttempts)
+                {
+                    logger.LogError(ex, "Download {Name} failed {Attempts} times; giving up on it", name, attempt);
+                    return;
+                }
+
                 logger.LogError(ex, "Download {Name} loop faulted; restarting in {Delay}s",
                     name, WorkerRestartDelay.TotalSeconds);
                 try
