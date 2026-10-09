@@ -295,14 +295,16 @@ public class DiscoverService(
     /// <summary>
     /// One rail set per ceiling, always built to <see cref="RefillRailSize"/> and cut to the depth
     /// asked for. A fresh entry is served without waiting; so is an expired one while another build
-    /// of the same set is running, because a rebuild must not stall every reader of a shared page.
+    /// of the same set is running, because a rebuild must not stall every reader of a shared page. A
+    /// refresh always waits its turn and rebuilds, or a warm-up after a dump install could keep the
+    /// old rails for another twelve hours.
     /// </summary>
     private async Task<IReadOnlyList<DiscoverRail>> CachedAsync(
         RailSet set, string ceiling, bool refresh, int depth,
         Func<Task<IReadOnlyList<DiscoverRail>>> build, CancellationToken ct)
     {
         set.Entries.TryGetValue(ceiling, out var hit);
-        if (hit is not null && (!refresh && Fresh(hit) || set.Build.CurrentCount == 0))
+        if (hit is not null && !refresh && (Fresh(hit) || set.Build.CurrentCount == 0))
         {
             return Slice(hit.Rails, depth);
         }

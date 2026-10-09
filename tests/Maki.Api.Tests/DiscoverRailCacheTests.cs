@@ -70,12 +70,37 @@ public class DiscoverRailCacheTests
         await store.Entered.Task.WaitAsync(Timeout);
 
         var during = await discover.GetFeedsAsync(refresh: false, ContentRating.Safe).WaitAsync(Timeout);
-        var refreshDuring = await discover.GetFeedsAsync(refresh: true, ContentRating.Safe).WaitAsync(Timeout);
+        // A second refresh waits for the running one and takes its result rather than scanning again.
+        var refreshDuring = discover.GetFeedsAsync(refresh: true, ContentRating.Safe);
 
         Assert.Equal(before.Count, during.Count);
-        Assert.Equal(before.Count, refreshDuring.Count);
         Assert.False(rebuild.IsCompleted);
+        var queries = store.Queries;
         store.Gate.SetResult();
         await rebuild.WaitAsync(Timeout);
+        await refreshDuring.WaitAsync(Timeout);
+        Assert.Equal(queries, store.Queries);
+    }
+
+    [Fact]
+    public async Task A_refresh_rebuilds_even_while_another_ceilings_build_runs()
+    {
+        var store = new CountingStore();
+        var discover = Service(store);
+        await discover.GetFeedsAsync(refresh: false, ContentRating.Suggestive);
+        var warm = store.Queries;
+
+        store.Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cold = discover.GetFeedsAsync(refresh: false, ContentRating.Safe);
+        await store.Entered.Task.WaitAsync(Timeout);
+
+        var refresh = discover.GetFeedsAsync(refresh: true, ContentRating.Suggestive);
+        await Task.Delay(50);
+        Assert.False(refresh.IsCompleted);
+
+        store.Gate.SetResult();
+        await cold.WaitAsync(Timeout);
+        await refresh.WaitAsync(Timeout);
+        Assert.Equal(warm * 3, store.Queries);
     }
 }
