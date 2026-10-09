@@ -22,13 +22,14 @@ import {
   IconTrendingUp,
 } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import {
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
 import { altTitleLabel, readableTitles } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
-import { formatFixedDecimal, formatNumber } from '../../format'
+import { formatFixedDecimal } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
@@ -139,7 +140,6 @@ export function DiscoverDetailModal({
   // otherwise extract as an unlabelled {0}.
   const readerHint = detail?.readerHint ?? null
   const readerHintScoreDisplay = readerHint ? formatFixedDecimal(readerHint.score / 10, 1) : null
-  const readerHintReadersDisplay = readerHint ? formatNumber(readerHint.readers) : null
   const readerHintBaselineDisplay = readerHint ? formatFixedDecimal(readerHint.baseline / 10, 1) : null
   const readerHintHigher = readerHint ? readerHint.score > readerHint.baseline : false
 
@@ -321,7 +321,10 @@ export function DiscoverDetailModal({
                             multiline
                             w={260}
                             zIndex={1001}
-                            label={t`${readerHintScoreDisplay} from ${readerHintReadersDisplay} readers with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`}
+                            label={plural(readerHint.readers, {
+                              one: `${readerHintScoreDisplay} from # reader with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
+                              other: `${readerHintScoreDisplay} from # readers with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
+                            })}
                           >
                             <Badge
                               size="sm"

@@ -11,6 +11,7 @@ import {
 } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import {
   useCreator,
   useRootFolders,
@@ -302,10 +303,10 @@ export default function CreatorPage() {
       {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && !canLoadMore && (
         <Alert variant="light" color="var(--neutral)" mt="md">
           <Text size="sm">
-            <Trans>
-              Showing {shownCount} of {workCount} titles. Filters and the catalogue's own coverage
-              both narrow this: only rated, non-novel entries are searchable.
-            </Trans>
+            {plural(workCount, {
+              one: `Showing ${shownCount} of # title. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.`,
+              other: `Showing ${shownCount} of # titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.`,
+            })}
           </Text>
         </Alert>
       )}

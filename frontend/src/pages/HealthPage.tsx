@@ -335,9 +335,10 @@ export default function HealthPage() {
             <Alert key={scan.id} title={scanTitle} mb="lg">
               <Group justify="space-between">
                 <Text>
-                  <Trans>
-                    {completed} / {total} files inspected
-                  </Trans>
+                  {plural(total, {
+                    one: `${completed} / # file inspected`,
+                    other: `${completed} / # files inspected`,
+                  })}
                 </Text>
                 <Button size="xs" variant="default" onClick={() => run(`/scans/${scan.id}/cancel`)}>
                   <Trans>Cancel scan</Trans>

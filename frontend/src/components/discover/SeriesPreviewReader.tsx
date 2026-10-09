@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
 import { IconArrowLeft, IconX } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { previewPageUrl, useSeriesPreview } from '../../api/preview'
 import { useReaderSettings } from '../../api/reader'
 import { useReadingProfiles } from '../../api/readingProfiles'
@@ -218,9 +219,12 @@ export function SeriesPreviewReader({
             {!source ? (
               <Trans>Looking for a source…</Trans>
             ) : pageCount > 0 ? (
-              <Trans>
-                Fetching from {source}, {readyPages} of {pageCount} pages
-              </Trans>
+              <>
+                {plural(pageCount, {
+                  one: `Fetching from ${source}, ${readyPages} of # page`,
+                  other: `Fetching from ${source}, ${readyPages} of # pages`,
+                })}
+              </>
             ) : (
               <Trans>Fetching from {source}…</Trans>
             )}

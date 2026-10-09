@@ -1141,10 +1141,13 @@ function SeriesDetailBody() {
             <Tooltip
                 label={
                   mixed
-                      ? t`${wantedCount} of ${total} chapters wanted · click to want all`
+                      ? plural(total, {
+                          one: `${wantedCount} of # chapter wanted · click to want all`,
+                          other: `${wantedCount} of # chapters wanted · click to want all`,
+                        })
                       : allWanted
-                          ? t`All ${total} chapters wanted`
-                          : t`None of the ${total} chapters wanted`
+                          ? plural(total, { one: 'All # chapter wanted', other: 'All # chapters wanted' })
+                          : plural(total, { one: 'None of the # chapter wanted', other: 'None of the # chapters wanted' })
                 }
                 withArrow
             >
@@ -1153,7 +1156,10 @@ function SeriesDetailBody() {
                   checked={allWanted}
                   classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
                   thumbIcon={mixed ? <IconMinus size={10} stroke={3} /> : undefined}
-                  aria-label={t`Wanted for ${spanLabel}: ${wantedCount} of ${total} chapters`}
+                  aria-label={plural(total, {
+                    one: `Wanted for ${spanLabel}: ${wantedCount} of # chapter`,
+                    other: `Wanted for ${spanLabel}: ${wantedCount} of # chapters`,
+                  })}
                   disabled={!canEditMetadata || setChaptersWanted.isPending}
                   onChange={(e) => applyWanted(ids, e.currentTarget.checked)}
               />
@@ -1178,7 +1184,10 @@ function SeriesDetailBody() {
           </Table.Td>
           <Table.Td>
             <Text size="sm" c="var(--ink-3)" className="tnum">
-              <Trans>{total} chapters · {downloadedCount} downloaded</Trans>
+              {plural(total, {
+                one: `# chapter · ${downloadedCount} downloaded`,
+                other: `# chapters · ${downloadedCount} downloaded`,
+              })}
               {watchedCount > 0 && (
                   <>
                     {' · '}
@@ -2037,12 +2046,18 @@ function SeriesDetailBody() {
         <Modal
             opened={downloadAllConfirmOpen}
             onClose={() => setDownloadAllConfirmOpen(false)}
-            title={t`Download ${missingWanted} wanted chapters?`}
+            title={plural(missingWanted, {
+              one: 'Download # wanted chapter?',
+              other: 'Download # wanted chapters?',
+            })}
             centered
         >
           <Stack gap="sm">
             <Text mt="sm" size="sm">
-              <Trans>This will add {missingWanted} chapters to the download queue.</Trans>
+              {plural(missingWanted, {
+                one: 'This will add # chapter to the download queue.',
+                other: 'This will add # chapters to the download queue.',
+              })}
             </Text>
             <Group justify="flex-end">
               <Button variant="default" onClick={() => setDownloadAllConfirmOpen(false)}>
@@ -2055,7 +2070,7 @@ function SeriesDetailBody() {
                     queueAllWanted()
                   }}
               >
-                <Trans>Download {missingWanted} chapters</Trans>
+                {plural(missingWanted, { one: 'Download # chapter', other: 'Download # chapters' })}
               </Button>
             </Group>
           </Stack>
@@ -3231,6 +3246,13 @@ function SeriesDetailBody() {
 function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
   const { seconds, style, remainingChapters, sampleChapters, seriesSpecific } = estimate
   const readingTime = formatReadingTime(seconds)
+  const chaptersLeft = plural(remainingChapters, { one: '# chapter left', other: '# chapters left' })
+  const basis = seriesSpecific
+    ? plural(sampleChapters, {
+        one: 'based on # chapter from this series',
+        other: 'based on # chapters from this series',
+      })
+    : plural(sampleChapters, { one: 'based on # similar read', other: 'based on # similar reads' })
   return (
       <Stack gap={1}>
         <Text size="sm" fw={650} className="tnum">
@@ -3238,25 +3260,9 @@ function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
         </Text>
         <Text size="xs" c="var(--ink-3)">
           {style === 'scrolling' ? (
-              seriesSpecific ? (
-                  <Trans>
-                    Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from
-                    this series
-                  </Trans>
-              ) : (
-                  <Trans>
-                    Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads
-                  </Trans>
-              )
-          ) : seriesSpecific ? (
-              <Trans>
-                Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this
-                series
-              </Trans>
+              <Trans>Scrolling pace · {chaptersLeft} · {basis}</Trans>
           ) : (
-              <Trans>
-                Paged pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads
-              </Trans>
+              <Trans>Paged pace · {chaptersLeft} · {basis}</Trans>
           )}
         </Text>
       </Stack>

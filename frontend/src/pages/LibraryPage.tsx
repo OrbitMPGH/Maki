@@ -960,9 +960,10 @@ export default function LibraryPage() {
                 </Button>
                 <Text size="xs" c="var(--ink-3)" className="tnum">
                   {filtersActive ? (
-                    <Trans>
-                      {visibleCount} of {totalCount} series match
-                    </Trans>
+                    plural(totalCount, {
+                      one: `${visibleCount} of # series match`,
+                      other: `${visibleCount} of # series match`,
+                    })
                   ) : (
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
@@ -1093,9 +1094,10 @@ export default function LibraryPage() {
                 />
                 <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm" hidden={isLoading}>
                   {filtersActive ? (
-                    <Trans>
-                      {visibleCount} of {totalCount} series match
-                    </Trans>
+                    plural(totalCount, {
+                      one: `${visibleCount} of # series match`,
+                      other: `${visibleCount} of # series match`,
+                    })
                   ) : (
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
@@ -1177,9 +1179,10 @@ export default function LibraryPage() {
       >
         <Stack gap="sm" pb="xl">
           <Text size="sm" c="var(--ink-3)">
-            <Trans>
-              {shownCount} of {totalSeriesShown} series shown.
-            </Trans>{' '}
+            {plural(totalSeriesShown, {
+              one: `${shownCount} of # series shown.`,
+              other: `${shownCount} of # series shown.`,
+            })}{' '}
             <Trans>Changes apply straight to the grid behind this panel.</Trans>
           </Text>
           <Select
@@ -1429,7 +1432,7 @@ export default function LibraryPage() {
       <Modal
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
-        title={t`Tag ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
       >
         <Stack gap="md">
           <Text size="sm" c="var(--ink-3)">
@@ -1493,7 +1496,7 @@ export default function LibraryPage() {
       <Modal
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
-        title={t`Auto-match sources for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>
@@ -1559,7 +1562,7 @@ export default function LibraryPage() {
       <Modal
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
-        title={t`Set monitoring for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>Applies to chapters released later.</Trans>{' '}
@@ -1604,7 +1607,7 @@ export default function LibraryPage() {
       <Modal
         opened={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
-        title={t`Set quality profile for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>
@@ -1675,7 +1678,7 @@ export default function LibraryPage() {
       <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
-        title={t`Set notifications for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>Yours alone - this changes what lands in your bell, not anybody else's.</Trans>
@@ -1729,7 +1732,7 @@ export default function LibraryPage() {
       <Modal
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        title={t`Move ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
       >
         <Stack gap="md">
           <Text size="sm" c="var(--ink-3)">

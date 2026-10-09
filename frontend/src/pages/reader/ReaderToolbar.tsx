@@ -27,6 +27,7 @@ import {
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
@@ -225,9 +226,10 @@ export default function ReaderToolbar({
                     <Text fz="xs" c="var(--ink-3)" truncate className="tnum">
                       {/* Named, since the bottom bar's bare page count sits right under it. */}
                       {chaptersRead < seriesChapterCount ? (
-                        <Trans>
-                          {chaptersRead}/{seriesChapterCount} chapters read
-                        </Trans>
+                        plural(seriesChapterCount, {
+                          one: `${chaptersRead}/# chapter read`,
+                          other: `${chaptersRead}/# chapters read`,
+                        })
                       ) : (
                         <Trans>all read</Trans>
                       )}

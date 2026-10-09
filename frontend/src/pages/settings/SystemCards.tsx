@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Alert,
@@ -382,11 +382,15 @@ export function ImageCacheSection() {
       ? Math.min(100, Math.round((status.processed / status.total) * 100))
       : null
 
-  const coverFilesLabel = usage ? formatNumber(usage.coverFiles) : undefined
+  const coverFiles = usage ? plural(usage.coverFiles, { one: '# file', other: '# files' }) : ''
   const coverBytesLabel = usage ? formatBytes(usage.coverBytes) : undefined
   const coversMissingLabel = usage ? formatNumber(usage.coversMissing) : undefined
-  const seriesTotalLabel = usage ? formatNumber(usage.seriesTotal) : undefined
-  const thumbnailFilesLabel = usage ? formatNumber(usage.thumbnailFiles) : undefined
+  const coversMissing = usage
+    ? plural(usage.seriesTotal, {
+        one: `${coversMissingLabel} of # series has no usable poster`,
+        other: `${coversMissingLabel} of # series have no usable poster`,
+      })
+    : ''
   const thumbnailBytesLabel = usage ? formatBytes(usage.thumbnailBytes) : undefined
 
   const lastError = status?.lastError
@@ -437,19 +441,19 @@ export function ImageCacheSection() {
           <Text size="sm" c="var(--ink-3)">
             {usage.coversMissing > 0 ? (
               <Trans>
-                Posters: {coverFilesLabel} files, {coverBytesLabel} - {coversMissingLabel} of{' '}
-                {seriesTotalLabel} series have no usable poster
+                Posters: {coverFiles}, {coverBytesLabel} - {coversMissing}
               </Trans>
             ) : (
               <Trans>
-                Posters: {coverFilesLabel} files, {coverBytesLabel} - every series has one
+                Posters: {coverFiles}, {coverBytesLabel} - every series has one
               </Trans>
             )}
           </Text>
           <Text size="sm" c="var(--ink-3)">
-            <Trans>
-              Reader thumbnails: {thumbnailFilesLabel} files, {thumbnailBytesLabel}
-            </Trans>
+            {plural(usage.thumbnailFiles, {
+              one: `Reader thumbnails: # file, ${thumbnailBytesLabel}`,
+              other: `Reader thumbnails: # files, ${thumbnailBytesLabel}`,
+            })}
           </Text>
         </Stack>
       )}
@@ -514,11 +518,10 @@ export function ImageCacheSection() {
       >
         <Stack>
           <Text size="sm">
-            <Trans>
-              This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup
-              and one image each. On a large library it runs for several minutes. Use &quot;Rebuild
-              missing&quot; instead if you are only fixing covers that fail to load.
-            </Trans>
+            {plural(usage?.seriesTotal ?? 0, {
+              one: 'This re-downloads the poster for the # series, one metadata lookup and one image each. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
+              other: 'This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
+            })}
           </Text>
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setConfirmForce(false)}>
