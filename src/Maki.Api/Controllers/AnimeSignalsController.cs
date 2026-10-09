@@ -58,7 +58,7 @@ public class AnimeSignalsController(
         // recommender rather than the raw rows behind it. A reader who scrobbles to both trackers
         // would otherwise see every show twice, and every season of a franchise as its own opinion.
         var rows = AnimeSignalGrouping.Group(stored)
-            .OrderByDescending(x => x.Score ?? 0)
+            .OrderByDescending(x => x.Score)
             .ThenBy(x => x.Title, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
