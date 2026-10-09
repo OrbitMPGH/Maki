@@ -3,7 +3,6 @@ using Microsoft.Data.Sqlite;
 
 namespace Maki.Metadata.Embedding;
 
-/// <summary>A tag's display/scoring metadata from the vocabulary table.</summary>
 /// <summary>
 /// One vocabulary entry. <paramref name="Category"/> is the root of the tag's MangaBaka
 /// <c>name_path</c> ("Themes", "Character Traits", "Sexual Content"), which is what lets scoring
@@ -531,7 +530,7 @@ public class EmbeddingStore(EmbeddingOptions options)
         WriteModelVersion(conn, version);
     }
 
-    private static string? ReadModelVersion(string dbPath)
+    internal static string? ReadModelVersion(string dbPath)
     {
         using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();

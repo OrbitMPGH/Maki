@@ -94,10 +94,6 @@ export function moveSection(sections: PageSection[], from: number, to: number): 
   return next
 }
 
-export function patchSection(sections: PageSection[], key: string, patch: Partial<PageSection>): PageSection[] {
-  return sections.map((s) => (s.key === key ? { ...s, ...patch } : s))
-}
-
 export function sameLayout(a: PageSection[], b: PageSection[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
 }

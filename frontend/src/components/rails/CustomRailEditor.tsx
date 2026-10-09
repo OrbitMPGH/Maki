@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -161,7 +162,7 @@ export function CustomRailForm({
         notifications.show({ color: 'var(--ok)', message: rail ? now`Rail saved` : now`Rail added` })
         onSaved?.(saved)
       },
-      onError: (err: unknown) => setError(String(err)),
+      onError: (err: unknown) => setError(errorText(err)),
     }
     if (rail) update.mutate({ id: rail.id, ...body }, options)
     else create.mutate(body, options)

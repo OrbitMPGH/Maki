@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -1499,7 +1500,7 @@ function SeriesDetailBody() {
     try {
       await dismissAnimeResumeMutation.mutateAsync({})
     } catch (error) {
-      notifications.show({ color: 'var(--danger)', message: String(error) })
+      notifications.show({ color: 'var(--danger)', message: errorText(error) })
       return
     }
 
@@ -1531,7 +1532,7 @@ function SeriesDetailBody() {
           message: (
             <Group gap="xs" wrap="nowrap" justify="space-between">
               <Text size="sm">
-                <Trans>Undo failed: {String(error)}</Trans>
+                <Trans>Undo failed: {errorText(error)}</Trans>
               </Text>
               <Button size="xs" variant="subtle" style={{ flexShrink: 0 }} onClick={performUndo}>
                 <Trans>Retry</Trans>

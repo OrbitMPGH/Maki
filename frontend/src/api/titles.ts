@@ -2,7 +2,7 @@ import type { LocalizedTitle } from './types'
 
 /**
  * Display names for the language codes metadata providers actually use, so an alt-title line reads
- * "ベルセルク (Japanese)" rather than "(ja)". A code that isn't here falls back to itself — the list
+ * "ベルセルク (Japanese)" rather than "(ja)". A code that isn't here falls back to itself, the list
  * is a courtesy, not a whitelist, and providers invent regional spellings faster than this grows.
  */
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -48,7 +48,7 @@ export function altTitleLabel(alt: LocalizedTitle): string {
 
 /**
  * The alt titles worth showing beside `displayed`: the original-script title first, then everything
- * the provider tagged, with anything already on screen dropped. Duplicates are common — the English
+ * the provider tagged, with anything already on screen dropped. Duplicates are common, the English
  * alt title of an English-titled series is the title again.
  */
 export function otherTitles(

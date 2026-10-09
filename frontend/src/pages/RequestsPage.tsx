@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -208,7 +209,7 @@ export default function RequestsPage() {
 
       {(approve.isError || reject.isError || remove.isError || edit.isError) && (
         <Alert color="var(--danger)" variant="light" mb="md">
-          {String(approve.error ?? reject.error ?? remove.error ?? edit.error)}
+          {errorText(approve.error ?? reject.error ?? remove.error ?? edit.error)}
         </Alert>
       )}
 

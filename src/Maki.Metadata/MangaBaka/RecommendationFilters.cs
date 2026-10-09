@@ -147,7 +147,7 @@ public record RecommendationFilters(
             parts.Add(rule.Mode switch
             {
                 CatalogueRules.Any => $"({string.Join(" OR ", tests)})",
-                CatalogueRules.None => $"NOT ({string.Join(" OR ", tests)})",
+                CatalogueRules.None => $"({alias}.genres IS NULL OR NOT ({string.Join(" OR ", tests)}))",
                 _ => string.Join(" AND ", tests),
             });
             ruleIndex++;
@@ -171,7 +171,9 @@ public record RecommendationFilters(
 
         AppendIn(cmd, parts, alias, "type", Types, $"{prefix}_t");
         AppendIn(cmd, parts, alias, "status", Statuses, $"{prefix}_s");
-        AppendIn(cmd, parts, alias, "content_rating", ContentRatings, $"{prefix}_cr", emptyMatchesNothing: true);
+        AppendIn(
+            cmd, parts, alias, "content_rating", ContentRating.CoversAll(ContentRatings) ? null : ContentRatings,
+            $"{prefix}_cr", emptyMatchesNothing: true);
 
         return parts.Count > 0 ? " AND " + string.Join(" AND ", parts) : string.Empty;
     }

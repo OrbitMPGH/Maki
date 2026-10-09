@@ -4835,6 +4835,12 @@ msgstr "読書履歴に共通する傾向がまだ十分にありません。"
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "カタログに登録されたシリーズが{min}件以上必要です。現在、この表示では{count}件あります。"
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An install of this download is already running.
+msgid "install.alreadyRunning"
+msgstr ""
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: Already using this model.
 #, fuzzy
@@ -4864,6 +4870,11 @@ msgstr "インデックスを作成中です。完了後にもう一度お試し
 #, fuzzy
 msgid "install.embeddingModel.notAvailable"
 msgstr "埋め込みモデルを利用できません"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: The model switch failed. Check the server log for details.
+msgid "install.embeddingModel.switchFailed"
+msgstr ""
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: A model switch is already in progress.

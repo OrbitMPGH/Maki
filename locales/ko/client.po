@@ -779,11 +779,6 @@ msgstr "{kind, select, both {스토리 · 그림} story {스토리} art {그림}
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {이전 기간보다 {pct}% 증가했습니다.} down {이전 기간보다 {pct}% 감소했습니다.} flat {이전 기간과 거의 같습니다.} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{relatedTo}의 {kind}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -4152,6 +4147,7 @@ msgstr "클라이언트 시크릿"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Close"
 msgstr "닫기"
@@ -4703,6 +4699,10 @@ msgstr ""
 #, fuzzy
 msgid "Couldn't load this rail"
 msgstr "이 섹션을 불러오지 못했습니다"
+
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -5874,6 +5874,7 @@ msgstr "시대"
 msgid "Erotica"
 msgstr "에로티카"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8824,6 +8825,10 @@ msgstr "중앙값"
 #, fuzzy
 msgid "Median wait"
 msgstr "중앙 대기 시간"
+
+#: src/App.tsx
+msgid "Menu"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -12050,6 +12055,10 @@ msgstr "관련 시리즈"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "관련 시리즈, 이와 비슷한 항목, 유사, 추천, 레일, 속편, 스핀오프"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -12644,6 +12653,7 @@ msgstr "대기 중인 다운로드 재시도 및 취소"
 msgid "Retry download"
 msgstr "다운로드 재시도"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -13221,9 +13231,8 @@ msgid "Search"
 msgstr "검색"
 
 #: src/components/CommandPalette.tsx
-#, fuzzy
-msgid "Search (Ctrl+K)"
-msgstr "검색 (Ctrl+K)"
+msgid "Search ({shortcut})"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -15045,6 +15054,14 @@ msgstr "시리즈의 소스"
 msgid "The server logs will say why."
 msgstr "이유는 서버 로그에서 확인할 수 있습니다."
 
+#: src/api/client.ts
+msgid "The server returned an error ({status})."
+msgstr ""
+
+#: src/api/client.ts
+msgid "The server sent a response Maki could not read ({status})."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
@@ -16664,6 +16681,7 @@ msgstr "원하는 챕터는 기존 자동화로 다시 다운로드할 수 있�
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "{spanLabel}에 대해 원하는 챕터: {total}개 중 {wantedCount}개"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"
