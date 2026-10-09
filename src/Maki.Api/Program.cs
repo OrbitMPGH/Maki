@@ -1289,6 +1289,7 @@ try
     builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
     var app = builder.Build();
+    DataDiagnostics.Logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Maki.Data");
 
     // Apply migrations + enable WAL on startup. Migrations are forward-only with no down path, so
     // snapshot the current DB *before* applying any pending migration — the recovery net for a bad
