@@ -320,8 +320,8 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, one {# download in progress} other {# downloads in progress}}"
 
 #: src/components/ImportListsSection.tsx
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "{adds} added by you, {excluded} excluded from taste"
@@ -3774,7 +3774,7 @@ msgstr "Could not copy to the clipboard. Select the text and copy it by hand."
 msgid "Could not import {file}"
 msgstr "Could not import {file}"
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Could not load anime signals: {0}"
@@ -8330,8 +8330,8 @@ msgid "Nothing here is final. Every option is also in Settings."
 msgstr "Nothing here is final. Every option is also in Settings."
 
 #: src/components/ImportListsSection.tsx
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Nothing imported: import lists need the local MangaBaka database."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Nothing imported: import lists need the local MangaBaka database."
 
 #: src/api/upgrades.ts
 msgid "Nothing in it beats what you have"
@@ -13083,7 +13083,7 @@ msgstr "Underscore (_)"
 msgid "Undo"
 msgstr "Undo"
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
 msgid "Undo failed: {0}"
 msgstr "Undo failed: {0}"

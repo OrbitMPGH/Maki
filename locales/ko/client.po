@@ -376,8 +376,8 @@ msgstr "{active, plural, other {다운로드 #개 진행 중}}"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "{added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류 {errors}개"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "{added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류 {errors}개"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4600,7 +4600,7 @@ msgstr "클립보드에 복사하지 못했습니다. 텍스트를 선택해서 
 msgid "Could not import {file}"
 msgstr ""
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10158,8 +10158,8 @@ msgstr "여기서 설정한 내용은 언제든 변경할 수 있습니다. 모�
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "가져온 항목이 없습니다. 가져오기 목록을 사용하려면 로컬 MangaBaka 데이터베이스가 필요합니다."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "가져온 항목이 없습니다. 가져오기 목록을 사용하려면 로컬 MangaBaka 데이터베이스가 필요합니다."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -15928,7 +15928,7 @@ msgstr "밑줄 (_)"
 msgid "Undo"
 msgstr "실행 취소"
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo failed: {0}"
