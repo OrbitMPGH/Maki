@@ -340,7 +340,6 @@ public class SeriesEmbeddingIndexer(
         int Id, string Name, byte Class, bool IsSpoiler, long SeriesCount, string Category,
         string NamePath = "");
 
-    /// <summary>Parses the tags_v2 JSON array; tolerant of missing fields and bad JSON.</summary>
     /// <summary>
     /// The first segment of a <c>name_path</c>. Split rather than stored whole because only the root
     /// distinguishes what a tag is <em>about</em> - everything below it narrows within that kind,
@@ -352,6 +351,7 @@ public class SeriesEmbeddingIndexer(
         return (cut < 0 ? namePath : namePath[..cut]).Trim();
     }
 
+    /// <summary>Parses the tags_v2 JSON array; tolerant of missing fields and bad JSON.</summary>
     internal static List<ParsedTag> ParseTags(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))

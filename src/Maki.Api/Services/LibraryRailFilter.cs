@@ -72,7 +72,7 @@ public static class LibraryRailFilter
             return false;
         }
 
-        if (f.ContentRatings is { Count: > 0 } ratings &&
+        if (f.ContentRatings is { Count: > 0 } ratings && !ContentRating.CoversAll(ratings) &&
             !ratings.Contains(s.ContentRating ?? string.Empty, StringComparer.OrdinalIgnoreCase))
         {
             return false;

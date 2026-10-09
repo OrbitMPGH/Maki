@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Maki.Metadata.Catalogue;
 
@@ -17,7 +18,7 @@ namespace Maki.Metadata.Catalogue;
 /// FTS5 table.
 /// </para>
 /// </summary>
-public static class CatalogueText
+public static partial class CatalogueText
 {
     /// <summary>
     /// Longest token this will run edit distance over. Beyond it the DP is not worth the cycles and
@@ -128,20 +129,24 @@ public static class CatalogueText
     /// The dump carries both "Junji Itou" (83 works) and "ITO Junji" (1), which are one person
     /// written in wapuro and macron-less Hepburn. Without this, searching either spelling finds a
     /// fraction of the work. <c>ou</c>, <c>oo</c> and <c>uu</c> all collapse, since those are the
-    /// three sequences that encode a long vowel; doubled consonants are deliberately left alone
-    /// because they are phonemic ("Ippo" is not "Ipo").
+    /// sequences that encode a long vowel, as does the traditional-Hepburn <c>oh</c> ("Satoh") when
+    /// no vowel follows it. A traditional-Hepburn <c>m</c> before <c>b</c>, <c>m</c> or <c>p</c>
+    /// ("Homma", "Namba") reads as <c>n</c>. Doubled consonants are deliberately left alone because
+    /// they are phonemic ("Ippo" is not "Ipo").
     /// </para>
     /// <para>
-    /// It is lossy on English words that happen to contain those pairs, so "Young" keys the same as
-    /// "Yong". That is why this only ever picks which spelling of a resolved name to prefer, and
-    /// never merges two names' works together: a wrong merge would be invisible, while a wrong
-    /// preference just shows the other spelling's page.
+    /// The collapse only applies to names that read as Hepburn or Kunrei romaji (see
+    /// <see cref="LooksJapaneseRomanized"/>). A name holding a token romaji cannot spell, such as
+    /// "Kim", "Lee", "Park", "Jung" or "Young", keeps its vowel pairs, so "Kim Young" and "Kim Yong"
+    /// stay apart. Korean tokens that happen to parse as romaji ("Choi", "Yoon", "Moon") still
+    /// merge with their short spellings, and so does a lone token like "Yuuki" against "Yuki";
+    /// <see cref="CreditIndex"/> accepts that cost.
     /// </para>
     /// </summary>
     public static string RomanizationKey(string? text)
     {
         var key = TokenSortKey(text);
-        if (key.Length == 0)
+        if (key.Length == 0 || !(HasMacron(text) || LooksJapaneseRomanized(key)))
         {
             return key;
         }
@@ -150,16 +155,53 @@ public static class CatalogueText
         for (var i = 0; i < key.Length; i++)
         {
             var c = key[i];
+            var next = i + 1 < key.Length ? key[i + 1] : ' ';
+            if (c == 'm' && next is 'b' or 'm' or 'p')
+            {
+                c = 'n';
+            }
+
             builder.Append(c);
-            if (i + 1 < key.Length &&
-                ((c == 'o' && (key[i + 1] == 'u' || key[i + 1] == 'o')) ||
-                 (c == 'u' && key[i + 1] == 'u')))
+            if ((c == 'o' && next is 'u' or 'o') || (c == 'u' && next == 'u'))
+            {
+                i++;
+            }
+            else if (c == 'o' && next == 'h' && (i + 2 >= key.Length || !"aiueo".Contains(key[i + 2])))
             {
                 i++;
             }
         }
 
         return builder.ToString();
+    }
+
+    private static bool HasMacron(string? text) =>
+        text is not null && text.AsSpan().IndexOfAny("āīūēōĀĪŪĒŌ") >= 0;
+
+    // Moras of Hepburn and Kunrei romaji: an optional doubled or digraph consonant plus a vowel (or
+    // the traditional "oh"), a bare "n" that does not start a following mora, or the traditional
+    // "m" written before b, m or p.
+    [GeneratedRegex("^(?:(?:(?:kk|ss|tt|pp|tch|ssh|cch)|(?:ky|gy|ny|hy|by|py|my|ry|sy|zy|ty|dy|jy|sh|ch|ts|[kgsztdnhbpmyrwfj]))?(?:oh|[aiueo])|n(?![aiueoy])|m(?=[bmp]))+$")]
+    private static partial Regex RomajiToken();
+
+    /// <summary>
+    /// Whether every token of a <see cref="TokenSortKey"/> parses as Hepburn or Kunrei romaji. A
+    /// token such as "Park", "Kim" or "Young" fails on a final consonant, and "Lee" or "Jung" on a
+    /// letter or cluster romaji does not use, which is what keeps the long-vowel collapse off names
+    /// holding one. It is a syllable test, not a language test: other tokens that parse as romaji
+    /// pass.
+    /// </summary>
+    internal static bool LooksJapaneseRomanized(string key)
+    {
+        foreach (var token in key.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!RomajiToken().IsMatch(token))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

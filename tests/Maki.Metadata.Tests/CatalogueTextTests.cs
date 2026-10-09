@@ -78,6 +78,37 @@ public class CatalogueTextTests
     public void RomanizationKey_collapses_long_vowel_spellings(string a, string b) =>
         Assert.Equal(CatalogueText.RomanizationKey(a), CatalogueText.RomanizationKey(b));
 
+    // Names holding a token romaji cannot spell (Kim, Lee, Park, Jung, Young) keep their vowel pairs.
+    // Korean tokens that parse as romaji (Choi, Yoon, Moon) still merge, which is accepted.
+    [Theory]
+    [InlineData("Kim Young", "Kim Yong")]
+    [InlineData("Lee Joo", "Lee Jo")]
+    [InlineData("Park Soo", "Park So")]
+    [InlineData("Jung Woo", "Jung Wo")]
+    [InlineData("Young", "Yong")]
+    public void RomanizationKey_keeps_names_with_non_romaji_tokens_apart(string a, string b) =>
+        Assert.NotEqual(CatalogueText.RomanizationKey(a), CatalogueText.RomanizationKey(b));
+
+    [Theory]
+    [InlineData("Satou", "Sato")]
+    [InlineData("Satō Kenji", "Kenji Sato")]
+    [InlineData("Yuuki Tanaka", "Yuki Tanaka")]
+    [InlineData("Satoh Kentarou", "Satoh Kentaro")]
+    [InlineData("Satoh Kentarou", "Satou Kentaro")]
+    [InlineData("Ohno Shinji", "Ono Shinji")]
+    [InlineData("Homma Masashi", "Honma Masashi")]
+    [InlineData("Namba Ken", "Nanba Ken")]
+    [InlineData("Syouzi Tanaka", "Syozi Tanaka")]
+    [InlineData("Zyoutarou Kujo", "Zyotaro Kujo")]
+    public void RomanizationKey_still_merges_japanese_spellings(string a, string b) =>
+        Assert.Equal(CatalogueText.RomanizationKey(a), CatalogueText.RomanizationKey(b));
+
+    [Fact]
+    public void RomanizationKey_leaves_oh_before_a_vowel_alone()
+    {
+        Assert.NotEqual(CatalogueText.RomanizationKey("Ohara"), CatalogueText.RomanizationKey("Oara"));
+    }
+
     [Fact]
     public void RomanizationKey_keeps_doubled_consonants_apart()
     {

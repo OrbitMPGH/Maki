@@ -161,6 +161,20 @@ public class PrebuiltIndexInstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task Refuses_AFileWhoseOwnStampNamesAnotherModel()
+    {
+        // The manifest says the right model; the file says otherwise. The file is the evidence.
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version,
+            stampedModel: "some-other-model-v9");
+
+        var result = await Installer().InstallAsync(ct: CancellationToken.None);
+
+        Assert.False(result.Installed);
+        Assert.Contains("some-other-model-v9", result.Reason);
+        Assert.False(File.Exists(_vectorPath));
+    }
+
+    [Fact]
     public async Task Force_StillRespectsCompatibility()
     {
         // "Download now" must not be a way to install an index this build cannot read.
@@ -233,7 +247,8 @@ public class PrebuiltIndexInstallerTests : IDisposable
 
     /// <summary>Builds a compressed artifact + manifest and puts them behind the stub HTTP handler.</summary>
     private void Publish(
-        int rows, int dimensions, string modelVersion, string? sha256Override = null, bool withBom = false)
+        int rows, int dimensions, string modelVersion, string? sha256Override = null, bool withBom = false,
+        string? stampedModel = null)
     {
         var sourcePath = Path.Combine(_dir, $"artifact-{Guid.NewGuid():N}.db");
         var source = new EmbeddingStore(new EmbeddingOptions(_dir, sourcePath, _dir, EmbeddingModelProfile.Base with { Dimensions = dimensions }));
@@ -247,6 +262,11 @@ public class PrebuiltIndexInstallerTests : IDisposable
         }
 
         source.UpsertBatch(batch);
+        if (stampedModel is not null)
+        {
+            source.SetModelVersion(stampedModel);
+        }
+
         SqliteConnection.ClearAllPools();
 
         var raw = File.ReadAllBytes(sourcePath);

@@ -37,6 +37,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile PairGraphIndex? _graph;
     private readonly IdleStamp _idle = new();
+    private readonly LoadFailureMemo _failed = new();
     private readonly SharedBuild<PairGraphIndex> _loads = new();
 
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
@@ -49,6 +50,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
     public void Invalidate()
     {
         _graph = null;
+        _failed.Clear();
         logger.LogDebug("Co-read graph invalidated");
     }
 
@@ -76,6 +78,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
             }
 
             File.Move(stagedPath, options.DatabasePath, overwrite: true);
+            _failed.Clear();
             logger.LogInformation("Swapped in a new co-read graph at {Path}", options.DatabasePath);
         }
         finally
@@ -133,22 +136,33 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
                 return raced;
             }
 
-            if (!File.Exists(options.DatabasePath))
+            if (!File.Exists(options.DatabasePath) || _failed.ShouldSkip(options.DatabasePath))
             {
                 return null;
             }
 
             load = _loads.Join(() =>
             {
+                var observed = _failed.Observe(options.DatabasePath);
                 try
                 {
                     var loaded = Load(CancellationToken.None);
                     _graph = loaded;
                     _idle.Touch();
+                    if (loaded is null)
+                    {
+                        _failed.Record(observed);
+                    }
+                    else
+                    {
+                        _failed.Clear();
+                    }
+
                     return loaded;
                 }
                 catch (Exception ex)
                 {
+                    _failed.Record(observed);
                     // Logged here because every caller may have stopped waiting by now.
                     logger.LogWarning(ex, "Loading the co-read graph failed");
                     throw;

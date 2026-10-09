@@ -44,7 +44,7 @@ public sealed class TextEmbedder(
     private readonly ReaderWriterLockSlim _sessionLock = new();
 
     private long _lastUsedTicks = DateTime.UtcNow.Ticks;
-    private InferenceSession? _session;
+    private volatile InferenceSession? _session;
     private Tokenizer? _tokenizer;
     private bool _usesTokenTypeIds;
 
@@ -102,9 +102,10 @@ public sealed class TextEmbedder(
             await modelStore.EnsureAsync(ct);
             _tokenizer = await CreateTokenizerAsync();
             using var sessionOptions = CreateSessionOptions(out var provider);
+            InferenceSession session;
             try
             {
-                _session = new InferenceSession(options.ModelPath, sessionOptions);
+                session = new InferenceSession(options.ModelPath, sessionOptions);
             }
             catch (OnnxRuntimeException ex) when (IsCorruptModel(ex) &&
                                                   !DeletedCorruptModels.ContainsKey(options.ModelPath))
@@ -124,8 +125,11 @@ public sealed class TextEmbedder(
             // Read the graph rather than assume it. token_type_ids is a BERT-family input that the
             // Gemma export simply does not declare, and ONNX Runtime rejects a run that feeds an
             // input the graph never asked for just as hard as one that omits a required input.
-            _usesTokenTypeIds = _session.InputMetadata.ContainsKey(TokenTypeIdsInput);
+            // Published last: EmbedBatch and EnsureReadyAsync treat a non-null session as ready
+            // without taking the init lock, so everything they depend on has to be set by then.
+            _usesTokenTypeIds = session.InputMetadata.ContainsKey(TokenTypeIdsInput);
             ActiveProvider = provider;
+            _session = session;
             Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
             logger.LogInformation(
                 "Text embedder ready ({Dim}-dim, model {Version}, {Precision} on {Provider})",
@@ -190,6 +194,7 @@ public sealed class TextEmbedder(
                 _session?.Dispose();
                 _session = null;
                 _tokenizer = null;
+                ActiveProvider = null;
                 Interlocked.Exchange(ref _failedUntilTicks, 0);
                 logger.LogInformation("Text embedder reset; will reload on next use");
             }
@@ -507,6 +512,11 @@ public sealed class TextEmbedder(
         var dim = output.Dimensions[^1];
         var mean = options.Model.Pooling == EmbeddingPooling.Mean;
 
+        // The multi-index indexer on Tensor<T> takes a params array, so reading element by element
+        // allocated once per float. A dense tensor is one row-major buffer; index it by hand.
+        ReadOnlySpan<float> data = output is DenseTensor<float> dense ? dense.Buffer.Span : output.ToArray();
+        var seq = output.Dimensions.Length > 2 ? output.Dimensions[1] : 1;
+
         if (pooled)
         {
             // Already [batch, dim] and already unit length; the normalize below is a no-op kept for
@@ -518,7 +528,7 @@ public sealed class TextEmbedder(
                 var vec = new float[dim];
                 for (var h = 0; h < dim; h++)
                 {
-                    vec[h] = output[b, h];
+                    vec[h] = data[(b * dim) + h];
                 }
 
                 EmbeddingMath.NormalizeInPlace(vec);
@@ -541,7 +551,7 @@ public sealed class TextEmbedder(
                 var last = rows[b].Length - 1;
                 for (var h = 0; h < dim; h++)
                 {
-                    vec[h] = output[b, last, h];
+                    vec[h] = data[(((b * seq) + last) * dim) + h];
                 }
             }
             else if (mean)
@@ -554,7 +564,7 @@ public sealed class TextEmbedder(
                 {
                     for (var h = 0; h < dim; h++)
                     {
-                        vec[h] += output[b, t, h];
+                        vec[h] += data[(((b * seq) + t) * dim) + h];
                     }
                 }
 
@@ -567,7 +577,7 @@ public sealed class TextEmbedder(
             {
                 for (var h = 0; h < dim; h++)
                 {
-                    vec[h] = output[b, 0, h]; // CLS token = position 0
+                    vec[h] = data[b * seq * dim + h]; // CLS token = position 0
                 }
             }
 
