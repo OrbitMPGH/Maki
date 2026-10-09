@@ -122,12 +122,12 @@ Ten lanes started 2026-10-09; i18n sweep and FE-UX run last because they cut acr
 | FE-READER-2 | FE-READER-11 | done 3d410c75, fc936e68 |
 | FE-READER-2 | FE-READER-14 | done 4ba0da23 |
 | FE-READER-2 | FE-READER-16 | done 14b960dd, 5cfce219 |
-| i18n sweep | HOSTING-22 | pending |
-| i18n sweep | SERIES-06 | pending |
-| i18n sweep | SERIES-07 | pending |
-| i18n sweep | SERIES-16 | pending |
-| i18n sweep | SERIES-22 | pending |
-| i18n sweep | AUTH-16 | pending |
+| i18n sweep | HOSTING-22 | done 392f4984, b0def6a8 (HealthScan.Error and SourceMapping.LastError stay English: need key columns) |
+| i18n sweep | SERIES-06 | done 3566c97f |
+| i18n sweep | SERIES-07 | done 52cfa8af |
+| i18n sweep | SERIES-16 | done 91904bbd |
+| i18n sweep | SERIES-22 | done 80ee0d53 |
+| i18n sweep | AUTH-16 | done 9b5496b3 (restore-by-name now 404, upstream failures 502) |
 | FE-UX | FE-UX-01 | done 9ebd63fb, 2cb7875f (AnimeSignalsSection, FeedbackLab, ManageSignalsModal still double-toast via shared hooks: Tier 3) |
 | FE-UX | FE-UX-06 | done e8468b3b, 2cb7875f |
 | FE-UX | FE-UX-08 | done 416d3e11, 2cb7875f |
