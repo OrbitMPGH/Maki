@@ -230,6 +230,30 @@ public static class AuthServiceCollectionExtensions
             });
         }
 
+        // The session cookie is not the only one worth keeping off plain HTTP: the remember-me cookie
+        // skips the second factor for 30 days. Behind a TLS proxy outside auth.trustedproxies
+        // SameAsRequest sees plain HTTP and would send them on any http:// request to the host.
+        foreach (var scheme in new[]
+                 {
+                     IdentityConstants.TwoFactorUserIdScheme,
+                     IdentityConstants.TwoFactorRememberMeScheme,
+                     IdentityConstants.ExternalScheme
+                 })
+        {
+            services.AddOptions<CookieAuthenticationOptions>(scheme)
+                .Configure<AuthRuntimeOptions>((o, auth) => o.Cookie.SecurePolicy = SecurePolicy(auth));
+        }
+
+        if (oidc.Enabled)
+        {
+            services.AddOptions<OpenIdConnectOptions>(AuthSchemes.Oidc)
+                .Configure<AuthRuntimeOptions>((o, auth) =>
+                {
+                    o.CorrelationCookie.SecurePolicy = SecurePolicy(auth);
+                    o.NonceCookie.SecurePolicy = SecurePolicy(auth);
+                });
+        }
+
         services.AddOptions<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme)
             .Configure<AuthRuntimeOptions>((o, auth) =>
             {
@@ -243,9 +267,7 @@ public static class AuthServiceCollectionExtensions
                 // half, and AntiforgeryCookieFilter covers the rest.
                 o.Cookie.SameSite = SameSiteMode.Lax;
 
-                o.Cookie.SecurePolicy = auth.RequireHttps
-                    ? CookieSecurePolicy.Always
-                    : CookieSecurePolicy.SameAsRequest;
+                o.Cookie.SecurePolicy = SecurePolicy(auth);
 
                 o.SlidingExpiration = true;
                 o.ExpireTimeSpan = auth.SessionLifetime;
@@ -311,6 +333,9 @@ public static class AuthServiceCollectionExtensions
 
         return services;
     }
+
+    private static CookieSecurePolicy SecurePolicy(AuthRuntimeOptions auth) =>
+        auth.RequireHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
 
     /// <summary>
     /// Zero attempts means "never lock out", expressed by an unreachable threshold alone. Every

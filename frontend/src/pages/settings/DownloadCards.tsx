@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -924,7 +925,7 @@ function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrO
   const { data: connection } = useConnectionSettings<Record<string, string | null>>('prowlarr')
   const configured = Boolean(connection?.url && connection?.apiKey)
   const { data: indexers, error: indexersError } = useProwlarrIndexers(configured)
-  const indexersErrorMessage = indexersError != null ? indexersError.message : null
+  const indexersErrorMessage = indexersError != null ? errorText(indexersError) : null
   const { selectedIndexers, setSelectedIndexers, categories, setCategories } = form
 
   const categoryData = [

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Data;
+using Maki.Data.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -73,7 +74,7 @@ public sealed class TrustedProxyStartupTests : IDisposable
         using var check = factory.Services.CreateScope();
         var events = await check.ServiceProvider.GetRequiredService<MakiDbContext>().AuthEvents
             .AsNoTracking()
-            .Where(e => e.UserName == "nobody")
+            .Where(e => e.Type == AuthEventType.LoginFailed)
             .ToListAsync();
         var recorded = Assert.Single(events);
         Assert.Equal(expected, recorded.ClientIp);

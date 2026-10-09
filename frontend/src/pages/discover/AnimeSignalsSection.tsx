@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
@@ -129,7 +130,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
 
   if (isLoading || !data) {
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {errorText(error)}</Trans></Alert>
     ) : null
   }
 

@@ -5,6 +5,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -92,6 +93,35 @@ public sealed class OpdsSettingsPasswordTests : IDisposable
             new SettingsController.OpdsSettings(true, false), users, new TestSignInManager(users), default);
 
         Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task A_passwordless_account_needs_a_recent_sign_in_to_mint_a_token()
+    {
+        var stale = _db.SeedUser("stale", MakiPermission.UseOpds,
+            configure: u => u.LastLoginAt = DateTime.UtcNow.AddHours(-2));
+        var fresh = _db.SeedUser("fresh", MakiPermission.UseOpds,
+            configure: u => u.LastLoginAt = DateTime.UtcNow.AddMinutes(-2));
+
+        foreach (var (userId, expected) in new[] { (stale, false), (fresh, true) })
+        {
+            using var db = _db.NewContext(userId);
+            var users = IdentityTestKit.UserManager(db);
+
+            var result = await Controller(userId, db).SetOpds(
+                new SettingsController.OpdsSettings(true, true), users, new TestSignInManager(users), default);
+
+            if (expected)
+            {
+                Assert.IsType<OkObjectResult>(result);
+                Assert.Equal(1, LiveOpdsKeys(userId));
+            }
+            else
+            {
+                Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
+                Assert.Equal(0, LiveOpdsKeys(userId));
+            }
+        }
     }
 
     [Fact]

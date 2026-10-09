@@ -8,7 +8,6 @@ namespace Maki.Api.Services;
 
 public record ResolvedChapterSource(SourceMapping Mapping, ISource Source, string SourceChapterId);
 
-/// <summary>No mapping resolved and at least one was skipped because its source rate-limited the listing.</summary>
 /// <summary>No enabled mapping could hand over this chapter. The message lists what each source said.</summary>
 public sealed class ChapterUnavailableException(string key, string message) : InvalidOperationException(message)
 {
@@ -17,6 +16,7 @@ public sealed class ChapterUnavailableException(string key, string message) : In
     public string Key { get; } = key;
 }
 
+/// <summary>No mapping resolved and at least one was skipped because its source rate-limited the listing.</summary>
 public sealed class SourceRateLimitedException(string sourceName, TimeSpan? retryAfter)
     : RateLimitException($"Rate limited by {sourceName} while finding the chapter", retryAfter)
 {
@@ -147,7 +147,7 @@ public class ChapterSourceResolver(
         }
 
         throw new ChapterUnavailableException(ChapterUnavailableException.NotListed,
-            $"Chapter {chapter.Number} unavailable on all sources ({string.Join("; ", errors)})");
+            $"Chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)} unavailable on all sources ({string.Join("; ", errors)})");
     }
 
     /// <summary>

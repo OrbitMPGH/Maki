@@ -3,6 +3,7 @@ using Maki.Api.Auth;
 using Maki.Api.Controllers;
 using Maki.Api.Dtos;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -74,7 +75,7 @@ public sealed class AuthHardeningTests : IDisposable
 
     private AuthController Auth(
         MakiDbContext db, UserManager<MakiUser> users, SignInManager<MakiUser> signIn, OidcRuntimeOptions oidc,
-        int userId, IAuthenticationService? authentication = null)
+        int userId, IAuthenticationService? authentication = null, IPasswordHasher<MakiUser>? hasher = null)
     {
         var services = new ServiceCollection();
         services.AddDataProtection();
@@ -84,7 +85,7 @@ public sealed class AuthHardeningTests : IDisposable
         }
 
         return new AuthController(
-            new TestLocalizer(), db, users, signIn, new PasswordHasher<MakiUser>(), new NoopAntiforgery(),
+            new TestLocalizer(), db, users, signIn, hasher ?? new PasswordHasher<MakiUser>(), new NoopAntiforgery(),
             new TestCurrentUser(userId), new AuthEventLogger(db, _clock), oidc, null!, _clock,
             NullLogger<AuthController>.Instance, Inbox())
         {
@@ -159,6 +160,77 @@ public sealed class AuthHardeningTests : IDisposable
         Assert.Equal(1, OidcLoginCount(userId));
     }
 
+    // ---- password sign-in ----
+
+    private sealed class CountingHasher : IPasswordHasher<MakiUser>
+    {
+        private readonly PasswordHasher<MakiUser> _inner = new();
+        public int Verifies { get; private set; }
+
+        public string HashPassword(MakiUser user, string password) => _inner.HashPassword(user, password);
+
+        public PasswordVerificationResult VerifyHashedPassword(MakiUser user, string hashedPassword, string providedPassword)
+        {
+            Verifies++;
+            return _inner.VerifyHashedPassword(user, hashedPassword, providedPassword);
+        }
+    }
+
+    private async Task<(IActionResult Result, MakiDbContext Db, CountingHasher Hasher)> LoginAsync(
+        string username, string password)
+    {
+        var db = _db.NewContext();
+        var users = IdentityTestKit.UserManager(db);
+        var hasher = new CountingHasher();
+        var controller = Auth(db, users, new TestSignInManager(users), new OidcRuntimeOptions(), 0, hasher: hasher);
+        var result = await controller.Login(new LoginRequest(username, password), new AuthRuntimeOptions(), default);
+        return (result, db, hasher);
+    }
+
+    [Fact]
+    public async Task A_failed_login_for_an_unknown_name_does_not_store_what_was_typed()
+    {
+        var (result, db, hasher) = await LoginAsync("hunter2-my-real-password", "x");
+        using var _ = db;
+
+        Assert.IsType<UnauthorizedObjectResult>(result);
+        var row = Assert.Single(db.AuthEvents);
+        Assert.Equal("?", row.UserName);
+        Assert.Equal(1, hasher.Verifies);
+        Assert.Equal("no such user", row.Detail);
+    }
+
+    [Fact]
+    public async Task A_locked_out_account_answers_the_generic_401_and_audits_the_lockout()
+    {
+        SeedWithPassword("ada");
+        using (var seed = _db.NewContext())
+        {
+            seed.Users.Single(u => u.UserName == "ada").LockoutEnd = DateTimeOffset.UtcNow.AddHours(1);
+            seed.SaveChanges();
+        }
+
+        var (result, db, hasher) = await LoginAsync("ada", Password);
+        using var _ = db;
+
+        Assert.Equal("error.auth.signInFailed", CodeOf(result));
+        Assert.Contains(db.AuthEvents, e => e.Type == AuthEventType.LockedOut);
+        Assert.Equal(1, hasher.Verifies);
+    }
+
+    [Fact]
+    public async Task A_passwordless_account_answers_the_generic_401()
+    {
+        _db.SeedUser("sso", MakiPermission.None);
+
+        var (result, db, hasher) = await LoginAsync("sso", Password);
+        using var _ = db;
+
+        Assert.Equal("error.auth.signInFailed", CodeOf(result));
+        Assert.Contains(db.AuthEvents, e => e.Type == AuthEventType.LoginFailed && e.UserName == "sso");
+        Assert.Equal(1, hasher.Verifies);
+    }
+
     // ---- recovery codes at sign-in ----
 
     private async Task<(AuthController Controller, TestSignInManager SignIn, MakiDbContext Db, IReadOnlyList<string> Codes)>
@@ -190,6 +262,82 @@ public sealed class AuthHardeningTests : IDisposable
 
         Assert.IsType<OkObjectResult>(result);
         Assert.Equal([codes[0]], signIn.RedeemedRecoveryCodes);
+    }
+
+    private async Task<(AuthController Controller, MakiDbContext Db, UserManager<MakiUser> Users, MakiUser User, string Code)>
+        RealAuthenticatorAsync(int userId)
+    {
+        var db = _db.NewContext(userId);
+        var users = IdentityTestKit.UserManager(db);
+        users.RegisterTokenProvider(
+            TokenOptions.DefaultAuthenticatorProvider, new AuthenticatorTokenProvider<MakiUser>());
+        var user = (await users.FindByIdAsync(userId.ToString()))!;
+        await users.ResetAuthenticatorKeyAsync(user);
+        await users.SetTwoFactorEnabledAsync(user, true);
+        var key = TotpReplayGuard.Base32Decode((await users.GetAuthenticatorKeyAsync(user))!)!;
+        var code = TotpReplayGuard.CodeFor(key, DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30);
+        var signIn = new TestSignInManager(users, user);
+        return (Auth(db, users, signIn, new OidcRuntimeOptions(), userId), db, users, user, code);
+    }
+
+    [Fact]
+    public async Task An_authenticator_code_works_once_and_is_refused_when_replayed()
+    {
+        var userId = SeedWithPassword("ada");
+        var (controller, db, _, _, code) = await RealAuthenticatorAsync(userId);
+        using var _ = db;
+
+        var first = await controller.TwoFactor(new TwoFactorRequest(code, false), default);
+        var replay = await controller.TwoFactor(new TwoFactorRequest(code, false), default);
+
+        Assert.IsType<OkObjectResult>(first);
+        Assert.Equal("error.account.totpReplayed", CodeOf(replay));
+        Assert.Contains(db.AuthEvents, e => e.Detail == "reused 2fa code");
+    }
+
+    private static Task<string?> LastTotpStepAsync(UserManager<MakiUser> users, MakiUser user) =>
+        users.GetAuthenticationTokenAsync(user, "Maki", "TotpLastStep");
+
+    [Fact]
+    public async Task Resetting_the_authenticator_key_forgets_the_last_used_step()
+    {
+        var adminId = _db.SeedUser("admin");
+        var userId = SeedWithPassword("ada");
+        var (controller, db, users, user, code) = await RealAuthenticatorAsync(userId);
+        using var _ = db;
+        await controller.TwoFactor(new TwoFactorRequest(code, false), default);
+        Assert.NotNull(await LastTotpStepAsync(users, user));
+
+        // Turning it off, and then starting a fresh enrolment.
+        await Account(db, userId, users).DisableTwoFactor(new DisableTwoFactorRequest(Password), default);
+        Assert.Null(await LastTotpStepAsync(users, user));
+        await users.SetAuthenticationTokenAsync(user, "Maki", "TotpLastStep", "5");
+        Assert.IsType<OkObjectResult>(await Account(db, userId, users).SetupTwoFactor());
+        Assert.Null(await LastTotpStepAsync(users, user));
+
+        // And the admin reset.
+        await users.SetAuthenticationTokenAsync(user, "Maki", "TotpLastStep", "5");
+        using var adminDb = _db.NewContext();
+        await Users(adminDb, adminId).ResetTwoFactor(userId, default);
+        using var check = _db.NewContext();
+        var checkUsers = IdentityTestKit.UserManager(check);
+        Assert.Null(await LastTotpStepAsync(checkUsers, (await checkUsers.FindByIdAsync(userId.ToString()))!));
+    }
+
+    [Fact]
+    public async Task A_code_used_to_regenerate_recovery_codes_cannot_be_used_again()
+    {
+        var userId = SeedWithPassword("ada");
+        var (_, db, users, user, code) = await RealAuthenticatorAsync(userId);
+        using var _ = db;
+        await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 2);
+        var account = Account(db, userId, users);
+
+        var first = await account.RegenerateRecoveryCodes(new EnableTwoFactorRequest(code, Password), default);
+        var replay = await account.RegenerateRecoveryCodes(new EnableTwoFactorRequest(code, Password), default);
+
+        Assert.IsType<OkObjectResult>(first);
+        Assert.Equal("error.account.totpReplayed", CodeOf(replay));
     }
 
     [Fact]
@@ -248,6 +396,113 @@ public sealed class AuthHardeningTests : IDisposable
         Assert.Equal("error.account.lockedOut", CodeOf(result));
     }
 
+    private AccountController Account(MakiDbContext db, int userId, UserManager<MakiUser>? existing = null)
+    {
+        var users = existing ?? IdentityTestKit.UserManager(db);
+        return new AccountController(
+            new TestLocalizer(), db, users, new TestSignInManager(users), new TestCurrentUser(userId),
+            new AuthEventLogger(db, _clock), new OidcRuntimeOptions(), _clock,
+            new UserSnapshotCache(new MemoryCache(new MemoryCacheOptions())))
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+    }
+
+    [Fact]
+    public async Task Changing_the_password_needs_the_current_one_and_rotates_the_stamp()
+    {
+        var userId = SeedWithPassword("ada");
+        var stamp = StampOf(userId);
+        using var db = _db.NewContext(userId);
+
+        var wrong = await Account(db, userId).ChangePassword(
+            new ChangePasswordRequest("not the password", "New-Password-123"), default);
+        Assert.IsType<BadRequestObjectResult>(wrong);
+        Assert.Equal(stamp, StampOf(userId));
+
+        var changed = await Account(db, userId).ChangePassword(
+            new ChangePasswordRequest(Password, "New-Password-123"), default);
+        Assert.IsType<NoContentResult>(changed);
+        Assert.NotEqual(stamp, StampOf(userId));
+
+        using var check = _db.NewContext();
+        var users = IdentityTestKit.UserManager(check);
+        var user = (await users.FindByIdAsync(userId.ToString()))!;
+        Assert.True(await users.CheckPasswordAsync(user, "New-Password-123"));
+        Assert.False(await users.CheckPasswordAsync(user, Password));
+    }
+
+    [Fact]
+    public async Task Regenerating_recovery_codes_needs_two_factor_the_password_and_a_code()
+    {
+        var userId = SeedWithPassword("ada");
+        using var db = _db.NewContext(userId);
+
+        var off = await Account(db, userId).RegenerateRecoveryCodes(new EnableTwoFactorRequest("123456", Password), default);
+        Assert.Equal("error.account.twoFactorNotEnabled", CodeOf(off));
+
+        var users = IdentityTestKit.UserManager(db);
+        var user = (await users.FindByIdAsync(userId.ToString()))!;
+        await users.SetTwoFactorEnabledAsync(user, true);
+        var oldCodes = (await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 2))!.ToList();
+
+        var wrongPassword = await Account(db, userId).RegenerateRecoveryCodes(
+            new EnableTwoFactorRequest(IdentityTestKit.ValidAuthenticatorCode, "wrong password"), default);
+        Assert.NotEqual(typeof(OkObjectResult), wrongPassword.GetType());
+
+        var wrongCode = await Account(db, userId).RegenerateRecoveryCodes(
+            new EnableTwoFactorRequest("000000", Password), default);
+        Assert.Equal("error.account.invalidCode", CodeOf(wrongCode));
+        Assert.Equal(2, await users.CountRecoveryCodesAsync(user));
+
+        var ok = Assert.IsType<OkObjectResult>(await Account(db, userId).RegenerateRecoveryCodes(
+            new EnableTwoFactorRequest(IdentityTestKit.ValidAuthenticatorCode, Password), default));
+        var fresh = (IEnumerable<string>)ok.Value!.GetType().GetProperty("recoveryCodes")!.GetValue(ok.Value)!;
+        Assert.Equal(8, fresh.Count());
+        Assert.Empty(fresh.Intersect(oldCodes));
+        Assert.Equal(8, await users.CountRecoveryCodesAsync(user));
+    }
+
+    [Theory]
+    [InlineData(-5, true)]
+    [InlineData(-30, false)]
+    [InlineData(null, false)]
+    public async Task A_passwordless_account_mints_an_api_key_only_after_a_recent_sign_in(
+        int? minutesSinceSignIn, bool allowed)
+    {
+        var userId = _db.SeedUser("sso", MakiPermission.None, configure: u =>
+            u.LastLoginAt = minutesSinceSignIn is { } m ? _clock.GetUtcNow().UtcDateTime.AddMinutes(m) : null);
+        using var db = _db.NewContext(userId);
+
+        var result = await Account(db, userId).CreateApiKey(
+            new CreateApiKeyRequest("script", UserApiKeyScope.Full, null), default);
+
+        if (allowed)
+        {
+            Assert.IsType<OkObjectResult>(result);
+        }
+        else
+        {
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
+            Assert.Equal("error.account.recentSignInRequired", CodeOf(result));
+            Assert.Empty(db.UserApiKeys);
+        }
+    }
+
+    [Fact]
+    public async Task A_rejected_new_password_leaves_the_old_one_working()
+    {
+        var userId = SeedWithPassword("ada");
+        using var db = _db.NewContext(userId);
+
+        var result = await Account(db, userId).ChangePassword(new ChangePasswordRequest(Password, "short"), default);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        using var check = _db.NewContext();
+        var users = IdentityTestKit.UserManager(check);
+        Assert.True(await users.CheckPasswordAsync((await users.FindByIdAsync(userId.ToString()))!, Password));
+    }
+
     // ---- admin user management ----
 
     private UsersController Users(MakiDbContext db, int adminId, OidcRuntimeOptions? oidc = null)
@@ -266,6 +521,51 @@ public sealed class AuthHardeningTests : IDisposable
     {
         using var db = _db.NewContext();
         return db.Users.Single(u => u.Id == userId).SecurityStamp!;
+    }
+
+    [Fact]
+    public async Task Undefined_permission_bits_are_dropped_on_create_and_update()
+    {
+        var adminId = _db.SeedUser("admin");
+        using var db = _db.NewContext();
+        var users = Users(db, adminId);
+        var stray = (MakiPermission)(1 << 20);
+
+        var created = Assert.IsType<OkObjectResult>(await users.Create(new SaveUserRequest(
+            "reader", "Correct-Horse-9-Battery", null, MakiPermission.UseOpds | stray, null, null, null, null), default));
+        var readerId = ((UserSummaryDto)created.Value!).Id;
+        Assert.Equal(MakiPermission.UseOpds, PermissionsOf(readerId));
+
+        await users.Update(readerId, new SaveUserRequest(
+            null, null, null, MakiPermission.UseTrackers | stray, null, null, null, null), default);
+        Assert.Equal(MakiPermission.UseTrackers, PermissionsOf(readerId));
+    }
+
+    private MakiPermission PermissionsOf(int userId)
+    {
+        using var db = _db.NewContext();
+        return db.Users.Single(u => u.Id == userId).Permissions;
+    }
+
+    [Fact]
+    public async Task An_all_folders_account_still_lists_its_kept_grants_so_unticking_restores_them()
+    {
+        var adminId = _db.SeedUser("admin");
+        var readerId = _db.SeedUser("reader", MakiPermission.None, allRootFolders: true);
+        using (var seed = _db.NewContext())
+        {
+            var kept = new RootFolder { Path = "/kept" };
+            seed.RootFolders.AddRange(kept, new RootFolder { Path = "/other" });
+            seed.SaveChanges();
+            seed.UserRootFolders.Add(new UserRootFolder { UserId = readerId, RootFolderId = kept.Id });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+        var ok = Assert.IsType<OkObjectResult>(await Users(db, adminId).List(default));
+
+        var reader = ((IEnumerable<UserSummaryDto>)ok.Value!).Single(u => u.Id == readerId);
+        Assert.Single(reader.RootFolderIds);
     }
 
     [Fact]

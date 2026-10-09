@@ -26,6 +26,19 @@ msgstr "É necessário um código do aplicativo autenticador"
 msgid "error.account.incorrectPassword"
 msgstr "A senha está incorreta"
 
+#. Single sign-on accounts have no password to confirm, so minting a key or OPDS token needs a fresh sign-in.
+#: src/Maki.Api/Auth/AccountCredentials.cs
+#. English: Sign out and sign in again, then try this within 10 minutes. Creating a key or token needs a recent sign-in.
+msgid "error.account.recentSignInRequired"
+msgstr ""
+
+#. An authenticator code that was already used, so the next one is needed. Shown only after the
+#. password was verified, so it says nothing about which accounts exist.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: That code was already used. Wait for the next one and try again
+msgid "error.account.totpReplayed"
+msgstr ""
+
 #. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
 #. sign-in-time 2FA prompt.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -115,6 +128,11 @@ msgstr "A autenticação de dois fatores já está ativada"
 #, fuzzy
 msgid "error.account.twoFactorDelegatedToSso"
 msgstr "Esta conta usa logon único, que gerencia a autenticação de dois fatores"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Two-factor authentication is not turned on
+msgid "error.account.twoFactorNotEnabled"
+msgstr ""
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -957,6 +975,12 @@ msgstr "O nome é obrigatório"
 msgid "error.recommendation.needsLocalDb"
 msgstr "As recomendações precisam do banco de dados local do MangaBaka (Configurações → Metadados → banco de dados local)"
 
+#. {feed} is the feed name the client sent; thrown by DiscoverService.GetFeedAsync.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: Unknown feed "{feed}"
+msgid "error.recommendation.unknownFeed"
+msgstr ""
+
 #. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
 #. sections that still work with no local database.
 #: src/Maki.Api/Controllers/RecommendationController.cs
@@ -1070,6 +1094,11 @@ msgid "error.requests.chapterRangeInvalid"
 msgstr "O último capítulo não pode ser menor que o primeiro"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: This series is above your content rating limit
+msgid "error.requests.contentRating"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Series not found on metadata provider
 #, fuzzy
 msgid "error.requests.metadataNotFound"
@@ -1106,6 +1135,11 @@ msgstr "É necessária uma série"
 #, fuzzy
 msgid "error.requests.seriesRequired"
 msgstr "É necessária uma série para solicitar"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: The series this request is for is no longer in the library. Reject the request instead.
+msgid "error.requests.seriesGone"
+msgstr ""
 
 #. Shown as the requester's name when the account no longer exists.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
@@ -1704,6 +1738,12 @@ msgstr "O rótulo é obrigatório"
 #, fuzzy
 msgid "error.tags.unknownTagIds"
 msgstr "Um ou mais ids de tag não existem"
+
+#. {file} is a file name and is never translated. The exception text follows it, untranslated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: Could not import {file}
+msgid "error.torrentImport.copyFailed"
+msgstr ""
 
 #: src/Maki.Api/Services/TorrentImportService.cs
 #. English: No comics found in the completed download ({detail})
@@ -2458,11 +2498,22 @@ msgstr "O banco de dados deste backup está danificado ou não é um banco de da
 msgid "error.system.backupTooNew"
 msgstr "O backup é de uma versão mais recente (a migração \"{migration}\" é desconhecida nesta compilação). Atualize o Maki antes de restaurá-lo."
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is from a version too old to restore directly (migration "{migration}" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade.
+msgid "error.system.backupTooOld"
+msgstr ""
+
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
 #, fuzzy
 msgid "error.system.backupUnreadable"
 msgstr "Este arquivo não é um backup do Maki legível. O arquivo ZIP ou seu manifesto está danificado. Nada foi alterado."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed.
+msgid "error.system.backupTooLarge"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: That is not a valid backup name.
@@ -2748,6 +2799,17 @@ msgstr "{series}: o capítulo {chapter} está pronto para leitura"
 #, fuzzy
 msgid "inbox.download.failed.title"
 msgstr "Falha no download"
+
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: Import waiting for a decision
+msgid "inbox.import.awaiting.title"
+msgstr ""
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: {series}: {release} needs a Replace or Skip decision in Activity before it is imported
+msgid "inbox.import.awaiting.body"
+msgstr ""
 
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. placeholder for emptiness. {error} is the source's own wording and is never translated.
@@ -3377,6 +3439,24 @@ msgstr "O torrent nunca apareceu no qBittorrent"
 msgid "error.download.torrentRemoved"
 msgstr "O torrent não está mais no qBittorrent"
 
+#. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
+#: src/Maki.Api/Services/DownloadWorkerHostedService.cs
+#. English: Gave up after the download time limit
+msgid "error.download.itemTimedOut"
+msgstr ""
+
+#. A repair was approved with a source that has since been disabled or removed.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The approved repair source is no longer available, request a new replacement
+msgid "error.download.repairSourceGone"
+msgstr ""
+
+#. The repair this download belonged to was closed or cancelled before the pages arrived.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The repair is no longer accepting candidates
+msgid "error.download.repairNotAccepting"
+msgstr ""
+
 #. The library folder is missing or empty, usually a network share that is not mounted. Maki retries
 #. on its own and does not count it as a failed attempt.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
@@ -3418,6 +3498,19 @@ msgstr "Capítulo"
 #, fuzzy
 msgid "notify.download.failed.title"
 msgstr "Falha no download"
+
+#. Sent outward when a finished torrent covers files the library already has and waits for a Replace
+#. or Skip decision. Renders in the instance's own language.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: Import waiting for a decision
+msgid "notify.import.awaiting.title"
+msgstr ""
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: {series}: {release} needs a Replace or Skip decision in Activity before it is imported
+msgid "notify.import.awaiting.body"
+msgstr ""
 
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. value for emptiness. {reason} is one of the error.download.* messages, already rendered.
@@ -4088,12 +4181,6 @@ msgid "health.check.schedulerPaused"
 msgstr "O agendador em segundo plano está pausado"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# migração do banco de dados pendente} many {# migrações do banco de dados pendentes}other {# migrações do banco de dados pendentes}}"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date
 #, fuzzy
 msgid "health.check.databaseCurrent"
@@ -4585,22 +4672,19 @@ msgstr "Rebaixa títulos próximos a este"
 msgid "feedback.taste.unchanged"
 msgstr "Preferências inalteradas"
 
-#. {list} is titles joined in English regardless of locale (see RecentActivityRailService.Because);
-#. a title is a proper noun a translation would not touch, and there is no list-format primitive in
-#. this catalogue's ICU subset. Same key used for the single-seed grouped rail, where {list} is one
-#. title.
+#. The server sends the literal text {list} and the client replaces it with the titles joined by
+#. Intl.ListFormat in the reader's language, so keep {list} in the translation.
 #: src/Maki.Api/Services/RecentActivityRailService.cs
 #. English: Because you read {list}
 #, fuzzy
 msgid "discover.rail.becauseYouRead"
 msgstr "Porque você leu {list}"
 
-#. {list} as above; {count} is how many further seeds were not named.
-#: src/Maki.Api/Services/RecentActivityRailService.cs
-#. English: Because you read {list} and {count, plural, one {# more} other {# more}}
-#, fuzzy
-msgid "discover.rail.becauseYouReadMore"
-msgstr "Porque você leu {list} e mais {count, plural, one {# título} many {# títulos} other {# títulos}}"
+#. One entry of the title list, shown last when more series seeded the rail than were named.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: {count, plural, one {# more} other {# more}}
+msgid "discover.rail.moreSeeds"
+msgstr ""
 
 #: src/Maki.Api/Services/DiscoverService.cs
 #. English: Newly released
@@ -4658,7 +4742,8 @@ msgstr "Com base na sua atividade recente"
 msgid "discover.rail.sideInterest"
 msgstr "Outro lado da sua biblioteca: {name}"
 
-#. {titles} is up to two series titles joined in English, same trade as {list} above. {count} is
+#. The server sends the literal text {titles} and the client replaces it with up to two series titles
+#. joined by Intl.ListFormat, so keep {titles} in the translation. {count} is
 #. how many titles in total share the interest.
 #: src/Maki.Api/Services/SideInterestRailService.cs
 #. English: A smaller thread shared by {count, plural, one {# title} other {# titles}}, including {titles}
@@ -4741,6 +4826,12 @@ msgstr "Ainda não há temas recorrentes em leituras suficientes para formar um 
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "Precisa de pelo menos {min} séries conhecidas pelo catálogo. Esta visualização tem {count} até agora."
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An install of this download is already running.
+msgid "install.alreadyRunning"
+msgstr ""
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: Already using this model.
 #, fuzzy
@@ -4770,6 +4861,11 @@ msgstr "Há uma indexação em andamento; tente novamente quando terminar."
 #, fuzzy
 msgid "install.embeddingModel.notAvailable"
 msgstr "Modelo de embeddings indisponível"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: The model switch failed. Check the server log for details.
+msgid "install.embeddingModel.switchFailed"
+msgstr ""
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: A model switch is already in progress.

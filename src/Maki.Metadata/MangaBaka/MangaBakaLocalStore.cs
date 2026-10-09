@@ -745,7 +745,8 @@ public class MangaBakaLocalStore(
 
                 var rowContentRating = GetString(reader, 10);
                 var ratingAllowed = contentRatings is { Count: > 0 }
-                    ? contentRatings.Contains(rowContentRating, StringComparer.OrdinalIgnoreCase)
+                    ? ContentRating.CoversAll(contentRatings)
+                        || contentRatings.Contains(rowContentRating, StringComparer.OrdinalIgnoreCase)
                     : rowContentRating != "pornographic";
                 if (GetString(reader, 1) != "active" || !ratingAllowed || GetString(reader, 11) == "novel")
                 {
@@ -794,23 +795,25 @@ public class MangaBakaLocalStore(
         var genreWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var tagWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var authors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seedRows = 0;
         using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = $"SELECT genres, tags, authors FROM series WHERE id IN ({string.Join(",", seedIds)})";
             using var reader = await cmd.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {
+                seedRows++;
                 foreach (var g in ParseStringArray(GetString(reader, 0)))
                 {
-                    genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0 / seedIds.Count;
+                    genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0;
                 }
 
                 foreach (var t in ParseStringArray(GetString(reader, 1)))
                 {
-                    tagWeight[t] = tagWeight.GetValueOrDefault(t) + 1.0 / seedIds.Count;
+                    tagWeight[t] = tagWeight.GetValueOrDefault(t) + 1.0;
                 }
 
-                foreach (var a in ParseStringArray(GetString(reader, 2)))
+                foreach (var a in ParseStringArray(GetString(reader, 2)).Where(CreditNames.IsPerson))
                 {
                     authors.Add(a);
                 }
@@ -820,6 +823,18 @@ public class MangaBakaLocalStore(
         if (genreWeight.Count == 0 && tagWeight.Count == 0 && authors.Count == 0)
         {
             return [];
+        }
+
+        // The share is taken over the seeds the dump actually returned, so a library with series
+        // missing from the dump does not scale every genre and tag down.
+        foreach (var key in genreWeight.Keys.ToList())
+        {
+            genreWeight[key] /= seedRows;
+        }
+
+        foreach (var key in tagWeight.Keys.ToList())
+        {
+            tagWeight[key] /= seedRows;
         }
 
         var exclude = new HashSet<long>(seedIds.Concat(excludeIds));
@@ -999,6 +1014,42 @@ public class MangaBakaLocalStore(
         }
 
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
+    }
+
+    /// <summary>
+    /// How many of <paramref name="ids"/> carry one of <paramref name="ratings"/> in the dump, by the
+    /// same <c>content_rating IN</c> test <see cref="GetByIdsAsync"/> hydrates with, so a count and the
+    /// page it describes agree. Reads the dump directly, so it also covers series the vector index
+    /// does not hold (unscored titles, novels).
+    /// </summary>
+    public async Task<int> CountWithinRatingsAsync(
+        IReadOnlyList<long> ids, IReadOnlyList<string> ratings, CancellationToken ct = default)
+    {
+        if (ids.Count == 0 || ratings.Count == 0)
+        {
+            return 0;
+        }
+
+        using var conn = Open();
+        var total = 0;
+        foreach (var chunk in ids.Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT COUNT(*) FROM series
+                WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                  AND content_rating IN ({string.Join(",", ratings.Select((_, i) => $"$r{i}"))})
+                """;
+            cmd.CommandTimeout = 600;
+            for (var i = 0; i < ratings.Count; i++)
+            {
+                cmd.Parameters.AddWithValue($"$r{i}", ratings[i]);
+            }
+
+            total += Convert.ToInt32(await cmd.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture);
+        }
+
+        return total;
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 ﻿using Maki.Api.Services;
+using Maki.Api.Controllers;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -609,5 +610,109 @@ public sealed class ProgressTests : IDisposable
 
         Assert.Equal(2, metrics.DistinctGenres);
         Assert.Equal([SeriesTypes.Manhwa], metrics.TypesRead);
+    }
+
+    // ---- Wave 3 edges --------------------------------------------------------------------
+
+    private sealed class SlowStore(string lastLevel) : IUserSettingsStore
+    {
+        private readonly Dictionary<string, string> _values = new()
+        {
+            [SettingKeys.ProgressLastNotifiedLevel] = lastLevel
+        };
+
+        public async Task<string?> GetAsync(int userId, string key, CancellationToken ct = default)
+        {
+            string? value;
+            lock (_values)
+            {
+                value = _values.GetValueOrDefault(key);
+            }
+
+            // Long enough that an unserialised second evaluation reads the same stale level.
+            await Task.Delay(150, ct);
+            return value;
+        }
+
+        public Task SetAsync(int userId, string key, string? value, CancellationToken ct = default)
+        {
+            lock (_values)
+            {
+                _values[key] = value ?? string.Empty;
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task TwoRacingEvaluationsAnnounceALevelOnce()
+    {
+        var store = new SlowStore("1");
+        using var db = _db.NewContext();
+        var service = new AchievementService(db, Metrics(db), store, _inbox, _clock,
+            NullLogger<AchievementService>.Instance);
+        var snapshot = new UserMetrics { ChaptersRead = 5000 };
+
+        await Task.WhenAll(
+            service.NotifyLevelAsync(UserId, snapshot, [], default),
+            service.NotifyLevelAsync(UserId, snapshot, [], default));
+
+        Assert.Single(_inbox.Raised, r => r.Type == InboxEventType.LevelUp);
+    }
+
+    [Fact]
+    public void TheGridKeepsAHeldTierWhenTheMetricFallsBack()
+    {
+        var librarian = AchievementCatalog.Find("librarian")!;
+        var unlockedAt = Now.AddDays(-3);
+        var held = new List<UserAchievement>
+        {
+            new() { UserId = UserId, Key = "librarian", Tier = 1, UnlockedAt = Now.AddDays(-9) },
+            new() { UserId = UserId, Key = "librarian", Tier = 2, UnlockedAt = unlockedAt },
+        };
+
+        var (tier, at) = ProgressController.DisplayedTier(librarian, new UserMetrics { LibrarySeries = 3 }, held);
+
+        Assert.Equal(2, tier);
+        Assert.Equal(unlockedAt, at);
+    }
+
+    [Fact]
+    public void TheGridShowsTheCurrentTierWhenItIsAheadOfWhatWasHeld()
+    {
+        var librarian = AchievementCatalog.Find("librarian")!;
+
+        var (tier, at) = ProgressController.DisplayedTier(librarian, new UserMetrics { LibrarySeries = 50 }, []);
+
+        Assert.Equal(2, tier);
+        Assert.Null(at);
+    }
+
+    [Fact]
+    public async Task ASeriesFinishedGoalSurvivesADstJumpOverMidnight()
+    {
+        TimeZoneInfo zone;
+        try
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("America/Santiago");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            Assert.Fail("America/Santiago is not available on this host, so the DST case cannot be exercised");
+            return;
+        }
+
+        // Chile springs forward at local midnight on the first Sunday of September.
+        var transition = new DateTime(2026, 9, 6, 0, 0, 0, DateTimeKind.Unspecified);
+        Assert.True(zone.IsInvalidTime(transition), "Local midnight on the Santiago transition day should not exist");
+
+        _db.SetUserConfig(UserId, (SettingKeys.UserTimeZone, "America/Santiago"));
+        var metrics = new UserMetricsService(_db.NewContext(), new TestUserSettingsStore(_db), _cache,
+            new StoppedClock(new DateTimeOffset(2026, 9, 6, 15, 0, 0, TimeSpan.Zero)));
+
+        var progress = await metrics.GoalProgressAsync(UserId, GoalPeriod.Day, GoalMetric.SeriesFinished);
+
+        Assert.Equal(0, progress);
     }
 }

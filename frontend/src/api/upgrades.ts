@@ -752,9 +752,10 @@ export function useDeleteQualityFormat() {
 export function useCutoffUnmet(page: number, pageSize = 50, seriesId?: number, enabled = true) {
   return useQuery({
     queryKey: ['upgrades', 'cutoff-unmet', { page, pageSize, seriesId }],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<CutoffUnmetPageDto>(
         `/upgrades/cutoff-unmet?page=${page}&pageSize=${pageSize}${seriesId != null ? `&seriesId=${seriesId}` : ''}`,
+        { signal },
       ),
     placeholderData: keepPreviousData,
     enabled,
@@ -796,9 +797,10 @@ export function useSaveUpgradeSettings() {
 export function useUpgradeHistory(page: number, pageSize = 25, seriesId?: number, enabled = true) {
   return useQuery({
     queryKey: ['upgrades', 'history', { page, pageSize, seriesId }],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<UpgradeHistoryPageDto>(
         `/upgrades/history?page=${page}&pageSize=${pageSize}${seriesId != null ? `&seriesId=${seriesId}` : ''}`,
+        { signal },
       ),
     placeholderData: keepPreviousData,
     enabled,

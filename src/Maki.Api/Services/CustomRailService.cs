@@ -4,6 +4,7 @@ using Maki.Data;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Maki.Api.Services;
 
@@ -35,8 +36,15 @@ public class CustomRailService(
     HiddenContentService hidden,
     RecommendationFeedbackService feedback,
     MangaBakaLocalStore store,
-    VectorIndexCache vectorIndex)
+    VectorIndexCache vectorIndex,
+    IMemoryCache? cache = null)
 {
+    /// <summary>
+    /// How long a user's projected library rows are reused. Home renders each library rail through
+    /// its own request and the editor's live count re-evaluates on every edit, all over the same rows.
+    /// </summary>
+    private static readonly TimeSpan LibraryRowsFor = TimeSpan.FromSeconds(10);
+
     /// <summary>How many series the "read" sort looks back over, the same bound Home's reading rails use.</summary>
     private const int RecentProgressScan = 2000;
 
@@ -133,12 +141,7 @@ public class CustomRailService(
     private async Task<IReadOnlyList<int>> LibraryAsync(CustomRailSpec spec, CancellationToken ct)
     {
         var filters = HiddenContentService.Sanitize(RecommendationFilters.FromSpec(spec.Filters));
-        var rows = await db.Series
-            .AsNoTracking()
-            .Select(s => new LibraryRailRow(
-                s.Id, s.MangaBakaId, s.Title, s.SortTitle, s.Genres, s.Tags, s.ContentRating, s.Year,
-                s.Status, s.Type, s.TotalChapters, s.Added, s.AuthorStory, s.AuthorArt, s.Publisher))
-            .ToListAsync(ct);
+        var rows = await LibraryRowsAsync(ct);
 
         // The index answers tags with their subtags and weights, and knows each title's score and
         // rank. It is only worth loading for a filter or sort that needs one of those; genres, years
@@ -161,6 +164,25 @@ public class CustomRailService(
 
         return LibraryRailFilter.Order(matching, spec.Sort, lastRead, r =>
             RowOf(r) is int row && index!.PopularityAt(row) is var rank && rank != VectorIndex.Unknown ? rank : null);
+    }
+
+    private async Task<IReadOnlyList<LibraryRailRow>> LibraryRowsAsync(CancellationToken ct)
+    {
+        var key = (Kind: "library-rail-rows", user.UserId, user.AllRootFolders,
+            Folders: string.Join(',', user.RootFolderIds.Order()));
+        if (cache is not null && cache.TryGetValue(key, out IReadOnlyList<LibraryRailRow>? hit) && hit is not null)
+        {
+            return hit;
+        }
+
+        var rows = await db.Series
+            .AsNoTracking()
+            .Select(s => new LibraryRailRow(
+                s.Id, s.MangaBakaId, s.Title, s.SortTitle, s.Genres, s.Tags, s.ContentRating, s.Year,
+                s.Status, s.Type, s.TotalChapters, s.Added, s.AuthorStory, s.AuthorArt, s.Publisher))
+            .ToListAsync(ct);
+        cache?.Set(key, (IReadOnlyList<LibraryRailRow>)rows, LibraryRowsFor);
+        return rows;
     }
 
     private async Task<Dictionary<int, DateTime>> LastReadAsync(CancellationToken ct)

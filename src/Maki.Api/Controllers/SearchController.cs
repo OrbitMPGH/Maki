@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Maki.Api.Auth;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
@@ -9,6 +10,7 @@ using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Controllers;
@@ -27,6 +29,7 @@ public class SearchController(
 {
     /// <summary>Search a specific site source, for manually linking a series.</summary>
     [HttpGet("source")]
+    [Authorize(Policy = Policies.ManageSources)]
     public async Task<IActionResult> SearchSource(
         [FromQuery] string sourceName, [FromQuery] string query, CancellationToken ct)
     {
@@ -34,6 +37,16 @@ public class SearchController(
         if (source is null)
         {
             return this.Fail(localizer, "error.search.unknownSource", new { sourceName });
+        }
+
+        if (!await sourceAvailability.IsEnabledAsync(source.Name, ct))
+        {
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = source.Name });
+        }
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return BadRequest();
         }
 
         var results = await source.SearchAsync(query, ct);
@@ -48,6 +61,7 @@ public class SearchController(
     /// Fetches the series detail so the UI can show what will be linked.
     /// </summary>
     [HttpGet("resolvesource")]
+    [Authorize(Policy = Policies.ManageSources)]
     public async Task<IActionResult> ResolveSource([FromQuery] string url, CancellationToken ct)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var target) ||
@@ -56,12 +70,19 @@ public class SearchController(
             return this.Fail(localizer, "error.search.invalidUrl");
         }
 
+        var disabled = await sourceAvailability.DisabledAsync(ct);
         foreach (var source in sourceRegistry.All)
         {
             var seriesId = await source.ResolveSeriesIdFromUrlAsync(target, ct);
             if (seriesId is null)
             {
                 continue;
+            }
+
+            // Recognised but switched off: say so, rather than claiming no source knows the URL.
+            if (disabled.Contains(source.Name))
+            {
+                return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = source.Name });
             }
 
             try

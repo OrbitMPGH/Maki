@@ -38,7 +38,27 @@ public static class FileLinker
             return FilePlacement.Hardlinked;
         }
 
-        File.Copy(source, target);
+        // Copied beside the target and moved in, so a crash mid-copy leaves a stray .partial rather than
+        // a truncated file under the final name that the next import would take as already placed.
+        var partial = target + ".partial";
+        try
+        {
+            File.Copy(source, partial, overwrite: true);
+            File.Move(partial, target);
+        }
+        catch
+        {
+            try
+            {
+                File.Delete(partial);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+
+            throw;
+        }
+
         return FilePlacement.Copied;
     }
 

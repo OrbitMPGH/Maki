@@ -335,6 +335,7 @@ public class ImportListService(
         }
 
         var unresolved = fresh.Where(e => !resolved.ContainsKey(e.RemoteId)).ToList();
+        var dumpMissing = false;
         if (unresolved.Count > 0)
         {
             if (!await store.IsAvailableAsync(ct))
@@ -348,16 +349,24 @@ public class ImportListService(
                         "Import lists skipped: the local MangaBaka database is not downloaded yet, so tracker ids cannot be resolved");
                 }
 
-                return ImportListRunResult.Empty with { DumpUnavailable = true };
+                // Entries that already carry a MangaBaka id need no dump, so they carry on.
+                if (resolved.Count == 0)
+                {
+                    return ImportListRunResult.Empty with { DumpUnavailable = true };
+                }
+
+                dumpMissing = true;
             }
+            else
+            {
+                await ResolveAsync(MangaBakaLocalStore.ExternalSource.AniList, e => e.AniListId);
+                await ResolveAsync(MangaBakaLocalStore.ExternalSource.MyAnimeList, e => e.MalId);
+                await ResolveAsync(MangaBakaLocalStore.ExternalSource.Kitsu, e => e.KitsuId);
 
-            await ResolveAsync(MangaBakaLocalStore.ExternalSource.AniList, e => e.AniListId);
-            await ResolveAsync(MangaBakaLocalStore.ExternalSource.MyAnimeList, e => e.MalId);
-            await ResolveAsync(MangaBakaLocalStore.ExternalSource.Kitsu, e => e.KitsuId);
-
-            var unmatched = unresolved.Where(e => !resolved.ContainsKey(e.RemoteId)).ToList();
-            await RecordAsync(user.Id, tracker.Name, unmatched, ImportListSkipReason.Unmatched, null, ct);
-            skipped += unmatched.Count;
+                var unmatched = unresolved.Where(e => !resolved.ContainsKey(e.RemoteId)).ToList();
+                await RecordAsync(user.Id, tracker.Name, unmatched, ImportListSkipReason.Unmatched, null, ct);
+                skipped += unmatched.Count;
+            }
         }
 
         var candidates = new List<Candidate>();
@@ -410,7 +419,7 @@ public class ImportListService(
         var batch = full && canAdd ? candidates : candidates.Take(prefs.MaxPerRun).ToList();
         if (batch.Count == 0)
         {
-            return new(added, requested, skipped, present, errors);
+            return new(added, requested, skipped, present, errors, dumpMissing);
         }
 
         var rootFolderId = canAdd ? await RootFolderForAsync(db, user, prefs.RootFolderId, ct) : null;
@@ -419,7 +428,7 @@ public class ImportListService(
             logger.LogWarning(
                 "Import list {Service} for user {UserId}: no root folder available, nothing added",
                 tracker.Name, user.Id);
-            return new(added, requested, skipped, present, errors + 1);
+            return new(added, requested, skipped, present, errors + 1, dumpMissing);
         }
 
         var note = canAdd
@@ -466,7 +475,7 @@ public class ImportListService(
             }
         }
 
-        return new(added, requested, skipped, present, errors);
+        return new(added, requested, skipped, present, errors, dumpMissing);
 
         async Task ResolveAsync(MangaBakaLocalStore.ExternalSource source, Func<RemoteListEntry, long?> key)
         {

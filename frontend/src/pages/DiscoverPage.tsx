@@ -1,6 +1,7 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
+import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -8,6 +9,7 @@ import {
   Button,
   Collapse,
   Group,
+  Loader,
   Modal,
   MultiSelect,
   RangeSlider,
@@ -94,6 +96,7 @@ import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
 import { LuckyButton } from '../components/LuckyButton'
 import { pickRandom } from '../lib/lucky'
+import { railSubtitle } from '../lib/railSubtitle'
 import {
   DiscoverRailRow,
   EngineCard,
@@ -118,7 +121,6 @@ import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
-import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
   DensityControl,
@@ -135,6 +137,9 @@ import {
  * because the tab is reached at one path and nothing else on Discover shares its controls.
  */
 const MEM = 'discover-recommended'
+
+// Pulls in the charting library, which the Browse tab never needs.
+const TasteTab = lazy(() => import('./discover/TasteTab').then((m) => ({ default: m.TasteTab })))
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -764,7 +769,7 @@ function RecommendedTab() {
 
       {error && (
         <Alert color="var(--warn)" variant="light">
-          {String(error)}
+          {errorText(error)}
         </Alert>
       )}
       {isFetching && !data && (
@@ -1038,7 +1043,7 @@ function FeedExpandModal({
 
       {error && (
         <Alert color="var(--warn)" variant="light">
-          {String(error)}
+          {errorText(error)}
         </Alert>
       )}
 
@@ -1274,7 +1279,7 @@ function DiscoverBrowseTab({
       title={t`Catalogue unavailable`}
     >
       <Stack gap="sm" align="flex-start">
-        <Text size="sm">{String(error)}</Text>
+        <Text size="sm">{errorText(error)}</Text>
         <Button
           size="xs"
           variant="default"
@@ -1320,9 +1325,9 @@ function DiscoverBrowseTab({
         {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
           <DiscoverSeedStrip seedIds={recentRail.seedIds} />
         ) : (
-          recentRail.subtitle && (
+          railSubtitle(recentRail) && (
             <Text c="var(--ink-3)" size="sm" mb="sm">
-              {recentRail.subtitle}
+              {railSubtitle(recentRail)}
             </Text>
           )
         )}
@@ -1364,7 +1369,7 @@ function DiscoverBrowseTab({
             {rail.seedIds && rail.seedIds.length > 0 ? (
               <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
             ) : (
-              <Text c="var(--ink-3)" size="sm" mb="sm">{rail.subtitle}</Text>
+              <Text c="var(--ink-3)" size="sm" mb="sm">{railSubtitle(rail)}</Text>
             )}
             <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
           </div>
@@ -1635,7 +1640,9 @@ export default function DiscoverPage() {
       {active === 'recommended' ? (
         <RecommendedTab />
       ) : active === 'taste' ? (
-        <TasteTab />
+        <Suspense fallback={<Loader />}>
+          <TasteTab />
+        </Suspense>
       ) : (
         <DiscoverBrowseTab
           refreshNonce={refreshNonce}

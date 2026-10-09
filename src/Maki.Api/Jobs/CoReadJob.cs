@@ -41,6 +41,7 @@ public class CoReadJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
+                build.MarkBuilt();
                 logger.LogInformation("Co-read graph: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else

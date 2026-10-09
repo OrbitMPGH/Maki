@@ -252,11 +252,13 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
   function submit() {
     const body: SaveUserBody = {
       username: username.trim(),
+      // An empty string clears the name on edit; leaving it out would keep the old one.
       displayName: isNew ? displayName.trim() || undefined : displayName.trim(),
       permissions: permissionsValue(),
       maxContentRating: rating,
       allRootFolders,
-      rootFolderIds: allRootFolders ? [] : folderIds.map(Number),
+      // Left out while every folder is granted so unticking later restores the earlier selection.
+      rootFolderIds: allRootFolders ? undefined : folderIds.map(Number),
       disabled,
     }
     if (password) body.password = password

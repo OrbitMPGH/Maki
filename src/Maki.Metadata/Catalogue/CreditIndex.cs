@@ -167,6 +167,13 @@ public sealed class CreditIndex
                 {
                     foreach (var raw in parse(json))
                     {
+                        // A publisher is never a person, so the placeholder list only applies to the
+                        // writer and artist columns.
+                        if (role != CreditRole.Publisher && !MangaBaka.CreditNames.IsPerson(raw))
+                        {
+                            continue;
+                        }
+
                         var key = CatalogueText.RomanizationKey(raw);
                         if (key.Length == 0)
                         {

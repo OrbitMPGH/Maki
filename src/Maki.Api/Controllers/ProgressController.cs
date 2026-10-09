@@ -163,7 +163,7 @@ public class ProgressController(
             held.Count,
             AchievementCatalog.All.Sum(a => a.Tiers.Count),
             recent,
-            await GoalsForAsync(target, ct),
+            await GoalsForAsync(target, ct, snapshot),
             unseen));
     }
 
@@ -371,12 +371,17 @@ public class ProgressController(
             .Where(a => a.UserId == userId)
             .ToListAsync(ct);
 
-    private async Task<List<ReadingGoalDto>> GoalsForAsync(int userId, CancellationToken ct)
+    private async Task<List<ReadingGoalDto>> GoalsForAsync(int userId, CancellationToken ct, UserMetrics? snapshot = null)
     {
         var goals = await db.ReadingGoals.IgnoreQueryFilters()
             .Where(g => g.UserId == userId)
             .OrderBy(g => g.Period).ThenBy(g => g.Metric)
             .ToListAsync(ct);
+
+        if (goals.Any(g => g.Metric != GoalMetric.SeriesFinished))
+        {
+            snapshot ??= await metrics.GetAsync(userId, ct);
+        }
 
         var rows = new List<ReadingGoalDto>(goals.Count);
         foreach (var goal in goals)
@@ -386,20 +391,36 @@ public class ProgressController(
                 goal.Period.ToString(),
                 goal.Metric.ToString(),
                 goal.Target,
-                await metrics.GoalProgressAsync(userId, goal.Period, goal.Metric, ct)));
+                await metrics.GoalProgressAsync(userId, goal.Period, goal.Metric, ct, snapshot)));
         }
 
         return rows;
     }
 
-    private AchievementDto Describe(
-        AchievementDefinition definition, UserMetrics snapshot, List<UserAchievement> held)
+    /// <summary>
+    /// The tier the grid shows: the higher of what the metrics say now and what was earned, because
+    /// unlocks are never revoked and a metric that can fall must not make a badge regress.
+    /// </summary>
+    internal static (int Tier, DateTime? UnlockedAt) DisplayedTier(
+        AchievementDefinition definition, UserMetrics snapshot, IReadOnlyList<UserAchievement> held)
     {
-        var tier = definition.TierFor(snapshot);
+        var heldTier = held
+            .Where(h => h.Key == definition.Key)
+            .Select(h => h.Tier)
+            .DefaultIfEmpty(0)
+            .Max();
+        var tier = Math.Min(Math.Max(definition.TierFor(snapshot), heldTier), definition.Tiers.Count);
         var unlockedAt = held
             .Where(h => h.Key == definition.Key && h.Tier == tier)
             .Select(h => (DateTime?)h.UnlockedAt)
             .FirstOrDefault();
+        return (tier, unlockedAt);
+    }
+
+    private AchievementDto Describe(
+        AchievementDefinition definition, UserMetrics snapshot, List<UserAchievement> held)
+    {
+        var (tier, unlockedAt) = DisplayedTier(definition, snapshot, held);
 
         return new AchievementDto(
             definition.Key,

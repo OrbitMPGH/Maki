@@ -19,7 +19,7 @@ import { notifications } from '@mantine/notifications'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
 import QRCode from 'qrcode'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import {
   useApiKeys,
   useChangePassword,
@@ -27,6 +27,7 @@ import {
   useCreateApiKey,
   useDisableTwoFactor,
   useEnableTwoFactor,
+  useRegenerateRecoveryCodes,
   useRevokeApiKey,
   useRevokeSessions,
   useStartTwoFactorSetup,
@@ -288,12 +289,15 @@ function TwoFactorCard() {
   const start = useStartTwoFactorSetup()
   const enable = useEnableTwoFactor()
   const disable = useDisableTwoFactor()
+  const regenerate = useRegenerateRecoveryCodes()
 
   const [enrolling, setEnrolling] = useState<{ sharedKey: string; authenticatorUri: string } | null>(null)
   const [code, setCode] = useState('')
   const [enablePassword, setEnablePassword] = useState('')
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
   const [disablePassword, setDisablePassword] = useState('')
+  const [regenPassword, setRegenPassword] = useState('')
+  const [regenCode, setRegenCode] = useState('')
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const keyCopy = useCopyText()
   const codesCopy = useCopyText()
@@ -357,6 +361,55 @@ function TwoFactorCard() {
           )
         )}
       </Group>
+
+      {status?.enabled && (
+        <Stack gap={4}>
+          <Text size="xs" c="var(--ink-3)">
+            {plural(status.recoveryCodesLeft, {
+              one: '# recovery code left. A new set replaces the old codes.',
+              other: '# recovery codes left. A new set replaces the old codes.',
+            })}
+          </Text>
+          <Group
+            component="form"
+            align="flex-end"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault()
+              if (!regenPassword || regenCode.length < 6) return
+              regenerate.mutate({ code: regenCode, password: regenPassword }, {
+                onSuccess: (result) => {
+                  setRegenPassword('')
+                  setRegenCode('')
+                  setRecoveryCodes(result.recoveryCodes)
+                },
+              })
+            }}
+          >
+            <PasswordInput
+              label={t`Your password`}
+              autoComplete="current-password"
+              value={regenPassword}
+              onChange={(e) => setRegenPassword(e.currentTarget.value)}
+              w={200}
+            />
+            <TextInput
+              label={t`Code from your app`}
+              inputMode="numeric"
+              value={regenCode}
+              onChange={(e) => setRegenCode(e.currentTarget.value)}
+              w={160}
+            />
+            <Button
+              type="submit"
+              variant="default"
+              loading={regenerate.isPending}
+              disabled={!regenPassword || regenCode.length < 6}
+            >
+              <Trans>New recovery codes</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      )}
 
       {status?.enabled && (
         <Group

@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -416,7 +417,7 @@ export function CatalogueBrowser({
 
           {error && (
             <Alert color="var(--warn)" variant="light" mb="md">
-              {String(error)}
+              {errorText(error)}
             </Alert>
           )}
 

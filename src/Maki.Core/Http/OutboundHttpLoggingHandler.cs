@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Core.Http;
@@ -45,7 +46,8 @@ public class OutboundHttpLoggingHandler : DelegatingHandler
             var response = await base.SendAsync(request, cancellationToken);
             var elapsed = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
 
-            if (!response.IsSuccessStatusCode)
+            // A removed poster or an id a lookup does not have is an ordinary answer, not a fault.
+            if (!response.IsSuccessStatusCode && response.StatusCode is not (HttpStatusCode.NotFound or HttpStatusCode.Gone))
             {
                 logger.LogWarning("{Method} {Host} responded {Status} in {Elapsed:0} ms",
                     request.Method.Method, host, (int)response.StatusCode, elapsed);

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -181,7 +182,7 @@ public sealed class SourceScoutService(
             .Where(l => picks.Contains(l.ChapterId))
             .DistinctBy(l => l.ChapterId)
             .OrderBy(l => l.Chapter!.Number ?? decimal.MaxValue)
-            .Select(l => l.Chapter!.NumberRaw ?? l.Chapter.Number?.ToString() ?? "?")];
+            .Select(l => l.Chapter!.NumberRaw ?? l.Chapter.Number?.ToString(CultureInfo.InvariantCulture) ?? "?")];
         job.Sources = [.. states.Values];
 
         using var writes = new SemaphoreSlim(1);

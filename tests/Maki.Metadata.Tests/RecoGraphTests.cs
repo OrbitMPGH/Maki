@@ -186,6 +186,15 @@ public class RecoGraphTests : IDisposable
         Assert.Equal(8, VotesBetween(graph!, 1, 3));
     }
 
+    [Fact]
+    public async Task AMalOnlyArtifactKeepsItsVotes()
+    {
+        var graph = await LoadSplit((1, 2, 0, 12), (1, 3, 0, 4));
+
+        Assert.Equal(12, VotesBetween(graph!, 1, 2));
+        Assert.Equal(4, VotesBetween(graph!, 1, 3));
+    }
+
     private static int VotesBetween(PairGraphIndex graph, long from, long to)
     {
         var node = Node(graph, from);

@@ -217,6 +217,10 @@ public sealed class SourceComparePreviewService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Source comparison for series {SeriesId} ended early", job.SeriesId);
+            foreach (var panel in job.Panels.Where(p => p.Status is not (PanelStatus.Ready or PanelStatus.Failed)))
+            {
+                HandleFailure(job, panel, ex);
+            }
         }
         finally
         {
@@ -320,10 +324,9 @@ public sealed class SourceComparePreviewService(
             ? union
             : [.. union.Take(PickerEnds), .. union.TakeLast(PickerEnds)];
 
-        var target = requested ?? union
-            .OrderByDescending(n => carriers[n])
-            .ThenBy(n => n)
-            .First();
+        decimal? target = requested ?? (union.Count == 0
+            ? null
+            : union.OrderByDescending(n => carriers[n]).ThenBy(n => n).First());
 
         return (picker, target);
 
@@ -357,7 +360,8 @@ public sealed class SourceComparePreviewService(
                 // different question than the one they asked is worse than an empty column.
                 if (panel.Target is null && job.RequestedChapter is null)
                 {
-                    panel.Target = panel.Chapters!.Where(c => c.Number is not null).MinBy(c => c.Number);
+                    panel.Target = panel.Chapters!.Where(c => c.Number is not null).MinBy(c => c.Number)
+                        ?? (target is null ? panel.Chapters!.First() : null);
                 }
 
                 if (panel.Target?.Number != target)

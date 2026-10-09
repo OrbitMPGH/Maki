@@ -212,6 +212,8 @@ public class AnimeSignalsController(
             await userSettings.SetAsync(SettingKeys.RecommendationsAnimeSignalsLastSync, null, ct);
         }
 
+        await RecommendationFeedbackService.BumpAsync(db, user.UserId, feedback: false, signal: true, ct);
+
         return Ok(new
         {
             enabled = request.Enabled,
