@@ -178,7 +178,9 @@ public class CbzLinkService(
 
         linked += await LinkLoneFileAsync(series, chapters, ct);
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
-        if (created > 0)
+        // Only a grabbed torrent is a download. Adopting files that were already on disk (rescan,
+        // library import) is linking, and counting it would credit a whole back catalogue as downloaded.
+        if (created > 0 && sourceName.StartsWith("torrent:", StringComparison.Ordinal))
         {
             // One event per adoption batch; value = ChapterFile rows created, so a file that
             // already had a row is never counted as downloaded again.

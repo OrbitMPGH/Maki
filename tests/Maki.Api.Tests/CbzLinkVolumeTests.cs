@@ -90,14 +90,14 @@ public class CbzLinkVolumeTests : IDisposable
         return path;
     }
 
-    private async Task LinkAsync(Series series, string path)
+    private async Task LinkAsync(Series series, string path, string sourceName = "torrent")
     {
         using var db = _db.NewContext();
         await Service(db).LinkFilesAsync(
             db.Series.Single(s => s.Id == series.Id),
             Path.Combine(_root, "Berserk"),
             [path],
-            "torrent",
+            sourceName,
             updateComicInfo: false,
             ct: CancellationToken.None);
     }
@@ -112,6 +112,21 @@ public class CbzLinkVolumeTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.NotNull(db.Chapters.Single(c => c.SeriesId == series.Id).ChapterFileId);
+    }
+
+    [Theory]
+    [InlineData("import", 0)]
+    [InlineData("rescan", 0)]
+    [InlineData("torrent:Nyaa", 1)]
+    public async Task Only_a_grabbed_torrent_counts_as_a_download(string sourceName, int expectedEvents)
+    {
+        var series = SeedSeries(chapterCount: 1);
+        var path = WriteVolume("Look Back.cbz");
+
+        await LinkAsync(series, path, sourceName);
+
+        using var db = _db.NewContext();
+        Assert.Equal(expectedEvents, db.StatsEvents.Count(e => e.Type == StatsEventType.ChapterDownloaded));
     }
 
     [Fact]
