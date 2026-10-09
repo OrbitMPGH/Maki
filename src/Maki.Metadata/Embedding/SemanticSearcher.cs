@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Metadata.Catalogue;
@@ -64,10 +65,12 @@ public class SemanticSearcher(
     /// bge is an asymmetric retrieval model: passages are embedded bare (as the indexer does) and
     /// queries carry this instruction. Without it, short queries land in the wrong region of the
     /// space and recall drops noticeably.
-    /// </summary>
-    /// Now read from the model rather than fixed here, because it is a property of the weights, not
-    /// of the search: e5 wants "query: " and gte wants nothing at all, and the bge default below
+    /// <para>
+    /// Read from the model rather than fixed here, because it is a property of the weights, not
+    /// of the search: e5 wants "query: " and gte wants nothing at all, and the bge default
     /// keeps this identical for every model shipped so far.
+    /// </para>
+    /// </summary>
     private string QueryInstruction => options.Model.QueryPrefix;
 
     /// <summary>Enough vectors for the index to be worth searching at all.</summary>
@@ -305,7 +308,7 @@ public class SemanticSearcher(
 
         var winners = RankCandidates(index, plan, fused, exactTitles, limit, nearTitles);
         var results = await HydrateAsync(winners, ct);
-        logger.LogInformation(
+        logger.LogDebug(
             "Semantic search for {Length}-char query returned {Count} of {Pool} candidates in {Elapsed:F0}ms",
             text.Length, results.Count, fused.Count, (DateTime.UtcNow - started).TotalMilliseconds);
         return new SemanticSearchOutcome(results, corrected, chips);
@@ -554,17 +557,19 @@ public class SemanticSearcher(
     /// </summary>
     private static double ScoreAgainstQueryTags(byte[]? candidateBlob, TagMath.Profile profile, Func<int, double> idf)
     {
-        if (candidateBlob is null || profile.IsEmpty)
+        if (candidateBlob is null || candidateBlob.Length % TagMath.EntrySize != 0 || profile.IsEmpty)
         {
             return 0;
         }
 
+        // Walked in place: this runs once per catalogue row per query, and Unpack builds a list each call.
         var dot = 0.0;
-        foreach (var (id, cls) in TagMath.Unpack(candidateBlob))
+        for (var i = 0; i < candidateBlob.Length; i += TagMath.EntrySize)
         {
+            var id = BinaryPrimitives.ReadInt32LittleEndian(candidateBlob.AsSpan(i));
             if (profile.IdfWeight.TryGetValue(id, out var wanted))
             {
-                dot += wanted * TagMath.ClassWeight(cls) * idf(id);
+                dot += wanted * TagMath.ClassWeight(candidateBlob[i + 4]) * idf(id);
             }
         }
 

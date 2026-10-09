@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { ActionIcon, Button, Group, Menu, Text, Tooltip } from '@mantine/core'
 import { randomUUID } from '../../lib/uuid'
 import { notifications } from '@mantine/notifications'
@@ -70,7 +71,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
         autoClose: 8000,
       })
     } catch (error) {
-      const reason = String(error)
+      const reason = errorText(error)
       notifications.show({
         color: 'var(--danger)', autoClose: false, message: <Group gap="xs" wrap="wrap">
           <Text size="sm"><Trans>Could not update {surface} feedback: {reason}</Trans></Text>
@@ -99,7 +100,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
         autoClose: 8000,
       })
     } catch (error) {
-      const reason = String(error)
+      const reason = errorText(error)
       notifications.show({
         color: 'var(--danger)', autoClose: false, message: <Group gap="xs" wrap="wrap">
           <Text size="sm"><Trans>Could not update {surface} feedback: {reason}</Trans></Text>

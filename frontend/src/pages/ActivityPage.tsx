@@ -178,11 +178,26 @@ function upgradeRejectionText(
 
 type ActivityTab = 'queue' | 'upgrades'
 
+/** What a section shows in place of its skeleton once its first fetch has failed. */
+function LoadFailed({ query }: { query: { error: unknown; isRefetching: boolean; refetch: () => unknown } }) {
+  const { t } = useLingui()
+  return (
+    <EmptyState
+      compact
+      title={t`Couldn't load this section`}
+      description={query.error instanceof Error ? query.error.message : String(query.error)}
+      actionLabel={query.isRefetching ? t`Retrying…` : t`Retry`}
+      onAction={() => void query.refetch()}
+    />
+  )
+}
+
 export default function ActivityPage() {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const sourceLabel = useSourceLabel()
-  const { data: queue } = useQueue()
+  const queueQuery = useQueue()
+  const queue = queueQuery.data
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
   const reorder = useReorderQueue()
@@ -212,25 +227,29 @@ export default function ActivityPage() {
   const [historyPage, setHistoryPage] = useState(1)
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
   const [reviewing, setReviewing] = useState<number | null>(null)
-  const { data: history } = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
+  const historyQuery = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
+  const history = historyQuery.data
   const historyPageCount = history ? Math.ceil(history.total / HISTORY_PAGE_SIZE) : 0
 
   const [upgradesPage, setUpgradesPage] = useState(1)
   const upgradesTabActive = tab === 'upgrades'
   // Gated on the tab being open: an instance-wide cutoff evaluation is real work, and Queue is the
   // tab most people leave open, so it shouldn't keep re-running one in the background.
-  const { data: upgradesSummary } = useUpgradesSummary(upgradesTabActive)
+  const upgradesSummaryQuery = useUpgradesSummary(upgradesTabActive)
+  const upgradesSummary = upgradesSummaryQuery.data
   const { data: upgradeSettings } = useUpgradeSettings(isAdmin)
-  const { data: cutoffUnmet } = useCutoffUnmet(upgradesPage, UPGRADES_PAGE_SIZE, undefined, upgradesTabActive)
+  const cutoffUnmetQuery = useCutoffUnmet(upgradesPage, UPGRADES_PAGE_SIZE, undefined, upgradesTabActive)
+  const cutoffUnmet = cutoffUnmetQuery.data
   const upgradesPageCount = cutoffUnmet ? Math.ceil(cutoffUnmet.total / UPGRADES_PAGE_SIZE) : 0
 
   const [upgradeHistoryPage, setUpgradeHistoryPage] = useState(1)
-  const { data: upgradeHistory } = useUpgradeHistory(
+  const upgradeHistoryQuery = useUpgradeHistory(
     upgradeHistoryPage,
     UPGRADE_HISTORY_PAGE_SIZE,
     undefined,
     upgradesTabActive,
   )
+  const upgradeHistory = upgradeHistoryQuery.data
   const upgradeHistoryPageCount = upgradeHistory ? Math.ceil(upgradeHistory.total / UPGRADE_HISTORY_PAGE_SIZE) : 0
   const historyEntries = useMemo(() => groupUpgradeHistory(upgradeHistory?.rows ?? []), [upgradeHistory])
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
@@ -385,7 +404,7 @@ export default function ActivityPage() {
 
         <Tabs.Panel value="queue">
       <FigureStrip
-        loading={!queue}
+        loading={!queue && !queueQuery.isError}
         figures={[
           { label: t`In progress`, value: stats.active, tone: 'info' },
           { label: t`Queued`, value: stats.queued },
@@ -395,7 +414,11 @@ export default function ActivityPage() {
       />
 
       {!queue ? (
-        <TableSkeleton columns={5} rows={4} />
+        queueQuery.isError ? (
+          <LoadFailed query={queueQuery} />
+        ) : (
+          <TableSkeleton columns={5} rows={4} />
+        )
       ) : queueItems.length === 0 ? (
         <EmptyState
           compact
@@ -654,7 +677,11 @@ export default function ActivityPage() {
         </Group>
 
         {!history ? (
-          <TableSkeleton columns={6} />
+          historyQuery.isError ? (
+            <LoadFailed query={historyQuery} />
+          ) : (
+            <TableSkeleton columns={6} />
+          )
         ) : history.items.length === 0 ? (
           <EmptyState
             compact
@@ -801,7 +828,11 @@ export default function ActivityPage() {
 
         <Tabs.Panel value="upgrades">
           {!upgradesSummary ? (
-            <TableSkeleton columns={6} rows={4} />
+            upgradesSummaryQuery.isError ? (
+              <LoadFailed query={upgradesSummaryQuery} />
+            ) : (
+              <TableSkeleton columns={6} rows={4} />
+            )
           ) : (
             <Stack gap="xl">
               <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
@@ -877,7 +908,11 @@ export default function ActivityPage() {
                   <Trans>Recent upgrades</Trans>
                 </Title>
                 {!upgradeHistory ? (
-                  <TableSkeleton columns={5} />
+                  upgradeHistoryQuery.isError ? (
+                    <LoadFailed query={upgradeHistoryQuery} />
+                  ) : (
+                    <TableSkeleton columns={5} />
+                  )
                 ) : upgradeHistory.rows.length === 0 ? (
                   <EmptyState
                     compact
@@ -1071,7 +1106,11 @@ export default function ActivityPage() {
                   <Trans>Cutoff unmet</Trans>
                 </Title>
                 {!cutoffUnmet ? (
-                  <TableSkeleton columns={6} rows={4} />
+                  cutoffUnmetQuery.isError ? (
+                    <LoadFailed query={cutoffUnmetQuery} />
+                  ) : (
+                    <TableSkeleton columns={6} rows={4} />
+                  )
                 ) : !upgradesSummary.profilesConfigured ? (
                   <EmptyState
                     compact

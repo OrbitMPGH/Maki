@@ -20,6 +20,17 @@ msgstr "A code from your authenticator app is required"
 msgid "error.account.incorrectPassword"
 msgstr "Password is incorrect"
 
+#. Single sign-on accounts have no password to confirm, so minting a key or OPDS token needs a fresh sign-in.
+#: src/Maki.Api/Auth/AccountCredentials.cs
+msgid "error.account.recentSignInRequired"
+msgstr "Sign out and sign in again, then try this within 10 minutes. Creating a key or token needs a recent sign-in."
+
+#. An authenticator code that was already used, so the next one is needed. Shown only after the
+#. password was verified, so it says nothing about which accounts exist.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.totpReplayed"
+msgstr "That code was already used. Wait for the next one and try again"
+
 #. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
 #. sign-in-time 2FA prompt.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -85,6 +96,10 @@ msgstr "Two-factor authentication is already enabled"
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.twoFactorDelegatedToSso"
 msgstr "This account signs in through single sign-on, which handles two-factor itself"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.twoFactorNotEnabled"
+msgstr "Two-factor authentication is not turned on"
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 msgid "error.animeResume.notEnabled"
@@ -1761,6 +1776,10 @@ msgstr "Backup is from a version too old to restore directly (migration \"{migra
 msgid "error.system.backupUnreadable"
 msgstr "This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed."
 
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupTooLarge"
+msgstr "The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed."
+
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.backupNameInvalid"
 msgstr "That is not a valid backup name."
@@ -3434,6 +3453,11 @@ msgstr "Nothing recurs across enough of your reading to name a group yet."
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "Needs at least {min} series the catalogue knows about. So far this view has {count}."
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.alreadyRunning"
+msgstr "An install of this download is already running."
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 msgid "install.embeddingModel.alreadyOn"
 msgstr "Already using this model."
@@ -3453,6 +3477,10 @@ msgstr "An indexing pass is running; try again once it finishes."
 #: src/Maki.Metadata/Embedding/SeriesEmbeddingIndexer.cs
 msgid "install.embeddingModel.notAvailable"
 msgstr "Embedding model not available"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+msgid "install.embeddingModel.switchFailed"
+msgstr "The model switch failed. Check the server log for details."
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 msgid "install.embeddingModel.switchInProgress"

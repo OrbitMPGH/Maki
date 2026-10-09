@@ -155,6 +155,11 @@ msgstr ""
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr "{0, plural, one {# page} many {# pages} other {# pages}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -773,11 +778,6 @@ msgstr "{kind, select, both {Scénario · dessin} story {Scénario} art {Dessin}
 #, fuzzy
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {En hausse de {pct} % par rapport à la période précédente.} down {En baisse de {pct} % par rapport à la période précédente.} flat {À peu près comme pour la période précédente.} none {} other {}}"
-
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{kind} de {relatedTo}"
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
@@ -2128,6 +2128,10 @@ msgstr ""
 #, fuzzy
 msgid "Account security"
 msgstr "Sécurité du compte"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed or a single sign-on link you removed since then comes back, so redo those afterwards. API keys you revoked since the backup stay revoked."
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -4143,6 +4147,7 @@ msgstr "Secret client"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Close"
 msgstr "Fermer"
@@ -4694,6 +4699,10 @@ msgstr ""
 #, fuzzy
 msgid "Couldn't load this rail"
 msgstr "Impossible de charger cette rubrique"
+
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -5865,6 +5874,7 @@ msgstr "Époque"
 msgid "Erotica"
 msgstr "Érotisme"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8816,6 +8826,10 @@ msgstr "Médiane"
 msgid "Median wait"
 msgstr "Attente médiane"
 
+#: src/App.tsx
+msgid "Menu"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Merging folder"
@@ -9374,6 +9388,10 @@ msgstr "Nouveau profil"
 #, fuzzy
 msgid "New rail"
 msgstr "Nouveau rail"
+
+#: src/components/settings/AccountSection.tsx
+msgid "New recovery codes"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12037,6 +12055,10 @@ msgstr "Séries associées"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "séries associées, plus comme ceci, similaires, recommandations, rails, suites, dérivées"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -12631,6 +12653,7 @@ msgstr "Réessayer et annuler les téléchargements en file"
 msgid "Retry download"
 msgstr "Réessayer le téléchargement"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -13208,9 +13231,8 @@ msgid "Search"
 msgstr "Rechercher"
 
 #: src/components/CommandPalette.tsx
-#, fuzzy
-msgid "Search (Ctrl+K)"
-msgstr "Rechercher (Ctrl+K)"
+msgid "Search ({shortcut})"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -15032,6 +15054,14 @@ msgstr "les sources de la série"
 msgid "The server logs will say why."
 msgstr "Les journaux du serveur indiqueront la raison."
 
+#: src/api/client.ts
+msgid "The server returned an error ({status})."
+msgstr ""
+
+#: src/api/client.ts
+msgid "The server sent a response Maki could not read ({status})."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
@@ -16651,6 +16681,7 @@ msgstr "Les chapitres souhaités peuvent être téléchargés à nouveau par l'a
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Souhaité pour {spanLabel} : {wantedCount} sur {total} chapitres"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

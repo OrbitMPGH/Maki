@@ -3,7 +3,6 @@ import { t } from '@lingui/core/macro'
 
 interface InitializeInfo {
   apiRoot: string
-  version: string
   /** True while the account the multi-user migration created has never been claimed. */
   setupNeeded: boolean
   /**
@@ -18,22 +17,30 @@ interface InitializeInfo {
   }
 }
 
-let initialize: InitializeInfo | null = null
+let initialize: Promise<InitializeInfo> | null = null
 
 /**
  * Pre-authentication bootstrap. Carries no credential: it used to return the instance API key to
  * any anonymous caller, which made the key that guarded the API readable by anyone who could load
  * the page.
  */
-export async function getInitialize(): Promise<InitializeInfo> {
-  if (!initialize) {
+export function getInitialize(): Promise<InitializeInfo> {
+  if (initialize) return initialize
+  // The promise is cached, not the value, so concurrent first callers share one fetch. A failure
+  // is dropped so the next caller tries again instead of inheriting the rejection.
+  const pending = (async () => {
     const res = await fetch('/initialize.json', { cache: 'no-cache' })
     if (!res.ok) throw new Error(t`Failed to initialize`)
-    initialize = (await res.json()) as InitializeInfo
-  }
-  return initialize
+    return (await res.json()) as InitializeInfo
+  })()
+  initialize = pending
+  pending.catch(() => {
+    if (initialize === pending) initialize = null
+  })
+  return pending
 }
 
+/** Forgets the bootstrap payload so the next caller re-reads it, for state that can change under a signed-out tab (SSO setup). */
 export function invalidateInitialize(): void {
   initialize = null
 }
@@ -142,17 +149,26 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   }
   if (!res.ok) {
     const body = await res.text()
-    throw new ApiError(res.status, `API ${res.status}: ${errorMessage(body) ?? res.statusText}`, errorCode(body))
+    // The status stays on ApiError.status. A body that is not the server's own JSON (a reverse
+    // proxy's HTML error page, say) is never shown.
+    const status = res.status
+    throw new ApiError(status, errorMessage(body) ?? t`The server returned an error (${status}).`, errorCode(body))
   }
   // 204, and any 200 whose handler wrote no body, have nothing to parse.
   const body = await res.text()
   if (!body) return undefined as T
-  return JSON.parse(body) as T
+  try {
+    return JSON.parse(body) as T
+  } catch {
+    const status = res.status
+    throw new ApiError(status, t`The server sent a response Maki could not read (${status}).`)
+  }
 }
 
 /**
- * Controllers answer failures as `{ "error": "...", "code": "..." }`; fall back to the raw body when
- * they don't. `error` is already localized by the server, so it is displayed as-is. `code` is the
+ * Controllers answer failures as `{ "error": "...", "code": "..." }`. `error` is already localized by
+ * the server, so it is displayed as-is; a body that is not JSON, or carries none of the known
+ * fields, yields null and the caller words a generic message. `code` is the
  * stable dotted key behind it (see `errorCode`), for a caller that wants to branch on a specific
  * failure rather than show it.
  */
@@ -161,9 +177,9 @@ function errorMessage(body: string): string | null {
   try {
     // `detail`/`title` are ASP.NET ProblemDetails, which bare `NotFound()` and model binding produce.
     const parsed = JSON.parse(body) as { error?: string; message?: string; detail?: string; title?: string }
-    return parsed.error ?? parsed.message ?? parsed.detail ?? parsed.title ?? body
+    return parsed.error ?? parsed.message ?? parsed.detail ?? parsed.title ?? null
   } catch {
-    return body
+    return null
   }
 }
 
