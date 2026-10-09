@@ -1132,7 +1132,7 @@ export default function LibraryPage() {
                 {f.name}
               </TagChip>
               <ActionIcon
-                size="xs"
+                size={24}
                 variant="subtle"
                 color="var(--ink-4)"
                 aria-label={t`Delete saved filter`}

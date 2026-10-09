@@ -1662,6 +1662,11 @@ body::before {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
+.home-read-button::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
 .reading-card:hover > .home-read-button {
   transform: translateY(-4px);
 }

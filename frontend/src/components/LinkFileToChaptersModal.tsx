@@ -183,7 +183,7 @@ export function LinkFileToChaptersModal({
                 leftSection={<IconSearch size={14} />}
                 rightSection={
                   query ? (
-                    <ActionIcon size="sm" variant="subtle" color="gray" aria-label={t`Clear search`} onClick={() => setQuery('')}>
+                    <ActionIcon size={24} variant="subtle" color="var(--neutral)" aria-label={t`Clear search`} onClick={() => setQuery('')}>
                       <IconX size={12} />
                     </ActionIcon>
                   ) : null
