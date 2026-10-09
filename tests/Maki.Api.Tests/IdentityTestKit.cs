@@ -83,8 +83,29 @@ internal class TestSignInManager(UserManager<MakiUser> users, MakiUser? twoFacto
 
     public override Task RefreshSignInAsync(MakiUser user) => Task.CompletedTask;
 
+    public override Task<bool> IsTwoFactorClientRememberedAsync(MakiUser user) => Task.FromResult(false);
+
     public override Task SignInWithClaimsAsync(MakiUser user, bool isPersistent, IEnumerable<Claim> additionalClaims) =>
         Task.CompletedTask;
+
+    public override async Task<SignInResult> TwoFactorAuthenticatorSignInAsync(
+        string code, bool isPersistent, bool rememberClient)
+    {
+        var user = twoFactorUser!;
+        if (await UserManager.IsLockedOutAsync(user))
+        {
+            return SignInResult.LockedOut;
+        }
+
+        if (await UserManager.VerifyTwoFactorTokenAsync(user, UserManager.Options.Tokens.AuthenticatorTokenProvider, code))
+        {
+            await UserManager.ResetAccessFailedCountAsync(user);
+            return SignInResult.Success;
+        }
+
+        await UserManager.AccessFailedAsync(user);
+        return SignInResult.Failed;
+    }
 
     public override Task<MakiUser?> GetTwoFactorAuthenticationUserAsync() => Task.FromResult(twoFactorUser);
 

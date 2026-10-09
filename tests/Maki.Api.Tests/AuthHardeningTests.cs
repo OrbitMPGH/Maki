@@ -264,6 +264,53 @@ public sealed class AuthHardeningTests : IDisposable
         Assert.Equal([codes[0]], signIn.RedeemedRecoveryCodes);
     }
 
+    private async Task<(AuthController Controller, MakiDbContext Db, UserManager<MakiUser> Users, MakiUser User, string Code)>
+        RealAuthenticatorAsync(int userId)
+    {
+        var db = _db.NewContext(userId);
+        var users = IdentityTestKit.UserManager(db);
+        users.RegisterTokenProvider(
+            TokenOptions.DefaultAuthenticatorProvider, new AuthenticatorTokenProvider<MakiUser>());
+        var user = (await users.FindByIdAsync(userId.ToString()))!;
+        await users.ResetAuthenticatorKeyAsync(user);
+        await users.SetTwoFactorEnabledAsync(user, true);
+        var key = TotpReplayGuard.Base32Decode((await users.GetAuthenticatorKeyAsync(user))!)!;
+        var code = TotpReplayGuard.CodeFor(key, DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30);
+        var signIn = new TestSignInManager(users, user);
+        return (Auth(db, users, signIn, new OidcRuntimeOptions(), userId), db, users, user, code);
+    }
+
+    [Fact]
+    public async Task An_authenticator_code_works_once_and_is_refused_when_replayed()
+    {
+        var userId = SeedWithPassword("ada");
+        var (controller, db, _, _, code) = await RealAuthenticatorAsync(userId);
+        using var _ = db;
+
+        var first = await controller.TwoFactor(new TwoFactorRequest(code, false), default);
+        var replay = await controller.TwoFactor(new TwoFactorRequest(code, false), default);
+
+        Assert.IsType<OkObjectResult>(first);
+        Assert.IsType<UnauthorizedObjectResult>(replay);
+        Assert.Contains(db.AuthEvents, e => e.Detail == "reused 2fa code");
+    }
+
+    [Fact]
+    public async Task A_code_used_to_regenerate_recovery_codes_cannot_be_used_again()
+    {
+        var userId = SeedWithPassword("ada");
+        var (_, db, users, user, code) = await RealAuthenticatorAsync(userId);
+        using var _ = db;
+        await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 2);
+        var account = Account(db, userId, users);
+
+        var first = await account.RegenerateRecoveryCodes(new EnableTwoFactorRequest(code, Password), default);
+        var replay = await account.RegenerateRecoveryCodes(new EnableTwoFactorRequest(code, Password), default);
+
+        Assert.IsType<OkObjectResult>(first);
+        Assert.Equal("error.account.invalidCode", CodeOf(replay));
+    }
+
     [Fact]
     public async Task A_wrong_recovery_code_counts_toward_lockout()
     {
@@ -320,9 +367,9 @@ public sealed class AuthHardeningTests : IDisposable
         Assert.Equal("error.account.lockedOut", CodeOf(result));
     }
 
-    private AccountController Account(MakiDbContext db, int userId)
+    private AccountController Account(MakiDbContext db, int userId, UserManager<MakiUser>? existing = null)
     {
-        var users = IdentityTestKit.UserManager(db);
+        var users = existing ?? IdentityTestKit.UserManager(db);
         return new AccountController(
             new TestLocalizer(), db, users, new TestSignInManager(users), new TestCurrentUser(userId),
             new AuthEventLogger(db, _clock), new OidcRuntimeOptions(), _clock,

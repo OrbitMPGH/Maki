@@ -215,12 +215,33 @@ public class AuthController(
         var isAuthenticatorCode = code.Length == 6 && code.All(char.IsAsciiDigit);
         // Identity neither checks lockout nor counts a miss on the recovery-code path, so both happen
         // here, and a redeemed code is re-issued as the same persistent session the authenticator gives.
-        var result = isAuthenticatorCode
-            ? await signInManager.TwoFactorAuthenticatorSignInAsync(
-                code, isPersistent: true, rememberClient: request.RememberMachine)
-            : await userManager.IsLockedOutAsync(user)
+        var replayed = false;
+        Microsoft.AspNetCore.Identity.SignInResult result;
+        if (isAuthenticatorCode)
+        {
+            // Identity's own verify decides first; the step is only worked out for a code it accepts,
+            // and only to refuse one that was already used.
+            replayed = !await userManager.IsLockedOutAsync(user)
+                && await userManager.VerifyTwoFactorTokenAsync(
+                    user, userManager.Options.Tokens.AuthenticatorTokenProvider, code)
+                && await TotpReplayGuard.IsReplayAsync(userManager, user, code);
+            if (replayed)
+            {
+                await userManager.AccessFailedAsync(user);
+                result = Microsoft.AspNetCore.Identity.SignInResult.Failed;
+            }
+            else
+            {
+                result = await signInManager.TwoFactorAuthenticatorSignInAsync(
+                    code, isPersistent: true, rememberClient: request.RememberMachine);
+            }
+        }
+        else
+        {
+            result = await userManager.IsLockedOutAsync(user)
                 ? Microsoft.AspNetCore.Identity.SignInResult.LockedOut
                 : await signInManager.TwoFactorRecoveryCodeSignInAsync(RecoveryCodeForm(code));
+        }
 
         if (!isAuthenticatorCode && !result.Succeeded && !result.IsLockedOut)
         {
@@ -231,8 +252,14 @@ public class AuthController(
         {
             await auditLog.LogAsync(AuthEventType.LoginFailed, user.UserName ?? string.Empty, user.Id,
                 HttpContext, detail: result.IsLockedOut ? "locked out at 2fa"
+                    : replayed ? "reused 2fa code"
                     : isAuthenticatorCode ? "wrong 2fa code" : "wrong recovery code", ct: ct);
             return AuthUnauthorized("error.auth.invalidCode");
+        }
+
+        if (isAuthenticatorCode)
+        {
+            await TotpReplayGuard.RecordAsync(userManager, user, code);
         }
 
         if (!isAuthenticatorCode)

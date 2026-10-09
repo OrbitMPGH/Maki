@@ -84,6 +84,20 @@ public class AccountController(
         }
     }
 
+    /// <summary>An authenticator code Identity accepts and that has not been used before; remembered once accepted.</summary>
+    private async Task<bool> CodeAcceptedAsync(MakiUser user, string code)
+    {
+        if (!await userManager.VerifyTwoFactorTokenAsync(
+                user, userManager.Options.Tokens.AuthenticatorTokenProvider, code)
+            || await TotpReplayGuard.IsReplayAsync(userManager, user, code))
+        {
+            return false;
+        }
+
+        await TotpReplayGuard.RecordAsync(userManager, user, code);
+        return true;
+    }
+
     [HttpPost("password")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
@@ -224,9 +238,7 @@ public class AccountController(
             return refused;
         }
 
-        var valid = await userManager.VerifyTwoFactorTokenAsync(
-            user, userManager.Options.Tokens.AuthenticatorTokenProvider, code);
-        if (!valid)
+        if (!await CodeAcceptedAsync(user, code))
         {
             return this.Fail(localizer, "error.account.invalidCode");
         }
@@ -269,8 +281,7 @@ public class AccountController(
             return refused;
         }
 
-        if (!await userManager.VerifyTwoFactorTokenAsync(
-                user, userManager.Options.Tokens.AuthenticatorTokenProvider, code))
+        if (!await CodeAcceptedAsync(user, code))
         {
             return this.Fail(localizer, "error.account.invalidCode");
         }
