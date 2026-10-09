@@ -494,8 +494,8 @@ public class RecommendationService(
     }
 
     private static string FilterKey(RecommendationFilters f) =>
-        $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{string.Join('.', f.Types ?? [])}-{string.Join('.', f.Statuses ?? [])}" +
-        $"-{string.Join('.', f.Genres ?? [])}-{f.MinChapters}-{f.MaxChapters}-{string.Join('.', f.Tags ?? [])}" +
-        $"-{string.Join('.', f.ContentRatings ?? [])}-{CatalogueRules.Key(f.Rules)}-{CatalogueRules.TermsKey(f.Hidden)}" +
+        $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{KeyPart.List(f.Types)}-{KeyPart.List(f.Statuses)}" +
+        $"-{KeyPart.List(f.Genres)}-{f.MinChapters}-{f.MaxChapters}-{KeyPart.List(f.Tags)}" +
+        $"-{KeyPart.List(f.ContentRatings)}-{CatalogueRules.Key(f.Rules)}-{CatalogueRules.TermsKey(f.Hidden)}" +
         $"-{CatalogueCredits.Key(f.Credits)}";
 }
