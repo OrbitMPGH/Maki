@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Maki.Core.Scrobbling;
@@ -90,10 +91,42 @@ public static partial class ScrobbleMatching
 
     public static string NormalizeTitle(string title)
     {
-        var t = title.Normalize(NormalizationForm.FormKC).ToLowerInvariant();
+        var t = StripLatinAccents(title).Normalize(NormalizationForm.FormKC).ToLowerInvariant();
         t = NonWord().Replace(t, " ");
         return Whitespace().Replace(t, " ").Trim();
     }
+
+    /// <summary>
+    /// Drops accents and macrons from Latin letters so a macron title meets its plain romanization.
+    /// Marks on other scripts stay: the kana voicing marks are what tell the voiced from the unvoiced.
+    /// </summary>
+    private static string StripLatinAccents(string title)
+    {
+        var decomposed = title.Normalize(NormalizationForm.FormD);
+        var kept = new StringBuilder(decomposed.Length);
+        var afterLatin = false;
+        foreach (var ch in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark)
+            {
+                if (afterLatin)
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                afterLatin = IsLatinLetter(ch);
+            }
+
+            kept.Append(ch);
+        }
+
+        return kept.ToString();
+    }
+
+    private static bool IsLatinLetter(char ch) =>
+        char.IsLetter(ch) && (ch < '\u0250' || ch is >= '\u1E00' and <= '\u1EFF');
 
     /// <summary>Normalized-title similarity in [0, 1] (Ratcliff/Obershelp, like Python's difflib).</summary>
     public static double TitleSimilarity(string a, string b)
