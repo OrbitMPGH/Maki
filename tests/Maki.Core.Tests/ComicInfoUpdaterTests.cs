@@ -87,6 +87,47 @@ public class ComicInfoUpdaterTests : IDisposable
     }
 
     [Fact]
+    public void Keeps_the_existing_fields_of_a_file_that_declares_utf16()
+    {
+        var path = CreateCbz("Berserk v01.cbz", """
+            <?xml version="1.0" encoding="utf-16"?>
+            <ComicInfo>
+              <Publisher>Dark Horse</Publisher>
+            </ComicInfo>
+            """);
+
+        Assert.True(ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null));
+
+        Assert.Equal("Dark Horse", ReadComicInfo(path).Publisher);
+    }
+
+    [Theory]
+    [InlineData("manga", "YesAndRightToLeft")]
+    [InlineData("manhwa", "Yes")]
+    [InlineData("manhua", "Yes")]
+    [InlineData("oel", "No")]
+    public void Reading_direction_follows_the_series_type(string type, string expected)
+    {
+        var path = CreateCbz("Berserk v01.cbz", "<ComicInfo><Manga>YesAndRightToLeft</Manga></ComicInfo>");
+        var series = TestSeries();
+        series.Type = type;
+
+        ComicInfoUpdater.UpdateFile(path, series, ReleaseNameParser.ParseFileName(path), null);
+
+        Assert.Equal(expected, ReadComicInfo(path).Manga);
+    }
+
+    [Fact]
+    public void An_unknown_type_keeps_the_direction_the_file_declared()
+    {
+        var path = CreateCbz("Berserk v01.cbz", "<ComicInfo><Manga>No</Manga></ComicInfo>");
+
+        ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null);
+
+        Assert.Equal("No", ReadComicInfo(path).Manga);
+    }
+
+    [Fact]
     public void Creates_comicinfo_when_archive_has_none()
     {
         var path = CreateCbz("Berserk 010.5.cbz", comicInfoXml: null);
