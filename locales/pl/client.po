@@ -342,6 +342,11 @@ msgstr "{0, plural, one {Plik tomu obejmujący # rozdział} few {Plik tomu obejm
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Oznaczono jako chciane: # rozdział} few {Oznaczono jako chciane: # rozdziały} many {Oznaczono jako chciane: # rozdziałów} other {Oznaczono jako chciane: # rozdziału}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0} recovery codes left. A new set replaces the old codes."
+msgstr ""
+
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1789,6 +1794,10 @@ msgstr "👎 Odrzucone"
 msgid "1 (lowest) to 5 (highest)."
 msgstr "Od 1 (najniższy) do 5 (najwyższy)."
 
+#: src/components/settings/AccountSection.tsx
+msgid "1 recovery code left. A new set replaces the old codes."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "1:1"
@@ -2124,6 +2133,10 @@ msgstr ""
 msgid "Account security"
 msgstr "Bezpieczeństwo konta"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed, an API key you revoked or a single sign-on link you removed since then comes back, so redo those afterwards."
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "accounts, permissions, disable user, add user, admin"
@@ -2131,10 +2144,6 @@ msgstr ""
 
 #: src/pages/settings/registry.ts
 msgid "Accounts, permissions, lockout and session rules, and single sign-on."
-msgstr ""
-
-#: src/pages/settings/SystemCards.tsx
-msgid "Accounts are restored too, exactly as they were in that backup. A password you changed, an API key you revoked or a single sign-on link you removed since then comes back, so redo those afterwards."
 msgstr ""
 
 #: src/api/inbox.ts
@@ -9347,6 +9356,10 @@ msgstr "Nowy profil"
 #, fuzzy
 msgid "New rail"
 msgstr "Nowa sekcja"
+
+#: src/components/settings/AccountSection.tsx
+msgid "New recovery codes"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy

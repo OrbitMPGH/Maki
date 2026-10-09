@@ -291,6 +291,11 @@ msgstr "{0, plural, one {Volume file backing # chapter} other {Volume file backi
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0} recovery codes left. A new set replaces the old codes."
+msgstr "{0} recovery codes left. A new set replaces the old codes."
+
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
 msgid "{0} rows right now"
@@ -1456,6 +1461,10 @@ msgstr "👎 Disliked"
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (lowest) to 5 (highest)."
 
+#: src/components/settings/AccountSection.tsx
+msgid "1 recovery code left. A new set replaces the old codes."
+msgstr "1 recovery code left. A new set replaces the old codes."
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "1:1"
 msgstr "1:1"
@@ -1730,6 +1739,10 @@ msgstr "Account"
 msgid "Account security"
 msgstr "Account security"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed, an API key you revoked or a single sign-on link you removed since then comes back, so redo those afterwards."
+msgstr "Accounts are restored too, exactly as they were in that backup. A password you changed, an API key you revoked or a single sign-on link you removed since then comes back, so redo those afterwards."
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "accounts, permissions, disable user, add user, admin"
@@ -1738,10 +1751,6 @@ msgstr "accounts, permissions, disable user, add user, admin"
 #: src/pages/settings/registry.ts
 msgid "Accounts, permissions, lockout and session rules, and single sign-on."
 msgstr "Accounts, permissions, lockout and session rules, and single sign-on."
-
-#: src/pages/settings/SystemCards.tsx
-msgid "Accounts are restored too, exactly as they were in that backup. A password you changed, an API key you revoked or a single sign-on link you removed since then comes back, so redo those afterwards."
-msgstr "Accounts are restored too, exactly as they were in that backup. A password you changed, an API key you revoked or a single sign-on link you removed since then comes back, so redo those afterwards."
 
 #: src/api/inbox.ts
 #: src/pages/reader/ReaderPage.tsx
@@ -7664,6 +7673,10 @@ msgstr "New profile"
 #: src/components/rails/CustomRailEditor.tsx
 msgid "New rail"
 msgstr "New rail"
+
+#: src/components/settings/AccountSection.tsx
+msgid "New recovery codes"
+msgstr "New recovery codes"
 
 #: src/pages/RequestsPage.tsx
 msgid "New series"

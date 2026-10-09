@@ -27,6 +27,7 @@ internal static class IdentityTestKit
             null!,
             NullLogger<UserManager<MakiUser>>.Instance);
         users.RegisterTokenProvider(TokenOptions.DefaultProvider, new AlwaysValidTokenProvider());
+        users.RegisterTokenProvider(TokenOptions.DefaultAuthenticatorProvider, new AlwaysValidTokenProvider());
         return users;
     }
 

@@ -86,6 +86,10 @@ msgstr "Two-factor authentication is already enabled"
 msgid "error.account.twoFactorDelegatedToSso"
 msgstr "This account signs in through single sign-on, which handles two-factor itself"
 
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.twoFactorNotEnabled"
+msgstr "Two-factor authentication is not turned on"
+
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 msgid "error.animeResume.notEnabled"
 msgstr "Turn on anime taste signals to use this"
@@ -1738,13 +1742,13 @@ msgstr "Backup is from a newer version (migration \"{migration}\" unknown to thi
 msgid "error.system.backupUnreadable"
 msgstr "This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed."
 
-#: src/Maki.Api/Controllers/SystemController.cs
-msgid "error.system.backupNameInvalid"
-msgstr "That is not a valid backup name."
-
 #: src/Maki.Api/Services/BackupService.cs
 msgid "error.system.backupTooLarge"
 msgstr "The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed."
+
+#: src/Maki.Api/Controllers/SystemController.cs
+msgid "error.system.backupNameInvalid"
+msgstr "That is not a valid backup name."
 
 #. {name} is a backup file name, never translated.
 #: src/Maki.Api/Controllers/SystemController.cs

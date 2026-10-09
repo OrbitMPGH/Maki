@@ -300,6 +300,83 @@ public sealed class AuthHardeningTests : IDisposable
         Assert.Equal("error.account.lockedOut", CodeOf(result));
     }
 
+    private AccountController Account(MakiDbContext db, int userId)
+    {
+        var users = IdentityTestKit.UserManager(db);
+        return new AccountController(
+            new TestLocalizer(), db, users, new TestSignInManager(users), new TestCurrentUser(userId),
+            new AuthEventLogger(db, _clock), new OidcRuntimeOptions(), _clock,
+            new UserSnapshotCache(new MemoryCache(new MemoryCacheOptions())))
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+    }
+
+    [Fact]
+    public async Task Changing_the_password_needs_the_current_one_and_rotates_the_stamp()
+    {
+        var userId = SeedWithPassword("ada");
+        var stamp = StampOf(userId);
+        using var db = _db.NewContext(userId);
+
+        var wrong = await Account(db, userId).ChangePassword(
+            new ChangePasswordRequest("not the password", "New-Password-123"), default);
+        Assert.IsType<BadRequestObjectResult>(wrong);
+        Assert.Equal(stamp, StampOf(userId));
+
+        var changed = await Account(db, userId).ChangePassword(
+            new ChangePasswordRequest(Password, "New-Password-123"), default);
+        Assert.IsType<NoContentResult>(changed);
+        Assert.NotEqual(stamp, StampOf(userId));
+
+        using var check = _db.NewContext();
+        var users = IdentityTestKit.UserManager(check);
+        var user = (await users.FindByIdAsync(userId.ToString()))!;
+        Assert.True(await users.CheckPasswordAsync(user, "New-Password-123"));
+        Assert.False(await users.CheckPasswordAsync(user, Password));
+    }
+
+    [Fact]
+    public async Task Regenerating_recovery_codes_needs_two_factor_the_password_and_a_code()
+    {
+        var userId = SeedWithPassword("ada");
+        using var db = _db.NewContext(userId);
+
+        var off = await Account(db, userId).RegenerateRecoveryCodes(new EnableTwoFactorRequest("123456", Password), default);
+        Assert.Equal("error.account.twoFactorNotEnabled", CodeOf(off));
+
+        var users = IdentityTestKit.UserManager(db);
+        var user = (await users.FindByIdAsync(userId.ToString()))!;
+        await users.SetTwoFactorEnabledAsync(user, true);
+        var oldCodes = (await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 2))!.ToList();
+
+        var noPassword = await Account(db, userId).RegenerateRecoveryCodes(
+            new EnableTwoFactorRequest("123456", "wrong password"), default);
+        Assert.NotEqual(typeof(OkObjectResult), noPassword.GetType());
+        Assert.Equal(2, await users.CountRecoveryCodesAsync(user));
+
+        var ok = Assert.IsType<OkObjectResult>(await Account(db, userId).RegenerateRecoveryCodes(
+            new EnableTwoFactorRequest("123456", Password), default));
+        var fresh = (IEnumerable<string>)ok.Value!.GetType().GetProperty("recoveryCodes")!.GetValue(ok.Value)!;
+        Assert.Equal(8, fresh.Count());
+        Assert.Empty(fresh.Intersect(oldCodes));
+        Assert.Equal(8, await users.CountRecoveryCodesAsync(user));
+    }
+
+    [Fact]
+    public async Task A_rejected_new_password_leaves_the_old_one_working()
+    {
+        var userId = SeedWithPassword("ada");
+        using var db = _db.NewContext(userId);
+
+        var result = await Account(db, userId).ChangePassword(new ChangePasswordRequest(Password, "short"), default);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        using var check = _db.NewContext();
+        var users = IdentityTestKit.UserManager(check);
+        Assert.True(await users.CheckPasswordAsync((await users.FindByIdAsync(userId.ToString()))!, Password));
+    }
+
     // ---- admin user management ----
 
     private UsersController Users(MakiDbContext db, int adminId, OidcRuntimeOptions? oidc = null)

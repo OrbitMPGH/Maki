@@ -109,13 +109,16 @@ public class AccountController(
             return BadRequest(new { error = Describe(IdentityResult.Failed(userManager.ErrorDescriber.PasswordMismatch())) });
         }
 
-        var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        // The current password was just verified above, so this goes through a reset token instead of
+        // ChangePasswordAsync, which would hash-verify it a second time.
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await userManager.ResetPasswordAsync(user, token, request.NewPassword);
         if (!result.Succeeded)
         {
             return BadRequest(new { error = Describe(result) });
         }
 
-        // ChangePasswordAsync rotates the security stamp, which invalidates every issued cookie —
+        // Setting the password rotates the security stamp, which invalidates every issued cookie —
         // including the one making this request. Re-issuing it here keeps the user signed in on this
         // device while every other session dies, which is the behaviour a password change should have.
         await signInManager.RefreshSignInAsync(user);
@@ -234,6 +237,48 @@ public class AccountController(
         await auditLog.LogAsync(AuthEventType.TwoFactorEnabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
 
         // Shown once. Identity stores them hashed, so there is no second chance to read them.
+        return Ok(new { recoveryCodes = codes ?? [] });
+    }
+
+    /// <summary>
+    /// Replaces the recovery codes with a fresh set, for someone down to their last few. Asks for the
+    /// password and a current authenticator code, the same proof enabling takes, since a hijacked
+    /// session minting codes of its own would hold a way past the second factor.
+    /// </summary>
+    [HttpPost("2fa/recovery-codes")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    public async Task<IActionResult> RegenerateRecoveryCodes(
+        [FromBody] EnableTwoFactorRequest request, CancellationToken ct)
+    {
+        var user = await LoadAsync();
+        if (user is null) return Unauthorized();
+
+        if (!user.TwoFactorEnabled)
+        {
+            return this.Conflict(localizer, "error.account.twoFactorNotEnabled");
+        }
+
+        var code = request.Code?.Replace(" ", string.Empty).Replace("-", string.Empty);
+        if (string.IsNullOrEmpty(code))
+        {
+            return this.Fail(localizer, "error.account.codeRequired");
+        }
+
+        if (await ConfirmPasswordAsync(user, request.Password, requirePassword: true) is { } refused)
+        {
+            return refused;
+        }
+
+        if (!await userManager.VerifyTwoFactorTokenAsync(
+                user, userManager.Options.Tokens.AuthenticatorTokenProvider, code))
+        {
+            return this.Fail(localizer, "error.account.invalidCode");
+        }
+
+        var codes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount);
+        await auditLog.LogAsync(AuthEventType.UserUpdated, user.UserName ?? string.Empty, user.Id,
+            HttpContext, detail: "two-factor recovery codes regenerated", ct: ct);
+
         return Ok(new { recoveryCodes = codes ?? [] });
     }
 

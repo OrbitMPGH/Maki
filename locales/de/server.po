@@ -116,6 +116,11 @@ msgstr "Die Zwei-Faktor-Authentifizierung ist bereits aktiviert"
 msgid "error.account.twoFactorDelegatedToSso"
 msgstr "Dieses Konto meldet sich über Single Sign-On an. Der Identitätsanbieter übernimmt die Zwei-Faktor-Authentifizierung."
 
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Two-factor authentication is not turned on
+msgid "error.account.twoFactorNotEnabled"
+msgstr ""
+
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
 #, fuzzy
@@ -2473,14 +2478,14 @@ msgstr "Das Backup stammt aus einer neueren Version (Migration „{migration}“
 msgid "error.system.backupUnreadable"
 msgstr "Diese Datei ist kein lesbares Maki-Backup. Das ZIP-Archiv oder sein Manifest ist beschädigt. Es wurden keine Änderungen vorgenommen."
 
-#: src/Maki.Api/Controllers/SystemController.cs
-#. English: That is not a valid backup name.
-msgid "error.system.backupNameInvalid"
-msgstr ""
-
 #: src/Maki.Api/Services/BackupService.cs
 #. English: The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed.
 msgid "error.system.backupTooLarge"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: That is not a valid backup name.
+msgid "error.system.backupNameInvalid"
 msgstr ""
 
 #. {name} is a backup file name, never translated.
