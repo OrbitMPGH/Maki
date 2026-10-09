@@ -429,7 +429,7 @@ public class KitsuTracker(
 
     public async Task UpdateAsync(
         int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-        CancellationToken ct = default)
+        CancellationToken ct = default, bool keepStatus = false)
     {
         var attributes = new JsonObject
         {

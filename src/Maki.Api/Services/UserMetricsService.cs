@@ -157,8 +157,13 @@ public class UserMetricsService(
     /// calendar, so "today" ends when their day does and a week starts on Monday rather than on
     /// whatever the host's culture happens to say.
     /// </summary>
+    /// <param name="snapshot">
+    /// A snapshot the caller already holds. A zone-less snapshot is never cached, so looping over
+    /// several goals without passing one recomputes the whole history for each.
+    /// </param>
     public async Task<long> GoalProgressAsync(
-        int userId, GoalPeriod period, GoalMetric metric, CancellationToken ct = default)
+        int userId, GoalPeriod period, GoalMetric metric, CancellationToken ct = default,
+        UserMetrics? snapshot = null)
     {
         var tz = await TimeZoneForAsync(userId, ct);
         var from = PeriodStart(Today(tz), period);
@@ -167,13 +172,13 @@ public class UserMetricsService(
         {
             // Not derivable from the day buckets: those carry chapters and seconds, and a finish is
             // neither.
-            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(from.ToDateTime(TimeOnly.MinValue), tz);
+            var fromUtc = StatsInsightsService.ToUtc(from.ToDateTime(TimeOnly.MinValue), tz);
             return await db.StatsEvents.IgnoreQueryFilters()
                 .Where(e => e.UserId == userId && e.Type == StatsEventType.SeriesFinished && e.Timestamp >= fromUtc)
                 .LongCountAsync(ct);
         }
 
-        var snapshot = await GetAsync(userId, ct);
+        snapshot ??= await GetAsync(userId, ct);
         var days = snapshot.Days.Where(d => d.Date >= from).ToList();
 
         return metric == GoalMetric.Chapters

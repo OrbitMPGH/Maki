@@ -67,7 +67,8 @@ public class ScrobbleController(
         {
             new("kavita", "Kavita", kavitaConfigured,
                 kavitaConfigured && await scrobbler.KavitaConnectedAsync(ct),
-                await settings.GetAsync(SettingKeys.KavitaUrl, ct), OAuth: false,
+                currentUser.Has(MakiPermission.Admin) ? await settings.GetAsync(SettingKeys.KavitaUrl, ct) : null,
+                OAuth: false,
                 SyncReading: true, SyncRatings: false, AnimeList: false, AnimeSignals: false),
         };
 

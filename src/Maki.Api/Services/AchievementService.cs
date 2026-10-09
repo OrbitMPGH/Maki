@@ -1,4 +1,5 @@
-﻿using Maki.Core.Configuration;
+﻿using System.Collections.Concurrent;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Progress;
@@ -29,6 +30,8 @@ public class AchievementService(
     TimeProvider clock,
     ILogger<AchievementService> logger)
 {
+    private static readonly ConcurrentDictionary<int, SemaphoreSlim> LevelGates = new();
+
     /// <summary>
     /// Evaluates and persists. Returns only what was newly unlocked by <em>this</em> call, which is
     /// what the reader's toast shows.
@@ -164,9 +167,21 @@ public class AchievementService(
     /// back to where they already were.
     /// </para>
     /// </summary>
-    private async Task NotifyLevelAsync(
+    internal async Task NotifyLevelAsync(
         int userId, UserMetrics snapshot, IEnumerable<int> tiers, CancellationToken ct)
     {
+        // The read, compare and write are not atomic, and a summary and an achievements fetch run
+        // together on every Stats load, so two evaluations would both announce the same level.
+        var gate = LevelGates.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
+        try
+        {
+            await gate.WaitAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
         try
         {
             var level = LevelMath.LevelForXp(LevelMath.Xp(
@@ -199,6 +214,10 @@ public class AchievementService(
         {
             // Never the reason a chapter fails to mark as read.
             logger.LogWarning(ex, "Could not evaluate level notification for user {UserId}", userId);
+        }
+        finally
+        {
+            gate.Release();
         }
     }
 
