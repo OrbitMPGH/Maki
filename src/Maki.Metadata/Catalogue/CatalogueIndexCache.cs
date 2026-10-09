@@ -210,6 +210,7 @@ public sealed class CatalogueIndexCache(
 
         var ticks = info.LastWriteTimeUtc.Ticks;
         var length = info.Length;
+        var observed = new LoadFailureMemo.Stamp(ticks, length);
         CatalogueIndexes? built;
         try
         {
@@ -219,13 +220,13 @@ public sealed class CatalogueIndexCache(
         {
             // Logged here because every caller may have stopped waiting by now.
             logger.LogWarning(ex, "Building the catalogue indexes failed");
-            _failed.Record(dumpOptions.DatabasePath);
+            _failed.Record(observed);
             throw;
         }
 
         if (built is null)
         {
-            _failed.Record(dumpOptions.DatabasePath);
+            _failed.Record(observed);
             return null;
         }
 

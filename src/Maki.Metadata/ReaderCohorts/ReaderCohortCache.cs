@@ -68,6 +68,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
             }
 
             File.Move(stagedPath, options.DatabasePath, overwrite: true);
+            _failed.Clear();
             logger.LogInformation("Swapped in new reader cohorts at {Path}", options.DatabasePath);
         }
         finally
@@ -132,6 +133,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
 
             load = _loads.Join(() =>
             {
+                var observed = _failed.Observe(options.DatabasePath);
                 try
                 {
                     var loaded = Load(CancellationToken.None);
@@ -139,7 +141,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
                     _idle.Touch();
                     if (loaded is null)
                     {
-                        _failed.Record(options.DatabasePath);
+                        _failed.Record(observed);
                     }
                     else
                     {
@@ -150,7 +152,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
                 }
                 catch (Exception ex)
                 {
-                    _failed.Record(options.DatabasePath);
+                    _failed.Record(observed);
                     // Logged here because every caller may have stopped waiting by now.
                     logger.LogWarning(ex, "Loading the reader cohorts failed");
                     throw;

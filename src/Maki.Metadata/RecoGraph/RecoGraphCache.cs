@@ -66,6 +66,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
             }
 
             File.Move(stagedPath, options.DatabasePath, overwrite: true);
+            _failed.Clear();
             logger.LogInformation("Swapped in a new co-recommendation graph at {Path}", options.DatabasePath);
         }
         finally
@@ -130,6 +131,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
 
             load = _loads.Join(() =>
             {
+                var observed = _failed.Observe(options.DatabasePath);
                 try
                 {
                     var loaded = Load(CancellationToken.None);
@@ -137,7 +139,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
                     _idle.Touch();
                     if (loaded is null)
                     {
-                        _failed.Record(options.DatabasePath);
+                        _failed.Record(observed);
                     }
                     else
                     {
@@ -148,7 +150,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
                 }
                 catch (Exception ex)
                 {
-                    _failed.Record(options.DatabasePath);
+                    _failed.Record(observed);
                     // Logged here because every caller may have stopped waiting by now.
                     logger.LogWarning(ex, "Loading the co-recommendation graph failed");
                     throw;

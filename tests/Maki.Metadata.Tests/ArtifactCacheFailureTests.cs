@@ -29,10 +29,24 @@ public class ArtifactCacheFailureTests : IDisposable
         var memo = new LoadFailureMemo();
 
         Assert.False(memo.ShouldSkip(path));
-        memo.Record(path);
+        memo.Record(memo.Observe(path));
         Assert.True(memo.ShouldSkip(path));
 
         File.WriteAllText(path, "two, longer");
+        Assert.False(memo.ShouldSkip(path));
+    }
+
+    [Fact]
+    public void A_file_replaced_during_the_load_is_not_remembered_as_the_one_that_failed()
+    {
+        var path = Path.Combine(_dir, "a.db");
+        File.WriteAllText(path, "old");
+        var memo = new LoadFailureMemo();
+        var observedAtStart = memo.Observe(path);
+
+        File.WriteAllText(path, "the replacement, longer");
+        memo.Record(observedAtStart);
+
         Assert.False(memo.ShouldSkip(path));
     }
 
@@ -44,13 +58,13 @@ public class ArtifactCacheFailureTests : IDisposable
         var now = DateTime.UtcNow;
         var memo = new LoadFailureMemo(() => now);
 
-        memo.Record(path);
+        memo.Record(memo.Observe(path));
         now += LoadFailureMemo.Backoff - TimeSpan.FromSeconds(1);
         Assert.True(memo.ShouldSkip(path));
         now += TimeSpan.FromSeconds(2);
         Assert.False(memo.ShouldSkip(path));
 
-        memo.Record(path);
+        memo.Record(memo.Observe(path));
         memo.Clear();
         Assert.False(memo.ShouldSkip(path));
     }

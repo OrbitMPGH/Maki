@@ -15,11 +15,21 @@ internal sealed class LoadFailureMemo(Func<DateTime>? clock = null)
 
     private sealed record Failure(long Ticks, long Length, DateTime At);
 
-    public void Record(string path)
+    /// <summary>A file's write time and length.</summary>
+    public readonly record struct Stamp(long Ticks, long Length);
+
+    /// <summary>
+    /// The file's stamp as it is now. Take it before a load starts and hand it to <see cref="Record"/>
+    /// on failure, so a file replaced while the load ran is not remembered as the one that failed.
+    /// </summary>
+    public Stamp? Observe(string path)
     {
         var info = new FileInfo(path);
-        _failure = info.Exists ? new Failure(info.LastWriteTimeUtc.Ticks, info.Length, _clock()) : null;
+        return info.Exists ? new Stamp(info.LastWriteTimeUtc.Ticks, info.Length) : null;
     }
+
+    public void Record(Stamp? observed) =>
+        _failure = observed is { } stamp ? new Failure(stamp.Ticks, stamp.Length, _clock()) : null;
 
     public void Clear() => _failure = null;
 
