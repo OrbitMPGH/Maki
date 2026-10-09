@@ -2456,10 +2456,11 @@ export function useHealth() {
 }
 
 /** Cached, instant: reflects the last CheckForUpdatesJob run (or a manual check-now). */
-export function useUpdateStatus() {
+export function useUpdateStatus(enabled = true) {
   return useQuery({
     queryKey: ['system', 'update'],
     queryFn: () => api<UpdateStatusDto>('/system/update'),
+    enabled,
   })
 }
 
