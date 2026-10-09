@@ -472,8 +472,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // Chapter numbers have at most 3 decimal places, well within double precision.
             e.Property(c => c.Number).HasConversion<double?>();
             e.HasIndex(c => new { c.SeriesId, c.Number, c.Volume, c.Language });
-            // Narrows the library list's per-series tallies by series and file link; they also read FileRemovedAt, which is not in the index.
-            e.HasIndex(c => new { c.SeriesId, c.ChapterFileId, c.Wanted });
+            // Covers the library list's per-series tallies, which read only these columns.
+            e.HasIndex(c => new { c.SeriesId, c.ChapterFileId, c.Wanted, c.FileRemovedAt });
             e.HasOne(c => c.ChapterFile).WithMany().HasForeignKey(c => c.ChapterFileId).OnDelete(DeleteBehavior.SetNull);
         });
 
