@@ -15201,6 +15201,11 @@ msgstr "Este mes"
 msgid "This operation is {opStatus} and needs no further action."
 msgstr "Esta operación está {opStatus} y no necesita más acciones."
 
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+msgid "This page failed to load."
+msgstr ""
+
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
 msgstr ""
@@ -15692,6 +15697,8 @@ msgid "Try a shorter or alternative query."
 msgstr "Prueba una consulta más corta o alternativa."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
