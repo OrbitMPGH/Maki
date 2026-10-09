@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from './client'
+import { ApiError, api } from './client'
 
 export interface FeedbackState {
   mangaBakaId: number
@@ -131,8 +131,8 @@ export function useFeedbackLab() {
 export function useFeedbackStates(cursor?: number, sort?: 'recent' | 'title') {
   return useQuery({
     queryKey: ['feedback-states', cursor, sort],
-    queryFn: () => api<FeedbackPage<FeedbackState>>(
-      `/recommendations/feedback?limit=100${cursor ? `&cursor=${cursor}` : ''}${sort ? `&sort=${sort}` : ''}`),
+    queryFn: ({ signal }) => api<FeedbackPage<FeedbackState>>(
+      `/recommendations/feedback?limit=100${cursor ? `&cursor=${cursor}` : ''}${sort ? `&sort=${sort}` : ''}`, { signal }),
   })
 }
 
@@ -142,7 +142,7 @@ export function useFeedbackState(id: number) {
     queryFn: async () => {
       try { return await api<FeedbackState>(`/recommendations/feedback/${id}`) }
       catch (error) {
-        if (String(error).includes('404')) return null
+        if (error instanceof ApiError && error.status === 404) return null
         throw error
       }
     },
@@ -152,7 +152,7 @@ export function useFeedbackState(id: number) {
 export function useFeedbackActivity(cursor?: number) {
   return useQuery({
     queryKey: ['feedback-activity', cursor],
-    queryFn: () => api<FeedbackPage<FeedbackActivity>>(`/recommendations/feedback/activity?limit=40${cursor ? `&cursor=${cursor}` : ''}`),
+    queryFn: ({ signal }) => api<FeedbackPage<FeedbackActivity>>(`/recommendations/feedback/activity?limit=40${cursor ? `&cursor=${cursor}` : ''}`, { signal }),
   })
 }
 

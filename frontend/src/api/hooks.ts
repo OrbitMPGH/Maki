@@ -137,7 +137,7 @@ export function useSeriesDetail(id: number) {
 export function useMetadataSearch(query: string) {
   return useQuery({
     queryKey: ['metadata-search', query],
-    queryFn: () => api<MetadataSearchResult[]>(`/search/metadata?query=${encodeURIComponent(query)}`),
+    queryFn: ({ signal }) => api<MetadataSearchResult[]>(`/search/metadata?query=${encodeURIComponent(query)}`, { signal }),
     enabled: query.trim().length > 1,
     staleTime: 5 * 60 * 1000,
   })
@@ -673,10 +673,11 @@ export function useDiscoverGenres(refreshNonce = 0, enabled = true) {
 export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPrevious = false) {
   return useQuery({
     queryKey: ['discover-feed', request],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<RecommendationItem[]>('/recommendations/discover/feed', {
         method: 'POST',
         body: JSON.stringify(request),
+        signal,
       }),
     enabled: request != null,
     staleTime: 5 * 60 * 1000,
@@ -733,10 +734,11 @@ export function useDiscoverSearch(
   const enabled = ready && (request?.query.trim().length ?? 0) >= minChars
   return useQuery({
     queryKey: ['discover-search', request],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<DiscoverSearchResponse>('/recommendations/discover/search', {
         method: 'POST',
         body: JSON.stringify(request),
+        signal,
       }),
     enabled,
     staleTime: 5 * 60 * 1000,
@@ -1147,10 +1149,11 @@ export function useRecommendationTags() {
 export function useDiscoverCount(request: DiscoverFeedRequest | null) {
   return useQuery({
     queryKey: ['discover-count', request],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<{ count: number | null }>('/recommendations/discover/count', {
         method: 'POST',
         body: JSON.stringify(request),
+        signal,
       }),
     enabled: request != null,
     staleTime: 5 * 60 * 1000,
@@ -2005,7 +2008,7 @@ export function useDeleteSeriesFiles(seriesId: number) {
 export function useQueue(page = 1, pageSize = 200) {
   return useQuery({
     queryKey: ['queue', page, pageSize],
-    queryFn: () => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`),
+    queryFn: ({ signal }) => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`, { signal }),
     refetchInterval: 10_000,
   })
 }
@@ -2022,7 +2025,7 @@ export function useQueueSummary() {
 export function useQueueHistory(page: number, pageSize = 25) {
   return useQuery({
     queryKey: ['queue-history', page, pageSize],
-    queryFn: () => api<QueueHistoryDto>(`/queue/history?page=${page}&pageSize=${pageSize}`),
+    queryFn: ({ signal }) => api<QueueHistoryDto>(`/queue/history?page=${page}&pageSize=${pageSize}`, { signal }),
     placeholderData: keepPreviousData,
     refetchInterval: 10_000,
   })
@@ -2625,9 +2628,10 @@ export interface SourceSearchResult {
 export function useSourceSearch(sourceName: string, query: string) {
   return useQuery({
     queryKey: ['source-search', sourceName, query],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<SourceSearchResult[]>(
         `/search/source?sourceName=${encodeURIComponent(sourceName)}&query=${encodeURIComponent(query)}`,
+        { signal },
       ),
     enabled: sourceName.length > 0 && query.trim().length > 1,
     staleTime: 5 * 60 * 1000,
