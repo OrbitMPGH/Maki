@@ -511,25 +511,9 @@ export interface DiscoverRail {
   seedIds?: number[] | null
   /** Filters that must remain attached when a personalised rail is expanded. */
   filters?: RecommendationFilters | null
-  /**
-   * Set only on a per-seed rail from `GET recommendations/discover/recent/grouped`: the one library
-   * series this rail's picks were attributed to, and how far through it the reader is. Nothing in
-   * the app renders that route today; the flat rail is what Discover shows.
-   */
-  seed?: DiscoverSeedState | null
   /** Set on a custom catalogue rail, so "Show more" keeps its order and owned-series setting. */
   sort?: BrowseSort
   excludeOwned?: boolean
-}
-
-/** A seed series as the Discover page draws it: the title, the position, and which state that is. */
-export interface DiscoverSeedState {
-  title: string
-  chaptersRead: number
-  /** Chapters on disk — the denominator the reader can actually reach, not the provider's count. */
-  chaptersAvailable: number
-  /** `reading`, `caught-up` (nothing left but the series continues), or `finished`. */
-  state: 'reading' | 'caught-up' | 'finished'
 }
 
 /** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */
