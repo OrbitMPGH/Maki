@@ -104,6 +104,33 @@ public class MangaBakaDumpServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Refresh_removes_the_old_files_journal_sidecars_before_swapping()
+    {
+        var installedPath = Path.Combine(_workDir, "mangabaka.db");
+        await File.WriteAllTextAsync(installedPath, "old");
+        foreach (var suffix in new[] { "-journal", "-wal", "-shm" })
+        {
+            await File.WriteAllTextAsync(installedPath + suffix, "stale");
+        }
+
+        using var source = new DumpDbBuilder();
+        source.AddSeries(377, "ONE PIECE").AddFillerSeries(1000);
+        var (compressed, sha1) = CompressDb(source.Path);
+        var service = CreateService(new Dictionary<string, byte[]>
+        {
+            ["series.sqlite.zst.sha1"] = System.Text.Encoding.UTF8.GetBytes($"{sha1}  series.sqlite.zst"),
+            ["series.sqlite.zst"] = compressed
+        });
+
+        Assert.True(await service.RefreshAsync());
+
+        foreach (var suffix in new[] { "-journal", "-wal", "-shm" })
+        {
+            Assert.False(File.Exists(installedPath + suffix), suffix);
+        }
+    }
+
+    [Fact]
     public async Task Refresh_rejects_checksum_mismatch_and_cleans_up()
     {
         using var source = new DumpDbBuilder();

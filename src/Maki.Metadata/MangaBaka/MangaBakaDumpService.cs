@@ -461,17 +461,24 @@ public class MangaBakaDumpService(
 
     private async Task SwapIntoPlaceAsync(string stagingPath, CancellationToken ct)
     {
-        // Readers use Pooling=False, but an in-flight query may still hold the old file
-        // open for a moment — retry the move instead of failing the whole refresh.
+        // Readers use Pooling=False, but an in-flight query or an index build can hold the old
+        // file open for several seconds — retry the move instead of failing the whole refresh.
         SqliteConnection.ClearAllPools();
         for (var attempt = 1; ; attempt++)
         {
             try
             {
+                // A journal or WAL left by an interrupted write belongs to the file being replaced;
+                // SQLite would replay it onto the new one on first open.
+                foreach (var suffix in new[] { "-journal", "-wal", "-shm" })
+                {
+                    File.Delete(options.DatabasePath + suffix);
+                }
+
                 File.Move(stagingPath, options.DatabasePath, overwrite: true);
                 return;
             }
-            catch (IOException) when (attempt < 5)
+            catch (IOException) when (attempt < 15)
             {
                 await Task.Delay(TimeSpan.FromSeconds(2), ct);
             }
