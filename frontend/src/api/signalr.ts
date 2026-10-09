@@ -165,8 +165,16 @@ export function useLiveEvents() {
     }
     reconnectListeners.add(onReconnected)
 
+    const registered: Array<[string, Parameters<HubConnection['off']>[1]]> = []
+    let liveConn: HubConnection | null = null
+    const listen = (conn: HubConnection, name: string, handler: Parameters<HubConnection['on']>[1]) => {
+      conn.on(name, handler)
+      registered.push([name, handler])
+    }
+
     const unsubscribe = subscribe((conn) => {
-      conn.on('queueUpdated', (item: QueueItemDto) => {
+      liveConn = conn
+      listen(conn, 'queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
         // Only the paged lists ['queue', page, pageSize] hold `items`; ['queue', 'import-plan', id] does not.
         queryClient.setQueriesData<QueueHistoryDto>({
@@ -207,7 +215,7 @@ export function useLiveEvents() {
 
       // The flush also refreshes Home's recently-added rail (keyed on ChapterFile.DateAdded, which
       // an import just wrote) and the detail page's Read button gate (`reader-continue`).
-      conn.on('chapterImported', ({ seriesId }: { seriesId: number }) => {
+      listen(conn, 'chapterImported', ({ seriesId }: { seriesId: number }) => {
         importedSeries.add(seriesId)
         scheduleSeriesRefresh()
       })
@@ -215,7 +223,7 @@ export function useLiveEvents() {
       // Auto-matching finished for a series added a moment ago. The sources card, the chapter
       // table and the series row itself (which carries the pending flag the spinner reads) all
       // change at once, so all three are refetched.
-      conn.on('sourceMatchFinished', ({ seriesId }: { seriesId: number }) => {
+      listen(conn, 'sourceMatchFinished', ({ seriesId }: { seriesId: number }) => {
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         // The detail row carries the pending flag the spinner reads, so it refreshes at once; the
@@ -231,7 +239,7 @@ export function useLiveEvents() {
       // One source's progress inside a match that's still running. Decoration on top of
       // `sourceMatchFinished`, which is still what makes the real rows appear. A client that
       // misses these just sees the finished table, as it did before.
-      conn.on(
+      listen(conn, 
         'sourceMatchProgress',
         ({
           seriesId,
@@ -255,7 +263,7 @@ export function useLiveEvents() {
       )
 
       // Kavita's live sync marked chapters read. Same queries a manual mark-read invalidates.
-      conn.on('readProgressChanged', ({ seriesId }: { seriesId: number }) => {
+      listen(conn, 'readProgressChanged', ({ seriesId }: { seriesId: number }) => {
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
@@ -263,19 +271,19 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['home'] })
       })
 
-      conn.on('updateAvailable', () => {
+      listen(conn, 'updateAvailable', () => {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
       })
 
       // Admins only: the hub puts this one in the admin group. Covers both the nav badge and an
       // open Requests page, so a request filed while an admin is looking at it lands without a
       // reload.
-      conn.on('seriesRequested', () => {
+      listen(conn, 'seriesRequested', () => {
         void queryClient.invalidateQueries({ queryKey: ['requests'] })
       })
 
       // Addressed to one user's group, not a broadcast: this is somebody's own mail.
-      conn.on('inboxNotification', async (item: InboxPush) => {
+      listen(conn, 'inboxNotification', async (item: InboxPush) => {
         // The push carries the recipient's new unread count, so the badge updates without a
         // round trip. The feed is invalidated rather than patched: it is paged and filtered, and
         // splicing a row into every cached filter combination is more ways to be wrong than it is
@@ -303,14 +311,7 @@ export function useLiveEvents() {
       reconnectListeners.delete(onReconnected)
       if (summaryTimer !== null) clearTimeout(summaryTimer)
       if (seriesTimer !== null) clearTimeout(seriesTimer)
-      connection?.off('queueUpdated')
-      connection?.off('chapterImported')
-      connection?.off('readProgressChanged')
-      connection?.off('sourceMatchFinished')
-      connection?.off('sourceMatchProgress')
-      connection?.off('updateAvailable')
-      connection?.off('seriesRequested')
-      connection?.off('inboxNotification')
+      for (const [name, handler] of registered) liveConn?.off(name, handler)
     }
   }, [queryClient])
 }

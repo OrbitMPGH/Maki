@@ -303,19 +303,31 @@ function AuthGate() {
 
   // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
   // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
-  if (location.pathname.startsWith('/read/')) {
-    return (
-      <RouteErrorBoundary>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/read/:chapterId" element={<ReaderPage />} />
-          </Routes>
-        </Suspense>
-      </RouteErrorBoundary>
-    )
-  }
+  const inReader = location.pathname.startsWith('/read/')
 
-  return <AppShellRoutes />
+  // Mounted above the reader/shell split so entering the reader neither drops the live
+  // subscriptions nor leaves it without inbox toasts and cache updates.
+  return (
+    <>
+      <LiveEvents />
+      {inReader ? (
+        <RouteErrorBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/read/:chapterId" element={<ReaderPage />} />
+            </Routes>
+          </Suspense>
+        </RouteErrorBoundary>
+      ) : (
+        <AppShellRoutes />
+      )}
+    </>
+  )
+}
+
+function LiveEvents() {
+  useLiveEvents()
+  return null
 }
 
 function AppShellRoutes() {
@@ -327,7 +339,6 @@ function AppShellRoutes() {
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
   const { t } = useLingui()
-  useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
 
