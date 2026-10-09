@@ -45,20 +45,10 @@ import { t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { QUALITY_TIER_COLOR, QUALITY_TIER_LABELS, upgradeReasonLabel } from '../api/upgrades'
 import type { QualityTierName } from '../api/upgrades'
+import { formatBytes } from '../format'
 import { useLabel } from '../i18n-context'
 
 const COLUMN_WIDTH = 300
-
-function formatSize(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB']
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit++
-  }
-  return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`
-}
 
 /** "Aggregator · 969px", or just the tier when no page width could be measured for this column. */
 function tierWidthLabel(
@@ -532,7 +522,7 @@ export function SourceCompareModal({
               {panels.map((panel, i) => {
                 const { chapterLabel, quality } = panel
                 const score = quality?.score ?? null
-                const weight = formatSize(weightOf(panel))
+                const weight = formatBytes(weightOf(panel))
                 let shift = 0
                 if (dragFromIndex !== null && hoverIndex !== null && i !== dragFromIndex) {
                   if (dragFromIndex < hoverIndex && i > dragFromIndex && i <= hoverIndex) shift = -1
@@ -703,7 +693,7 @@ export function SourceCompareModal({
                                 />
                                 <Text size="10px" c="var(--ink-3)" ta="center" mt={2}>
                                   {page.width ? `${page.width}×${page.height} · ` : ''}
-                                  {formatSize(page.bytes)}
+                                  {formatBytes(page.bytes)}
                                 </Text>
                               </Box>
                             ) : (
@@ -849,7 +839,7 @@ export function SourceCompareModal({
                   Row {zoomRowNumber} of {zoomTotalPages}
                 </Trans>
                 {zoomPage.width ? ` · ${zoomPage.width}×${zoomPage.height}` : ''} ·{' '}
-                {formatSize(zoomPage.bytes)}
+                {formatBytes(zoomPage.bytes)}
               </Text>
               <ActionIcon
                 variant="subtle"
