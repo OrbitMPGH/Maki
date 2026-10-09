@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 
 const PREFIX = 'maki-page:'
 
@@ -22,15 +22,31 @@ export function usePageState<T>(
   key: string | null,
   initial: T | (() => T),
 ): [T, Dispatch<SetStateAction<T>>] {
-  const [value, setValue] = useState<T>(() => {
+  const read = (from: string | null): T => {
     try {
-      const raw = key == null ? null : sessionStorage.getItem(PREFIX + key)
+      const raw = from == null ? null : sessionStorage.getItem(PREFIX + from)
       // Wrapped rather than stored bare so `null`, `0` and `""` are all distinguishable from
       // "nothing stored", which `getItem` reports the same way.
       if (raw) return (JSON.parse(raw) as { v: T }).v
     } catch { /* unparseable or unavailable; the default is a fine answer */ }
     return typeof initial === 'function' ? (initial as () => T)() : initial
-  })
+  }
+
+  // The value is held with the key it belongs to, so a key that changes while mounted loads the
+  // new key's snapshot instead of carrying the old scope's value over and writing it there.
+  const [held, setHeld] = useState<{ key: string | null; value: T }>(() => ({ key, value: read(key) }))
+  let value = held.value
+  if (held.key !== key) {
+    value = read(key)
+    setHeld({ key, value })
+  }
+
+  const setValue = useCallback<Dispatch<SetStateAction<T>>>((action) => {
+    setHeld((current) => {
+      const next = typeof action === 'function' ? (action as (previous: T) => T)(current.value) : action
+      return Object.is(next, current.value) ? current : { key: current.key, value: next }
+    })
+  }, [])
 
   useEffect(() => {
     if (key == null) return
