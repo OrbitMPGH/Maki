@@ -107,6 +107,10 @@ public class ChapterDownloadProcessor(
         // won't have refreshed if the mapping just changed).
         SourceMapping? usedMapping = null;
 
+        // The packaged archive inside the library share. Moved on success; anything else that ends the
+        // attempt (a failure, a Clear, the item timeout) must not leave a full chapter behind.
+        string? tmpCbz = null;
+
         try
         {
             // 1. The mapping and source chapter id were already resolved at enqueue time — no
@@ -215,7 +219,7 @@ public class ChapterDownloadProcessor(
 
             var comicInfo = ComicInfoBuilder.Serialize(ComicInfoBuilder.Build(series, chapter, pageFiles.Count));
             var tmpDir = Path.Combine(rootFolder.Path, ".maki", "tmp");
-            var tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
+            tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
             CbzPackager.Package(pageFiles, comicInfo, tmpCbz);
 
             if (item.HealthOperationId is { } repairId)
@@ -410,6 +414,13 @@ public class ChapterDownloadProcessor(
             var (key, detail) = DownloadFailureReason.Classify(ex);
             await FailAsync(item, key, ct, detail: detail);
             return DownloadOutcome.Settled;
+        }
+        finally
+        {
+            if (tmpCbz is not null)
+            {
+                TryDeleteFile(tmpCbz);
+            }
         }
     }
 
