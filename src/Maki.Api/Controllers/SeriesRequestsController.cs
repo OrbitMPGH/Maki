@@ -236,7 +236,7 @@ public class SeriesRequestsController(
                     .SetProperty(r => r.EditedAt, editedAt)
                     .SetProperty(r => r.EditedByUserId, currentUser.UserId), ct);
         }
-        catch (Exception e) when (SeriesRequestSubmitter.IsUniqueViolation(e))
+        catch (Exception e) when (DbErrors.IsUniqueViolation(e))
         {
             // The new range matches another Pending request of this user's for the same series
             // (or the same provider id): the partial unique index refuses the row, same as a
@@ -455,7 +455,7 @@ public class SeriesRequestsController(
                     .SetProperty(r => r.SeriesId, request.SeriesId)
                     .SetProperty(r => r.Title, request.Title), CancellationToken.None);
         }
-        catch (Exception ex) when (SeriesRequestSubmitter.IsUniqueViolation(ex))
+        catch (Exception ex) when (DbErrors.IsUniqueViolation(ex))
         {
             logger.LogWarning(ex,
                 "Request {Id} could not be released to Pending, a duplicate is already pending; rejecting it instead",

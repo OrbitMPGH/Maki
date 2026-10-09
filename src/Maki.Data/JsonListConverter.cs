@@ -2,12 +2,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Logging;
 
 namespace Maki.Data;
 
 /// <summary>
 /// Stores a List&lt;T&gt; of records as JSON text, enums by name so a reordered enum cannot silently
-/// change what a stored row means. A row that fails to parse reads as an empty list.
+/// change what a stored row means. A row that fails to parse reads as an empty list and logs a warning.
 /// </summary>
 internal static class JsonListConverter<T> where T : class
 {
@@ -36,8 +37,11 @@ internal static class JsonListConverter<T> where T : class
         {
             return JsonSerializer.Deserialize<List<T>>(json, Options) ?? [];
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            DataDiagnostics.Logger?.LogWarning(ex,
+                "Stored {Type} list could not be read and was treated as empty; saving this row would overwrite it",
+                typeof(T).Name);
             return [];
         }
     }

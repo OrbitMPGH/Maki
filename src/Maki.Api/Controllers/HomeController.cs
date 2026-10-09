@@ -4,7 +4,6 @@ using Maki.Core.Reading;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
@@ -243,7 +242,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         {
             await WriteHiddenFromHomeAsync(seriesId, at, ct);
         }
-        catch (DbUpdateException e) when (e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 })
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             // A double click inserts twice for a series with no state row yet; the loser updates
             // the row the winner created.
