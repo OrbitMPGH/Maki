@@ -17,9 +17,10 @@ namespace Maki.Data.Migrations
                 filter: "\"State\" = 'open'");
 
             migrationBuilder.CreateIndex(
-                name: "IX_HealthFiles_Removed_RelativePath",
+                name: "IX_HealthFiles_RelativePath",
                 table: "HealthFiles",
-                columns: new[] { "Removed", "RelativePath" });
+                column: "RelativePath",
+                filter: "NOT \"Removed\"");
         }
 
         /// <inheritdoc />
@@ -30,7 +31,7 @@ namespace Maki.Data.Migrations
                 table: "HealthFindings");
 
             migrationBuilder.DropIndex(
-                name: "IX_HealthFiles_Removed_RelativePath",
+                name: "IX_HealthFiles_RelativePath",
                 table: "HealthFiles");
         }
     }

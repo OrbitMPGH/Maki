@@ -562,9 +562,10 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("ContentHash");
 
-                    b.HasIndex("SeriesId");
+                    b.HasIndex("RelativePath")
+                        .HasFilter("NOT \"Removed\"");
 
-                    b.HasIndex("Removed", "RelativePath");
+                    b.HasIndex("SeriesId");
 
                     b.HasIndex("RootFolderId", "RelativePath")
                         .IsUnique();

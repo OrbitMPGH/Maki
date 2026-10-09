@@ -208,8 +208,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // ChapterFile, forever.
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.ChapterFileId);
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.SeriesId);
-        // The workspace polls the open count and the default file order every few seconds.
-        modelBuilder.Entity<HealthFile>().HasIndex(x => new { x.Removed, x.RelativePath });
+        // The workspace polls the default file order every few seconds. A partial index on the
+        // filtered column is what lets SQLite read it already sorted; a (Removed, RelativePath)
+        // index still sorts in a temp B-tree for WHERE NOT Removed ORDER BY RelativePath.
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.RelativePath).HasFilter("NOT \"Removed\"");
         modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
         modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
         modelBuilder.Entity<HealthFinding>().HasIndex(x => x.State).HasFilter("\"State\" = 'open'");
