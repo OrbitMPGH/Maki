@@ -211,6 +211,7 @@ public class HousekeepingJob(
         await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);
 
         await PruneInboxAsync(ct);
+        await PruneHealthScansAsync(db, cutoff, ct);
 
         // 0x10002: consider every table, not only the ones this pooled connection happened to query.
         await db.Database.ExecuteSqlRawAsync("PRAGMA optimize=0x10002;", ct);
@@ -225,6 +226,24 @@ public class HousekeepingJob(
         // consumer here opens with Pooling=False so the nightly artifact swaps can replace a file.
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         logger.LogDebug("Housekeeping complete");
+    }
+
+    /// <summary>Health scans that finished before <paramref name="cutoff"/>, except the ten newest, which is what the health page lists.</summary>
+    internal static async Task<int> PruneHealthScansAsync(MakiDbContext db, DateTime cutoff, CancellationToken ct)
+    {
+        var oldestKept = await db.HealthScans
+            .OrderByDescending(s => s.Id)
+            .Skip(9)
+            .Select(s => (int?)s.Id)
+            .FirstOrDefaultAsync(ct);
+        if (oldestKept is null)
+        {
+            return 0;
+        }
+
+        return await db.HealthScans
+            .Where(s => s.Id < oldestKept && s.Status != "pending" && s.Status != "running" && s.CreatedAt < cutoff)
+            .ExecuteDeleteAsync(ct);
     }
 
     /// <summary>
