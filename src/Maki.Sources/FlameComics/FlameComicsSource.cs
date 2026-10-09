@@ -147,7 +147,7 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
         var props = await GetPagePropsAsync("browse", ct);
         if (!props.TryGetProperty("series", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException("Flame Comics browse page data has no series array");
         }
 
         var catalog = new List<SourceSeriesResult>();
@@ -186,10 +186,13 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
         }
 
         using var json = JsonDocument.Parse(payload);
-        return json.RootElement.TryGetProperty("props", out var props) &&
-               props.TryGetProperty("pageProps", out var pageProps)
-            ? pageProps.Clone()
-            : default;
+        if (json.RootElement.TryGetProperty("props", out var props) &&
+            props.TryGetProperty("pageProps", out var pageProps))
+        {
+            return pageProps.Clone();
+        }
+
+        throw new InvalidOperationException($"Flame Comics __NEXT_DATA__ for /{path} has no props.pageProps");
     }
 
     /// <summary>

@@ -443,16 +443,23 @@ public sealed class MangaFireBrowser(
         await context.AddInitScriptAsync("try { localStorage.clear(); sessionStorage.clear(); } catch (e) { }");
 
         // only the JSON responses matter — skip images/media/fonts to cut nav time and bandwidth.
-        await context.RouteAsync("**/*", route =>
+        await context.RouteAsync("**/*", async route =>
         {
-            var type = route.Request.ResourceType;
-            if (type is "image" or "media" or "font")
+            try
             {
-                _ = route.AbortAsync();
+                var type = route.Request.ResourceType;
+                if (type is "image" or "media" or "font")
+                {
+                    await route.AbortAsync();
+                }
+                else
+                {
+                    await route.ContinueAsync();
+                }
             }
-            else
+            catch (PlaywrightException)
             {
-                _ = route.ContinueAsync();
+                // the page closed under the request; nothing left to route
             }
         });
 

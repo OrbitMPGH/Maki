@@ -233,7 +233,12 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
         }
 
         using var json = JsonDocument.Parse(raw);
-        return json.RootElement.TryGetProperty("props", out var props) ? props.Clone() : default;
+        if (!json.RootElement.TryGetProperty("props", out var props))
+        {
+            throw new InvalidOperationException($"Manhwa18.net data-page for {url} has no props");
+        }
+
+        return props.Clone();
     }
 
     private static DateTime? ReleaseDate(JsonElement row) =>

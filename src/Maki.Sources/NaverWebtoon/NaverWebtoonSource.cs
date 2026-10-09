@@ -165,7 +165,7 @@ public class NaverWebtoonSource(IHttpClientFactory httpClientFactory) : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var response = await Client.GetAsync(
+        using var response = await Client.GetAsync(
             $"webtoon/detail?titleId={chapter.SourceSeriesId}&no={chapter.SourceChapterId}", ct);
         response.EnsureSuccessStatusCode();
 

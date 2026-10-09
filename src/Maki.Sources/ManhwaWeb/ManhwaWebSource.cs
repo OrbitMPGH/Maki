@@ -163,7 +163,7 @@ public class ManhwaWebSource(IHttpClientFactory httpClientFactory) : ISource
         if (!body.TrimStart().StartsWith('{'))
         {
             throw new InvalidOperationException(
-                $"ManhwaWeb pages endpoint returned a non-JSON response for chapter {chapter.SourceChapterId}: {body}");
+                $"ManhwaWeb pages endpoint returned a non-JSON response for chapter {chapter.SourceChapterId}: {(body.Length <= 100 ? body : body[..100])}");
         }
 
         using var doc = JsonDocument.Parse(body);

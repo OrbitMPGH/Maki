@@ -223,7 +223,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
         var view = data?.Message(SuccessAllTitlesView);
         if (view is null)
         {
-            return catalog;
+            throw new InvalidOperationException("MANGA Plus title_list/allV2 has no all-titles view");
         }
 
         // Non-English entries used to be dropped here, which made the other eight catalogs
