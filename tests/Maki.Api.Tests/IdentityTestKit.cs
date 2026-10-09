@@ -27,7 +27,7 @@ internal static class IdentityTestKit
             null!,
             NullLogger<UserManager<MakiUser>>.Instance);
         users.RegisterTokenProvider(TokenOptions.DefaultProvider, new AlwaysValidTokenProvider());
-        users.RegisterTokenProvider(TokenOptions.DefaultAuthenticatorProvider, new AlwaysValidTokenProvider());
+        users.RegisterTokenProvider(TokenOptions.DefaultAuthenticatorProvider, new KnownCodeTokenProvider());
         return users;
     }
 
@@ -36,6 +36,21 @@ internal static class IdentityTestKit
 
     public static ClaimsPrincipal Principal(int userId) =>
         new(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"));
+
+    /// <summary>The one authenticator code <see cref="KnownCodeTokenProvider"/> accepts.</summary>
+    public const string ValidAuthenticatorCode = "123456";
+
+    private sealed class KnownCodeTokenProvider : IUserTwoFactorTokenProvider<MakiUser>
+    {
+        public Task<string> GenerateAsync(string purpose, UserManager<MakiUser> manager, MakiUser user) =>
+            Task.FromResult(ValidAuthenticatorCode);
+
+        public Task<bool> ValidateAsync(string purpose, string token, UserManager<MakiUser> manager, MakiUser user) =>
+            Task.FromResult(token == ValidAuthenticatorCode);
+
+        public Task<bool> CanGenerateTwoFactorTokenAsync(UserManager<MakiUser> manager, MakiUser user) =>
+            Task.FromResult(false);
+    }
 
     private sealed class AlwaysValidTokenProvider : IUserTwoFactorTokenProvider<MakiUser>
     {

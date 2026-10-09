@@ -118,7 +118,7 @@ public class AccountController(
             return BadRequest(new { error = Describe(result) });
         }
 
-        // Setting the password rotates the security stamp, which invalidates every issued cookie —
+        // Setting the password rotates the security stamp, which invalidates every issued cookie,
         // including the one making this request. Re-issuing it here keeps the user signed in on this
         // device while every other session dies, which is the behaviour a password change should have.
         await signInManager.RefreshSignInAsync(user);

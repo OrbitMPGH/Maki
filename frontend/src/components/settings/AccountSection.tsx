@@ -17,7 +17,7 @@ import { notifications } from '@mantine/notifications'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
 import QRCode from 'qrcode'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import {
   useApiKeys,
   useChangePassword,
@@ -352,11 +352,10 @@ function TwoFactorCard() {
       {status?.enabled && (
         <Stack gap={4}>
           <Text size="xs" c="var(--ink-3)">
-            {status.recoveryCodesLeft === 1 ? (
-              <Trans>1 recovery code left. A new set replaces the old codes.</Trans>
-            ) : (
-              <Trans>{status.recoveryCodesLeft} recovery codes left. A new set replaces the old codes.</Trans>
-            )}
+            {plural(status.recoveryCodesLeft, {
+              one: '# recovery code left. A new set replaces the old codes.',
+              other: '# recovery codes left. A new set replaces the old codes.',
+            })}
           </Text>
           <Group
             component="form"

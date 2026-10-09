@@ -132,6 +132,11 @@ msgstr "{0, plural, one {# more chapter is in the same volume file and loses it 
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr "{0, plural, one {# page} other {# pages}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+msgstr "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{0, plural, one {# season} other {# seasons}}"
@@ -290,11 +295,6 @@ msgstr "{0, plural, one {Volume file backing # chapter} other {Volume file backi
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
-
-#. placeholder {0}: status.recoveryCodesLeft
-#: src/components/settings/AccountSection.tsx
-msgid "{0} recovery codes left. A new set replaces the old codes."
-msgstr "{0} recovery codes left. A new set replaces the old codes."
 
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
@@ -1460,10 +1460,6 @@ msgstr "👎 Disliked"
 #: src/components/NotificationsSection.tsx
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (lowest) to 5 (highest)."
-
-#: src/components/settings/AccountSection.tsx
-msgid "1 recovery code left. A new set replaces the old codes."
-msgstr "1 recovery code left. A new set replaces the old codes."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "1:1"

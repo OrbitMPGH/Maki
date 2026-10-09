@@ -155,6 +155,11 @@ msgstr ""
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr "{0, plural, one {# страница} few {# страницы} many {# страниц} other {# страницы}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -341,11 +346,6 @@ msgstr "{0, plural, one {Файл тома для # главы} few {Файлы 
 #, fuzzy
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Нужна # глава} few {Нужны # главы} many {Нужно # глав} other {Нужна # глава}}"
-
-#. placeholder {0}: status.recoveryCodesLeft
-#: src/components/settings/AccountSection.tsx
-msgid "{0} recovery codes left. A new set replaces the old codes."
-msgstr ""
 
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
@@ -1793,10 +1793,6 @@ msgstr "👎 Не понравилось"
 #, fuzzy
 msgid "1 (lowest) to 5 (highest)."
 msgstr "От 1 (минимум) до 5 (максимум)."
-
-#: src/components/settings/AccountSection.tsx
-msgid "1 recovery code left. A new set replaces the old codes."
-msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy

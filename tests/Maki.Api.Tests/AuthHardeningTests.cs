@@ -370,13 +370,17 @@ public sealed class AuthHardeningTests : IDisposable
         await users.SetTwoFactorEnabledAsync(user, true);
         var oldCodes = (await users.GenerateNewTwoFactorRecoveryCodesAsync(user, 2))!.ToList();
 
-        var noPassword = await Account(db, userId).RegenerateRecoveryCodes(
-            new EnableTwoFactorRequest("123456", "wrong password"), default);
-        Assert.NotEqual(typeof(OkObjectResult), noPassword.GetType());
+        var wrongPassword = await Account(db, userId).RegenerateRecoveryCodes(
+            new EnableTwoFactorRequest(IdentityTestKit.ValidAuthenticatorCode, "wrong password"), default);
+        Assert.NotEqual(typeof(OkObjectResult), wrongPassword.GetType());
+
+        var wrongCode = await Account(db, userId).RegenerateRecoveryCodes(
+            new EnableTwoFactorRequest("000000", Password), default);
+        Assert.Equal("error.account.invalidCode", CodeOf(wrongCode));
         Assert.Equal(2, await users.CountRecoveryCodesAsync(user));
 
         var ok = Assert.IsType<OkObjectResult>(await Account(db, userId).RegenerateRecoveryCodes(
-            new EnableTwoFactorRequest("123456", Password), default));
+            new EnableTwoFactorRequest(IdentityTestKit.ValidAuthenticatorCode, Password), default));
         var fresh = (IEnumerable<string>)ok.Value!.GetType().GetProperty("recoveryCodes")!.GetValue(ok.Value)!;
         Assert.Equal(8, fresh.Count());
         Assert.Empty(fresh.Intersect(oldCodes));
