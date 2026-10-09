@@ -65,7 +65,7 @@ public class HousekeepingJob(
         // Two kinds of garbage, and only the first used to be collected:
         //   1. whole directories for ChapterFile rows that no longer exist;
         //   2. files inside a *live* directory left by an earlier version of the same archive —
-        //      the name is "{ArchiveSize}-{page}.jpg", so a re-download at a different size
+        //      the name is "{ArchiveSize}-{stamp}-{page}.jpg", so a re-download at a different size
         //      orphans every thumbnail it had without the directory ever going away.
         if (Directory.Exists(paths.ReaderCacheDir))
         {

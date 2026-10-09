@@ -29,7 +29,17 @@ public class ReaderService(
         long ArchiveSize,
         IReadOnlyList<string> Pages,
         int StartPage,
-        int PageCount);
+        int PageCount,
+        long ArchiveStamp = 0)
+    {
+        public string ArchiveVersion => ArchiveVersionOf(ArchiveSize, ArchiveStamp);
+    }
+
+    /// <summary>
+    /// What a page URL, ETag or cached render is keyed on. The size alone cannot tell a same-size
+    /// replacement from the original, so the write time rides along.
+    /// </summary>
+    internal static string ArchiveVersionOf(long size, long stamp) => $"{size}-{stamp}";
 
     /// <summary>
     /// Resolves the chapter's pages. Returns null when the chapter is unknown, has no file, or
@@ -66,7 +76,7 @@ public class ReaderService(
 
         var file = row.File;
         var absolute = LibraryPaths.Resolve(row.RootPath, file.RelativePath);
-        if (absolute is null || !File.Exists(absolute))
+        if (absolute is null || StampOf(absolute) is not { } stamp)
         {
             logger.LogWarning("Chapter {ChapterId} file is missing: {Path}", chapterId, file.RelativePath);
             return null;
@@ -81,7 +91,7 @@ public class ReaderService(
         var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
 
         return new ChapterSlice(
-            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count);
+            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count, stamp);
     }
 
     /// <summary>Just what serving one page or thumbnail needs: no Chapter or Series entity.</summary>
@@ -92,7 +102,11 @@ public class ReaderService(
         long ArchiveSize,
         IReadOnlyList<string> Pages,
         int StartPage,
-        int PageCount);
+        int PageCount,
+        long ArchiveStamp = 0)
+    {
+        public string ArchiveVersion => ArchiveVersionOf(ArchiveSize, ArchiveStamp);
+    }
 
     /// <summary>
     /// <see cref="SliceAsync"/> for the page, thumbnail and OPDS page endpoints, which run hundreds
@@ -122,7 +136,7 @@ public class ReaderService(
         }
 
         var absolute = LibraryPaths.Resolve(row.RootPath, file.RelativePath);
-        if (absolute is null || !File.Exists(absolute))
+        if (absolute is null || StampOf(absolute) is not { } stamp)
         {
             logger.LogWarning("Chapter {ChapterId} file is missing: {Path}", chapterId, file.RelativePath);
             return null;
@@ -135,7 +149,7 @@ public class ReaderService(
         }
 
         var (start, count) = SliceBounds(info, row.Number, row.SharesFile);
-        return new PageSlice(chapterId, file.Id, absolute, file.Size, info.Pages, start, count);
+        return new PageSlice(chapterId, file.Id, absolute, file.Size, info.Pages, start, count, stamp);
     }
 
     /// <summary>
@@ -182,7 +196,7 @@ public class ReaderService(
             }
 
             var absolute = LibraryPaths.Resolve(row.RootPath, row.File.RelativePath);
-            if (absolute is null || !File.Exists(absolute))
+            if (absolute is null || StampOf(absolute) is not { } stamp)
             {
                 continue;
             }
@@ -195,10 +209,17 @@ public class ReaderService(
 
             var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
             slices[row.Chapter.Id] = new ChapterSlice(
-                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count);
+                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count, stamp);
         }
 
         return slices;
+    }
+
+    /// <summary>The file's write time in ticks, or null when it is not on disk. One stat, shared with the existence check.</summary>
+    private static long? StampOf(string absolute)
+    {
+        var info = new FileInfo(absolute);
+        return info.Exists ? info.LastWriteTimeUtc.Ticks : null;
     }
 
     /// <summary>One page of a resolved slice, or null when it cannot be read. See <see cref="ReaderArchiveCache.OpenPageAsync"/>.</summary>

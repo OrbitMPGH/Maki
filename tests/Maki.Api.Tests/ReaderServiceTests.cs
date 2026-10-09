@@ -157,9 +157,24 @@ public sealed class ReaderServiceTests : IDisposable
             Assert.NotNull(full);
             Assert.Equal(
                 new ReaderService.PageSlice(chapterId, full.ChapterFileId, full.ArchivePath, full.ArchiveSize,
-                    full.Pages, full.StartPage, full.PageCount),
+                    full.Pages, full.StartPage, full.PageCount, full.ArchiveStamp),
                 slim);
         }
+    }
+
+    [Fact]
+    public async Task ASameSizeReplacementChangesTheArchiveVersion()
+    {
+        var (_, chapters) = SeedFromCbz("replaced.cbz", ["001.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var before = await reader.PageSliceAsync(chapters[1m], CancellationToken.None);
+
+        var path = before!.ArchivePath;
+        File.SetLastWriteTimeUtc(path, File.GetLastWriteTimeUtc(path).AddMinutes(5));
+        var after = await reader.PageSliceAsync(chapters[1m], CancellationToken.None);
+
+        Assert.Equal(before.ArchiveSize, after!.ArchiveSize);
+        Assert.NotEqual(before.ArchiveVersion, after.ArchiveVersion);
     }
 
     [Fact]
