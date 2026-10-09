@@ -119,7 +119,7 @@ public class SystemController(
     {
         if (imageCacheStatus.Running)
         {
-            return Ok(new { started = false, message = "A rebuild is already running" });
+            return Ok(new { started = false, message = localizer.Get("error.system.rebuildRunning") });
         }
 
         var scheduler = await schedulerFactory.GetScheduler(ct);
@@ -155,9 +155,13 @@ public class SystemController(
         {
             return PhysicalFile(backups.PathFor(name), "application/zip", name);
         }
-        catch (Exception ex) when (ex is ArgumentException or FileNotFoundException)
+        catch (ArgumentException)
         {
-            return NotFound(new { message = ex.Message });
+            return this.NotFoundMessage(localizer, "error.system.backupNameInvalid");
+        }
+        catch (FileNotFoundException)
+        {
+            return this.NotFoundMessage(localizer, "error.system.backupNotFound", new { name });
         }
     }
 
@@ -170,9 +174,13 @@ public class SystemController(
             backups.Delete(name);
             return NoContent();
         }
-        catch (Exception ex) when (ex is ArgumentException or FileNotFoundException)
+        catch (ArgumentException)
         {
-            return NotFound(new { message = ex.Message });
+            return this.NotFoundMessage(localizer, "error.system.backupNameInvalid");
+        }
+        catch (FileNotFoundException)
+        {
+            return this.NotFoundMessage(localizer, "error.system.backupNotFound", new { name });
         }
     }
 
@@ -189,13 +197,22 @@ public class SystemController(
         {
             return this.Fail(localizer, ex.Key, ex.Args);
         }
-        catch (Exception ex) when (ex is ArgumentException or FileNotFoundException or InvalidOperationException)
+        catch (ArgumentException)
         {
-            return BadRequest(new { message = ex.Message });
+            return this.NotFoundMessage(localizer, "error.system.backupNameInvalid");
+        }
+        catch (FileNotFoundException)
+        {
+            return this.NotFoundMessage(localizer, "error.system.backupNotFound", new { name });
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(ex, "Could not stage the restore of backup {Name}", name);
+            return this.Fail(localizer, "error.system.restoreFailed");
         }
 
         ScheduleRestart();
-        return Accepted(new { message = "Restore staged. Restarting to apply." });
+        return Accepted(new { message = localizer.Get("error.system.restoreStaged") });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -218,11 +235,12 @@ public class SystemController(
         }
         catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException)
         {
-            return BadRequest(new { message = ex.Message });
+            logger.LogWarning(ex, "Could not stage the uploaded restore");
+            return this.Fail(localizer, "error.system.restoreFailed");
         }
 
         ScheduleRestart();
-        return Accepted(new { message = "Restore staged. Restarting to apply." });
+        return Accepted(new { message = localizer.Get("error.system.restoreStaged") });
     }
 
     /// <summary>Stops the app shortly after the response flushes so the staged restore is applied on

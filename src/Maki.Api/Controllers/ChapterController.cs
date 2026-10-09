@@ -567,9 +567,14 @@ public class ChapterController(
         {
             return this.Fail(localizer, ex.Key);
         }
+        catch (ChapterUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            logger.LogWarning(ex, "Could not queue chapter {ChapterId}", id);
+            return this.Fail(localizer, "error.chapter.enqueueFailed");
         }
     }
 
@@ -629,9 +634,14 @@ public class ChapterController(
         {
             return this.Fail(localizer, ex.Key);
         }
+        catch (ChapterUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            logger.LogWarning(ex, "Could not queue chapter {ChapterId}", id);
+            return this.Fail(localizer, "error.chapter.enqueueFailed");
         }
     }
 

@@ -168,7 +168,10 @@ public class SeriesRenameService(
 
             if (targets.TryGetValue(to, out var claimedBy))
             {
-                conflicts.Add($"{Path.GetFileName(to)} — wanted by both {claimedBy} and {file.RelativePath}");
+                conflicts.Add(localizer.Get("error.seriesRename.conflict", new
+                {
+                    file = Path.GetFileName(to), first = claimedBy, second = file.RelativePath,
+                }));
                 continue;
             }
 
@@ -300,7 +303,7 @@ public class SeriesRenameService(
             {
                 logger.LogWarning(ex, "Could not rename series folder for {Title}", series.Title);
                 return new SeriesRenameResult(plan, false,
-                    $"Could not rename the series folder: {ex.Message}", []);
+                    localizer.Get("error.seriesRename.folderFailed"), []);
             }
         }
 
@@ -381,7 +384,7 @@ public class SeriesRenameService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Could not rename {From} for {Title}", file.From, series.Title);
-                warnings.Add($"Could not rename {Path.GetFileName(file.From)}: {ex.Message}");
+                warnings.Add(localizer.Get("error.seriesRename.fileFailed", new { file = Path.GetFileName(file.From) }));
                 renamed.Add(file with { To = StayPut(root, from, original, occupied, moves) });
             }
         }

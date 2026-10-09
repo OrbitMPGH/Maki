@@ -47,7 +47,7 @@ public class ImportListServiceTests : IDisposable
             sourceMatchQueue: new SourceMatchQueue(),
             stats: null!, identity: null!, appSettings: new FakeAppSettings(),
             naming: new NamingService(new FakeAppSettings()),
-            notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(),
+            notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(), localizer: new TestLocalizer(),
             logger: NullLogger<SeriesCreationService>.Instance));
         services.AddScoped(sp => new SeriesRequestSubmitter(
             sp.GetRequiredService<MakiDbContext>(), [_metadata], new SilentBroadcaster(), _inbox, _notifications,

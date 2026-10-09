@@ -5,6 +5,18 @@ using Maki.Core.Http;
 
 namespace Maki.Core.Download;
 
+public enum QBittorrentFailure
+{
+    LoginFailed,
+    TorrentRejected,
+}
+
+/// <summary>A qBittorrent refusal Maki can name; the message is English for logs only.</summary>
+public sealed class QBittorrentException(QBittorrentFailure failure, string message) : InvalidOperationException(message)
+{
+    public QBittorrentFailure Failure { get; } = failure;
+}
+
 /// <summary>
 /// Minimal qBittorrent WebUI (v2) client: cookie login, add by URL/magnet with a
 /// category, and list torrents in that category. One instance per app; the auth
@@ -81,7 +93,7 @@ public class QBittorrentClient
         var body = await response.Content.ReadAsStringAsync(ct);
         if (body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("qBittorrent rejected the torrent");
+            throw new QBittorrentException(QBittorrentFailure.TorrentRejected, "qBittorrent rejected the torrent");
         }
     }
 
@@ -127,7 +139,9 @@ public class QBittorrentClient
             response.EnsureSuccessStatusCode();
             if (!await LoginSucceededAsync(response, ct))
             {
-                throw new InvalidOperationException("qBittorrent login failed (check username/password). Status code: " + response.StatusCode);
+                throw new QBittorrentException(
+                    QBittorrentFailure.LoginFailed,
+                    "qBittorrent login failed (check username/password). Status code: " + response.StatusCode);
             }
 
             _authenticatedFor = baseUrl;

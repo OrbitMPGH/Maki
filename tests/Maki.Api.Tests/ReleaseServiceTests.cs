@@ -62,10 +62,10 @@ public class ReleaseServiceTests : IDisposable
     [Fact]
     public async Task Prowlarr_config_throws_until_both_url_and_key_are_set()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GetProwlarrConfigAsync(CancellationToken.None));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetProwlarrConfigAsync(CancellationToken.None));
 
         await _settings.SetAsync(SettingKeys.ProwlarrUrl, "http://prowlarr.test");
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GetProwlarrConfigAsync(CancellationToken.None));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetProwlarrConfigAsync(CancellationToken.None));
 
         await _settings.SetAsync(SettingKeys.ProwlarrApiKey, "key");
         var (url, apiKey) = await Build().GetProwlarrConfigAsync(CancellationToken.None);
@@ -76,7 +76,7 @@ public class ReleaseServiceTests : IDisposable
     [Fact]
     public async Task Qbt_config_throws_without_url_then_fills_defaults()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GetQbtConfigAsync(CancellationToken.None));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetQbtConfigAsync(CancellationToken.None));
 
         await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
         var config = await Build().GetQbtConfigAsync(CancellationToken.None);
@@ -158,7 +158,8 @@ public class ReleaseServiceTests : IDisposable
         const string magnet = "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567";
         var service = Build("[" + Release("g", "torrent", 5, magnet: magnet) + "]");
         var controller = new ReleaseController(
-            service, new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions())), new TestLocalizer());
+            service, new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions())), new TestLocalizer(),
+            NullLogger<ReleaseController>.Instance);
         var forged = new ReleaseDto("g", "Forged", 1, "Forged", 0, 0, "torrent",
             DownloadUrl: "http://169.254.169.254/latest/meta-data", MagnetUrl: null, InfoUrl: null);
 
@@ -184,7 +185,8 @@ public class ReleaseServiceTests : IDisposable
 
         using var db = _db.NewContext();
         var result = await new ReleaseController(
-                Build(), new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions())), new TestLocalizer())
+                Build(), new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions())), new TestLocalizer(),
+                NullLogger<ReleaseController>.Instance)
             .Grab(new ReleaseController.GrabRequest(seriesId, forged), new TestCurrentUser(1), db, CancellationToken.None);
 
         Assert.Equal(400, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
@@ -220,7 +222,7 @@ public class ReleaseServiceTests : IDisposable
         await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
         var release = new ReleaseDto("g", "t", 1, "Nyaa", 1, 0, "torrent", null, null, null);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null));
     }
 
     [Fact]
@@ -229,6 +231,6 @@ public class ReleaseServiceTests : IDisposable
         await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
         var release = new ReleaseDto("g", "t", 1, "Nyaa", 1, 0, "torrent", "http://x/t.torrent", null, null);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Build().GrabAsync(404, release, DownloadOrigin.Manual, null, null));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GrabAsync(404, release, DownloadOrigin.Manual, null, null));
     }
 }

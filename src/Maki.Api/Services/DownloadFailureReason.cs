@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 
 namespace Maki.Api.Services;
@@ -17,6 +18,7 @@ public static class DownloadFailureReason
     public const string Network = "error.download.network";
     public const string Disk = "error.download.disk";
     public const string Unexpected = "error.download.unexpected";
+    public const string ChallengeNotSolved = "error.download.challengeNotSolved";
 
     private const int MaxDetailLength = 300;
 
@@ -28,6 +30,8 @@ public static class DownloadFailureReason
                 return (SourceRejected, $"HTTP {(int)http.StatusCode!}");
             case HttpRequestException { StatusCode: { } status }:
                 return (SourceError, $"HTTP {(int)status}");
+            case ChallengeNotSolvedException challenge:
+                return (ChallengeNotSolved, challenge.Host);
             case SourceErrorException:
                 return (SourceError, Trim(ex.Message));
             case ChapterUnavailableException unavailable:

@@ -75,7 +75,7 @@ public class SeriesRequestsControllerTests : IDisposable
             sourceMatchQueue: new SourceMatchQueue(),
             stats: null!, identity: null!, appSettings: new FakeAppSettings(),
             naming: new NamingService(new FakeAppSettings()),
-            notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(),
+            notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(), localizer: new TestLocalizer(),
             logger: NullLogger<SeriesCreationService>.Instance);
 
         return new SeriesRequestsController(

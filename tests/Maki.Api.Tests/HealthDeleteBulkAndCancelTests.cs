@@ -33,7 +33,7 @@ public sealed class HealthDeleteBulkAndCancelTests : IDisposable
         TestQuality.Create());
 
     private HealthController Controller(MakiDbContext db, HealthOperationService operations) =>
-        new(db, null!, operations, null!, new TestCurrentUser(1), null!, new TestLocalizer(), null!, null!)
+        new(db, null!, operations, null!, new TestCurrentUser(1), null!, new TestLocalizer(), null!, null!, NullLogger<HealthController>.Instance)
         { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
 
     private async Task<HealthFile> Seed(MakiDbContext db)

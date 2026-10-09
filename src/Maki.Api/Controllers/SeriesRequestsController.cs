@@ -246,7 +246,7 @@ public class SeriesRequestsController(
 
         inbox.Raise(InboxEventType.RequestEdited, new InboxMessage(
                 Key: "inbox.request.edited",
-                Params: InboxMessage.Args(new { title = edited.Title, range = RangeLabel(start, end) }),
+                Params: InboxMessage.Args(new { title = edited.Title, range = RangeKey(start, end), start = ChapterLabel(start), end = ChapterLabel(end) }),
                 Url: "/requests"),
             InboxAudience.User(edited.UserId));
 
@@ -690,14 +690,17 @@ public class SeriesRequestsController(
         }
     }
 
-    /// <summary>Renders an edited chapter range the way the requests page labels it.</summary>
-    private static string RangeLabel(decimal? start, decimal? end) => (start, end) switch
+    /// <summary>The catalogue key for an edited chapter range, which <c>InboxRenderer</c> words at read time.</summary>
+    private static string RangeKey(decimal? start, decimal? end) => (start, end) switch
     {
-        (null, null) => "everything",
-        (not null, null) => $"chapter {start} onwards",
-        (null, not null) => $"up to chapter {end}",
-        _ => $"chapters {start}–{end}",
+        (null, null) => "inbox.request.range.all",
+        (not null, null) => "inbox.request.range.from",
+        (null, not null) => "inbox.request.range.upTo",
+        _ => "inbox.request.range.between",
     };
+
+    private static string ChapterLabel(decimal? number) =>
+        number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
 
     /// <summary>
     /// Resolves the requester, resolver and editor display names in one query for the whole page,
@@ -718,7 +721,7 @@ public class SeriesRequestsController(
 
         return [.. rows.Select(r => SeriesRequestDto.FromEntity(
             r,
-            names.GetValueOrDefault(r.UserId, "Unknown"),
+            names.GetValueOrDefault(r.UserId) ?? localizer.Get("error.requests.unknownUser"),
             r.ResolvedByUserId is int by ? names.GetValueOrDefault(by) : null,
             r.EditedByUserId is int editor ? names.GetValueOrDefault(editor) : null))];
     }

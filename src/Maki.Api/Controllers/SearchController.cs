@@ -79,10 +79,8 @@ public class SearchController(
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    error = $"URL matched {source.DisplayName} but the series page could not be fetched: {ex.Message}"
-                });
+                logger.LogWarning(ex, "Could not fetch the series page {Url} from {Source}", target, source.Name);
+                return this.BadGateway(localizer, "error.search.seriesPageFailed", new { source = source.DisplayName });
             }
         }
 

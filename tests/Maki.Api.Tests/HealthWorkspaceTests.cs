@@ -131,10 +131,10 @@ public class HealthWorkspaceTests : IDisposable
     {
         using var db=fixture.NewContext(); var file=await Seed(db,true); var service=Operations(db);
         // Automatic is not a way past having nothing mapped; it only means "you pick which".
-        var automatic=await Assert.ThrowsAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,null,1,default));
-        Assert.Equal("This series has no enabled source mappings",automatic.Message);
-        var named=await Assert.ThrowsAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,999,1,default));
-        Assert.Equal("Select an enabled source mapped to this series",named.Message);
+        var automatic=await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,null,1,default));
+        Assert.Equal("error.download.noEnabledMapping",Assert.IsType<HealthRefusedException>(automatic).Key);
+        var named=await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,999,1,default));
+        Assert.Equal("error.health.mappingNotEnabled",Assert.IsType<HealthRefusedException>(named).Key);
     }
     [Fact] public async Task A_scan_does_not_accumulate_tracked_entities()
     {
@@ -222,13 +222,13 @@ public class HealthWorkspaceTests : IDisposable
         using var db=fixture.NewContext(); var file=await Seed(db);
         var service=Operations(db);var op=await service.PreviewDeleteAsync(file.Id,file.Version,1,default);
         await File.AppendAllTextAsync(Path.Combine(root,"one.cbz"),"changed");
-        await Assert.ThrowsAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default)); Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default)); Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
     }
     [Fact] public async Task Confirmation_is_required_and_path_escape_is_rejected()
     {
         using var db=fixture.NewContext();var file=await Seed(db);var service=Operations(db);
         var op=await service.PreviewDeleteAsync(file.Id,file.Version,1,default);
-        await Assert.ThrowsAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,false,false,default));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,false,false,default));
         Assert.Throws<InvalidOperationException>(()=>HealthPaths.Resolve(root,"../outside.cbz"));
     }
     [Fact] public void A_library_root_that_is_itself_a_link_resolves_but_links_inside_it_do_not()
@@ -340,7 +340,7 @@ public class HealthWorkspaceTests : IDisposable
             db.ChapterProgress.Add(new(){UserId=userId,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4,PageCount=5,Completed=true,ReadSeconds=120});
         }
         await db.SaveChangesAsync();var op=await Stage(db,file);var service=Operations(db);
-        await Assert.ThrowsAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default));
         Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
         await service.ApplyAsync(op.Id,file.Version,true,true,default);
         Assert.Equal("completed",op.Status);Assert.Equal(2,await db.ChapterFiles.CountAsync());Assert.Empty(db.ReaderBookmarks);
@@ -351,7 +351,7 @@ public class HealthWorkspaceTests : IDisposable
     {
         using var db=fixture.NewContext();var file=await Seed(db,true);var op=await Stage(db,file);
         await File.AppendAllTextAsync(Path.Combine(root,HealthOperationService.Candidates(op)[0].RelativePath),"changed");
-        await Assert.ThrowsAsync<InvalidOperationException>(()=>Operations(db).ApplyAsync(op.Id,file.Version,true,true,default));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>Operations(db).ApplyAsync(op.Id,file.Version,true,true,default));
         Assert.True(File.Exists(Path.Combine(root,"one.cbz")));Assert.Single(db.ChapterFiles);
     }
     [Fact] public async Task Interrupted_replacement_restores_original_and_keeps_links()

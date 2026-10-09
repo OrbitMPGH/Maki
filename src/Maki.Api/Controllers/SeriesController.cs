@@ -1443,8 +1443,7 @@ public class SeriesController(
                     logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
                     RollbackMoves();
 
-                    return StatusCode(StatusCodes.Status500InternalServerError,
-                        new { error = $"Could not move the series folder: {ex.Message}" });
+                    return this.ServerError(localizer, "error.series.moveFailed");
                 }
             }
         }
