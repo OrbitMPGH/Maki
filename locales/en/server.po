@@ -2938,10 +2938,6 @@ msgid "health.check.schedulerPaused"
 msgstr "Background scheduler is paused"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# database migration pending} other {# database migrations pending}}"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.databaseCurrent"
 msgstr "Database is reachable and up to date"
 

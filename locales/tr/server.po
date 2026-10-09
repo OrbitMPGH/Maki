@@ -4109,12 +4109,6 @@ msgid "health.check.schedulerPaused"
 msgstr "Arka plan zamanlayıcısı duraklatıldı"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# veritabanı geçişi bekliyor} other {# veritabanı geçişi bekliyor}}"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date
 #, fuzzy
 msgid "health.check.databaseCurrent"

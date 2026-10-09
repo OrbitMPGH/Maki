@@ -4109,12 +4109,6 @@ msgid "health.check.schedulerPaused"
 msgstr "Фоновый планировщик приостановлен"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {ожидает # миграция базы данных} few {ожидают # миграции базы данных} many {ожидает # миграций базы данных} other {ожидает # миграция базы данных}}"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date
 #, fuzzy
 msgid "health.check.databaseCurrent"

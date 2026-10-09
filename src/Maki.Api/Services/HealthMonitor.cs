@@ -128,9 +128,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     "/settings?tab=system&s=backup");
             }
             catch { Add("backup", "system", "unavailable", "health.check.backupUnreadable"); }
-            var failedSince = DateTime.UtcNow.AddDays(-30);
-            var failed = await db.DownloadQueue.CountAsync(
-                q => q.Status == QueueStatus.Failed && (q.CompletedAt ?? q.QueuedAt) >= failedSince, ct);
+            var failedNow = DateTime.UtcNow;
+            var failed = await Maki.Api.Jobs.HousekeepingJob
+                .RecentFailures(db.DownloadQueue, failedNow, failedNow.AddDays(-30)).CountAsync(ct);
             foreach (var root in roots)
             {
                 try
@@ -191,10 +191,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 var running = scheduler.IsStarted && !scheduler.InStandbyMode;
                 Add("scheduler", "system", running ? "healthy" : "warning",
                     running ? "health.check.schedulerRunning" : "health.check.schedulerPaused");
-                var pending = (await db.Database.GetPendingMigrationsAsync(ct)).Count();
-                Add("database", "system", pending > 0 ? "warning" : "healthy",
-                    pending > 0 ? "health.check.migrationsPending" : "health.check.databaseCurrent",
-                    pending > 0 ? new { count = pending } : null);
+                var reachable = await db.Database.CanConnectAsync(ct);
+                Add("database", "system", reachable ? "healthy" : "unavailable",
+                    reachable ? "health.check.databaseCurrent" : "health.check.diagnosticsUnavailable");
                 if (MigrationErrorMarker.Exists(paths.ConfigDir, DateTime.UtcNow))
                 {
                     if (MigrationErrorMarker.Read(paths.ConfigDir, DateTime.UtcNow) is { } migrationError)

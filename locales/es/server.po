@@ -4109,12 +4109,6 @@ msgid "health.check.schedulerPaused"
 msgstr "El planificador en segundo plano está pausado"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# migración de base de datos pendiente} many {# migraciones de base de datos pendientes} other {# migraciones de base de datos pendientes}}"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date
 #, fuzzy
 msgid "health.check.databaseCurrent"

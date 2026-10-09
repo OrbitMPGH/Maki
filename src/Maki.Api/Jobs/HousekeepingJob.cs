@@ -15,6 +15,22 @@ public class HousekeepingJob(
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
 
+    /// <summary>
+    /// Failed rows that are not waiting on a retry. A failure stamps neither <c>CompletedAt</c> nor
+    /// resets <c>QueuedAt</c>, so a chapter that failed once and is parked behind a backoff or an
+    /// early-access date is still live work however old the row is.
+    /// </summary>
+    internal static IQueryable<DownloadQueueItem> SettledFailures(IQueryable<DownloadQueueItem> queue, DateTime now) =>
+        queue.Where(q => q.Status == QueueStatus.Failed && (q.NextAttempt == null || q.NextAttempt <= now));
+
+    /// <summary>Settled failures whose last activity (the retry date, else completion, else queueing) is before <paramref name="cutoff"/>.</summary>
+    internal static IQueryable<DownloadQueueItem> StaleFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
+        SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) < cutoff);
+
+    /// <summary>Settled failures from the last 30 days, which is what the downloads health check reports.</summary>
+    internal static IQueryable<DownloadQueueItem> RecentFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
+        SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) >= cutoff);
+
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
@@ -142,14 +158,16 @@ public class HousekeepingJob(
 
         RestoreBootstrap.PurgeStalePreRestoreCopies(paths, TimeSpan.FromDays(7), logger);
 
-        // Settled queue rows whose last activity is older than 30 days. Failed rows go too, or the
-        // downloads health check would stay yellow over a failure from months ago.
-        var cutoff = DateTime.UtcNow.AddDays(-30);
+        // Settled queue rows whose last activity is older than 30 days.
+        var now = DateTime.UtcNow;
+        var cutoff = now.AddDays(-30);
         await db.DownloadQueue
-            .Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled ||
-                         q.Status == QueueStatus.Failed) &&
+            .Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled) &&
                         (q.CompletedAt ?? q.QueuedAt) < cutoff)
             .ExecuteDeleteAsync(ct);
+
+        // Failed rows go too, or the downloads health check would stay yellow over a failure from months ago.
+        await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);
 
         await PruneInboxAsync(ct);
 
