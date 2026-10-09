@@ -105,10 +105,13 @@ Two published files per build:
 }
 ```
 
-The same fields go in a `meta` table **inside** the database, so a file that arrives by any route
-still self-describes.
+The database carries a `meta` table holding one row, `model_version`. The installer stamps it with
+the manifest's version before the swap, `EmbeddingStore.EnsureSchema` adopts an unstamped file as the
+running model's, and a full local pass under a new model rewrites it once every row is re-embedded.
+A local file whose `model_version` differs from the running model is treated as nothing worth keeping:
+the next check replaces it whatever its row count or install date.
 
-Contents: `series_vectors`, `series_tags`, `tag_vocab`. The tag tables are derived too and are
+Contents: `series_vectors`, `series_tags`, `tag_vocab`, `meta`. The tag tables are derived too and are
 small; shipping them saves the tag-vocabulary pass as well. The `hash` column must be included —
 without it the user's next incremental pass can't tell what's current and would re-embed
 everything, defeating the point.
@@ -282,6 +285,7 @@ is a hostile SQLite file.
 |---|---|
 | manifest unreachable | log at debug, keep local indexing; retry next cycle |
 | model version / dimension mismatch | refuse install, log once, local indexing continues |
+| local database from another model version | replace it on the next check, ignoring row count and date; the index build logs a warning until then |
 | download truncated or sha mismatch | discard staging file, no swap |
 | `quick_check` fails | discard, no swap |
 | indexing pass running | defer swap to the next cycle |
