@@ -178,13 +178,31 @@ public class ChapterDownloadProcessor(
             }
 
             // 2. Download pages (resumable — existing files are kept).
+            // Pages finish on up to four threads at once, so the count only moves forward and the
+            // throttle is decided under a lock; the broadcast itself runs outside it.
+            var progressLock = new Lock();
+            var furthest = 0;
             var lastBroadcast = DateTime.MinValue;
             var pageFiles = await pageDownloader.DownloadAsync(pages, mapping.SourceName, workingDir, async (done, _) =>
             {
-                item.PagesDone = done;
-                if (DateTime.UtcNow - lastBroadcast > TimeSpan.FromSeconds(1))
+                bool broadcast;
+                lock (progressLock)
                 {
-                    lastBroadcast = DateTime.UtcNow;
+                    if (done > furthest)
+                    {
+                        furthest = done;
+                        item.PagesDone = done;
+                    }
+
+                    broadcast = DateTime.UtcNow - lastBroadcast > TimeSpan.FromSeconds(1);
+                    if (broadcast)
+                    {
+                        lastBroadcast = DateTime.UtcNow;
+                    }
+                }
+
+                if (broadcast)
+                {
                     await BroadcastAsync(item, chapter, series, mapping.SourceName);
                 }
             }, ct);
@@ -900,6 +918,10 @@ public class ChapterDownloadProcessor(
         item.SetError("error.download.earlyAccess", new { source = sourceName });
         await db.SaveChangesAsync(ct);
         await BroadcastAsync(item, chapter, series, sourceName);
+
+        // Parked until the unlock, which can be days away. The batch would otherwise wait on an item
+        // that reports nothing until the stale sweep closes it with a "went quiet" warning.
+        await batches.DiscardAsync(series.Id, item.Id);
     }
 
     private async Task SetStatusAsync(DownloadQueueItem item, QueueStatus status, CancellationToken ct)
