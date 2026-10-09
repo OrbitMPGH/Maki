@@ -128,10 +128,19 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
 
             load = _loads.Join(() =>
             {
-                var loaded = Load(CancellationToken.None);
-                _graph = loaded;
-                _idle.Touch();
-                return loaded;
+                try
+                {
+                    var loaded = Load(CancellationToken.None);
+                    _graph = loaded;
+                    _idle.Touch();
+                    return loaded;
+                }
+                catch (Exception ex)
+                {
+                    // Logged here because every caller may have stopped waiting by now.
+                    logger.LogWarning(ex, "Loading the co-recommendation graph failed");
+                    throw;
+                }
             });
         }
         finally

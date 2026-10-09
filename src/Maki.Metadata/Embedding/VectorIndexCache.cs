@@ -166,7 +166,7 @@ public sealed class VectorIndexCache(
     /// <summary>
     /// Replaces the vector database with <paramref name="stagedPath"/> and drops the cached index.
     /// Waits out any running build under the build lock, so a swap can never race a build that is
-    /// midway through reading the old file. The WAL sidecars belong to the file being replaced, so they go with it —
+    /// midway through reading the old file. The WAL sidecars belong to the file being replaced, so they go with it:
     /// leaving them would let SQLite reconstruct pages of the *previous* database over the new one.
     /// </summary>
     public async Task SwapDatabaseAsync(string stagedPath, CancellationToken ct = default)
@@ -285,6 +285,12 @@ public sealed class VectorIndexCache(
 
             _idle.Touch();
             return loaded;
+        }
+        catch (Exception ex)
+        {
+            // Logged here because every caller may have stopped waiting by now.
+            logger.LogWarning(ex, "Building the search vectors failed");
+            throw;
         }
         finally
         {

@@ -20,8 +20,8 @@ public sealed class SharedBuild<T> where T : class
 
     /// <summary>
     /// The running build, or <paramref name="build"/> started on the thread pool. Call under the
-    /// owner's lock so two callers cannot both start one. The build publishes its own result, since
-    /// nobody may be waiting by the time it finishes.
+    /// owner's lock so two callers cannot both start one. The build publishes its own result and
+    /// logs its own failure, since nobody may be waiting by the time it finishes.
     /// </summary>
     /// <param name="started">
     /// False when this joined a build already under way, which may have read its input before the

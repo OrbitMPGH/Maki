@@ -202,7 +202,18 @@ public sealed class CatalogueIndexCache(
 
         var ticks = info.LastWriteTimeUtc.Ticks;
         var length = info.Length;
-        var built = Build(CancellationToken.None);
+        CatalogueIndexes? built;
+        try
+        {
+            built = Build(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            // Logged here because every caller may have stopped waiting by now.
+            logger.LogWarning(ex, "Building the catalogue indexes failed");
+            throw;
+        }
+
         if (built is null)
         {
             return null;

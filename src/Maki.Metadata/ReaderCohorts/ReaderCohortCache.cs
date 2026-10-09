@@ -130,10 +130,19 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
 
             load = _loads.Join(() =>
             {
-                var loaded = Load(CancellationToken.None);
-                _index = loaded;
-                _idle.Touch();
-                return loaded;
+                try
+                {
+                    var loaded = Load(CancellationToken.None);
+                    _index = loaded;
+                    _idle.Touch();
+                    return loaded;
+                }
+                catch (Exception ex)
+                {
+                    // Logged here because every caller may have stopped waiting by now.
+                    logger.LogWarning(ex, "Loading the reader cohorts failed");
+                    throw;
+                }
             });
         }
         finally
