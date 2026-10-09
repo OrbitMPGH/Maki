@@ -266,7 +266,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
 
     /// <summary>
     /// Prefixes a description with the language its title is published in. Two entries for the same
-    /// work carry the same name — the picker needs something on the card to tell them apart. English
+    /// work carry the same name, so the picker needs something on the card to tell them apart. English
     /// is the unmarked default, so only the other editions carry the label.
     /// </summary>
     private static string? WithLanguage(string? description, string? language)
