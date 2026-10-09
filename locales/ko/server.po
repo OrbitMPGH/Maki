@@ -1539,6 +1539,12 @@ msgstr "시리즈를 찾을 수 없습니다"
 msgid "error.seriesRename.planChanged"
 msgstr "미리보기를 불러온 뒤 이름 변경 계획이 바뀌었습니다. 새 계획을 확인하고 다시 시도하세요."
 
+#. Shown when a request fails on a bug in Maki. The exception is in the server log.
+#: src/Maki.Api/Logging/UnhandledExceptionHandler.cs
+#. English: Something went wrong on the server. Details are in the server log.
+msgid "error.server.unexpected"
+msgstr ""
+
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unknown start page: {page}

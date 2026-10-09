@@ -64,6 +64,12 @@ public class SecurityHeadersMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(HttpContext context)
     {
+        Apply(context);
+        await next(context);
+    }
+
+    public static void Apply(HttpContext context)
+    {
         var headers = context.Response.Headers;
         headers["X-Content-Type-Options"] = "nosniff";
         headers["X-Frame-Options"] = "DENY";
@@ -72,7 +78,5 @@ public class SecurityHeadersMiddleware(RequestDelegate next)
         // any Referer leaving the origin from an OPDS-rendered page would carry the token with it.
         headers["Referrer-Policy"] = "no-referrer";
         headers["Content-Security-Policy"] = PolicyFor(context);
-
-        await next(context);
     }
 }

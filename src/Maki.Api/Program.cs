@@ -986,6 +986,7 @@ try
             o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcDateTimeConverter());
         });
     builder.Services.AddSignalR();
+    builder.Services.AddExceptionHandler<UnhandledExceptionHandler>();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
@@ -1484,6 +1485,14 @@ try
         // renders the duration to four decimal places, which is four more than anyone reads.
         o.MessageTemplate = "{RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0} ms";
     });
+
+    // Inside request logging so the 500 line still carries the status, and the handler leaves the
+    // exception handled so neither the logger nor Kestrel reports it a second time.
+    app.UseExceptionHandler(errorApp => errorApp.Run(context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        return Task.CompletedTask;
+    }));
 
     // A browser that navigates away mid-request cancels RequestAborted, and the query awaiting it
     // throws. Left alone that reaches request logging and Kestrel as an unhandled 500.
