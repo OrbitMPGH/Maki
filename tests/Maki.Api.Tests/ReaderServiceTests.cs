@@ -276,6 +276,19 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.Equal(3, ChaptersRead().Sum());
     }
 
+    [Fact]
+    public async Task ADecimalChapterReadAfterItsWholeNumberCounts()
+    {
+        var (_, chapters) = SeedFromCbz("decimal.cbz", ["001.jpg"], [(10m, null), (10.5m, null), (11m, null)]);
+        var reader = Reader();
+
+        await ReadAsync(reader, chapters[10m]);
+        await ReadAsync(reader, chapters[10.5m]);
+        await ReadAsync(reader, chapters[11m]);
+
+        Assert.Equal([1, 1, 1], ChaptersRead());
+    }
+
     /// <summary>
     /// Ticking chapters off the table is not reading them today: it raises the mark silently, the
     /// same way watched does, so the next genuine read still counts one.

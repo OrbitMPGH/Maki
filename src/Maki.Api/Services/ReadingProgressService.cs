@@ -303,11 +303,12 @@ public class ReadingProgressService(
         // the built-in reader can all move the number backwards — never let that spike (or
         // negate) the stats.
         var chapterDelta = (int)Math.Floor(maxChapter) - (int)Math.Floor(state.MaxChapter);
-        // A native call is itself one completion, so it counts at least one even when the row that
-        // raised the mark is not visible here, and never more than the whole-chapter gap.
-        if (nativeCompletions is int native && chapterDelta > 0)
+        // A native call counts the genuine completions above the old mark, which the floored gap
+        // would hide for a decimal chapter (10.5 after 10). With none to count, the call is still
+        // one completion when the whole-chapter mark moved.
+        if (nativeCompletions is int native)
         {
-            chapterDelta = Math.Clamp(native, 1, chapterDelta);
+            chapterDelta = native > 0 ? native : Math.Min(chapterDelta, 1);
         }
         var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
         var fullIncognito = await IsFullIncognitoAsync(seriesId ?? state.SeriesId, ct);
