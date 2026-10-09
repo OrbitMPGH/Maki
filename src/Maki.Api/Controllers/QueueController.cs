@@ -477,14 +477,57 @@ public class QueueController(
             .Select(q => new { q.Id, q.SeriesId })
             .ToListAsync(ct);
 
+        // Two statements per chunk instead of three queries per row. Each is conditional on the status,
+        // so a worker that completed or claimed a row meanwhile is not overwritten; a row that moved
+        // from pending to in-flight between the statements is picked up by the next pass.
+        var pending = new[] { QueueStatus.Queued, QueueStatus.Failed, QueueStatus.RateLimited, QueueStatus.Resolving };
+        var terminal = new[] { QueueStatus.Completed, QueueStatus.Cancelled };
+        var ids = items.Select(i => i.Id).ToList();
+        for (var pass = 0; pass < 3; pass++)
+        {
+            var changed = 0;
+            foreach (var chunk in ids.Chunk(500))
+            {
+                foreach (var id in chunk)
+                {
+                    queue.CancelWork(id);
+                }
+
+                var rows = db.DownloadQueue.Where(q => chunk.Contains(q.Id));
+                changed += await rows.Where(q => pending.Contains(q.Status)).ExecuteDeleteAsync(ct);
+                changed += await rows
+                    .Where(q => !pending.Contains(q.Status) && !terminal.Contains(q.Status))
+                    .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Cancelled), ct);
+            }
+
+            if (changed == 0)
+            {
+                break;
+            }
+        }
+
+        var statuses = new Dictionary<int, QueueStatus>();
+        foreach (var chunk in ids.Chunk(500))
+        {
+            foreach (var row in await db.DownloadQueue.AsNoTracking()
+                         .Where(q => chunk.Contains(q.Id))
+                         .Select(q => new { q.Id, q.Status })
+                         .ToListAsync(ct))
+            {
+                statuses[row.Id] = row.Status;
+            }
+        }
+
         var cleared = 0;
         foreach (var item in items)
         {
-            if (await RemoveOrCancelAsync(item.Id, ct))
+            if (statuses.TryGetValue(item.Id, out var status) && status != QueueStatus.Cancelled)
             {
-                cleared++;
-                await batches.DiscardAsync(item.SeriesId, item.Id);
+                continue;
             }
+
+            cleared++;
+            await batches.DiscardAsync(item.SeriesId, item.Id);
         }
 
         return Ok(new QueueClearDto(cleared));
