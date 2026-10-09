@@ -64,6 +64,7 @@ public class DiscoverRailCacheTests
         var store = new CountingStore();
         var discover = Service(store);
         var before = await discover.GetFeedsAsync(refresh: false, ContentRating.Safe);
+        var perBuild = store.Queries;
 
         store.Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var rebuild = discover.GetFeedsAsync(refresh: true, ContentRating.Safe);
@@ -75,11 +76,12 @@ public class DiscoverRailCacheTests
 
         Assert.Equal(before.Count, during.Count);
         Assert.False(rebuild.IsCompleted);
-        var queries = store.Queries;
         store.Gate.SetResult();
         await rebuild.WaitAsync(Timeout);
         await refreshDuring.WaitAsync(Timeout);
-        Assert.Equal(queries, store.Queries);
+        // The rebuild's scans are throttled below the rail count on a small runner, so some only
+        // start once the gate opens; count whole builds rather than snapshotting mid-build.
+        Assert.Equal(perBuild * 2, store.Queries);
     }
 
     [Fact]
