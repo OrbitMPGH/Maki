@@ -11,7 +11,8 @@ namespace Maki.Api.Services;
 /// <summary>
 /// Compares the catalogue against a user's recomputed metrics and records what they have earned.
 /// <para>
-/// Idempotent and forward-only. It runs on every chapter completion <em>and</em> lazily whenever the
+/// Idempotent and forward-only. It runs after every chapter completion (queued by
+/// <see cref="AchievementEvaluationQueue"/>, off the request) <em>and</em> lazily whenever the
 /// progress endpoints are read, which is deliberate: reads that arrive through the Kavita scrobble
 /// pass or OPDS never touch the reader's completion path, so without the lazy call those users would
 /// never unlock anything. Running twice has to be free, and the unique index on
@@ -33,8 +34,7 @@ public class AchievementService(
     private static readonly ConcurrentDictionary<int, SemaphoreSlim> LevelGates = new();
 
     /// <summary>
-    /// Evaluates and persists. Returns only what was newly unlocked by <em>this</em> call, which is
-    /// what the reader's toast shows.
+    /// Evaluates and persists. Returns only what was newly unlocked by <em>this</em> call.
     /// </summary>
     public async Task<IReadOnlyList<UserAchievement>> EvaluateAsync(int userId, CancellationToken ct = default)
     {

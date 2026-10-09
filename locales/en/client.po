@@ -1872,7 +1872,6 @@ msgid "Accounts, permissions, lockout and session rules, and single sign-on."
 msgstr "Accounts, permissions, lockout and session rules, and single sign-on."
 
 #: src/api/inbox.ts
-#: src/pages/reader/ReaderPage.tsx
 msgid "Achievement unlocked"
 msgstr "Achievement unlocked"
 

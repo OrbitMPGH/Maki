@@ -356,8 +356,7 @@ public class HomeControllerTests : IDisposable
                 new ContinueReadingService(db),
                 null!, // settings
                 null!, // import service
-                null!, // user metrics
-                null!, // achievements
+                null!, // achievement queue
                 null!, // app paths
                 null!, // logger
                 null!, // current user

@@ -2246,7 +2246,6 @@ msgid "Accounts, permissions, lockout and session rules, and single sign-on."
 msgstr ""
 
 #: src/api/inbox.ts
-#: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Achievement unlocked"
 msgstr "已解锁成就"

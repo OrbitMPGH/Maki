@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { flushProgress, saveProgress } from '../../api/reader'
-import type { UnlockedAchievement } from '../../api/reader'
 import type { ReadingClock } from './useReadingClock'
 
 const DEBOUNCE_MS = 1500
@@ -33,7 +32,6 @@ export function useReaderProgress(
   complete: boolean,
   enabled: boolean,
   clock: ReadingClock,
-  onUnlocked?: (unlocked: UnlockedAchievement[]) => void,
   onFlushed?: () => void,
 ) {
   const latest = useRef({ chapterId, page, complete })
@@ -46,8 +44,6 @@ export function useReaderProgress(
 
   // Held in a ref so a caller passing an inline arrow does not restart the debounce and the
   // heartbeat on every render, which would mean the timers never actually fire.
-  const unlockHandler = useRef(onUnlocked)
-  unlockHandler.current = onUnlocked
   const flushedHandler = useRef(onFlushed)
   flushedHandler.current = onFlushed
 
@@ -72,9 +68,6 @@ export function useReaderProgress(
       if (opened.current?.chapterId === id) opened.current.written = true
       inflight.current = inflight.current
         .then(() => saveProgress(id, at, done || undefined, seconds))
-        .then((unlocked) => {
-          if (unlocked.length > 0) unlockHandler.current?.(unlocked)
-        })
         .catch(() => {})
     },
     [clock],
@@ -126,8 +119,7 @@ export function useReaderProgress(
       if (opened.current?.chapterId === id) opened.current.written = true
       const run = () =>
         flushProgress(id, at, done || undefined, seconds)
-          .then((unlocked) => {
-            if (unlocked.length > 0) unlockHandler.current?.(unlocked)
+          .then(() => {
             // Only now has the write committed, so a refetch started any earlier could read the old state.
             flushedHandler.current?.()
           })

@@ -889,6 +889,8 @@ try
     builder.Services.AddSingleton<IUserSnapshotCache, UserSnapshotCache>();
     builder.Services.AddScoped<UserMetricsService>();
     builder.Services.AddScoped<AchievementService>();
+    builder.Services.AddSingleton<AchievementEvaluationQueue>()
+        .AddHostedService(sp => sp.GetRequiredService<AchievementEvaluationQueue>());
     builder.Services.AddSingleton<ReadingProgressGate>();
     builder.Services.AddScoped<ReadingProgressService>();
     builder.Services.AddSingleton<ReaderArchiveCache>();

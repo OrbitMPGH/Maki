@@ -4374,15 +4374,6 @@ export function useDeleteReadingGoal() {
   })
 }
 
-export function useMarkAchievementsSeen() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (ids: number[]) =>
-      api('/progress/achievements/seen', { method: 'POST', body: JSON.stringify({ ids }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress', 'summary'] }),
-  })
-}
-
 export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],

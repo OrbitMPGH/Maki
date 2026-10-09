@@ -63,8 +63,7 @@ public class ReaderController(
     ContinueReadingService continueReading,
     ReadingProfileService profiles,
     KavitaReadImportService readImport,
-    UserMetricsService metrics,
-    AchievementService achievements,
+    AchievementEvaluationQueue achievementQueue,
     AppPaths paths,
     ILogger<ReaderController> logger,
     ICurrentUser currentUser,
@@ -405,64 +404,19 @@ public class ReaderController(
             slice, request.PageIndex, request.Completed,
             new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct);
 
+        // After the save, so the evaluation sees the finished chapter. Whatever it unlocks reaches
+        // the reader through the inbox push rather than this response.
+        if (finished && db.Scope.UserId is var userId and not 0)
+        {
+            achievementQueue.Enqueue(userId);
+        }
+
         return Ok(new
         {
             chapterId = id,
             pageIndex = ReaderService.ClampPage(request.PageIndex, slice.PageCount),
             completed = finished || request.Completed == true,
-            unlocked = finished ? await UnlockedAsync(ct) : [],
         });
-    }
-
-    /// <summary>
-    /// Evaluates achievements after a chapter completes and hands back whatever it earned, so the
-    /// reader can show a toast on the same round trip.
-    /// <para>
-    /// Carried on the response rather than pushed over SignalR: the hub addresses admins and
-    /// root-folder audiences and has no per-user method, and adding the first one to deliver a toast
-    /// the client is already waiting on would be pure ceremony. Reads that arrive any other way (the
-    /// Kavita pass, OPDS) are caught by the lazy evaluation on the progress endpoints instead.
-    /// </para>
-    /// <para>
-    /// Never fails the write. The progress is already committed by the time this runs, and a badge
-    /// that shows up on the next page load is not worth turning a successful read into a 500.
-    /// </para>
-    /// </summary>
-    private async Task<object[]> UnlockedAsync(CancellationToken ct)
-    {
-        var userId = db.Scope.UserId;
-        if (userId == 0)
-        {
-            return [];
-        }
-
-        try
-        {
-            metrics.Invalidate(userId);
-            var unlocked = await achievements.EvaluateAsync(userId, ct);
-
-            // One toast per achievement, not per tier. Crossing several rungs in one go is normal
-            // and the reader experiences it as a single thing happening; acknowledging the top tier
-            // marks the rest seen too (see AchievementService.MarkSeenAsync).
-            return [.. unlocked
-                .GroupBy(u => u.Key, StringComparer.Ordinal)
-                .Select(g => g.OrderByDescending(u => u.Tier).First())
-                .Select(u => new
-            {
-                id = u.Id,
-                key = u.Key,
-                tier = u.Tier,
-                name = localizer.AchievementName(u.Key),
-                tierName = AchievementCatalog.Find(u.Key) is { } d
-                    ? localizer.AchievementTier(d, u.Tier)
-                    : null,
-            })];
-        }
-        catch (Exception e)
-        {
-            logger.LogWarning(e, "Achievement evaluation failed for user {UserId}", userId);
-            return [];
-        }
     }
 
     [HttpPost("chapter/{id:int}/read")]

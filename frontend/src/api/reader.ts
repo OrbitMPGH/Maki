@@ -162,33 +162,16 @@ export function useContinueReading(seriesId: number, enabled = true) {
  * server adds up. Only ever send time the caller has consumed from its clock, or a retry counts
  * the same stretch twice.
  */
-export interface UnlockedAchievement {
-  id: number
-  key: string
-  tier: number
-  name: string
-  tierName: string | null
-}
-
-interface SaveProgressResult {
-  chapterId: number
-  pageIndex: number
-  completed: boolean
-  /** Non-empty only on the write that completes a chapter. */
-  unlocked: UnlockedAchievement[]
-}
-
 export async function saveProgress(
   chapterId: number,
   pageIndex: number,
   completed?: boolean,
   seconds?: number,
-): Promise<UnlockedAchievement[]> {
-  const result = await api<SaveProgressResult>(`/reader/chapter/${chapterId}/progress`, {
+): Promise<void> {
+  await api(`/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     body: JSON.stringify({ pageIndex, completed, seconds }),
   })
-  return result?.unlocked ?? []
 }
 
 /**
@@ -205,18 +188,15 @@ export async function flushProgress(
   pageIndex: number,
   completed?: boolean,
   seconds?: number,
-): Promise<UnlockedAchievement[]> {
+): Promise<void> {
   const init = await getInitialize()
-  const response = await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
+  await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
     body: JSON.stringify({ pageIndex, completed, seconds, final: true }),
   })
-  if (!response.ok) return []
-  const result = (await response.json()) as SaveProgressResult
-  return result?.unlocked ?? []
 }
 
 export interface ReaderSettings {
