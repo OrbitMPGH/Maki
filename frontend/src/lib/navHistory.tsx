@@ -13,8 +13,7 @@ import { useLocation, useNavigate, useNavigationType, type Location } from 'reac
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { pageTitle } from '../nav'
-import { SCROLL_PREFIX } from './pageState'
-import { useAuth } from '../auth/AuthProvider'
+import { SCROLL_PREFIX, onTabStateCleared } from './pageState'
 
 /**
  * One entry of the in-app history stack, mirroring what the browser is holding.
@@ -110,17 +109,14 @@ export function NavHistoryProvider({ children }: { children: ReactNode }) {
   }, [location, navigationType])
 
   // Labels carry series titles, so the stack is the previous account's data too. It restarts at the
-  // current entry whenever the signed-in account changes, as it would after a reload.
-  const { me } = useAuth()
-  const accountId = me?.id ?? null
-  const lastAccountId = useRef(accountId)
-  useEffect(() => {
-    if (lastAccountId.current === accountId) return
-    lastAccountId.current = accountId
-    setEntries([entryFor(location)])
-    // Only an account change should reset it, not every navigation.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountId])
+  // current entry whenever the tab's remembered state is cleared (an explicit sign-out, or a
+  // different person signing in), as it would after a reload.
+  const locationRef = useRef(location)
+  locationRef.current = location
+  useEffect(
+    () => onTabStateCleared(() => setEntries([entryFor(locationRef.current)])),
+    [],
+  )
 
   const setLabel = useCallback((key: string, label: string) => {
     setEntries((prev) => {

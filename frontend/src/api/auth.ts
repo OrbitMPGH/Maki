@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { stopConnection } from './signalr'
 import { api, invalidateInitialize } from './client'
-import { clearTabState } from '../lib/pageState'
+import { noteSignedInUser, noteSignedOut } from '../lib/pageState'
 import { useSaveSettingsRecord } from './settingsRecord'
 
 type SetupDoneHandler = () => void
@@ -97,6 +97,7 @@ export const ME_QUERY_KEY = ['auth', 'me'] as const
 /**
  * Drops every cached query except the identity one, so nothing one account fetched is shown to the
  * next. Runs on logout, on any 401 and on every sign-in.
+ * The tab's own memory (filters, scroll, back links) is handled separately, by who signed in.
  *
  * Not qc.clear(): that tears down every Query instance, including the one the mounted useMe
  * observer is attached to, so a setQueryData right after builds a fresh instance the observer was
@@ -110,8 +111,6 @@ export function dropAccountData(qc: QueryClient): void {
   // The sign-in page reads SSO state from the bootstrap payload, which an admin may have changed
   // since this tab loaded it.
   invalidateInitialize()
-  // Per-tab memory of the last account's filters, search text and scroll offsets.
-  clearTabState()
   qc.removeQueries({
     predicate: (query) =>
       query.queryKey.length !== ME_QUERY_KEY.length ||
@@ -133,7 +132,13 @@ function browserTimeZoneHeader(): Record<string, string> {
 export function useMe(enabled = true) {
   return useQuery({
     queryKey: ME_QUERY_KEY,
-    queryFn: () => api<Me>('/auth/me', { headers: browserTimeZoneHeader() }),
+    // Noted before the data reaches any page, so a different user's first render never reads the
+    // previous one's remembered filters.
+    queryFn: async () => {
+      const me = await api<Me>('/auth/me', { headers: browserTimeZoneHeader() })
+      noteSignedInUser(me.id)
+      return me
+    },
     enabled,
     // A 401 here is the normal signed-out state, not a transient failure, so retrying it just delays
     // the login screen.
@@ -150,6 +155,7 @@ export function useLogin() {
     onSuccess: (result) => {
       // Two-factor is still pending, so there is no session yet and nothing to cache.
       if (result.requiresTwoFactor) return
+      noteSignedInUser(result.id)
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, result)
     },
@@ -162,6 +168,7 @@ export function useVerifyTwoFactor() {
     mutationFn: (body: { code: string; rememberMachine: boolean }) =>
       api<Me>('/auth/2fa', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: (me) => {
+      noteSignedInUser(me.id)
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, me)
     },
@@ -174,6 +181,7 @@ export function useSetup() {
     mutationFn: (body: { username: string; password: string; displayName?: string }) =>
       api<Me>('/auth/setup', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: (me) => {
+      noteSignedInUser(me.id)
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, me)
       setSetupDone()
@@ -186,6 +194,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
     onSuccess: () => {
+      noteSignedOut()
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, null)
     },

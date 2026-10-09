@@ -14,6 +14,40 @@ export function clearTabState(): void {
       if (key.startsWith(PREFIX) || key.startsWith(SCROLL_PREFIX)) sessionStorage.removeItem(key)
     }
   } catch { /* storage unavailable; there is nothing remembered to leak */ }
+  for (const listener of clearListeners) listener()
+}
+
+const clearListeners = new Set<() => void>()
+
+/** Lets in-memory per-tab state (the nav stack) reset together with the stored state. */
+export function onTabStateCleared(listener: () => void): () => void {
+  clearListeners.add(listener)
+  return () => {
+    clearListeners.delete(listener)
+  }
+}
+
+const USER_KEY = 'maki-user'
+
+/**
+ * Records who is signed in on this tab and clears the tab's remembered state when it is somebody
+ * else. Kept in sessionStorage, so it survives a 401 (an expired session signing back in as the
+ * same person keeps their filters, scroll and back links), a reload, and the SSO redirect.
+ */
+export function noteSignedInUser(id: number): void {
+  try {
+    const previous = sessionStorage.getItem(USER_KEY)
+    if (previous !== null && previous !== String(id)) clearTabState()
+    sessionStorage.setItem(USER_KEY, String(id))
+  } catch { /* storage unavailable; nothing is remembered between users either */ }
+}
+
+/** An explicit sign-out: the next person to sign in starts clean even if it is the same account. */
+export function noteSignedOut(): void {
+  try {
+    sessionStorage.removeItem(USER_KEY)
+  } catch { /* see noteSignedInUser */ }
+  clearTabState()
 }
 
 /**
