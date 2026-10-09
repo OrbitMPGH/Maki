@@ -177,7 +177,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | CORE | CORE-03 | low | done 6eb5697f, 62de2859 |
 | CORE | CORE-02 | low | done 6eb5697f |
 | CORE | CORE-29 | low | done dc10a04d |
-| CORE | CORE-28 | low | skipped (a cached PDF reader would hold the file open on Windows and block moves and deletes; perf-only) |
+| CORE | CORE-28 | low | skipped (owner decided 2026-10-09: leave; PDFs are a minor path and a cached reader would pin files on Windows) |
 | CORE | CORE-27 | low | done 392f4984, 0206fd0e, d275940a |
 | CORE | CORE-11 | nit | done 5619b70f |
 | CORE | CORE-33 | nit | done 92b8c15e |
@@ -189,13 +189,13 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | CORE | CORE-15 | nit | done 5619b70f |
 | CORE | CORE-17 | nit | done 5619b70f |
 | CORE | CORE-31 | nit | done 79fe6292 |
-| CORE | CORE-32 | nit | skipped (unscored AnimeSignalPolicy branches: delete or make live is a recommendation-behaviour choice for the owner) |
+| CORE | CORE-32 | nit | pending (owner decided 2026-10-09: delete the dead unscored branches and the UnscoredCredit dial; lane audit/w4-core32) |
 | DATA | DATA-04 | low | done 2c4313e8 |
 | DATA | DATA-09 | low | done 2c4313e8, 79d4c05d |
 | DATA | DATA-13 | low | done b03f93fd |
 | DATA | DATA-01 | low | skipped (already fixed by c2de0e39, 399a9cb1: MigrationErrorMarker expires after 7 days) |
 | DATA | DATA-08 | low | done bc365743, 79d4c05d |
-| DATA | DATA-12 | low | skipped (behaviour change: refreshing CompletedAt on a re-read moves the documented first-flip rule and the stats that date rows by it; owner may revisit) |
+| DATA | DATA-12 | low | pending (owner decided 2026-10-09: cleanup and keeplast use max(CompletedAt, UpdatedAt), the first-completion stamp stays; lane audit/w4-reader) |
 | DATA | DATA-03 | low | done 2c4313e8 |
 | DATA | DATA-14 | low | done 77cb6d67, 33bdd262 (HealthScans only; the history, operations and file-version journals stay unpruned on purpose) |
 | DATA | DATA-06 | low | done b73fe53a, a55ccaf5 |
@@ -209,7 +209,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DBPERF | DBPERF-10 | low | done 6d71be0b |
 | DBPERF | DBPERF-12 | low | done 3c9ca0cf (already on audit-fixes) |
 | DBPERF | DBPERF-15 | low | done 253738de (title and id projection; normalised-key column left, disproportionate for a low) |
-| DBPERF | DBPERF-11 | low | skipped (needs a design change: delta-update the cached metrics or evaluate achievements off the request; both move the unlock toast, owner may revisit) |
+| DBPERF | DBPERF-11 | low | pending (owner decided 2026-10-09: evaluate achievements off the request, unlock toast through the inbox hub; lane audit/w4-reader) |
 | DBPERF | DBPERF-16 | low | done b4857564 (tag links untracked; a lean list DTO without Overview needs a SeriesRow change, owner may revisit) |
 | DBPERF | DBPERF-13 | low | done 3b817c70, ba3ada8e |
 | DBPERF | DBPERF-01 | low | done 8dbe98ba |
@@ -258,7 +258,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DOWNLOADS | DOWNLOADS-15 | nit | done c49ba63e |
 | DOWNLOADS | DOWNLOADS-33 | nit | done d7cca99b |
 | DOWNLOADS | DOWNLOADS-32 | nit | done dd02082e |
-| DOWNLOADS | DOWNLOADS-35 | nit | skipped (behaviour change, timezone-dependent tests) |
+| DOWNLOADS | DOWNLOADS-35 | nit | skipped (owner decided 2026-10-09: leave; the daily cap keeps resetting at UTC midnight) |
 | DOWNLOADS | DOWNLOADS-31 | nit | done c49ba63e |
 | FE-INFRA | FE-INFRA-14 | low | done 639d65f0, 4710e58b |
 | FE-INFRA | FE-INFRA-04 | low | done 9b633198, c236d1fb |
@@ -334,7 +334,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-READER | FE-READER-24 | low | done d3762af8 |
 | FE-READER | FE-READER-20 | low | done 2a8da8e9 |
 | FE-READER | FE-READER-07 | low | done 1c28fad9, dd7ed05b |
-| FE-READER | FE-READER-10 | low | skipped (documented write-on-open that Continue relies on) |
+| FE-READER | FE-READER-10 | low | pending (owner decided 2026-10-09: skip the write on open until page, time or completion changes; lane audit/w4-reader) |
 | FE-READER | FE-READER-06 | low | done dd7ed05b (Next chapter completes only from the last page) |
 | FE-READER | FE-READER-09 | low | done d1b40371, dd7ed05b, 0d142894 |
 | FE-READER | FE-READER-34 | low | done d7e48f3c |
@@ -353,7 +353,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-READER | FE-READER-29 | nit | done d3762af8 |
 | FE-READER | FE-READER-28 | nit | done d852dae9 |
 | FE-READER | FE-READER-30 | nit | done 4efc724f |
-| FE-READER | FE-READER-33 | nit | skipped (needs a backend payload change) |
+| FE-READER | FE-READER-33 | nit | pending (owner decided 2026-10-09: drop the unused manifest fields; lane audit/w4-reader) |
 | FE-READER | FE-READER-35 | nit | done 40e82886 |
 | FE-READER | FE-READER-32 | nit | done 1c28fad9 |
 | FE-SETTINGS | FE-SETTINGS-23 | low | done f8cb0007, 70c6eabc, 371679e3 |
@@ -452,13 +452,13 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | HOSTING | HOSTING-51 | nit | done 5d4d9608, 75957f9e |
 | HOSTING | HOSTING-14 | nit | skipped (window is milliseconds) |
 | HOSTING | HOSTING-49 | nit | skipped (theoretical) |
-| HOSTING | HOSTING-50 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-50 | nit | pending (owner decided 2026-10-09: precompress assets in the Vite build; lane audit/w4-hosting) |
 | HOSTING | HOSTING-25 | nit | done c7a42239 |
-| HOSTING | HOSTING-43 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-43 | nit | pending (owner decided 2026-10-09: share the JSON converters with SignalR; lane audit/w4-hosting) |
 | HOSTING | HOSTING-45 | nit | skipped (too large) |
 | HOSTING | HOSTING-46 | nit | done e6b572f1, 75957f9e |
 | HOSTING | HOSTING-48 | nit | done 9f199317 |
-| HOSTING | HOSTING-41 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-41 | nit | pending (owner decided 2026-10-09: one exception handler, keyed 500 body, one log line; lane audit/w4-hosting) |
 | HOSTING | HOSTING-42 | nit | done 42896055 |
 | HOSTING | HOSTING-35 | nit | done fa68c82e |
 | HOSTING | HOSTING-44 | nit | done eef1bbd1, 703f8a7f |
