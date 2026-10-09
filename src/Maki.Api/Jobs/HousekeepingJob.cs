@@ -61,6 +61,47 @@ public class HousekeepingJob(
             }
         }
 
+        // Packaged chapters left in a library share's .maki/tmp by an item that was cleared or whose
+        // process died mid-import. Named after the queue row, so one still active is left alone.
+        var tmpCutoff = DateTime.UtcNow.AddDays(-1);
+        var liveTmp = (await db.DownloadQueue
+                .Where(q => q.Status != QueueStatus.Completed &&
+                            q.Status != QueueStatus.Failed &&
+                            q.Status != QueueStatus.Cancelled)
+                .Select(q => q.Id)
+                .ToListAsync(ct))
+            .Select(id => id.ToString())
+            .ToHashSet();
+        foreach (var rootPath in await db.RootFolders.IgnoreQueryFilters().Select(r => r.Path).ToListAsync(ct))
+        {
+            var tmpDir = Path.Combine(rootPath, ".maki", "tmp");
+            if (!Directory.Exists(tmpDir))
+            {
+                continue;
+            }
+
+            try
+            {
+                foreach (var file in Directory.GetFiles(tmpDir, "*.cbz"))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    if (File.GetLastWriteTimeUtc(file) < tmpCutoff &&
+                        !liveTmp.Contains(Path.GetFileNameWithoutExtension(file)))
+                    {
+                        File.Delete(file);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogDebug(ex, "Could not clean {Dir}", tmpDir);
+            }
+        }
+
         // Reader thumbnails. Regenerable on demand, so anything doubtful is safe to delete.
         // Two kinds of garbage, and only the first used to be collected:
         //   1. whole directories for ChapterFile rows that no longer exist;

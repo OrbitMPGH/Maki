@@ -54,6 +54,10 @@ public static class ImageValidator
             var imageInfo = await Image.IdentifyAsync(filePath, ct);
             return imageInfo.Width > 0 && imageInfo.Height > 0;
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
         catch
         {
             return false;

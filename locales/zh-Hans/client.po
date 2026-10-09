@@ -4590,6 +4590,11 @@ msgstr "无法为此系列生成重新关联方案。"
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "无法复制到剪贴板。请选中文本后手动复制。"
 
+#. {file} is a file name and is never translated. The error text follows it, untranslated.
+#: src/api/queue.ts
+msgid "Could not import {file}"
+msgstr ""
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -5508,6 +5513,11 @@ msgstr "下载后续章节"
 #, fuzzy
 msgid "Download order"
 msgstr "下载顺序"
+
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
@@ -6694,6 +6704,10 @@ msgstr "全屏"
 #, fuzzy
 msgid "Fully read owned"
 msgstr "已读完的收藏"
+
+#: src/api/queue.ts
+msgid "Gave up after the download time limit"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -9509,6 +9523,11 @@ msgstr "此时间段没有已读章节。"
 #, fuzzy
 msgid "No checks have run yet. Use Check now."
 msgstr "尚未运行任何检查。请使用“立即检查”。"
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13581,6 +13600,10 @@ msgstr "已完成系列"
 msgid "Series folder format"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Series has no root folder"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
 msgstr ""
@@ -14762,6 +14785,10 @@ msgid "The API token of your Pushover application."
 msgstr "你的 Pushover 应用 API 令牌。"
 
 #: src/api/queue.ts
+msgid "The approved repair source is no longer available, request a new replacement"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The approved source no longer has these pages"
 msgstr "批准的来源不再有这些页面"
@@ -14810,6 +14837,10 @@ msgstr "当前文件会移入回收站而不是直接删除，因此如果新副
 
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
 msgstr ""
 
 #: src/pages/settings/registry.ts
@@ -14953,6 +14984,10 @@ msgstr "元数据提供方将这些章节分配给此卷。通常准确，但合
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "提供方的签发者 URL，不要包含 /.well-known/openid-configuration。Maki 会自行追加该路径。"
 
+#: src/api/queue.ts
+msgid "The repair is no longer accepting candidates"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "The request for {removingTitle} is removed. This can't be undone."
@@ -14977,6 +15012,10 @@ msgstr "样本下载失败"
 #, fuzzy
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "所选系列将从 Maki 中移除并停止监控。"
+
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

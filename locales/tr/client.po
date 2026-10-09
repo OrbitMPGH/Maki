@@ -4590,6 +4590,11 @@ msgstr "Bu seri için bir plan oluşturulamadı."
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "Panoya kopyalanamadı. Metni seçip elle kopyalayın."
 
+#. {file} is a file name and is never translated. The error text follows it, untranslated.
+#: src/api/queue.ts
+msgid "Could not import {file}"
+msgstr ""
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -5508,6 +5513,11 @@ msgstr "Sonraki bölümleri indir"
 #, fuzzy
 msgid "Download order"
 msgstr "İndirme sırası"
+
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
@@ -6694,6 +6704,10 @@ msgstr "Tam ekran"
 #, fuzzy
 msgid "Fully read owned"
 msgstr "Sahip olduklarının tamamı okundu"
+
+#: src/api/queue.ts
+msgid "Gave up after the download time limit"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -9509,6 +9523,11 @@ msgstr "Bu dönemde okunan bölüm yok."
 #, fuzzy
 msgid "No checks have run yet. Use Check now."
 msgstr "Henüz hiçbir kontrol çalıştırılmadı. Şimdi kontrol et'i kullanın."
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13581,6 +13600,10 @@ msgstr "bitirilen seri"
 msgid "Series folder format"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Series has no root folder"
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
 msgstr ""
@@ -14762,6 +14785,10 @@ msgid "The API token of your Pushover application."
 msgstr "Pushover uygulamanın API belirteci."
 
 #: src/api/queue.ts
+msgid "The approved repair source is no longer available, request a new replacement"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The approved source no longer has these pages"
 msgstr "Onaylanan kaynakta bu sayfalar artık yok"
@@ -14810,6 +14837,10 @@ msgstr "Mevcut dosya doğrudan silinmek yerine çöpe taşınır, bu yüzden yen
 
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
 msgstr ""
 
 #: src/pages/settings/registry.ts
@@ -14953,6 +14984,10 @@ msgstr "Sağlayıcı bu bölümleri bu cilde atıyor. Genellikle doğrudur, derl
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "Sağlayıcının issuer değeri, /.well-known/openid-configuration olmadan. Maki bunu kendisi ekler."
 
+#: src/api/queue.ts
+msgid "The repair is no longer accepting candidates"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "The request for {removingTitle} is removed. This can't be undone."
@@ -14977,6 +15012,10 @@ msgstr "Örnek indirme başarısız oldu"
 #, fuzzy
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "Seçilen seriler Maki'den kaldırılacak ve izlenmeyi bırakacak."
+
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

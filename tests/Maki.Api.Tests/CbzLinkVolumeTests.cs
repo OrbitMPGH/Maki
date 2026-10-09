@@ -3,6 +3,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
 using Maki.Core.Sources;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -171,6 +172,96 @@ public class CbzLinkVolumeTests : IDisposable
         Assert.NotEqual(
             check.Chapters.Single(c => c.Id == englishId).ChapterFileId,
             check.Chapters.Single(c => c.Id == germanId).ChapterFileId);
+    }
+
+    [Fact]
+    public async Task A_volume_links_the_rows_in_its_own_language_only()
+    {
+        var series = SeedSeries(chapterCount: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.AddRange(
+                new Chapter { SeriesId = series.Id, Number = 1, Language = "en" },
+                new Chapter { SeriesId = series.Id, Number = 2, Language = "en" },
+                new Chapter { SeriesId = series.Id, Number = 1, Language = "de" },
+                new Chapter { SeriesId = series.Id, Number = 2, Language = "de" });
+            db.SaveChanges();
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk v01 (Digital) (Oak).cbz", 1, 2));
+
+        using var check = _db.NewContext();
+        var chapters = check.Chapters.Where(c => c.SeriesId == series.Id).ToList();
+        Assert.All(chapters.Where(c => c.Language == "en"), c => Assert.NotNull(c.ChapterFileId));
+        Assert.All(chapters.Where(c => c.Language == "de"), c => Assert.Null(c.ChapterFileId));
+    }
+
+    [Fact]
+    public async Task A_volume_tagged_zh_Hans_links_the_older_zh_rows()
+    {
+        var series = SeedSeries(chapterCount: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.AddRange(
+                new Chapter { SeriesId = series.Id, Number = 1, Language = "en" },
+                new Chapter { SeriesId = series.Id, Number = 1, Language = "zh" });
+            db.SaveChanges();
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk v01 [zh-Hans] (Oak).cbz", 1));
+
+        using var check = _db.NewContext();
+        Assert.Null(check.Chapters.Single(c => c.SeriesId == series.Id && c.Language == "en").ChapterFileId);
+        Assert.NotNull(check.Chapters.Single(c => c.SeriesId == series.Id && c.Language == "zh").ChapterFileId);
+    }
+
+    [Fact]
+    public async Task An_untagged_volume_in_a_series_with_no_english_links_by_range_as_before()
+    {
+        var series = SeedSeries(chapterCount: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.AddRange(
+                new Chapter { SeriesId = series.Id, Number = 1, Volume = 1, Language = "de" },
+                new Chapter { SeriesId = series.Id, Number = 1, Volume = 1, Language = "fr" });
+            db.SaveChanges();
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk v01 (Oak).cbz", 1));
+
+        using var check = _db.NewContext();
+        Assert.All(check.Chapters.Where(c => c.SeriesId == series.Id).ToList(), c => Assert.NotNull(c.ChapterFileId));
+    }
+
+    [Fact]
+    public async Task A_rescan_leaves_a_chapter_on_its_file_when_a_spare_twin_also_matches_it()
+    {
+        var series = SeedSeries(chapterCount: 1);
+        var owner = WriteVolume("Berserk c001.cbz");
+        var twin = WriteVolume("Berserk Ch.1.cbz");
+        int ownerId;
+        using (var db = _db.NewContext())
+        {
+            var ownerRow = new ChapterFile { SeriesId = series.Id, RelativePath = Path.Combine("Berserk", Path.GetFileName(owner)), DateAdded = DateTime.UtcNow };
+            var twinRow = new ChapterFile { SeriesId = series.Id, RelativePath = Path.Combine("Berserk", Path.GetFileName(twin)), DateAdded = DateTime.UtcNow };
+            db.ChapterFiles.AddRange(ownerRow, twinRow);
+            db.SaveChanges();
+            db.Chapters.Single(c => c.SeriesId == series.Id).ChapterFileId = ownerRow.Id;
+            db.SaveChanges();
+            ownerId = ownerRow.Id;
+        }
+
+        for (var run = 0; run < 2; run++)
+        {
+            using (var db = _db.NewContext())
+            {
+                await Service(db).RescanSeriesAsync(
+                    db.Series.Include(s => s.RootFolder).Single(s => s.Id == series.Id));
+            }
+
+            using var check = _db.NewContext();
+            Assert.Equal(ownerId, check.Chapters.Single(c => c.SeriesId == series.Id).ChapterFileId);
+        }
     }
 
     [Fact]

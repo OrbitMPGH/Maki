@@ -3763,6 +3763,11 @@ msgstr "Could not build a plan for this series."
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "Could not copy to the clipboard. Select the text and copy it by hand."
 
+#. {file} is a file name and is never translated. The error text follows it, untranslated.
+#: src/api/queue.ts
+msgid "Could not import {file}"
+msgstr "Could not import {file}"
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -4518,6 +4523,11 @@ msgstr "Download next chapters"
 #: src/components/SourceMappingsSection.tsx
 msgid "Download order"
 msgstr "Download order"
+
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr "Download path not accessible from Maki: {path}"
 
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
@@ -5486,6 +5496,10 @@ msgstr "Full screen"
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Fully read owned"
 msgstr "Fully read owned"
+
+#: src/api/queue.ts
+msgid "Gave up after the download time limit"
+msgstr "Gave up after the download time limit"
 
 #: src/components/discover/RecommenderDials.tsx
 msgid "gems"
@@ -7797,6 +7811,11 @@ msgstr "No chapters read in this period."
 #: src/pages/HealthPage.tsx
 msgid "No checks have run yet. Use Check now."
 msgstr "No checks have run yet. Use Check now."
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr "No comics found in the completed download ({detail})"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "No creator shows up often enough yet."
@@ -11142,6 +11161,10 @@ msgstr "series finished"
 msgid "Series folder format"
 msgstr "Series folder format"
 
+#: src/api/queue.ts
+msgid "Series has no root folder"
+msgstr "Series has no root folder"
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
 msgstr "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
@@ -12113,6 +12136,10 @@ msgid "The API token of your Pushover application."
 msgstr "The API token of your Pushover application."
 
 #: src/api/queue.ts
+msgid "The approved repair source is no longer available, request a new replacement"
+msgstr "The approved repair source is no longer available, request a new replacement"
+
+#: src/api/queue.ts
 msgid "The approved source no longer has these pages"
 msgstr "The approved source no longer has these pages"
 
@@ -12155,6 +12182,10 @@ msgstr "The current file moves to trash rather than being deleted outright, so t
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
 msgstr "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
+
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
+msgstr "The download is no longer in qBittorrent"
 
 #: src/pages/settings/registry.ts
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
@@ -12273,6 +12304,10 @@ msgstr "The provider assigns these chapters to this volume. Usually right, compi
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 
+#: src/api/queue.ts
+msgid "The repair is no longer accepting candidates"
+msgstr "The repair is no longer accepting candidates"
+
 #: src/pages/RequestsPage.tsx
 msgid "The request for {removingTitle} is removed. This can't be undone."
 msgstr "The request for {removingTitle} is removed. This can't be undone."
@@ -12292,6 +12327,10 @@ msgstr "The sample download failed"
 #: src/pages/LibraryPage.tsx
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "The selected series will be removed from Maki and stop being monitored."
+
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr "The series was deleted or moved while this download was being imported, so nothing was imported"
 
 #: src/pages/HealthPage.tsx
 msgid "the series' sources"

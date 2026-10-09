@@ -5,6 +5,7 @@ using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -331,7 +332,7 @@ public class FileRelinkPlanner(
         foreach (var chapter in chapters)
         {
             if (chapter.ChapterFileId is { } fileId && candidateByRecordId.TryGetValue(fileId, out var holder)
-                && (holder.Languages is null || holder.Languages.Contains(ChapterFileLanguage.Of(chapter))))
+                && ChapterFileLanguage.Allows(holder.Languages, chapter))
             {
                 holder.Covers.TryAdd(chapter.Id, RelinkConfidence.Existing);
             }
@@ -389,31 +390,40 @@ public class FileRelinkPlanner(
     private static bool IsEvidence(Candidate candidate, RelinkConfidence confidence) =>
         Rank(candidate, confidence) <= WeakestEvidenceRank;
 
+    /// <summary>
+    /// The language rows the candidate may back, or null for any. A hand-made link says which row the
+    /// file is for; the name only speaks for unlinked files.
+    /// </summary>
+    private static HashSet<string>? LanguagesOf(
+        Candidate candidate, List<Chapter> chapters, IReadOnlySet<string> seriesLanguages)
+    {
+        HashSet<string>? languages = null;
+        if (candidate.Record is { SourceName: "Manual" } manual)
+        {
+            var linked = chapters.Where(c => c.ChapterFileId == manual.Id).Select(ChapterFileLanguage.Of)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (linked.Count > 0) languages = linked;
+        }
+
+        languages ??= ChapterFileLanguage.FromName(candidate.RelativePath, seriesLanguages);
+        if (languages is { Count: 0 } && candidate.Record is { } record)
+        {
+            languages = chapters.Where(c => c.ChapterFileId == record.Id).Select(ChapterFileLanguage.Of)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        return languages;
+    }
+
     private static void Cover(
         Candidate candidate, List<Chapter> chapters, Func<Chapter, int?>? estimator, IReadOnlySet<string> seriesLanguages)
     {
         var parsed = candidate.Parsed;
+        var languages = LanguagesOf(candidate, chapters, seriesLanguages);
         if (parsed.IsChapter)
         {
-            // A hand-made link says which row the file is for; the name only speaks for unlinked files.
-            HashSet<string>? languages = null;
-            if (candidate.Record is { SourceName: "Manual" } manual)
-            {
-                var linked = chapters.Where(c => c.ChapterFileId == manual.Id).Select(ChapterFileLanguage.Of)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                if (linked.Count > 0) languages = linked;
-            }
-
-            languages ??= ChapterFileLanguage.FromName(candidate.RelativePath, seriesLanguages);
-            if (languages is { Count: 0 } && candidate.Record is { } record)
-            {
-                languages = chapters.Where(c => c.ChapterFileId == record.Id).Select(ChapterFileLanguage.Of)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            }
-
             candidate.Languages = languages;
-            foreach (var chapter in chapters.Where(c => c.Number == parsed.Number
-                         && (languages is null || languages.Contains(ChapterFileLanguage.Of(c)))))
+            foreach (var chapter in chapters.Where(c => c.Number == parsed.Number && ChapterFileLanguage.Allows(languages, c)))
             {
                 candidate.Covers[chapter.Id] = RelinkConfidence.FileName;
             }
@@ -426,12 +436,19 @@ public class FileRelinkPlanner(
             return;
         }
 
+        languages = ChapterFileLanguage.ForVolume(languages);
         var start = parsed.Volume!.Value;
         var end = parsed.VolumeEnd ?? start;
         var markers = VolumeChapterScanner.ScanCbz(candidate.AbsolutePath).ToHashSet();
         candidate.HasMarkers = markers.Count > 0;
         foreach (var chapter in chapters)
         {
+            // An English volume does not cover the Spanish row of the same chapter.
+            if (!ChapterFileLanguage.Allows(languages, chapter))
+            {
+                continue;
+            }
+
             if (chapter.Number is { } number && markers.Contains(number))
             {
                 candidate.Covers[chapter.Id] = RelinkConfidence.PageMarkers;
@@ -623,6 +640,18 @@ public static partial class ChapterFileLanguage
     public static HashSet<string> SeriesLanguages(IEnumerable<Chapter> chapters) =>
         chapters.Select(Of).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Whether a file speaking <paramref name="languages"/> (null: any) may back this chapter row.</summary>
+    public static bool Allows(IReadOnlySet<string>? languages, Chapter chapter) =>
+        languages is null || languages.Any(language => SourceLanguages.Same(language, Of(chapter)));
+
+    /// <summary>
+    /// <see cref="FromName"/> for a volume: a name that says nothing usable (untagged, in a series
+    /// with several languages and none of them the default) links by range as it always did, rather
+    /// than backing no chapter at all.
+    /// </summary>
+    public static HashSet<string>? ForVolume(HashSet<string>? languages) =>
+        languages is { Count: 0 } ? null : languages;
+
     /// <summary>
     /// Follows <c>FileNameBuilder</c>: a <c>[es]</c> tag or a trailing <c>{Chapter Language}</c> code names
     /// the language, and an untagged file is the default language. Null means any language (the series
@@ -638,7 +667,7 @@ public static partial class ChapterFileLanguage
         var name = Path.GetFileNameWithoutExtension(path);
         var tagged = BracketTag().Matches(name)
             .Select(m => m.Groups[1].Value.Trim())
-            .Where(tag => seriesLanguages.Contains(tag) || LanguageCode().IsMatch(tag))
+            .Where(tag => HasLanguage(seriesLanguages, tag) || LanguageCode().IsMatch(tag))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (tagged.Count > 0)
         {
@@ -646,15 +675,19 @@ public static partial class ChapterFileLanguage
         }
 
         var last = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
-        if (last is not null && seriesLanguages.Contains(last))
+        if (last is not null && HasLanguage(seriesLanguages, last))
         {
             return new HashSet<string>([last], StringComparer.OrdinalIgnoreCase);
         }
 
-        return seriesLanguages.Contains(FileNameBuilder.DefaultLanguage)
+        return HasLanguage(seriesLanguages, FileNameBuilder.DefaultLanguage)
             ? new HashSet<string>([FileNameBuilder.DefaultLanguage], StringComparer.OrdinalIgnoreCase)
             : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
+
+    // "zh" on an old row and "zh-Hans" in a file name are one language.
+    private static bool HasLanguage(IReadOnlySet<string> seriesLanguages, string code) =>
+        seriesLanguages.Contains(code) || seriesLanguages.Any(l => SourceLanguages.Same(l, code));
 
     [GeneratedRegex(@"\[([^\[\]]+)\]")]
     private static partial Regex BracketTag();

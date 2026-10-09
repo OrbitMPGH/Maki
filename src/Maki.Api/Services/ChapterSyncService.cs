@@ -295,9 +295,8 @@ public class ChapterSyncService(
     }
 
     /// <summary>
-    /// Heals duplicates created before volume became a wildcard in matching:
-    /// the same chapter synced once with a volume ("Vol.4 Ch.27") and once
-    /// without ("Ch.27"). Keeps the richest copy and deletes the rest.
+    /// A one-shot stored under this listing's label as its title, now that the label parses to a
+    /// number. Promoting it keeps its file and reads rather than adding a second row beside it.
     /// </summary>
     internal static Chapter? PromotableOneShot(List<Chapter> existing, SourceChapter sc) =>
         sc.Number is null || string.IsNullOrWhiteSpace(sc.NumberRaw)
@@ -331,6 +330,11 @@ public class ChapterSyncService(
                ?? untitled.FirstOrDefault(c => LinkedId(c) is null);
     }
 
+    /// <summary>
+    /// Heals duplicates created before volume became a wildcard in matching:
+    /// the same chapter synced once with a volume ("Vol.4 Ch.27") and once
+    /// without ("Ch.27"). Keeps the richest copy and deletes the rest.
+    /// </summary>
     private async Task MergeDuplicatesAsync(List<Chapter> existing, ReadRows reads, CancellationToken ct)
     {
         var groups = existing

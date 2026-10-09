@@ -122,6 +122,9 @@ public class TorrentUpgradeService(
     ILogger<TorrentUpgradeService> logger)
 {
     public static readonly TimeSpan SearchInterval = TimeSpan.FromDays(7);
+
+    /// <summary>How soon a series whose search or grab failed is tried again, instead of waiting out the interval.</summary>
+    public static readonly TimeSpan RetryAfterFailure = TimeSpan.FromDays(1);
     private const int MaxPlaceholders = 2000;
 
     public async Task<IReadOnlyList<TorrentCandidateView>> EvaluateAsync(
@@ -305,6 +308,7 @@ public class TorrentUpgradeService(
         // A manual search with the instance switches off may look and propose, never grab on its own.
         var switchesOff = !options.Enabled || !options.VolumeSearch;
 
+        var failed = false;
         try
         {
             ReleaseSearchResult result;
@@ -316,6 +320,7 @@ public class TorrentUpgradeService(
                                            && !ct.IsCancellationRequested)
             {
                 logger.LogWarning(ex, "Volume search for '{Title}' failed", series.Title);
+                failed = true;
                 return new SeriesVolumeSearchResult(true, 0, null, null, VolumeSearchReasons.SearchFailed);
             }
 
@@ -340,6 +345,7 @@ public class TorrentUpgradeService(
                                                && !ct.IsCancellationRequested)
                 {
                     logger.LogWarning(ex, "Could not grab '{Release}' for '{Title}'", grab.Release.Title, series.Title);
+                    failed = true;
                     return new SeriesVolumeSearchResult(true, result.Releases.Count, null, null, VolumeSearchReasons.GrabFailed);
                 }
             }
@@ -356,7 +362,8 @@ public class TorrentUpgradeService(
         }
         finally
         {
-            await StampSearchedAsync(seriesId);
+            // A Prowlarr or qBittorrent outage must not push the series out by the whole interval.
+            await StampSearchedAsync(seriesId, failed ? RetryAfterFailure - SearchInterval : TimeSpan.Zero);
         }
     }
 
@@ -365,10 +372,13 @@ public class TorrentUpgradeService(
         !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrUrl, ct)) &&
         !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct)));
 
-    private Task StampSearchedAsync(int seriesId) =>
-        db.Series.Where(s => s.Id == seriesId)
-            .ExecuteUpdateAsync(u => u.SetProperty(s => s.LastVolumeSearchUtc, time.GetUtcNow().UtcDateTime),
-                CancellationToken.None);
+    /// <param name="offset">Added to now; negative values make the series eligible again sooner.</param>
+    private Task StampSearchedAsync(int seriesId, TimeSpan offset = default)
+    {
+        var stamp = time.GetUtcNow().UtcDateTime + offset;
+        return db.Series.Where(s => s.Id == seriesId)
+            .ExecuteUpdateAsync(u => u.SetProperty(s => s.LastVolumeSearchUtc, stamp), CancellationToken.None);
+    }
 
     /// <summary>Queues the proposal's release with the verdict as it reads against the library now.</summary>
     public async Task<(int? QueueItemId, ProposalActionError Error)> GrabProposalAsync(int proposalId, int? userId, CancellationToken ct)

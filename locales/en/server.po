@@ -1216,6 +1216,11 @@ msgstr "Label is required"
 msgid "error.tags.unknownTagIds"
 msgstr "One or more tag ids do not exist"
 
+#. {file} is a file name and is never translated. The exception text follows it, untranslated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+msgid "error.torrentImport.copyFailed"
+msgstr "Could not import {file}"
+
 #: src/Maki.Api/Services/TorrentImportService.cs
 msgid "error.torrentImport.noComicsFound"
 msgstr "No comics found in the completed download ({detail})"
@@ -1956,6 +1961,15 @@ msgstr "{series}: chapter {chapter} is ready to read"
 msgid "inbox.download.failed.title"
 msgstr "Download failed"
 
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "inbox.import.awaiting.title"
+msgstr "Import waiting for a decision"
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "inbox.import.awaiting.body"
+msgstr "{series}: {release} needs a Replace or Skip decision in Activity before it is imported"
+
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. placeholder for emptiness. {error} is the source's own wording and is never translated.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
@@ -2410,6 +2424,21 @@ msgstr "The torrent never appeared in qBittorrent"
 msgid "error.download.torrentRemoved"
 msgstr "The torrent is no longer in qBittorrent"
 
+#. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
+#: src/Maki.Api/Services/DownloadWorkerHostedService.cs
+msgid "error.download.itemTimedOut"
+msgstr "Gave up after the download time limit"
+
+#. A repair was approved with a source that has since been disabled or removed.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "error.download.repairSourceGone"
+msgstr "The approved repair source is no longer available, request a new replacement"
+
+#. The repair this download belonged to was closed or cancelled before the pages arrived.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "error.download.repairNotAccepting"
+msgstr "The repair is no longer accepting candidates"
+
 #. The library folder is missing or empty, usually a network share that is not mounted. Maki retries
 #. on its own and does not count it as a failed attempt.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
@@ -2439,6 +2468,17 @@ msgstr "Chapter"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "notify.download.failed.title"
 msgstr "Download failed"
+
+#. Sent outward when a finished torrent covers files the library already has and waits for a Replace
+#. or Skip decision. Renders in the instance's own language.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "notify.import.awaiting.title"
+msgstr "Import waiting for a decision"
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "notify.import.awaiting.body"
+msgstr "{series}: {release} needs a Replace or Skip decision in Activity before it is imported"
 
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. value for emptiness. {reason} is one of the error.download.* messages, already rendered.

@@ -449,7 +449,7 @@ public class TorrentUpgradeServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task The_last_search_time_is_written_even_when_the_search_fails()
+    public async Task A_failed_search_is_retried_after_a_day_not_a_week()
     {
         Chapter(1, 1);
         _releases.SearchError = new HttpRequestException("prowlarr down");
@@ -458,7 +458,19 @@ public class TorrentUpgradeServiceTests : IDisposable
 
         Assert.Equal(VolumeSearchReasons.SearchFailed, result.Reason);
         using var db = _world.Db.NewContext();
-        Assert.Equal(_clock.Now.UtcDateTime, db.Series.Single().LastVolumeSearchUtc);
+        var stamped = db.Series.Single().LastVolumeSearchUtc!.Value;
+        Assert.Equal(_clock.Now.UtcDateTime - (TorrentUpgradeService.SearchInterval - TorrentUpgradeService.RetryAfterFailure), stamped);
+
+        // Still inside the interval a day later than a success would have been.
+        _clock.Now = _clock.Now.AddHours(23);
+        using (var recent = _world.Db.NewContext())
+        {
+            Assert.Empty(await Service(recent).CandidateSeriesAsync(CancellationToken.None));
+        }
+
+        _clock.Now = _clock.Now.AddHours(2);
+        using var later = _world.Db.NewContext();
+        Assert.Equal([_world.SeriesId], await Service(later).CandidateSeriesAsync(CancellationToken.None));
     }
 
     private void RenameSeries(string title)
