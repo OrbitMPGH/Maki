@@ -251,9 +251,10 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
         var malScale = Percentile90([.. raw.Where(r => r.Mal > 0).Select(r => r.Mal)]);
 
         // Votes stay integers on AniList's scale rather than becoming floats, so RecoGraphTuning's
-        // MinVotes floor keeps meaning what it says. An artifact from only one provider leaves the
-        // other's scale at zero and its term drops out, which is exactly today's state.
-        var ratio = aniListScale > 0 && malScale > 0 ? (double)aniListScale / malScale : 0;
+        // MinVotes floor keeps meaning what it says. An artifact from only one provider has nothing
+        // to rescale against: AniList-only leaves the MAL term at zero, and MAL-only keeps its votes
+        // as counted, since AniList's term is the zero one there.
+        var ratio = aniListScale > 0 && malScale > 0 ? (double)aniListScale / malScale : 1;
 
         var pairs = new List<(long, long, float)>(raw.Count);
         foreach (var (a, b, aniList, mal) in raw)
