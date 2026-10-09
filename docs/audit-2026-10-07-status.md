@@ -399,29 +399,29 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-SETTINGS | FE-SETTINGS-47 | nit | done ff20624e, 93830f66 |
 | FE-SETTINGS | FE-SETTINGS-51 | nit | done f725c08a |
 | FE-SETTINGS | FE-SETTINGS-30 | nit | done 9b3ca879 (accountSecurity stays outside the switchable categories, commented) |
-| FE-UX | FE-UX-03 | low | pending |
-| FE-UX | FE-UX-05 | low | pending |
-| FE-UX | FE-UX-07 | low | pending |
-| FE-UX | FE-UX-11 | low | pending |
-| FE-UX | FE-UX-12 | low | pending |
-| FE-UX | FE-UX-15 | low | pending |
-| FE-UX | FE-UX-16 | low | pending |
-| FE-UX | FE-UX-23 | low | pending |
-| FE-UX | FE-UX-25 | low | pending |
-| FE-UX | FE-UX-20 | low | pending |
-| FE-UX | FE-UX-26 | low | pending |
-| FE-UX | FE-UX-02 | low | pending |
-| FE-UX | FE-UX-21 | low | pending |
-| FE-UX | FE-UX-10 | low | pending |
-| FE-UX | FE-UX-13 | nit | pending |
-| FE-UX | FE-UX-18 | nit | pending |
-| FE-UX | FE-UX-19 | nit | pending |
-| FE-UX | FE-UX-22 | nit | pending |
-| FE-UX | FE-UX-24 | nit | pending |
-| FE-UX | FE-UX-27 | nit | pending |
-| FE-UX | FE-UX-04 | nit | pending |
-| FE-UX | FE-UX-09 | nit | pending |
-| FE-UX | FE-UX-17 | nit | pending |
+| FE-UX | FE-UX-03 | low | done ec5dc54f (saved filters and presets keep their Undo toast) |
+| FE-UX | FE-UX-05 | low | done 9a221296 |
+| FE-UX | FE-UX-07 | low | done 8c7de511, 6cf77e80 |
+| FE-UX | FE-UX-11 | low | done 2694903e |
+| FE-UX | FE-UX-12 | low | done a32ec269, f55eedd4 |
+| FE-UX | FE-UX-15 | low | done c257f629 |
+| FE-UX | FE-UX-16 | low | done c257f629 (real h2 at the old size, not SectionHeader) |
+| FE-UX | FE-UX-23 | low | done 7f6b38dd (status badges stay as they are, not interactive) |
+| FE-UX | FE-UX-25 | low | done 20843eb7, 40d1086c, 2b8acd9a |
+| FE-UX | FE-UX-20 | low | done 74e89237 (already on audit-fixes) |
+| FE-UX | FE-UX-26 | low | done 1f6eb6f5, 41ea966d |
+| FE-UX | FE-UX-02 | low | done ec5dc54f, 76d39667 |
+| FE-UX | FE-UX-21 | low | done 8f7bb3b9 |
+| FE-UX | FE-UX-10 | low | done eb489a9d |
+| FE-UX | FE-UX-13 | nit | done 9bdad072 |
+| FE-UX | FE-UX-18 | nit | done 97baa3ae |
+| FE-UX | FE-UX-19 | nit | done d3762af8, 5c701ea7 (already on audit-fixes) |
+| FE-UX | FE-UX-22 | nit | done 8f7bb3b9, 607ca9c2 |
+| FE-UX | FE-UX-24 | nit | done 58175e37 |
+| FE-UX | FE-UX-27 | nit | done 4d9da09f, c257f629 |
+| FE-UX | FE-UX-04 | nit | done 69c9f784 |
+| FE-UX | FE-UX-09 | nit | done 9038900c, 4aaa271b, 1aa233a9 |
+| FE-UX | FE-UX-17 | nit | done 29ac991c, 7ac4b45d |
 | HOSTING | HOSTING-26 | low | done ae3a7864, 1723f02e |
 | HOSTING | HOSTING-32 | low | done 27a3a327 (proxy bypass in CORE lane) |
 | HOSTING | HOSTING-19 | low | done ae3a7864, 75957f9e |
