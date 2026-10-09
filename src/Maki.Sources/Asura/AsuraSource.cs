@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
@@ -166,7 +167,8 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
         {
             DateTimeOffset? unlockAt = ch.TryGetProperty("early_access_until", out var uaEl) &&
                                         uaEl.ValueKind == JsonValueKind.String &&
-                                        DateTimeOffset.TryParse(uaEl.GetString(), out var parsed)
+                                        DateTimeOffset.TryParse(
+                                            uaEl.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed)
                 ? parsed
                 : null;
 

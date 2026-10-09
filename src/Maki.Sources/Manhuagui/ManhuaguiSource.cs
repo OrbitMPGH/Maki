@@ -135,7 +135,9 @@ public partial class ManhuaguiSource(IHttpClientFactory httpClientFactory) : ISo
         var latestHref = statusLi?.QuerySelector("a.blue")?.GetAttribute("href");
         var latestDateText = reds is { Count: > 1 } ? reds[1].TextContent.Trim() : null;
         DateTime? latestDate = latestDateText is not null &&
-            DateTime.TryParseExact(latestDateText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate)
+            DateTime.TryParseExact(
+                latestDateText, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedDate)
                 ? parsedDate
                 : null;
 

@@ -148,7 +148,9 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
 
             DateTime? releaseDate = null;
             var time = link.QuerySelector("time")?.GetAttribute("datetime");
-            if (time != null && DateTime.TryParse(time, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out var dt))
+            if (time != null && DateTime.TryParse(
+                    time, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dt))
             {
                 releaseDate = dt;
             }
