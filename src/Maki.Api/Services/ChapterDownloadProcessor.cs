@@ -263,15 +263,17 @@ public class ChapterDownloadProcessor(
 
             // 6. Atomic move into the library.
             await SetStatusAsync(item, QueueStatus.Importing, ct);
+            if (item.UpgradeInfoJson is not null)
+            {
+                // Takes the series lock itself, after the archive is measured.
+                return await ApplyUpgradeAsync(item, chapter, series, rootFolder, mapping, source, sourceChapterId,
+                    tmpCbz, workingDir, ct);
+            }
+
             var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
 
             // Released right after the save below; the using covers every other way out.
             using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
-            if (item.UpgradeInfoJson is not null)
-            {
-                return await ApplyUpgradeAsync(item, chapter, series, rootFolder, mapping, source, sourceChapterId,
-                    tmpCbz, workingDir, ct);
-            }
 
             var seriesFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
             var heldByOthers = (await db.Chapters
@@ -515,11 +517,28 @@ public class ChapterDownloadProcessor(
         ISource source, string sourceChapterId, string tmpCbz, string workingDir, CancellationToken ct)
     {
         var info = UpgradeInfo.Parse(item.UpgradeInfoJson);
-        var current = info is null || chapter.ChapterFileId != info.ChapterFileId
+        if (info is null)
+        {
+            TryDeleteFile(tmpCbz);
+            await FailAsync(item, "error.download.upgradeTargetGone", ct, permanent: true);
+            return DownloadOutcome.Settled;
+        }
+
+        // Reading every page of the packaged archive is the slow part and touches nothing the lock
+        // protects, so it happens before the lock is taken. The target is judged again under it.
+        var measurement = ChapterFileMeasurer.MeasureArchive(tmpCbz, 0, ct);
+        var size = new FileInfo(tmpCbz).Length;
+
+        using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+        // The chapter was read when the item started, long before the lock: a link made since is
+        // only visible after a reload.
+        await db.Entry(chapter).ReloadAsync(ct);
+        var current = chapter.ChapterFileId != info.ChapterFileId
             ? null
             : await db.ChapterFiles.FirstOrDefaultAsync(f => f.Id == info.ChapterFileId && f.SeriesId == series.Id, ct);
         var finalPath = current is null ? null : LibraryPaths.Resolve(rootFolder.Path, current.RelativePath);
-        if (info is null || current is null || finalPath is null || !File.Exists(finalPath))
+        if (current is null || finalPath is null || !File.Exists(finalPath))
         {
             TryDeleteFile(tmpCbz);
             await FailAsync(item, "error.download.upgradeTargetGone", ct, permanent: true);
@@ -533,8 +552,6 @@ public class ChapterDownloadProcessor(
                 UpgradeReasons.UnsupportedFile, after: null, info.ProfileId, info.ProfileVersion, null, null, null, ct);
         }
 
-        var measurement = ChapterFileMeasurer.MeasureArchive(tmpCbz, 0, ct);
-        var size = new FileInfo(tmpCbz).Length;
         await SourceQualitySamples.RecordAsync(db, mapping, chapter.Id, SourceQualityOrigin.Download,
             measurement.PageCount, measurement.MedianWidth, measurement.MedianHeight, size, measurement.ImageFormat,
             DateTime.UtcNow, ct);
@@ -546,6 +563,7 @@ public class ChapterDownloadProcessor(
         var tier = QualityTierResolver.Resolve(source.Kind, null, fileName, isVolume: false);
 
         var evaluator = await new UpgradeEvaluationService(db, quality).ForSeriesAsync(series.Id, ct);
+        var shared = UpgradeCandidateRules.SharedFile(await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct));
         QualityScore? before = null;
         QualityScore? candidate = null;
         var reason = UpgradeReasons.UpgradeRejected;
@@ -556,7 +574,6 @@ public class ChapterDownloadProcessor(
                 measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language,
                 measurement.MedianHeight));
             tier = candidate?.Tier ?? tier;
-            var shared = UpgradeCandidateRules.SharedFile(await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct));
             reason = ForcedGuard(info, current, shared, measurement, evaluator?.Profile.PageTolerancePercent ?? 10);
         }
         else if (evaluator?.Evaluate(current, chapter.Language) is { } evaluated)
@@ -571,6 +588,12 @@ public class ChapterDownloadProcessor(
                 ? null
                 : UpgradeReasons.Explain(evaluator.Profile, current.PageCount, candidate, measurement.MedianWidth,
                     measurement.PageCount);
+
+            // A chapter linked to this file since the scan would read this one chapter's pages.
+            if (reason is null && shared)
+            {
+                reason = UpgradeReasons.SharedFile;
+            }
         }
 
         var after = new QualitySnapshot
@@ -751,7 +774,7 @@ public class ChapterDownloadProcessor(
         if (!info.Force)
         {
             await UpgradeAttempts.UpsertAsync(db, chapter.Id, series.Id, mapping.Id, sourceChapterId, profileId,
-                profileVersion, UpgradeReasons.UpgradeRejected, probed: true, pageCount, width, score, ct);
+                profileVersion, reason ?? UpgradeReasons.UpgradeRejected, probed: true, pageCount, width, score, ct);
         }
 
         info.Outcome = UpgradeOutcomes.Rejected;
