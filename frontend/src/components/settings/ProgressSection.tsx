@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Button,
@@ -97,10 +97,13 @@ export function ProgressSection() {
   const [target, setTarget] = useState<number | string>(3)
 
   // Seed the time zone from the browser the first time somebody opens this, so streaks land on the
-  // right day without anybody having to think about it. Only when it is genuinely unset — never
+  // right day without anybody having to think about it. Only when it is genuinely unset, never
   // overwrite a zone the user chose.
+  const zoneSeeded = useRef(false)
   useEffect(() => {
+    if (zoneSeeded.current || save.isError) return
     if (settings && settings.timeZone === '' && browserTimeZone()) {
+      zoneSeeded.current = true
       save.mutate({ timeZone: browserTimeZone() })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

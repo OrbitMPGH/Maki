@@ -21,6 +21,7 @@ export function useSaveSettingsRecord<T extends object>(
   { optimistic = false, merge = (current, patch) => ({ ...current, ...patch }) }: SettingsRecordOptions<T> = {},
 ) {
   const queryClient = useQueryClient()
+  const othersPending = () => queryClient.isMutating({ predicate: (m) => m.options.scope?.id === path }) > 1
   return useMutation({
     scope: { id: path },
     mutationFn: async (patch: Partial<T>) => {
@@ -28,15 +29,26 @@ export function useSaveSettingsRecord<T extends object>(
       return api<T>(path, { method: 'PUT', body: JSON.stringify(merge(current, patch)) })
     },
     onMutate: optimistic
-      ? (patch) => {
+      ? async (patch) => {
+          await queryClient.cancelQueries({ queryKey })
+          const previous = queryClient.getQueryData<T>(queryKey)
           queryClient.setQueryData<T>(queryKey, (old) => (old ? merge(old, patch) : old))
+          return { previous }
         }
       : undefined,
-    onError: optimistic ? () => void queryClient.invalidateQueries({ queryKey }) : undefined,
+    onError: optimistic
+      ? (_error, _patch, context) => {
+          if (!othersPending() && context?.previous) queryClient.setQueryData(queryKey, context.previous)
+        }
+      : undefined,
+    onSettled: optimistic
+      ? () => {
+          if (!othersPending()) void queryClient.invalidateQueries({ queryKey })
+        }
+      : undefined,
     onSuccess: (saved) => {
       // While later saves are queued the cache already shows their values; this answer would undo them.
-      const queued = queryClient.isMutating({ predicate: (m) => m.options.scope?.id === path }) > 1
-      if (!optimistic || !queued) queryClient.setQueryData(queryKey, saved)
+      if (!optimistic || !othersPending()) queryClient.setQueryData(queryKey, saved)
       onSaved?.()
     },
   })
