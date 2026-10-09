@@ -259,6 +259,9 @@ public class BackupService(
             if (manifest?.LastMigration is { } last && !known.Contains(last))
                 throw Reject("error.system.backupTooNew", new { migration = last });
 
+            if (dbEntry.Length > MaxExtractedDatabaseBytes)
+                throw Reject("error.system.backupTooLarge");
+
             Directory.CreateDirectory(tempDir);
             dbEntry.ExtractToFile(stagedDb, overwrite: true);
             archive.GetEntry(ConfigEntry)?.ExtractToFile(Path.Combine(tempDir, ConfigEntry), overwrite: true);
@@ -357,6 +360,8 @@ public class BackupService(
         if (previous is not null)
             TryDeleteDirectory(previous);
     }
+
+    private const long MaxExtractedDatabaseBytes = 8L * 1024 * 1024 * 1024;
 
     private BackupRestoreException Reject(string key, object? args = null) =>
         new(key, args, localizer.Get(key, args));

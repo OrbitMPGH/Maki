@@ -2478,6 +2478,11 @@ msgstr "Este archivo no es una copia de seguridad de Maki legible. El archivo ZI
 msgid "error.system.backupNameInvalid"
 msgstr ""
 
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed.
+msgid "error.system.backupTooLarge"
+msgstr ""
+
 #. {name} is a backup file name, never translated.
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: Backup "{name}" was not found.

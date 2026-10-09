@@ -1742,6 +1742,10 @@ msgstr "This file is not a readable Maki backup. The zip or its manifest is dama
 msgid "error.system.backupNameInvalid"
 msgstr "That is not a valid backup name."
 
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupTooLarge"
+msgstr "The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed."
+
 #. {name} is a backup file name, never translated.
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.backupNotFound"
