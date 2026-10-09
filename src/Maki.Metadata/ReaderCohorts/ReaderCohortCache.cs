@@ -27,6 +27,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile ReaderCohortIndex? _index;
     private readonly IdleStamp _idle = new();
+    private readonly LoadFailureMemo _failed = new();
     private readonly SharedBuild<ReaderCohortIndex> _loads = new();
 
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
@@ -39,6 +40,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
     public void Invalidate()
     {
         _index = null;
+        _failed.Clear();
         logger.LogDebug("Reader cohorts invalidated");
     }
 
@@ -123,7 +125,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
                 return raced;
             }
 
-            if (!File.Exists(options.DatabasePath))
+            if (!File.Exists(options.DatabasePath) || _failed.ShouldSkip(options.DatabasePath))
             {
                 return null;
             }
@@ -135,10 +137,20 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
                     var loaded = Load(CancellationToken.None);
                     _index = loaded;
                     _idle.Touch();
+                    if (loaded is null)
+                    {
+                        _failed.Record(options.DatabasePath);
+                    }
+                    else
+                    {
+                        _failed.Clear();
+                    }
+
                     return loaded;
                 }
                 catch (Exception ex)
                 {
+                    _failed.Record(options.DatabasePath);
                     // Logged here because every caller may have stopped waiting by now.
                     logger.LogWarning(ex, "Loading the reader cohorts failed");
                     throw;
