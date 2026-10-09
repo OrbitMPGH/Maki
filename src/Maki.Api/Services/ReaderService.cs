@@ -381,6 +381,10 @@ public class ReaderService(
         }
     }
 
+    /// <summary>The page that is actually stored for a reported one: inside the chapter's own slice.</summary>
+    public static int ClampPage(int pageIndex, int pageCount) =>
+        Math.Clamp(pageIndex, 0, Math.Max(0, pageCount - 1));
+
     // 2067 = SQLITE_CONSTRAINT_UNIQUE, 1555 = SQLITE_CONSTRAINT_PRIMARYKEY. Matched on the
     // *extended* code, never the primary 19, which also covers FK and NOT NULL failures that no
     // retry can fix — the same rule ReadingProgressService follows.
@@ -410,7 +414,7 @@ public class ReaderService(
         }
 
         // The resume position is free to move backwards; completion is not.
-        row.PageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, slice.PageCount - 1));
+        row.PageIndex = ClampPage(pageIndex, slice.PageCount);
         row.PageCount = slice.PageCount;
 
         // A watched row stays ticked off while it is merely opened: the reader writes page 0 a

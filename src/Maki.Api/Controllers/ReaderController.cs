@@ -400,7 +400,7 @@ public class ReaderController(
         return Ok(new
         {
             chapterId = id,
-            pageIndex = request.PageIndex,
+            pageIndex = ReaderService.ClampPage(request.PageIndex, slice.PageCount),
             completed = finished || request.Completed == true,
             unlocked = finished ? await UnlockedAsync(ct) : [],
         });

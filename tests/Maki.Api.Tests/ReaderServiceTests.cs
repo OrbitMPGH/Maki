@@ -898,6 +898,14 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     [Theory]
+    [InlineData(-3, 5, 0)]
+    [InlineData(2, 5, 2)]
+    [InlineData(99, 5, 4)]
+    [InlineData(4, 0, 0)]
+    public void TheStoredPageIsAlwaysInsideTheChapter(int reported, int pageCount, int expected) =>
+        Assert.Equal(expected, ReaderService.ClampPage(reported, pageCount));
+
+    [Theory]
     [InlineData(null, false, 0)]
     [InlineData(5, false, 5)]
     [InlineData(5, true, 0)]
