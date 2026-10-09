@@ -98,7 +98,7 @@ export function useReaderProgress(
   useEffect(() => {
     if (!enabled) return
 
-    const flush = (unloading: boolean) => {
+    const flush = (direct: boolean) => {
       const { chapterId: id, page: at, complete: done } = latest.current
       // Banked seconds are worth a write on their own: this is the last chance to report the
       // stretch since the previous one, and a hidden tab may never come back.
@@ -115,10 +115,10 @@ export function useReaderProgress(
             flushedHandler.current?.()
           })
           .catch(() => {})
-      // A page that is going away has no time to queue. Otherwise the flush goes after the save
-      // already in flight, so that one cannot land later and put the older position back; a hung
-      // save is only waited on briefly.
-      if (unloading) {
+      // A hidden or closing page may be frozen before anything queued runs, so those send at once
+      // (keepalive). Only the unmount flush goes after the save already in flight, so that one
+      // cannot land later and put the older position back; a hung save is only waited on briefly.
+      if (direct) {
         void run()
         return
       }
@@ -129,7 +129,7 @@ export function useReaderProgress(
     }
 
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') flush(false)
+      if (document.visibilityState === 'hidden') flush(true)
     }
 
     document.addEventListener('visibilitychange', onVisibility)
