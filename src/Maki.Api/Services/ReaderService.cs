@@ -2,7 +2,6 @@ using Maki.Core.Entities;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
 using Maki.Data;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -372,7 +371,7 @@ public class ReaderService(
         {
             return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
@@ -385,11 +384,6 @@ public class ReaderService(
     public static int ClampPage(int pageIndex, int pageCount) =>
         Math.Clamp(pageIndex, 0, Math.Max(0, pageCount - 1));
 
-    // 2067 = SQLITE_CONSTRAINT_UNIQUE, 1555 = SQLITE_CONSTRAINT_PRIMARYKEY. Matched on the
-    // *extended* code, never the primary 19, which also covers FK and NOT NULL failures that no
-    // retry can fix — the same rule ReadingProgressService follows.
-    private static bool IsUniqueViolation(DbUpdateException e) =>
-        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
         TimeReport time, CancellationToken ct)
@@ -510,7 +504,7 @@ public class ReaderService(
             await db.SaveChangesAsync(ct);
         }
         catch (Exception e) when (sessionStaged && e is not OperationCanceledException &&
-                                  !(e is DbUpdateException u && IsUniqueViolation(u)))
+                                  !(e is DbUpdateException u && DbErrors.IsUniqueViolation(u)))
         {
             logger.LogWarning(e, "Recording reading session for user {UserId} failed", UserId);
             DetachSessions();

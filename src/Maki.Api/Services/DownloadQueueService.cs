@@ -5,7 +5,6 @@ using Maki.Api.Hubs;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Data;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -261,7 +260,7 @@ public class DownloadQueueService(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             db.Entry(item).State = EntityState.Detached;
             throw new InvalidOperationException("A download is already queued for this chapter");
@@ -362,7 +361,7 @@ public class DownloadQueueService(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             // Something else queued one of these between the check and the insert. Rare enough that
             // falling back to the per-chapter path, which settles each race on its own, is fine.
@@ -398,9 +397,6 @@ public class DownloadQueueService(
         return new BulkEnqueueResult(items, error);
     }
 
-    // On a queue insert only the unique index on ActiveChapterId can raise this.
-    private static bool IsUniqueViolation(DbUpdateException e) =>
-        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
     /// <summary>
     /// Queues a chapter for download. Returns as soon as the row exists, because finding which mapping
@@ -486,7 +482,7 @@ public class DownloadQueueService(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             // Lost a race with another enqueue (a double click, or a manual download against
             // SmartDownloadJob) between the check above and this insert.

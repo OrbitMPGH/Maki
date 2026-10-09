@@ -6,7 +6,6 @@ using Maki.Core.Metadata;
 using Maki.Core.Notifications;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -119,7 +118,7 @@ public class SeriesRequestSubmitter(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             db.Entry(request).State = EntityState.Detached;
             return new(null, SeriesRequestSubmitError.AlreadyPending);
@@ -165,19 +164,4 @@ public class SeriesRequestSubmitter(
     private static string ChapterLabel(decimal? number) =>
         number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
 
-    /// <summary>
-    /// Shared with the controller, whose Edit and release paths hit the same index.
-    /// <para>
-    /// Takes the base <see cref="Exception"/> type because the two call shapes don't wrap the same
-    /// way: <c>SaveChangesAsync</c> goes through the change tracker and wraps the provider's
-    /// exception in a <see cref="DbUpdateException"/>, but <c>ExecuteUpdateAsync</c> executes the
-    /// statement directly and lets the provider's own exception through unwrapped.
-    /// </para>
-    /// </summary>
-    internal static bool IsUniqueViolation(Exception e) => e switch
-    {
-        DbUpdateException { InnerException: SqliteException { SqliteExtendedErrorCode: 2067 or 1555 } } => true,
-        SqliteException { SqliteExtendedErrorCode: 2067 or 1555 } => true,
-        _ => false,
-    };
 }
