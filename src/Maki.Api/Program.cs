@@ -982,12 +982,11 @@ try
                 noContentFormatter.TreatNullValueAsNoContent = false;
             }
         })
-        .AddJsonOptions(o =>
-        {
-            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-            o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcDateTimeConverter());
-        });
-    builder.Services.AddSignalR();
+        .AddJsonOptions(o => Maki.Api.Json.MakiJson.ApplyConverters(o.JsonSerializerOptions));
+    builder.Services.AddSignalR()
+        .AddJsonProtocol(o => Maki.Api.Json.MakiJson.ApplyConverters(o.PayloadSerializerOptions));
+    builder.Services.AddExceptionHandler<UnhandledExceptionHandler>();
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
@@ -1487,6 +1486,37 @@ try
         o.MessageTemplate = "{RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0} ms";
     });
 
+    if (authOptions.RequireHttps)
+    {
+        // No UseHttpsRedirection: Kestrel binds plain http only and TLS is the proxy's job, so the
+        // middleware could never find an https port to redirect to.
+        app.UseHsts();
+    }
+
+    app.UseMiddleware<SecurityHeadersMiddleware>();
+
+    // ExceptionHandlerMiddleware clears the response headers when it handles an exception, which would
+    // take Strict-Transport-Security and the security headers set above with it. Restored on the way out.
+    app.Use(async (context, next) =>
+    {
+        var kept = context.Response.Headers.ToList();
+        context.Response.OnStarting(() =>
+        {
+            foreach (var (name, value) in kept)
+                context.Response.Headers.TryAdd(name, value);
+            return Task.CompletedTask;
+        });
+        await next();
+    });
+
+    // Inside request logging so the 500 line still carries the status, and the handler leaves the
+    // exception handled so neither the logger nor Kestrel reports it a second time.
+    app.UseExceptionHandler(errorApp => errorApp.Run(context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        return Task.CompletedTask;
+    }));
+
     // A browser that navigates away mid-request cancels RequestAborted, and the query awaiting it
     // throws. Left alone that reaches request logging and Kestrel as an unhandled 500.
     app.Use(async (context, next) =>
@@ -1498,15 +1528,6 @@ try
                 context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
         }
     });
-
-    app.UseMiddleware<SecurityHeadersMiddleware>();
-
-    if (authOptions.RequireHttps)
-    {
-        // No UseHttpsRedirection: Kestrel binds plain http only and TLS is the proxy's job, so the
-        // middleware could never find an https port to redirect to.
-        app.UseHsts();
-    }
 
     // Before authentication, and that ordering is load-bearing.
     //
@@ -1526,14 +1547,22 @@ try
     // lazy chunks point at hashes that no longer exist.
     var spaFiles = new StaticFileOptions
     {
-        OnPrepareResponse = c => c.Context.Response.Headers.CacheControl =
-            c.Context.Request.Path.StartsWithSegments("/assets")
-                ? "public, max-age=31536000, immutable"
-                : "no-cache"
+        FileProvider = new PrecompressedFileProvider(
+            app.Environment.WebRootFileProvider, app.Services.GetRequiredService<IHttpContextAccessor>()),
+        OnPrepareResponse = c =>
+        {
+            c.Context.Response.Headers.CacheControl =
+                c.Context.Request.Path.StartsWithSegments("/assets")
+                    ? "public, max-age=31536000, immutable"
+                    : "no-cache";
+            PrecompressedFileProvider.Apply(c);
+        }
     };
-    app.UseResponseCompression();
     app.UseDefaultFiles();
     app.UseStaticFiles(spaFiles);
+    // After the static files on purpose: they answer from the Vite build's precompressed siblings and
+    // never reach it, so runtime compression is left to API responses.
+    app.UseResponseCompression();
 
     app.UseRateLimiter();
 

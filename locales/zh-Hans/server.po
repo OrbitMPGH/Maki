@@ -1539,6 +1539,12 @@ msgstr "未找到作品"
 msgid "error.seriesRename.planChanged"
 msgstr "预览加载后，重命名方案已更改。请检查新方案后重试。"
 
+#. Shown when a request fails on a bug in Maki. The exception is in the server log.
+#: src/Maki.Api/Logging/UnhandledExceptionHandler.cs
+#. English: Something went wrong on the server. Details are in the server log.
+msgid "error.server.unexpected"
+msgstr ""
+
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unknown start page: {page}
