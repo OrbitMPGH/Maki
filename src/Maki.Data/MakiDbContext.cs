@@ -382,7 +382,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasMany(s => s.UserTags).WithMany(t => t.Series).UsingEntity<SeriesTag>(
                 r => r.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId),
                 l => l.HasOne<Series>().WithMany().HasForeignKey(j => j.SeriesId),
-                j => j.ToTable("SeriesTags"));
+                j =>
+                {
+                    j.ToTable("SeriesTags");
+                    j.HasQueryFilter(t => _scope.Unrestricted || Series.Any(s => s.Id == t.SeriesId));
+                });
 
             // Library access, enforced once here instead of at each of the dozens of places that
             // query series. A correlated EXISTS rather than an `IN` over a captured id set: the
@@ -508,11 +512,12 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne(l => l.SourceMapping).WithMany(m => m.ChapterLinks)
                 .HasForeignKey(l => l.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
 
-            // A link is visible exactly when its chapter's series is visible. Spell the series
-            // EXISTS out here so adding a join table cannot bypass root-folder grants.
+            // A link is visible exactly when its chapter is, and the chapter filter carries the series
+            // check. Correlating through Chapters keeps the lookup on the chapter primary key; an EXISTS
+            // over Series with the chapter inside it scans every series per link row.
             e.HasQueryFilter(l =>
                 _scope.Unrestricted ||
-                Series.Any(s => s.Chapters.Any(c => c.Id == l.ChapterId)));
+                Chapters.Any(c => c.Id == l.ChapterId));
         });
 
         modelBuilder.Entity<DownloadQueueItem>(e =>
