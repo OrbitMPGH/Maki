@@ -4279,8 +4279,6 @@ export interface ProgressSummary {
   total: number
   recent: Achievement[]
   goals: ReadingGoal[]
-  /** Unlocks the user has not been shown yet. */
-  unseen: Achievement[]
 }
 
 export interface HeatmapDay {

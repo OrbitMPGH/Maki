@@ -36,8 +36,8 @@ public class UserAchievement : IUserOwned
     public DateTime UnlockedAt { get; set; }
 
     /// <summary>
-    /// Null until the user has been shown it. What makes the reader's unlock toast fire exactly
-    /// once, rather than on every chapter after the one that earned it.
+    /// Unused: nothing sets it any more, since unlock toasts ride the inbox push. Kept so the column
+    /// needs no migration.
     /// </summary>
     public DateTime? SeenAt { get; set; }
 }

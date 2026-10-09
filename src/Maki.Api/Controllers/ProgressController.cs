@@ -143,13 +143,6 @@ public class ProgressController(
             .Select(d => d!)
             .ToList();
 
-        var unseen = TopTierPerKey(held.Where(h => h.SeenAt is null))
-            .OrderBy(h => h.UnlockedAt)
-            .Select(h => Describe(h, snapshot, held))
-            .Where(d => d is not null)
-            .Select(d => d!)
-            .ToList();
-
         return Ok(new ProgressSummaryDto(
             true,
             spec.ShowStreaks,
@@ -163,8 +156,7 @@ public class ProgressController(
             held.Count,
             AchievementCatalog.All.Sum(a => a.Tiers.Count),
             recent,
-            await GoalsForAsync(target, ct, snapshot),
-            unseen));
+            await GoalsForAsync(target, ct, snapshot)));
     }
 
     /// <summary>
@@ -215,16 +207,6 @@ public class ProgressController(
             .OrderBy(d => d.Date)
             .Select(d => new HeatmapDayDto(d.Date, d.Chapters, d.Seconds))
             .ToList());
-    }
-
-    public record SeenRequest(IReadOnlyList<int> Ids);
-
-    /// <summary>Stamps unlocks as shown. Always about the caller: a toast is not something an admin dismisses for somebody else.</summary>
-    [HttpPost("achievements/seen")]
-    public async Task<IActionResult> Seen([FromBody] SeenRequest request, CancellationToken ct)
-    {
-        await achievements.MarkSeenAsync(currentUser.UserId, request.Ids ?? [], ct);
-        return NoContent();
     }
 
     [HttpGet("goals")]
@@ -439,7 +421,7 @@ public class ProgressController(
     }
 
     /// <summary>
-    /// The stored-row form, for the recent and unseen lists. Null when this build no longer knows the
+    /// The stored-row form, for the recent list. Null when this build no longer knows the
     /// key — a retired achievement stops rendering rather than breaking the page.
     /// </summary>
     private AchievementDto? Describe(
@@ -464,5 +446,5 @@ public class ProgressController(
         new(p.Level, p.Xp, p.IntoLevel, p.LevelSpan, p.NextLevelXp, p.Progress);
 
     private static ProgressSummaryDto Disabled() =>
-        new(false, false, new LevelDto(1, 0, 0, 1, 0, 0), 0, 0, 0, 0, 0, 0, 0, 0, [], [], []);
+        new(false, false, new LevelDto(1, 0, 0, 1, 0, 0), 0, 0, 0, 0, 0, 0, 0, 0, [], []);
 }
