@@ -190,20 +190,20 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | CORE | CORE-17 | nit | pending |
 | CORE | CORE-31 | nit | pending |
 | CORE | CORE-32 | nit | pending |
-| DATA | DATA-04 | low | pending |
-| DATA | DATA-09 | low | pending |
-| DATA | DATA-13 | low | pending |
-| DATA | DATA-01 | low | pending |
-| DATA | DATA-08 | low | pending |
-| DATA | DATA-12 | low | pending |
-| DATA | DATA-03 | low | pending |
-| DATA | DATA-14 | low | pending |
-| DATA | DATA-06 | low | pending |
-| DATA | DATA-05 | low | pending |
-| DATA | DATA-10 | nit | pending |
-| DATA | DATA-07 | nit | pending |
-| DATA | DATA-15 | nit | pending |
-| DATA | DATA-11 | nit | pending |
+| DATA | DATA-04 | low | done 2c4313e8 |
+| DATA | DATA-09 | low | done 2c4313e8, 79d4c05d |
+| DATA | DATA-13 | low | done b03f93fd |
+| DATA | DATA-01 | low | skipped (already fixed by c2de0e39, 399a9cb1: MigrationErrorMarker expires after 7 days) |
+| DATA | DATA-08 | low | done bc365743, 79d4c05d |
+| DATA | DATA-12 | low | skipped (behaviour change: refreshing CompletedAt on a re-read moves the documented first-flip rule and the stats that date rows by it; owner may revisit) |
+| DATA | DATA-03 | low | done 2c4313e8 |
+| DATA | DATA-14 | low | done 77cb6d67, 33bdd262 (HealthScans only; the history, operations and file-version journals stay unpruned on purpose) |
+| DATA | DATA-06 | low | done b73fe53a, a55ccaf5 |
+| DATA | DATA-05 | low | done 2c4313e8 |
+| DATA | DATA-10 | nit | done b73fe53a |
+| DATA | DATA-07 | nit | done 987a6e4a |
+| DATA | DATA-15 | nit | done ed88032f, 99c162e8 |
+| DATA | DATA-11 | nit | done d9a73712 |
 | DBPERF | DBPERF-03 | low | pending |
 | DBPERF | DBPERF-07 | low | pending |
 | DBPERF | DBPERF-10 | low | pending |
