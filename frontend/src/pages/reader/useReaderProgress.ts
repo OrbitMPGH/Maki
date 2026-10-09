@@ -31,6 +31,7 @@ export function useReaderProgress(
   enabled: boolean,
   clock: ReadingClock,
   onUnlocked?: (unlocked: UnlockedAchievement[]) => void,
+  onFlushed?: () => void,
 ) {
   const latest = useRef({ chapterId, page, complete })
   const pending = useRef(false)
@@ -41,6 +42,8 @@ export function useReaderProgress(
   // heartbeat on every render, which would mean the timers never actually fire.
   const unlockHandler = useRef(onUnlocked)
   unlockHandler.current = onUnlocked
+  const flushedHandler = useRef(onFlushed)
+  flushedHandler.current = onFlushed
 
   latest.current = { chapterId, page, complete }
 
@@ -69,6 +72,7 @@ export function useReaderProgress(
 
     pending.current = true
     timer.current = setTimeout(() => {
+      if (!pending.current) return
       pending.current = false
       send(chapterId, page, complete)
     }, DEBOUNCE_MS)
@@ -96,10 +100,14 @@ export function useReaderProgress(
       // Banked seconds are worth a write on their own: this is the last chance to report the
       // stretch since the previous one, and a hidden tab may never come back.
       if (!id || (!pending.current && clock.pending() === 0)) return
+      // The flush carries the latest position, so a debounce still armed would only repeat it.
+      clearTimeout(timer.current)
       pending.current = false
       void flushProgress(id, at, done || undefined, clock.take())
         .then((unlocked) => {
           if (unlocked.length > 0) unlockHandler.current?.(unlocked)
+          // Only now has the write committed, so a refetch started any earlier could read the old state.
+          flushedHandler.current?.()
         })
         .catch(() => {})
     }

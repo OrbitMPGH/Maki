@@ -135,6 +135,20 @@ export default function ReaderPage() {
     [markSeenMutate, t],
   )
 
+  const invalidateProgress = useCallback(
+    (seriesId: number) => {
+      void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
+    },
+    [queryClient],
+  )
+  const seriesId = manifest?.seriesId
+  const onFlushed = useCallback(() => {
+    if (seriesId != null) invalidateProgress(seriesId)
+  }, [seriesId, invalidateProgress])
+
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
   // writing that would overwrite the saved position with page 1, the very thing being resumed to.
   const tracking = resumedFor === manifest?.chapterId && !incognito
@@ -149,6 +163,7 @@ export default function ReaderPage() {
     tracking,
     clock,
     onAchievementsUnlocked,
+    onFlushed,
   )
 
   /**
@@ -233,9 +248,7 @@ export default function ReaderPage() {
             () => [] as UnlockedAchievement[],
           )
           if (unlocked.length > 0) onAchievementsUnlocked(unlocked)
-          void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
-          void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
-          void queryClient.invalidateQueries({ queryKey: ['series'] })
+          invalidateProgress(seriesId)
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
       }
@@ -253,6 +266,7 @@ export default function ReaderPage() {
       shownTo,
       pageCount,
       queryClient,
+      invalidateProgress,
       tracking,
       clock,
       finished,
