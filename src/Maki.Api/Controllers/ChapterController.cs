@@ -176,17 +176,10 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
-        var chapters = await db.Chapters
+        var updated = await db.Chapters
             .Where(c => request.ChapterIds.Contains(c.Id))
-            .ToListAsync(ct);
-
-        foreach (var chapter in chapters)
-        {
-            chapter.Wanted = request.Wanted;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { updated = chapters.Count });
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.Wanted, request.Wanted), ct);
+        return Ok(new { updated });
     }
 
     /// <summary>

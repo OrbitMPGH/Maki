@@ -1787,14 +1787,10 @@ public class SeriesController(
         // Resolved through db.Series, like the notification bulk: ids outside the caller's root
         // folders are dropped by the query filter instead of written.
         var wanted = (request.SeriesIds ?? []).Distinct().ToList();
-        var series = await db.Series.Where(s => wanted.Contains(s.Id)).ToListAsync(ct);
-        foreach (var s in series)
-        {
-            s.UpgradeProfileId = request.UpgradeProfileId;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { updated = series.Count });
+        var updated = await db.Series
+            .Where(s => wanted.Contains(s.Id))
+            .ExecuteUpdateAsync(u => u.SetProperty(s => s.UpgradeProfileId, request.UpgradeProfileId), ct);
+        return Ok(new { updated });
     }
 
     public record IncognitoRequest(string Mode);

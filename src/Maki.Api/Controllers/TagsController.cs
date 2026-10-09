@@ -96,13 +96,12 @@ public class TagsController(ILocalizer localizer, MakiDbContext db) : Controller
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var tag = await db.Tags.Include(t => t.Series).FirstOrDefaultAsync(t => t.Id == id, ct);
+        var tag = await db.Tags.FirstOrDefaultAsync(t => t.Id == id, ct);
         if (tag is null)
         {
             return NotFound();
         }
 
-        tag.Series.Clear();
         db.Tags.Remove(tag);
         await db.SaveChangesAsync(ct);
         return NoContent();
