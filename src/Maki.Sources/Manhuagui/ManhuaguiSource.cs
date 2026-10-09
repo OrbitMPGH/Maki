@@ -205,7 +205,7 @@ public partial class ManhuaguiSource(IHttpClientFactory httpClientFactory) : ISo
         var encodedPath = "/" + string.Join('/',
             data.Path.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(Uri.EscapeDataString)) + "/";
 
-        var headers = new Dictionary<string, string> { ["Referer"] = "https://www.manhuagui.com/" };
+        var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
         var pages = data.Files
             .Select(file => new PageRequest(
                 $"https://i.hamreus.com{encodedPath}{file}?e={data.Sl.E}&m={data.Sl.M}", headers))

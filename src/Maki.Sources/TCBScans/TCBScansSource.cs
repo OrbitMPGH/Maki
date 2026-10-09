@@ -28,7 +28,10 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
 
     public string Name => "tcbscans";
     public string DisplayName => "TCB Scans";
-    public string BaseUrl => "https://tcbonepiecechapters.com";
+    public string BaseUrl => DefaultBaseUrl(Environment.GetEnvironmentVariable("MAKI_SOURCE_TCBSCANS_BASEURL"));
+
+    public static string DefaultBaseUrl(string? overrideUrl) =>
+        string.IsNullOrWhiteSpace(overrideUrl) ? "https://tcbonepiecechapters.com" : overrideUrl.TrimEnd('/');
     public SourceCapabilities Capabilities => SourceCapabilities.None;
     public SourceKind Kind => SourceKind.Scanlator;
 

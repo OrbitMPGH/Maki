@@ -267,7 +267,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
             throw new ChapterLockedException($"CuuTruyen chapter {chapter.SourceChapterId} has no pages");
         }
 
-        var headers = new Dictionary<string, string> { ["Referer"] = "https://cuutruyen.net/" };
+        var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
         var pages = new List<PageRequest>(entries.Count);
 
         foreach (var page in entries)

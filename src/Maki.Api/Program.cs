@@ -464,12 +464,14 @@ try
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // TCB Scans — plain HTML, English-only; wants a Referer on every request.
+    // The domain rotates on DMCA takedowns, so MAKI_SOURCE_TCBSCANS_BASEURL overrides it.
     var tcbLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    var tcbBaseUrl = TCBScansSource.DefaultBaseUrl(Environment.GetEnvironmentVariable("MAKI_SOURCE_TCBSCANS_BASEURL")) + "/";
     builder.Services.AddHttpClient(TCBScansSource.HttpClientName, client =>
         {
-            client.BaseAddress = new Uri("https://tcbonepiecechapters.com/");
+            client.BaseAddress = new Uri(tcbBaseUrl);
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
-            client.DefaultRequestHeaders.Referrer = new Uri("https://tcbonepiecechapters.com/");
+            client.DefaultRequestHeaders.Referrer = new Uri(tcbBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(tcbLimiter))
@@ -601,7 +603,7 @@ try
             // slightly older Chrome build number.
             client.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36");
-            client.DefaultRequestHeaders.Referrer = new Uri("https://www.manhuagui.com/");
+            client.DefaultRequestHeaders.Referrer = new Uri(manhuaguiBaseUrl);
             client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("zh-CN,zh;q=0.9");
             client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
             client.Timeout = TimeSpan.FromSeconds(30);
