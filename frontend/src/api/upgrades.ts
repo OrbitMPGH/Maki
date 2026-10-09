@@ -625,6 +625,7 @@ export function useSeriesUpgradeScanStatus(seriesId: number) {
     queryKey: ['upgrade-scan-status', seriesId],
     queryFn: async () =>
       (await api<SeriesScanStatus | undefined>(`/upgrades/scan/status?seriesId=${seriesId}`)) ?? null,
+    meta: { inlineNotFound: true },
     refetchInterval: (query) => {
       const state = query.state.data?.state
       return state === 'queued' || state === 'running' ? 2000 : false
