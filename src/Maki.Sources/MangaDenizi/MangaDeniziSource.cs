@@ -20,6 +20,7 @@ namespace Maki.Sources.MangaDenizi;
 public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
 {
     public const string HttpClientName = "source-mangadenizi";
+    public const string ImageHttpClientName = "source-mangadenizi-img";
 
     private static readonly Uri ApiReferer = new("https://mangadenizi.net/manga");
     private const int MaxSearchPages = 3;
@@ -34,6 +35,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
     public IReadOnlyList<string> CoverHosts => [];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
+    private HttpClient ImageClient => httpClientFactory.CreateClient(ImageHttpClientName);
 
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
@@ -263,7 +265,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         PublicAddressGuard.EnsureAllowed(url);
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Referrer = new Uri($"{BaseUrl}/");
-        using var response = await Client.SendAsync(request, ct);
+        using var response = await ImageClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsByteArrayAsync(ct);
     }
