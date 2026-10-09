@@ -204,30 +204,30 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DATA | DATA-07 | nit | done 987a6e4a |
 | DATA | DATA-15 | nit | done ed88032f, 99c162e8 |
 | DATA | DATA-11 | nit | done d9a73712 |
-| DBPERF | DBPERF-03 | low | pending |
-| DBPERF | DBPERF-07 | low | pending |
-| DBPERF | DBPERF-10 | low | pending |
-| DBPERF | DBPERF-12 | low | pending |
-| DBPERF | DBPERF-15 | low | pending |
-| DBPERF | DBPERF-11 | low | pending |
-| DBPERF | DBPERF-16 | low | pending |
-| DBPERF | DBPERF-13 | low | pending |
-| DBPERF | DBPERF-01 | low | pending |
-| DBPERF | DBPERF-02 | low | pending |
-| DBPERF | DBPERF-05 | low | pending |
-| DBPERF | DBPERF-06 | low | pending |
-| DBPERF | DBPERF-08 | low | pending |
-| DBPERF | DBPERF-09 | low | pending |
-| DBPERF | DBPERF-04 | low | pending |
-| DBPERF | DBPERF-18 | nit | pending |
-| DBPERF | DBPERF-19 | nit | pending |
-| DBPERF | DBPERF-20 | nit | pending |
-| DBPERF | DBPERF-22 | nit | pending |
-| DBPERF | DBPERF-17 | nit | pending |
-| DBPERF | DBPERF-21 | nit | pending |
-| DBPERF | DBPERF-24 | nit | pending |
-| DBPERF | DBPERF-14 | nit | pending |
-| DBPERF | DBPERF-23 | nit | pending |
+| DBPERF | DBPERF-03 | low | done 8df07602 |
+| DBPERF | DBPERF-07 | low | done f1e81d32 |
+| DBPERF | DBPERF-10 | low | done 6d71be0b |
+| DBPERF | DBPERF-12 | low | done 3c9ca0cf (already on audit-fixes) |
+| DBPERF | DBPERF-15 | low | done 253738de (title and id projection; normalised-key column left, disproportionate for a low) |
+| DBPERF | DBPERF-11 | low | skipped (needs a design change: delta-update the cached metrics or evaluate achievements off the request; both move the unlock toast, owner may revisit) |
+| DBPERF | DBPERF-16 | low | done b4857564 (tag links untracked; a lean list DTO without Overview needs a SeriesRow change, owner may revisit) |
+| DBPERF | DBPERF-13 | low | done 3b817c70, ba3ada8e |
+| DBPERF | DBPERF-01 | low | done 8dbe98ba |
+| DBPERF | DBPERF-02 | low | done 75290339 |
+| DBPERF | DBPERF-05 | low | done cbfbc9a1, 30ec865a |
+| DBPERF | DBPERF-06 | low | done b82a18f3 |
+| DBPERF | DBPERF-08 | low | done b86a30f5, f41ab7db |
+| DBPERF | DBPERF-09 | low | done d07232e0 (Settings cards poll 30 s; server-side scope batching skipped as disproportionate) |
+| DBPERF | DBPERF-04 | low | done b99a56c8 |
+| DBPERF | DBPERF-18 | nit | done e80a4c24 |
+| DBPERF | DBPERF-19 | nit | done f94d32c9 |
+| DBPERF | DBPERF-20 | nit | done 624ad11e, 8df07602 |
+| DBPERF | DBPERF-22 | nit | done 614b1ad2 |
+| DBPERF | DBPERF-17 | nit | done 8e0f2fc7 |
+| DBPERF | DBPERF-21 | nit | done d93345de (StageAsync; the RequestLocale sync read stays, every localizer reads it) |
+| DBPERF | DBPERF-24 | nit | done 271b21b9 |
+| DBPERF | DBPERF-14 | nit | done d7e4e7a4, e07fa1db |
+| DBPERF | DBPERF-23 | nit | skipped (Mode=ReadOnly already in place; mmap_size or pooling needs a runtime measurement against the dump and interacts with the nightly swap) |
 | DOWNLOADS | DOWNLOADS-09 | low | done d6ae9d72 |
 | DOWNLOADS | DOWNLOADS-10 | low | done d2f47522 |
 | DOWNLOADS | DOWNLOADS-13 | low | done 45a8c486 |
