@@ -121,7 +121,8 @@ public class ChapterRedownloadTests : IDisposable
 
         var result = await controller.Redownload(new(seriesId, "good"), Evaluation(), default);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        var refused = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("error.sourceMapping.sourceDisabled", refused.Value!.GetType().GetProperty("code")!.GetValue(refused.Value));
     }
 
     [Theory]
