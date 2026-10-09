@@ -51,6 +51,8 @@ public class ReleaseNameParserTests
     [InlineData("Title v05 - 2nd Season.cbz", 5, null)]
     [InlineData("Title v05-02.cbz", 5, null)]
     [InlineData("Title v01 - v03 (Digital).cbz", 1, 3)]
+    [InlineData("Berserk Vol. 1 - 3.cbz", 1, 3)]
+    [InlineData("Berserk Vol. 1 - 41 (Digital).cbz", 1, 41)]
     public void A_volume_range_needs_a_bare_hyphen_or_a_marked_end(string file, int volume, int? volumeEnd)
     {
         var parsed = ReleaseNameParser.ParseFileName(file);

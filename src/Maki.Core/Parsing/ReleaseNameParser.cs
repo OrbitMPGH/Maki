@@ -39,13 +39,14 @@ public static partial class ReleaseNameParser
     [GeneratedRegex(@"\s*[\(\[][^\)\]]*[\)\]]")]
     internal static partial Regex TagGroups();
 
-    // A volume range takes a bare hyphen, or a spaced one only when the end carries its own v/vol
-    // marker: "Title Vol. 3 - 10 Years After" is volume 3, not 3 to 10.
+    // A volume range takes a bare hyphen, or a spaced one when the end carries its own v/vol marker
+    // or is a number that closes the name or runs into a tag or "+": "Vol. 1 - 41 (Digital)" is a
+    // range, "Title Vol. 3 - 10 Years After" is volume 3.
     // The lookbehind is "\b that also breaks on an underscore": older scanlation sets name every
     // file "Narutaru_vol.03", and _ is a word character, so \b found no boundary in front of the
     // marker and not one of them parsed. Any other letter or digit in front still blocks the
     // match, which is what keeps "Revolution" out of the volume pattern.
-    [GeneratedRegex(@"(?<![a-z0-9])v(?:ol(?:ume)?)?\.?[\s_]*([0-9]+)(?:(?:-|\s-\s*(?=v))(?:v(?:ol)?\.?[\s_]*)?([0-9]+))?", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?<![a-z0-9])v(?:ol(?:ume)?)?\.?[\s_]*([0-9]+)(?:(?:-|\s-\s*(?=v|[0-9]+\s*(?:$|[(\[+])))(?:v(?:ol)?\.?[\s_]*)?([0-9]+))?", RegexOptions.IgnoreCase)]
     internal static partial Regex VolumePattern();
 
     // The "h" is optional because a bare "c049" is the scanlation convention, and this has to accept
