@@ -980,12 +980,9 @@ try
                 noContentFormatter.TreatNullValueAsNoContent = false;
             }
         })
-        .AddJsonOptions(o =>
-        {
-            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-            o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcDateTimeConverter());
-        });
-    builder.Services.AddSignalR();
+        .AddJsonOptions(o => Maki.Api.Json.MakiJson.ApplyConverters(o.JsonSerializerOptions));
+    builder.Services.AddSignalR()
+        .AddJsonProtocol(o => Maki.Api.Json.MakiJson.ApplyConverters(o.PayloadSerializerOptions));
     builder.Services.AddExceptionHandler<UnhandledExceptionHandler>();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
