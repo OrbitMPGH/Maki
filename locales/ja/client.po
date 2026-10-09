@@ -2222,6 +2222,10 @@ msgstr "{title}をライブラリに追加"
 msgid "Add a rail"
 msgstr "レールを追加"
 
+#: src/pages/ImportPage.tsx
+msgid "Add a root folder in Settings, then come back to scan it for series to import."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3407,6 +3411,10 @@ msgstr "C:\\Manga（任意）"
 #, fuzzy
 msgid "C:\\Manga or /library"
 msgstr "C:\\Mangaまたは/library"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Can't load this import"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -7305,6 +7313,10 @@ msgstr "画像形式"
 msgid "Import"
 msgstr "インポート"
 
+#: src/pages/ImportPage.tsx
+msgid "Import {folderName}"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -9744,6 +9756,10 @@ msgstr "結果はありません。"
 msgid "No reviews on MyAnimeList yet."
 msgstr "MyAnimeListにはまだレビューがありません。"
 
+#: src/pages/ImportPage.tsx
+msgid "No root folders yet"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
@@ -10674,6 +10690,10 @@ msgstr "今後はこれらのフィルターでRecommendedを開く"
 #, fuzzy
 msgid "Open series"
 msgstr "シリーズを開く"
+
+#: src/pages/ImportPage.tsx
+msgid "Open settings"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12603,6 +12623,7 @@ msgstr ""
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -12751,6 +12772,10 @@ msgstr "もう一度抽選"
 #, fuzzy
 msgid "Romance"
 msgstr "ロマンス"
+
+#: src/api/titles.ts
+msgid "Romanized"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/ImportListsSection.tsx

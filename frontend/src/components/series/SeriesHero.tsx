@@ -1,4 +1,4 @@
-﻿import {type ReactNode, useMemo} from 'react'
+import {type ReactNode, useMemo} from 'react'
 import {
     ActionIcon,
     Alert,
@@ -25,8 +25,8 @@ import {
     seriesStatusVisual,
     statusToken,
 } from '../ui/status'
-import {useReadTracking} from "../../api/reader.ts";
-import {useChapters} from "../../api/hooks.ts";
+import { useReadTracking } from '../../api/reader'
+import { useChapters } from '../../api/hooks'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'

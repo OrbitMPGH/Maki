@@ -1815,6 +1815,10 @@ msgstr "Add {title} to library"
 msgid "Add a rail"
 msgstr "Add a rail"
 
+#: src/pages/ImportPage.tsx
+msgid "Add a root folder in Settings, then come back to scan it for series to import."
+msgstr "Add a root folder in Settings, then come back to scan it for series to import."
+
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Add a series"
@@ -2789,6 +2793,10 @@ msgstr "C:\\Manga (optional)"
 #: src/pages/settings/LibraryCards.tsx
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga or /library"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Can't load this import"
+msgstr "Can't load this import"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
@@ -5998,6 +6006,10 @@ msgstr "Image formats"
 msgid "Import"
 msgstr "Import"
 
+#: src/pages/ImportPage.tsx
+msgid "Import {folderName}"
+msgstr "Import {folderName}"
+
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Import a folder"
@@ -7995,6 +8007,10 @@ msgstr "No results."
 msgid "No reviews on MyAnimeList yet."
 msgstr "No reviews on MyAnimeList yet."
 
+#: src/pages/ImportPage.tsx
+msgid "No root folders yet"
+msgstr "No root folders yet"
+
 #: src/components/CatalogueRules.tsx
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
 msgstr "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
@@ -8760,6 +8776,10 @@ msgstr "Open Recommended with these filters from now on"
 #: src/pages/RequestsPage.tsx
 msgid "Open series"
 msgstr "Open series"
+
+#: src/pages/ImportPage.tsx
+msgid "Open settings"
+msgstr "Open settings"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Open source page"
@@ -10346,6 +10366,7 @@ msgstr "Retries"
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -10467,6 +10488,10 @@ msgstr "Roll again"
 #: src/components/CatalogueFilters.tsx
 msgid "Romance"
 msgstr "Romance"
+
+#: src/api/titles.ts
+msgid "Romanized"
+msgstr "Romanized"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/ImportListsSection.tsx

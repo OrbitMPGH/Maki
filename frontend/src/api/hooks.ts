@@ -2015,10 +2015,11 @@ export function useDeleteSeriesFiles(seriesId: number) {
 }
 
 /** The active queue. Paginated server-side; `total` tells you if the page is truncated. */
-export function useQueue(page = 1, pageSize = 200) {
+export function useQueue(page = 1, pageSize = 200, enabled = true) {
   return useQuery({
     queryKey: ['queue', page, pageSize],
     queryFn: () => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`),
+    enabled,
     refetchInterval: 10_000,
   })
 }
@@ -2058,9 +2059,10 @@ export function useRetryQueueItem() {
  */
 export function useImportPlan(id: number | null) {
   return useQuery({
-    queryKey: ['queue', 'import-plan', id],
+    queryKey: ['import-plan', id],
     queryFn: () => api<TorrentImportPlanDto>(`/queue/${id}/import-plan`),
     enabled: id !== null,
+    meta: { silent: true },
   })
 }
 
@@ -2970,6 +2972,7 @@ export function useReleaseSearch(seriesId: number, enabled: boolean, query?: str
     enabled,
     staleTime: 5 * 60 * 1000,
     retry: false,
+    meta: { silent: true },
   })
 }
 
