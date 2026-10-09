@@ -12,7 +12,8 @@ namespace Maki.Sources.Asura;
 /// The series id is the hashed public slug ("{slug}-{hash}"); the chapter id packs
 /// the series slug and raw chapter number as "{slug}|{number}" so GetPagesAsync can
 /// rebuild the per-chapter endpoint. Premium chapters whose early-access window
-/// hasn't opened serve no pages, so they're skipped to avoid empty grabs.
+/// hasn't opened serve no pages: they stay listed, and GetPagesAsync raises
+/// <see cref="ChapterLockedException"/> with the unlock time so the download retries later.
 /// </summary>
 public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
 {
@@ -142,8 +143,12 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
         var pages = new List<PageRequest>();
         JsonElement ch = default;
         var hasChapter = root.TryGetProperty("data", out var data) && data.TryGetProperty("chapter", out ch);
-        if (hasChapter &&
-            ch.TryGetProperty("pages", out var pageArray) &&
+        if (!hasChapter)
+        {
+            throw new InvalidOperationException($"Asura Scans series/{seriesSlug}/chapters/{number} has no chapter payload");
+        }
+
+        if (ch.TryGetProperty("pages", out var pageArray) &&
             pageArray.ValueKind == JsonValueKind.Array)
         {
             var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
@@ -162,7 +167,7 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
         // actually opens, so a chapter that looked unlocked at sync time can still come back
         // premium-locked with zero pages here. Flag it distinctly so the pipeline retries
         // quietly instead of burning it down to a permanent failure.
-        if (pages.Count == 0 && hasChapter &&
+        if (pages.Count == 0 &&
             ch.TryGetProperty("is_premium", out var premiumEl) && premiumEl.ValueKind == JsonValueKind.True)
         {
             DateTimeOffset? unlockAt = ch.TryGetProperty("early_access_until", out var uaEl) &&
