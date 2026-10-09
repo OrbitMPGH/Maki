@@ -458,19 +458,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(r => _scope.Unrestricted || r.UserId == _scope.UserId);
         });
 
-
-    /// <summary>
-    /// "The series this row hangs off is visible to the caller." Written as an EXISTS over
-    /// <see cref="Series"/> rather than by repeating the root-folder join, so it inherits the series
-    /// filter above and the two can never drift apart.
-    /// <para>
-    /// Every entity on the required end of a relationship to <c>Series</c> needs this, and not for
-    /// tidiness: without it EF warns at model build that the required navigation may be filtered out,
-    /// and — far worse — the child table is left <em>unfiltered</em>. A chapter, its file, its source
-    /// mappings and its queue rows would all be readable by id for a series the caller was never
-    /// granted, which is the whole access model bypassed one join short of the door.
-    /// </para>
-    /// </summary>
+        // The filters below read "the series this row hangs off is visible to the caller", written as
+        // an EXISTS over Series rather than by repeating the root-folder join, so they inherit the
+        // series filter above and the two can never drift apart.
+        //
+        // Every entity on the required end of a relationship to Series needs one, and not for
+        // tidiness: without it EF warns at model build that the required navigation may be filtered
+        // out, and, far worse, the child table is left unfiltered. A chapter, its file, its source
+        // mappings and its queue rows would all be readable by id for a series the caller was never
+        // granted, which is the whole access model bypassed one join short of the door.
         modelBuilder.Entity<Chapter>(e =>
         {
             e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
