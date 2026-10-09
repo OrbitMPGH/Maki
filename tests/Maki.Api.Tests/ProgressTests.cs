@@ -699,15 +699,13 @@ public sealed class ProgressTests : IDisposable
         }
         catch (TimeZoneNotFoundException)
         {
+            Assert.Fail("America/Santiago is not available on this host, so the DST case cannot be exercised");
             return;
         }
 
         // Chile springs forward at local midnight on the first Sunday of September.
         var transition = new DateTime(2026, 9, 6, 0, 0, 0, DateTimeKind.Unspecified);
-        if (!zone.IsInvalidTime(transition))
-        {
-            return;
-        }
+        Assert.True(zone.IsInvalidTime(transition), "Local midnight on the Santiago transition day should not exist");
 
         _db.SetUserConfig(UserId, (SettingKeys.UserTimeZone, "America/Santiago"));
         var metrics = new UserMetricsService(_db.NewContext(), new TestUserSettingsStore(_db), _cache,
