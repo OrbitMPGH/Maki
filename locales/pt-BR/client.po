@@ -2130,7 +2130,7 @@ msgid "Account security"
 msgstr "Segurança da conta"
 
 #: src/pages/settings/SystemCards.tsx
-msgid "Accounts are restored too, exactly as they were in that backup. A password you changed, an API key you revoked or a single sign-on link you removed since then comes back, so redo those afterwards."
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed or a single sign-on link you removed since then comes back, so redo those afterwards. API keys you revoked since the backup stay revoked."
 msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.

@@ -223,9 +223,9 @@ export function BackupSection() {
           </Text>
           <Text size="sm">
             <Trans>
-              Accounts are restored too, exactly as they were in that backup. A password you changed, an API
-              key you revoked or a single sign-on link you removed since then comes back, so redo those
-              afterwards.
+              Accounts are restored too, exactly as they were in that backup. A password you changed or a
+              single sign-on link you removed since then comes back, so redo those afterwards. API keys you
+              revoked since the backup stay revoked.
             </Trans>
           </Text>
           <Group justify="flex-end">

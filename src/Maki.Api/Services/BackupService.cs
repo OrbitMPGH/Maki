@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO.Compression;
 using System.Text.Json;
 using Maki.Api.Configuration;
@@ -230,7 +231,8 @@ public class BackupService(
         var tempDir = Path.Combine(parent, $".restore-staging-{Guid.NewGuid():N}");
         try
         {
-            ExtractAndValidate(zipStream, tempDir);
+            var createdUtc = ExtractAndValidate(zipStream, tempDir);
+            CarryRevocationsForward(Path.Combine(tempDir, DbEntry), createdUtc);
             SwapIntoPending(tempDir, parent);
         }
         finally
@@ -242,10 +244,11 @@ public class BackupService(
         await Task.CompletedTask;
     }
 
-    private void ExtractAndValidate(Stream zipStream, string tempDir)
+    private DateTime? ExtractAndValidate(Stream zipStream, string tempDir)
     {
         var known = db.Database.GetMigrations().ToList();
         var stagedDb = Path.Combine(tempDir, DbEntry);
+        DateTime? createdUtc;
 
         try
         {
@@ -258,6 +261,8 @@ public class BackupService(
             var manifest = ReadManifestFromArchive(archive);
             if (manifest?.LastMigration is { } last && !known.Contains(last))
                 throw Reject("error.system.backupTooNew", new { migration = last });
+
+            createdUtc = manifest?.CreatedUtc;
 
             if (dbEntry.Length > MaxExtractedDatabaseBytes)
                 throw Reject("error.system.backupTooLarge");
@@ -273,6 +278,71 @@ public class BackupService(
         }
 
         ValidateDatabase(stagedDb, known);
+        return createdUtc;
+    }
+
+    /// <summary>
+    /// A restore swaps in the old accounts wholesale, which would bring back an API key revoked since
+    /// the backup was taken. Every key the live database has revoked after <paramref name="backupCreatedUtc"/>
+    /// (or any, when the backup has no manifest) is revoked in the staged copy too, matched by key hash.
+    /// </summary>
+    private void CarryRevocationsForward(string stagedDb, DateTime? backupCreatedUtc)
+    {
+        try
+        {
+            var revoked = new List<(string Hash, string RevokedAt)>();
+            using (var live = new SqliteConnection($"Data Source={paths.DatabasePath};Mode=ReadOnly;Pooling=False"))
+            {
+                live.Open();
+                using var query = live.CreateCommand();
+                query.CommandText = "SELECT KeyHash, RevokedAt FROM UserApiKeys WHERE RevokedAt IS NOT NULL";
+                using var reader = query.ExecuteReader();
+                while (reader.Read())
+                {
+                    var at = reader.GetString(1);
+                    if (backupCreatedUtc is { } created
+                        && DateTime.TryParse(at, CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
+                        && parsed <= created.ToUniversalTime())
+                    {
+                        continue;
+                    }
+
+                    revoked.Add((reader.GetString(0), at));
+                }
+            }
+
+            if (revoked.Count == 0)
+                return;
+
+            using var staged = new SqliteConnection($"Data Source={stagedDb};Pooling=False");
+            staged.Open();
+            using (var exists = staged.CreateCommand())
+            {
+                exists.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'UserApiKeys'";
+                if (Convert.ToInt64(exists.ExecuteScalar()) == 0)
+                    return;
+            }
+
+            using var transaction = staged.BeginTransaction();
+            foreach (var (hash, at) in revoked)
+            {
+                using var update = staged.CreateCommand();
+                update.Transaction = transaction;
+                update.CommandText = "UPDATE UserApiKeys SET RevokedAt = $at WHERE KeyHash = $hash AND RevokedAt IS NULL";
+                update.Parameters.AddWithValue("$at", at);
+                update.Parameters.AddWithValue("$hash", hash);
+                update.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+        catch (SqliteException ex)
+        {
+            // Restoring without the revocations would revive a key the admin killed, so refuse.
+            logger.LogWarning("Rejected restore: could not carry API key revocations forward: {Error}", ex.Message);
+            throw Reject("error.system.restoreFailed");
+        }
     }
 
     private void ValidateDatabase(string dbPath, IReadOnlyList<string> known)

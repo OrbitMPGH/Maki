@@ -206,6 +206,50 @@ public class BackupRestoreTests : IDisposable
         Assert.False(Directory.Exists(_paths.RestorePendingDir));
     }
 
+    [Fact]
+    public async Task A_key_revoked_after_the_backup_stays_revoked_after_the_restore()
+    {
+        var backupTaken = DateTime.UtcNow.AddDays(-2);
+        _db.Users.Add(new Maki.Data.Identity.MakiUser { Id = 5, UserName = "ada", NormalizedUserName = "ADA" });
+        _db.UserApiKeys.AddRange(
+            new Maki.Data.Identity.UserApiKey
+            {
+                UserId = 5, Name = "late", KeyHash = "hash-late", Prefix = "late",
+                CreatedAt = backupTaken.AddDays(-30), RevokedAt = DateTime.UtcNow.AddDays(-1)
+            },
+            new Maki.Data.Identity.UserApiKey
+            {
+                UserId = 5, Name = "early", KeyHash = "hash-early", Prefix = "early",
+                CreatedAt = backupTaken.AddDays(-30), RevokedAt = backupTaken.AddDays(-10)
+            });
+        await _db.SaveChangesAsync();
+
+        var backupDb = SqliteFile(_configDir, conn =>
+        {
+            Exec(conn, "PRAGMA journal_mode=WAL");
+            Exec(conn, "CREATE TABLE __EFMigrationsHistory (MigrationId TEXT PRIMARY KEY, ProductVersion TEXT NOT NULL)");
+            Exec(conn, $"INSERT INTO __EFMigrationsHistory VALUES ('{LastKnownMigration}', '10.0.0')");
+            Exec(conn, "CREATE TABLE UserApiKeys (KeyHash TEXT PRIMARY KEY, RevokedAt TEXT NULL)");
+            Exec(conn, "INSERT INTO UserApiKeys VALUES ('hash-late', NULL), ('hash-early', NULL)");
+        });
+        var manifest = JsonSerializer.Serialize(new BackupManifest("1.0.0", backupTaken, null, "manual"));
+
+        await Build().StagePendingRestoreFromUploadAsync(
+            new MemoryStream(Zip(backupDb, manifest)), CancellationToken.None);
+
+        using var staged = new SqliteConnection(
+            $"Data Source={Path.Combine(_paths.RestorePendingDir, "maki.db")};Mode=ReadOnly;Pooling=False");
+        staged.Open();
+        using var query = staged.CreateCommand();
+        query.CommandText = "SELECT KeyHash, RevokedAt IS NOT NULL FROM UserApiKeys ORDER BY KeyHash";
+        using var reader = query.ExecuteReader();
+        var rows = new Dictionary<string, bool>();
+        while (reader.Read()) rows[reader.GetString(0)] = reader.GetBoolean(1);
+
+        Assert.True(rows["hash-late"]);
+        Assert.False(rows["hash-early"]);
+    }
+
     private void ReleaseLiveDb()
     {
         _db.Database.CloseConnection();
