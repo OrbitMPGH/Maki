@@ -15,11 +15,14 @@ public static partial class ChapterNumberParser
 {
     // "Episode 12" is how WeebCentral labels webtoons; read as a one-shot, every episode of a series
     // turned into its own unnumbered chapter.
-    [GeneratedRegex(@"(?:\b(?:ch(?:apter)?|ep(?:isode)?)\b\.?\s*)([0-9]+(?:\.[0-9]+)?)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?:\b(?:ch(?:apter)?|ep(?:isode)?)(?![a-z])\.?\s*)([0-9]+(?:\.[0-9]+|,[0-9]{1,2}(?![0-9]))?)", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterPattern();
 
-    [GeneratedRegex(@"^\s*#?([0-9]+(?:\.[0-9]+)?)\s*(?:[-:–].*)?$")]
+    [GeneratedRegex(@"^\s*#?([0-9]+(?:\.[0-9]+|,[0-9]{1,2}(?![0-9]))?)\s*(?:[-:–].*)?$")]
     private static partial Regex BareNumberPattern();
+
+    [GeneratedRegex(@"^([0-9]+),([0-9]{1,2})$")]
+    private static partial Regex CommaDecimal();
 
     [GeneratedRegex(@"\bvol(?:ume)?\b\.?\s*([0-9]+)", RegexOptions.IgnoreCase)]
     private static partial Regex VolumePattern();
@@ -59,8 +62,8 @@ public static partial class ChapterNumberParser
             }
         }
 
-        // Direct decimal ("10", "10.5") — the common case for API-backed sources.
-        if (decimal.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var direct))
+        // Direct decimal ("10", "10.5", "10,5"): the common case for API-backed sources.
+        if (TryParseNumber(text) is { } direct)
         {
             return new ParsedChapter(direct, volume, false);
         }
@@ -78,8 +81,8 @@ public static partial class ChapterNumberParser
             return new ParsedChapter(bareNumber, volume, false);
         }
 
-        // Unparseable and no volume info: treat as a one-shot/special so it is not lost.
-        return new ParsedChapter(null, volume, IsOneShot: true);
+        // Unparseable: treat as a one-shot/special so it is not lost. A volume-only row keeps its volume.
+        return new ParsedChapter(null, volume, IsOneShot: volume is null);
     }
 
     /// <summary>
@@ -114,10 +117,24 @@ public static partial class ChapterNumberParser
             : null;
     }
 
+    // A comma is a decimal separator only with one or two digits after it; "1,000" stays unparsed.
+    // A single digit is always a decimal ("4,5" is 4.5). Two digits that continue the number
+    // ("9,10", "10,11") are two chapters in one row ("Ch.9,10") and take the first.
     private static decimal? TryParseNumber(string digits) =>
-        decimal.TryParse(digits, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number)
+        decimal.TryParse(CommaDecimal().Replace(digits, CommaNumber), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number)
             ? number
             : null;
+
+    private static string CommaNumber(Match match)
+    {
+        var whole = match.Groups[1].Value;
+        var after = match.Groups[2].Value;
+        var consecutive = after.Length == 2 && after[0] != '0' &&
+                          decimal.TryParse(whole, NumberStyles.None, CultureInfo.InvariantCulture, out var first) &&
+                          decimal.TryParse(after, NumberStyles.None, CultureInfo.InvariantCulture, out var second) &&
+                          second == first + 1;
+        return consecutive ? whole : $"{whole}.{after}";
+    }
 
     private static int? TryParseVolume(string? text)
     {

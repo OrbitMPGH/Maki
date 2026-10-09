@@ -107,6 +107,7 @@ public class MalTracker(
             throw new TrackerException($"MAL {what} request failed: {e.Message}", e);
         }
 
+        using var _ = response;
         var body = await response.Content.ReadAsStringAsync(ct);
         if (!response.IsSuccessStatusCode)
         {
@@ -178,6 +179,7 @@ public class MalTracker(
                 throw new TrackerException($"MAL token refresh request failed: {e.Message}", e);
             }
 
+            using var _ = response;
             if (!response.IsSuccessStatusCode)
             {
                 // Only the token that was actually rejected is dropped; one stored since (an OAuth
@@ -268,7 +270,8 @@ public class MalTracker(
                         $"MAL API {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
                 }
 
-                return JsonDocument.Parse(body).RootElement.Clone();
+                using var doc = JsonDocument.Parse(body);
+                return doc.RootElement.Clone();
             }
             finally
             {
@@ -591,6 +594,7 @@ public class MalTracker(
                 throw new HttpRequestException($"AniList relation lookup failed: {e.Message}", e);
             }
 
+            using var _ = response;
             if ((int)response.StatusCode == 429)
             {
                 if (!waited429)

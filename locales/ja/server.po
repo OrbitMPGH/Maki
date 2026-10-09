@@ -1755,10 +1755,15 @@ msgid "error.torrentImport.copyFailed"
 msgstr ""
 
 #: src/Maki.Api/Services/TorrentImportService.cs
-#. English: No comics found in the completed download ({detail})
-#, fuzzy
-msgid "error.torrentImport.noComicsFound"
-msgstr "完了したダウンロード内に漫画が見つかりません（{detail}）"
+#. English: No comics found in the completed download (it is empty)
+msgid "error.torrentImport.noComicsEmpty"
+msgstr ""
+
+#. {census} lists the most common file types that were there with their counts, such as "2 .pdf, 1 .txt". The extensions are never translated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: No comics found in the completed download (found {census})
+msgid "error.torrentImport.noComicsOfType"
+msgstr ""
 
 #: src/Maki.Api/Services/TorrentImportService.cs
 #. English: Series has no root folder

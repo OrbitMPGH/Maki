@@ -71,6 +71,23 @@ public class UpgradeTrashTests : IDisposable
     }
 
     [Fact]
+    public async Task Housekeeping_sweeps_stale_partial_packages_from_the_library_tmp_folder()
+    {
+        var tmp = Path.Combine(_world.Library, ".maki", "tmp");
+        Directory.CreateDirectory(tmp);
+        var stale = Path.Combine(tmp, "9001.cbz.partial");
+        var fresh = Path.Combine(tmp, "9002.cbz.partial");
+        File.WriteAllBytes(stale, [1]);
+        File.WriteAllBytes(fresh, [1]);
+        File.SetLastWriteTimeUtc(stale, DateTime.UtcNow.AddDays(-3));
+
+        await HousekeepAsync();
+
+        Assert.False(File.Exists(stale));
+        Assert.True(File.Exists(fresh));
+    }
+
+    [Fact]
     public async Task A_retention_of_zero_purges_everything_on_the_next_run()
     {
         SeedTrash("1-new.cbz", ageDays: 0);
