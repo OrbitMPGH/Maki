@@ -48,7 +48,7 @@ export function StatTile({
         {loading ? (
           <Skeleton h={22} w={64} mt={10} mb={3} />
         ) : (
-          <Text fz={26} lh={1.1} mt={6} className="figure">
+          <Text fz="var(--type-feature)" lh={1.1} mt={6} className="figure">
             {value}
           </Text>
         )}

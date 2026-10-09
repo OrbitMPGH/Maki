@@ -40,7 +40,7 @@ export function SeriesReviews({ malId }: { malId: number }) {
           <Group gap="xs" wrap="nowrap">
             <IconMessage2 size={20} color="var(--brand-fg)" />
             <Stack gap={0}>
-              <Title order={3} fz={17}>
+              <Title order={3} fz="var(--type-section)">
                 <Trans>Reviews</Trans>
               </Title>
               <Text size="xs" c="var(--ink-4)">

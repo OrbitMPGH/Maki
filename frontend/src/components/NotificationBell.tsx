@@ -167,7 +167,7 @@ function NotificationRow({
           </Text>
           {/* fz, not size: `size` takes a token ("xs"), and a raw number there resolves against
               --mantine-line-height-{n}, which does not exist and lands as line-height: 100px. */}
-          <Text fz={10} lh={1.5} c="var(--ink-3)">
+          <Text fz="var(--type-badge)" lh={1.5} c="var(--ink-3)">
             {relativeTime(item.createdAt)}
           </Text>
         </Stack>

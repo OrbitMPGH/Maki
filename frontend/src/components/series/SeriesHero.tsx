@@ -289,7 +289,7 @@ export function SeriesHero({
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
-                        <Title order={3} fz={17}>
+                        <Title order={3} fz="var(--type-section)">
                             <Trans>Progress</Trans>
                         </Title>
 

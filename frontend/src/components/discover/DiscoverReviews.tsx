@@ -24,7 +24,7 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
   return (
     <Paper withBorder radius="lg" p="lg">
       <Group justify="space-between" align="baseline">
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>Reviews</Trans>
         </Title>
         <Text size="xs" c="var(--ink-4)">

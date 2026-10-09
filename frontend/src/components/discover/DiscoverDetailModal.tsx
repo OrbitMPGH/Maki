@@ -438,7 +438,7 @@ export function DiscoverDetailModal({
                       </Group>
                     )}
 
-                    <Title order={3} fz={17}>
+                    <Title order={3} fz="var(--type-section)">
                       <Trans>Synopsis</Trans>
                     </Title>
 
@@ -469,7 +469,7 @@ export function DiscoverDetailModal({
                     {(detail?.animeStart || detail?.animeEnd) && (
                         <>
                           <Divider color="var(--hairline)"/>
-                          <Title order={4} fz={14}>
+                          <Title order={4} fz="var(--type-body)">
                             <Trans>Anime coverage</Trans>
                           </Title>
                           <AnimeCoverageBar

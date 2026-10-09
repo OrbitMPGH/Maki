@@ -329,7 +329,7 @@ function Row({
             <Text size="xs" c="var(--ink-3)">
               {item.body}
             </Text>
-            <Text fz={10} lh={1.5} c="var(--ink-3)">
+            <Text fz="var(--type-badge)" lh={1.5} c="var(--ink-3)">
               {/* Under an older day's heading the day is already said, and a relative time can
                   disagree with it ("yesterday" under Monday, 34 hours on), so those rows give the
                   clock time instead. */}

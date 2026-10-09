@@ -848,7 +848,7 @@ function ChecksPanel({
   return (
     <Panel edge={edge} className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>System checks</Trans>
         </Title>
         <Switch
@@ -1164,7 +1164,7 @@ function FileReview({
 
             <div className="health-review-column">
               <Panel p="md">
-                <Title order={4} fz={15} mb="sm">
+                <Title order={4} fz="var(--type-subhead)" mb="sm">
                   <Trans>Request replacement</Trans>
                 </Title>
                 <Select
@@ -1224,7 +1224,7 @@ function FileReview({
               </Panel>
 
               <Panel p="md">
-                <Title order={4} fz={15} mb="sm">
+                <Title order={4} fz="var(--type-subhead)" mb="sm">
                   {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
                 </Title>
                 <Text size="xs" c="var(--ink-4)" mb="sm">
@@ -1309,7 +1309,7 @@ function UnlinkedPanel({
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={4} fz={15}>
+        <Title order={4} fz="var(--type-subhead)">
           <Trans>Not linked to any chapter</Trans>
         </Title>
         <Badge variant="light" color="var(--neutral)">
@@ -1765,7 +1765,7 @@ function OptionsPanel() {
   return (
     <Panel edge="strong" className="health-area-options" p="lg">
       <Stack>
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>Health settings</Trans>
         </Title>
         {action.error && <Alert color="var(--danger)">{action.error.message}</Alert>}
@@ -1835,7 +1835,7 @@ function CachePanel() {
   return (
     <Panel className="health-area-cache" p="lg">
       <Stack>
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>Image cache and backups</Trans>
         </Title>
         {cache.data && (
