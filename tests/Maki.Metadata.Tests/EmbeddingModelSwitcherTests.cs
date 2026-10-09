@@ -93,6 +93,43 @@ public class EmbeddingModelSwitcherTests : IDisposable
     }
 
     [Fact]
+    public void A_raw_install_failure_is_reported_as_a_failed_switch_not_as_its_text()
+    {
+        var (error, args) = EmbeddingModelSwitcher.Outcome(
+            modelReady: true, new PrebuiltIndexResult(false, "Install failed: connection reset"));
+
+        Assert.Equal("install.embeddingModel.switchFailed", error);
+        Assert.Null(args);
+    }
+
+    [Fact]
+    public void An_install_already_running_is_reported_as_such_not_as_a_failure()
+    {
+        var (error, _) = EmbeddingModelSwitcher.Outcome(
+            modelReady: true, new PrebuiltIndexResult(false, PrebuiltIndexInstaller.AlreadyRunningReason));
+
+        Assert.Equal("install.alreadyRunning", error);
+    }
+
+    [Fact]
+    public void Catalogue_reasons_pass_through_and_current_or_installed_is_success()
+    {
+        var args = new { published = 1 };
+
+        Assert.Equal(
+            ("install.prebuiltIndex.wrongDimensions", (object?)args),
+            EmbeddingModelSwitcher.Outcome(true, new PrebuiltIndexResult(
+                false, "install.prebuiltIndex.wrongDimensions", ReasonArgs: args)));
+        Assert.Null(EmbeddingModelSwitcher.Outcome(
+            true, new PrebuiltIndexResult(false, PrebuiltIndexInstaller.CurrentReason)).Error);
+        Assert.Null(EmbeddingModelSwitcher.Outcome(
+            true, new PrebuiltIndexResult(true, "install.prebuiltIndex.installed")).Error);
+        Assert.Equal(
+            "install.embeddingModel.downloadFailed",
+            EmbeddingModelSwitcher.Outcome(false, new PrebuiltIndexResult(true, "x")).Error);
+    }
+
+    [Fact]
     public async Task A_second_switch_while_one_runs_is_refused()
     {
         var release = new TaskCompletionSource();

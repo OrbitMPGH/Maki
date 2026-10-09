@@ -67,6 +67,9 @@ public class PrebuiltIndexInstaller(
     /// <summary>The reason an install answers when the index on disk is already as new as the published one.</summary>
     public const string CurrentReason = "install.prebuiltIndex.current";
 
+    /// <summary>The reason a second install answers while one is already downloading.</summary>
+    public const string AlreadyRunningReason = "install.alreadyRunning";
+
     private readonly SemaphoreSlim _installGate = new(1, 1);
 
     /// <summary>
@@ -178,7 +181,7 @@ public class PrebuiltIndexInstaller(
 
         if (!_installGate.Wait(0))
         {
-            return new PrebuiltIndexResult(false, "install.alreadyRunning");
+            return new PrebuiltIndexResult(false, AlreadyRunningReason);
         }
 
         try
