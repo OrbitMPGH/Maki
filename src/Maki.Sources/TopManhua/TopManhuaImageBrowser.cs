@@ -92,9 +92,15 @@ public sealed class TopManhuaImageBrowser(
         _browser = null;
         _playwright = null;
 
-        await BrowserSupport.CloseQuietlyAsync(context);
-        await BrowserSupport.CloseQuietlyAsync(browser);
-        playwright?.Dispose();
+        try
+        {
+            await BrowserSupport.CloseQuietlyAsync(context);
+            await BrowserSupport.CloseQuietlyAsync(browser);
+        }
+        finally
+        {
+            playwright?.Dispose();
+        }
     }
 
     /// <summary>
