@@ -1,4 +1,4 @@
-import { Group, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
+import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
 import { IconAdjustments, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -34,7 +34,7 @@ export default function CommandPalette({ navItems }: Props) {
   const navigate = useNavigate()
   // The full library list is only needed once the palette is open; the cache still serves it
   // from other pages while closed.
-  const { data: series } = useSeries(opened)
+  const { data: series, isFetching: seriesLoading } = useSeries(opened)
   const { can } = useAuth()
   const { _, i18n } = useLingui()
   const { t } = useLinguiMacro()
@@ -226,9 +226,16 @@ export default function CommandPalette({ navItems }: Props) {
           <ScrollArea.Autosize mah="min(360px, 60dvh)" type="auto" viewportRef={listRef}>
             <Stack gap={2} p="xs" id={listId} role={results.length > 0 ? 'listbox' : undefined}>
               {results.length === 0 && (
-                <Text c="var(--ink-3)" size="sm" ta="center" py="lg">
-                  <Trans>No matches.</Trans>
-                </Text>
+                // On a cold cache the library is still loading, so an empty list is not an answer yet.
+                seriesLoading && !series ? (
+                  <Center py="lg">
+                    <Loader size="sm" />
+                  </Center>
+                ) : (
+                  <Text c="var(--ink-3)" size="sm" ta="center" py="lg">
+                    <Trans>No matches.</Trans>
+                  </Text>
+                )
               )}
               {results.map((r, i) => (
                 <Group
