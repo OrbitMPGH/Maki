@@ -103,4 +103,15 @@ public class SourceComparePreviewTests
 
         Assert.Equal(5m, target);
     }
+
+    [Fact]
+    public void A_listing_with_only_unnumbered_chapters_plans_no_target_instead_of_throwing()
+    {
+        IReadOnlyList<SourceChapter> oneShot = [new("fake", "s", "x", null, null, null, "One-shot", "en", null)];
+
+        var (picker, target) = SourceComparePreviewService.PlanChapter([oneShot], null);
+
+        Assert.Empty(picker);
+        Assert.Null(target);
+    }
 }
