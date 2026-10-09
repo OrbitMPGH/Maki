@@ -109,7 +109,15 @@ export default function ReaderPage() {
   )
   const bookmarked = bookmarkedPages.has(page)
 
-  usePreload(urls, page, prefs.mode === 'vertical' ? 0 : prefs.preload)
+  // The preload window counts spreads, so double-page mode warms as many turns as single-page does.
+  const preloadPages = useMemo(
+    () =>
+      prefs.mode === 'vertical' || prefs.preload <= 0
+        ? []
+        : spreads.slice(spreadIndex, spreadIndex + 1 + prefs.preload).flat(),
+    [spreads, spreadIndex, prefs.mode, prefs.preload],
+  )
+  usePreload(urls, preloadPages, measure)
 
   /**
    * Achievements ride back on the write that completes a chapter, so the toast needs no second
