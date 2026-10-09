@@ -135,6 +135,9 @@ public class RefreshMonitoredSeriesJob(
             }
         }
 
+        // A partial enqueue announces only what actually went into the queue.
+        var announced = enqueueError is null ? wanted.Count : queuedItemIds.Count;
+
         if (held)
         {
             logger.LogWarning(
@@ -146,11 +149,9 @@ public class RefreshMonitoredSeriesJob(
             logger.LogInformation(
                 smart ? "Series {SeriesId}: found {Count} new chapter(s), left to Smart Download"
                       : "Series {SeriesId}: queued {Count} new chapter(s)",
-                seriesId, wanted.Count);
+                seriesId, announced);
         }
 
-        // A partial enqueue announces only what actually went into the queue.
-        var announced = enqueueError is null ? wanted.Count : queuedItemIds.Count;
         var locale = await locales.DefaultAsync();
         var title = series?.Title ?? localizer.GetFor(locale, "inbox.unknownSeries");
 
