@@ -1161,9 +1161,15 @@ msgstr "{reasonText} - {measurement}"
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
 msgstr "{remaining, plural, one {# más en la cola} many {# más en la cola} other {# más en la cola}}"
 
+#. placeholder {0}: formatNumber(failed)
+#. placeholder {1}: formatNumber(failed)
 #: src/pages/settings/LibraryCards.tsx
-msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
+msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # series, {1} failed}}"
 msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+#~ msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
+#~ msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -1749,8 +1755,8 @@ msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{dis
 msgstr "<0>{seriesCount, plural, one {# serie} many {# series} other {# series}}</0> y <1>{diskSize}</1> en disco."
 
 #: src/pages/stats/sections/ProgressSection.tsx
-msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
-msgstr ""
+#~ msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
+#~ msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -4653,6 +4659,10 @@ msgid "Could not import {file}"
 msgstr ""
 
 #: src/api/ssoErrors.ts
+msgid "Could not link single sign-on to your account"
+msgstr ""
+
+#: src/api/ssoErrors.ts
 msgid "Could not link that login to a new account"
 msgstr ""
 
@@ -4953,6 +4963,10 @@ msgstr "Copia actual"
 #, fuzzy
 msgid "Current file"
 msgstr "Archivo actual"
+
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Current streak: <0>{streak, plural, one {# day} other {# days}}</0>. Best: <1>{best, plural, one {# day} other {# days}}</1>."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy

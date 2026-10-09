@@ -4,7 +4,7 @@ import type { MessageDescriptor } from '@lingui/core'
 /**
  * What the server's `SsoErrorCodes` mean. The failed-sign-in and failed-link redirects carry only
  * one of these codes in the query string, never a sentence, so a crafted link can't put text of its
- * own on the page. An unknown code falls back to the generic message.
+ * own on the page. An unknown code falls back to a generic message for sign-in or for linking.
  */
 const SSO_ERRORS: Record<string, MessageDescriptor> = {
   accountDisabled: msg`That account is disabled`,
@@ -22,7 +22,12 @@ const SSO_ERRORS: Record<string, MessageDescriptor> = {
 }
 
 const GENERIC = msg`Sign-in failed`
+const GENERIC_LINK = msg`Could not link single sign-on to your account`
 
-export function ssoErrorLabel(code: string): MessageDescriptor {
-  return Object.hasOwn(SSO_ERRORS, code) ? SSO_ERRORS[code] : GENERIC
+export function ssoErrorLabel(code: string, fallback: MessageDescriptor = GENERIC): MessageDescriptor {
+  return Object.hasOwn(SSO_ERRORS, code) ? SSO_ERRORS[code] : fallback
+}
+
+export function ssoLinkErrorLabel(code: string): MessageDescriptor {
+  return ssoErrorLabel(code, GENERIC_LINK)
 }

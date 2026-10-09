@@ -1,5 +1,5 @@
 import { i18n } from '@lingui/core'
-import { ssoErrorLabel } from '../../api/ssoErrors'
+import { ssoLinkErrorLabel } from '../../api/ssoErrors'
 import { useEffect, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -135,7 +135,7 @@ function SsoCard() {
     if (linkResult.linked) {
       notifications.show({ message: now`Single sign-on linked to your account`, color: 'var(--ok)' })
     } else if (linkResult.error) {
-      notifications.show({ message: i18n._(ssoErrorLabel(linkResult.error)), color: 'var(--danger)' })
+      notifications.show({ message: i18n._(ssoLinkErrorLabel(linkResult.error)), color: 'var(--danger)' })
     }
     // Dropped once shown so a reload does not repeat it.
     if (!linkResult.linked && linkResult.error === null) return

@@ -219,13 +219,15 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
           {summary.showStreaks && (
             <Text size="xs" c="var(--ink-3)" mt="sm" className="tnum">
               <Trans>
+                Current streak:{' '}
                 <b>
                   <Plural value={streak} one="# day" other="# days" />
-                </b>{' '}
-                streak, best{' '}
+                </b>
+                . Best:{' '}
                 <b>
                   <Plural value={best} one="# day" other="# days" />
                 </b>
+                .
               </Trans>
             </Text>
           )}

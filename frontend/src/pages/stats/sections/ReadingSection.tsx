@@ -96,11 +96,14 @@ function ReadingInsight({
     const d = delta(chapters, prevTotals.chaptersRead)
     if (d === null) {
       kind = 'none'
-    } else if (Math.round(d * 100) === 0) {
-      kind = 'flat'
     } else {
-      kind = d > 0 ? 'up' : 'down'
-      pct = formatPercent(Math.abs(d))
+      const whole = Math.round(Math.abs(d) * 100)
+      if (whole === 0) {
+        kind = 'flat'
+      } else {
+        kind = d > 0 ? 'up' : 'down'
+        pct = formatPercent(whole / 100)
+      }
     }
   }
 

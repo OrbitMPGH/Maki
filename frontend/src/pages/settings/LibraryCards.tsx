@@ -49,7 +49,7 @@ import {
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
-import { formatBytes, formatDateTime } from '../../format'
+import { formatBytes, formatDateTime, formatNumber } from '../../format'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
@@ -544,8 +544,8 @@ export function NamingSection() {
                     message:
                       failed > 0
                         ? plural(renamed, {
-                            one: `Renamed # series, ${failed} failed`,
-                            other: `Renamed # series, ${failed} failed`,
+                            one: `Renamed # series, ${formatNumber(failed)} failed`,
+                            other: `Renamed # series, ${formatNumber(failed)} failed`,
                           })
                         : plural(renamed, { one: 'Renamed # series', other: 'Renamed # series' }),
                     color: failed > 0 ? 'var(--warn)' : 'var(--ok)',
