@@ -202,7 +202,7 @@ public sealed class VectorIndexCache(
 
     /// <summary>
     /// The index, building it if needed. Null when there's nothing to search — no vector DB, no
-    /// dump, or an index that hasn't been built yet — and while embeddings are switched off, so a
+    /// dump, or an index that hasn't been built yet, and while embeddings are switched off, so a
     /// caller that only wants the franchise columns does not rebuild a hundred megabytes the owner
     /// turned the feature off to avoid.
     /// </summary>

@@ -69,7 +69,7 @@ in verbatim instead of being parsed from float32 and re-quantized.
 
 Search packs rows down to 4-bit levels, two to a byte, when it builds the in-memory index
 (`EmbeddingMath.PackQuantized`), and a quantized round-trip agrees with the float32 cosine **to
-three decimals** (`VectorIndexTests.Quantize_RoundTrips_WithinTolerance`) — far finer than the gap
+three decimals** (`VectorIndexTests.Quantize_RoundTrips_WithinTolerance`), far finer than the gap
 between adjacent results. Paying 3.5× the bandwidth to ship precision that is discarded at load
 makes no sense.
 
@@ -124,7 +124,7 @@ everything, defeating the point.
    `dimensions == options.Dimensions`. This is the critical guard: a 384-dim file dropped into a
    768-dim build has every row filtered as wrong-width, and search goes silently empty while
    falling back to title matching. Refuse, log once, leave local indexing alone.
-3. **Freshness gate** — install when the local file holds fewer than 1,000 rows or vectors stamped
+3. **Freshness gate**: install when the local file holds fewer than 1,000 rows or vectors stamped
    with another model. Otherwise skip if `generatedAt` is not newer than the recorded local marker,
    and skip if the local row count already meets the artifact's `rowCount`. Never install *older*
    than what's on disk; that would throw away work and move backwards. A manual "Download now"
@@ -134,7 +134,7 @@ everything, defeating the point.
    one) against this build's model, vector width, and a row count within 5% of the stated count.
    Only one install runs at a time; a second answers `install.alreadyRunning` rather than sharing
    the staging file.
-5. **Quiesce** — refuse the install while `EmbeddingIndexStatus.Running`, before and again after the
+5. **Quiesce**: refuse the install while `EmbeddingIndexStatus.Running`, before and again after the
    download; the swap itself runs under `VectorIndexCache`'s build lock so no reader is mid-build.
 6. **Swap** — `File.Move(overwrite: true)`, and delete stale `-wal` / `-shm` sidecars. Stores open
    with `Pooling=False`, so no connection outlives its call.

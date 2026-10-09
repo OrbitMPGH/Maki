@@ -451,7 +451,7 @@ public class MangaBakaDumpService(
     private async Task SwapIntoPlaceAsync(string stagingPath, CancellationToken ct)
     {
         // Readers use Pooling=False, but an in-flight query or an index build can hold the old
-        // file open for several seconds — retry the move instead of failing the whole refresh.
+        // file open for several seconds, so retry the move instead of failing the whole refresh.
         SqliteConnection.ClearAllPools();
         for (var attempt = 1; ; attempt++)
         {
