@@ -114,6 +114,28 @@ public class MangaDeniziSourceTests
         });
     }
 
+    [Fact]
+    public async Task GetPages_hands_an_unscrambled_page_to_the_downloader_as_a_plain_url_without_fetching_it()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["reader/solo-leveling/000"] =
+                """{"pages":[{"image_url":"https://img.mangadenizi.net/a.webp","scramble":null},{"image_url":"https://img.mangadenizi.net/b.webp"}]}"""
+        });
+        var source = new MangaDeniziSource(factory);
+        var chapter = new SourceChapter(
+            "mangadenizi", "solo-leveling", "solo-leveling/000", "0", 0m, null, null, "tr", null);
+
+        var pages = await source.GetPagesAsync(chapter);
+
+        Assert.All(pages.Pages, p =>
+        {
+            Assert.Null(p.Data);
+            Assert.Equal("https://mangadenizi.net/", p.Headers!["Referer"]);
+        });
+        Assert.DoesNotContain(factory.Requests, r => r.Contains(".webp"));
+    }
+
     [Theory]
     [InlineData("http://192.168.1.10/reader-images/p.webp")]
     [InlineData("http://127.0.0.1:8990/api/v1/series")]

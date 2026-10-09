@@ -186,6 +186,15 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
                     $"MangaDenizi page for chapter {chapterSlug} of {mangaSlug} has no usable image_url");
             }
 
+            // Only a scrambled page has to be fetched here; a clean one goes to the downloader
+            // as a plain URL so it streams with progress and uses the page cache.
+            if (!pageEl.TryGetProperty("scramble", out var scrambleEl) || scrambleEl.ValueKind == JsonValueKind.Null)
+            {
+                PublicAddressGuard.EnsureAllowed(imageUrl);
+                pages.Add(new PageRequest(imageUrl, headers));
+                continue;
+            }
+
             var raw = await FetchImageBytesAsync(imageUrl, ct);
             var data = await ProcessPageAsync(raw, pageEl, imageUrl, ct);
             pages.Add(new PageRequest(imageUrl, headers, Data: data));
