@@ -2019,13 +2019,19 @@ export function useDeleteSeriesFiles(seriesId: number) {
   })
 }
 
-/** The active queue. Paginated server-side; `total` tells you if the page is truncated. */
-export function useQueue(page = 1, pageSize = 200, enabled = true) {
+/**
+ * The active queue. Paginated server-side; `total` tells you if the page is truncated.
+ * `pauseWhenIdle` stops the poll while the shell's queue summary reports nothing active: the
+ * socket patches new items in, so an idle queue needs no 10 s refetch.
+ */
+export function useQueue(page = 1, pageSize = 200, enabled = true, pauseWhenIdle = false) {
+  const { data: summary } = useQueueSummary()
+  const idle = pauseWhenIdle && summary !== undefined && summary.active === 0
   return useQuery({
     queryKey: ['queue', page, pageSize],
     queryFn: ({ signal }) => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`, { signal }),
     enabled,
-    refetchInterval: 10_000,
+    refetchInterval: idle ? false : 10_000,
   })
 }
 
