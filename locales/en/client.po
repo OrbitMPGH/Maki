@@ -7924,6 +7924,15 @@ msgstr "No checks have run yet. Use Check now."
 msgid "No comics found in the completed download ({detail})"
 msgstr "No comics found in the completed download ({detail})"
 
+#. {census} lists the most common file types that were there with their counts, such as "2 .pdf, 1 .txt". The extensions are never translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download (found {census})"
+msgstr "No comics found in the completed download (found {census})"
+
+#: src/api/queue.ts
+msgid "No comics found in the completed download (it is empty)"
+msgstr "No comics found in the completed download (it is empty)"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "No creator shows up often enough yet."
 msgstr "No creator shows up often enough yet."
