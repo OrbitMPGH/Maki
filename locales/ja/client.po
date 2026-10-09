@@ -84,9 +84,11 @@ msgstr "{0, plural, other {#章を再リンクしました}}"
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, other {#章を選択中}}"
 
+#. placeholder {0}: goal.target
 #. placeholder {0}: removed.length
 #. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
 msgstr "{0, plural, other {#章}}"
@@ -144,6 +146,11 @@ msgstr "{0, plural, other {#章を保持}}"
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, other {#件の一致}}"
 
+#. placeholder {0}: goal.target
+#: src/components/settings/ProgressSection.tsx
+msgid "{0, plural, one {# minute read} other {# minutes read}}"
+msgstr ""
+
 #. placeholder {0}: deleteFilesPlan.others
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
@@ -174,6 +181,11 @@ msgstr "{0, plural, other {#件のシード}}"
 #, fuzzy
 msgid "{0, plural, one {# selected} other {# selected}}"
 msgstr "{0, plural, other {#件を選択中}}"
+
+#. placeholder {0}: goal.target
+#: src/components/settings/ProgressSection.tsx
+msgid "{0, plural, one {# series finished} other {# series finished}}"
+msgstr ""
 
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
@@ -9878,6 +9890,10 @@ msgstr "なし"
 msgid "None available"
 msgstr "利用できるものはありません"
 
+#: src/pages/NotificationsPage.tsx
+msgid "None in the latest notifications"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "None linked"
@@ -10436,6 +10452,10 @@ msgstr "oidc、openid connect、sso、authelia、authentik、keycloak、発行�
 #, fuzzy
 msgid "OK"
 msgstr "OK"
+
+#: src/pages/NotificationsPage.tsx
+msgid "Older ones may match. Load more to look further back."
+msgstr ""
 
 #: src/api/customRails.ts
 #: src/api/hooks.ts

@@ -20,7 +20,7 @@ import {
 import type { ProgressSettings, ReadingGoal } from '../../api/hooks'
 import { useLingui } from '@lingui/react'
 import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
-import { msg } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 
@@ -41,6 +41,17 @@ const METRIC_DEFS: { value: ReadingGoal['metric']; label: MessageDescriptor }[] 
   { value: 'Minutes', label: msg`minutes read` },
   { value: 'SeriesFinished', label: msg`series finished` },
 ]
+
+function goalAmount(goal: ReadingGoal): string {
+  switch (goal.metric) {
+    case 'Chapters':
+      return plural(goal.target, { one: '# chapter', other: '# chapters' })
+    case 'Minutes':
+      return plural(goal.target, { one: '# minute read', other: '# minutes read' })
+    default:
+      return plural(goal.target, { one: '# series finished', other: '# series finished' })
+  }
+}
 
 function usePeriodOptions() {
   const { _, i18n } = useLingui()
@@ -164,8 +175,7 @@ export function ProgressSection() {
           {(summary?.goals ?? []).map((goal) => (
             <Group key={goal.id} justify="space-between" wrap="nowrap">
               <Text size="sm">
-                {periods.find((p) => p.value === goal.period)?.label}: {goal.target}{' '}
-                {metrics.find((m) => m.value === goal.metric)?.label}
+                {periods.find((p) => p.value === goal.period)?.label}: {goalAmount(goal)}
               </Text>
               <ActionIcon
                 variant="subtle"

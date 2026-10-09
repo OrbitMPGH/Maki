@@ -41,7 +41,8 @@ export interface Me {
   id: number
   userName: string
   displayName: string | null
-  permissions: number
+  /** The flags enum as the server serialises it, e.g. "AddSeries, UseOpds"; read `permissionNames` instead. */
+  permissions: string
   permissionNames: Permission[]
   isAdmin: boolean
   maxContentRating: string
@@ -52,7 +53,7 @@ export interface Me {
   oidcUserName: string | null
 }
 
-export interface UserSummary extends Me {
+export interface UserSummary extends Omit<Me, 'oidcUserName'> {
   disabled: boolean
   pendingSetup: boolean
   createdAt: string

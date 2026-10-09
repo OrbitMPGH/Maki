@@ -83,6 +83,7 @@ export interface InboxPush extends Omit<InboxItem, 'read' | 'coverUrl'> {
 /**
  * Grouping for the settings card and the page's filter chips. Purely presentational — the server
  * knows nothing about these buckets, and an event type missing from here simply isn't offered.
+ * `accountSecurity` is left out on purpose: a sign-in alert stays on and has no filter chip.
  */
 /**
  * `id` is the filter value and the React key; `label` is what a reader sees. They were one string
@@ -181,7 +182,7 @@ export const INBOX_ADMIN_ONLY: InboxEventType[] = [
   'upgradeRestoreFailed',
 ]
 
-export function useInbox(filter?: { unreadOnly?: boolean; type?: InboxEventType | null }) {
+export function useInbox(filter?: { unreadOnly?: boolean; type?: InboxEventType | null }, enabled = true) {
   const unreadOnly = filter?.unreadOnly ?? false
   const type = filter?.type ?? null
 
@@ -197,6 +198,7 @@ export function useInbox(filter?: { unreadOnly?: boolean; type?: InboxEventType 
       return api<InboxPage>(`/inbox${qs ? `?${qs}` : ''}`)
     },
     getNextPageParam: (last) => last.nextCursor,
+    enabled,
   })
 }
 
@@ -267,5 +269,6 @@ export function useSaveInboxPrefs() {
 }
 
 function invalidateInbox(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: ['inbox'] })
+  void queryClient.invalidateQueries({ queryKey: ['inbox', 'feed'] })
+  void queryClient.invalidateQueries({ queryKey: ['inbox', 'unread'] })
 }
