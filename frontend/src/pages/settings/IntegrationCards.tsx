@@ -66,7 +66,12 @@ export function ScrobbleSection() {
       onSave={() => {
         if (!form) return
         const { libraryIds: _, ...rest } = form
-        save.mutate(rest, { onSuccess: savedToast })
+        save.mutate(rest, {
+          onSuccess: (saved) => {
+            setForm(saved)
+            savedToast()
+          },
+        })
       }}
     >
       <Stack gap="xs">
@@ -160,6 +165,7 @@ export function ScrobbleSection() {
             label={t`Password`}
             type="password"
             autoComplete="new-password"
+            placeholder={form?.kitsuPasswordSet ? t`Saved` : undefined}
             value={form?.kitsuPassword ?? ''}
             onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
           />

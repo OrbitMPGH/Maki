@@ -2011,7 +2011,12 @@ public class SettingsController(
         /// Whether the caller may edit the instance half. The client uses it to disable those fields
         /// rather than showing a non-admin inputs whose writes will be dropped.
         /// </summary>
-        bool IsAdmin = false);
+        bool IsAdmin = false,
+        /// <summary>
+        /// Stands in for <c>KitsuPassword</c>, which is never sent back: a third-party password that
+        /// is often reused would otherwise be readable by any of the caller's API keys.
+        /// </summary>
+        bool KitsuPasswordSet = false);
 
     /// <summary>
     /// Both halves of the scrobble configuration in one response, because one card in the UI shows
@@ -2048,13 +2053,14 @@ public class SettingsController(
             admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientId, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientSecret, ct) : null,
             mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuEmail),
-            mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword),
+            null,
             int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
                 ? m
                 : Services.ScrobbleService.DefaultIntervalMinutes,
             mine.GetValueOrDefault(SettingKeys.ScrobblePlanToRead) == "true",
             admin ? await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct) : null,
-            IsAdmin: admin));
+            IsAdmin: admin,
+            KitsuPasswordSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword))));
     }
 
     [Authorize(Policy = Policies.UseTrackers)]
@@ -2064,7 +2070,13 @@ public class SettingsController(
         // The caller's own remote accounts, always writable.
         await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
         await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
-        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        // Null means "leave it": GET never returns the password, so a client that did not touch the
+        // field sends nothing back.
+        if (request.KitsuPassword is not null)
+        {
+            await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        }
+
         await userSettings.SetAsync(
             SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);
 

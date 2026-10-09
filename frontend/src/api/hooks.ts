@@ -3695,6 +3695,8 @@ export interface ScrobbleSettings {
   libraryIds: string | null
   /** The app registrations, interval and library filter are instance-wide; the server drops them for anyone else. */
   isAdmin: boolean
+  /** The server never returns the Kitsu password; null on save means unchanged. */
+  kitsuPasswordSet: boolean
 }
 
 export function useScrobbleSettings() {
