@@ -141,7 +141,11 @@ public class ChapterDownloadProcessor(
             else
             {
                 if (item.HealthOperationId != null)
-                    throw new InvalidOperationException("Approved repair source is no longer available; request a new replacement");
+                {
+                    await FailAsync(item, "error.download.repairSourceGone", ct);
+                    return DownloadOutcome.Settled;
+                }
+
                 var resolved = await sourceResolver.ResolveAsync(
                     db, chapter, item.PreferredMappingId ?? item.SourceMappingId, ct, triedMappingIds,
                     onlyPreferred: item.PreferredMappingId != null);
@@ -247,7 +251,11 @@ public class ChapterDownloadProcessor(
                 {
                 var operation = await db.HealthOperations.FindAsync([repairId], ct);
                 if (operation != null) await db.Entry(operation).ReloadAsync(ct);
-                if (operation?.Status != "downloading") throw new InvalidOperationException("Repair is no longer accepting candidates");
+                if (operation?.Status != "downloading")
+                {
+                    await FailAsync(item, "error.download.repairNotAccepting", ct);
+                    return DownloadOutcome.Settled;
+                }
                 var staged = HealthPaths.Resolve(rootFolder.Path, $".maki/health/{repairId}/chapter-{chapter.Id}.cbz");
                 Directory.CreateDirectory(Path.GetDirectoryName(staged)!);
                 File.Move(tmpCbz, staged, overwrite: true);

@@ -147,7 +147,7 @@ public class ChapterSourceResolver(
         }
 
         throw new ChapterUnavailableException(ChapterUnavailableException.NotListed,
-            $"Chapter {chapter.Number} unavailable on all sources ({string.Join("; ", errors)})");
+            $"Chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)} unavailable on all sources ({string.Join("; ", errors)})");
     }
 
     /// <summary>

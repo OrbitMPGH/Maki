@@ -39,7 +39,9 @@ public class DownloadWorkerHostedService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await RecoverAsync(stoppingToken);
+        // A transient database error here (another startup task holding the write lock) must not
+        // fault the service: the default host behaviour would stop the whole application.
+        await SuperviseAsync("startup recovery", RecoverAsync, stoppingToken);
         await RefreshSettingsAsync(stoppingToken);
 
         var workers = Enumerable.Range(0, MaxConcurrentChapters)
@@ -326,10 +328,7 @@ public class DownloadWorkerHostedService(
                     // happens next, and free the worker for the rest of the queue.
                     logger.LogError("Worker {Worker} abandoned queue item {Id} after {Minutes} min",
                         workerId, queueItemId, itemTimeout.TotalMinutes);
-                    await TryFailAsync(
-                        queueItemId,
-                        new TimeoutException($"Download gave up after {itemTimeout.TotalMinutes:0} minutes"),
-                        ct);
+                    await TryFailAsync(queueItemId, new TimeoutException(), ct, "error.download.itemTimedOut");
                 }
                 catch (Exception ex)
                 {
@@ -357,7 +356,7 @@ public class DownloadWorkerHostedService(
     /// Uses a fresh scope because the one that threw may hold a broken DbContext. Best-effort: if
     /// even this fails the DB is unreachable, and startup recovery re-queues the item.
     /// </summary>
-    private async Task TryFailAsync(int queueItemId, Exception cause, CancellationToken ct)
+    private async Task TryFailAsync(int queueItemId, Exception cause, CancellationToken ct, string? key = null)
     {
         try
         {
@@ -374,7 +373,8 @@ public class DownloadWorkerHostedService(
                 return;
             }
 
-            var (key, detail) = DownloadFailureReason.Classify(cause);
+            var (classified, detail) = key is null ? DownloadFailureReason.Classify(cause) : (key, null);
+            key = classified;
             item.Status = QueueStatus.Failed;
             item.SetError(key, detail: detail);
             item.RetryCount++;

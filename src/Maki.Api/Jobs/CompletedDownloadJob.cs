@@ -351,7 +351,7 @@ public class CompletedDownloadJob(
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
-            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs);
+            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs, outcome.Error);
             else item.SetRawError(outcome.Error);
             return;
         }

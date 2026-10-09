@@ -1211,6 +1211,11 @@ msgstr "Label is required"
 msgid "error.tags.unknownTagIds"
 msgstr "One or more tag ids do not exist"
 
+#. {file} is a file name and is never translated. The exception text follows it, untranslated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+msgid "error.torrentImport.copyFailed"
+msgstr "Could not import {file}"
+
 #: src/Maki.Api/Services/TorrentImportService.cs
 msgid "error.torrentImport.noComicsFound"
 msgstr "No comics found in the completed download ({detail})"
@@ -2404,6 +2409,21 @@ msgstr "The torrent never appeared in qBittorrent"
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentRemoved"
 msgstr "The torrent is no longer in qBittorrent"
+
+#. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
+#: src/Maki.Api/Services/DownloadWorkerHostedService.cs
+msgid "error.download.itemTimedOut"
+msgstr "Gave up after the download time limit, Maki will try again"
+
+#. A repair was approved with a source that has since been disabled or removed.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "error.download.repairSourceGone"
+msgstr "The approved repair source is no longer available, request a new replacement"
+
+#. The repair this download belonged to was closed or cancelled before the pages arrived.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "error.download.repairNotAccepting"
+msgstr "The repair is no longer accepting candidates"
 
 #. The library folder is missing or empty, usually a network share that is not mounted. Maki retries
 #. on its own and does not count it as a failed attempt.

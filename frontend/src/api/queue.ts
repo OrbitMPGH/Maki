@@ -74,6 +74,13 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.disk': msg`Could not write the chapter to disk`,
   'error.download.invalidPage': msg`A page the source sent is not a readable image`,
   'error.download.notListed': msg`No source has this chapter right now`,
+  'error.download.itemTimedOut': msg`Gave up after the download time limit, Maki will try again`,
+  'error.download.repairSourceGone': msg`The approved repair source is no longer available, request a new replacement`,
+  'error.download.repairNotAccepting': msg`The repair is no longer accepting candidates`,
+  'error.torrentImport.copyFailed': msg({
+    message: `Could not import {file}`,
+    comment: `{file} is a file name and is never translated. The error text follows it, untranslated.`,
+  }),
   'error.torrentImport.notInQbittorrent': msg`The download is no longer in qBittorrent`,
   'error.torrentImport.pathNotAccessible': msg({
     message: `Download path not accessible from Maki: {path}`,

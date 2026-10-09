@@ -375,9 +375,9 @@ public class QueueController(
         {
             item.Status = QueueStatus.Failed;
             var rendered = outcome.ErrorKey is not null
-                ? localizer.Get(outcome.ErrorKey, outcome.ErrorArgs)
+                ? localizer.Get(outcome.ErrorKey, outcome.ErrorArgs) + (outcome.Error is null ? "" : $": {outcome.Error}")
                 : outcome.Error;
-            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs);
+            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs, outcome.Error);
             else item.SetRawError(outcome.Error);
             await db.SaveChangesAsync(ct);
             await Broadcast(item);
