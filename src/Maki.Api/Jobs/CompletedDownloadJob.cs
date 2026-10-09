@@ -104,15 +104,20 @@ public class CompletedDownloadJob(
         // whose torrents keep seeding in qBittorrent. Excluding only pending items let a
         // finished previous download be re-claimed by a new hashless (.torrent) item and
         // imported into the wrong series' folder.
-        var claimedJson = await db.DownloadQueue
-            .Where(q => q.Protocol == AcquisitionProtocol.Torrent && q.ReleaseInfoJson != null)
-            .Select(q => q.ReleaseInfoJson!)
-            .ToListAsync(ct);
-        var claimedHashes = claimedJson
-            .Select(j => JsonSerializer.Deserialize<ReleaseInfo>(j)?.TorrentHash)
-            .Where(h => h != null)
-            .Select(h => h!)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        //
+        // Only a hashless item ever consults the set, so the history is read only while one is pending
+        // instead of on every poll.
+        var claimedHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (pending.Any(q => ReleaseInfoOf(q) is { TorrentHash: null }))
+        {
+            var claimedJson = await db.DownloadQueue
+                .Where(q => q.Protocol == AcquisitionProtocol.Torrent && q.ReleaseInfoJson != null)
+                .Select(q => q.ReleaseInfoJson!)
+                .ToListAsync(ct);
+            claimedHashes.UnionWith(claimedJson
+                .Select(j => JsonSerializer.Deserialize<ReleaseInfo>(j)?.TorrentHash)
+                .OfType<string>());
+        }
 
         foreach (var item in pending)
         {
