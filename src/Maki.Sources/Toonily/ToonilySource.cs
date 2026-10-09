@@ -214,8 +214,9 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
 
     private SourceChapter? ToChapter(string seriesId, MadaraParser.ChapterItem item)
     {
-        var chapterId = SourceUrl.PathTail(
-            new Uri(item.Href), BaseUrl, $"/serie/{seriesId}/", firstSegmentOnly: true);
+        var chapterId = Uri.TryCreate(new Uri(BaseUrl), item.Href, out var hrefUri)
+            ? SourceUrl.PathTail(hrefUri, BaseUrl, $"/serie/{seriesId}/", firstSegmentOnly: true)
+            : null;
         if (chapterId is null)
         {
             return null;
@@ -286,8 +287,8 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var html = await fetcher.GetHtmlAsync(
-            $"{BaseUrl}/serie/{chapter.SourceSeriesId}/{chapter.SourceChapterId}/", ct);
+        var seriesId = NormalizeSeriesId(chapter.SourceSeriesId);
+        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/serie/{seriesId}/{chapter.SourceChapterId}/", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         // The CDN 403s a page request with no Referer.

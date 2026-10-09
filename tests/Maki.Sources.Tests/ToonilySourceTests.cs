@@ -162,6 +162,22 @@ public class ToonilySourceTests
     }
 
     [Fact]
+    public async Task GetPages_accepts_a_legacy_mapping_that_stored_the_series_url()
+    {
+        var fetcher = new FakeHtmlFetcher(new()
+        {
+            ["/chapter-242"] = FakeHttpClientFactory.Fixture("toonily-chapter.html")
+        });
+        var source = new ToonilySource(fetcher);
+
+        await source.GetPagesAsync(new SourceChapter(
+            "toonily", "https://toonily.com/serie/secret-class-38c3e37a/", "chapter-242", "Chapter 242", 242,
+            null, null, "en", null));
+
+        Assert.Equal("https://toonily.com/serie/secret-class-38c3e37a/chapter-242/", Assert.Single(fetcher.Requested));
+    }
+
+    [Fact]
     public async Task GetPages_throws_locked_when_every_image_is_filtered_out()
     {
         const string html = """
