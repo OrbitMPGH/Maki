@@ -671,7 +671,7 @@ export default function ActivityPage() {
       <Stack gap="sm" mt="xl">
         <Group gap="xs">
           <IconHistory size={18} />
-          <Title order={4}>
+          <Title order={2} size="h4">
             <Trans>History</Trans>
           </Title>
         </Group>
@@ -894,7 +894,7 @@ export default function ActivityPage() {
 
               {proposals && proposals.length > 0 && (
                 <Stack gap="sm">
-                  <Title order={4}>
+                  <Title order={2} size="h4">
                     <Trans>Volume releases waiting for you</Trans>
                   </Title>
                   {proposals.map((proposal) => (
@@ -904,7 +904,7 @@ export default function ActivityPage() {
               )}
 
               <Stack gap="sm">
-                <Title order={4}>
+                <Title order={2} size="h4">
                   <Trans>Recent upgrades</Trans>
                 </Title>
                 {!upgradeHistory ? (
@@ -1102,7 +1102,7 @@ export default function ActivityPage() {
               </Stack>
 
               <Stack gap="sm">
-                <Title order={4}>
+                <Title order={2} size="h4">
                   <Trans>Cutoff unmet</Trans>
                 </Title>
                 {!cutoffUnmet ? (
