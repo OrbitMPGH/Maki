@@ -77,8 +77,8 @@ public class HousekeepingJob(
             }
         }
 
-        // Packaged chapters left in a library share's .maki/tmp by an item that was cleared or whose
-        // process died mid-import. Named after the queue row, so one still active is left alone.
+        // Packaged chapters, and their .partial files from a kill mid-write, left in a library share's
+        // .maki/tmp by an item that was cleared or whose process died mid-import. Named after the queue row, so one still active is left alone.
         var tmpCutoff = DateTime.UtcNow.AddDays(-1);
         var liveTmp = (await db.DownloadQueue
                 .Where(q => q.Status != QueueStatus.Completed &&
@@ -98,7 +98,7 @@ public class HousekeepingJob(
 
             try
             {
-                foreach (var file in Directory.GetFiles(tmpDir, "*.cbz"))
+                foreach (var file in Directory.GetFiles(tmpDir, "*.cbz").Concat(Directory.GetFiles(tmpDir, "*.cbz.partial")))
                 {
                     if (ct.IsCancellationRequested)
                     {
@@ -106,7 +106,7 @@ public class HousekeepingJob(
                     }
 
                     if (File.GetLastWriteTimeUtc(file) < tmpCutoff &&
-                        !liveTmp.Contains(Path.GetFileNameWithoutExtension(file)))
+                        !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
                     {
                         File.Delete(file);
                     }
