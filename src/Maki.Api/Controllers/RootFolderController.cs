@@ -71,8 +71,7 @@ public class RootFolderController(
             return this.Conflict(localizer, "error.rootFolder.inUse");
         }
 
-        // The grants cascade away, but a cached snapshot still lists this id, and SQLite hands it to
-        // the next folder added.
+        // The grants cascade away, but a cached snapshot still lists this id until it is evicted.
         var grantees = await db.UserRootFolders
             .Where(g => g.RootFolderId == id)
             .Select(g => g.UserId)

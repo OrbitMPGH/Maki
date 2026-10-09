@@ -39,11 +39,15 @@ public static partial class ReleaseNameParser
     [GeneratedRegex(@"\s*[\(\[][^\)\]]*[\)\]]")]
     internal static partial Regex TagGroups();
 
+    // A volume range takes a bare hyphen, or a spaced one when the end carries its own v/vol marker
+    // or is a number that closes the name or runs into a tag, "+", "," or "Complete"/"END":
+    // "Vol. 1 - 41 (Digital)" is a range, "Title Vol. 3 - 10 Years After" is volume 3. VolumeRange
+    // then drops an end that reads as a year or sits implausibly far past the start.
     // The lookbehind is "\b that also breaks on an underscore": older scanlation sets name every
     // file "Narutaru_vol.03", and _ is a word character, so \b found no boundary in front of the
     // marker and not one of them parsed. Any other letter or digit in front still blocks the
     // match, which is what keeps "Revolution" out of the volume pattern.
-    [GeneratedRegex(@"(?<![a-z0-9])v(?:ol(?:ume)?)?\.?[\s_]*([0-9]+)(?:\s*-\s*(?:v(?:ol)?\.?[\s_]*)?([0-9]+))?", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?<![a-z0-9])v(?:ol(?:ume)?)?\.?[\s_]*([0-9]+)(?:(?:-|\s+-\s*(?=v|[0-9]+\s*(?:$|[(\[+,]|(?:complete|end)\b)))(?:v(?:ol)?\.?[\s_]*)?([0-9]+))?", RegexOptions.IgnoreCase)]
     internal static partial Regex VolumePattern();
 
     // The "h" is optional because a bare "c049" is the scanlation convention, and this has to accept
@@ -124,8 +128,13 @@ public static partial class ReleaseNameParser
     internal static (int Start, int? End)? VolumeRange(Match match)
     {
         if (TryInt(match.Groups[1].Value) is not { } start) return null;
-        return match.Groups[2].Success ? (start, TryInt(match.Groups[2].Value)) : (start, null);
+        if (!match.Groups[2].Success) return (start, null);
+        var end = TryInt(match.Groups[2].Value);
+        return end > start && end < MinYearLikeVolume && end - start <= MaxVolumeSpan ? (start, end) : (start, null);
     }
+
+    private const int MinYearLikeVolume = 1900;
+    private const int MaxVolumeSpan = 300;
 
     internal static decimal? TryDecimal(string digits) =>
         decimal.TryParse(digits, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value) ? value : null;

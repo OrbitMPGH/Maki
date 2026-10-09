@@ -23,6 +23,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useCopyText } from '../ui/useCopyText'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useSliceSync } from '../../pages/settings/sharedRecord'
 import { SettingsNumberInput } from './SettingsNumberInput'
 
@@ -63,7 +64,7 @@ function useSecuritySlice<S extends object>(pick: (s: SecuritySettings) => S) {
       },
     )
   }
-  return { draft, setDraft, dirty, saving: save.isPending, discard, commit }
+  return { draft, saved: slice, setDraft, dirty, saving: save.isPending, discard, commit }
 }
 
 export function SecuritySection() {
@@ -85,7 +86,6 @@ export function SecuritySection() {
       saving={saving}
       onDiscard={discard}
       onSave={commit}
-      panelProps={{ id: 'security' }}
     >
       <Group grow align="flex-start">
         <SettingsNumberInput
@@ -117,14 +117,22 @@ export function SecuritySection() {
   )
 }
 
+const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+
 export function NetworkSection() {
   const { t } = useLingui()
-  const { draft, setDraft, dirty, saving, discard, commit } = useSecuritySlice<NetworkSlice>((s) => ({
+  const { draft, saved, setDraft, dirty, saving, discard, commit } = useSecuritySlice<NetworkSlice>((s) => ({
     requireHttps: s.requireHttps,
     trustedProxies: s.trustedProxies,
   }))
+  const [confirmingHttps, setConfirmingHttps] = useState(false)
 
   if (!draft) return null
+
+  // Sign-in is refused over plain HTTP once this is on, so switching it on from an http page that
+  // is not loopback locks the admin out of this very address after the restart.
+  const onPlainHttp = window.location.protocol === 'http:' && !LOOPBACK_HOSTS.includes(window.location.hostname)
+  const turningOnHttps = onPlainHttp && draft.requireHttps && saved?.requireHttps === false
 
   return (
     <SettingsSection
@@ -134,7 +142,7 @@ export function NetworkSection() {
       dirty={dirty}
       saving={saving}
       onDiscard={discard}
-      onSave={commit}
+      onSave={() => (turningOnHttps ? setConfirmingHttps(true) : commit())}
     >
       <Stack gap="md">
         <Switch
@@ -143,6 +151,14 @@ export function NetworkSection() {
           checked={draft.requireHttps}
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
+        {onPlainHttp && draft.requireHttps && (
+          <Alert color="var(--danger)" variant="light">
+            <Trans>
+              You are on this page over plain HTTP. After a restart, signing in at this address will be
+              refused. Open Maki through its HTTPS address first, or make sure you can reach it that way.
+            </Trans>
+          </Alert>
+        )}
 
         <TextInput
           label={t`Trusted proxies`}
@@ -152,8 +168,36 @@ export function NetworkSection() {
           onChange={(e) => setDraft({ ...draft, trustedProxies: e.currentTarget.value })}
         />
       </Stack>
+
+      <ConfirmDialog
+        opened={confirmingHttps}
+        onClose={() => setConfirmingHttps(false)}
+        title={<Trans>Require HTTPS from a plain HTTP address?</Trans>}
+        confirmLabel={<Trans>Save anyway</Trans>}
+        loading={saving}
+        onConfirm={() => {
+          setConfirmingHttps(false)
+          commit()
+        }}
+      >
+        <Trans>
+          You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address,
+          and getting back in needs a TLS proxy in front of Maki or an edit to the database.
+        </Trans>
+      </ConfirmDialog>
     </SettingsSection>
   )
+}
+
+/** Lowercases scheme and host and drops trailing slashes, the differences the server ignores. */
+function normalizeAuthority(value: string) {
+  const trimmed = value.trim()
+  try {
+    const url = new URL(trimmed)
+    return url.origin + url.pathname.replace(/\/+$/, '')
+  } catch {
+    return trimmed.replace(/\/+$/, '')
+  }
 }
 
 /**
@@ -167,6 +211,7 @@ export function OidcSection() {
   const save = useSaveOidcSettings()
   const redirectCopy = useCopyText()
   const [draft, setDraft] = useState<OidcSettings | null>(null)
+  const [confirmingIssuer, setConfirmingIssuer] = useState(false)
 
   useEffect(() => {
     if (data) setDraft(data)
@@ -177,6 +222,18 @@ export function OidcSection() {
   const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
   const mapsPermissions = Boolean(draft.adminClaim.trim() || draft.permissionClaim.trim())
   const redirectUrl = `${window.location.origin}${draft.redirectPath}`
+  // Linked logins are keyed to the issuer, so any change beyond case and a trailing slash
+  // unlinks them all.
+  const issuerChanged =
+    data !== undefined && data.authority.trim() !== '' && normalizeAuthority(draft.authority) !== normalizeAuthority(data.authority)
+  const saveOidc = () =>
+    save.mutate(draft, {
+      onSuccess: () =>
+        notifications.show({
+          message: now`Single sign-on saved. Restart Maki to apply it.`,
+          color: 'var(--ok)',
+        }),
+    })
 
   return (
     <SettingsSection
@@ -191,16 +248,7 @@ export function OidcSection() {
       dirty={dirty}
       saving={save.isPending}
       onDiscard={() => data && setDraft(data)}
-      onSave={() =>
-        save.mutate(draft, {
-          onSuccess: () =>
-            notifications.show({
-              message: now`Single sign-on saved. Restart Maki to apply it.`,
-              color: 'var(--ok)',
-            }),
-        })
-      }
-      panelProps={{ id: 'oidc' }}
+      onSave={() => (issuerChanged ? setConfirmingIssuer(true) : saveOidc())}
     >
       <Stack gap="md">
         <Stack gap={6}>
@@ -329,6 +377,24 @@ export function OidcSection() {
           </Alert>
         )}
       </Stack>
+
+      <ConfirmDialog
+        opened={confirmingIssuer}
+        onClose={() => setConfirmingIssuer(false)}
+        title={<Trans>Change the issuer URL?</Trans>}
+        confirmLabel={<Trans>Save anyway</Trans>}
+        loading={save.isPending}
+        onConfirm={() => {
+          setConfirmingIssuer(false)
+          saveOidc()
+        }}
+      >
+        <Trans>
+          Single sign-on logins are tied to the issuer. After a restart, people who signed in through
+          the old one are matched again by their verified email where they have one, and otherwise
+          have to link single sign-on again.
+        </Trans>
+      </ConfirmDialog>
     </SettingsSection>
   )
 }

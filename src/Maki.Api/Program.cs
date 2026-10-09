@@ -160,6 +160,7 @@ try
             handler.AllowAutoRedirect = false;
             return handler;
         })
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler())
         .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     // Bulk dump downloads (~350 MB nightly snapshot) bypass the rate limiter — a single
@@ -363,7 +364,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(2);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         // One 5xx or reset on a page of a 200-page chapter should cost a second try, not the chapter.
         // It leaves 429 and 503 alone, which PageDownloader turns into the source's cooldown.
         .AddHttpMessageHandler(() => new TransientRetryHandler());
@@ -409,7 +411,8 @@ try
 
     // MangaDenizi fetches its own page images through this client.
     builder.Services.AddHttpClient(MangaDeniziSource.HttpClientName)
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true));
 
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
     // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
@@ -419,7 +422,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -658,7 +662,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(60);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -1289,6 +1294,7 @@ try
     builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
     var app = builder.Build();
+    DataDiagnostics.Logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Maki.Data");
 
     // Apply migrations + enable WAL on startup. Migrations are forward-only with no down path, so
     // snapshot the current DB *before* applying any pending migration — the recovery net for a bad
@@ -1301,7 +1307,16 @@ try
 
         // A fresh install has nothing to protect yet, and the backup would query tables that no
         // migration has created, logging an error on every first boot.
-        var freshDatabase = !db.Database.GetAppliedMigrations().Any();
+        var applied = db.Database.GetAppliedMigrations().ToList();
+        var freshDatabase = applied.Count == 0;
+        var newerThanBuild = applied.Except(db.Database.GetMigrations()).ToList();
+        if (newerThanBuild.Count > 0)
+        {
+            startupLog.LogError(
+                "The database has {Count} migration(s) this build does not know (latest {Latest}). It was written by a newer version, "
+                + "and running this older one against it can corrupt data. Restore the pre-upgrade backup from the backups folder, or upgrade again",
+                newerThanBuild.Count, newerThanBuild[^1]);
+        }
         if (pending.Count > 0 && !freshDatabase)
         {
             startupLog.LogInformation("{Count} pending migration(s); taking pre-migration backup", pending.Count);

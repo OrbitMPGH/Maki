@@ -34,6 +34,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsNumberInput } from './SettingsNumberInput'
+import { useReportUnsaved } from './SaveButton'
 
 const MODE_LABELS: Record<ReaderPrefs['mode'], MessageDescriptor> = {
   paged: msg`Single page`,
@@ -298,6 +299,10 @@ function ProfileEditor({
   const [types, setTypes] = useState<string[]>(initial.seriesTypes)
   const [prefs, setPrefs] = useState<ReaderPrefs>(initial.prefs)
   const set = (patch: Partial<ReaderPrefs>) => setPrefs((current) => ({ ...current, ...patch }))
+  useReportUnsaved(
+    JSON.stringify({ name, types, prefs }) !==
+      JSON.stringify({ name: initial.name, types: initial.seriesTypes, prefs: initial.prefs }),
+  )
 
   return (
     <Stack gap="sm" mt="sm">

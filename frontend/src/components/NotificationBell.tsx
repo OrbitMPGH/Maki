@@ -39,7 +39,7 @@ export function NotificationBell() {
 
   const { data: unread } = useInboxUnread()
   useInboxPrefs()
-  const { data, isLoading } = useInbox()
+  const { data, isPending } = useInbox(undefined, opened)
   const markRead = useMarkInboxRead()
   const markAll = useMarkAllInboxRead()
 
@@ -100,7 +100,7 @@ export function NotificationBell() {
           )}
         </Group>
 
-        {isLoading ? (
+        {isPending ? (
           <Text size="xs" c="var(--ink-3)" px="sm" pb="sm">
             <Trans>Loading…</Trans>
           </Text>

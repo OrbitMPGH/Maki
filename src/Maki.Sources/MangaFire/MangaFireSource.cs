@@ -18,7 +18,7 @@ namespace Maki.Sources.MangaFire;
 ///   (title page, walking pager)  → chapters: {items:[{id, number, name, language, type, createdAt}]}
 ///   /title/{key}/chapter/{id}    → pages:    {data:{pages:[{url, width, height}]}}
 /// Series id is "{hid}-{slug}" (the tail of /title/ URLs); the hid is the part before the first '-'.
-/// Pages are served plain (no tile scrambling), so ScrambleOffset stays 0.
+/// Pages are served plain, with no tile scrambling.
 /// </summary>
 public class MangaFireSource(MangaFireBrowser browser) : ISource
 {

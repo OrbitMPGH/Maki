@@ -2372,10 +2372,6 @@ namespace Maki.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Timestamp");
-
-                    b.HasIndex("UserId");
-
                     b.ToTable("AuthEvents");
                 });
 
@@ -2508,6 +2504,10 @@ namespace Maki.Data.Migrations
                         .IsUnique();
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex(new[] { "UserId", "Scope" }, "IX_UserApiKeys_Opds_Live_UserId")
+                        .IsUnique()
+                        .HasFilter("RevokedAt IS NULL AND Scope = 1");
 
                     b.ToTable("UserApiKeys");
                 });

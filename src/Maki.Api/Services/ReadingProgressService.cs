@@ -1,6 +1,5 @@
 using Maki.Core.Entities;
 using Maki.Data;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -462,7 +461,7 @@ public class ReadingProgressService(
             {
                 return await action();
             }
-            catch (DbUpdateException e) when (IsUniqueViolation(e))
+            catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
             {
                 logger.LogDebug("Reading-state merge lost a race, retrying: {Error}", e.Message);
                 db.ChangeTracker.Clear();
@@ -474,11 +473,4 @@ public class ReadingProgressService(
             gate.Lock.Release();
         }
     }
-
-    // 2067 = SQLITE_CONSTRAINT_UNIQUE, 1555 = SQLITE_CONSTRAINT_PRIMARYKEY. Matched on the
-    // *extended* code on purpose: the primary code (19, SQLITE_CONSTRAINT) also covers FK,
-    // NOT NULL and CHECK failures, none of which a retry can resolve — retrying those just runs
-    // the whole merge a second time before rethrowing the same error.
-    private static bool IsUniqueViolation(DbUpdateException e) =>
-        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 }

@@ -139,7 +139,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 
 | Lane | ID | Tier | State |
 |---|---|---|---|
-| Kavita repair | (wave 2 review) | low | decision (repair mis-attributed Kavita ReadingState rows: move, drop or leave) |
+| Kavita repair | (wave 2 review) | low | skipped (owner decided 2026-10-09: leave existing rows; imported rows carry no Kavita series id, so a repair cannot tell a wrong row from a right one, and the scoped match stops new ones) |
 | DOWNLOADS | DOWNLOADS-02 | medium | done 5e4c759e (missed in wave 2) |
 | HOSTING-08 job | HOSTING-08 | medium | done a17238bd, 0cb22018, 5ae81857 (setting backup.scheduled, default off) |
 | AUTH | AUTH-07 | low | done 07efa3dc |
@@ -166,44 +166,44 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | AUTH | AUTH-25 | nit | done 6f2c9bcb |
 | AUTH | AUTH-16 | nit | done (wave 2) |
 | AUTH | AUTH-27 | nit | done 6f2c9bcb |
-| CORE | CORE-10 | low | pending |
-| CORE | CORE-20 | low | pending |
-| CORE | CORE-23 | low | pending |
-| CORE | CORE-06 | low | pending |
-| CORE | CORE-07 | low | pending |
-| CORE | CORE-21 | low | pending |
-| CORE | CORE-25 | low | pending |
-| CORE | CORE-26 | low | pending |
-| CORE | CORE-03 | low | pending |
-| CORE | CORE-02 | low | pending |
-| CORE | CORE-29 | low | pending |
-| CORE | CORE-28 | low | pending |
-| CORE | CORE-27 | low | pending |
-| CORE | CORE-11 | nit | pending |
-| CORE | CORE-33 | nit | pending |
-| CORE | CORE-04 | nit | pending |
-| CORE | CORE-12 | nit | pending |
-| CORE | CORE-16 | nit | pending |
-| CORE | CORE-30 | nit | pending |
-| CORE | CORE-14 | nit | pending |
-| CORE | CORE-15 | nit | pending |
-| CORE | CORE-17 | nit | pending |
-| CORE | CORE-31 | nit | pending |
-| CORE | CORE-32 | nit | pending |
-| DATA | DATA-04 | low | pending |
-| DATA | DATA-09 | low | pending |
-| DATA | DATA-13 | low | pending |
-| DATA | DATA-01 | low | pending |
-| DATA | DATA-08 | low | pending |
-| DATA | DATA-12 | low | pending |
-| DATA | DATA-03 | low | pending |
-| DATA | DATA-14 | low | pending |
-| DATA | DATA-06 | low | pending |
-| DATA | DATA-05 | low | pending |
-| DATA | DATA-10 | nit | pending |
-| DATA | DATA-07 | nit | pending |
-| DATA | DATA-15 | nit | pending |
-| DATA | DATA-11 | nit | pending |
+| CORE | CORE-10 | low | done bef5715d |
+| CORE | CORE-20 | low | done 3539885a |
+| CORE | CORE-23 | low | done e597547c (culture only; "One-shot", "Vol." and "Ch." labels stay English, a structured-parts design change for the owner) |
+| CORE | CORE-06 | low | done 724f9e2f, 5f4ead85, 8ba7da67 |
+| CORE | CORE-07 | low | done 668b2d95, 62de2859 |
+| CORE | CORE-21 | low | done 3539885a, 9786a048 |
+| CORE | CORE-25 | low | done f91b6f3c |
+| CORE | CORE-26 | low | done b735d624 |
+| CORE | CORE-03 | low | done 6eb5697f, 62de2859 |
+| CORE | CORE-02 | low | done 6eb5697f |
+| CORE | CORE-29 | low | done dc10a04d |
+| CORE | CORE-28 | low | skipped (a cached PDF reader would hold the file open on Windows and block moves and deletes; perf-only) |
+| CORE | CORE-27 | low | done 392f4984, 0206fd0e, d275940a |
+| CORE | CORE-11 | nit | done 5619b70f |
+| CORE | CORE-33 | nit | done 92b8c15e |
+| CORE | CORE-04 | nit | done 6eb5697f |
+| CORE | CORE-12 | nit | done d6065757 |
+| CORE | CORE-16 | nit | done 5619b70f |
+| CORE | CORE-30 | nit | done 79fe6292 |
+| CORE | CORE-14 | nit | done 871a793c |
+| CORE | CORE-15 | nit | done 5619b70f |
+| CORE | CORE-17 | nit | done 5619b70f |
+| CORE | CORE-31 | nit | done 79fe6292 |
+| CORE | CORE-32 | nit | skipped (unscored AnimeSignalPolicy branches: delete or make live is a recommendation-behaviour choice for the owner) |
+| DATA | DATA-04 | low | done 2c4313e8 |
+| DATA | DATA-09 | low | done 2c4313e8, 79d4c05d |
+| DATA | DATA-13 | low | done b03f93fd |
+| DATA | DATA-01 | low | skipped (already fixed by c2de0e39, 399a9cb1: MigrationErrorMarker expires after 7 days) |
+| DATA | DATA-08 | low | done bc365743, 79d4c05d |
+| DATA | DATA-12 | low | skipped (behaviour change: refreshing CompletedAt on a re-read moves the documented first-flip rule and the stats that date rows by it; owner may revisit) |
+| DATA | DATA-03 | low | done 2c4313e8 |
+| DATA | DATA-14 | low | done 77cb6d67, 33bdd262 (HealthScans only; the history, operations and file-version journals stay unpruned on purpose) |
+| DATA | DATA-06 | low | done b73fe53a, a55ccaf5 |
+| DATA | DATA-05 | low | done 2c4313e8 |
+| DATA | DATA-10 | nit | done b73fe53a |
+| DATA | DATA-07 | nit | done 987a6e4a |
+| DATA | DATA-15 | nit | done ed88032f, 99c162e8 |
+| DATA | DATA-11 | nit | done d9a73712 |
 | DBPERF | DBPERF-03 | low | pending |
 | DBPERF | DBPERF-07 | low | pending |
 | DBPERF | DBPERF-10 | low | pending |
@@ -356,49 +356,49 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-READER | FE-READER-33 | nit | skipped (needs a backend payload change) |
 | FE-READER | FE-READER-35 | nit | done 40e82886 |
 | FE-READER | FE-READER-32 | nit | done 1c28fad9 |
-| FE-SETTINGS | FE-SETTINGS-23 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-20 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-26 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-28 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-40 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-43 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-02 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-05 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-06 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-34 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-48 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-03 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-11 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-13 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-17 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-21 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-22 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-27 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-35 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-37 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-38 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-42 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-44 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-45 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-49 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-50 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-18 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-19 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-04 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-29 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-41 | low | pending |
-| FE-SETTINGS | FE-SETTINGS-46 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-14 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-31 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-07 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-32 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-36 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-12 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-24 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-39 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-47 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-51 | nit | pending |
-| FE-SETTINGS | FE-SETTINGS-30 | nit | pending |
+| FE-SETTINGS | FE-SETTINGS-23 | low | done f8cb0007, 70c6eabc, 371679e3 |
+| FE-SETTINGS | FE-SETTINGS-20 | low | done f8cb0007 |
+| FE-SETTINGS | FE-SETTINGS-26 | low | done 25cd85ed, c6155de0 |
+| FE-SETTINGS | FE-SETTINGS-28 | low | done 25cd85ed |
+| FE-SETTINGS | FE-SETTINGS-40 | low | done ff20624e |
+| FE-SETTINGS | FE-SETTINGS-43 | low | done ff20624e |
+| FE-SETTINGS | FE-SETTINGS-02 | low | done 25cd85ed |
+| FE-SETTINGS | FE-SETTINGS-05 | low | done 76d39667 |
+| FE-SETTINGS | FE-SETTINGS-06 | low | done 76d39667 |
+| FE-SETTINGS | FE-SETTINGS-34 | low | done 9b3ca879 |
+| FE-SETTINGS | FE-SETTINGS-48 | low | done f725c08a |
+| FE-SETTINGS | FE-SETTINGS-03 | low | done 9ebd63fb (global MutationCache toast) |
+| FE-SETTINGS | FE-SETTINGS-11 | low | done 76d39667 |
+| FE-SETTINGS | FE-SETTINGS-13 | low | done 76d39667 |
+| FE-SETTINGS | FE-SETTINGS-17 | low | done f8cb0007, 9ebd63fb |
+| FE-SETTINGS | FE-SETTINGS-21 | low | done f8cb0007, 371679e3 |
+| FE-SETTINGS | FE-SETTINGS-22 | low | done f8cb0007 |
+| FE-SETTINGS | FE-SETTINGS-27 | low | done 25cd85ed |
+| FE-SETTINGS | FE-SETTINGS-35 | low | done 9b3ca879 |
+| FE-SETTINGS | FE-SETTINGS-37 | low | done f8cb0007 |
+| FE-SETTINGS | FE-SETTINGS-38 | low | done f8cb0007, 70c6eabc, 371679e3 |
+| FE-SETTINGS | FE-SETTINGS-42 | low | done ff20624e |
+| FE-SETTINGS | FE-SETTINGS-44 | low | done ff20624e (Play Rewind hidden when viewing another reader) |
+| FE-SETTINGS | FE-SETTINGS-45 | low | done ff20624e |
+| FE-SETTINGS | FE-SETTINGS-49 | low | done f725c08a |
+| FE-SETTINGS | FE-SETTINGS-50 | low | done f725c08a |
+| FE-SETTINGS | FE-SETTINGS-18 | low | done f8cb0007 |
+| FE-SETTINGS | FE-SETTINGS-19 | low | done f8cb0007 |
+| FE-SETTINGS | FE-SETTINGS-04 | low | done 76d39667 |
+| FE-SETTINGS | FE-SETTINGS-29 | low | done 9b3ca879, 93830f66 |
+| FE-SETTINGS | FE-SETTINGS-41 | low | done ff20624e, 93830f66 |
+| FE-SETTINGS | FE-SETTINGS-46 | nit | done ff20624e |
+| FE-SETTINGS | FE-SETTINGS-14 | nit | done 76d39667 |
+| FE-SETTINGS | FE-SETTINGS-31 | nit | done 9b3ca879 |
+| FE-SETTINGS | FE-SETTINGS-07 | nit | done 76d39667 |
+| FE-SETTINGS | FE-SETTINGS-32 | nit | done 25cd85ed |
+| FE-SETTINGS | FE-SETTINGS-36 | nit | done 9b3ca879 |
+| FE-SETTINGS | FE-SETTINGS-12 | nit | done 76d39667 |
+| FE-SETTINGS | FE-SETTINGS-24 | nit | done 9b3ca879 |
+| FE-SETTINGS | FE-SETTINGS-39 | nit | done f8cb0007 |
+| FE-SETTINGS | FE-SETTINGS-47 | nit | done ff20624e, 93830f66 |
+| FE-SETTINGS | FE-SETTINGS-51 | nit | done f725c08a |
+| FE-SETTINGS | FE-SETTINGS-30 | nit | done 9b3ca879 (accountSecurity stays outside the switchable categories, commented) |
 | FE-UX | FE-UX-03 | low | pending |
 | FE-UX | FE-UX-05 | low | pending |
 | FE-UX | FE-UX-07 | low | pending |
@@ -443,7 +443,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | HOSTING | HOSTING-16 | low | done 58c40a8f |
 | HOSTING | HOSTING-30 | low | done 6f2de970, 1723f02e |
 | HOSTING | HOSTING-04 | low | skipped (write probe is the point of the check) |
-| HOSTING | HOSTING-21 | low | decision (manual import-list run: off the request onto the job, or inline with a cap) |
+| HOSTING | HOSTING-21 | low | done 50b23db2 (owner decided 2026-10-09: every manual run goes onto the background job, 202 started) |
 | HOSTING | HOSTING-17 | low | done 58c40a8f |
 | HOSTING | HOSTING-18 | low | done 890943d4 |
 | HOSTING | HOSTING-28 | low | done d67793ae (UrlBase removed) |
@@ -462,29 +462,29 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | HOSTING | HOSTING-42 | nit | done 42896055 |
 | HOSTING | HOSTING-35 | nit | done fa68c82e |
 | HOSTING | HOSTING-44 | nit | done eef1bbd1, 703f8a7f |
-| METADATA | METADATA-12 | low | pending |
-| METADATA | METADATA-13 | low | pending |
-| METADATA | METADATA-15 | low | pending |
-| METADATA | METADATA-17 | low | pending |
-| METADATA | METADATA-23 | low | pending |
-| METADATA | METADATA-24 | low | pending |
-| METADATA | METADATA-10 | low | pending |
-| METADATA | METADATA-11 | low | pending |
-| METADATA | METADATA-18 | low | pending |
-| METADATA | METADATA-03 | low | pending |
-| METADATA | METADATA-14 | low | pending |
-| METADATA | METADATA-05 | low | pending |
-| METADATA | METADATA-06 | low | pending |
-| METADATA | METADATA-16 | low | pending |
-| METADATA | METADATA-20 | low | pending |
-| METADATA | METADATA-22 | low | pending |
-| METADATA | METADATA-19 | low | pending |
-| METADATA | METADATA-08 | low | pending |
-| METADATA | METADATA-21 | low | pending |
-| METADATA | METADATA-28 | low | pending |
-| METADATA | METADATA-27 | low | pending |
-| METADATA | METADATA-25 | nit | pending |
-| METADATA | METADATA-26 | nit | pending |
+| METADATA | METADATA-12 | low | done 5961fc2e, 3ec2c387 |
+| METADATA | METADATA-13 | low | done 5961fc2e |
+| METADATA | METADATA-15 | low | done 968d5400 |
+| METADATA | METADATA-17 | low | done 4cd1d49d |
+| METADATA | METADATA-23 | low | done 968d5400 |
+| METADATA | METADATA-24 | low | done d40b598d |
+| METADATA | METADATA-10 | low | done e78eec04 |
+| METADATA | METADATA-11 | low | done 7b2885f0 |
+| METADATA | METADATA-18 | low | done b4df95f1 |
+| METADATA | METADATA-03 | low | done 128f4617 |
+| METADATA | METADATA-14 | low | done 76fc517e, 8f569062, 94860047 |
+| METADATA | METADATA-05 | low | done fab5861c (ArrayPool part left; empty-channel path no longer allocates) |
+| METADATA | METADATA-06 | low | done 418cd4bf |
+| METADATA | METADATA-16 | low | done 016375a2, 3d6cde5f |
+| METADATA | METADATA-20 | low | done 876c98eb |
+| METADATA | METADATA-22 | low | done 99af3675, 8d0ae457 |
+| METADATA | METADATA-19 | low | done b4df95f1 |
+| METADATA | METADATA-08 | low | done 167d4d1b, 5367f6f9 (index still builds while embeddings are off; gating it broke never-show and tag filters) |
+| METADATA | METADATA-21 | low | done 5ad60dd1, 016375a2 (shared checks and failure memo; no base class) |
+| METADATA | METADATA-28 | low | done 8a91df93, 5961fc2e, 158ebb32 and others (no Invalidate-during-build test) |
+| METADATA | METADATA-27 | low | done 7983e1e1 |
+| METADATA | METADATA-25 | nit | done 60bb0d95 (COLLATE, LIKE ESCAPE, HtmlDecode, DropAfterScan left alone) |
+| METADATA | METADATA-26 | nit | done 8720e872 |
 | PROGRESS | PROGRESS-27 | low | done eccdea66 |
 | PROGRESS | PROGRESS-10 | low | done 363e5bc7 |
 | PROGRESS | PROGRESS-22 | low | done 71138ce0 |

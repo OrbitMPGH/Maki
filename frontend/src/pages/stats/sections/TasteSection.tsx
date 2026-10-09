@@ -6,7 +6,8 @@ import { useStatsInsights, useStatsStanding } from '../../../api/stats'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { TagChips } from '../../../components/ui/TagChip'
-import { formatPercent, formatSignedDecimal } from '../../../format'
+import { formatDecimal, formatPercent } from '../../../format'
+import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
 import { ChartSkeleton } from '../ChartSkeleton'
 import { CreatorList } from '../CreatorList'
 import { LeanBars } from '../charts/LeanBars'
@@ -108,17 +109,15 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
 
   if (activity && activity.readTrackingAvailable === false) {
     return (
-      <EmptyState
-        compact
-        title={t`Reading stats need Kavita`}
-        description={t`Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way.`}
-      />
+      <ReadTrackingEmpty />
     )
   }
 
   const ratings = standing?.ratings ?? null
-  const meanGapKind = ratings ? (ratings.meanGap > 0 ? 'above' : ratings.meanGap < 0 ? 'below' : 'same') : 'same'
-  const meanGapValue = ratings ? formatSignedDecimal(ratings.meanGap) : '0'
+  // Judged on the value as printed, so a gap that rounds to 0.0 reads as "the same", not "0.0 above".
+  const meanGapRounded = ratings ? Math.round(ratings.meanGap * 10) / 10 : 0
+  const meanGapKind = meanGapRounded > 0 ? 'above' : meanGapRounded < 0 ? 'below' : 'same'
+  const meanGapValue = formatDecimal(Math.abs(meanGapRounded))
 
   return (
     <>
@@ -162,15 +161,19 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
           </div>
           {ratings && (
             <p className="stats-panel-sub">
-              <Trans>
-                You rate {meanGapValue}{' '}
-                <Select
-                  value={meanGapKind}
-                  _above="points above the crowd"
-                  _below="points below the crowd"
-                  other="the same as the crowd"
-                />
-              </Trans>
+              {meanGapKind === 'same' ? (
+                <Trans>You rate the same as the crowd</Trans>
+              ) : (
+                <Trans>
+                  You rate {meanGapValue}{' '}
+                  <Select
+                    value={meanGapKind}
+                    _above="points above the crowd"
+                    _below="points below the crowd"
+                    other="points from the crowd"
+                  />
+                </Trans>
+              )}
             </p>
           )}
           {standing === undefined ? (

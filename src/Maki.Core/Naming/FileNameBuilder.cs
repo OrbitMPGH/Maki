@@ -68,7 +68,7 @@ public static class FileNameBuilder
         var language = chapter.Language;
         if (string.IsNullOrWhiteSpace(language) ||
             language.Equals(DefaultLanguage, StringComparison.OrdinalIgnoreCase) ||
-            format.Contains(LanguageToken, StringComparison.OrdinalIgnoreCase))
+            NamingFormatter.UsesToken(format, LanguageToken))
         {
             return string.Empty;
         }

@@ -77,8 +77,8 @@ public class HousekeepingJob(
             }
         }
 
-        // Packaged chapters left in a library share's .maki/tmp by an item that was cleared or whose
-        // process died mid-import. Named after the queue row, so one still active is left alone.
+        // Packaged chapters, and their .partial files from a kill mid-write, left in a library share's
+        // .maki/tmp by an item that was cleared or whose process died mid-import. Named after the queue row, so one still active is left alone.
         var tmpCutoff = DateTime.UtcNow.AddDays(-1);
         var liveTmp = (await db.DownloadQueue
                 .Where(q => q.Status != QueueStatus.Completed &&
@@ -98,7 +98,7 @@ public class HousekeepingJob(
 
             try
             {
-                foreach (var file in Directory.GetFiles(tmpDir, "*.cbz"))
+                foreach (var file in Directory.GetFiles(tmpDir, "*.cbz").Concat(Directory.GetFiles(tmpDir, "*.cbz.partial")))
                 {
                     if (ct.IsCancellationRequested)
                     {
@@ -106,7 +106,7 @@ public class HousekeepingJob(
                     }
 
                     if (File.GetLastWriteTimeUtc(file) < tmpCutoff &&
-                        !liveTmp.Contains(Path.GetFileNameWithoutExtension(file)))
+                        !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
                     {
                         File.Delete(file);
                     }
@@ -211,6 +211,11 @@ public class HousekeepingJob(
         await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);
 
         await PruneInboxAsync(ct);
+        var prunedScans = await PruneHealthScansAsync(db, cutoff, ct);
+        if (prunedScans > 0)
+        {
+            logger.LogDebug("Housekeeping removed {Count} old health scans", prunedScans);
+        }
 
         // 0x10002: consider every table, not only the ones this pooled connection happened to query.
         await db.Database.ExecuteSqlRawAsync("PRAGMA optimize=0x10002;", ct);
@@ -225,6 +230,24 @@ public class HousekeepingJob(
         // consumer here opens with Pooling=False so the nightly artifact swaps can replace a file.
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         logger.LogDebug("Housekeeping complete");
+    }
+
+    /// <summary>Health scans that finished before <paramref name="cutoff"/>, except the ten newest, which is what the health page lists.</summary>
+    internal static async Task<int> PruneHealthScansAsync(MakiDbContext db, DateTime cutoff, CancellationToken ct)
+    {
+        var oldestKept = await db.HealthScans
+            .OrderByDescending(s => s.Id)
+            .Skip(9)
+            .Select(s => (int?)s.Id)
+            .FirstOrDefaultAsync(ct);
+        if (oldestKept is null)
+        {
+            return 0;
+        }
+
+        return await db.HealthScans
+            .Where(s => s.Id < oldestKept && s.Status != "pending" && s.Status != "running" && (s.FinishedAt ?? s.CreatedAt) < cutoff)
+            .ExecuteDeleteAsync(ct);
     }
 
     /// <summary>

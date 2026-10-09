@@ -471,7 +471,12 @@ public class AuthController(
             await auditLog.LogAsync(AuthEventType.LoginFailed,
                 OidcClaimMapper.UserName(oidc, claims, subject), null, HttpContext,
                 detail: $"single sign-on refused: {resolved.ErrorKey ?? resolved.RawError}", ct: ct);
-            return SsoFailureRaw(ResolveError(resolved));
+            if (resolved.RawError is not null)
+            {
+                logger.LogWarning("Single sign-on refused: {Error}", resolved.RawError);
+            }
+
+            return SsoFailure(resolved.ErrorKey);
         }
 
         var user = resolved.User;
@@ -690,27 +695,16 @@ public class AuthController(
     /// <summary>
     /// Back to the login page with the reason in the query string. A redirect rather than a JSON
     /// error because the browser got here by a top-level navigation from the provider — there is no
-    /// fetch waiting for a response body. The message is rendered here, in the request's own
-    /// language, because the page it lands on is a plain query string with no locale of its own.
+    /// fetch waiting for a response body. Only a short <see cref="SsoErrorCodes"/> code travels, never
+    /// a sentence: the login page words it in its own language, and a crafted link cannot put text
+    /// of its own on the page.
     /// </summary>
-    private IActionResult SsoFailure(string key, object? args = null) =>
-        SsoFailureRaw(localizer.Get(key, args));
+    private IActionResult SsoFailure(string? key) =>
+        Redirect("/login?ssoError=" + SsoErrorCodes.FromKey(key));
 
-    private IActionResult SsoFailureRaw(string message) =>
-        Redirect("/login?ssoError=" + Uri.EscapeDataString(message));
-
-    /// <summary>Same idea as <see cref="SsoFailure(string,object?)"/>, back to the settings page instead.</summary>
-    private IActionResult LinkFailure(string key, object? args = null) =>
-        Redirect("/settings?oidcLinkError=" + Uri.EscapeDataString(localizer.Get(key, args)));
-
-    /// <summary>
-    /// Words an <see cref="OidcSignInService"/> failure: its own catalogue key when it has one, the
-    /// raw text Identity worded itself when it does not, and the generic fallback when neither is set.
-    /// </summary>
-    private string ResolveError(OidcSignInResult result) =>
-        result.ErrorKey is { } key
-            ? localizer.Get(key, result.ErrorArgs)
-            : result.RawError ?? localizer.Get("error.auth.ssoSignInFailed");
+    /// <summary>Same idea as <see cref="SsoFailure(string)"/>, back to the settings page instead.</summary>
+    private IActionResult LinkFailure(string key) =>
+        Redirect("/settings?oidcLinkError=" + SsoErrorCodes.FromKey(key));
 
     /// <summary>
     /// Refuses anything that is not a path on this instance. Without it the return URL is an open
