@@ -118,11 +118,11 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpGet]
     public async Task<IActionResult> Overview(CancellationToken ct) => Ok(new
     {
-        checks = (await db.HealthChecks.OrderBy(c => c.Category).ThenBy(c => c.Id).ToListAsync(ct))
+        checks = (await db.HealthChecks.AsNoTracking().OrderBy(c => c.Category).ThenBy(c => c.Id).ToListAsync(ct))
             .Select(Rendered),
         openFindings = await db.HealthFindings.CountAsync(f => f.State == "open", ct),
         files = await db.HealthFiles.CountAsync(f => !f.Removed, ct),
-        scans = await db.HealthScans.OrderByDescending(s => s.Id).Take(10).ToListAsync(ct),
+        scans = await db.HealthScans.AsNoTracking().OrderByDescending(s => s.Id).Take(10).ToListAsync(ct),
         roots = await db.RootFolders.Select(r => new { r.Id, r.Path }).ToListAsync(ct)
     });
 
@@ -224,7 +224,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             chapters,
             mappings,
             match = await matches.MatchAsync(file, ct),
-            findings = (await db.HealthFindings.Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct))
+            findings = (await db.HealthFindings.AsNoTracking().Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct))
                 .Select(Rendered),
         });
     }

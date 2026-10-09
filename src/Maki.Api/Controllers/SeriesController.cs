@@ -474,7 +474,7 @@ public class SeriesController(
     public async Task<IActionResult> Files(int id, [FromServices] UpgradeEvaluationService upgrades,
         [FromServices] IMemoryCache cache, CancellationToken ct)
     {
-        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        var series = await db.Series.AsNoTracking().Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -485,7 +485,7 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        var records = await db.ChapterFiles.Where(f => f.SeriesId == id).ToListAsync(ct);
+        var records = await db.ChapterFiles.AsNoTracking().Where(f => f.SeriesId == id).ToListAsync(ct);
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == id && c.ChapterFileId != null)
             .Select(c => new { c.ChapterFileId, c.Number, c.Language })
@@ -836,7 +836,7 @@ public class SeriesController(
     [HttpGet("{id:int}/related")]
     public async Task<IActionResult> Related(int id, [FromServices] HiddenContentService hidden, CancellationToken ct)
     {
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -873,7 +873,7 @@ public class SeriesController(
     [HttpGet("{id:int}/similar")]
     public async Task<IActionResult> Similar(int id, [FromServices] HiddenContentService hidden, CancellationToken ct)
     {
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();

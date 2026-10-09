@@ -606,7 +606,7 @@ public class ReaderController(
     [HttpPut("chapter/{id:int}/bookmark/{page:int}")]
     public async Task<IActionResult> ToggleBookmark(int id, int page, CancellationToken ct)
     {
-        var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == id, ct);
+        var chapter = await db.Chapters.AsNoTracking().Select(c => new { c.Id, c.SeriesId }).FirstOrDefaultAsync(c => c.Id == id, ct);
         if (chapter is null)
         {
             return NotFound();
@@ -669,6 +669,7 @@ public class ReaderController(
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
         // so the ordered fallback below picks it up in its proper place.
         var inProgress = await db.ChapterProgress
+            .AsNoTracking()
             .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null && p.PageIndex > 0 &&
                         db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
             .OrderByDescending(p => p.UpdatedAt)
