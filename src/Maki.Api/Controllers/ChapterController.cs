@@ -48,7 +48,6 @@ public class ChapterController(
     {
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
-            .Include(c => c.ChapterFile)
             .Select(c => new
             {
                 c.Id,

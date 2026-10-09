@@ -440,6 +440,12 @@ public class SeriesController(
     /// been opened — and nothing could clear it, because the mark may not be lowered.
     /// </para>
     /// </summary>
+    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
+        await ReadCounts.Read(db)
+            .GroupBy(p => p.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
+
     /// <summary>
     /// The caller's own per-series state: their score, and their notification mode. Needed by every
     /// endpoint that hands back a <see cref="SeriesDto"/> after a mutation — neither is a column on
@@ -456,12 +462,6 @@ public class SeriesController(
 
         return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default);
     }
-
-    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
-        await ReadCounts.Read(db)
-            .GroupBy(p => p.SeriesId)
-            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
 
     /// <summary>
     /// Lists the raw CBZ files in the series folder cross-referenced with the database:
@@ -910,7 +910,7 @@ public class SeriesController(
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct)
     {
-        var series = await db.Series.Include(s => s.UserTags).Include(s => s.RootFolder)
+        var series = await db.Series.AsNoTracking().Include(s => s.UserTags).Include(s => s.RootFolder)
             .FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
@@ -923,8 +923,9 @@ public class SeriesController(
         var active = await db.DownloadQueue
             .Where(q => q.SeriesId == id && q.Status != QueueStatus.Completed &&
                         q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+            .Select(q => q.Status)
             .ToListAsync(ct);
-        var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
+        var queued = active.Count(status => status is QueueStatus.Queued or QueueStatus.RateLimited);
 
         // Null means nothing has been read yet, which the UI hides instead of drawing an empty bar.
         // Through ReadCounts so this page and the library grid can't disagree about what "read" is.
@@ -1998,6 +1999,4 @@ public class SeriesController(
         await db.SaveChangesAsync(ct);
         return Ok(new { tagIds = series.UserTags.Select(t => t.Id).ToList() });
     }
-
-    /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>
 }

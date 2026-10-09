@@ -92,9 +92,9 @@ export interface SeriesDto {
   animeStart: string | null
   animeEnd: string | null
   /**
-   * Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
-   * when nothing has reported reading progress for this series yet, distinct from 0 (tracked,
-   * but nothing read).
+   * Downloaded chapters the caller has finished, counted from their completed progress rows
+   * (built-in reader and Kavita sync alike). Null when no progress exists for this series yet,
+   * distinct from 0 (tracked, but nothing read).
    */
   readChapterCount: number | null
   /**
@@ -137,8 +137,10 @@ export interface SeriesDto {
   warnings?: string[] | null
   /** Upgrade profile pinned to this series, or null to fall back to the instance default. */
   upgradeProfileId: number | null
-  /** Null when this series has never been scanned for upgrades, by any of the three entry points. */
-  /** `checked` is null for scans recorded before it was kept; `skipped` maps a reason code to a count. */
+  /**
+   * Null when this series has never been scanned for upgrades, by any of the three entry points.
+   * `checked` is null for scans recorded before it was kept; `skipped` maps a reason code to a count.
+   */
   lastUpgradeScan: {
     at: string
     probed: number

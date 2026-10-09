@@ -114,9 +114,9 @@ public record SeriesDto(
     string? AnimeStart,
     string? AnimeEnd,
     /// <summary>
-    /// Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
-    /// when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
-    /// but nothing read).
+    /// Downloaded chapters the caller has finished, counted from their completed progress rows
+    /// (built-in reader and Kavita sync alike). Null when no progress exists for this series yet,
+    /// distinct from 0 (tracked, but nothing read).
     /// </summary>
     int? ReadChapterCount = null,
     /// <summary>
@@ -310,11 +310,6 @@ public record SeriesDto(
     }
 }
 
-/// <param name="Incognito">
-/// "Off" | "ScrobbleOnly" | "Full", or null to let the per-content-rating rules
-/// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
-/// to be the fallback rather than a hardcoded Off.
-/// </param>
 public record SeriesOperationDto(Guid Id, string State, int SeriesId, long SignalRevision);
 
 /// <param name="Checked">Null for scans recorded before it was kept.</param>
@@ -339,6 +334,11 @@ public record LastUpgradeScanDto(DateTime At, int Probed, int Queued, int? Check
     }
 }
 
+/// <param name="Incognito">
+/// "Off" | "ScrobbleOnly" | "Full", or null to let the per-content-rating rules
+/// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
+/// to be the fallback rather than a hardcoded Off.
+/// </param>
 public record AddSeriesRequest(
     string MetadataProviderId,
     int RootFolderId,
