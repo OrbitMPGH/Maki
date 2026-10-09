@@ -202,7 +202,7 @@ export function SeriesPreviewReader({
               <Button onClick={onClose} leftSection={<IconArrowLeft size={16} />}>
                 <Trans>Back to the series</Trans>
               </Button>
-              <Button variant="subtle" color="gray" className="reader-end-quiet" onClick={() => setAtEnd(false)}>
+              <Button variant="subtle" color="var(--neutral)" className="reader-end-quiet" onClick={() => setAtEnd(false)}>
                 <Trans>Stay here</Trans>
               </Button>
             </Group>
@@ -281,7 +281,7 @@ export function SeriesPreviewReader({
       <div className="reader-root" data-preview style={{ background: prefs.background }}>
         <div className="reader-bar reader-bar-top" data-visible onClick={(e) => e.stopPropagation()}>
           <Group gap="sm" wrap="nowrap" px="md" h="100%">
-            <ActionIcon variant="subtle" color="gray" aria-label={t`Close preview`} onClick={onClose}>
+            <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`Close preview`} onClick={onClose}>
               <IconX size={18} />
             </ActionIcon>
             <div style={{ minWidth: 0, flex: 1 }}>

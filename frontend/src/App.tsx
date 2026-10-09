@@ -233,7 +233,7 @@ function ActivityButton() {
         component={Link}
         to="/activity"
         variant="subtle"
-        color="gray"
+        color="var(--neutral)"
         aria-label={t`Activity`}
         pos="relative"
         style={{ overflow: 'visible' }}

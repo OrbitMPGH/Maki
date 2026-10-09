@@ -326,7 +326,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                               >
                                 <ActionIcon
                                   variant="subtle"
-                                  color="gray"
+                                  color="var(--neutral)"
                                   onClick={() =>
                                     setFileTrusted.mutate({
                                       fileId: f.quality!.fileId,

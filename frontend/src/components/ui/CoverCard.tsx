@@ -13,7 +13,7 @@ import {
 } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { BADGE_COLOR, BADGE_ON, seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual } from './status'
+import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual, statusColor, statusOnColor } from './status'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -160,7 +160,7 @@ export const CoverCard = memo(function CoverCard({
               data-tip={statusLabel}
               role="img"
               aria-label={statusLabel}
-              style={{ '--tone': BADGE_COLOR[status.color], '--tone-on': BADGE_ON[status.color] } as React.CSSProperties}
+              style={{ '--tone': statusColor(status.color), '--tone-on': statusOnColor(status.color) } as React.CSSProperties}
             >
               <StatusGlyph size={13} stroke={2} />
             </span>

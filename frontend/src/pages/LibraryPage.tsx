@@ -1016,7 +1016,7 @@ export default function LibraryPage() {
                 {can('DeleteSeries') && bulkBtn('Remove', <Trans>Remove</Trans>, <IconTrash size={15} />, () => {
                   setDeleteFiles(false)
                   setDeleteModalOpen(true)
-                }, 'red')}
+                }, 'var(--danger)')}
                 <Button
                   visibleFrom="sm"
                   size="xs"

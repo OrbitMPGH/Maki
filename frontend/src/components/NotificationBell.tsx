@@ -78,7 +78,7 @@ export function NotificationBell() {
           >
             <ActionIcon
               variant="subtle"
-              color="gray"
+              color="var(--neutral)"
               aria-label={t`Notifications`}
               onClick={toggle}
             >

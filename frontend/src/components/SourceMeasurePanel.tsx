@@ -157,7 +157,7 @@ export function MeasureResult({
               <Trans>Reorder priority to match</Trans>
             </Button>
           </Tooltip>
-          <Button size="xs" variant="subtle" color="gray" onClick={onDismiss}>
+          <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onDismiss}>
             <Trans>Keep as is</Trans>
           </Button>
         </Group>

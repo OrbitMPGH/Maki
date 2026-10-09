@@ -81,7 +81,7 @@ export function ReviewList({
                   {review.author}
                 </Text>
                 {review.tags.map((t) => (
-                  <Badge key={t} size="xs" variant="light" color="gray">
+                  <Badge key={t} size="xs" variant="light" color="var(--neutral)">
                     {t}
                   </Badge>
                 ))}

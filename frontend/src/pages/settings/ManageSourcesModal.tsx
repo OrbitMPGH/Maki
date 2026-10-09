@@ -226,14 +226,14 @@ function PriorityRail({ items, onChange, labelOf }: {
             <span className="source-rail-name">{label}</span>
             <span className="source-rail-moves">
               <ActionIcon
-                variant="subtle" color="gray" size="sm" disabled={i === 0}
+                variant="subtle" color="var(--neutral)" size="sm" disabled={i === 0}
                 aria-label={t`Move ${label} up`}
                 onClick={() => move(i, -1)}
               >
                 <IconChevronUp size={14} />
               </ActionIcon>
               <ActionIcon
-                variant="subtle" color="gray" size="sm" disabled={i === items.length - 1}
+                variant="subtle" color="var(--neutral)" size="sm" disabled={i === items.length - 1}
                 aria-label={t`Move ${label} down`}
                 onClick={() => move(i, 1)}
               >
@@ -502,7 +502,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
               </div>
             )}
             <Group justify="space-between" className="source-filter-foot">
-              <Button variant="subtle" color="gray" size="xs" onClick={clearFilters} disabled={activeFilters === 0}>
+              <Button variant="subtle" color="var(--neutral)" size="xs" onClick={clearFilters} disabled={activeFilters === 0}>
                 <Trans>Clear filters</Trans>
               </Button>
               <Button variant="default" size="xs" onClick={() => setFiltersOpen(false)}>
@@ -601,7 +601,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
         <footer className="source-manager-foot">
           <DirtySummary turnedOn={turnedOn} turnedOff={turnedOff} orderChanged={orderChanged} />
           <Group gap="xs" ml="auto">
-            <Button variant="subtle" color="gray" onClick={resetToDefaults} disabled={!sources}>
+            <Button variant="subtle" color="var(--neutral)" onClick={resetToDefaults} disabled={!sources}>
               <Trans>Reset to defaults</Trans>
             </Button>
             <Button variant="default" onClick={requestClose} disabled={save.isPending}>

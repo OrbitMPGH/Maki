@@ -259,7 +259,7 @@ export function SeriesHero({
                                                 <ActionIcon
                                                     size="sm"
                                                     variant="subtle"
-                                                    color="gray"
+                                                    color="var(--neutral)"
                                                     onClick={() => onRate(null)}
                                                     aria-label={t`Clear rating`}
                                                 >

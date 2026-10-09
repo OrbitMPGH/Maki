@@ -351,7 +351,7 @@ export function DiscoverDetailModal({
                             <Badge
                               size="sm"
                               variant="outline"
-                              color="gray"
+                              color="var(--neutral)"
                               leftSection={
                                 <MetadataSiteIcon
                                   site={r.source.toLowerCase()}

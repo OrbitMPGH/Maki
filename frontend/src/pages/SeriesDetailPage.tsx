@@ -1228,7 +1228,7 @@ function SeriesDetailBody() {
               {readTracking && (
                   <Menu shadow="md" position="bottom-end" withinPortal>
                     <Menu.Target>
-                      <ActionIcon variant="subtle" color="gray" aria-label={t`Actions for ${spanLabel}`}>
+                      <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`Actions for ${spanLabel}`}>
                         <IconDotsVertical size={17} />
                       </ActionIcon>
                     </Menu.Target>
@@ -1268,7 +1268,7 @@ function SeriesDetailBody() {
               <Tooltip label={t`Expand`} withArrow>
                 <ActionIcon
                     variant="subtle"
-                    color="gray"
+                    color="var(--neutral)"
                     onClick={() => toggleSpanFold(span.key)}
                     aria-label={t`Expand ${spanLabel}`}
                 >
@@ -2271,7 +2271,7 @@ function SeriesDetailBody() {
                           <ActionIcon
                               size="sm"
                               variant="subtle"
-                              color="gray"
+                              color="var(--neutral)"
                               aria-label={t`Clear chapter search`}
                               onClick={() => setChapterSearch('')}
                           >
@@ -2407,7 +2407,7 @@ function SeriesDetailBody() {
                           <Button
                               size="xs"
                               variant="light"
-                              color="gray"
+                              color="var(--neutral)"
                               leftSection={<IconEyeOff size={15} />}
                               disabled={selected.size === 0}
                               loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
@@ -2444,7 +2444,7 @@ function SeriesDetailBody() {
                             <Button
                                 size="xs"
                                 variant="light"
-                                color="gray"
+                                color="var(--neutral)"
                                 leftSection={<IconEyeOff size={15} />}
                                 disabled={selected.size === 0}
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'unread'}
@@ -2739,7 +2739,7 @@ function SeriesDetailBody() {
                                       <Group gap={6} wrap="nowrap">
                                         {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                                             <Tooltip label={t`Contained in a volume/compilation file`} withArrow>
-                                              <Badge size="sm" color="indigo" variant="light" className="tnum">
+                                              <Badge size="sm" color="var(--info)" variant="light" className="tnum">
                                                 <Trans>Vol. {fileVolume}</Trans>
                                               </Badge>
                                             </Tooltip>
@@ -2828,7 +2828,7 @@ function SeriesDetailBody() {
                                             return (
                                                 <Stack gap={4} align="flex-start">
                                                   <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                                                    <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="gray">
+                                                    <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
                                                       {origin.label}
                                                     </Badge>
                                                   </Tooltip>
@@ -2888,7 +2888,7 @@ function SeriesDetailBody() {
                                                 )
                                                 return (
                                                     <Tooltip label={t`Read file cleanup is on for this series`} withArrow>
-                                                      <Badge size="sm" color="gray" variant="light" leftSection={<IconClock size={12} />}>
+                                                      <Badge size="sm" color="var(--neutral)" variant="light" leftSection={<IconClock size={12} />}>
                                                         {daysLeft === 0
                                                             ? t`File removed soon`
                                                             : plural(daysLeft, {
@@ -2902,12 +2902,12 @@ function SeriesDetailBody() {
                                             </>
                                         ) : c.fileRemovedAt ? (
                                             <Tooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
-                                              <Badge size="sm" color="gray" variant="light" leftSection={<IconTrash size={12} />}>
+                                              <Badge size="sm" color="var(--neutral)" variant="light" leftSection={<IconTrash size={12} />}>
                                                 <Trans>File removed</Trans>
                                               </Badge>
                                             </Tooltip>
                                         ) : (
-                                            <Badge size="sm" color="gray" variant="light">
+                                            <Badge size="sm" color="var(--neutral)" variant="light">
                                               <Trans>Missing</Trans>
                                             </Badge>
                                         )}
@@ -2982,7 +2982,7 @@ function SeriesDetailBody() {
                                             <Tooltip label={t`Link to a file already on disk`} withArrow>
                                               <ActionIcon
                                                   variant="subtle"
-                                                  color="gray"
+                                                  color="var(--neutral)"
                                                   onClick={() => setLinkChapterIds([c.id])}
                                                   aria-label={t`Link ${chapterLbl} to a file`}
                                               >
@@ -3011,7 +3011,7 @@ function SeriesDetailBody() {
                                               <Menu.Target>
                                                 <ActionIcon
                                                     variant="subtle"
-                                                    color="gray"
+                                                    color="var(--neutral)"
                                                     aria-label={t`More actions for ${chapterLbl}`}
                                                 >
                                                   <IconDotsVertical size={17} />
