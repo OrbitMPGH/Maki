@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Text.RegularExpressions;
 using Maki.Core;
 using Maki.Core.Http;
 using Maki.Sources.Common;
@@ -86,20 +85,16 @@ public sealed class TopManhuaImageBrowser(
     /// </summary>
     private async Task ShutdownAsync()
     {
-        if (_context != null)
-        {
-            await _context.CloseAsync();
-            _context = null;
-        }
-
-        if (_browser != null)
-        {
-            await _browser.CloseAsync();
-            _browser = null;
-        }
-
-        _playwright?.Dispose();
+        var context = _context;
+        var browser = _browser;
+        var playwright = _playwright;
+        _context = null;
+        _browser = null;
         _playwright = null;
+
+        await BrowserSupport.CloseQuietlyAsync(context);
+        await BrowserSupport.CloseQuietlyAsync(browser);
+        playwright?.Dispose();
     }
 
     /// <summary>
@@ -118,7 +113,18 @@ public sealed class TopManhuaImageBrowser(
             for (var attempt = 0; ; attempt++)
             {
                 var context = await EnsureContextAsync(ct);
-                var page = await context.NewPageAsync();
+                IPage page;
+                try
+                {
+                    page = await context.NewPageAsync();
+                }
+                catch (PlaywrightException) when (attempt == 0)
+                {
+                    logger.LogWarning("TopManhua browser could not open a page; relaunching it");
+                    await ShutdownAsync();
+                    continue;
+                }
+
                 try
                 {
                     return await CancellableBrowserCall.RunAsync(
@@ -149,7 +155,7 @@ public sealed class TopManhuaImageBrowser(
         var wanted = new HashSet<string>(imageUrls, StringComparer.Ordinal);
         var captured = new ConcurrentDictionary<string, byte[]>(StringComparer.Ordinal);
 
-        page.Response += async (_, response) =>
+        async Task CaptureBodyAsync(IResponse response)
         {
             if (!wanted.Contains(response.Url) || !response.Ok)
             {
@@ -160,12 +166,29 @@ public sealed class TopManhuaImageBrowser(
             {
                 captured[response.Url] = await response.BodyAsync();
             }
-            catch (PlaywrightException)
+            catch (Exception)
             {
-                // response body no longer available (e.g. page navigated away); skip it
+                // best-effort capture: the body may be gone (page closed or navigated away); skip it
             }
-        };
+        }
 
+        void OnResponse(object? sender, IResponse response) => _ = CaptureBodyAsync(response);
+
+        page.Response += OnResponse;
+        try
+        {
+            return await NavigateAndCaptureAsync(page, chapterUrl, wanted, captured, ct);
+        }
+        finally
+        {
+            page.Response -= OnResponse;
+        }
+    }
+
+    private async Task<IReadOnlyDictionary<string, byte[]>> NavigateAndCaptureAsync(
+        IPage page, string chapterUrl, HashSet<string> wanted, ConcurrentDictionary<string, byte[]> captured,
+        CancellationToken ct)
+    {
         await page.GotoAsync(chapterUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = NavTimeoutMs });
 
         if (await ClassifyAsync(page) == PageVerdict.Challenge)
@@ -194,11 +217,17 @@ public sealed class TopManhuaImageBrowser(
                 captured.Count, wanted.Count, chapterUrl);
         }
 
-        return captured;
+        return captured.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
     }
 
     private async Task<IBrowserContext> EnsureContextAsync(CancellationToken ct)
     {
+        if (_browser is { IsConnected: false })
+        {
+            logger.LogWarning("The TopManhua browser process is gone; relaunching it");
+            await ShutdownAsync();
+        }
+
         if (_context != null)
         {
             return _context;
@@ -222,7 +251,7 @@ public sealed class TopManhuaImageBrowser(
             // The headless shell advertises itself in the client hints ("HeadlessChrome") even
             // though the UA header is overridden above — restate them so they agree with the UA
             // FlareSolverr earned the clearance cookie with (see MangaFireBrowser for the same fix).
-            ExtraHTTPHeaders = ClientHintsFor(session.UserAgent),
+            ExtraHTTPHeaders = BrowserSupport.ClientHintsFor(session.UserAgent),
         });
 
         await context.AddInitScriptAsync("Object.defineProperty(navigator,'webdriver',{get:()=>undefined});");
@@ -239,36 +268,11 @@ public sealed class TopManhuaImageBrowser(
         return _context;
     }
 
-    /// <summary>Sec-CH-UA headers consistent with <paramref name="userAgent"/>, replacing the shell's own.</summary>
-    private static Dictionary<string, string> ClientHintsFor(string userAgent)
-    {
-        var major = Regex.Match(userAgent, @"Chrome/(\d+)").Groups[1].Value;
-        var platform = userAgent.Contains("Windows", StringComparison.Ordinal) ? "Windows"
-            : userAgent.Contains("Macintosh", StringComparison.Ordinal) ? "macOS"
-            : userAgent.Contains("Android", StringComparison.Ordinal) ? "Android"
-            : "Linux";
-
-        var headers = new Dictionary<string, string>
-        {
-            ["sec-ch-ua-mobile"] = "?0",
-            ["sec-ch-ua-platform"] = $"\"{platform}\"",
-        };
-
-        if (major.Length > 0)
-        {
-            headers["sec-ch-ua"] = $"\"Chromium\";v=\"{major}\", \"Not_A Brand\";v=\"24\", \"Google Chrome\";v=\"{major}\"";
-        }
-
-        return headers;
-    }
-
     private async Task ResetContextAsync()
     {
-        if (_context != null)
-        {
-            await _context.CloseAsync();
-            _context = null;
-        }
+        var context = _context;
+        _context = null;
+        await BrowserSupport.CloseQuietlyAsync(context);
     }
 
     private static readonly string[] BlockedTitleContains = ["Attention Required"];
