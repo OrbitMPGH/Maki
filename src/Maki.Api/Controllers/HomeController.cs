@@ -158,7 +158,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             .Select(s => new { s.Id, s.Title, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);
 
-        var next = await continueReading.NextForAsync(allIds, ct);
+        var next = await continueReading.NextForAsync(continuedIds, ct);
 
         // The actual in-progress rows for just the series above, newest per series.
         var resumeRows = (await db.ChapterProgress
@@ -193,25 +193,36 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                 next.GetValueOrDefault(entry.SeriesId)?.UnreadChapters ?? 0));
         }
 
+        // Resolved a chunk at a time, in the same newest-first order, so the chapter lists of the
+        // later candidates are only read when the rail is still short of `limit`.
         var jumpRail = new List<HomeReadingItem>();
-        foreach (var entry in finishedSeries)
+        foreach (var chunk in finishedSeries.Chunk(limit * 2))
         {
-            if (!titles.TryGetValue(entry.SeriesId, out var series) ||
-                !next.TryGetValue(entry.SeriesId, out var upNext))
+            var upNextBySeries = await continueReading.NextForAsync(chunk.Select(x => x.SeriesId).ToList(), ct);
+            foreach (var entry in chunk)
             {
-                continue; // nothing left to read in this series
-            }
+                if (!titles.TryGetValue(entry.SeriesId, out var series) ||
+                    !upNextBySeries.TryGetValue(entry.SeriesId, out var upNext))
+                {
+                    continue; // nothing left to read in this series
+                }
 
-            jumpRail.Add(new HomeReadingItem(
-                series.Id,
-                series.Title,
-                SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
-                upNext.ChapterId,
-                upNext.Label,
-                0,
-                0,
-                entry.Last,
-                upNext.UnreadChapters));
+                jumpRail.Add(new HomeReadingItem(
+                    series.Id,
+                    series.Title,
+                    SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
+                    upNext.ChapterId,
+                    upNext.Label,
+                    0,
+                    0,
+                    entry.Last,
+                    upNext.UnreadChapters));
+
+                if (jumpRail.Count == limit)
+                {
+                    break;
+                }
+            }
 
             if (jumpRail.Count == limit)
             {
