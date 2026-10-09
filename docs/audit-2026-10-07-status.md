@@ -330,32 +330,32 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-LIBRARY | FE-LIBRARY-49 | nit | pending |
 | FE-LIBRARY | FE-LIBRARY-56 | nit | pending |
 | FE-LIBRARY | FE-LIBRARY-61 | nit | pending |
-| FE-READER | FE-READER-08 | low | pending |
-| FE-READER | FE-READER-24 | low | pending |
-| FE-READER | FE-READER-20 | low | pending |
-| FE-READER | FE-READER-07 | low | pending |
-| FE-READER | FE-READER-10 | low | pending |
-| FE-READER | FE-READER-06 | low | pending |
-| FE-READER | FE-READER-09 | low | pending |
-| FE-READER | FE-READER-34 | low | pending |
-| FE-READER | FE-READER-19 | low | pending |
-| FE-READER | FE-READER-15 | low | pending |
-| FE-READER | FE-READER-17 | low | pending |
-| FE-READER | FE-READER-18 | low | pending |
-| FE-READER | FE-READER-21 | low | pending |
-| FE-READER | FE-READER-22 | low | pending |
-| FE-READER | FE-READER-23 | low | pending |
-| FE-READER | FE-READER-25 | low | pending |
-| FE-READER | FE-READER-26 | low | pending |
-| FE-READER | FE-READER-12 | low | pending |
-| FE-READER | FE-READER-27 | nit | pending |
-| FE-READER | FE-READER-31 | nit | pending |
-| FE-READER | FE-READER-29 | nit | pending |
-| FE-READER | FE-READER-28 | nit | pending |
-| FE-READER | FE-READER-30 | nit | pending |
-| FE-READER | FE-READER-33 | nit | pending |
-| FE-READER | FE-READER-35 | nit | pending |
-| FE-READER | FE-READER-32 | nit | pending |
+| FE-READER | FE-READER-08 | low | done 1c28fad9 |
+| FE-READER | FE-READER-24 | low | done d3762af8 |
+| FE-READER | FE-READER-20 | low | done 2a8da8e9 |
+| FE-READER | FE-READER-07 | low | done 1c28fad9, dd7ed05b |
+| FE-READER | FE-READER-10 | low | skipped (documented write-on-open that Continue relies on) |
+| FE-READER | FE-READER-06 | low | done dd7ed05b (Next chapter completes only from the last page) |
+| FE-READER | FE-READER-09 | low | done d1b40371, dd7ed05b, 0d142894 |
+| FE-READER | FE-READER-34 | low | done d7e48f3c |
+| FE-READER | FE-READER-19 | low | done 6cc7b6c1 (partial) |
+| FE-READER | FE-READER-15 | low | done d852dae9 |
+| FE-READER | FE-READER-17 | low | done d852dae9 |
+| FE-READER | FE-READER-18 | low | done 6cc7b6c1 |
+| FE-READER | FE-READER-21 | low | done d3762af8 |
+| FE-READER | FE-READER-22 | low | done 5c701ea7, dd7ed05b |
+| FE-READER | FE-READER-23 | low | done 5c701ea7 |
+| FE-READER | FE-READER-25 | low | done 4efc724f |
+| FE-READER | FE-READER-26 | low | done 2a41d3f1, dd7ed05b |
+| FE-READER | FE-READER-12 | low | done d1b40371 |
+| FE-READER | FE-READER-27 | nit | done d3762af8 |
+| FE-READER | FE-READER-31 | nit | skipped (under 2 s, touches incognito semantics) |
+| FE-READER | FE-READER-29 | nit | done d3762af8 |
+| FE-READER | FE-READER-28 | nit | done d852dae9 |
+| FE-READER | FE-READER-30 | nit | done 4efc724f |
+| FE-READER | FE-READER-33 | nit | skipped (needs a backend payload change) |
+| FE-READER | FE-READER-35 | nit | done 40e82886 |
+| FE-READER | FE-READER-32 | nit | done 1c28fad9 |
 | FE-SETTINGS | FE-SETTINGS-23 | low | pending |
 | FE-SETTINGS | FE-SETTINGS-20 | low | pending |
 | FE-SETTINGS | FE-SETTINGS-26 | low | pending |
