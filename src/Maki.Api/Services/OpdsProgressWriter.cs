@@ -108,17 +108,20 @@ public sealed class OpdsProgressWriter(IServiceScopeFactory scopes, ILogger<Opds
             }
 
             var existing = await reader.ProgressAsync(key.ChapterId, ct);
-            // A row a lone last-page prefetch left behind (page 0, nothing read, no time) is not
-            // progress: counting it would let the next prefetch complete the chapter.
-            var hasProgress = existing is { Watched: false } and not { Completed: false, PageIndex: 0, ReadSeconds: 0 };
             var completed = OpdsProgressPolicy.CompletionFor(
-                hasProgress || pending.LastPageAfterEarlierFetch, pending.Page, slice.PageCount);
+                existing is { Watched: false } || pending.LastPageAfterEarlierFetch, pending.Page, slice.PageCount);
+            // A lone last-page prefetch writes nothing: a row would make the next prefetch complete
+            // the chapter, and would resume Continue at the last page. A one-page chapter still gets
+            // its row, since its first page is also its last and the next fetch has to be able to
+            // finish it.
+            if (completed == false && slice.PageCount > 1)
+            {
+                return;
+            }
+
             // No reading time: a page fetch says a page was asked for, not that anybody was
             // looking at it, and readers that prefetch would bill a whole chapter in one burst.
-            // A lone last-page prefetch keeps the row but not the position: resuming at the last page
-            // would make Continue jump to a chapter nobody opened.
-            var page = completed == false ? 0 : pending.Page;
-            await reader.SaveProgressAsync(slice, page, completed, ReaderService.TimeReport.None, ct);
+            await reader.SaveProgressAsync(slice, pending.Page, completed, ReaderService.TimeReport.None, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
