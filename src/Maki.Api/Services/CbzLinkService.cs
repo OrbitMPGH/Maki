@@ -72,6 +72,39 @@ public class CbzLinkService(
         var index = 0;
         var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record, string Path)>();
         var volumeFiles = new List<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)>();
+
+        // New rows go in together so one save assigns every id the linking pass needs.
+        var added = false;
+        foreach (var file in ordered)
+        {
+            var key = LibraryPaths.ComparisonKey(Path.Combine(folderName, Path.GetRelativePath(seriesDir, file)));
+            if (existing.ContainsKey(key))
+            {
+                continue;
+            }
+
+            var adopted = new ChapterFile
+            {
+                SeriesId = series.Id,
+                RelativePath = Path.Combine(folderName, Path.GetRelativePath(seriesDir, file)),
+                Size = new FileInfo(file).Length,
+                SourceName = sourceName,
+                ReleaseName = releaseName,
+                DateAdded = DateTime.UtcNow
+            };
+            var (kind, group) = quality.ResolveProvenance(adopted, null);
+            ChapterFileQualityService.StampTierOnly(adopted, kind, group);
+            db.ChapterFiles.Add(adopted);
+            existing[key] = adopted;
+            created++;
+            added = true;
+        }
+
+        if (added)
+        {
+            await db.SaveChangesAsync(ct);
+        }
+
         foreach (var file in ordered)
         {
             if (progress != null)
@@ -82,39 +115,18 @@ public class CbzLinkService(
             var parsed = ReleaseNameParser.ParseFileName(file);
             var relativePath = Path.Combine(folderName, Path.GetRelativePath(seriesDir, file));
 
-            var key = LibraryPaths.ComparisonKey(relativePath);
-            if (existing.TryGetValue(key, out var chapterFile))
+            var chapterFile = existing[LibraryPaths.ComparisonKey(relativePath)];
+            // The spelling on disk wins: a row written under the other separator, or with
+            // different casing, is repaired here rather than duplicated.
+            chapterFile.RelativePath = relativePath;
+            var size = new FileInfo(file).Length;
+            if (chapterFile.Size != size)
             {
-                // The spelling on disk wins: a row written under the other separator, or with
-                // different casing, is repaired here rather than duplicated.
-                chapterFile.RelativePath = relativePath;
-                var size = new FileInfo(file).Length;
-                if (chapterFile.Size != size)
-                {
-                    chapterFile.MeasuredAtUtc = null;
-                }
+                chapterFile.MeasuredAtUtc = null;
+            }
 
-                chapterFile.Size = size;
-                chapterFile.ReleaseName ??= releaseName;
-            }
-            else
-            {
-                chapterFile = new ChapterFile
-                {
-                    SeriesId = series.Id,
-                    RelativePath = relativePath,
-                    Size = new FileInfo(file).Length,
-                    SourceName = sourceName,
-                    ReleaseName = releaseName,
-                    DateAdded = DateTime.UtcNow
-                };
-                var (kind, group) = quality.ResolveProvenance(chapterFile, null);
-                ChapterFileQualityService.StampTierOnly(chapterFile, kind, group);
-                db.ChapterFiles.Add(chapterFile);
-                await db.SaveChangesAsync(ct); // need the file id for linking
-                existing[key] = chapterFile;
-                created++;
-            }
+            chapterFile.Size = size;
+            chapterFile.ReleaseName ??= releaseName;
 
             if (parsed.IsVolume)
             {
