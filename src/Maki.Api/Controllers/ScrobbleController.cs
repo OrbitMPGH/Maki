@@ -274,6 +274,7 @@ public class ScrobbleController(
                 {
                     db.AnimeSignals.RemoveRange(stale);
                     await db.SaveChangesAsync(ct);
+                    await RecommendationFeedbackService.BumpAsync(db, UserId, feedback: false, signal: true, ct);
                 }
             }
         }
