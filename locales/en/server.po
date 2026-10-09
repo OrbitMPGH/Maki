@@ -3403,6 +3403,10 @@ msgid "install.embeddingModel.notAvailable"
 msgstr "Embedding model not available"
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+msgid "install.embeddingModel.switchFailed"
+msgstr "The model switch failed. Check the server log for details."
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 msgid "install.embeddingModel.switchInProgress"
 msgstr "A model switch is already in progress."
 

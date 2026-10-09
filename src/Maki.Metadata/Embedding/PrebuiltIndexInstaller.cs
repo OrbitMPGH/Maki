@@ -64,6 +64,9 @@ public class PrebuiltIndexInstaller(
 {
     public const string HttpClientName = "prebuilt-index";
 
+    /// <summary>The reason an install answers when the index on disk is already as new as the published one.</summary>
+    public const string CurrentReason = "install.prebuiltIndex.current";
+
     private readonly SemaphoreSlim _installGate = new(1, 1);
 
     /// <summary>
@@ -167,7 +170,7 @@ public class PrebuiltIndexInstaller(
 
         if (!force && !await IsNewerThanLocalAsync(manifest, ct))
         {
-            return new PrebuiltIndexResult(false, "install.prebuiltIndex.current");
+            return new PrebuiltIndexResult(false, CurrentReason);
         }
 
         Directory.CreateDirectory(options.StagingDirectory);

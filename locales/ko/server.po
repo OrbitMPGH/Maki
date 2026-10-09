@@ -4782,6 +4782,11 @@ msgid "install.embeddingModel.notAvailable"
 msgstr "임베딩 모델을 사용할 수 없습니다"
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: The model switch failed. Check the server log for details.
+msgid "install.embeddingModel.switchFailed"
+msgstr ""
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: A model switch is already in progress.
 #, fuzzy
 msgid "install.embeddingModel.switchInProgress"

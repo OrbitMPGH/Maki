@@ -119,16 +119,18 @@ public class EmbeddingModelSwitcher(
             await modelStore.EnsureAsync();            // downloads the target ONNX + vocab if missing
             var modelReady = await embedder.EnsureReadyAsync();
 
-            // force: fetch the target model's index regardless of the freshness check — this is a
-            // deliberate switch, not the nightly poll.
-            var install = await prebuilt.InstallAsync(force: true);
+            // Not forced: the installer already treats vectors stamped with another model as worth
+            // replacing, so a switch fetches the target's index when the file holds anything else and
+            // leaves it alone when turning embeddings back on finds the right vectors still on disk.
+            var install = await prebuilt.InstallAsync();
+            var haveIndex = install.Installed || install.Reason == PrebuiltIndexInstaller.CurrentReason;
 
             _lastError = !modelReady
                 ? "install.embeddingModel.downloadFailed"
-                : install.Installed
+                : haveIndex
                     ? null
                     : install.Reason;
-            _lastErrorArgs = !modelReady || install.Installed ? null : install.ReasonArgs;
+            _lastErrorArgs = !modelReady || haveIndex ? null : install.ReasonArgs;
 
             if (_lastError is null)
             {
@@ -143,7 +145,8 @@ public class EmbeddingModelSwitcher(
         }
         catch (Exception ex)
         {
-            _lastError = ex.Message;
+            _lastError = "install.embeddingModel.switchFailed";
+            _lastErrorArgs = null;
             logger.LogError(ex, "Model switch to {Model} failed", targetKind);
         }
         finally

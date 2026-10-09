@@ -4782,6 +4782,11 @@ msgid "install.embeddingModel.notAvailable"
 msgstr "El modelo de incrustación no está disponible"
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: The model switch failed. Check the server log for details.
+msgid "install.embeddingModel.switchFailed"
+msgstr ""
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: A model switch is already in progress.
 #, fuzzy
 msgid "install.embeddingModel.switchInProgress"
