@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { Button, Divider, Drawer, Group, Modal, Stack, Switch, Text } from '@mantine/core'
-import { notifications } from '@mantine/notifications'
+import { Button, Divider, Drawer, Group, Stack, Switch, Text } from '@mantine/core'
 import {
   IconArrowBarToDown,
   IconArrowBarToUp,
@@ -12,9 +10,10 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import type { PageSection } from '../../api/hooks'
-import { useDeleteCustomRail, type CustomRail } from '../../api/customRails'
+import type { CustomRail } from '../../api/customRails'
 import { useLabel } from '../../i18n-context'
 import { CustomRailForm } from '../rails/CustomRailEditor'
+import { DeleteRailDialog } from '../rails/DeleteRailDialog'
 import type { SectionDef } from './pageLayout'
 
 /**
@@ -47,7 +46,6 @@ export function SectionProperties({
   const { t } = useLingui()
   const renderLabel = useLabel()
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const remove = useDeleteCustomRail()
 
   const allPanelsOff = section?.panels?.every((p) => !p.enabled) ?? false
 
@@ -182,34 +180,13 @@ export function SectionProperties({
         )}
       </Drawer>
 
-      <Modal opened={confirmDelete} onClose={() => setConfirmDelete(false)} title={t`Delete rail`} size="sm">
-        <Stack gap="md">
-          <Text size="sm">
-            <Trans>Delete the rail "{label}"? Its filters go with it.</Trans>
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={() => setConfirmDelete(false)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={remove.isPending}
-              onClick={() =>
-                rail &&
-                remove.mutate(rail.id, {
-                  onSuccess: () => {
-                    setConfirmDelete(false)
-                    onClose()
-                    notifications.show({ color: 'var(--ok)', message: now`Rail deleted` })
-                  },
-                })
-              }
-            >
-              <Trans>Delete</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+      <DeleteRailDialog
+        opened={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        railId={rail?.id}
+        railName={label}
+        onDeleted={onClose}
+      />
     </>
   )
 }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Button,
@@ -10,11 +9,9 @@ import {
   Modal,
   SimpleGrid,
   Skeleton,
-  Stack,
   Text,
 } from '@mantine/core'
 import { useIntersection } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
 import {
   IconCopy,
   IconDots,
@@ -35,7 +32,6 @@ import {
 import {
   customRailAsDiscoverRail,
   useCustomRailItems,
-  useDeleteCustomRail,
   type CustomRail,
   type CustomRailPlacement,
 } from '../../api/customRails'
@@ -49,6 +45,7 @@ import { Rail } from '../ui/Rail'
 import { SectionHeader } from '../ui/SectionHeader'
 import { useDensityPref } from '../ui/viewPrefs'
 import { CustomRailEditor, type CustomRailDraft } from './CustomRailEditor'
+import { DeleteRailDialog } from './DeleteRailDialog'
 
 const ICONS = { library: IconLibrary, recommendations: IconSparkles, catalogue: IconFilter }
 
@@ -83,7 +80,6 @@ export function CustomRailSection({
   const [editing, setEditing] = useState<{ rail?: CustomRail; draft?: CustomRailDraft } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
-  const remove = useDeleteCustomRail()
 
   const source = rail.spec.source
   const count = source === 'library' ? data?.seriesIds.length : data?.items.length
@@ -187,32 +183,12 @@ export function CustomRailSection({
 
       {editing && <CustomRailEditor {...editing} onClose={() => setEditing(null)} />}
       {libraryOpen && <LibraryRailModal rail={rail} onClose={() => setLibraryOpen(false)} />}
-      <Modal opened={confirmDelete} onClose={() => setConfirmDelete(false)} title={t`Delete rail`} size="sm">
-        <Stack gap="md">
-          <Text size="sm">
-            <Trans>Delete the rail "{railName}"? Its filters go with it.</Trans>
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={() => setConfirmDelete(false)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={remove.isPending}
-              onClick={() =>
-                remove.mutate(rail.id, {
-                  onSuccess: () => {
-                    setConfirmDelete(false)
-                    notifications.show({ color: 'var(--ok)', message: now`Rail deleted` })
-                  },
-                })
-              }
-            >
-              <Trans>Delete</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+      <DeleteRailDialog
+        opened={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        railId={rail.id}
+        railName={railName}
+      />
     </div>
   )
 }
