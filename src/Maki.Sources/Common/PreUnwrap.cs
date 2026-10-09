@@ -20,7 +20,22 @@ internal static class PreUnwrap
         }
 
         var doc = await Parser.ParseDocumentAsync(body, ct);
-        var pre = doc.QuerySelector("pre")?.TextContent;
+        return PreOrThrow(doc.QuerySelector("pre")?.TextContent, trimmed, url);
+    }
+
+    public static string Unwrap(string body, string? url = null)
+    {
+        var trimmed = body.TrimStart();
+        if (!trimmed.StartsWith('<'))
+        {
+            return body;
+        }
+
+        return PreOrThrow(Parser.ParseDocument(body).QuerySelector("pre")?.TextContent, trimmed, url);
+    }
+
+    private static string PreOrThrow(string? pre, string trimmed, string? url)
+    {
         if (pre is not null)
         {
             return pre;

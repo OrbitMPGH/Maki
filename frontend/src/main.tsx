@@ -51,18 +51,25 @@ window.addEventListener('vite:preloadError', (event) => {
  * actions with per-row results) or word it themselves in an `onError`. `meta.inlineNotFound` drops
  * only a 404, for pages that render their own not-found state.
  */
+const recentErrorToasts = new Map<string, number>()
+const ERROR_TOAST_DEDUPE_MS = 3000
+
 function reportError(error: unknown, meta?: Record<string, unknown>) {
   if (meta?.silent) return
   if (meta?.inlineNotFound && error instanceof ApiError && error.status === 404) return
-  notifications.show({
-    message:
-      typeof meta?.errorMessage === 'string'
-        ? meta.errorMessage
-        : error instanceof Error
-          ? error.message
-          : String(error),
-    color: 'var(--danger)',
-  })
+  const message =
+    typeof meta?.errorMessage === 'string'
+      ? meta.errorMessage
+      : error instanceof Error
+        ? error.message
+        : String(error)
+  // A page mounting several queries while the API is down fails them all with the same text at
+  // once; one toast says it.
+  const now = Date.now()
+  const last = recentErrorToasts.get(message)
+  if (last !== undefined && now - last < ERROR_TOAST_DEDUPE_MS) return
+  recentErrorToasts.set(message, now)
+  notifications.show({ message, color: 'var(--danger)' })
 }
 
 function isFinalClientError(error: unknown): boolean {

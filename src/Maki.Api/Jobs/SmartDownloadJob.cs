@@ -72,7 +72,7 @@ public class SmartDownloadJob(
 
         foreach (var (series, after) in dueSeries)
         {
-            var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
+            var chapters = await db.Chapters.AsNoTracking().Where(c => c.SeriesId == series.Id).ToListAsync(ct);
             var backingOff = await BackingOffAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct);
             var missing = Chapter.NextWanted(Ahead(chapters, after), batchSize, backingOff);
 
@@ -175,6 +175,7 @@ public class SmartDownloadJob(
         MakiDbContext db, int limit, CancellationToken ct)
     {
         var smartSeries = await db.Series
+            .AsNoTracking()
             .Where(s => s.MonitorNewItems == NewChapterMonitorMode.Smart)
             .ToListAsync(ct);
         if (smartSeries.Count == 0)

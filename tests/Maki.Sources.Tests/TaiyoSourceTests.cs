@@ -38,6 +38,24 @@ public class TaiyoSourceTests
     }
 
     [Fact]
+    public async Task A_meilisearch_url_outside_taiyo_moe_in_the_bundle_is_ignored()
+    {
+        var layout = FakeHttpClientFactory.Fixture("taiyo-layout.js")
+            .Replace("https://meilisearch.taiyo.moe", "http://169.254.169.254");
+        var source = SourceFor(new()
+        {
+            ["app/layout-"] = layout,
+            ["multi-search"] = FakeHttpClientFactory.Fixture("taiyo-search.json"),
+            ["https://taiyo.moe/"] = FakeHttpClientFactory.Fixture("taiyo-home.html"),
+        }, out var factory);
+
+        await source.SearchAsync("one piece");
+
+        var search = Assert.Single(factory.Requests, u => u.Contains("multi-search"));
+        Assert.StartsWith("https://meilisearch.taiyo.moe/", search);
+    }
+
+    [Fact]
     public async Task Search_reuses_the_cached_key_on_a_second_call()
     {
         var source = SourceFor(new()

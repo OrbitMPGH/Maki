@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.MangaLib;
 
@@ -96,7 +97,7 @@ public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISou
         var chapters = new List<SourceChapter>();
         foreach (var row in rows.EnumerateArray())
         {
-            var number = row.TryGetProperty("number", out var numEl) ? numEl.GetString() : null;
+            var number = row.TryGetProperty("number", out var numEl) ? JsonRead.Text(numEl) : null;
 
             if (!row.TryGetProperty("branches", out var branches) || branches.ValueKind != JsonValueKind.Array)
             {

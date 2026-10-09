@@ -142,6 +142,14 @@ public class WebtoonsSourceTests
     }
 
     [Fact]
+    public async Task Search_throws_when_every_locale_fails()
+    {
+        var source = SourceFor(new());
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => source.SearchAsync("tower of god"));
+    }
+
+    [Fact]
     public async Task GetSeries_reads_the_open_graph_block_and_schedule()
     {
         var source = SourceFor(new() { ["title_no=95"] = FakeHttpClientFactory.Fixture("webtoons-list-page1.html") });

@@ -150,6 +150,24 @@ public class ShinigamiSourceTests
     }
 
     [Fact]
+    public async Task Chapter_list_stops_when_an_api_that_ignores_paging_repeats_the_same_page()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["chapter"] = """
+                {"retcode":0,"meta":{"page":1,"total_page":5},"data":[
+                    {"chapter_id":"a","manga_id":"m","chapter_title":"","chapter_number":1,"release_date":null}
+                ]}
+                """
+        });
+
+        var chapters = await new ShinigamiSource(factory).ListChaptersAsync(SeriesId);
+
+        Assert.Single(chapters);
+        Assert.Equal(2, factory.Requests.Count);
+    }
+
+    [Fact]
     public async Task Pages_join_base_url_and_path_with_no_double_slash_and_carry_a_referer()
     {
         var source = new ShinigamiSource(new FakeHttpClientFactory(new()

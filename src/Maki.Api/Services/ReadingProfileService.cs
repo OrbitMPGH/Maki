@@ -45,7 +45,7 @@ public record ResolvedReaderPrefs(
 public class ReadingProfileService(MakiDbContext db, IUserSettings userSettings)
 {
     public Task<List<ReadingProfile>> ListAsync(CancellationToken ct) =>
-        db.ReadingProfiles.OrderBy(p => p.Name).ToListAsync(ct);
+        db.ReadingProfiles.AsNoTracking().OrderBy(p => p.Name).ToListAsync(ct);
 
     /// <summary>
     /// The four-layer answer for one series: its own override, the profile pinned to it, the profile
@@ -71,12 +71,22 @@ public class ReadingProfileService(MakiDbContext db, IUserSettings userSettings)
             .Select(s => new { s.ReaderPrefsJson, s.ReadingProfileId })
             .FirstOrDefaultAsync(ct);
 
+        return await ResolveForAsync(type, state?.ReaderPrefsJson, state?.ReadingProfileId, ct);
+    }
+
+    /// <summary>
+    /// <see cref="ResolveAsync"/> for a caller that already holds the series type and the user's state
+    /// row, so the page that needs both does not read them twice.
+    /// </summary>
+    public async Task<ResolvedReaderPrefs> ResolveForAsync(
+        string? type, string? readerPrefsJson, int? readingProfileId, CancellationToken ct)
+    {
         var profiles = await ListAsync(ct);
         var auto = type is null
             ? null
             : profiles.FirstOrDefault(p => p.Types().Contains(type, StringComparer.Ordinal));
 
-        if (state?.ReaderPrefsJson is { Length: > 0 } own)
+        if (readerPrefsJson is { Length: > 0 } own)
         {
             return new ResolvedReaderPrefs(
                 ReaderPrefsSpec.Parse(own), ReaderPrefsSource.Series, null, null, null, auto?.Id);
@@ -84,7 +94,7 @@ public class ReadingProfileService(MakiDbContext db, IUserSettings userSettings)
 
         // A pinned id that no longer resolves means the profile was deleted between the SetNull and
         // this read, or the row belongs to another user; either way fall through to auto.
-        var pinned = state?.ReadingProfileId is int id
+        var pinned = readingProfileId is int id
             ? profiles.FirstOrDefault(p => p.Id == id)
             : null;
 

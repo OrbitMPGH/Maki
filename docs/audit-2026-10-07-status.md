@@ -204,30 +204,30 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DATA | DATA-07 | nit | done 987a6e4a |
 | DATA | DATA-15 | nit | done ed88032f, 99c162e8 |
 | DATA | DATA-11 | nit | done d9a73712 |
-| DBPERF | DBPERF-03 | low | pending |
-| DBPERF | DBPERF-07 | low | pending |
-| DBPERF | DBPERF-10 | low | pending |
-| DBPERF | DBPERF-12 | low | pending |
-| DBPERF | DBPERF-15 | low | pending |
-| DBPERF | DBPERF-11 | low | pending |
-| DBPERF | DBPERF-16 | low | pending |
-| DBPERF | DBPERF-13 | low | pending |
-| DBPERF | DBPERF-01 | low | pending |
-| DBPERF | DBPERF-02 | low | pending |
-| DBPERF | DBPERF-05 | low | pending |
-| DBPERF | DBPERF-06 | low | pending |
-| DBPERF | DBPERF-08 | low | pending |
-| DBPERF | DBPERF-09 | low | pending |
-| DBPERF | DBPERF-04 | low | pending |
-| DBPERF | DBPERF-18 | nit | pending |
-| DBPERF | DBPERF-19 | nit | pending |
-| DBPERF | DBPERF-20 | nit | pending |
-| DBPERF | DBPERF-22 | nit | pending |
-| DBPERF | DBPERF-17 | nit | pending |
-| DBPERF | DBPERF-21 | nit | pending |
-| DBPERF | DBPERF-24 | nit | pending |
-| DBPERF | DBPERF-14 | nit | pending |
-| DBPERF | DBPERF-23 | nit | pending |
+| DBPERF | DBPERF-03 | low | done 8df07602 |
+| DBPERF | DBPERF-07 | low | done f1e81d32 |
+| DBPERF | DBPERF-10 | low | done 6d71be0b |
+| DBPERF | DBPERF-12 | low | done 3c9ca0cf (already on audit-fixes) |
+| DBPERF | DBPERF-15 | low | done 253738de (title and id projection; normalised-key column left, disproportionate for a low) |
+| DBPERF | DBPERF-11 | low | skipped (needs a design change: delta-update the cached metrics or evaluate achievements off the request; both move the unlock toast, owner may revisit) |
+| DBPERF | DBPERF-16 | low | done b4857564 (tag links untracked; a lean list DTO without Overview needs a SeriesRow change, owner may revisit) |
+| DBPERF | DBPERF-13 | low | done 3b817c70, ba3ada8e |
+| DBPERF | DBPERF-01 | low | done 8dbe98ba |
+| DBPERF | DBPERF-02 | low | done 75290339 |
+| DBPERF | DBPERF-05 | low | done cbfbc9a1, 30ec865a |
+| DBPERF | DBPERF-06 | low | done b82a18f3 |
+| DBPERF | DBPERF-08 | low | done b86a30f5, f41ab7db |
+| DBPERF | DBPERF-09 | low | done d07232e0 (Settings cards poll 30 s; server-side scope batching skipped as disproportionate) |
+| DBPERF | DBPERF-04 | low | done b99a56c8 |
+| DBPERF | DBPERF-18 | nit | done e80a4c24 |
+| DBPERF | DBPERF-19 | nit | done f94d32c9 |
+| DBPERF | DBPERF-20 | nit | done 624ad11e, 8df07602 |
+| DBPERF | DBPERF-22 | nit | done 614b1ad2 |
+| DBPERF | DBPERF-17 | nit | done 8e0f2fc7 |
+| DBPERF | DBPERF-21 | nit | done d93345de (StageAsync; the RequestLocale sync read stays, every localizer reads it) |
+| DBPERF | DBPERF-24 | nit | done 271b21b9 |
+| DBPERF | DBPERF-14 | nit | done d7e4e7a4, e07fa1db |
+| DBPERF | DBPERF-23 | nit | skipped (Mode=ReadOnly already in place; mmap_size or pooling needs a runtime measurement against the dump and interacts with the nightly swap) |
 | DOWNLOADS | DOWNLOADS-09 | low | done d6ae9d72 |
 | DOWNLOADS | DOWNLOADS-10 | low | done d2f47522 |
 | DOWNLOADS | DOWNLOADS-13 | low | done 45a8c486 |
@@ -260,24 +260,24 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DOWNLOADS | DOWNLOADS-32 | nit | done dd02082e |
 | DOWNLOADS | DOWNLOADS-35 | nit | skipped (behaviour change, timezone-dependent tests) |
 | DOWNLOADS | DOWNLOADS-31 | nit | done c49ba63e |
-| FE-INFRA | FE-INFRA-14 | low | pending |
-| FE-INFRA | FE-INFRA-04 | low | pending |
-| FE-INFRA | FE-INFRA-13 | low | pending |
-| FE-INFRA | FE-INFRA-16 | low | pending |
-| FE-INFRA | FE-INFRA-17 | low | pending |
-| FE-INFRA | FE-INFRA-24 | low | pending |
-| FE-INFRA | FE-INFRA-10 | low | pending |
-| FE-INFRA | FE-INFRA-21 | low | pending |
-| FE-INFRA | FE-INFRA-23 | low | pending |
-| FE-INFRA | FE-INFRA-11 | low | pending |
-| FE-INFRA | FE-INFRA-18 | low | pending |
-| FE-INFRA | FE-INFRA-20 | low | pending |
-| FE-INFRA | FE-INFRA-19 | low | pending |
-| FE-INFRA | FE-INFRA-27 | nit | pending |
-| FE-INFRA | FE-INFRA-09 | nit | pending |
-| FE-INFRA | FE-INFRA-12 | nit | pending |
-| FE-INFRA | FE-INFRA-25 | nit | pending |
-| FE-INFRA | FE-INFRA-26 | nit | pending |
+| FE-INFRA | FE-INFRA-14 | low | done 639d65f0, 4710e58b |
+| FE-INFRA | FE-INFRA-04 | low | done 9b633198, c236d1fb |
+| FE-INFRA | FE-INFRA-13 | low | done 510074b5, 051bfa38 |
+| FE-INFRA | FE-INFRA-16 | low | done 639d65f0 |
+| FE-INFRA | FE-INFRA-17 | low | done 639d65f0 |
+| FE-INFRA | FE-INFRA-24 | low | done fdadd942, 353716e5 |
+| FE-INFRA | FE-INFRA-10 | low | done 5dcd7708, b301cbc2 |
+| FE-INFRA | FE-INFRA-21 | low | done 74e89237, 32a10587, b301cbc2 |
+| FE-INFRA | FE-INFRA-23 | low | done b981c767 (no Mantine chunk group) |
+| FE-INFRA | FE-INFRA-11 | low | done 510074b5, 20bad74d, 5dcd7708 |
+| FE-INFRA | FE-INFRA-18 | low | done 80a64e52 |
+| FE-INFRA | FE-INFRA-20 | low | done 74e89237 |
+| FE-INFRA | FE-INFRA-19 | low | done 60d9c75f |
+| FE-INFRA | FE-INFRA-27 | nit | done 6682d202, b301cbc2 (queue summary already scoped server-side) |
+| FE-INFRA | FE-INFRA-09 | nit | done 659d7a60 (overlapping setLocale race left) |
+| FE-INFRA | FE-INFRA-12 | nit | done 659d7a60, c236d1fb |
+| FE-INFRA | FE-INFRA-25 | nit | done 7349acbe, 20bad74d |
+| FE-INFRA | FE-INFRA-26 | nit | done f9fce1d7, a440cd45, b301cbc2 (page-component em dashes belong to their lanes; UrlBase in ConfigFileProvider.cs left) |
 | FE-LIBRARY | FE-LIBRARY-39 | low | done fcd2d073 |
 | FE-LIBRARY | FE-LIBRARY-53 | low | done 45cf9479 |
 | FE-LIBRARY | FE-LIBRARY-21 | low | done 66efa0f4, a096b3d6 |
@@ -571,30 +571,30 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | SERIES | SERIES-38 | nit | done df34afee (partial) |
 | SERIES | SERIES-12 | nit | skipped (owner decision: admins stay scoped) |
 | SERIES | SERIES-40 | nit | done e60abca7 |
-| SOURCES | SOURCES-26 | low | pending |
-| SOURCES | SOURCES-17 | low | pending |
-| SOURCES | SOURCES-21 | low | pending |
-| SOURCES | SOURCES-22 | low | pending |
-| SOURCES | SOURCES-24 | low | pending |
-| SOURCES | SOURCES-20 | low | pending |
-| SOURCES | SOURCES-06 | low | pending |
-| SOURCES | SOURCES-18 | low | pending |
-| SOURCES | SOURCES-19 | low | pending |
-| SOURCES | SOURCES-33 | low | pending |
-| SOURCES | SOURCES-23 | low | pending |
-| SOURCES | SOURCES-05 | low | pending |
-| SOURCES | SOURCES-04 | low | pending |
-| SOURCES | SOURCES-15 | low | pending |
-| SOURCES | SOURCES-25 | low | pending |
-| SOURCES | SOURCES-08 | low | pending |
-| SOURCES | SOURCES-27 | low | pending |
-| SOURCES | SOURCES-14 | low | pending |
-| SOURCES | SOURCES-16 | low | pending |
-| SOURCES | SOURCES-13 | low | pending |
-| SOURCES | SOURCES-32 | low | pending |
-| SOURCES | SOURCES-30 | nit | pending |
-| SOURCES | SOURCES-28 | nit | pending |
-| SOURCES | SOURCES-29 | nit | pending |
-| SOURCES | SOURCES-34 | nit | pending |
-| SOURCES | SOURCES-35 | nit | pending |
-| SOURCES | SOURCES-31 | nit | pending |
+| SOURCES | SOURCES-26 | low | done e0153f3a |
+| SOURCES | SOURCES-17 | low | done 023e4931, cd9cf9ee, e30da49b, 123451bb, 63c60a6f |
+| SOURCES | SOURCES-21 | low | done 9e710734 (comments only; surfacing a licensed-out state needs a new exception contract, owner may revisit) |
+| SOURCES | SOURCES-22 | low | done a6aa4de2 |
+| SOURCES | SOURCES-24 | low | done 7fbfa56d |
+| SOURCES | SOURCES-20 | low | done 0db1e819 |
+| SOURCES | SOURCES-06 | low | done cd9cf9ee (URLs trimmed; moving MadaraParser to Common for TopManhua needs its live markup checked) |
+| SOURCES | SOURCES-18 | low | done e30da49b |
+| SOURCES | SOURCES-19 | low | done da8c381a |
+| SOURCES | SOURCES-33 | low | done 0db1e819 (non-numeric slugs kept; the _1 vs _10 sub-chapter convention is unconfirmed on the site) |
+| SOURCES | SOURCES-23 | low | done 452c7a79, 023e4931, cd9cf9ee |
+| SOURCES | SOURCES-05 | low | done 6f768338, 7a0682e8 |
+| SOURCES | SOURCES-04 | low | done 6f768338 |
+| SOURCES | SOURCES-15 | low | done 123451bb |
+| SOURCES | SOURCES-25 | low | done d4afb81d, a50a787c, 561a0969, 73bd3110 |
+| SOURCES | SOURCES-08 | low | done 77204f8d, ddccae11 (MangaDenizi; CuuTruyen and GigaViewer keep their own image clients, a per-page transform contract is a design decision) |
+| SOURCES | SOURCES-27 | low | done e53b9193 |
+| SOURCES | SOURCES-14 | low | done 14ea499b |
+| SOURCES | SOURCES-16 | low | done 123451bb, 7fbfa56d, c24359cd, 6f768338, 2caa2b8d, 7ba35a70 |
+| SOURCES | SOURCES-13 | low | done 023e4931, d7b0c3a2, 69422890 |
+| SOURCES | SOURCES-32 | low | done d7b0c3a2 |
+| SOURCES | SOURCES-30 | nit | skipped (needs three favicon files under frontend/public/source-icons plus sourceIcons.ts entries; owner adds the files) |
+| SOURCES | SOURCES-28 | nit | done d4afb81d, 023e4931 |
+| SOURCES | SOURCES-29 | nit | done a19153d2 |
+| SOURCES | SOURCES-34 | nit | done 245452e2 |
+| SOURCES | SOURCES-35 | nit | done cbd19b60 (Content tags for Atsumaru, MangaKatana and MangaPill rest on the sites' reputation, unconfirmed live) |
+| SOURCES | SOURCES-31 | nit | done 178432ad, 20b06084, 9278bd40, 3270dc61 |

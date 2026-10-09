@@ -174,21 +174,31 @@ public class ReaderController(
         // read next), and ReadCounts for the numerator. Both are counted at manifest time and go
         // stale within the chapter, which is exactly right: they only move when a chapter is
         // finished, and finishing one refetches this.
-        var seriesChapterCount = await db.Chapters
-            .CountAsync(c => c.SeriesId == slice.Series.Id && (c.ChapterFileId != null || c.FileRemovedAt != null), ct);
         var seriesReadCount = await ReadCounts.Read(db)
             .CountAsync(p => p.SeriesId == slice.Series.Id, ct);
 
-        // How long the series actually is, which the two counts above deliberately can't say. Same
-        // rule the series page's denominator uses. The toolbar shows it as a trailing hint so
+        // seriesWantedCount is how long the series actually is, which the downloaded count can't say.
+        // Same rule the series page's denominator uses. The toolbar shows it as a trailing hint so
         // someone reading a series that downloads in batches can tell there is more coming.
-        var seriesWantedCount = await db.Chapters
-            .CountAsync(c => c.SeriesId == slice.Series.Id && (c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null), ct);
+        var counts = await db.Chapters
+            .Where(c => c.SeriesId == slice.Series.Id)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Downloaded = g.Count(c => c.ChapterFileId != null || c.FileRemovedAt != null),
+                Wanted = g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
+            })
+            .FirstOrDefaultAsync(ct);
+        var seriesChapterCount = counts?.Downloaded ?? 0;
+        var seriesWantedCount = counts?.Wanted ?? 0;
 
         // Named on the end-of-chapter screen, and its number is how that screen tells a straight
         // continuation from a jump over chapters that were never downloaded.
         var nextChapter = next is int nextId
-            ? await db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == nextId, ct)
+            ? await db.Chapters.AsNoTracking()
+                .Where(c => c.Id == nextId)
+                .Select(c => new { c.Number, c.Volume, c.Title, c.IsOneShot })
+                .FirstOrDefaultAsync(ct)
             : null;
 
         return Ok(new
@@ -208,7 +218,9 @@ public class ReaderController(
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
-            nextChapterLabel = nextChapter is null ? null : ChapterLabel.For(nextChapter),
+            nextChapterLabel = nextChapter is null
+                ? null
+                : ChapterLabel.For(nextChapter.Number, nextChapter.Volume, nextChapter.Title, nextChapter.IsOneShot),
             nextChapterNumber = nextChapter?.Number,
             seriesCoverUrl = SeriesDto.CoverUrlFor(slice.Series.Id, slice.Series.CoverPath, slice.Series.LastMetadataRefresh),
             prefs = resolved.Prefs,
@@ -606,7 +618,7 @@ public class ReaderController(
     [HttpPut("chapter/{id:int}/bookmark/{page:int}")]
     public async Task<IActionResult> ToggleBookmark(int id, int page, CancellationToken ct)
     {
-        var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == id, ct);
+        var chapter = await db.Chapters.AsNoTracking().Select(c => new { c.Id, c.SeriesId }).FirstOrDefaultAsync(c => c.Id == id, ct);
         if (chapter is null)
         {
             return NotFound();
@@ -669,6 +681,7 @@ public class ReaderController(
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
         // so the ordered fallback below picks it up in its proper place.
         var inProgress = await db.ChapterProgress
+            .AsNoTracking()
             .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null && p.PageIndex > 0 &&
                         db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
             .OrderByDescending(p => p.UpdatedAt)

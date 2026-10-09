@@ -143,7 +143,7 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("ChapterFileId");
 
-                    b.HasIndex("SeriesId", "ChapterFileId", "Wanted");
+                    b.HasIndex("SeriesId", "ChapterFileId", "Wanted", "FileRemovedAt");
 
                     b.HasIndex("SeriesId", "Number", "Volume", "Language");
 
@@ -559,6 +559,9 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("ContentHash");
 
+                    b.HasIndex("RelativePath")
+                        .HasFilter("NOT \"Removed\"");
+
                     b.HasIndex("SeriesId");
 
                     b.HasIndex("RootFolderId", "RelativePath")
@@ -640,6 +643,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("State")
+                        .HasFilter("\"State\" = 'open'");
 
                     b.HasIndex("FileId", "Version", "Kind")
                         .IsUnique();

@@ -148,7 +148,9 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
 
             DateTime? releaseDate = null;
             var time = link.QuerySelector("time")?.GetAttribute("datetime");
-            if (time != null && DateTime.TryParse(time, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out var dt))
+            if (time != null && DateTime.TryParse(
+                    time, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dt))
             {
                 releaseDate = dt;
             }
@@ -186,6 +188,11 @@ public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : I
             .Where(src => !string.IsNullOrEmpty(src) && src!.StartsWith("http", StringComparison.Ordinal))
             .Select(src => new PageRequest(src!, headers))
             .ToList();
+
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for WeebCentral chapter {chapter.SourceChapterId}");
+        }
 
         return new ChapterPages(pages);
     }

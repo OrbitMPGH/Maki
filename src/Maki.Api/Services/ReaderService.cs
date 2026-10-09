@@ -704,6 +704,17 @@ public class ReaderService(
             .Where(p => ids.Contains(p.ChapterId))
             .ToDictionaryAsync(p => p.ChapterId, ct);
 
+        var needSlices = chapters
+            .Where(c => !(existing.TryGetValue(c.Id, out var known) && known is { Completed: true, Watched: false }) &&
+                        (c.SharesFile || c.MeasuredPages is not > 0))
+            .Select(c => c.Id)
+            .ToList();
+        var slices = await SlicesAsync(needSlices, ct);
+        foreach (var missing in needSlices.Where(id => !slices.ContainsKey(id)))
+        {
+            logger.LogWarning("Chapter {ChapterId} file is missing or unreadable, so it was not marked read", missing);
+        }
+
         var now = DateTime.UtcNow;
         var read = 0;
         var changed = new HashSet<int>();
@@ -719,7 +730,7 @@ public class ReaderService(
 
             var pageCount = !chapter.SharesFile && chapter.MeasuredPages is > 0 and var measured
                 ? measured
-                : (await SliceAsync(chapter.Id, ct))?.PageCount;
+                : slices.GetValueOrDefault(chapter.Id)?.PageCount;
             if (pageCount is not > 0)
             {
                 continue;

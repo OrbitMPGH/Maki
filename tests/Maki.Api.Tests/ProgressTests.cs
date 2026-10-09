@@ -116,7 +116,7 @@ public sealed class ProgressTests : IDisposable
         var incognito = _db.SeedSeries("Hidden", configure: s => s.Incognito = IncognitoMode.Full);
         using var db = _db.NewContext();
         var stats = new StatsEventService(db);
-        stats.Record(StatsEventType.ChaptersRead, incognito, "Hidden", 500);
+        await stats.StageAsync(StatsEventType.ChaptersRead, incognito, "Hidden", 500);
         await db.SaveChangesAsync();
 
         var metrics = await Metrics().GetAsync(UserId);

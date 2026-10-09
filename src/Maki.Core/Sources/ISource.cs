@@ -53,7 +53,10 @@ public interface ISource
 
     /// <summary>
     /// Resolves page image URLs for a chapter. Must be called at download time, not enqueue
-    /// time — some sources (MangaDex at-home) return short-lived URLs.
+    /// time, since some sources (MangaDex at-home) return short-lived URLs. A response that lacks the page
+    /// payload altogether throws <see cref="InvalidOperationException"/> naming the URL, and a
+    /// locked chapter throws <see cref="ChapterLockedException"/>; an empty list means the site
+    /// genuinely lists no pages.
     /// </summary>
     Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default);
 

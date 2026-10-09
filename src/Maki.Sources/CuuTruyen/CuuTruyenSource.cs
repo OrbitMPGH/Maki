@@ -91,7 +91,11 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
         var results = new List<SourceSeriesResult>();
         foreach (var item in data.EnumerateArray())
         {
-            var id = item.GetProperty("id").GetInt64().ToString(CultureInfo.InvariantCulture);
+            if (!item.TryGetProperty("id", out var idEl) || JsonRead.Text(idEl) is not { Length: > 0 } id)
+            {
+                continue;
+            }
+
             var name = item.TryGetProperty("name", out var n) ? n.GetString() : null;
             var cover = item.TryGetProperty("cover_url", out var c) ? RewriteHost(c.GetString()) : null;
 
@@ -209,13 +213,12 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
 
     private SourceChapter? ToChapter(string sourceSeriesId, JsonElement entry)
     {
-        if (!entry.TryGetProperty("id", out var idEl))
+        if (!entry.TryGetProperty("id", out var idEl) || JsonRead.Text(idEl) is not { Length: > 0 } id)
         {
             return null;
         }
 
-        var id = idEl.GetInt64().ToString(CultureInfo.InvariantCulture);
-        var numberRaw = entry.TryGetProperty("number", out var num) ? num.GetString() : null;
+        var numberRaw = entry.TryGetProperty("number", out var num) ? JsonRead.Text(num) : null;
         var parsed = ChapterNumberParser.Parse(numberRaw);
         var name = entry.TryGetProperty("name", out var nm) ? nm.GetString() : null;
 
@@ -256,7 +259,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
         }
 
         var entries = pagesEl.EnumerateArray()
-            .OrderBy(p => p.TryGetProperty("order", out var o) ? o.GetInt32() : 0)
+            .OrderBy(p => p.TryGetProperty("order", out var o) ? JsonRead.Int(o) ?? 0 : 0)
             .ToList();
 
         if (entries.Count == 0)
@@ -264,7 +267,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
             throw new ChapterLockedException($"CuuTruyen chapter {chapter.SourceChapterId} has no pages");
         }
 
-        var headers = new Dictionary<string, string> { ["Referer"] = "https://cuutruyen.net/" };
+        var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
         var pages = new List<PageRequest>(entries.Count);
 
         foreach (var page in entries)
@@ -336,6 +339,11 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
             .Select(t =>
             {
                 var dash = t.IndexOf('-');
+                if (dash < 0)
+                {
+                    throw new InvalidDataException($"malformed CuuTruyen DRM strip '{t}'");
+                }
+
                 return (
                     Dy: int.Parse(t[..dash], CultureInfo.InvariantCulture),
                     H: int.Parse(t[(dash + 1)..], CultureInfo.InvariantCulture));
