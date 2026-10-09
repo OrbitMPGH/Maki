@@ -278,15 +278,6 @@ msgstr "해당 로그인에 연결된 Maki 계정이 없습니다"
 msgid "error.auth.ssoNoSubject"
 msgstr "ID 제공자가 subject를 반환하지 않았습니다"
 
-#. The generic fallback when a single sign-on failure has neither a catalogue key
-#. (OidcSignInResult.ErrorKey) nor text the identity provider library worded itself
-#. (OidcSignInResult.RawError, RemoteFailureContext.Failure.Message in AuthServiceCollectionExtensions).
-#: src/Maki.Api/Controllers/AuthController.cs
-#. English: Sign-in failed
-#, fuzzy
-msgid "error.auth.ssoSignInFailed"
-msgstr "로그인하지 못했습니다"
-
 #. A provisioned account collides with an existing local username.
 #: src/Maki.Api/Auth/OidcSignInService.cs
 #. English: An account with that username already exists

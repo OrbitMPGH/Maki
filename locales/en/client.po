@@ -2168,6 +2168,10 @@ msgstr "Amber"
 msgid "Ambiguous names"
 msgstr "Ambiguous names"
 
+#: src/api/ssoErrors.ts
+msgid "An account with that username already exists"
+msgstr "An account with that username already exists"
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "An admin decides where it lands and what gets downloaded."
@@ -3579,6 +3583,10 @@ msgstr "Confirm your password to link"
 msgid "Confirm your password to turn it off"
 msgstr "Confirm your password to turn it off"
 
+#: src/api/ssoErrors.ts
+msgid "Confirm your password, then start linking single sign-on again"
+msgstr "Confirm your password, then start linking single sign-on again"
+
 #: src/pages/ScrobblePage.tsx
 msgid "Connect"
 msgstr "Connect"
@@ -3770,6 +3778,14 @@ msgstr "Could not build a plan for this series."
 #: src/components/ui/useCopyText.ts
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "Could not copy to the clipboard. Select the text and copy it by hand."
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that login to a new account"
+msgstr "Could not link that login to a new account"
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that single sign-on account"
+msgstr "Could not link that single sign-on account"
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -7872,6 +7888,10 @@ msgstr "No library folder yet. Series need one to download into."
 msgid "no longer steers your taste"
 msgstr "no longer steers your taste"
 
+#: src/api/ssoErrors.ts
+msgid "No Maki account is linked to that login"
+msgstr "No Maki account is linked to that login"
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "No manga match"
 msgstr "No manga match"
@@ -11503,6 +11523,10 @@ msgstr "Sign out everywhere else"
 msgid "Sign-in"
 msgstr "Sign-in"
 
+#: src/api/ssoErrors.ts
+msgid "Sign-in failed"
+msgstr "Sign-in failed"
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
 msgid "Sign-in policy"
@@ -12152,6 +12176,14 @@ msgstr "Test notification sent"
 msgid "Thai"
 msgstr "Thai"
 
+#: src/api/ssoErrors.ts
+msgid "That account has not been set up yet"
+msgstr "That account has not been set up yet"
+
+#: src/api/ssoErrors.ts
+msgid "That account is disabled"
+msgstr "That account is disabled"
+
 #: src/api/queue.ts
 msgid "That chapter no longer exists"
 msgstr "That chapter no longer exists"
@@ -12159,6 +12191,10 @@ msgstr "That chapter no longer exists"
 #: src/components/SeriesFilesSection.tsx
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
+
+#: src/api/ssoErrors.ts
+msgid "That single sign-on account is already linked to a different user"
+msgstr "That single sign-on account is already linked to a different user"
 
 #: src/api/upgrades.ts
 msgid "That source is rate-limited right now"
@@ -12263,6 +12299,14 @@ msgstr "The folder and every file already match the current naming formats."
 #: src/pages/rewind/slides.tsx
 msgid "The full breakdown is waiting behind this slide."
 msgstr "The full breakdown is waiting behind this slide."
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
+msgstr "The identity provider rejected the sign-in request. Check the OIDC client configuration."
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider returned no subject"
+msgstr "The identity provider returned no subject"
 
 #: src/components/SetupWizard.tsx
 msgid "The language of Maki's interface, on every device you sign in on."
@@ -12372,6 +12416,10 @@ msgstr "the series' sources"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "The server logs will say why."
 msgstr "The server logs will say why."
+
+#: src/api/ssoErrors.ts
+msgid "The sign-in did not complete. Please try again."
+msgstr "The sign-in did not complete. Please try again."
 
 #: src/components/settings/AccountSection.tsx
 msgid "The single biggest improvement if Maki is reachable from the internet."
@@ -12489,6 +12537,10 @@ msgstr "They will have to link single sign-on again, or use a password, to sign 
 #: src/components/settings/UsersSection.tsx
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "They will no longer be able to sign in. This can't be undone."
+
+#: src/api/ssoErrors.ts
+msgid "This account already has a single sign-on login. Remove it before linking another."
+msgstr "This account already has a single sign-on login. Remove it before linking another."
 
 #: src/components/settings/AccountSection.tsx
 msgid "This account has no password login for two-factor to protect."

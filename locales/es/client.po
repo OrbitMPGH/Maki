@@ -2647,6 +2647,10 @@ msgstr "Ámbar"
 msgid "Ambiguous names"
 msgstr "Nombres ambiguos"
 
+#: src/api/ssoErrors.ts
+msgid "An account with that username already exists"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
@@ -4358,6 +4362,10 @@ msgstr "Confirma tu contraseña para vincular"
 msgid "Confirm your password to turn it off"
 msgstr "Confirma tu contraseña para desactivarlo"
 
+#: src/api/ssoErrors.ts
+msgid "Confirm your password, then start linking single sign-on again"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connect"
@@ -4591,6 +4599,14 @@ msgstr "No se pudo preparar un plan para esta serie."
 #, fuzzy
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "No se pudo copiar al portapapeles. Selecciona el texto y cópialo a mano."
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that login to a new account"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that single sign-on account"
+msgstr ""
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -9590,6 +9606,10 @@ msgstr "Aún no hay carpetas de biblioteca. Las series necesitan una para descar
 msgid "no longer steers your taste"
 msgstr "ya no influye en tus gustos"
 
+#: src/api/ssoErrors.ts
+msgid "No Maki account is linked to that login"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "No manga match"
@@ -13998,6 +14018,10 @@ msgstr "Cerrar sesión en el resto de dispositivos"
 msgid "Sign-in"
 msgstr ""
 
+#: src/api/ssoErrors.ts
+msgid "Sign-in failed"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
 msgid "Sign-in policy"
@@ -14785,6 +14809,14 @@ msgstr "Notificación de prueba enviada"
 msgid "Thai"
 msgstr "Tailandés"
 
+#: src/api/ssoErrors.ts
+msgid "That account has not been set up yet"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "That account is disabled"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "That chapter no longer exists"
@@ -14794,6 +14826,10 @@ msgstr "Ese capítulo ya no existe"
 #, fuzzy
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr "Esto ocurre con los tomos recopilatorios y con los nombres que el sistema no puede interpretar. Prueba primero «Volver a vincular archivos», que lee cada tomo para encontrar sus capítulos; para los que no pueda ubicar, usa el botón de vinculación de la fila."
+
+#: src/api/ssoErrors.ts
+msgid "That single sign-on account is already linked to a different user"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -14918,6 +14954,14 @@ msgstr "La carpeta y todos los archivos ya coinciden con los formatos de nomencl
 #, fuzzy
 msgid "The full breakdown is waiting behind this slide."
 msgstr "El desglose completo está detrás de esta diapositiva."
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider returned no subject"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -15051,6 +15095,10 @@ msgstr "las fuentes de la serie"
 #, fuzzy
 msgid "The server logs will say why."
 msgstr "Los registros del servidor indicarán el motivo."
+
+#: src/api/ssoErrors.ts
+msgid "The sign-in did not complete. Please try again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -15194,6 +15242,10 @@ msgstr ""
 #, fuzzy
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "Ya no podrá iniciar sesión. No se puede deshacer."
+
+#: src/api/ssoErrors.ts
+msgid "This account already has a single sign-on login. Remove it before linking another."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

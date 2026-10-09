@@ -1,3 +1,5 @@
+import { i18n } from '@lingui/core'
+import { ssoErrorLabel } from '../../api/ssoErrors'
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   Alert,
@@ -120,7 +122,7 @@ function SsoCard() {
 
   // The redirect back from oidc/link-complete lands here as a top-level navigation, so the result
   // travels in the query string rather than a fetch response, read once, same pattern as
-  // LoginPage's ssoError.
+  // LoginPage's ssoError. It is a short code, mapped to a message here.
   const [linkResult] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     return { linked: params.get('oidcLinked') === '1', error: params.get('oidcLinkError') }
@@ -130,7 +132,7 @@ function SsoCard() {
     if (linkResult.linked) {
       notifications.show({ message: now`Single sign-on linked to your account`, color: 'var(--ok)' })
     } else if (linkResult.error) {
-      notifications.show({ message: linkResult.error, color: 'var(--danger)' })
+      notifications.show({ message: i18n._(ssoErrorLabel(linkResult.error)), color: 'var(--danger)' })
     }
     // Dropped once shown so a reload does not repeat it.
     const params = new URLSearchParams(window.location.search)

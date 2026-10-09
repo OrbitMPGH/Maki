@@ -15,6 +15,8 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { AuthError, AuthFrame } from '../components/auth/AuthFrame'
 import { useLogin, useVerifyTwoFactor } from '../api/auth'
 import { getInitialize } from '../api/client'
+import { ssoErrorLabel } from '../api/ssoErrors'
+import { useLabel } from '../i18n-context'
 
 /** Where to land after SSO: the page that asked for sign-in, or the start page from /login itself. */
 function ssoReturnUrl() {
@@ -34,6 +36,7 @@ function ssoReturnUrl() {
  */
 export function LoginPage() {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
@@ -192,7 +195,7 @@ export function LoginPage() {
         </form>
       ) : (
         <Stack>
-          {ssoError && <AuthError>{ssoError}</AuthError>}
+          {ssoError && <AuthError>{renderLabel(ssoErrorLabel(ssoError))}</AuthError>}
 
           {sso.enabled && (
             <>

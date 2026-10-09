@@ -2647,6 +2647,10 @@ msgstr "琥珀色"
 msgid "Ambiguous names"
 msgstr "名称有歧义"
 
+#: src/api/ssoErrors.ts
+msgid "An account with that username already exists"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
@@ -4358,6 +4362,10 @@ msgstr "确认密码以关联"
 msgid "Confirm your password to turn it off"
 msgstr "确认密码以将其关闭"
 
+#: src/api/ssoErrors.ts
+msgid "Confirm your password, then start linking single sign-on again"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connect"
@@ -4591,6 +4599,14 @@ msgstr "无法为此系列生成重新关联方案。"
 #, fuzzy
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "无法复制到剪贴板。请选中文本后手动复制。"
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that login to a new account"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that single sign-on account"
+msgstr ""
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -9590,6 +9606,10 @@ msgstr "尚无资料库文件夹。作品需要一个文件夹来存放下载内
 msgid "no longer steers your taste"
 msgstr "不再影响你的品味"
 
+#: src/api/ssoErrors.ts
+msgid "No Maki account is linked to that login"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "No manga match"
@@ -13998,6 +14018,10 @@ msgstr "退出其他所有设备"
 msgid "Sign-in"
 msgstr ""
 
+#: src/api/ssoErrors.ts
+msgid "Sign-in failed"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
 msgid "Sign-in policy"
@@ -14785,6 +14809,14 @@ msgstr "测试通知已发送"
 msgid "Thai"
 msgstr "泰语"
 
+#: src/api/ssoErrors.ts
+msgid "That account has not been set up yet"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "That account is disabled"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "That chapter no longer exists"
@@ -14794,6 +14826,10 @@ msgstr "该章节已不存在"
 #, fuzzy
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr "合订卷或匹配器无法解析的文件名会导致这种情况。先尝试“重新关联文件”，此操作会读取每个卷文件以查找其中的章节；无法匹配的内容可点击所在行的关联按钮手动处理。"
+
+#: src/api/ssoErrors.ts
+msgid "That single sign-on account is already linked to a different user"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -14918,6 +14954,14 @@ msgstr "文件夹和所有文件已经符合当前命名格式。"
 #, fuzzy
 msgid "The full breakdown is waiting behind this slide."
 msgstr "完整明细就在此幻灯片之后。"
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider returned no subject"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -15051,6 +15095,10 @@ msgstr "系列的来源"
 #, fuzzy
 msgid "The server logs will say why."
 msgstr "服务器日志会说明原因。"
+
+#: src/api/ssoErrors.ts
+msgid "The sign-in did not complete. Please try again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -15194,6 +15242,10 @@ msgstr ""
 #, fuzzy
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "此用户将无法再登录。此操作无法撤销。"
+
+#: src/api/ssoErrors.ts
+msgid "This account already has a single sign-on login. Remove it before linking another."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

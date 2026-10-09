@@ -278,15 +278,6 @@ msgstr "С этой учётной записью не связана учётн
 msgid "error.auth.ssoNoSubject"
 msgstr "Провайдер идентификации не вернул идентификатор пользователя"
 
-#. The generic fallback when a single sign-on failure has neither a catalogue key
-#. (OidcSignInResult.ErrorKey) nor text the identity provider library worded itself
-#. (OidcSignInResult.RawError, RemoteFailureContext.Failure.Message in AuthServiceCollectionExtensions).
-#: src/Maki.Api/Controllers/AuthController.cs
-#. English: Sign-in failed
-#, fuzzy
-msgid "error.auth.ssoSignInFailed"
-msgstr "Не удалось войти"
-
 #. A provisioned account collides with an existing local username.
 #: src/Maki.Api/Auth/OidcSignInService.cs
 #. English: An account with that username already exists

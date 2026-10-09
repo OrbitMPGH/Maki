@@ -2647,6 +2647,10 @@ msgstr "Kehribar"
 msgid "Ambiguous names"
 msgstr "Belirsiz adlar"
 
+#: src/api/ssoErrors.ts
+msgid "An account with that username already exists"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
@@ -4358,6 +4362,10 @@ msgstr "Bağlamak için parolanızı onaylayın"
 msgid "Confirm your password to turn it off"
 msgstr "Kapatmak için parolanızı onaylayın"
 
+#: src/api/ssoErrors.ts
+msgid "Confirm your password, then start linking single sign-on again"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connect"
@@ -4591,6 +4599,14 @@ msgstr "Bu seri için bir plan oluşturulamadı."
 #, fuzzy
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "Panoya kopyalanamadı. Metni seçip elle kopyalayın."
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that login to a new account"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that single sign-on account"
+msgstr ""
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -9590,6 +9606,10 @@ msgstr "Henüz kitaplık klasörü yok. Serilerin indirilebilmesi için bir klas
 msgid "no longer steers your taste"
 msgstr "artık zevk profilinizi yönlendirmiyor"
 
+#: src/api/ssoErrors.ts
+msgid "No Maki account is linked to that login"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "No manga match"
@@ -13998,6 +14018,10 @@ msgstr "Her yerde oturumu kapat"
 msgid "Sign-in"
 msgstr ""
 
+#: src/api/ssoErrors.ts
+msgid "Sign-in failed"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
 msgid "Sign-in policy"
@@ -14785,6 +14809,14 @@ msgstr "Test bildirimi gönderildi"
 msgid "Thai"
 msgstr "Tayca"
 
+#: src/api/ssoErrors.ts
+msgid "That account has not been set up yet"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "That account is disabled"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "That chapter no longer exists"
@@ -14794,6 +14826,10 @@ msgstr "Bu bölüm artık mevcut değil"
 #, fuzzy
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr "Bu, omnibus ciltlerde ve eşleştiricinin ayrıştıramadığı adlarda olur. Önce Dosyaları yeniden bağla seçeneğini deneyin; her cildi okuyup içindeki bölümleri bulur. Yerleştiremediği bölümler için satırdaki bağlama düğmesini kullanın."
+
+#: src/api/ssoErrors.ts
+msgid "That single sign-on account is already linked to a different user"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -14918,6 +14954,14 @@ msgstr "Klasör ve her dosya zaten mevcut adlandırma biçimleriyle eşleşiyor.
 #, fuzzy
 msgid "The full breakdown is waiting behind this slide."
 msgstr "Tam döküm bu slaydın arkasında bekliyor."
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider returned no subject"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -15051,6 +15095,10 @@ msgstr "serinin kaynakları"
 #, fuzzy
 msgid "The server logs will say why."
 msgstr "Nedenini sunucu günlüklerinde görebilirsiniz."
+
+#: src/api/ssoErrors.ts
+msgid "The sign-in did not complete. Please try again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -15194,6 +15242,10 @@ msgstr ""
 #, fuzzy
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "Artık giriş yapamazlar. Bu işlem geri alınamaz."
+
+#: src/api/ssoErrors.ts
+msgid "This account already has a single sign-on login. Remove it before linking another."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

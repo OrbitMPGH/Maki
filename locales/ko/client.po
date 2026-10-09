@@ -2647,6 +2647,10 @@ msgstr "앰버"
 msgid "Ambiguous names"
 msgstr "모호한 이름"
 
+#: src/api/ssoErrors.ts
+msgid "An account with that username already exists"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
@@ -4358,6 +4362,10 @@ msgstr "연결하려면 비밀번호를 확인하세요"
 msgid "Confirm your password to turn it off"
 msgstr "끄려면 비밀번호를 확인하세요"
 
+#: src/api/ssoErrors.ts
+msgid "Confirm your password, then start linking single sign-on again"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connect"
@@ -4591,6 +4599,14 @@ msgstr "이 시리즈의 계획을 만들지 못했습니다."
 #, fuzzy
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "클립보드에 복사하지 못했습니다. 텍스트를 선택해서 직접 복사하세요."
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that login to a new account"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that single sign-on account"
+msgstr ""
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -9590,6 +9606,10 @@ msgstr "라이브러리 폴더가 없습니다. 시리즈를 다운로드하려�
 msgid "no longer steers your taste"
 msgstr "더 이상 취향에 반영되지 않음"
 
+#: src/api/ssoErrors.ts
+msgid "No Maki account is linked to that login"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "No manga match"
@@ -13998,6 +14018,10 @@ msgstr "다른 모든 곳에서 로그아웃"
 msgid "Sign-in"
 msgstr ""
 
+#: src/api/ssoErrors.ts
+msgid "Sign-in failed"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
 msgid "Sign-in policy"
@@ -14785,6 +14809,14 @@ msgstr "테스트 알림 전송됨"
 msgid "Thai"
 msgstr "태국어"
 
+#: src/api/ssoErrors.ts
+msgid "That account has not been set up yet"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "That account is disabled"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "That chapter no longer exists"
@@ -14794,6 +14826,10 @@ msgstr "해당 챕터가 더 이상 존재하지 않습니다"
 #, fuzzy
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr "옴니버스 권 파일이나 연결기가 해석할 수 없는 이름에서 이런 일이 생깁니다. 먼저 파일 다시 연결을 사용해 각 권 파일 안의 챕터를 찾으세요. 찾지 못한 항목은 해당 행의 연결 버튼으로 직접 연결하세요."
+
+#: src/api/ssoErrors.ts
+msgid "That single sign-on account is already linked to a different user"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -14918,6 +14954,14 @@ msgstr "폴더와 모든 파일이 이미 현재 이름 지정 형식과 일치�
 #, fuzzy
 msgid "The full breakdown is waiting behind this slide."
 msgstr "전체 세부 분석은 이 슬라이드 뒤에서 확인할 수 있습니다."
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider returned no subject"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -15051,6 +15095,10 @@ msgstr "시리즈의 소스"
 #, fuzzy
 msgid "The server logs will say why."
 msgstr "이유는 서버 로그에서 확인할 수 있습니다."
+
+#: src/api/ssoErrors.ts
+msgid "The sign-in did not complete. Please try again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -15194,6 +15242,10 @@ msgstr ""
 #, fuzzy
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "해당 사용자는 더 이상 로그인할 수 없습니다. 되돌릴 수 없습니다."
+
+#: src/api/ssoErrors.ts
+msgid "This account already has a single sign-on login. Remove it before linking another."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
