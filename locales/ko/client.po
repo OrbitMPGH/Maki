@@ -461,14 +461,12 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, other {다운로드한 챕터}}"
 
 #: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
-msgstr "{chaptersMarked, plural, other {챕터 #개}}를 {seriesMatched}개 시리즈에서 읽음으로 표시함"
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series, {seriesUnmatched} Kavita series unmatched"
-msgstr "{chaptersMarked, plural, other {챕터 #개}}를 {seriesMatched}개 시리즈에서 읽음으로 표시함, {seriesUnmatched}개 Kavita 시리즈는 일치하지 않음"
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -1127,6 +1125,10 @@ msgstr "{reasonText} - {measurement}"
 #, fuzzy
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
 msgstr "{remaining, plural, other {대기열에 #개 더 있음}}"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -2794,7 +2796,7 @@ msgid "Applies automatically to"
 msgstr "자동 적용 대상"
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Applies the series folder format and chapter file format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+msgid "Applies the series folder format and chapter file format above to all {seriesCount, plural, one {# series} other {# series}} in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -6273,6 +6275,10 @@ msgstr ""
 #, fuzzy
 msgid "Files"
 msgstr "파일"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -12111,6 +12117,10 @@ msgstr ""
 msgid "Remove condition"
 msgstr "조건 제거"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove folder"
+msgstr ""
+
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Remove from Continue reading"
@@ -12185,6 +12195,10 @@ msgstr "소스를 제거할까요?"
 #, fuzzy
 msgid "Remove the record"
 msgstr "기록 제거"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove this root folder?"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12269,11 +12283,6 @@ msgstr "Maki 표준에 맞게 이름 변경"
 #, fuzzy
 msgid "Renamed"
 msgstr "이름 변경됨"
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Renamed {renamed}, {failed} failed"
-msgstr "{renamed}개 이름 변경됨, {failed}개 실패"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

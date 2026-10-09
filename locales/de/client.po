@@ -461,14 +461,12 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, one {Kapitel heruntergeladen} other {Kapitel heruntergeladen}}"
 
 #: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
-msgstr "{chaptersMarked, plural, one {# Kapitel} other {# Kapitel}} in {seriesMatched} Serien als gelesen markiert"
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series, {seriesUnmatched} Kavita series unmatched"
-msgstr "{chaptersMarked, plural, one {# Kapitel} other {# Kapitel}} in {seriesMatched} Serien als gelesen markiert, {seriesUnmatched} Kavita-Serien nicht zugeordnet"
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -1127,6 +1125,10 @@ msgstr "{reasonText} - {measurement}"
 #, fuzzy
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
 msgstr "{remaining, plural, one {noch # in der Warteschlange} other {noch # in der Warteschlange}}"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -2794,7 +2796,7 @@ msgid "Applies automatically to"
 msgstr "Gilt automatisch für"
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Applies the series folder format and chapter file format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+msgid "Applies the series folder format and chapter file format above to all {seriesCount, plural, one {# series} other {# series}} in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -6273,6 +6275,10 @@ msgstr ""
 #, fuzzy
 msgid "Files"
 msgstr "Dateien"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -12111,6 +12117,10 @@ msgstr ""
 msgid "Remove condition"
 msgstr "Bedingung entfernen"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove folder"
+msgstr ""
+
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Remove from Continue reading"
@@ -12185,6 +12195,10 @@ msgstr "Quelle entfernen?"
 #, fuzzy
 msgid "Remove the record"
 msgstr "Datensatz entfernen"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove this root folder?"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12269,11 +12283,6 @@ msgstr "Nach Maki-Standard umbenennen"
 #, fuzzy
 msgid "Renamed"
 msgstr "Umbenannt"
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Renamed {renamed}, {failed} failed"
-msgstr "{renamed} umbenannt, {failed} fehlgeschlagen"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

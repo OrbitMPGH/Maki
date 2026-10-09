@@ -387,12 +387,12 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 
 #: src/pages/settings/ReadingCards.tsx
-msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
-msgstr "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}"
+msgstr "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}"
 
 #: src/pages/settings/ReadingCards.tsx
-msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series, {seriesUnmatched} Kavita series unmatched"
-msgstr "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series, {seriesUnmatched} Kavita series unmatched"
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
+msgstr "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read"
@@ -923,6 +923,10 @@ msgstr "{reasonText} - {measurement}"
 #: src/components/home/DownloadingStrip.tsx
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
 msgstr "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
+msgstr "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
@@ -2284,8 +2288,8 @@ msgid "Applies automatically to"
 msgstr "Applies automatically to"
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Applies the series folder format and chapter file format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
-msgstr "Applies the series folder format and chapter file format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+msgid "Applies the series folder format and chapter file format above to all {seriesCount, plural, one {# series} other {# series}} in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+msgstr "Applies the series folder format and chapter file format above to all {seriesCount, plural, one {# series} other {# series}} in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
 
 #: src/pages/LibraryPage.tsx
 msgid "Applies to chapters released later."
@@ -5141,6 +5145,10 @@ msgstr "File removed soon"
 #: src/pages/stats/SourceReliability.tsx
 msgid "Files"
 msgstr "Files"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
+msgstr "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
 
 #: src/pages/ActivityPage.tsx
 msgid "Files replaced by the automatic upgrader show up here."
@@ -9935,6 +9943,10 @@ msgstr "Remove chapters?"
 msgid "Remove condition"
 msgstr "Remove condition"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove folder"
+msgstr "Remove folder"
+
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Remove from Continue reading"
 msgstr "Remove from Continue reading"
@@ -9994,6 +10006,10 @@ msgstr "Remove source?"
 #: src/pages/HealthPage.tsx
 msgid "Remove the record"
 msgstr "Remove the record"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove this root folder?"
+msgstr "Remove this root folder?"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove without cleanup"
@@ -10063,10 +10079,6 @@ msgstr "Rename to the Maki standard"
 #: src/components/RenameSeriesModal.tsx
 msgid "Renamed"
 msgstr "Renamed"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Renamed {renamed}, {failed} failed"
-msgstr "Renamed {renamed}, {failed} failed"
 
 #: src/pages/ImportPage.tsx
 msgid "Renaming folder"

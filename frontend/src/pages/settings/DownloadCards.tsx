@@ -924,7 +924,7 @@ function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrO
   const { data: connection } = useConnectionSettings<Record<string, string | null>>('prowlarr')
   const configured = Boolean(connection?.url && connection?.apiKey)
   const { data: indexers, error: indexersError } = useProwlarrIndexers(configured)
-  const indexersErrorMessage = indexersError != null ? String(indexersError) : null
+  const indexersErrorMessage = indexersError != null ? indexersError.message : null
   const { selectedIndexers, setSelectedIndexers, categories, setCategories } = form
 
   const categoryData = [
