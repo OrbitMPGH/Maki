@@ -41,16 +41,6 @@ msgstr "(cannot be undone)"
 msgid "(inaccessible)"
 msgstr "(inaccessible)"
 
-#. placeholder {0}: usage.seriesTotal
-#: src/pages/settings/SystemCards.tsx
-msgid "{0, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
-msgstr "{0, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
-
-#. placeholder {0}: readerHint.readers
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "{0, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
-msgstr "{0, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
-
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
@@ -110,9 +100,7 @@ msgid "{0, plural, one {# file kept on disk because another series still uses it
 msgstr "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
 
 #. placeholder {0}: upgradesSummary.trashFiles
-#. placeholder {0}: usage.coverFiles
 #: src/pages/ActivityPage.tsx
-#: src/pages/settings/SystemCards.tsx
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# file} other {# files}}"
 
@@ -235,11 +223,6 @@ msgstr "{0, plural, one {From {readSeriesCount} of your # series} other {From {r
 msgid "{0, plural, one {From all # series, weighted by what you read} other {From all # series, weighted by what you read}}"
 msgstr "{0, plural, one {From all # series, weighted by what you read} other {From all # series, weighted by what you read}}"
 
-#. placeholder {0}: deleting?.seriesCount ?? 0
-#: src/components/TagManagerModal.tsx
-msgid "{0, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
-msgstr "{0, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
-
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {Marked read: # chapter} other {Marked read: # chapters}}"
@@ -285,11 +268,6 @@ msgstr "{0, plural, one {Queued # chapter} other {Queued # chapters}}"
 msgid "{0, plural, one {Queued # missing chapter} other {Queued # missing chapters}}"
 msgstr "{0, plural, one {Queued # missing chapter} other {Queued # missing chapters}}"
 
-#. placeholder {0}: usage.thumbnailFiles
-#: src/pages/settings/SystemCards.tsx
-msgid "{0, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
-msgstr "{0, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
-
 #. placeholder {0}: r.newChapters
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {Refreshed, # new chapter} other {Refreshed, # new chapters}}"
@@ -309,11 +287,6 @@ msgstr "{0, plural, one {Removed # unsupported chapter} other {Removed # unsuppo
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, one {Show all #} other {Show all #}}"
-
-#. placeholder {0}: usage?.seriesTotal ?? 0
-#: src/pages/settings/SystemCards.tsx
-msgid "{0, plural, one {This re-downloads the poster for the # series, one metadata lookup and one image each. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.} other {This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.}}"
-msgstr "{0, plural, one {This re-downloads the poster for the # series, one metadata lookup and one image each. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.} other {This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.}}"
 
 #. placeholder {0}: selected.size
 #: src/components/SeriesFilesSection.tsx
@@ -507,6 +480,10 @@ msgstr "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp}
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Show # affected series} other {Show # affected series}}"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
+msgstr "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
+
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -522,6 +499,10 @@ msgstr "{decade}s"
 #: src/pages/HealthPage.tsx
 msgid "{deletedCount} deleted, {failedCount} refused:"
 msgstr "{deletedCount} deleted, {failedCount} refused:"
+
+#: src/components/TagManagerModal.tsx
+msgid "{deletingSeriesCount, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
+msgstr "{deletingSeriesCount, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
 
 #: src/components/SourceMeasurePanel.tsx
 msgid "{done} of {probes} chapter samples. The order below updates once it finishes."
@@ -951,6 +932,10 @@ msgstr "{readCount} of {seriesChapterCount} read"
 msgid "{readCount} read"
 msgstr "{readCount} read"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{readerHintReaders, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
+msgstr "{readerHintReaders, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{readFilterCount} read"
 msgstr "{readFilterCount} read"
@@ -1109,10 +1094,6 @@ msgstr "{seriesCount, plural, one {# series} other {# series}}"
 msgid "{seriesStarted, plural, one {{seriesFinished} of # series read to the end of what you hold.} other {{seriesFinished} of # series read to the end of what you hold.}}"
 msgstr "{seriesStarted, plural, one {{seriesFinished} of # series read to the end of what you hold.} other {{seriesFinished} of # series read to the end of what you hold.}}"
 
-#: src/components/home/ReadingRail.tsx
-msgid "{seriesTitle} - {chapterLabel}"
-msgstr "{seriesTitle} - {chapterLabel}"
-
 #: src/components/ImportReviewModal.tsx
 msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
 msgstr "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
@@ -1120,6 +1101,14 @@ msgstr "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downlo
 #: src/pages/HealthPage.tsx
 msgid "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this archive."
 msgstr "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this archive."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "{seriesTotalCount, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
+msgstr "{seriesTotalCount, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "{seriesTotalCount, plural, one {This re-downloads the poster for the # series, one metadata lookup and one image each. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.} other {This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.}}"
+msgstr "{seriesTotalCount, plural, one {This re-downloads the poster for the # series, one metadata lookup and one image each. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.} other {This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "{seriesWantedCount, plural, one {# in series} other {# in series}}"
@@ -1208,6 +1197,10 @@ msgstr "{target, plural, one {# minute} other {# minutes}}"
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, one {# series finished} other {# series finished}}"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
+msgstr "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
 
 #: src/components/series/FileQualityBadge.tsx
 msgid "{tierLabel} · {medianWidth}px"
@@ -4408,11 +4401,6 @@ msgstr "delete read, auto delete, cleanup, clean up, disk space, retention, remo
 msgid "Delete request"
 msgstr "Delete request"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/LibraryCards.tsx
-msgid "Delete root folder"
-msgstr "Delete root folder"
-
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Delete saved filter"
@@ -5069,6 +5057,10 @@ msgstr "Every series"
 #: src/components/SetupWizard.tsx
 msgid "Every series folder ends up named the same way."
 msgstr "Every series folder ends up named the same way."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Every series has a poster."
+msgstr "Every series has a poster."
 
 #: src/pages/LibraryPage.tsx
 msgid "Every series Maki watches: cover art, download progress and status at a glance."
@@ -7358,6 +7350,10 @@ msgstr "Martial Arts"
 msgid "Match"
 msgstr "Match"
 
+#: src/pages/LibraryPage.tsx
+msgid "Match mode for {label}"
+msgstr "Match mode for {label}"
+
 #: src/theme-context.tsx
 msgid "Match system"
 msgstr "Match system"
@@ -9411,14 +9407,6 @@ msgstr "Posters"
 msgid "Posters, reader thumbnails and the page samples used to compare sources. Both buttons clear thumbnails and samples and remove posters of deleted series. Rebuild missing then re-downloads posters that are missing or broken; Rebuild all re-downloads every poster."
 msgstr "Posters, reader thumbnails and the page samples used to compare sources. Both buttons clear thumbnails and samples and remove posters of deleted series. Rebuild missing then re-downloads posters that are missing or broken; Rebuild all re-downloads every poster."
 
-#: src/pages/settings/SystemCards.tsx
-msgid "Posters: {coverFiles}, {coverBytesLabel} - {coversMissing}"
-msgstr "Posters: {coverFiles}, {coverBytesLabel} - {coversMissing}"
-
-#: src/pages/settings/SystemCards.tsx
-msgid "Posters: {coverFiles}, {coverBytesLabel} - every series has one"
-msgstr "Posters: {coverFiles}, {coverBytesLabel} - every series has one"
-
 #: src/components/NotificationsSection.tsx
 msgid "Posts into one topic of a forum group."
 msgstr "Posts into one topic of a forum group."
@@ -10275,6 +10263,11 @@ msgstr "Remove mapping"
 #: src/pages/RequestsPage.tsx
 msgid "Remove request"
 msgstr "Remove request"
+
+#: src/components/SetupWizard.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove root folder"
+msgstr "Remove root folder"
 
 #: src/components/CatalogueRules.tsx
 msgid "Remove rule"

@@ -48,16 +48,6 @@ msgstr "(되돌릴 수 없음)"
 msgid "(inaccessible)"
 msgstr "(접근할 수 없음)"
 
-#. placeholder {0}: usage.seriesTotal
-#: src/pages/settings/SystemCards.tsx
-msgid "{0, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
-msgstr ""
-
-#. placeholder {0}: readerHint.readers
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "{0, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
-msgstr ""
-
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -127,9 +117,7 @@ msgid "{0, plural, one {# file kept on disk because another series still uses it
 msgstr ""
 
 #. placeholder {0}: upgradesSummary.trashFiles
-#. placeholder {0}: usage.coverFiles
 #: src/pages/ActivityPage.tsx
-#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {#개 파일}}"
@@ -270,11 +258,6 @@ msgstr "{0, plural, other {읽은 시리즈 {readSeriesCount}개 중 #개에서}
 msgid "{0, plural, one {From all # series, weighted by what you read} other {From all # series, weighted by what you read}}"
 msgstr "{0, plural, other {읽은 내용을 반영해 가중치를 적용한 전체 시리즈 #개에서}}"
 
-#. placeholder {0}: deleting?.seriesCount ?? 0
-#: src/components/TagManagerModal.tsx
-msgid "{0, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
-msgstr ""
-
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -329,11 +312,6 @@ msgstr "{0, plural, other {챕터 #개를 대기열에 추가함}}"
 msgid "{0, plural, one {Queued # missing chapter} other {Queued # missing chapters}}"
 msgstr "{0, plural, other {누락된 챕터 #개를 대기열에 추가함}}"
 
-#. placeholder {0}: usage.thumbnailFiles
-#: src/pages/settings/SystemCards.tsx
-msgid "{0, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
-msgstr ""
-
 #. placeholder {0}: r.newChapters
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -356,11 +334,6 @@ msgstr "{0, plural, other {지원하지 않는 챕터 #개를 제거함}}"
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, other {전체 #개 표시}}"
-
-#. placeholder {0}: usage?.seriesTotal ?? 0
-#: src/pages/settings/SystemCards.tsx
-msgid "{0, plural, one {This re-downloads the poster for the # series, one metadata lookup and one image each. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.} other {This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.}}"
-msgstr ""
 
 #. placeholder {0}: selected.size
 #: src/components/SeriesFilesSection.tsx
@@ -595,6 +568,10 @@ msgstr "{count, plural, other {측정한 챕터 #개의 중앙값: 너비 {width
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, other {영향을 받는 #개 시리즈 표시}}"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
+msgstr ""
+
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -613,6 +590,10 @@ msgstr "{decade}년대"
 #, fuzzy
 msgid "{deletedCount} deleted, {failedCount} refused:"
 msgstr "{deletedCount}개 삭제됨, {failedCount}개 거부됨:"
+
+#: src/components/TagManagerModal.tsx
+msgid "{deletingSeriesCount, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -1135,6 +1116,10 @@ msgstr "{seriesChapterCount}개 중 {readCount}개 읽음"
 msgid "{readCount} read"
 msgstr "{readCount}개 읽음"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{readerHintReaders, plural, one {{readerHintScoreDisplay} from # reader with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.} other {{readerHintScoreDisplay} from # readers with reading habits like yours, against {readerHintBaselineDisplay} from readers overall.}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{readFilterCount} read"
@@ -1317,11 +1302,6 @@ msgstr "{seriesCount, plural, other {시리즈 #개}}"
 msgid "{seriesStarted, plural, one {{seriesFinished} of # series read to the end of what you hold.} other {{seriesFinished} of # series read to the end of what you hold.}}"
 msgstr "{seriesStarted, plural, other {{seriesFinished}개 / 보유한 시리즈 #개를 끝까지 읽음.}}"
 
-#: src/components/home/ReadingRail.tsx
-#, fuzzy
-msgid "{seriesTitle} - {chapterLabel}"
-msgstr "{seriesTitle} - {chapterLabel}"
-
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "{seriesTitle} - {fileCount, plural, one {# file} other {# files}} downloaded, {replacedFiles, plural, one {# existing file} other {# existing files}} affected, {newChapters, plural, one {# new chapter} other {# new chapters}}"
@@ -1331,6 +1311,14 @@ msgstr "{seriesTitle} - {fileCount, plural, other {파일 #개}} 다운로드됨
 #, fuzzy
 msgid "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this archive."
 msgstr "{seriesTitle}에 {lowerLabel}이(가) 없습니다. 챕터가 존재하도록 시리즈를 새로 고친 다음 이 보관 파일을 가져오세요."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "{seriesTotalCount, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
+msgstr ""
+
+#: src/pages/settings/SystemCards.tsx
+msgid "{seriesTotalCount, plural, one {This re-downloads the poster for the # series, one metadata lookup and one image each. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.} other {This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.}}"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -1440,6 +1428,10 @@ msgstr "{target, plural, other {#분}}"
 #, fuzzy
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, other {완료한 시리즈 #개}}"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
+msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 #, fuzzy
@@ -5303,12 +5295,6 @@ msgstr ""
 msgid "Delete request"
 msgstr "요청 삭제"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Delete root folder"
-msgstr "루트 폴더 삭제"
-
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6107,6 +6093,10 @@ msgstr "모든 시리즈"
 #, fuzzy
 msgid "Every series folder ends up named the same way."
 msgstr "모든 시리즈 폴더의 이름이 같은 규칙으로 지정됩니다."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Every series has a poster."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8879,6 +8869,10 @@ msgstr "무술"
 msgid "Match"
 msgstr "일치"
 
+#: src/pages/LibraryPage.tsx
+msgid "Match mode for {label}"
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Match system"
@@ -11369,14 +11363,6 @@ msgstr "포스터"
 msgid "Posters, reader thumbnails and the page samples used to compare sources. Both buttons clear thumbnails and samples and remove posters of deleted series. Rebuild missing then re-downloads posters that are missing or broken; Rebuild all re-downloads every poster."
 msgstr ""
 
-#: src/pages/settings/SystemCards.tsx
-msgid "Posters: {coverFiles}, {coverBytesLabel} - {coversMissing}"
-msgstr ""
-
-#: src/pages/settings/SystemCards.tsx
-msgid "Posters: {coverFiles}, {coverBytesLabel} - every series has one"
-msgstr ""
-
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Posts into one topic of a forum group."
@@ -12412,6 +12398,11 @@ msgstr "매핑 제거"
 #, fuzzy
 msgid "Remove request"
 msgstr "요청 제거"
+
+#: src/components/SetupWizard.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove root folder"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
