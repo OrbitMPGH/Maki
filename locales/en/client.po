@@ -815,6 +815,10 @@ msgstr "{name}: {reason}"
 msgid "{name}: stopped after {ok}/{total}"
 msgstr "{name}: stopped after {ok}/{total}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
+msgstr "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
+
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
 msgstr "{newChapterCount, plural, one {# new} other {# new}}"
@@ -12021,6 +12025,10 @@ msgstr "Stop showing their new titles on Home and Discover"
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Stopped before finishing"
 msgstr "Stopped before finishing"
+
+#: src/pages/LibraryPage.tsx
+msgid "Stopping"
+msgstr "Stopping"
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx

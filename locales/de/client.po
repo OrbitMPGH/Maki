@@ -989,6 +989,10 @@ msgstr "{name}: {reason}"
 msgid "{name}: stopped after {ok}/{total}"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
+msgstr ""
+
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
@@ -14617,6 +14621,10 @@ msgstr "Zeige ihre neuen Titel nicht mehr auf Start und Entdecken"
 #, fuzzy
 msgid "Stopped before finishing"
 msgstr "Vor dem Abschluss pausiert"
+
+#: src/pages/LibraryPage.tsx
+msgid "Stopping"
+msgstr ""
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx

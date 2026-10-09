@@ -989,6 +989,10 @@ msgstr "{name}: {reason}"
 msgid "{name}: stopped after {ok}/{total}"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
+msgstr ""
+
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
@@ -14617,6 +14621,10 @@ msgstr "Не показывать их новые произведения на 
 #, fuzzy
 msgid "Stopped before finishing"
 msgstr "Бросил, не закончив"
+
+#: src/pages/LibraryPage.tsx
+msgid "Stopping"
+msgstr ""
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
