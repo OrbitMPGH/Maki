@@ -177,11 +177,9 @@ export function useLiveEvents() {
       liveConn = conn
       listen(conn, 'queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
-        // Only the paged lists ['queue', page, pageSize] hold `items`; ['queue', 'import-plan', id] does not.
-        queryClient.setQueriesData<QueueHistoryDto>({
-          queryKey: ['queue'],
-          predicate: (q) => typeof q.queryKey[1] === 'number',
-        }, (old) => {
+        // Only the paged lists ['queue', page, pageSize] and the per-series ['queue', 'series', id]
+        // hold `items`; ['queue', 'import-plan', id] does not.
+        const patch = (old: QueueHistoryDto | undefined) => {
           if (!old || !Array.isArray(old.items)) return old
           if (isDone) {
             const items = old.items.filter((q) => q.id !== item.id)
@@ -199,7 +197,12 @@ export function useLiveEvents() {
           const next = [...old.items]
           next[idx] = item
           return { ...old, items: next }
-        })
+        }
+        queryClient.setQueriesData<QueueHistoryDto>({
+          queryKey: ['queue'],
+          predicate: (q) => typeof q.queryKey[1] === 'number',
+        }, patch)
+        queryClient.setQueryData<QueueHistoryDto>(['queue', 'series', item.seriesId], patch)
         if (isDone) {
           // The item moved into history, so refresh the paginated history feed.
           void queryClient.invalidateQueries({ queryKey: ['queue-history'] })

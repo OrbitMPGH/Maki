@@ -69,6 +69,22 @@ public class QueueControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task List_narrows_to_one_series()
+    {
+        SeedItem(QueueStatus.Queued);
+        SeedItem(QueueStatus.Downloading);
+        var other = _db.SeedSeries();
+
+        var all = Assert.IsType<QueueHistoryDto>(Assert.IsType<OkObjectResult>(
+            await Controller().List(seriesId: _seriesId, ct: CancellationToken.None)).Value);
+        var none = Assert.IsType<QueueHistoryDto>(Assert.IsType<OkObjectResult>(
+            await Controller().List(seriesId: other, ct: CancellationToken.None)).Value);
+
+        Assert.Equal(2, all.Total);
+        Assert.Equal(0, none.Total);
+    }
+
+    [Fact]
     public async Task History_includes_only_completed_and_cancelled()
     {
         SeedItem(QueueStatus.Queued);

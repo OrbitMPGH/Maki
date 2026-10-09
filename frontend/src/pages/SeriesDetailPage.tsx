@@ -95,7 +95,7 @@ import {
   useUnlinkChapters,
   useDeleteChapterFiles,
   useDeleteChapters,
-  useQueue, useSeriesFilesSummary,
+  useSeriesQueue, useSeriesFilesSummary,
   useRecommendationDetail,
 } from '../api/hooks'
 import {
@@ -419,7 +419,7 @@ function SeriesDetailBody() {
       (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
       [readProgress],
   )
-  const { data: queue } = useQueue()
+  const { data: queue } = useSeriesQueue(seriesId)
   const queueByChapterId = useMemo(
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
       [queue, seriesId],

@@ -2028,6 +2028,16 @@ export function useQueue(page = 1, pageSize = 200, enabled = true) {
   })
 }
 
+/** One series' active queue items, so its page does not depend on them landing in the global first page. */
+export function useSeriesQueue(seriesId: number) {
+  return useQuery({
+    queryKey: ['queue', 'series', seriesId],
+    queryFn: ({ signal }) =>
+      api<QueueHistoryDto>(`/queue?page=1&pageSize=200&seriesId=${seriesId}`, { signal }),
+    refetchInterval: 10_000,
+  })
+}
+
 /** Per-status counts for the shell badge, so it doesn't poll a whole queue page. */
 export function useQueueSummary() {
   return useQuery({
