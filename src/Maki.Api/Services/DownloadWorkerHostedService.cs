@@ -39,7 +39,22 @@ public class DownloadWorkerHostedService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await RecoverAsync(stoppingToken);
+        // An exception out of ExecuteAsync stops the whole host, so a busy database at startup
+        // delays downloads instead.
+        while (true)
+        {
+            try
+            {
+                await RecoverAsync(stoppingToken);
+                break;
+            }
+            catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
+            {
+                logger.LogError(ex, "Download recovery failed; retrying in {Seconds} s", WorkerRestartDelay.TotalSeconds);
+                await Task.Delay(WorkerRestartDelay, stoppingToken);
+            }
+        }
+
         await RefreshSettingsAsync(stoppingToken);
 
         var workers = Enumerable.Range(0, MaxConcurrentChapters)
