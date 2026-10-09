@@ -297,6 +297,9 @@ export function useLiveEvents() {
         // If the prefs cannot be loaded the toast shows, matching the server default.
         const prefs = await queryClient.ensureQueryData(inboxPrefsQuery).catch(() => null)
         if (prefs?.toasts === false) return
+        // The reader owns the whole viewport and the toast stack sits over its bottom bar and tap
+        // zone; the badge and feed above are already updated, so the mail is there afterwards.
+        if (window.location.pathname.startsWith('/read/')) return
 
         notifications.show({
           title: item.title,

@@ -14,7 +14,7 @@ import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
 import { i18n, loadLocale, resolveInitialLocale } from './i18n'
 import App from './App.tsx'
-import { ApiError } from './api/client'
+import { ApiError, UnauthorizedError } from './api/client'
 import { syncSkeletonPulses } from './lib/skeletonSync'
 
 syncSkeletonPulses()
@@ -66,6 +66,7 @@ function reportError(error: unknown, meta?: Record<string, unknown>) {
 }
 
 function isFinalClientError(error: unknown): boolean {
+  if (error instanceof UnauthorizedError) return true
   if (!(error instanceof ApiError)) return false
   return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429
 }
