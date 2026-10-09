@@ -94,6 +94,14 @@ public class ReleaseTagsTests
         Assert.Null(ReleaseTags.Group([tag]));
     }
 
+    [Theory]
+    [InlineData("lfp")]
+    [InlineData("oak")]
+    public void Group_keeps_a_lowercase_three_letter_group(string tag)
+    {
+        Assert.Equal(tag, ReleaseTags.Group([tag]));
+    }
+
     [Fact]
     public void Group_survives_uppercase_or_capitalised_group_names_that_look_like_language_tags()
     {
