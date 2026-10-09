@@ -7466,6 +7466,13 @@ msgid "Move {selectedCount} series"
 msgstr "Move {selectedCount} series"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Move {tierLabel} down"
+msgstr "Move {tierLabel} down"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Move {tierLabel} up"
+msgstr "Move {tierLabel} up"
+
 #: src/pages/ActivityPage.tsx
 msgid "Move down"
 msgstr "Move down"
@@ -7495,7 +7502,6 @@ msgstr "Move to top"
 msgid "Move to top of queue"
 msgstr "Move to top of queue"
 
-#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Move up"
 msgstr "Move up"
@@ -10743,6 +10749,11 @@ msgstr "score {score}"
 #: src/components/SourceCompareModal.tsx
 msgid "Score {score}"
 msgstr "Score {score}"
+
+#. placeholder {0}: format.name
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Score for {0}"
+msgstr "Score for {0}"
 
 #: src/components/series/FileQualityBadge.tsx
 msgid "Score: {score}"

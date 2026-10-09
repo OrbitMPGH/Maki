@@ -4305,18 +4305,10 @@ export function useProgressSettings() {
 
 export function useSaveProgressSettings() {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (settings: ProgressSettings) =>
-      api<ProgressSettings>('/progress/settings', {
-        method: 'PUT',
-        body: JSON.stringify(settings),
-      }),
-    onSuccess: (saved) => {
-      queryClient.setQueryData(['progress', 'settings'], saved)
-      // Every surface depends on the switches and on which calendar days are bucketed into.
-      queryClient.invalidateQueries({ queryKey: ['progress'] })
-    },
-  })
+  return useSaveSettingsRecord<ProgressSettings>(['progress', 'settings'], '/progress/settings', () => {
+    // Every surface depends on the switches and on which calendar days are bucketed into.
+    void queryClient.invalidateQueries({ queryKey: ['progress'] })
+  }, { optimistic: true })
 }
 
 export function useSaveReadingGoal() {

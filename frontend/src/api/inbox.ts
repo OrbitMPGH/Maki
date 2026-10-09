@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api } from './client'
+import { useSaveSettingsRecord } from './settingsRecord'
 
 /**
  * Mirrors `InboxEventType` on the server, in camelCase. Append only — the values are persisted as
@@ -259,11 +260,9 @@ export function useInboxPrefs() {
 }
 
 export function useSaveInboxPrefs() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (prefs: InboxPrefs) =>
-      api<InboxPrefs>('/inbox/prefs', { method: 'PUT', body: JSON.stringify(prefs) }),
-    onSuccess: (saved) => queryClient.setQueryData(['inbox', 'prefs'], saved),
+  return useSaveSettingsRecord<InboxPrefs>(['inbox', 'prefs'], '/inbox/prefs', undefined, {
+    optimistic: true,
+    merge: (current, patch) => ({ ...current, ...patch, types: { ...current.types, ...patch.types } }),
   })
 }
 

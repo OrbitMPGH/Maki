@@ -9100,6 +9100,13 @@ msgid "Move {selectedCount} series"
 msgstr "Mover {selectedCount} séries"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Move {tierLabel} down"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Move {tierLabel} up"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -9136,7 +9143,6 @@ msgstr "Mover para o topo"
 msgid "Move to top of queue"
 msgstr "Mover para o topo da fila"
 
-#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -13089,6 +13095,11 @@ msgstr "pontuação {score}"
 #, fuzzy
 msgid "Score {score}"
 msgstr "Pontuação {score}"
+
+#. placeholder {0}: format.name
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Score for {0}"
+msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 #, fuzzy

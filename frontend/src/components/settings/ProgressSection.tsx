@@ -90,7 +90,7 @@ export function ProgressSection() {
   // overwrite a zone the user chose.
   useEffect(() => {
     if (settings && settings.timeZone === '' && browserTimeZone()) {
-      save.mutate({ ...settings, timeZone: browserTimeZone() })
+      save.mutate({ timeZone: browserTimeZone() })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings?.timeZone])
@@ -99,7 +99,7 @@ export function ProgressSection() {
     return null
   }
 
-  const patch = (changes: Partial<ProgressSettings>) => save.mutate({ ...settings, ...changes })
+  const patch = (changes: Partial<ProgressSettings>) => save.mutate(changes)
   const zone = browserTimeZone()
 
   return (
