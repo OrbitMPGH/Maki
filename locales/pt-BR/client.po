@@ -376,8 +376,8 @@ msgstr "{active, plural, one {# download em andamento} many {# downloads em anda
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "{added} adicionadas, {requested} solicitadas, {skipped} ignoradas, {errors} erros"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "{added} adicionadas, {requested} solicitadas, {skipped} ignoradas, {errors} erros"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4600,7 +4600,7 @@ msgstr "Não foi possível copiar para a área de transferência. Selecione o te
 msgid "Could not import {file}"
 msgstr ""
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10158,8 +10158,8 @@ msgstr "Nada aqui é definitivo. Todas as opções também estão em Configuraç
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Nada foi importado: as listas de importação precisam do banco de dados local do MangaBaka."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Nada foi importado: as listas de importação precisam do banco de dados local do MangaBaka."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -15928,7 +15928,7 @@ msgstr "Sublinhado (_)"
 msgid "Undo"
 msgstr "Desfazer"
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo failed: {0}"

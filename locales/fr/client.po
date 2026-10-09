@@ -376,8 +376,8 @@ msgstr "{active, plural, one {# téléchargement en cours} many {# téléchargem
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "{added} ajoutées, {requested} demandées, {skipped} ignorées, {errors} erreurs"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "{added} ajoutées, {requested} demandées, {skipped} ignorées, {errors} erreurs"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4600,7 +4600,7 @@ msgstr "Impossible de copier dans le presse-papiers. Sélectionnez le texte et c
 msgid "Could not import {file}"
 msgstr ""
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10158,8 +10158,8 @@ msgstr "Rien n'est définitif ici. Toutes les options sont aussi disponibles dan
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Rien n'a été importé : les listes d'importation nécessitent le téléchargement de la base locale de MangaBaka."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Rien n'a été importé : les listes d'importation nécessitent le téléchargement de la base locale de MangaBaka."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -15928,7 +15928,7 @@ msgstr "Tiret bas (_)"
 msgid "Undo"
 msgstr "Annuler"
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo failed: {0}"

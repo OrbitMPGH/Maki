@@ -376,8 +376,8 @@ msgstr "{active, plural, one {# загрузка выполняется} few {# 
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Добавлено: {added}, запрошено: {requested}, пропущено: {skipped}, ошибок: {errors}"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Добавлено: {added}, запрошено: {requested}, пропущено: {skipped}, ошибок: {errors}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4600,7 +4600,7 @@ msgstr "Не удалось скопировать в буфер обмена. �
 msgid "Could not import {file}"
 msgstr ""
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10158,8 +10158,8 @@ msgstr "Эти настройки не окончательные. Все пар
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Ничего не импортировано: для списков импорта нужна локальная база MangaBaka."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Ничего не импортировано: для списков импорта нужна локальная база MangaBaka."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -15928,7 +15928,7 @@ msgstr "Подчёркивание (_)"
 msgid "Undo"
 msgstr "Отменить"
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo failed: {0}"

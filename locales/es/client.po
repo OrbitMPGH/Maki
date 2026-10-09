@@ -376,8 +376,8 @@ msgstr "{active, plural, one {# descarga en curso} many {# descargas en curso} o
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "{added} añadidas, {requested} solicitadas, {skipped} omitidas, {errors} errores"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "{added} añadidas, {requested} solicitadas, {skipped} omitidas, {errors} errores"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4600,7 +4600,7 @@ msgstr "No se pudo copiar al portapapeles. Selecciona el texto y cópialo a mano
 msgid "Could not import {file}"
 msgstr ""
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10158,8 +10158,8 @@ msgstr "Nada de esto es definitivo. También encontrarás todas las opciones en 
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "No se importó nada: las listas de importación necesitan la base de datos local de MangaBaka."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "No se importó nada: las listas de importación necesitan la base de datos local de MangaBaka."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -15928,7 +15928,7 @@ msgstr "Guion bajo (_)"
 msgid "Undo"
 msgstr "Deshacer"
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo failed: {0}"
