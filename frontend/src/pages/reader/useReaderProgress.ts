@@ -40,6 +40,9 @@ export function useReaderProgress(
   const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const inflight = useRef<Promise<void>>(Promise.resolve())
+  // Where the chapter was opened, and whether anything has been written since. Opening is not a
+  // reason to write: the position on record already is this one.
+  const opened = useRef<{ chapterId: number; page: number; written: boolean } | undefined>(undefined)
 
   // Held in a ref so a caller passing an inline arrow does not restart the debounce and the
   // heartbeat on every render, which would mean the timers never actually fire.
@@ -49,6 +52,12 @@ export function useReaderProgress(
   flushedHandler.current = onFlushed
 
   latest.current = { chapterId, page, complete }
+
+  if (!enabled || !chapterId) {
+    opened.current = undefined
+  } else if (opened.current?.chapterId !== chapterId) {
+    opened.current = { chapterId, page, written: false }
+  }
 
   // Chained onto the previous send rather than tracked standalone: heartbeat and debounce saves
   // overlap, and tracking only the last one let an older, slower request land after a newer save
@@ -60,6 +69,7 @@ export function useReaderProgress(
       // turn in the chain comes up: waiting would let time banked while queued behind an earlier
       // request bleed into this send instead of a later one.
       const seconds = clock.take()
+      if (opened.current?.chapterId === id) opened.current.written = true
       inflight.current = inflight.current
         .then(() => saveProgress(id, at, done || undefined, seconds))
         .then((unlocked) => {
@@ -72,6 +82,12 @@ export function useReaderProgress(
 
   useEffect(() => {
     if (!enabled || !chapterId) return
+
+    const start = opened.current
+    if (start && !start.written && start.page === page && !complete) {
+      pending.current = false
+      return
+    }
 
     pending.current = true
     timer.current = setTimeout(() => {
@@ -107,6 +123,7 @@ export function useReaderProgress(
       clearTimeout(timer.current)
       pending.current = false
       const seconds = clock.take()
+      if (opened.current?.chapterId === id) opened.current.written = true
       const run = () =>
         flushProgress(id, at, done || undefined, seconds)
           .then((unlocked) => {
