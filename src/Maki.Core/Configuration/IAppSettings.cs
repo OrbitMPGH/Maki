@@ -149,8 +149,8 @@ public static class SettingKeys
     public const string LibraryWriteCoverToFolder = "library.writecovertofolder";
 
     /// <summary>
-    /// Global built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
-    /// blob. A series may override the whole spec through <c>Series.ReaderPrefsJson</c>.
+    /// The user's built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
+    /// blob. A series may override the whole spec through <c>UserSeriesState.ReaderPrefsJson</c>.
     /// </summary>
     public const string ReaderPrefs = "reader.prefs";
 
