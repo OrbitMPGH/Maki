@@ -536,6 +536,7 @@ export default function ReaderPage() {
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
         onHold={setChromeHeld}
+        onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
       />
 
@@ -593,6 +594,14 @@ export default function ReaderPage() {
           data-visible={chrome}
           onMouseEnter={() => setChromeHeld(true)}
           onMouseLeave={() => setChromeHeld(false)}
+          onFocus={(event) => {
+            if (!(event.target as HTMLElement).matches(':focus-visible')) return
+            setChrome(true)
+            setChromeHeld(true)
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setChromeHeld(false)
+          }}
         >
           <PageStrip
             urls={thumbs}

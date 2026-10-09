@@ -63,6 +63,7 @@ export default function ReaderToolbar({
   onToggleStrip,
   visible,
   onHold,
+  onReveal,
   onShortcuts,
 }: {
   manifest: ReaderManifest
@@ -92,6 +93,8 @@ export default function ReaderToolbar({
   visible: boolean
   /** Keeps the auto-hide from pulling the chrome out from under an open menu or the cursor. */
   onHold: (held: boolean) => void
+  /** Brings the chrome up; called when a keyboard user tabs onto a control while it is hidden. */
+  onReveal: () => void
   onShortcuts: () => void
 }) {
   const { t } = useLingui()
@@ -126,9 +129,25 @@ export default function ReaderToolbar({
   const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
   const forwardChapterLabel = rtl ? t`Previous chapter` : t`Next chapter`
 
+  // The cursor over a bar, keyboard focus inside one, or the settings popover all keep it up.
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
   useEffect(() => {
-    onHold(settingsOpen)
-  }, [settingsOpen, onHold])
+    onHold(hovered || focused || settingsOpen)
+  }, [hovered, focused, settingsOpen, onHold])
+
+  // Only keyboard focus counts: a button clicked with the mouse keeps focus, and holding the chrome
+  // for that would stop it ever auto-hiding again.
+  const barFocus = {
+    onFocus: (event: React.FocusEvent) => {
+      if (!(event.target as HTMLElement).matches(':focus-visible')) return
+      setFocused(true)
+      onReveal()
+    },
+    onBlur: (event: React.FocusEvent<HTMLElement>) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false)
+    },
+  }
 
   // Escape closes the settings first. Mantine only closes on Escape when focus is inside the
   // dropdown, and focus is usually still on the gear, so the reader's own Escape (leave the reader)
@@ -168,8 +187,9 @@ export default function ReaderToolbar({
         className="reader-bar reader-bar-top"
         data-visible={visible}
         onClick={stop}
-        onMouseEnter={() => onHold(true)}
-        onMouseLeave={() => onHold(settingsOpen)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        {...barFocus}
       >
         <Group gap="sm" wrap="nowrap" px="md" h="100%">
           <ActionIcon
@@ -249,8 +269,9 @@ export default function ReaderToolbar({
         className="reader-bar reader-bar-bottom"
         data-visible={visible}
         onClick={stop}
-        onMouseEnter={() => onHold(true)}
-        onMouseLeave={() => onHold(settingsOpen)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        {...barFocus}
       >
         <Group gap="xs" wrap="nowrap" px="md" h="100%">
           <Tooltip label={backChapterLabel} withArrow zIndex={OVERLAY_Z}>
