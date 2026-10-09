@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -504,7 +504,7 @@ export function SourceMappingsSection({
                     <PriorityInput
                       value={m.priority}
                       label={t`Priority for ${sourceName}`}
-                      onCommit={(priority) => updateMapping.mutate({ ...m, priority })}
+                      onCommit={(priority, onError) => updateMapping.mutate({ ...m, priority }, { onError })}
                     />
                   </Tooltip>
                 </Table.Td>
@@ -1000,13 +1000,6 @@ function signedNumber(i18n: { number: (n: number) => string }, n: number) {
   return n > 0 ? `+${i18n.number(n)}` : i18n.number(n)
 }
 
-/**
- * The languages one mapping lists chapters in.
- *
- * Adding a language is not just "more chapters": chapter identity is (number, language), so each
- * one adds its own row per chapter number and its own wanted/missing count, and each downloads to
- * its own file. Hence the warning rather than a bare picker.
- */
 /** Holds a draft while typing and saves once, on blur or Enter, so a two-digit value is one write. */
 function PriorityInput({
   value,
@@ -1015,16 +1008,25 @@ function PriorityInput({
 }: {
   value: number
   label: string
-  onCommit: (priority: number) => void
+  onCommit: (priority: number, onError: () => void) => void
 }) {
   const [draft, setDraft] = useState<number | string>(value)
-  useEffect(() => setDraft(value), [value])
+  const lastSent = useRef(value)
+  useEffect(() => {
+    setDraft(value)
+    lastSent.current = value
+  }, [value])
 
   const commit = () => {
     const parsed = typeof draft === 'number' ? draft : draft === '' ? NaN : Number(draft)
-    const priority = Number.isFinite(parsed) ? Math.min(99, Math.max(1, Math.round(parsed))) : value
+    const priority = Number.isFinite(parsed) ? Math.min(99, Math.max(1, Math.round(parsed))) : lastSent.current
     setDraft(priority)
-    if (priority !== value) onCommit(priority)
+    if (priority === lastSent.current) return
+    lastSent.current = priority
+    onCommit(priority, () => {
+      lastSent.current = value
+      setDraft(value)
+    })
   }
 
   return (
@@ -1044,6 +1046,13 @@ function PriorityInput({
   )
 }
 
+/**
+ * The languages one mapping lists chapters in.
+ *
+ * Adding a language is not just "more chapters": chapter identity is (number, language), so each
+ * one adds its own row per chapter number and its own wanted/missing count, and each downloads to
+ * its own file. Hence the warning rather than a bare picker.
+ */
 function MappingLanguages({
   mapping,
   supported,
