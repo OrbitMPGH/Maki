@@ -1472,8 +1472,9 @@ try
 
     if (authOptions.RequireHttps)
     {
+        // No UseHttpsRedirection: Kestrel binds plain http only and TLS is the proxy's job, so the
+        // middleware could never find an https port to redirect to.
         app.UseHsts();
-        app.UseHttpsRedirection();
     }
 
     // Before authentication, and that ordering is load-bearing.
