@@ -649,23 +649,38 @@ export default function LibraryPage() {
     const name = BULK_ACTION_LABELS[action] ? _(BULK_ACTION_LABELS[action]) : action
     setBusy(action)
     let stopped = false
-    const progress = (done: number) => (
+    let ok = 0
+    const errors: string[] = []
+    const progress = () => (
       <Group gap="xs" wrap="nowrap" justify="space-between">
-        <Text size="sm">{`${name}: ${done}/${total}`}</Text>
-        <Button size="xs" variant="subtle" style={{ flexShrink: 0 }} onClick={() => { stopped = true }}>
-          <Trans>Stop</Trans>
+        <Text size="sm">{`${name}: ${ok + errors.length}/${total}`}</Text>
+        <Button
+          size="xs"
+          variant="subtle"
+          style={{ flexShrink: 0 }}
+          disabled={stopped}
+          onClick={() => {
+            stopped = true
+            notifications.update({
+              id: 'bulk-action',
+              loading: true,
+              message: progress(),
+              autoClose: false,
+              withCloseButton: false,
+            })
+          }}
+        >
+          {stopped ? <Trans>Stopping</Trans> : <Trans>Stop</Trans>}
         </Button>
       </Group>
     )
     notifications.show({
       id: 'bulk-action',
       loading: true,
-      message: progress(0),
+      message: progress(),
       autoClose: false,
       withCloseButton: false,
     })
-    let ok = 0
-    const errors: string[] = []
     for (const id of ids) {
       if (stopped) break
       try {
@@ -674,24 +689,26 @@ export default function LibraryPage() {
       } catch (err) {
         errors.push(errorText(err))
       }
-      const done = ok + errors.length
       notifications.update({
         id: 'bulk-action',
         loading: true,
-        message: progress(done),
+        message: progress(),
         autoClose: false,
         withCloseButton: false,
       })
     }
     const firstError = errors[0]
+    const stoppedEarly = stopped && ok + errors.length < total
     notifications.update({
       id: 'bulk-action',
       loading: false,
       color: errors.length ? 'var(--warn)' : 'var(--ok)',
       // The fixed wording is translated; `firstError` carries a raw exception message untouched.
       message: errors.length
-        ? now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`
-        : stopped
+        ? stoppedEarly
+          ? now`${name}: stopped, ${ok}/${total} succeeded, first error: ${firstError}`
+          : now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`
+        : stoppedEarly
           ? now`${name}: stopped after ${ok}/${total}`
           : now`${name}: ${ok}/${total} succeeded`,
       autoClose: 8000,
