@@ -4595,22 +4595,19 @@ msgstr "이 제목과 비슷한 제목의 순위를 낮춥니다"
 msgid "feedback.taste.unchanged"
 msgstr "취향 변화 없음"
 
-#. {list} is titles joined in English regardless of locale (see RecentActivityRailService.Because);
-#. a title is a proper noun a translation would not touch, and there is no list-format primitive in
-#. this catalogue's ICU subset. Same key used for the single-seed grouped rail, where {list} is one
-#. title.
+#. The server sends the literal text {list} and the client replaces it with the titles joined by
+#. Intl.ListFormat in the reader's language, so keep {list} in the translation.
 #: src/Maki.Api/Services/RecentActivityRailService.cs
 #. English: Because you read {list}
 #, fuzzy
 msgid "discover.rail.becauseYouRead"
 msgstr "{list} 읽기 기반 추천"
 
-#. {list} as above; {count} is how many further seeds were not named.
-#: src/Maki.Api/Services/RecentActivityRailService.cs
-#. English: Because you read {list} and {count, plural, one {# more} other {# more}}
-#, fuzzy
-msgid "discover.rail.becauseYouReadMore"
-msgstr "{list} 등 {count, plural, other {#개 작품}}을 읽은 독자를 위한 추천"
+#. One entry of the title list, shown last when more series seeded the rail than were named.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: {count, plural, one {# more} other {# more}}
+msgid "discover.rail.moreSeeds"
+msgstr ""
 
 #: src/Maki.Api/Services/DiscoverService.cs
 #. English: Newly released
@@ -4668,7 +4665,8 @@ msgstr "최근 활동 기반"
 msgid "discover.rail.sideInterest"
 msgstr "라이브러리의 다른 관심사: {name}"
 
-#. {titles} is up to two series titles joined in English, same trade as {list} above. {count} is
+#. The server sends the literal text {titles} and the client replaces it with up to two series titles
+#. joined by Intl.ListFormat, so keep {titles} in the translation. {count} is
 #. how many titles in total share the interest.
 #: src/Maki.Api/Services/SideInterestRailService.cs
 #. English: A smaller thread shared by {count, plural, one {# title} other {# titles}}, including {titles}

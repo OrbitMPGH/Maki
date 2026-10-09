@@ -115,7 +115,7 @@ public class RecentActivityRailService(
             "Recent-activity rail for user {UserId}: {Seeds} seed(s), {Items} item(s)",
             scope.UserId, seeds.Count, items.Count);
 
-        var (subtitleKey, subtitleArgs) = Because(seeds);
+        var (subtitleKey, subtitleArgs, named, more) = Because(seeds);
         return new DiscoverRail(
             RailKey,
             "discover.rail.recentActivity",
@@ -124,7 +124,9 @@ public class RecentActivityRailService(
             items,
             Subtitle: subtitleKey,
             SeedIds: seedIds,
-            SubtitleArgs: subtitleArgs);
+            SubtitleArgs: subtitleArgs,
+            SubtitleTitles: named,
+            SubtitleMore: more);
     }
 
     /// <summary>
@@ -172,31 +174,23 @@ public class RecentActivityRailService(
     /// <summary>
     /// How many of the newest completed progress rows to group for the seed list. A bounded,
     /// index-ordered scan like <c>HomeController</c>'s reading rails: an unbounded GROUP BY after a
-    /// Kavita import aggregates every read chapter on each Discover visit. The per-series read
-    /// counts are then taken for just the candidate series.
+    /// Kavita import aggregates every read chapter on each Discover visit.
     /// </summary>
     private const int RecentProgressScan = 2000;
 
     /// <summary>
     /// "Because you read A, B and C"; the seeds, most recent first, at most three named.
     /// <para>
-    /// <c>list</c> is titles joined in English regardless of the caller's language, the same trade
-    /// <c>{ratings}</c> makes elsewhere: there is no list-format primitive in this catalogue's ICU
-    /// subset, and a title is a proper noun a translation would not touch anyway.
+    /// The message carries a literal <c>{list}</c> marker and the titles travel separately, so the
+    /// client joins them with <c>Intl.ListFormat</c> in the reader's language; the server has no
+    /// list-format primitive. <c>More</c> is how many further seeds were left unnamed.
     /// </para>
     /// </summary>
-    private static (string Key, object Args) Because(IReadOnlyList<RecentSeed> seeds)
+    private static (string Key, object Args, IReadOnlyList<string> Titles, int More) Because(
+        IReadOnlyList<RecentSeed> seeds)
     {
         var named = seeds.Take(3).Select(s => s.Title).ToList();
-        var list = named.Count switch
-        {
-            1 => named[0],
-            2 => $"{named[0]} and {named[1]}",
-            _ => $"{named[0]}, {named[1]} and {named[2]}",
-        };
-        return seeds.Count > named.Count
-            ? ("discover.rail.becauseYouReadMore", new { list, count = seeds.Count - named.Count })
-            : ("discover.rail.becauseYouRead", new { list });
+        return ("discover.rail.becauseYouRead", new { list = "{list}" }, named, seeds.Count - named.Count);
     }
 
     /// <summary>

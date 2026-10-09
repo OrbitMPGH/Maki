@@ -503,6 +503,8 @@ export interface DiscoverRail {
   items: RecommendationItem[]
   /** A line under the heading saying where the rail came from. Null on the catalogue rails. */
   subtitle?: string | null
+  /** Titles named in {@link subtitle}'s `{list}` or `{titles}` marker; join them with `railSubtitle`. */
+  subtitleTitles?: string[] | null
   /**
    * Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
    * "Show more" to page the recommender instead of {@link useDiscoverFeed}, whose `feed` vocabulary

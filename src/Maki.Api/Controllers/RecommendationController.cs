@@ -519,7 +519,19 @@ public class RecommendationController(
     {
         Title = localizer.Get(rail.Title, rail.TitleArgs),
         Subtitle = rail.Subtitle is null ? null : localizer.Get(rail.Subtitle, rail.SubtitleArgs),
+        SubtitleTitles = SubtitleTitlesFor(rail, localizer),
     };
+
+    /// <summary>
+    /// The titles the client joins into the subtitle, with a localized "N more" entry last when
+    /// seeds were left unnamed.
+    /// </summary>
+    internal static IReadOnlyList<string>? SubtitleTitlesFor(DiscoverRail rail, ILocalizer localizer) =>
+        rail.SubtitleTitles is null
+            ? null
+            : rail.SubtitleMore > 0
+                ? [.. rail.SubtitleTitles, localizer.Get("discover.rail.moreSeeds", new { count = rail.SubtitleMore })]
+                : rail.SubtitleTitles;
 
     private IReadOnlyList<DiscoverRail> LocalizeRails(IReadOnlyList<DiscoverRail> rails) =>
         rails.Select(LocalizeRail).ToList();

@@ -33,12 +33,23 @@ namespace Maki.Api.Services;
 /// not part of.
 /// </param>
 /// <param name="Filters">Constraints that must remain attached when a personalised rail expands.</param>
+/// <param name="SubtitleTitles">
+/// Series titles the subtitle names, for the client to join with <c>Intl.ListFormat</c> in place of the
+/// <c>{list}</c> or <c>{titles}</c> marker the rendered <see cref="Subtitle"/> carries. The server has
+/// no list-format primitive, so it never joins them itself.
+/// </param>
+/// <param name="SubtitleMore">
+/// How many further seeds were not named. The controller turns it into a localized "N more" entry
+/// at the end of <see cref="SubtitleTitles"/>. Not sent to the client.
+/// </param>
 public record DiscoverRail(
     string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items,
     string? Subtitle = null, IReadOnlyList<long>? SeedIds = null,
     RecommendationFilters? Filters = null,
     [property: JsonIgnore] object? TitleArgs = null,
-    [property: JsonIgnore] object? SubtitleArgs = null);
+    [property: JsonIgnore] object? SubtitleArgs = null,
+    IReadOnlyList<string>? SubtitleTitles = null,
+    [property: JsonIgnore] int SubtitleMore = 0);
 
 /// <summary>A Discover feed name that is not a <see cref="BrowseFeed"/>; the controller renders it.</summary>
 public sealed class UnknownFeedException(string feed) : InvalidOperationException(feed)

@@ -192,9 +192,11 @@ public class RecentActivityRailTests : IDisposable
         // is the subtitle's — that is the only place recency is user-visible.
         Assert.Equal([101, 202, 303], recommender.Seen.Single().Order());
         // Subtitle is a catalogue key, rendered by the controller, not the service; see the
-        // DiscoverRail doc. The rendered sentence lives in SubtitleArgs.list.
+        // DiscoverRail doc. The client joins SubtitleTitles into the {list} marker.
         Assert.Equal("discover.rail.becauseYouRead", result.Subtitle);
-        Assert.Equivalent(new { list = "Series 202, Series 303 and Series 101" }, result.SubtitleArgs);
+        Assert.Equivalent(new { list = "{list}" }, result.SubtitleArgs);
+        Assert.Equal(["Series 202", "Series 303", "Series 101"], result.SubtitleTitles);
+        Assert.Equal(0, result.SubtitleMore);
     }
 
     [Fact]
@@ -219,7 +221,7 @@ public class RecentActivityRailTests : IDisposable
 
         Assert.NotNull(result);
         Assert.Equal([101], recommender.Seen.Single());
-        Assert.Equivalent(new { list = "Series 101" }, result.SubtitleArgs);
+        Assert.Equal(["Series 101"], result.SubtitleTitles);
     }
 
     [Fact]
@@ -234,11 +236,11 @@ public class RecentActivityRailTests : IDisposable
         var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
 
         // The six most recent, which here are the six smallest ids. Six rather than a rounder
-        // number because the grouped rail draws one card per seed in a three-column grid.
+        // number.
         Assert.Equal([100, 101, 102, 103, 104, 105], recommender.Seen.Single().Order());
-        Assert.Equal("discover.rail.becauseYouReadMore", result!.Subtitle);
-        Assert.Equivalent(
-            new { list = "Series 100, Series 101 and Series 102", count = 3 }, result.SubtitleArgs);
+        Assert.Equal("discover.rail.becauseYouRead", result!.Subtitle);
+        Assert.Equal(["Series 100", "Series 101", "Series 102"], result.SubtitleTitles);
+        Assert.Equal(3, result.SubtitleMore);
     }
 
     [Fact]
@@ -254,7 +256,7 @@ public class RecentActivityRailTests : IDisposable
         // write the gate out itself, and it must not name the title in the subtitle either.
         Assert.Equal([202], recommender.Seen.Single().Order());
         Assert.Equal("discover.rail.becauseYouRead", result!.Subtitle);
-        Assert.Equivalent(new { list = "Series 202" }, result.SubtitleArgs);
+        Assert.Equal(["Series 202"], result.SubtitleTitles);
     }
 
     [Fact]
