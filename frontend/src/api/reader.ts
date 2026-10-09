@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import { api, authHeaders, getInitialize } from './client'
@@ -97,6 +97,8 @@ export function useReaderManifest(chapterId: number) {
     queryKey: ['reader-manifest', chapterId],
     queryFn: () => api<ReaderManifest>(`/reader/chapter/${chapterId}`),
     enabled: Number.isFinite(chapterId) && chapterId > 0,
+    // The reader draws its own failure state, so the global error toast would only double it.
+    meta: { silent: true },
     // The page list of a stored archive doesn't change while the reader is open, so nothing
     // refetches mid-chapter, but `resumePage` and `completed` do change, and a cached snapshot of
     // them is poison: reopening a chapter would resume off the position it had when first opened,
@@ -239,11 +241,13 @@ export interface ReaderSettings {
 
 export type KavitaLiveStatus = 'Off' | 'Connecting' | 'Connected' | 'NotAdmin' | 'Unreachable'
 
+export const readerSettingsQuery = queryOptions({
+  queryKey: ['settings', 'reader'],
+  queryFn: () => api<ReaderSettings>('/settings/reader'),
+})
+
 export function useReaderSettings() {
-  return useQuery({
-    queryKey: ['settings', 'reader'],
-    queryFn: () => api<ReaderSettings>('/settings/reader'),
-  })
+  return useQuery(readerSettingsQuery)
 }
 
 export function useSaveReaderSettings() {

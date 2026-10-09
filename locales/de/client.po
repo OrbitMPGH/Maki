@@ -4617,6 +4617,10 @@ msgstr "Bibliotheken aus Kavita konnten nicht geladen werden: {kavitaLibrariesEr
 msgid "Could not load library stats"
 msgstr "Bibliotheksstatistiken konnten nicht geladen werden"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "Could not load your progress. The server logs will say why."
@@ -10790,6 +10794,7 @@ msgstr "Seite {pageIndex}/{pageCount}"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Seite {pageNumber} von {pageCount}"
@@ -15240,6 +15245,11 @@ msgstr "Diesen Monat"
 msgid "This operation is {opStatus} and needs no further action."
 msgstr "Dieser Vorgang ist {opStatus} und erfordert keine weitere Aktion."
 
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+msgid "This page failed to load."
+msgstr ""
+
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
 msgstr ""
@@ -15731,6 +15741,9 @@ msgid "Try a shorter or alternative query."
 msgstr "Versuche eine kürzere oder alternative Suchanfrage."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"

@@ -3786,6 +3786,10 @@ msgstr "Could not load libraries from Kavita: {kavitaLibrariesErrorMessage}"
 msgid "Could not load library stats"
 msgstr "Could not load library stats"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr "Could not load this chapter."
+
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Could not load your progress. The server logs will say why."
 msgstr "Could not load your progress. The server logs will say why."
@@ -8849,6 +8853,7 @@ msgstr "Page {pageIndex}/{pageCount}"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/reader/ReaderPage.tsx
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Page {pageNumber} of {pageCount}"
 
@@ -12512,6 +12517,11 @@ msgstr "This month"
 msgid "This operation is {opStatus} and needs no further action."
 msgstr "This operation is {opStatus} and needs no further action."
 
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+msgid "This page failed to load."
+msgstr "This page failed to load."
+
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
 msgstr "This page hit an error"
@@ -12912,6 +12922,9 @@ msgid "Try a shorter or alternative query."
 msgstr "Try a shorter or alternative query."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Try again"
 msgstr "Try again"

@@ -4617,6 +4617,10 @@ msgstr "Kavita 라이브러리를 불러오지 못했습니다: {kavitaLibraries
 msgid "Could not load library stats"
 msgstr "라이브러리 통계를 불러오지 못했습니다."
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "Could not load your progress. The server logs will say why."
@@ -10790,6 +10794,7 @@ msgstr "페이지 {pageIndex}/{pageCount}"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "{pageCount}개 중 {pageNumber}페이지"
@@ -15240,6 +15245,11 @@ msgstr "이번 달"
 msgid "This operation is {opStatus} and needs no further action."
 msgstr "이 작업은 {opStatus} 상태이며 추가 조치가 필요하지 않습니다."
 
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+msgid "This page failed to load."
+msgstr ""
+
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
 msgstr ""
@@ -15731,6 +15741,9 @@ msgid "Try a shorter or alternative query."
 msgstr "더 짧거나 다른 검색어를 사용해 보세요."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"

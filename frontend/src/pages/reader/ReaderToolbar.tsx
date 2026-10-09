@@ -41,6 +41,7 @@ const OVERLAY_Z = 500
 export default function ReaderToolbar({
   manifest,
   page,
+  pageLabel,
   onSeek,
   onPrevChapter,
   onNextChapter,
@@ -62,10 +63,13 @@ export default function ReaderToolbar({
   onToggleStrip,
   visible,
   onHold,
+  onReveal,
   onShortcuts,
 }: {
   manifest: ReaderManifest
   page: number
+  /** The page counter's text: one number, or a range when a double-page spread is up. */
+  pageLabel: string
   onSeek: (page: number) => void
   onPrevChapter: () => void
   onNextChapter: () => void
@@ -89,6 +93,8 @@ export default function ReaderToolbar({
   visible: boolean
   /** Keeps the auto-hide from pulling the chrome out from under an open menu or the cursor. */
   onHold: (held: boolean) => void
+  /** Brings the chrome up; called when a keyboard user tabs onto a control while it is hidden. */
+  onReveal: () => void
   onShortcuts: () => void
 }) {
   const { t } = useLingui()
@@ -123,9 +129,25 @@ export default function ReaderToolbar({
   const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
   const forwardChapterLabel = rtl ? t`Previous chapter` : t`Next chapter`
 
+  // The cursor over a bar, keyboard focus inside one, or the settings popover all keep it up.
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
   useEffect(() => {
-    onHold(settingsOpen)
-  }, [settingsOpen, onHold])
+    onHold(hovered || focused || settingsOpen)
+  }, [hovered, focused, settingsOpen, onHold])
+
+  // Only keyboard focus counts: a button clicked with the mouse keeps focus, and holding the chrome
+  // for that would stop it ever auto-hiding again.
+  const barFocus = {
+    onFocus: (event: React.FocusEvent) => {
+      if (!(event.target as HTMLElement).matches(':focus-visible')) return
+      setFocused(true)
+      onReveal()
+    },
+    onBlur: (event: React.FocusEvent<HTMLElement>) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false)
+    },
+  }
 
   // Escape closes the settings first. Mantine only closes on Escape when focus is inside the
   // dropdown, and focus is usually still on the gear, so the reader's own Escape (leave the reader)
@@ -165,8 +187,9 @@ export default function ReaderToolbar({
         className="reader-bar reader-bar-top"
         data-visible={visible}
         onClick={stop}
-        onMouseEnter={() => onHold(true)}
-        onMouseLeave={() => onHold(settingsOpen)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        {...barFocus}
       >
         <Group gap="sm" wrap="nowrap" px="md" h="100%">
           <ActionIcon
@@ -246,8 +269,9 @@ export default function ReaderToolbar({
         className="reader-bar reader-bar-bottom"
         data-visible={visible}
         onClick={stop}
-        onMouseEnter={() => onHold(true)}
-        onMouseLeave={() => onHold(settingsOpen)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        {...barFocus}
       >
         <Group gap="xs" wrap="nowrap" px="md" h="100%">
           <Tooltip label={backChapterLabel} withArrow zIndex={OVERLAY_Z}>
@@ -293,7 +317,7 @@ export default function ReaderToolbar({
             c="var(--ink-3)"
             style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
           >
-            {page + 1} / {manifest.pageCount}
+            {pageLabel} / {manifest.pageCount}
           </Text>
 
           <Tooltip label={forwardChapterLabel} withArrow zIndex={OVERLAY_Z}>
@@ -491,16 +515,18 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              onClick={onToggleFullscreen}
-              aria-label={t`Toggle full screen`}
-            >
-              {fullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
-            </ActionIcon>
-          </Tooltip>
+          {document.fullscreenEnabled && (
+            <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                onClick={onToggleFullscreen}
+                aria-label={t`Toggle full screen`}
+              >
+                {fullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
+              </ActionIcon>
+            </Tooltip>
+          )}
         </Group>
       </div>
     </>

@@ -4617,6 +4617,10 @@ msgstr "Kavita kitaplıkları yüklenemedi: {kavitaLibrariesErrorMessage}"
 msgid "Could not load library stats"
 msgstr "Kitaplık istatistikleri yüklenemedi"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "Could not load your progress. The server logs will say why."
@@ -10790,6 +10794,7 @@ msgstr "Sayfa {pageIndex}/{pageCount}"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Sayfa {pageNumber} / {pageCount}"
@@ -15240,6 +15245,11 @@ msgstr "Bu ay"
 msgid "This operation is {opStatus} and needs no further action."
 msgstr "Bu işlem {opStatus} durumunda ve başka bir eyleme gerek yok."
 
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+msgid "This page failed to load."
+msgstr ""
+
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
 msgstr ""
@@ -15731,6 +15741,9 @@ msgid "Try a shorter or alternative query."
 msgstr "Daha kısa veya alternatif bir sorgu deneyin."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"

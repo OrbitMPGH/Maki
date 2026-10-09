@@ -1,11 +1,11 @@
-import { Button, Center, Stack, Text } from '@mantine/core'
+import { Button, Center, Group, Stack, Text, VisuallyHidden } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ApiError } from '../../api/client'
 import { notifications } from '@mantine/notifications'
 import { IconTrophy } from '@tabler/icons-react'
-import { Trans } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import {
   flushProgress,
   useBookmarks,
@@ -40,11 +40,19 @@ const FLUSH_WAIT_MS = 2000
 export default function ReaderPage() {
   const { chapterId: param } = useParams()
   const chapterId = Number(param)
+  const { t } = useLingui()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data: manifest, isLoading, isError, isFetching } = useReaderManifest(chapterId)
+  const {
+    data: manifest,
+    error,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useReaderManifest(chapterId)
   const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
-    useReaderPrefs(manifest, !isFetching)
+    useReaderPrefs(manifest, !isFetching && !isError)
 
   const [page, setPage] = useState(0)
   // Bumped on every *explicit* jump (resume, toolbar scrub, page-strip click, Home/End) so
@@ -71,7 +79,11 @@ export default function ReaderPage() {
   // The chrome starts hidden and is summoned by a tap in the middle of the page: the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
-  const [chromeHeld, setChromeHeld] = useState(false)
+  // One hold per source, so one letting go (the cursor leaving a bar) cannot release another
+  // (the cursor arriving on the thumbnail strip).
+  const [toolbarHeld, setToolbarHeld] = useState(false)
+  const [stripHeld, setStripHeld] = useState(false)
+  const chromeHeld = toolbarHeld || stripHeld
   const [fullscreen, setFullscreen] = useState(false)
   const [stripOpen, setStripOpen] = useState(false)
   const [zoom, setZoom] = useState(1)
@@ -90,6 +102,8 @@ export default function ReaderPage() {
   const spreadIndex = useMemo(() => spreadIndexOf(spreads, page), [spreads, page])
   // `page` is a spread's first index; the position on record is the furthest page on screen.
   const shownTo = useMemo(() => Math.max(page, ...(spreads[spreadIndex] ?? [])), [spreads, spreadIndex, page])
+  // "4-5" while a spread shows two pages, so the last spread can say it reached the final page.
+  const pageNumber = shownTo > page ? `${page + 1}-${shownTo + 1}` : `${page + 1}`
 
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
@@ -99,7 +113,15 @@ export default function ReaderPage() {
   )
   const bookmarked = bookmarkedPages.has(page)
 
-  usePreload(urls, page, prefs.mode === 'vertical' ? 0 : prefs.preload)
+  // The preload window counts spreads, so double-page mode warms as many turns as single-page does.
+  const preloadPages = useMemo(
+    () =>
+      prefs.mode === 'vertical' || prefs.preload <= 0
+        ? []
+        : spreads.slice(spreadIndex, spreadIndex + 1 + prefs.preload).flat(),
+    [spreads, spreadIndex, prefs.mode, prefs.preload],
+  )
+  usePreload(urls, preloadPages, measure)
 
   /**
    * Achievements ride back on the write that completes a chapter, so the toast needs no second
@@ -114,7 +136,7 @@ export default function ReaderPage() {
           title: achievement.tierName
             ? `${achievement.name} · ${achievement.tierName}`
             : achievement.name,
-          message: now`Achievement unlocked`,
+          message: t`Achievement unlocked`,
           icon: <IconTrophy size={18} />,
           autoClose: 6000,
         })
@@ -122,8 +144,22 @@ export default function ReaderPage() {
 
       markSeenMutate(unlocked.map((a) => a.id))
     },
-    [markSeenMutate],
+    [markSeenMutate, t],
   )
+
+  const invalidateProgress = useCallback(
+    (seriesId: number) => {
+      void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
+    },
+    [queryClient],
+  )
+  const seriesId = manifest?.seriesId
+  const onFlushed = useCallback(() => {
+    if (seriesId != null) invalidateProgress(seriesId)
+  }, [seriesId, invalidateProgress])
 
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
   // writing that would overwrite the saved position with page 1, the very thing being resumed to.
@@ -139,6 +175,7 @@ export default function ReaderPage() {
     tracking,
     clock,
     onAchievementsUnlocked,
+    onFlushed,
   )
 
   /**
@@ -147,7 +184,9 @@ export default function ReaderPage() {
    * snapshot from the previous visit: applying it would jump to page 1 and then save that.
    */
   useEffect(() => {
-    if (!manifest || isFetching || resumedFor === manifest.chapterId) return
+    // A failed refetch leaves the cached manifest in place, and its resumePage is the previous
+    // visit's snapshot: resuming from it would start writing that position back.
+    if (!manifest || isFetching || isError || resumedFor === manifest.chapterId) return
     setResumedFor(manifest.chapterId)
     const toEnd = enterAtEndRef.current
     enterAtEndRef.current = false
@@ -158,7 +197,7 @@ export default function ReaderPage() {
     setAtEnd(false)
     setFinishedFor(null)
     leavingRef.current = false
-  }, [manifest, isFetching, resumedFor, seekToPage])
+  }, [manifest, isFetching, isError, resumedFor, seekToPage])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
   useEffect(() => {
@@ -177,10 +216,16 @@ export default function ReaderPage() {
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement))
     document.addEventListener('fullscreenchange', onChange)
-    return () => document.removeEventListener('fullscreenchange', onChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      // Leaving the reader must not leave the whole app fullscreen.
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
+    }
   }, [])
 
   const toggleFullscreen = useCallback(() => {
+    // iPhone Safari has no element fullscreen; the method is missing there, not just rejected.
+    if (!document.fullscreenEnabled) return
     if (document.fullscreenElement) {
       void document.exitFullscreen().catch(() => {})
     } else {
@@ -215,9 +260,7 @@ export default function ReaderPage() {
             () => [] as UnlockedAchievement[],
           )
           if (unlocked.length > 0) onAchievementsUnlocked(unlocked)
-          void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
-          void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
-          void queryClient.invalidateQueries({ queryKey: ['series'] })
+          invalidateProgress(seriesId)
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
       }
@@ -235,6 +278,7 @@ export default function ReaderPage() {
       shownTo,
       pageCount,
       queryClient,
+      invalidateProgress,
       tracking,
       clock,
       finished,
@@ -294,108 +338,111 @@ export default function ReaderPage() {
     }
   }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage])
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
-      const target = event.target as HTMLElement | null
-      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
-
-      // The sheet is read, not driven: while it is up the only keys that do anything close it.
-      if (shortcutsOpen) {
-        if (event.key === 'Escape' || event.key === '?') {
-          event.preventDefault()
-          setShortcutsOpen(false)
-        }
-        return
-      }
-
-      // In right-to-left reading the left arrow advances; in left-to-right it goes back.
-      const forwardKey = prefs.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
-      const backKey = prefs.direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
-
-      switch (event.key) {
-        case forwardKey:
-          event.preventDefault()
-          next()
-          break
-        case backKey:
-          event.preventDefault()
-          previous()
-          break
-        case ' ':
-          // Continuous mode keeps the browser's native space-to-scroll, except on the end screen,
-          // where there is nothing to scroll.
-          if (prefs.mode !== 'vertical' || atEnd) {
-            event.preventDefault()
-            if (event.shiftKey) previous()
-            else next()
-          }
-          break
-        case 'Home':
-          event.preventDefault()
-          seekToPage(0)
-          break
-        case 'End':
-          event.preventDefault()
-          seekToPage(Math.max(0, pageCount - 1))
-          break
-        case 'f':
-          toggleFullscreen()
-          break
-        case 'd':
-          update({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })
-          break
-        case 'b':
-          toggleBookmark.mutate(page)
-          break
-        case 't':
-          setStripOpen((open) => !open)
-          break
-        case '1':
-          update({ mode: 'paged' })
-          break
-        case '2':
-          update({ mode: 'double' })
-          break
-        case '3':
-          update({ mode: 'vertical' })
-          break
-        case '+':
-        case '=':
-          setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))
-          break
-        case '-':
-          setZoom((z) => Math.max(1, z - ZOOM_STEP))
-          break
-        case '0':
-          setZoom(1)
-          break
-        case '?':
-          setShortcutsOpen(true)
-          break
-        case 'Escape':
-          if (!document.fullscreenElement && manifest) navigate(`/series/${manifest.seriesId}`)
-          break
-      }
+  // The listener is registered once and reads the latest handler, so it is not torn down and
+  // re-added on every render (a page change in continuous mode re-renders on each scroll step).
+  const onKey = useRef<(event: KeyboardEvent) => void>(() => {})
+  onKey.current = (event: KeyboardEvent) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
+    const target = event.target as HTMLElement | null
+    if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+    // Space on a control reached by keyboard presses that control, it does not turn the page.
+    if (
+      event.key === ' ' &&
+      target?.matches(':focus-visible') &&
+      target.closest('button, a, [role="button"], [role="slider"], [contenteditable="true"]')
+    ) {
+      return
     }
 
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [
-    shortcutsOpen,
-    atEnd,
-    next,
-    previous,
-    pageCount,
-    prefs,
-    update,
-    toggleFullscreen,
-    manifest,
-    navigate,
-    page,
-    toggleBookmark,
-    seekToPage,
-  ])
+    // The sheet is read, not driven: while it is up the only keys that do anything close it.
+    if (shortcutsOpen) {
+      if (event.key === 'Escape' || event.key === '?') {
+        event.preventDefault()
+        setShortcutsOpen(false)
+      }
+      return
+    }
+
+    // In right-to-left reading the left arrow advances; in left-to-right it goes back.
+    const forwardKey = prefs.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
+    const backKey = prefs.direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
+
+    // Caps Lock and Shift upper-case letters; the named keys (ArrowLeft, Home) are longer than 1.
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
+
+    switch (key) {
+      case forwardKey:
+        event.preventDefault()
+        next()
+        break
+      case backKey:
+        event.preventDefault()
+        previous()
+        break
+      case ' ':
+        // Continuous mode keeps the browser's native space-to-scroll, except on the end screen,
+        // where there is nothing to scroll.
+        if (prefs.mode !== 'vertical' || atEnd) {
+          event.preventDefault()
+          if (event.shiftKey) previous()
+          else next()
+        }
+        break
+      case 'Home':
+        event.preventDefault()
+        setAtEnd(false)
+        seekToPage(0)
+        break
+      case 'End':
+        event.preventDefault()
+        setAtEnd(false)
+        seekToPage(Math.max(0, pageCount - 1))
+        break
+      case 'f':
+        toggleFullscreen()
+        break
+      case 'd':
+        update({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })
+        break
+      case 'b':
+        toggleBookmark.mutate(page)
+        break
+      case 't':
+        setStripOpen((open) => !open)
+        break
+      case '1':
+        update({ mode: 'paged' })
+        break
+      case '2':
+        update({ mode: 'double' })
+        break
+      case '3':
+        update({ mode: 'vertical' })
+        break
+      case '+':
+      case '=':
+        setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))
+        break
+      case '-':
+        setZoom((z) => Math.max(1, z - ZOOM_STEP))
+        break
+      case '0':
+        setZoom(1)
+        break
+      case '?':
+        setShortcutsOpen(true)
+        break
+      case 'Escape':
+        if (!document.fullscreenElement && manifest) navigate(`/series/${manifest.seriesId}`)
+        break
+    }
+  }
+
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => onKey.current(event)
+    window.addEventListener('keydown', listener)
+    return () => window.removeEventListener('keydown', listener)
+  }, [])
 
   /** Tap zones: outer thirds page, the middle toggles the chrome. */
   const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -421,7 +468,7 @@ export default function ReaderPage() {
 
   // A cached manifest is shown only once the fresh one has landed and the resume is applied;
   // before that its prefs and position are a snapshot of the previous visit.
-  if (isLoading || (manifest && resumedFor !== manifest.chapterId)) {
+  if (!isError && (isLoading || (manifest && resumedFor !== manifest.chapterId))) {
     return (
       <div className="reader-root">
         <Center h="100dvh">
@@ -431,17 +478,30 @@ export default function ReaderPage() {
     )
   }
 
-  if (isError || !manifest) {
+  if (!manifest || (isError && resumedFor !== manifest.chapterId)) {
+    // Only a 404 means the file is the problem; anything else (network, 401, 500) is worth retrying.
+    const unreadable = !isError || (error instanceof ApiError && error.status === 404)
     return (
       <div className="reader-root">
         <Center h="100dvh">
           <Stack align="center" gap="sm">
             <Text c="var(--ink-3)">
-              <Trans>This chapter has no readable file.</Trans>
+              {unreadable ? (
+                <Trans>This chapter has no readable file.</Trans>
+              ) : (
+                <Trans>Could not load this chapter.</Trans>
+              )}
             </Text>
-            <Button component={Link} to="/library" variant="light">
-              <Trans>Back to library</Trans>
-            </Button>
+            <Group gap="xs">
+              {!unreadable && (
+                <Button variant="light" loading={isFetching} onClick={() => void refetch()}>
+                  <Trans>Try again</Trans>
+                </Button>
+              )}
+              <Button component={Link} to="/library" variant="light">
+                <Trans>Back to library</Trans>
+              </Button>
+            </Group>
           </Stack>
         </Center>
       </div>
@@ -458,9 +518,11 @@ export default function ReaderPage() {
       <ReaderToolbar
         manifest={manifest}
         page={page}
+        pageLabel={pageNumber}
         onSeek={seekToPage}
         onPrevChapter={() => void goToChapter(manifest.previousChapterId, false)}
-        onNextChapter={() => void goToChapter(manifest.nextChapterId, true)}
+        // Skipping ahead is not finishing: only leaving from the last page counts as read.
+        onNextChapter={() => void goToChapter(manifest.nextChapterId, shownTo >= manifest.pageCount - 1)}
         prefs={prefs}
         onPrefs={update}
         selection={selection}
@@ -478,7 +540,8 @@ export default function ReaderPage() {
         stripOpen={stripOpen}
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
-        onHold={setChromeHeld}
+        onHold={setToolbarHeld}
+        onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
       />
 
@@ -534,8 +597,16 @@ export default function ReaderPage() {
         <div
           className="reader-strip-wrap"
           data-visible={chrome}
-          onMouseEnter={() => setChromeHeld(true)}
-          onMouseLeave={() => setChromeHeld(false)}
+          onMouseEnter={() => setStripHeld(true)}
+          onMouseLeave={() => setStripHeld(false)}
+          onFocus={(event) => {
+            if (!(event.target as HTMLElement).matches(':focus-visible')) return
+            setChrome(true)
+            setStripHeld(true)
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setStripHeld(false)
+          }}
         >
           <PageStrip
             urls={thumbs}
@@ -564,8 +635,16 @@ export default function ReaderPage() {
 
       {prefs.showPageNumber && !chrome && !atEnd && (
         <div className="reader-page-badge">
-          {page + 1} / {manifest.pageCount}
+          {pageNumber} / {manifest.pageCount}
         </div>
+      )}
+
+      {!atEnd && (
+        <VisuallyHidden role="status" aria-live="polite">
+          <Trans>
+            Page {pageNumber} of {pageCount}
+          </Trans>
+        </VisuallyHidden>
       )}
     </div>
   )
