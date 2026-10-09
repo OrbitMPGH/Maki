@@ -67,8 +67,6 @@ public class SemanticRecommender(
     /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
     private readonly TasteVectorTuning _tasteTuning = tasteTuning ?? TasteVectorTuning.Default;
 
-    /// <summary>Standard RRF damping, same constant the search fusion uses.</summary>
-    private const double RrfK = 60;
 
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
     private long _activeCount; // cached count of active dump series, the N in idf = log(N/df)
@@ -1752,21 +1750,19 @@ public class SemanticRecommender(
     }
 
     /// <summary>
-    /// Reciprocal rank fusion across the per-query rankings, returning the rows that make the
-    /// pool. Only membership comes out of this — the caller scores the survivors on cosines, for
-    /// the reason in the class summary.
+    /// The union of each query's top <paramref name="poolPerQuery"/> rows, the pool's membership.
+    /// Only membership comes out of this; the caller scores the survivors on cosines, for the reason
+    /// in the class summary. Rows come out channel by channel, best first within each.
+    /// <para>
+    /// A bounded selection per channel rather than a sort of every survivor: a whole-library request
+    /// has dozens of channels over the whole catalogue and reads at most a couple of thousand rows
+    /// of each. Ties break on the lower row so the pool does not depend on sort stability.
+    /// </para>
     /// </summary>
-    private static List<int> FuseByRank(float[][] cosines, int rowCount, int poolPerQuery)
+    internal static List<int> FuseByRank(float[][] cosines, int rowCount, int poolPerQuery)
     {
-        var fused = new Dictionary<int, double>();
         var channel0 = cosines[0];
-
-        // Three catalogue-sized arrays, rented once and refilled per channel rather than allocated
-        // per channel. The sort is over [0, survivors) explicitly, since a rented array is longer
-        // than the data in it and sorting the tail would drag pool garbage into the ranking.
         var survivors = ArrayPool<int>.Shared.Rent(rowCount);
-        var ranked = ArrayPool<int>.Shared.Rent(rowCount);
-        var keys = ArrayPool<float>.Shared.Rent(rowCount);
         try
         {
             var count = 0;
@@ -1778,30 +1774,73 @@ public class SemanticRecommender(
                 }
             }
 
-            foreach (var channel in cosines)
-            {
-                Array.Copy(survivors, ranked, count);
-                for (var i = 0; i < count; i++)
-                {
-                    keys[i] = -channel[ranked[i]]; // ascending on the negation = descending by cosine
-                }
+            var take = Math.Min(poolPerQuery, count);
+            var tops = new int[cosines.Length][];
+            Parallel.For(0, cosines.Length, c => tops[c] = TopRows(cosines[c], survivors, count, take));
 
-                Array.Sort(keys, ranked, 0, count);
-                var take = Math.Min(poolPerQuery, count);
-                for (var rank = 0; rank < take; rank++)
+            var seen = new HashSet<int>();
+            var pooled = new List<int>();
+            foreach (var top in tops)
+            {
+                foreach (var row in top)
                 {
-                    fused[ranked[rank]] = fused.GetValueOrDefault(ranked[rank]) + (1.0 / (RrfK + rank + 1));
+                    if (seen.Add(row))
+                    {
+                        pooled.Add(row);
+                    }
                 }
             }
+
+            return pooled;
         }
         finally
         {
             ArrayPool<int>.Shared.Return(survivors);
-            ArrayPool<int>.Shared.Return(ranked);
-            ArrayPool<float>.Shared.Return(keys);
+        }
+    }
+
+    /// <summary>The <paramref name="take"/> best of the first <paramref name="count"/> survivors, best first.</summary>
+    private static int[] TopRows(float[] channel, int[] survivors, int count, int take)
+    {
+        if (take <= 0)
+        {
+            return [];
         }
 
-        return [.. fused.Keys];
+        // Min-heap on the ranking, so the root is the weakest row kept so far.
+        var heap = new PriorityQueue<int, (float Cosine, int Row)>(take + 1, WeakestFirst.Instance);
+        for (var i = 0; i < count; i++)
+        {
+            var row = survivors[i];
+            var key = (channel[row], row);
+            if (heap.Count < take)
+            {
+                heap.Enqueue(row, key);
+            }
+            else if (heap.TryPeek(out _, out var weakest) && WeakestFirst.Instance.Compare(key, weakest) > 0)
+            {
+                heap.DequeueEnqueue(row, key);
+            }
+        }
+
+        var top = new int[heap.Count];
+        for (var i = top.Length - 1; i >= 0; i--)
+        {
+            top[i] = heap.Dequeue();
+        }
+
+        return top;
+    }
+
+    private sealed class WeakestFirst : IComparer<(float Cosine, int Row)>
+    {
+        public static readonly WeakestFirst Instance = new();
+
+        public int Compare((float Cosine, int Row) x, (float Cosine, int Row) y)
+        {
+            var byCosine = x.Cosine.CompareTo(y.Cosine);
+            return byCosine != 0 ? byCosine : y.Row.CompareTo(x.Row);
+        }
     }
 
     /// <summary>

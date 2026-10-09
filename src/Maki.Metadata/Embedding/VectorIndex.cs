@@ -282,6 +282,12 @@ public sealed class VectorIndex(
     /// </summary>
     public bool TryGetTagIds(string name, out int[] ids) => vocabularies.Tags.TryGetValue(name, out ids!);
 
+    /// <summary>Every interned genre name with its id.</summary>
+    public IReadOnlyDictionary<string, int> GenreVocabulary => vocabularies.Genres;
+
+    /// <summary>Every interned tag name with the ids of its casing variants.</summary>
+    public IReadOnlyDictionary<string, int[]> TagVocabulary => vocabularies.Tags;
+
     /// <summary>
     /// Cosine of one row against a query packed by <see cref="EmbeddingMath.QuantizeQuery"/>.
     /// Exposed so a caller that scores rows itself (the recommender's hybrid pass) can reuse the

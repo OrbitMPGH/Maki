@@ -186,6 +186,74 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task An_invalidate_landing_during_a_build_is_not_lost()
+    {
+        var store = Store();
+        store.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        cache.AfterBuildForTest = () =>
+        {
+            cache.AfterBuildForTest = null;
+            store.UpsertBatch([(2L, "h", [0f, 1f, 0f, 0f])]);
+            cache.Invalidate();
+        };
+
+        Assert.Equal(1, (await cache.GetAsync())!.Count);
+        Assert.False(cache.IsLoaded);
+        Assert.Equal(2, (await cache.GetAsync())!.Count);
+    }
+
+    [Fact]
+    public async Task A_caller_arriving_after_an_invalidate_does_not_take_the_build_it_outdated()
+    {
+        var store = Store();
+        store.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        Task<VectorIndex?>? late = null;
+        cache.AfterBuildForTest = () =>
+        {
+            cache.AfterBuildForTest = null;
+            store.UpsertBatch([(2L, "h", [0f, 1f, 0f, 0f])]);
+            cache.Invalidate();
+            // Joins the build that is still running, which read the file before the invalidate.
+            late = cache.GetAsync();
+        };
+
+        Assert.Equal(1, (await cache.GetAsync())!.Count);
+        Assert.NotNull(late);
+        Assert.Equal(2, (await late!)!.Count);
+    }
+
+    [Fact]
+    public async Task A_cancelled_caller_does_not_abort_the_shared_build()
+    {
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        var built = new ManualResetEventSlim();
+        var release = new ManualResetEventSlim();
+        var builds = 0;
+        cache.AfterBuildForTest = () =>
+        {
+            Interlocked.Increment(ref builds);
+            built.Set();
+            release.Wait(TimeSpan.FromSeconds(10));
+        };
+
+        using var cts = new CancellationTokenSource();
+        var first = cache.GetAsync(cts.Token);
+        Assert.True(built.Wait(TimeSpan.FromSeconds(10)));
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+
+        var second = cache.GetAsync();
+        release.Set();
+
+        Assert.Equal(1, (await second)!.Count);
+        Assert.True(cache.IsLoaded);
+        Assert.Equal(1, builds);
+    }
+
+    [Fact]
     public async Task Franchises_LoadOnlyOnDemand_OnceAcrossConcurrentReaders()
     {
         AddFranchiseColumns();

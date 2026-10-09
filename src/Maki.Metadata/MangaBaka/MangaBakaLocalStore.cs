@@ -380,21 +380,29 @@ public class MangaBakaLocalStore(
             return ids;
         }
 
+        var letters = Letters(normalized);
         using var conn = Open();
         using var cmd = conn.CreateCommand();
-        // FTS narrows the candidates without scanning the catalogue. Equality then rejects
-        // subtitles and longer titles that contain the phrase, even if they rank highly in FTS.
+        // FTS narrows the candidates without scanning the catalogue, anchored to the start of the
+        // title because an equal title starts with the phrase; a common word otherwise pulls in
+        // every title containing it. Equality then rejects subtitles and longer titles.
         cmd.CommandText = $"""
             SELECT series_id, title FROM {MangaBakaDumpService.SearchTableName}
             WHERE {MangaBakaDumpService.SearchTableName} MATCH $query
             """;
         // Let unicode61 tokenize the original text. Our normalization also folds Japanese
         // voicing marks, which FTS preserves, so feeding that folded text back would miss names.
-        cmd.Parameters.AddWithValue("$query", $"\"{query.Replace("\"", "\"\"")}\"");
+        cmd.Parameters.AddWithValue("$query", $"^\"{query.Replace("\"", "\"\"")}\"");
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
         {
-            if (CatalogueText.Normalize(reader.GetString(1)) == normalized)
+            var title = reader.GetString(1);
+            if (CatalogueText.NormalizedLetterCount(title) is { } count && count != letters)
+            {
+                continue;
+            }
+
+            if (CatalogueText.Normalize(title) == normalized)
             {
                 ids.Add(reader.GetInt64(0));
             }
@@ -402,6 +410,8 @@ public class MangaBakaLocalStore(
 
         return ids;
     }
+
+    private static int Letters(string normalized) => normalized.Count(c => c != ' ');
 
     /// <summary>Typo candidates verified against a complete title, never just matching words.</summary>
     internal async Task<IReadOnlyDictionary<long, int>> GetNearTitleIdsAsync(
@@ -468,6 +478,7 @@ public class MangaBakaLocalStore(
 
         // One edit for short titles, two for longer ones. Adjacent swapped letters count as one.
         var budget = normalized.Length < 12 ? 1 : 2;
+        var letters = Letters(normalized);
         var scratch = new int[(normalized.Length + 1) * 3];
         using var conn = Open();
         using var cmd = conn.CreateCommand();
@@ -479,7 +490,15 @@ public class MangaBakaLocalStore(
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
         {
-            var title = CatalogueText.Normalize(reader.GetString(1));
+            // Every edit moves the letter count by at most one, so most rows a common word or the
+            // last token's prefix pulls in are rejected here without being folded.
+            var raw = reader.GetString(1);
+            if (CatalogueText.NormalizedLetterCount(raw) is { } count && Math.Abs(count - letters) > budget)
+            {
+                continue;
+            }
+
+            var title = CatalogueText.Normalize(raw);
             var distance = CatalogueText.BoundedDistance<char>(title.AsSpan(), normalized.AsSpan(), budget, scratch);
             if (distance <= budget)
             {
@@ -1024,7 +1043,7 @@ public class MangaBakaLocalStore(
     /// ordering. Reuses <see cref="MangaBakaRecommendation"/> so the same card/detail/add flow
     /// works — the relation and matched-genre/tag fields are left empty.
     /// </summary>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
         BrowseFeed feed, int limit, string? genre = null,
         RecommendationFilters? filters = null, CancellationToken ct = default)
     {

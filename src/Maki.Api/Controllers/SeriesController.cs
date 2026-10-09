@@ -821,7 +821,7 @@ public class SeriesController(
     /// available, rather than an error — this is a supplementary section, not a core one.
     /// </summary>
     [HttpGet("{id:int}/related")]
-    public async Task<IActionResult> Related(int id, CancellationToken ct)
+    public async Task<IActionResult> Related(int id, [FromServices] HiddenContentService hidden, CancellationToken ct)
     {
         var series = await db.Series.FindAsync([id], ct);
         if (series is null)
@@ -841,7 +841,9 @@ public class SeriesController(
         var related = await mangaBakaStore.GetRelatedAsync(
             [mangaBakaId], new HashSet<long>(libraryIds), ContentRating.Allowed(currentUser.MaxContentRating), ct);
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
-        return Ok(related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList());
+        return Ok(HiddenContentService.Without(
+            related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList(),
+            await hidden.PredicateAsync(ct)));
     }
 
     /// <summary>
@@ -856,7 +858,7 @@ public class SeriesController(
     /// </para>
     /// </summary>
     [HttpGet("{id:int}/similar")]
-    public async Task<IActionResult> Similar(int id, CancellationToken ct)
+    public async Task<IActionResult> Similar(int id, [FromServices] HiddenContentService hidden, CancellationToken ct)
     {
         var series = await db.Series.FindAsync([id], ct);
         if (series is null)
@@ -885,7 +887,8 @@ public class SeriesController(
             .ToListAsync(ct);
         var ownedSet = new HashSet<long>(owned);
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
-        return Ok(pool
+        var visible = HiddenContentService.Without(pool, await hidden.PredicateAsync(ct));
+        return Ok(visible
             .Where(r => !long.TryParse(r.ProviderId, out var providerId) ||
                 !ownedSet.Contains(providerId) && !suppressed.Contains(providerId))
             .Take(RailSize)

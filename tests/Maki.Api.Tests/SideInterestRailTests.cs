@@ -1,5 +1,6 @@
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
 using Maki.Data.Identity;
 using Maki.Metadata.Embedding;
 using static Maki.Api.Services.SideInterestRailService;
@@ -62,7 +63,32 @@ public class SideInterestRailTests
             db.UserSeriesStates.Add(new UserSeriesState { UserId = 1, SeriesId = disliked, Rating = 2 });
             await db.SaveChangesAsync();
         }
-        var service = new SideInterestRailService(test.ScopeFactory(), null!, null!, null!);
+        var service = new SideInterestRailService(test.ScopeFactory(), null!,
+            new SeedWeightService(new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
+            null!, null!);
+        var seeds = await service.ReadSeedsAsync(new TestCurrentUser(1), default);
+        Assert.Equal(1, Assert.Single(seeds).Id);
+    }
+
+    [Fact]
+    public async Task Ignored_and_thumbed_down_titles_do_not_supply_themes()
+    {
+        using var test = new TestDb();
+        test.SeedUser();
+        test.SeedSeries("Visible", configure: s => s.MangaBakaId = 1);
+        test.SeedSeries("Ignored", configure: s => s.MangaBakaId = 2);
+        test.SeedSeries("Thumbed down", configure: s => s.MangaBakaId = 3);
+        using (var db = test.NewContext())
+        {
+            db.RecommendationSignalOverrides.Add(new RecommendationSignalOverride
+            { UserId = 1, ProviderId = 2, IgnoreAsSeed = true });
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            { UserId = 1, ProviderId = 3, Sentiment = RecommendationSentiment.Disliked, Revision = 1 });
+            await db.SaveChangesAsync();
+        }
+        var service = new SideInterestRailService(test.ScopeFactory(), null!,
+            new SeedWeightService(new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
+            null!, null!);
         var seeds = await service.ReadSeedsAsync(new TestCurrentUser(1), default);
         Assert.Equal(1, Assert.Single(seeds).Id);
     }

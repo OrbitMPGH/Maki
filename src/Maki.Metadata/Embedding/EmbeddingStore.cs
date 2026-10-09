@@ -67,8 +67,22 @@ public class EmbeddingStore(EmbeddingOptions options)
                     scale REAL NOT NULL,
                     vec   BLOB NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS meta (
+                    key   TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
                 """;
             cmd.ExecuteNonQuery();
+        }
+
+        // A file from before the version was recorded is taken to hold the running model's vectors,
+        // which is what every pass and install up to the release that started recording it wrote.
+        using (var adopt = conn.CreateCommand())
+        {
+            adopt.CommandText = "INSERT OR IGNORE INTO meta (key, value) VALUES ($key, $value)";
+            adopt.Parameters.AddWithValue("$key", ModelVersionKey);
+            adopt.Parameters.AddWithValue("$value", options.ModelVersion);
+            adopt.ExecuteNonQuery();
         }
 
         MigrateFloat32Vectors(conn);
@@ -482,6 +496,76 @@ public class EmbeddingStore(EmbeddingOptions options)
         }
 
         return map;
+    }
+
+    private const string ModelVersionKey = "model_version";
+
+    /// <summary>
+    /// The model version every vector in the file was written with, or null when the file predates
+    /// the record. The dimension check cannot tell two 768-dim models apart, so this is what can.
+    /// </summary>
+    public string? GetModelVersion() => File.Exists(DbPath) ? ReadModelVersion(DbPath) : null;
+
+    /// <summary>Records <paramref name="version"/> as the model the whole file now holds.</summary>
+    public void SetModelVersion(string version)
+    {
+        EnsureSchema();
+        using var conn = OpenWritable();
+        WriteModelVersion(conn, version);
+    }
+
+    /// <summary>
+    /// Stamps a database that is not open through a store yet, such as a downloaded artifact before
+    /// it is swapped in.
+    /// </summary>
+    public static void StampModelVersion(string dbPath, string version)
+    {
+        using var conn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
+        conn.Open();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)";
+            cmd.ExecuteNonQuery();
+        }
+
+        WriteModelVersion(conn, version);
+    }
+
+    private static string? ReadModelVersion(string dbPath)
+    {
+        using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT value FROM meta WHERE key = $key";
+        cmd.Parameters.AddWithValue("$key", ModelVersionKey);
+        try
+        {
+            return cmd.ExecuteScalar() as string;
+        }
+        catch (SqliteException)
+        {
+            return null; // no meta table yet
+        }
+    }
+
+    private static void WriteModelVersion(SqliteConnection conn, string version)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "INSERT INTO meta (key, value) VALUES ($key, $value) " +
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value";
+        cmd.Parameters.AddWithValue("$key", ModelVersionKey);
+        cmd.Parameters.AddWithValue("$value", version);
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>Drops every tag-name vector, so the next pass embeds the vocabulary afresh.</summary>
+    public void ClearTagVectors()
+    {
+        EnsureSchema();
+        using var conn = OpenWritable();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM tag_vectors";
+        cmd.ExecuteNonQuery();
     }
 
     /// <summary>Tag ids that already have a name embedding, so a pass only embeds new ones.</summary>

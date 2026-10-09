@@ -174,6 +174,38 @@ public class MangaBakaLocalStoreTests : IDisposable
         Assert.Empty(await Catalogued().GetNearTitleIdsAsync(query));
     }
 
+    [Theory]
+    [InlineData("love", 1L)]
+    [InlineData("LOVE!", 1L)]
+    [InlineData("cafe latte", 4L)]
+    [InlineData("나 혼자만 레벨업", 5L)]
+    public async Task Exact_title_lookup_finds_the_equal_title_among_ones_that_share_its_words(string query, long id)
+    {
+        _db.AddSeries(1, "Love")
+            .AddSeries(2, "Lovely Love")
+            .AddSeries(3, "Love, Again")
+            .AddSeries(4, "Café Latte")
+            .AddSeries(5, "나 혼자만 레벨업")
+            .AddSeries(6, "나 혼자만 레벨업 외전")
+            .BuildSearchIndex();
+
+        Assert.Equal(id, Assert.Single(await Store.GetExactTitleIdsAsync(query)));
+    }
+
+    [Fact]
+    public async Task Near_title_lookup_still_reaches_a_title_through_the_last_tokens_prefix()
+    {
+        _db.AddSeries(1, "One Piece")
+            .AddSeries(2, "One Piece Party Special")
+            .AddSeries(3, "Lovely Pieces")
+            .BuildSearchIndex();
+
+        var match = Assert.Single(await Catalogued().GetNearTitleIdsAsync("one piec"));
+
+        Assert.Equal(1L, match.Key);
+        Assert.Equal(1, match.Value);
+    }
+
     [Fact]
     public async Task Exact_title_lookup_is_not_limited_by_lexical_candidate_depth()
     {

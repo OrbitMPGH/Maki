@@ -175,4 +175,18 @@ public class CatalogueTextTests
 
         return d[a.Length, b.Length];
     }
+
+    [Theory]
+    [InlineData("Café Latte!")]
+    [InlineData("What Was I Meant to Call This Mess That Wouldn't Go Away?")]
+    [InlineData("落ちない汚れを僕は何と呼べばよかったのか")]
+    [InlineData("Café -- 2nd")]
+    public void NormalizedLetterCount_matches_the_letters_Normalize_keeps(string text) =>
+        Assert.Equal(CatalogueText.Normalize(text).Count(c => c != ' '), CatalogueText.NormalizedLetterCount(text));
+
+    [Theory]
+    [InlineData("나 혼자만 레벨업")]
+    [InlineData("𠮷野家")]
+    public void NormalizedLetterCount_declines_text_whose_fold_changes_its_width(string text) =>
+        Assert.Null(CatalogueText.NormalizedLetterCount(text));
 }

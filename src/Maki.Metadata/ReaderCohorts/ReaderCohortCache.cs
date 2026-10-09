@@ -27,6 +27,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile ReaderCohortIndex? _index;
     private readonly IdleStamp _idle = new();
+    private readonly SharedBuild<ReaderCohortIndex> _loads = new();
 
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _index is not null;
@@ -52,6 +53,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
         await _lock.WaitAsync(ct);
         try
         {
+            await _loads.DrainAsync();
             _index = null;
             SqliteConnection.ClearAllPools();
 
@@ -111,6 +113,7 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
             return cached;
         }
 
+        Task<ReaderCohortIndex?> load;
         await _lock.WaitAsync(ct);
         try
         {
@@ -125,14 +128,29 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
                 return null;
             }
 
-            _index = await Task.Run(() => Load(ct), ct);
-            _idle.Touch();
-            return _index;
+            load = _loads.Join(() =>
+            {
+                try
+                {
+                    var loaded = Load(CancellationToken.None);
+                    _index = loaded;
+                    _idle.Touch();
+                    return loaded;
+                }
+                catch (Exception ex)
+                {
+                    // Logged here because every caller may have stopped waiting by now.
+                    logger.LogWarning(ex, "Loading the reader cohorts failed");
+                    throw;
+                }
+            });
         }
         finally
         {
             _lock.Release();
         }
+
+        return await load.WaitAsync(ct);
     }
 
     private ReaderCohortIndex? Load(CancellationToken ct)

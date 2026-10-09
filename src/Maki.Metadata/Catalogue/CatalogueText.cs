@@ -69,6 +69,31 @@ public static class CatalogueText
         return builder.ToString();
     }
 
+    /// <summary>
+    /// How many letters and digits <see cref="Normalize"/> would keep, read off the raw text without
+    /// normalizing it, so a caller can reject a title by length before paying for the fold. Null
+    /// where the raw text cannot say: a Hangul syllable decomposes into several letters, and a
+    /// supplementary-plane character can fold to a different width.
+    /// </summary>
+    internal static int? NormalizedLetterCount(string text)
+    {
+        var count = 0;
+        foreach (var c in text)
+        {
+            if (char.IsSurrogate(c) || c is >= '\uAC00' and <= '\uD7A3')
+            {
+                return null;
+            }
+
+            if (char.IsLetterOrDigit(c))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     /// <summary>The normalized form split into tokens. Empty array for text that folds to nothing.</summary>
     public static string[] Tokenize(string? text)
     {

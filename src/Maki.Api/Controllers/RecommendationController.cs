@@ -112,7 +112,7 @@ public class RecommendationController(
         var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
             ? TasteView.Shelf
             : TasteView.Read;
-        var insights = await tasteInsights.GetAsync(currentUser, parsed, refresh, ct);
+        var insights = await tasteInsights.GetAsync(currentUser, parsed, refresh, await hidden.TermsAsync(ct), ct);
 
         // Groups/DriftUnavailable/Unavailable are catalogue keys, not display text; see the
         // TasteInsights doc. TasteInsightsService is a singleton whose result is cached per user,
@@ -139,7 +139,8 @@ public class RecommendationController(
     /// <summary>
     /// Catalogue-browse rails (Popular / New / Trending / Top rated / per-type) for the Discover
     /// tab — independent of the library, but bounded by the caller's own content-rating ceiling.
-    /// Cached per ceiling; <paramref name="refresh"/> recomputes the caller's.
+    /// Cached per ceiling and shared by every reader at it, so <paramref name="refresh"/> rebuilds
+    /// only for an admin.
     /// </summary>
     [HttpGet("discover")]
     public async Task<IActionResult> Discover([FromQuery] bool refresh, CancellationToken ct)
@@ -149,7 +150,7 @@ public class RecommendationController(
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+                SharedRefresh(refresh), currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
             return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
         }
         catch (LocalCatalogueUnavailableException ex)
@@ -241,7 +242,7 @@ public class RecommendationController(
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetGenreFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+                SharedRefresh(refresh), currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
             return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
         }
         catch (LocalCatalogueUnavailableException ex)
@@ -534,12 +535,17 @@ public class RecommendationController(
     public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
 
     /// <summary>
-    /// Deeper rails only for a caller who has something to filter out of them. The Discover caches
-    /// are shared instance-wide, so a reader with no feedback asking for refill headroom would make
-    /// every reader pay a doubled catalogue scan for slack none of them use.
+    /// Refill headroom only for a caller who has something to filter out of the rails. The cached
+    /// set is built that deep either way; this only decides how much of it comes back.
     /// </summary>
     private static int RailDepth(HashSet<long> suppressed, Func<long, bool>? isHidden) =>
         suppressed.Count > 0 || isHidden is not null ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+
+    /// <summary>
+    /// The shared Discover rails are one cache for every reader at a ceiling, so a reader's refresh
+    /// button must not rebuild them for everybody.
+    /// </summary>
+    private bool SharedRefresh(bool refresh) => refresh && currentUser.Has(MakiPermission.Admin);
 
     private Task<RecommendationFilters> ScopeAsync(RecommendationFilters? filters, CancellationToken ct) =>
         hidden.ScopeAsync(filters, currentUser.MaxContentRating, ct);

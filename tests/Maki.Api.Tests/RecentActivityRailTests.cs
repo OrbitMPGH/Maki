@@ -1,6 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Recommendations;
+using Maki.Data.Identity;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -113,7 +114,9 @@ public class RecentActivityRailTests : IDisposable
             settings,
             NullLogger<RecommendationService>.Instance);
         var rail = new RecentActivityRailService(
-            _db.ScopeFactory(), recommendations, NullLogger<RecentActivityRailService>.Instance);
+            _db.ScopeFactory(), recommendations,
+            new SeedWeightService(new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, settings),
+            NullLogger<RecentActivityRailService>.Instance);
         return (rail, recommender);
     }
 
@@ -192,6 +195,31 @@ public class RecentActivityRailTests : IDisposable
         // DiscoverRail doc. The rendered sentence lives in SubtitleArgs.list.
         Assert.Equal("discover.rail.becauseYouRead", result.Subtitle);
         Assert.Equivalent(new { list = "Series 202, Series 303 and Series 101" }, result.SubtitleArgs);
+    }
+
+    [Fact]
+    public async Task Ignored_disliked_and_low_rated_titles_do_not_seed_the_rail()
+    {
+        SeedRead(101, Now.AddDays(-30));
+        SeedRead(202, Now.AddDays(-1));
+        SeedRead(303, Now.AddDays(-2));
+        var lowRated = SeedRead(404, Now.AddDays(-3));
+        using (var db = _db.NewContext())
+        {
+            db.RecommendationSignalOverrides.Add(new RecommendationSignalOverride
+            { UserId = 1, ProviderId = 202, IgnoreAsSeed = true });
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            { UserId = 1, ProviderId = 303, Sentiment = RecommendationSentiment.Disliked, Revision = 1 });
+            db.UserSeriesStates.Add(new UserSeriesState { UserId = 1, SeriesId = lowRated, Rating = 2 });
+            db.SaveChanges();
+        }
+
+        var (rail, recommender) = Service();
+        var result = await rail.GetAsync(new TestCurrentUser(1), refresh: false);
+
+        Assert.NotNull(result);
+        Assert.Equal([101], recommender.Seen.Single());
+        Assert.Equivalent(new { list = "Series 101" }, result.SubtitleArgs);
     }
 
     [Fact]
@@ -424,7 +452,9 @@ public class RecentActivityRailTests : IDisposable
             settings,
             NullLogger<RecommendationService>.Instance);
         return new RecentActivityRailService(
-            _db.ScopeFactory(), recommendations, NullLogger<RecentActivityRailService>.Instance);
+            _db.ScopeFactory(), recommendations,
+            new SeedWeightService(new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, settings),
+            NullLogger<RecentActivityRailService>.Instance);
     }
 
     [Fact]
@@ -559,7 +589,9 @@ public class RecentActivityRailTests : IDisposable
             settings,
             NullLogger<RecommendationService>.Instance);
         var rail = new RecentActivityRailService(
-            _db.ScopeFactory(), recommendations, NullLogger<RecentActivityRailService>.Instance);
+            _db.ScopeFactory(), recommendations,
+            new SeedWeightService(new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, settings),
+            NullLogger<RecentActivityRailService>.Instance);
 
         var rails = await rail.GetGroupedAsync(new TestCurrentUser(1), refresh: false);
         var bySeed = rails.ToDictionary(r => r.Seed!.Title, r => r.Items.Select(i => i.MatchedTags[0]).ToList());

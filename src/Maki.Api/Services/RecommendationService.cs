@@ -98,7 +98,33 @@ public class RecommendationService(
     /// </summary>
     private const int FranchiseSpacing = 8;
 
-    private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly object _poolsGate = new();
+    private readonly SemaphoreSlim _scanGate = new(1, 1);
+    private readonly Dictionary<string, PoolBuild> _building = [];
+
+    /// <summary>
+    /// One pending pool build and how many readers are waiting on it. When the last one leaves
+    /// before the build reaches the scan gate it is cancelled, so a key nobody wants any more
+    /// (a slider position passed through, a rail scrolled past) never costs a scan.
+    /// </summary>
+    internal int PendingBuilds
+    {
+        get
+        {
+            lock (_poolsGate)
+            {
+                return _building.Count;
+            }
+        }
+    }
+
+    private sealed class PoolBuild
+    {
+        public Task<RecommendationsResult> Task { get; set; } = null!;
+        public int Waiters { get; set; }
+        public bool Scanning { get; set; }
+        public CancellationTokenSource Abandoned { get; } = new();
+    }
     private readonly RecommendationPoolCache _pools = new(CacheSlots, RailCacheSlots, CacheFor);
 
     /// <param name="scope">
@@ -204,75 +230,152 @@ public class RecommendationService(
                   $"|o:{request.Obscurity:F2}|d:{request.Diversity:F2}|w:{weightKey}" +
                   $"|g:{(coGraph ? 1 : 0)}|c:{(coRead ? 1 : 0)}|t:{(tasteVectors ? 1 : 0)}" +
                   $"|a:{avoidKey}";
-        await _lock.WaitAsync(ct);
+        // Hits only need the pool lookup, so they never queue behind a scan. Builds are single-flight
+        // per key and run one at a time behind _scanGate. A scan that has started finishes on no
+        // caller's token, so a reader who leaves mid-scan neither throws the work away nor makes the
+        // next reader start it again; one still queued when its last reader leaves is dropped.
+        RecommendationsResult? pool = null;
+        PoolBuild? build = null;
+        lock (_poolsGate)
+        {
+            if (!request.Refresh && _pools.TryGet(key, origin, out var hit))
+            {
+                pool = hit;
+            }
+            else
+            {
+                if (!_building.TryGetValue(key, out build))
+                {
+                    var created = new PoolBuild();
+                    created.Task = Task.Run(() => BuildPoolAsync(
+                        key, created, origin, seeds, libraryIds, filters, request, seedWeight, snapshot.Avoided,
+                        coGraph, coRead, tasteVectors));
+                    _building[key] = created;
+                    build = created;
+                }
+
+                build.Waiters++;
+            }
+        }
+
+        if (pool is null)
+        {
+            try
+            {
+                pool = await build!.Task.WaitAsync(ct);
+            }
+            finally
+            {
+                lock (_poolsGate)
+                {
+                    if (--build!.Waiters == 0 && !build.Scanning && !build.Task.IsCompleted)
+                    {
+                        build.Abandoned.Cancel();
+                        if (_building.TryGetValue(key, out var current) && ReferenceEquals(current, build))
+                        {
+                            _building.Remove(key);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
+
+        // The caller is paging a pool that no longer exists, so their page number means nothing
+        // against this one and honouring it would skip or repeat titles. Serve the new pool from
+        // the top and say so, rather than an empty page: the client drops what it had and keeps
+        // this, so paging restarts instead of dead-ending mid-scroll.
+        var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
+        var similarVisible = Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList());
+        var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
+        var page = restart ? 0 : Math.Max(0, request.Page);
+        return pool with
+        {
+            Related = relatedVisible,
+            Similar = similarVisible.Skip(page * PageSize).Take(PageSize).ToList(),
+            Page = page,
+            HasMore = similarVisible.Count > (page + 1) * PageSize,
+            PoolVersion = version,
+            RestartRequired = restart,
+        };
+    }
+
+    private async Task<RecommendationsResult> BuildPoolAsync(
+        string key, PoolBuild self, PoolOrigin origin, IReadOnlyList<long> seeds, IReadOnlyList<long> libraryIds,
+        RecommendationFilters filters, RecommendationRequest request,
+        IReadOnlyDictionary<long, double> seedWeight, IReadOnlyDictionary<long, double> avoided,
+        bool coGraph, bool coRead, bool tasteVectors)
+    {
+        var entered = false;
         try
         {
-            var pool = !request.Refresh && _pools.TryGet(key, origin, out var hit) ? hit : null;
-
-            if (pool is null)
+            await _scanGate.WaitAsync(self.Abandoned.Token);
+            entered = true;
+            lock (_poolsGate)
             {
-                var started = DateTime.UtcNow;
-                var exclude = new HashSet<long>(libraryIds.Concat(seeds));
-                var related = await store.GetRelatedAsync(seeds, exclude, filters.ContentRatings, ct);
-                foreach (var r in related)
-                {
-                    exclude.Add(long.Parse(r.ProviderId));
-                }
+                self.Abandoned.Token.ThrowIfCancellationRequested();
+                self.Scanning = true;
+            }
 
-                // Prefer semantic ("feel") matches once the embedding index is built; fall back to
-                // the genre/tag/author scan while it's still populating (or empty).
-                var similar = semantic.IsReady()
-                    ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
-                        seedWeight.Count > 0 ? seedWeight : null,
-                        snapshot.Avoided.Count > 0 ? snapshot.Avoided : null, request.Diversity,
-                        coGraph: coGraph, coRead: coRead, taste: tasteVectors, ct: ct)
-                    : [];
-                var mode = similar.Count > 0 ? "semantic" : "genre";
-                if (similar.Count == 0)
-                {
-                    // The fallback scan has no vectors, so there is nothing to measure resemblance
-                    // against and the avoid channel simply cannot apply here.
-                    similar = await store.GetSimilarAsync(seeds, exclude, PoolSize, filters, ct);
-                }
+            var started = DateTime.UtcNow;
+            var exclude = new HashSet<long>(libraryIds.Concat(seeds));
+            var related = await store.GetRelatedAsync(seeds, exclude, filters.ContentRatings, CancellationToken.None);
+            foreach (var r in related)
+            {
+                exclude.Add(long.Parse(r.ProviderId));
+            }
 
-                logger.LogInformation(
-                    "Computed recommendations for {SeedCount} seed(s) in {Elapsed:F1}s: {Related} related, {Similar} similar ({Mode})",
-                    seeds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count, mode);
+            // Prefer semantic ("feel") matches once the embedding index is built; fall back to
+            // the genre/tag/author scan while it's still populating (or empty).
+            var similar = semantic.IsReady()
+                ? await semantic.GetSimilarAsync(seeds, exclude, PoolSize, filters, request.Obscurity,
+                    seedWeight.Count > 0 ? seedWeight : null,
+                    avoided.Count > 0 ? avoided : null, request.Diversity,
+                    coGraph: coGraph, coRead: coRead, taste: tasteVectors, ct: CancellationToken.None)
+                : [];
+            var mode = similar.Count > 0 ? "semantic" : "genre";
+            if (similar.Count == 0)
+            {
+                // The fallback scan has no vectors, so there is nothing to measure resemblance
+                // against and the avoid channel simply cannot apply here.
+                similar = await store.GetSimilarAsync(seeds, exclude, PoolSize, filters, CancellationToken.None);
+            }
 
-                // One index pass for both lists, so a relation and a similar pick that are the same
-                // work carry the same component and the surfaces can see that they are.
-                var franchises = await semantic.FranchisesAsync(
-                    related.Concat(similar).Select(CatalogueId).Where(id => id > 0).ToList(), ct);
-                related = WithFranchises(related, franchises);
-                similar = Spread(WithFranchises(similar, franchises));
+            logger.LogInformation(
+                "Computed recommendations for {SeedCount} seed(s) in {Elapsed:F1}s: {Related} related, {Similar} similar ({Mode})",
+                seeds.Count, (DateTime.UtcNow - started).TotalSeconds, related.Count, similar.Count, mode);
 
-                pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
+            // One index pass for both lists, so a relation and a similar pick that are the same
+            // work carry the same component and the surfaces can see that they are.
+            var franchises = await semantic.FranchisesAsync(
+                related.Concat(similar).Select(CatalogueId).Where(id => id > 0).ToList(), CancellationToken.None);
+            related = WithFranchises(related, franchises);
+            similar = Spread(WithFranchises(similar, franchises));
+
+            var pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
+            lock (_poolsGate)
+            {
                 _pools.Store(key, pool, origin);
             }
 
-            var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
-
-            // The caller is paging a pool that no longer exists, so their page number means nothing
-            // against this one and honouring it would skip or repeat titles. Serve the new pool from
-            // the top and say so, rather than an empty page: the client drops what it had and keeps
-            // this, so paging restarts instead of dead-ending mid-scroll.
-            var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
-            var similarVisible = Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList());
-            var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
-            var page = restart ? 0 : Math.Max(0, request.Page);
-            return pool with
-            {
-                Related = relatedVisible,
-                Similar = similarVisible.Skip(page * PageSize).Take(PageSize).ToList(),
-                Page = page,
-                HasMore = similarVisible.Count > (page + 1) * PageSize,
-                PoolVersion = version,
-                RestartRequired = restart,
-            };
+            return pool;
         }
         finally
         {
-            _lock.Release();
+            lock (_poolsGate)
+            {
+                if (_building.TryGetValue(key, out var current) && ReferenceEquals(current, self))
+                {
+                    _building.Remove(key);
+                }
+            }
+
+            if (entered)
+            {
+                _scanGate.Release();
+            }
         }
     }
 
