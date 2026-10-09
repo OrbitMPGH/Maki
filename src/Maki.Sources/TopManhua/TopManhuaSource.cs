@@ -45,8 +45,13 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             {
                 continue;
             }
-            var href = link.GetAttribute("href")!;
-            var path = new Uri(href).AbsolutePath.TrimStart('/');
+            var href = link.GetAttribute("href");
+            if (!Uri.TryCreate(href, UriKind.Absolute, out var hrefUri))
+            {
+                continue;
+            }
+
+            var path = hrefUri.AbsolutePath.TrimStart('/');
             var seriesId = path.StartsWith("manhua/", StringComparison.Ordinal)
                 ? path["manhua/".Length..]
                 : path;
@@ -97,7 +102,12 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
                 continue;
             }
 
-            var href = link.GetAttribute("href")!;
+            var href = link.GetAttribute("href");
+            if (string.IsNullOrWhiteSpace(href))
+            {
+                continue;
+            }
+
             var beforeC = href.LastIndexOf("/chapter-", StringComparison.Ordinal);
             var chapterId = beforeC >= 0 ? href[(beforeC + 1)..] : href;
             
@@ -109,7 +119,9 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             var dateText = row.QuerySelector(".chapter-release-date")?.TextContent.Trim();
             DateTime? releaseDate = null;
             if (dateText is not null
-                && DateTime.TryParse(dateText, null, DateTimeStyles.AdjustToUniversal, out var d))
+                && DateTime.TryParse(
+                    dateText, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var d))
             {
                 releaseDate = d;
             }
@@ -146,7 +158,7 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             ["Priority"] = "u=5, i"
         };
         var urls = doc.QuerySelectorAll(".reading-content > div > img")
-            .Select(img => img.GetAttribute("data-src"))
+            .Select(img => img.GetAttribute("data-src")?.Trim())
             .Where(url => !string.IsNullOrEmpty(url))
             .Select(url => url!)
             .ToList();

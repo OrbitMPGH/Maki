@@ -26,4 +26,37 @@ public class TopManhuaSourceTests
         Assert.Equal("chapter-225", titled.SourceChapterId);
         Assert.Null(chapters.Single(c => c.Number == 222m).Title);
     }
+
+    [Fact]
+    public async Task A_search_card_without_an_absolute_link_is_skipped_not_fatal()
+    {
+        const string search = """
+            <div class="c-tabs-item">
+              <div><div class="post-title"><h3><a>No link</a></h3></div></div>
+              <div><div class="post-title"><h3><a href="/manhua/relative">Relative</a></h3></div></div>
+              <div><div class="post-title"><h3><a href="https://www.topmanhua.fan/manhua/anjo">Anjo</a></h3></div></div>
+            </div>
+            """;
+        var source = new TopManhuaSource(new FakeHttpClientFactory(new() { ["?s="] = search }), null!);
+
+        var results = await source.SearchAsync("anjo");
+
+        Assert.Equal("anjo", Assert.Single(results).SourceSeriesId);
+    }
+
+    [Fact]
+    public async Task A_row_without_a_link_target_is_skipped_and_an_english_date_parses()
+    {
+        const string page = """
+            <div class="chapter-list">
+              <div><a>Chapter 3</a></div>
+              <div><a href="https://www.topmanhua.fan/manhua/anjo/chapter-2">Chapter 2</a><span class="chapter-release-date">May 3, 2024</span></div>
+            </div>
+            """;
+        var source = new TopManhuaSource(new FakeHttpClientFactory(new() { ["manhua/anjo"] = page }), null!);
+
+        var chapter = Assert.Single(await source.ListChaptersAsync("anjo"));
+
+        Assert.Equal(new DateTime(2024, 5, 3, 0, 0, 0, DateTimeKind.Utc), chapter.ReleaseDate);
+    }
 }
