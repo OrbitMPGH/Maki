@@ -513,15 +513,12 @@ public class ReaderController(
     [HttpPost("chapter/{id:int}/read")]
     public async Task<IActionResult> MarkRead(int id, CancellationToken ct)
     {
-        var slice = await reader.SliceAsync(id, ct);
-        if (slice is null)
+        // The same silent tick as the chapter table's select mode: no event, no reading time.
+        if (await reader.MarkReadAsync([id], ct) == 0)
         {
             return NotFound();
         }
 
-        // No time: ticking a chapter off from the chapter table is not a sitting with it.
-        await reader.SaveProgressAsync(
-            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct, bulk: true);
         return Ok(new { chapterId = id, completed = true });
     }
 

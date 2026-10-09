@@ -345,18 +345,18 @@ public class ReaderService(
     /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct, bool bulk = false)
+        TimeReport time, CancellationToken ct)
     {
         try
         {
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, bulk, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
         }
         catch (DbUpdateException e) when (IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
             db.ChangeTracker.Clear();
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, bulk, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
         }
     }
 
@@ -367,7 +367,7 @@ public class ReaderService(
         e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, bool bulk, CancellationToken ct)
+        TimeReport time, CancellationToken ct)
     {
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
@@ -376,6 +376,9 @@ public class ReaderService(
         // being read, so finishing it must fire the completion branch below and become a genuine
         // read. Once Watched clears, the flag is sticky again and a re-read emits nothing.
         var wasCompleted = row is { Completed: true, Watched: false };
+        // The tombstone marks a row that was read and then marked unread, so finishing it again is
+        // a re-read. A one-shot has no mark to absorb that, unlike a numbered chapter.
+        var reRead = row?.UnreadAt is not null;
 
         if (row is null)
         {
@@ -407,7 +410,13 @@ public class ReaderService(
                 row.CompletedAt = now;
             }
 
-            row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
+            // An explicit false never un-completes a finished row; only marking unread does that.
+            row.Completed = completed switch
+            {
+                true => true,
+                false => row.Completed,
+                null => row.Completed || row.PageIndex >= slice.PageCount - 1
+            };
             // Read here, so it is no longer external, deliberately un-read, or merely watched.
             row.External = false;
             row.UnreadAt = null;
@@ -415,11 +424,7 @@ public class ReaderService(
         }
 
         var justCompleted = !stillWatched && row.Completed && !wasCompleted;
-        if (bulk)
-        {
-            row.BulkMarked |= justCompleted;
-        }
-        else if (!stillWatched && row.Completed && finishing)
+        if (!stillWatched && row.Completed && finishing)
         {
             row.BulkMarked = false;
         }
@@ -443,7 +448,7 @@ public class ReaderService(
 
         if (justCompleted)
         {
-            await OnChapterCompletedAsync(slice.Series, chapter, ct);
+            await OnChapterCompletedAsync(slice.Series, chapter, reRead, ct);
         }
 
         return justCompleted;
@@ -566,7 +571,7 @@ public class ReaderService(
 
         var chapters = await db.Chapters
             .Where(c => chapterIds.Contains(c.Id))
-            .Select(c => new { c.Id, c.SeriesId })
+            .Select(c => new { c.Id, c.SeriesId, c.Number })
             .ToListAsync(ct);
         if (chapters.Count == 0)
         {
@@ -580,6 +585,7 @@ public class ReaderService(
 
         var now = DateTime.UtcNow;
         var updated = 0;
+        var tickedTop = new Dictionary<int, double>();
         foreach (var chapter in chapters)
         {
             if (existing.TryGetValue(chapter.Id, out var row))
@@ -610,6 +616,11 @@ public class ReaderService(
             row.UnreadAt = null;
             row.UpdatedAt = now;
             updated++;
+            if (chapter.Number is { } number &&
+                (!tickedTop.TryGetValue(chapter.SeriesId, out var top) || (double)number > top))
+            {
+                tickedTop[chapter.SeriesId] = (double)number;
+            }
         }
 
         if (updated == 0)
@@ -629,6 +640,9 @@ public class ReaderService(
         foreach (var seriesId in seriesIds)
         {
             var (maxChapter, maxVolume) = await RecomputeMarksAsync(seriesId, ct);
+            // Ticked chapters are usually not downloaded, and the recompute only sees file-backed
+            // ones, so the mark would stay put and the next real read would absorb the season.
+            maxChapter = Math.Max(maxChapter, tickedTop.GetValueOrDefault(seriesId));
             await progress.ImportSilentAsync(UserId, seriesId, kavitaSeriesId: null,
                 titles.GetValueOrDefault(seriesId, string.Empty), maxChapter, maxVolume, ct);
         }
@@ -731,15 +745,21 @@ public class ReaderService(
 
         await db.SaveChangesAsync(ct);
 
+        var seriesRows = await db.Series
+            .Where(s => changed.Contains(s.Id))
+            .Select(s => new { s.Id, s.Title, s.Incognito })
+            .ToListAsync(ct);
+        var titles = seriesRows.ToDictionary(s => s.Id, s => s.Title);
+
         foreach (var (seriesId, number) in pushTo)
         {
+            if (seriesRows.Any(s => s.Id == seriesId && s.Incognito == IncognitoMode.Full))
+            {
+                continue;
+            }
+
             kavitaPush.QueuePush(UserId, seriesId, number);
         }
-
-        var titles = await db.Series
-            .Where(s => changed.Contains(s.Id))
-            .Select(s => new { s.Id, s.Title })
-            .ToDictionaryAsync(s => s.Id, s => s.Title, ct);
 
         foreach (var seriesId in changed)
         {
@@ -817,20 +837,38 @@ public class ReaderService(
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task OnChapterCompletedAsync(Series series, Chapter chapter, CancellationToken ct)
+    // The completion is already committed by the time this runs, so a failure here (the progress
+    // gate timing out under a long Kavita pass, say) must not turn a saved read into an error.
+    private async Task OnChapterCompletedAsync(Series series, Chapter chapter, bool reRead, CancellationToken ct)
     {
-        kavitaPush.QueuePush(UserId, series.Id, chapter.Number);
-
-        if (chapter.Number is null)
+        try
         {
-            // A one-shot has no number to raise the high-water mark to — see
-            // ReadingProgressService.RecordUnnumberedReadAsync for why inventing one is wrong.
-            await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct);
-            return;
-        }
+            if (series.Incognito != IncognitoMode.Full)
+            {
+                kavitaPush.QueuePush(UserId, series.Id, chapter.Number);
+            }
 
-        var (maxChapter, maxVolume) = await RecomputeMarksAsync(series.Id, ct);
-        await progress.TrackNativeAsync(UserId, series.Id, series.Title, maxChapter, maxVolume, ct);
+            if (chapter.Number is null)
+            {
+                // A one-shot has no number to raise the high-water mark to, so a re-read after
+                // marking it unread would count again: see
+                // ReadingProgressService.RecordUnnumberedReadAsync for why inventing one is wrong.
+                if (!reRead)
+                {
+                    await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct);
+                }
+
+                return;
+            }
+
+            var (maxChapter, maxVolume) = await RecomputeMarksAsync(series.Id, ct);
+            await progress.TrackNativeAsync(UserId, series.Id, series.Title, maxChapter, maxVolume, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Completion side effects failed for chapter {ChapterId}", chapter.Id);
+            db.ChangeTracker.Clear();
+        }
     }
 
     /// <summary>

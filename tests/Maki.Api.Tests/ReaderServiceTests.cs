@@ -3,6 +3,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Reading;
+using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -38,17 +39,26 @@ public sealed class ReaderServiceTests : IDisposable
         }
     }
 
-    private ReaderService Reader(ReadingSessionService? sessions = null)
+    private ReaderService Reader(ReadingSessionService? sessions = null, InertKavitaPusher? pusher = null,
+        Func<MakiDbContext, ReadingProgressService>? progress = null)
     {
         // Narrowed the way a request is: ReaderService reads its owner off the scope.
         var context = _db.NewContext(TestUser);
         // A real pusher would query the database from its fire-and-forget task and race Dispose;
         // see InertKavitaPusher.
-        var scopeFactory = _db.ScopeFactory();
-        var pusher = InertKavitaPusher.For(scopeFactory);
+        pusher ??= InertKavitaPusher.For(_db.ScopeFactory());
         return new ReaderService(context, _archives,
+            progress?.Invoke(context) ??
             new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
             pusher, sessions ?? new ReadingSessionService(context), NullLogger<ReaderService>.Instance);
+    }
+
+    private sealed class FailingTrackProgress(MakiDbContext context)
+        : ReadingProgressService(context, new ReadingProgressGate(), NullLogger<ReadingProgressService>.Instance)
+    {
+        public override Task<Marks> TrackNativeAsync(int userId, int seriesId, string title,
+            double maxChapter, double maxVolume, CancellationToken ct) =>
+            throw new TimeoutException("gate");
     }
 
     private List<StatsEvent> Events()
@@ -973,22 +983,127 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.False(after.ChapterProgress.Single(p => p.ChapterId == chapters[1m]).BulkMarked);
     }
 
-    /// <summary>The single-chapter tick behaves like the bulk endpoint, and leaves a genuine read alone.</summary>
+    /// <summary>Ticking a chapter off one at a time is the same silent bulk tick, and leaves a genuine read alone.</summary>
     [Fact]
-    public async Task ASingleBulkTickFlagsTheRowButNotAChapterThatWasAlreadyRead()
+    public async Task ASingleTickFlagsTheRowButNotAChapterThatWasAlreadyRead()
     {
         var (_, chapters) = SeedFromCbz("singletick.cbz", ["001.jpg", "002.jpg"], [(1m, null), (2m, null)]);
         var reader = Reader();
-        var slice1 = await reader.SliceAsync(chapters[1m], CancellationToken.None);
         var slice2 = await reader.SliceAsync(chapters[2m], CancellationToken.None);
         await reader.SaveProgressAsync(slice2!, 1, true, new(60, true), CancellationToken.None);
+        var eventsBefore = Events().Count;
 
-        await reader.SaveProgressAsync(slice1!, 1, true, ReaderService.TimeReport.None, CancellationToken.None, bulk: true);
-        await reader.SaveProgressAsync(slice2!, 1, true, ReaderService.TimeReport.None, CancellationToken.None, bulk: true);
+        await reader.MarkReadAsync([chapters[1m]], CancellationToken.None);
+        await reader.MarkReadAsync([chapters[2m]], CancellationToken.None);
 
         using var db = _db.NewContext(TestUser);
         Assert.True(db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]).BulkMarked);
         Assert.False(db.ChapterProgress.Single(p => p.ChapterId == chapters[2m]).BulkMarked);
+        Assert.Equal(eventsBefore, Events().Count);
+    }
+
+    [Fact]
+    public async Task ReadingAOneShotAgainAfterMarkingItUnreadCountsOnce()
+    {
+        var seriesId = SeedSeriesAt();
+        var path = WriteCbz("oneshot-reread.cbz", "001.jpg");
+        var chapterId = LinkChapters(seriesId, path, [(null, null)]).Single().Id;
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapterId, CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+        await reader.ClearProgressAsync(chapterId, CancellationToken.None);
+        var again = await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        Assert.True(again);
+        Assert.Single(Events(), e => e.Type == StatsEventType.ChaptersRead);
+    }
+
+    [Fact]
+    public async Task AnExplicitNotCompletedSaveDoesNotUncompleteAFinishedChapter()
+    {
+        var (_, chapters) = SeedFromCbz("sticky.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        var again = await reader.SaveProgressAsync(slice!, 1, false, ReaderService.TimeReport.None, CancellationToken.None);
+
+        Assert.False(again);
+        using var db = _db.NewContext(TestUser);
+        Assert.True(db.ChapterProgress.Single().Completed);
+        Assert.Single(Events(), e => e.Type == StatsEventType.ChaptersRead);
+    }
+
+    [Fact]
+    public async Task AFullyIncognitoSeriesIsNotPushedToKavita()
+    {
+        var (seriesId, chapters) = SeedFromCbz("incognito-push.cbz", ["001.jpg", "002.jpg"], [(1m, null), (2m, null)]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == seriesId).Incognito = IncognitoMode.Full;
+            db.SaveChanges();
+        }
+
+        var pusher = InertKavitaPusher.For(_db.ScopeFactory());
+        var reader = Reader(pusher: pusher);
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+        await reader.MarkReadAsync([chapters[2m]], CancellationToken.None);
+
+        Assert.Empty(pusher.Pushes);
+    }
+
+    [Fact]
+    public async Task ANormalSeriesIsPushedToKavitaOnCompletionAndBulkTick()
+    {
+        var (seriesId, chapters) = SeedFromCbz("normal-push.cbz", ["001.jpg", "002.jpg"], [(1m, null), (2m, null)]);
+        var pusher = InertKavitaPusher.For(_db.ScopeFactory());
+        var reader = Reader(pusher: pusher);
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+        await reader.MarkReadAsync([chapters[2m]], CancellationToken.None);
+
+        Assert.Equal([(seriesId, (decimal?)1m), (seriesId, (decimal?)2m)], pusher.Pushes);
+    }
+
+    [Fact]
+    public async Task AFailingCompletionSideEffectDoesNotFailTheSavedRead()
+    {
+        var (_, chapters) = SeedFromCbz("sidefx.cbz", ["001.jpg"], [(1m, null)]);
+        var reader = Reader(progress: c => new FailingTrackProgress(c));
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        var completed = await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        Assert.True(completed);
+        using var db = _db.NewContext(TestUser);
+        Assert.True(db.ChapterProgress.Single().Completed);
+    }
+
+    /// <summary>Ticked chapters are usually not downloaded, and the mark still has to land on them.</summary>
+    [Fact]
+    public async Task MarkingUndownloadedChaptersWatchedStillRaisesTheMark()
+    {
+        var seriesId = SeedSeriesAt();
+        List<int> ids;
+        using (var db = _db.NewContext())
+        {
+            var rows = Enumerable.Range(1, 3).Select(n => new Chapter
+            {
+                SeriesId = seriesId, Number = n, Language = "en"
+            }).ToList();
+            db.Chapters.AddRange(rows);
+            db.SaveChanges();
+            ids = rows.Select(r => r.Id).ToList();
+        }
+
+        var reader = Reader();
+        await reader.MarkWatchedAsync(ids, CancellationToken.None);
+
+        using var check = _db.NewContext(TestUser);
+        Assert.Equal(3, check.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
+        Assert.Empty(Events());
     }
 
     /// <summary>A watched tick is not a start, so the first genuine read redates the row.</summary>

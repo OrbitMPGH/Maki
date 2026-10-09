@@ -113,7 +113,7 @@ public class ReadingProgressService(
     /// 100, is one chapter read, not a hundred. A first native read baselines silently at the
     /// highest completed chapter below the new mark, as the Kavita path does, and emits one.
     /// </summary>
-    public async Task<Marks> TrackNativeAsync(int userId, int seriesId, string title,
+    public virtual async Task<Marks> TrackNativeAsync(int userId, int seriesId, string title,
         double maxChapter, double maxVolume, CancellationToken ct) =>
         await WithGateAsync(async () =>
         {
