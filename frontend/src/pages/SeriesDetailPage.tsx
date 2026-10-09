@@ -2739,7 +2739,7 @@ function SeriesDetailBody() {
                                       <Group gap={6} wrap="nowrap">
                                         {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                                             <Tooltip label={t`Contained in a volume/compilation file`} withArrow>
-                                              <Badge size="sm" color="var(--info)" variant="light" className="tnum">
+                                              <Badge size="sm" color="var(--watched)" variant="light" className="tnum">
                                                 <Trans>Vol. {fileVolume}</Trans>
                                               </Badge>
                                             </Tooltip>
