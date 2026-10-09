@@ -65,6 +65,27 @@ public class DataIndexCleanupMigrationTests : IDisposable
     }
 
     [Fact]
+    public void Downgrade_restores_the_auth_event_indexes_and_keeps_the_opds_index()
+    {
+        using (var db = new MakiDbContext(_options))
+        {
+            db.Database.Migrate();
+        }
+
+        Assert.DoesNotContain("IX_AuthEvents_Timestamp", Indexes("AuthEvents"));
+
+        using (var db = new MakiDbContext(_options))
+        {
+            db.Database.GetInfrastructure().GetRequiredService<IMigrator>().Migrate(Previous);
+        }
+
+        var authIndexes = Indexes("AuthEvents");
+        Assert.Contains("IX_AuthEvents_Timestamp", authIndexes);
+        Assert.Contains("IX_AuthEvents_UserId", authIndexes);
+        Assert.Contains("IX_UserApiKeys_Opds_Live_UserId", Indexes("UserApiKeys"));
+    }
+
+    [Fact]
     public void A_fresh_schema_built_from_the_model_has_the_opds_index()
     {
         using var db = new MakiDbContext(_options);
