@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Anchor,
   Button,
@@ -53,21 +54,22 @@ export function LoginPage() {
   // Whether the identity provider redirected back with a failure. Read once on mount: the server
   // puts it in the query string because the browser arrives here by a top-level navigation from
   // another origin, with no fetch waiting for a response body.
-  const [ssoError] = useState(() => new URLSearchParams(window.location.search).get('ssoError'))
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [ssoError] = useState(() => searchParams.get('ssoError'))
 
   // Dropped once read so a reload does not show an old failure, and so the page the user wanted
   // can be handed to the provider as the place to land after sign-in.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (!params.has('ssoError')) return
-    params.delete('ssoError')
-    const query = params.toString()
-    window.history.replaceState(
-      window.history.state,
-      '',
-      window.location.pathname + (query ? `?${query}` : '') + window.location.hash,
+    if (ssoError === null) return
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('ssoError')
+        return next
+      },
+      { replace: true },
     )
-  }, [])
+  }, [ssoError, setSearchParams])
 
   // Shown only after the user asks for it when password login is provider-restricted: admins still
   // need the form, and everyone else needs to be told why it will not work for them.

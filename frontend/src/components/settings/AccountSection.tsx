@@ -1,6 +1,7 @@
 import { i18n } from '@lingui/core'
 import { ssoErrorLabel } from '../../api/ssoErrors'
 import { useEffect, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Badge,
@@ -124,10 +125,11 @@ function SsoCard() {
   // The redirect back from oidc/link-complete lands here as a top-level navigation, so the result
   // travels in the query string rather than a fetch response, read once, same pattern as
   // LoginPage's ssoError. It is a short code, mapped to a message here.
-  const [linkResult] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    return { linked: params.get('oidcLinked') === '1', error: params.get('oidcLinkError') }
-  })
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [linkResult] = useState(() => ({
+    linked: searchParams.get('oidcLinked') === '1',
+    error: searchParams.get('oidcLinkError'),
+  }))
 
   useEffect(() => {
     if (linkResult.linked) {
@@ -136,18 +138,17 @@ function SsoCard() {
       notifications.show({ message: i18n._(ssoErrorLabel(linkResult.error)), color: 'var(--danger)' })
     }
     // Dropped once shown so a reload does not repeat it.
-    const params = new URLSearchParams(window.location.search)
-    if (params.has('oidcLinked') || params.has('oidcLinkError')) {
-      params.delete('oidcLinked')
-      params.delete('oidcLinkError')
-      const query = params.toString()
-      window.history.replaceState(
-        window.history.state,
-        '',
-        window.location.pathname + (query ? `?${query}` : '') + window.location.hash,
-      )
-    }
-  }, [linkResult])
+    if (!linkResult.linked && linkResult.error === null) return
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('oidcLinked')
+        next.delete('oidcLinkError')
+        return next
+      },
+      { replace: true },
+    )
+  }, [linkResult, setSearchParams])
 
   if (!sso?.enabled) {
     return null

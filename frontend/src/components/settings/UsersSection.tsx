@@ -281,6 +281,8 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
     <Modal
       opened
       onClose={onClose}
+      closeOnEscape={!confirming}
+      closeOnClickOutside={!confirming}
       title={isNew ? t`Add user` : t`Edit ${editName}`}
       centered
       size="lg"
