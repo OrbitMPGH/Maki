@@ -139,6 +139,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 
 | Lane | ID | Tier | State |
 |---|---|---|---|
+| Kavita repair | (wave 2 review) | low | decision (repair mis-attributed Kavita ReadingState rows: move, drop or leave) |
 | HOSTING-08 job | HOSTING-08 | medium | done a17238bd, 0cb22018, 5ae81857 (setting backup.scheduled, default off) |
 | AUTH | AUTH-07 | low | pending |
 | AUTH | AUTH-08 | low | pending |
@@ -483,33 +484,33 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | METADATA | METADATA-27 | low | pending |
 | METADATA | METADATA-25 | nit | pending |
 | METADATA | METADATA-26 | nit | pending |
-| PROGRESS | PROGRESS-27 | low | pending |
-| PROGRESS | PROGRESS-10 | low | pending |
-| PROGRESS | PROGRESS-22 | low | pending |
-| PROGRESS | PROGRESS-28 | low | pending |
-| PROGRESS | PROGRESS-11 | low | pending |
-| PROGRESS | PROGRESS-14 | low | pending |
-| PROGRESS | PROGRESS-15 | low | pending |
-| PROGRESS | PROGRESS-17 | low | pending |
-| PROGRESS | PROGRESS-18 | low | pending |
-| PROGRESS | PROGRESS-19 | low | pending |
-| PROGRESS | PROGRESS-26 | low | pending |
-| PROGRESS | PROGRESS-30 | low | pending |
-| PROGRESS | PROGRESS-32 | low | pending |
-| PROGRESS | PROGRESS-33 | low | pending |
-| PROGRESS | PROGRESS-01 | low | pending |
-| PROGRESS | PROGRESS-02 | low | pending |
-| PROGRESS | PROGRESS-16 | low | pending |
-| PROGRESS | PROGRESS-35 | low | pending |
-| PROGRESS | PROGRESS-25 | low | pending |
-| PROGRESS | PROGRESS-03 | low | pending |
-| PROGRESS | PROGRESS-29 | low | pending |
-| PROGRESS | PROGRESS-34 | nit | pending |
-| PROGRESS | PROGRESS-31 | nit | pending |
-| PROGRESS | PROGRESS-20 | nit | pending |
-| PROGRESS | PROGRESS-04 | nit | pending |
-| PROGRESS | PROGRESS-21 | nit | pending |
-| PROGRESS | PROGRESS-36 | nit | pending |
+| PROGRESS | PROGRESS-27 | low | done eccdea66 |
+| PROGRESS | PROGRESS-10 | low | done 363e5bc7 |
+| PROGRESS | PROGRESS-22 | low | done 71138ce0 |
+| PROGRESS | PROGRESS-28 | low | done 5919a390 (culture only) |
+| PROGRESS | PROGRESS-11 | low | done 363e5bc7 |
+| PROGRESS | PROGRESS-14 | low | done 363e5bc7 |
+| PROGRESS | PROGRESS-15 | low | done 3e5633de, f8a6c69c, fe3fdbc7 |
+| PROGRESS | PROGRESS-17 | low | done 9b48cec6 |
+| PROGRESS | PROGRESS-18 | low | skipped (already fixed by CORE-22) |
+| PROGRESS | PROGRESS-19 | low | skipped (already fixed by CORE-18) |
+| PROGRESS | PROGRESS-26 | low | done 556e0502, 057a09fa |
+| PROGRESS | PROGRESS-30 | low | done b6e0d3dd |
+| PROGRESS | PROGRESS-32 | low | done 9b48cec6 |
+| PROGRESS | PROGRESS-33 | low | done 71138ce0 |
+| PROGRESS | PROGRESS-01 | low | done 71138ce0, 149b6730, dba5c355 (CountedAt column, migration) |
+| PROGRESS | PROGRESS-02 | low | done 33aa057d |
+| PROGRESS | PROGRESS-16 | low | done 9b48cec6, 0c9249e7 |
+| PROGRESS | PROGRESS-35 | low | done 363e5bc7 |
+| PROGRESS | PROGRESS-25 | low | skipped (client refetch coalesced in wave 2; audience cache would delay revocation) |
+| PROGRESS | PROGRESS-03 | low | done 71138ce0 |
+| PROGRESS | PROGRESS-29 | low | done 71138ce0 |
+| PROGRESS | PROGRESS-34 | nit | skipped (documented in reader-progress.md) |
+| PROGRESS | PROGRESS-31 | nit | skipped (existing test pins intended behaviour) |
+| PROGRESS | PROGRESS-20 | nit | done 59b0d22c (em dash only) |
+| PROGRESS | PROGRESS-04 | nit | done 71138ce0 |
+| PROGRESS | PROGRESS-21 | nit | done 59b0d22c |
+| PROGRESS | PROGRESS-36 | nit | done 59b0d22c, a927697b, 907d10d4 (partial: d, e, f skipped) |
 | RECO | RECO-19 | low | pending |
 | RECO | RECO-08 | low | pending |
 | RECO | RECO-14 | low | pending |
