@@ -397,7 +397,6 @@ public class DownloadQueueService(
         return new BulkEnqueueResult(items, error);
     }
 
-
     /// <summary>
     /// Queues a chapter for download. Returns as soon as the row exists, because finding which mapping
     /// actually has this chapter means listing each source's catalog over the network, too slow to

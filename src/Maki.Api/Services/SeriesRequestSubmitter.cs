@@ -163,5 +163,4 @@ public class SeriesRequestSubmitter(
 
     private static string ChapterLabel(decimal? number) =>
         number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
-
 }

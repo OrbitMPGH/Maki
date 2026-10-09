@@ -384,7 +384,6 @@ public class ReaderService(
     public static int ClampPage(int pageIndex, int pageCount) =>
         Math.Clamp(pageIndex, 0, Math.Max(0, pageCount - 1));
 
-
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
         TimeReport time, CancellationToken ct)
     {
