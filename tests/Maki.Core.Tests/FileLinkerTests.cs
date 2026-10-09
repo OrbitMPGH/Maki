@@ -52,6 +52,34 @@ public class FileLinkerTests : IDisposable
     }
 
     [Fact]
+    public void Place_WithoutHardlink_WritesThroughAPartialFileSoAFailedCopyLeavesNoDestination()
+    {
+        var source = Write("source.cbz", "payload");
+        var target = Path.Combine(_dir, "target.cbz");
+
+        // A directory squatting on the .partial name makes the copy fail. A copy that wrote
+        // straight to the final name would not touch it and would succeed.
+        Directory.CreateDirectory(target + ".partial");
+
+        Assert.ThrowsAny<Exception>(() => FileLinker.Place(source, target, preferHardlink: false));
+        Assert.False(File.Exists(target));
+        Assert.True(Directory.Exists(target + ".partial"));
+    }
+
+    [Fact]
+    public void Place_WithoutHardlink_OverwritesAStalePartialFromACrashedCopy()
+    {
+        var source = Write("source.cbz", "payload");
+        var target = Path.Combine(_dir, "target.cbz");
+        File.WriteAllText(target + ".partial", "torn half of an earlier copy");
+
+        FileLinker.Place(source, target, preferHardlink: false);
+
+        Assert.Equal("payload", File.ReadAllText(target));
+        Assert.False(File.Exists(target + ".partial"));
+    }
+
+    [Fact]
     public void Place_WithHardlink_SharesContentInSameFolder()
     {
         var source = Write("source.cbz", "payload");
