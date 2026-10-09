@@ -78,6 +78,21 @@ public class CatalogueTextTests
     public void RomanizationKey_collapses_long_vowel_spellings(string a, string b) =>
         Assert.Equal(CatalogueText.RomanizationKey(a), CatalogueText.RomanizationKey(b));
 
+    [Theory]
+    [InlineData("Kim Young", "Kim Yong")]
+    [InlineData("Lee Joo", "Lee Jo")]
+    [InlineData("Park Soo", "Park So")]
+    [InlineData("Young", "Yong")]
+    public void RomanizationKey_keeps_non_japanese_spellings_apart(string a, string b) =>
+        Assert.NotEqual(CatalogueText.RomanizationKey(a), CatalogueText.RomanizationKey(b));
+
+    [Theory]
+    [InlineData("Satou", "Sato")]
+    [InlineData("Satō Kenji", "Kenji Sato")]
+    [InlineData("Yuuki Tanaka", "Yuki Tanaka")]
+    public void RomanizationKey_still_merges_japanese_spellings(string a, string b) =>
+        Assert.Equal(CatalogueText.RomanizationKey(a), CatalogueText.RomanizationKey(b));
+
     [Fact]
     public void RomanizationKey_keeps_doubled_consonants_apart()
     {

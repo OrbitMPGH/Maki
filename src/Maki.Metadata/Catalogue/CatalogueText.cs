@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Maki.Metadata.Catalogue;
 
@@ -17,7 +18,7 @@ namespace Maki.Metadata.Catalogue;
 /// FTS5 table.
 /// </para>
 /// </summary>
-public static class CatalogueText
+public static partial class CatalogueText
 {
     /// <summary>
     /// Longest token this will run edit distance over. Beyond it the DP is not worth the cycles and
@@ -132,15 +133,16 @@ public static class CatalogueText
     /// because they are phonemic ("Ippo" is not "Ipo").
     /// </para>
     /// <para>
-    /// It is lossy on names that happen to contain those pairs, so "Young" keys the same as "Yong".
-    /// <see cref="CreditIndex"/> accepts that: it keys creators by this value and merges their works
-    /// on purpose, having measured how many names the merge fixes against how many it wrongly joins.
+    /// The collapse only applies to names that read as Hepburn romaji (see
+    /// <see cref="LooksJapaneseRomanized"/>), so Korean and Western spellings such as "Young" and
+    /// "Yong" or "Lee Joo" and "Lee Jo" stay apart. A lone token that happens to be valid romaji,
+    /// like "Yuuki" against "Yuki", still merges; <see cref="CreditIndex"/> accepts that cost.
     /// </para>
     /// </summary>
     public static string RomanizationKey(string? text)
     {
         var key = TokenSortKey(text);
-        if (key.Length == 0)
+        if (key.Length == 0 || !(HasMacron(text) || LooksJapaneseRomanized(key)))
         {
             return key;
         }
@@ -159,6 +161,32 @@ public static class CatalogueText
         }
 
         return builder.ToString();
+    }
+
+    private static bool HasMacron(string? text) =>
+        text is not null && text.AsSpan().IndexOfAny("āīūēōĀĪŪĒŌ") >= 0;
+
+    // Moras of Hepburn romaji: optional doubled or digraph consonant plus a vowel, or a bare "n"
+    // that is not the start of a following mora.
+    [GeneratedRegex("^(?:(?:(?:kk|ss|tt|pp|tch|ssh|cch)|(?:ky|gy|ny|hy|by|py|my|ry|sh|ch|ts|[kgsztdnhbpmyrwfj]))?[aiueo]|n(?![aiueoy]))+$")]
+    private static partial Regex RomajiToken();
+
+    /// <summary>
+    /// Whether every token of a <see cref="TokenSortKey"/> parses as Hepburn romaji. Korean and
+    /// Western spellings fail on a final consonant ("Park", "Kim", "Young") or a letter romaji does
+    /// not use ("Lee"), which is what keeps the long-vowel collapse off them.
+    /// </summary>
+    internal static bool LooksJapaneseRomanized(string key)
+    {
+        foreach (var token in key.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!RomajiToken().IsMatch(token))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

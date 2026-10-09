@@ -100,6 +100,17 @@ public class CreditIndexTests : IDisposable
     }
 
     [Fact]
+    public void Korean_romanizations_that_differ_by_a_vowel_pair_stay_two_creators()
+    {
+        _db.AddSeries(1, "A", authorsJson: """["Kim Young"]""");
+        _db.AddSeries(2, "B", authorsJson: """["Kim Yong"]""");
+
+        var index = Build();
+
+        Assert.Equal(2, index.NameCount);
+    }
+
+    [Fact]
     public void Equally_common_spellings_stay_stable_when_a_title_index_is_added()
     {
         _db.AddSeries(1, "Z", authorsJson: """["Ito Junji"]""");
