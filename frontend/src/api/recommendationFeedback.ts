@@ -82,6 +82,7 @@ export interface FranchiseFeedbackResult {
   changed: number
   titles: { mangaBakaId: number; title: string | null }[]
   feedbackRevision: number
+  skipped?: number
 }
 
 export interface SignalOverrideState {

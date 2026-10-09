@@ -112,7 +112,7 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
     {
         if (state is not null and not ("hidden" or "dismissed" or "exposed"))
             return this.Fail(localizer, "error.feedback.unsupportedState");
-        if (sort is not null and not ("recent" or "title"))
+        if (sort is not null and not "recent")
             return this.Fail(localizer, "error.feedback.unsupportedSort");
         return Ok(await feedback.StatesAsync(user.UserId, cursor, limit <= 0 ? 40 : limit, ct, state, sort));
     }
