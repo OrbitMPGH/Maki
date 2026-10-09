@@ -791,13 +791,24 @@ function SeriesDetailBody() {
     setFoldedSpans(folded)
   }, [progressRows, animeSpans, seriesId, chaptersInSpan, readStateFor])
 
+  const refocusSpan = useRef<string | null>(null)
   const toggleSpanFold = useCallback((key: string) => {
+    refocusSpan.current = key
     setFoldedSpans((current) => {
       const next = new Set(current)
       if (!next.delete(key)) next.add(key)
       return next
     })
   }, [])
+
+  // Folding swaps the control that was pressed for a different row, so focus would drop to the
+  // page; hand it to the span's control in the new layout instead.
+  useEffect(() => {
+    const key = refocusSpan.current
+    refocusSpan.current = null
+    if (key === null || (document.activeElement && document.activeElement !== document.body)) return
+    document.querySelector<HTMLElement>(`[data-span-fold="${CSS.escape(key)}"]`)?.focus()
+  }, [foldedSpans])
 
   /** The span (if any) a marker at this exact chapter number both starts or ends, so its badge can
    *  double as the fold control and as the line's anchor. A marker that lost its pairing, or its
@@ -1174,6 +1185,7 @@ function SeriesDetailBody() {
                   variant="light"
                   leftSection={<IconDeviceTv size={12} />}
                   className="chapter-span-badge"
+                  data-span-fold={span.key}
                   {...pressable(() => toggleSpanFold(span.key))}
               >
                 {span.label}
@@ -1818,7 +1830,7 @@ function SeriesDetailBody() {
             )}
             <div className="series-split">
               <Panel className="series-detail-synopsis" edge="brand">
-                <Title order={3} fz="var(--type-section)">
+                <Title order={2} size="h3" fz="var(--type-section)">
                   <Trans>Synopsis</Trans>
                 </Title>
                 {series.overview ? (
@@ -1834,7 +1846,7 @@ function SeriesDetailBody() {
                 {(series.animeStart || series.animeEnd) && (
                     <>
                       <Divider my="md" color="var(--hairline)" />
-                      <Title order={4} fz="var(--type-body)" mb={10}>
+                      <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
                         <Trans>Anime coverage</Trans>
                       </Title>
                       <AnimeCoverageBar
@@ -1852,7 +1864,7 @@ function SeriesDetailBody() {
                 <Stack gap="md">
                   {series.genres.length > 0 && (
                       <div>
-                        <Title order={4} fz="var(--type-body)" mb={10}>
+                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
                           <Trans>Genres</Trans>
                         </Title>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
@@ -1870,7 +1882,7 @@ function SeriesDetailBody() {
                   {(providerTags.length > 0 || series.metadataTags.length > 0) && (
                       <div>
                         <Divider my="md" color="var(--hairline)" />
-                        <Title order={4} fz="var(--type-body)" mb={10}>
+                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
                           <Trans>Tags</Trans>
                         </Title>
                         <div ref={tagListRef}>
@@ -1896,7 +1908,7 @@ function SeriesDetailBody() {
                   {series.links.length > 0 && (
                       <div>
                         <Divider mb="sm" color="var(--hairline)" />
-                        <Title order={4} fz="var(--type-body)" mb={10}>
+                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
                           <Trans>Open on</Trans>
                         </Title>
                         <Group gap="xs" wrap="wrap">
@@ -1981,7 +1993,7 @@ function SeriesDetailBody() {
                   </Text>
                 </Panel>
                 <Panel className="series-detail-metadata-panel" edge="strong" edgeSide="left">
-                  <Title order={3} fz="var(--type-section)" mb="sm">
+                  <Title order={2} size="h3" fz="var(--type-section)" mb="sm">
                     <Trans>Metadata</Trans>
                   </Title>
                   <div className="series-records">
@@ -2192,7 +2204,7 @@ function SeriesDetailBody() {
                 gap="sm"
             >
               <Group gap="xs" align="baseline">
-                <Title order={3}><Trans>Chapters</Trans></Title>
+                <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
                 {chapters && (
                     <Text size="sm" c="var(--ink-3)" className="tnum">
                       {progress.have}/{progress.total}
@@ -2784,6 +2796,7 @@ function SeriesDetailBody() {
                                                         color={marker.kind === 'start' ? 'var(--info)' : 'var(--danger)'}
                                                         variant="light"
                                                         className={`chapter-span-marker${span ? ' chapter-span-badge' : ''}`}
+                                                        data-span-fold={span && marker.kind === 'start' ? span.key : undefined}
                                                         ref={
                                                           span
                                                               ? (el: HTMLDivElement | null) =>
