@@ -311,6 +311,25 @@ public class AnimeSignalSyncTests : IDisposable
         Assert.Equal([1L, 2L], ids);
     }
 
+    /// <summary>
+    /// The seed snapshot is cached per signal revision, so a sync that changed the stored rows has
+    /// to move it or the next recommendation reads the old list for the rest of the cache window.
+    /// </summary>
+    [Fact]
+    public async Task A_sync_that_reads_a_list_moves_the_signal_revision()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+        var source = new FakeAnimeListSource([new AnimeListEntry(1, "Anime 1", 8, AnimeWatchStatus.Completed)], failing: 0);
+
+        await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        using var db = _fixture.NewContext();
+        var versions = await RecommendationFeedbackService.VersionsAsync(db, userId);
+        Assert.Equal(1, versions.SignalRevision);
+        Assert.Equal(0, versions.FeedbackRevision);
+    }
+
     /// <summary>A real cancellation must still propagate rather than being swallowed as a lookup failure.</summary>
     [Fact]
     public async Task A_real_cancellation_still_propagates()

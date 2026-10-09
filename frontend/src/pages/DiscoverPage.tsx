@@ -94,6 +94,7 @@ import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
 import { LuckyButton } from '../components/LuckyButton'
 import { pickRandom } from '../lib/lucky'
+import { railSubtitle } from '../lib/railSubtitle'
 import {
   DiscoverRailRow,
   EngineCard,
@@ -1320,9 +1321,9 @@ function DiscoverBrowseTab({
         {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
           <DiscoverSeedStrip seedIds={recentRail.seedIds} />
         ) : (
-          recentRail.subtitle && (
+          railSubtitle(recentRail) && (
             <Text c="var(--ink-3)" size="sm" mb="sm">
-              {recentRail.subtitle}
+              {railSubtitle(recentRail)}
             </Text>
           )
         )}
@@ -1364,7 +1365,7 @@ function DiscoverBrowseTab({
             {rail.seedIds && rail.seedIds.length > 0 ? (
               <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
             ) : (
-              <Text c="var(--ink-3)" size="sm" mb="sm">{rail.subtitle}</Text>
+              <Text c="var(--ink-3)" size="sm" mb="sm">{railSubtitle(rail)}</Text>
             )}
             <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
           </div>

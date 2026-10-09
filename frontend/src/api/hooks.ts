@@ -501,6 +501,8 @@ export interface DiscoverRail {
   items: RecommendationItem[]
   /** A line under the heading saying where the rail came from. Null on the catalogue rails. */
   subtitle?: string | null
+  /** Titles named in {@link subtitle}'s `{list}` or `{titles}` marker; join them with `railSubtitle`. */
+  subtitleTitles?: string[] | null
   /**
    * Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
    * "Show more" to page the recommender instead of {@link useDiscoverFeed}, whose `feed` vocabulary
@@ -509,25 +511,9 @@ export interface DiscoverRail {
   seedIds?: number[] | null
   /** Filters that must remain attached when a personalised rail is expanded. */
   filters?: RecommendationFilters | null
-  /**
-   * Set only on a per-seed rail from `GET recommendations/discover/recent/grouped`: the one library
-   * series this rail's picks were attributed to, and how far through it the reader is. Nothing in
-   * the app renders that route today; the flat rail is what Discover shows.
-   */
-  seed?: DiscoverSeedState | null
   /** Set on a custom catalogue rail, so "Show more" keeps its order and owned-series setting. */
   sort?: BrowseSort
   excludeOwned?: boolean
-}
-
-/** A seed series as the Discover page draws it: the title, the position, and which state that is. */
-export interface DiscoverSeedState {
-  title: string
-  chaptersRead: number
-  /** Chapters on disk — the denominator the reader can actually reach, not the provider's count. */
-  chaptersAvailable: number
-  /** `reading`, `caught-up` (nothing left but the series continues), or `finished`. */
-  state: 'reading' | 'caught-up' | 'finished'
 }
 
 /** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */

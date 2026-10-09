@@ -110,5 +110,5 @@ public static class CatalogueRules
     public static string TermsKey(IReadOnlyList<CatalogueTerm>? terms) =>
         terms is null
             ? string.Empty
-            : string.Join(',', terms.Select(t => $"{t.Kind}/{t.Name}/{(t.Subtags ? 1 : 0)}{(t.Central ? 1 : 0)}"));
+            : string.Join(',', terms.Select(t => $"{t.Kind}/{KeyPart.Of(t.Name)}/{(t.Subtags ? 1 : 0)}{(t.Central ? 1 : 0)}"));
 }

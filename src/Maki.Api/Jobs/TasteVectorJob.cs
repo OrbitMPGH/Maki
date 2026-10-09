@@ -42,6 +42,7 @@ public class TasteVectorJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
+                build.MarkBuilt();
                 logger.LogInformation("Behavioural vectors: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else

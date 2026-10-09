@@ -43,6 +43,7 @@ public class MangaBakaDumpRefreshJob(
 
             if (installed)
             {
+                build.MarkBuilt();
                 // Rail caches were built off the old (or no) dump; re-warm against the new one.
                 var scheduler = await schedulerFactory.GetScheduler(context.CancellationToken);
                 await scheduler.TriggerJob(DiscoverCacheWarmJob.Key, context.CancellationToken);

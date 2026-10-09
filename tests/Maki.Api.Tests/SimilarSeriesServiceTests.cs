@@ -36,7 +36,11 @@ public class SimilarSeriesServiceTests
         public bool LastCoRead = true;
         public bool LastTaste = true;
 
+        public string? Stamp;
+
         public override bool IsReady() => ready;
+
+        public override string? IndexStamp => Stamp;
 
         public override async Task<IReadOnlyList<MangaBakaRecommendation>> GetSimilarAsync(
             IReadOnlyCollection<long> seedIds, IReadOnlyCollection<long> excludeIds,
@@ -130,6 +134,36 @@ public class SimilarSeriesServiceTests
 
         Assert.Empty(await Service(recommender).GetAsync(1, ["safe"]));
         Assert.Equal(0, recommender.Calls);
+    }
+
+    [Fact]
+    public async Task A_rebuilt_index_recomputes_a_cached_pool()
+    {
+        var recommender = new CountingRecommender { Stamp = "dump-1" };
+        var service = Service(recommender);
+
+        await service.GetAsync(1, ["safe"]);
+        await service.GetAsync(1, ["safe"]);
+        Assert.Equal(1, recommender.Calls);
+
+        recommender.Stamp = "dump-2";
+        await service.GetAsync(1, ["safe"]);
+        Assert.Equal(2, recommender.Calls);
+    }
+
+    [Fact]
+    public async Task Distinct_series_do_not_scan_the_index_all_at_once()
+    {
+        var recommender = new CountingRecommender { Gate = new TaskCompletionSource() };
+        var service = Service(recommender);
+
+        var visits = Enumerable.Range(1, 4).Select(id => service.GetAsync(id, ["safe"])).ToList();
+        await Task.Delay(200);
+        Assert.Equal(2, recommender.Calls);
+
+        recommender.Gate.SetResult();
+        await Task.WhenAll(visits);
+        Assert.Equal(4, recommender.Calls);
     }
 
     [Fact]
