@@ -183,7 +183,8 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
             !read.TryGetProperty("pages", out var pageArray) ||
             pageArray.ValueKind != JsonValueKind.Array)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException(
+                $"No page list in the response for chapter {chapter.SourceChapterId} of {chapter.SourceSeriesId}");
         }
 
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };

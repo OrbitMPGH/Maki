@@ -156,7 +156,7 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
         var parts = chapter.SourceChapterId.Split('_', 2);
         if (parts.Length != 2)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException($"Unrecognised Baozi chapter id '{chapter.SourceChapterId}'");
         }
 
         var html = await Client.GetStringAsync(

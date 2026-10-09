@@ -123,7 +123,8 @@ public class SenMangaSource(IHttpClientFactory httpClientFactory) : ISource
             $"api/read/{chapter.SourceSeriesId}/{chapter.SourceChapterId}", JsonOptions, ct);
         if (read?.Pages is null)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException(
+                $"No page list in the response for api/read/{chapter.SourceSeriesId}/{chapter.SourceChapterId}");
         }
 
         var pages = read.Pages

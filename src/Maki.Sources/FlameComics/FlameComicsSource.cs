@@ -115,7 +115,8 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
             !data.TryGetProperty("images", out var images) ||
             images.ValueKind != JsonValueKind.Object)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException(
+                $"No image list in the page data for series/{chapter.SourceSeriesId}/{chapter.SourceChapterId}");
         }
 
         // "images" is an object keyed by page index as a string, so it has to be ordered

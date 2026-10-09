@@ -28,4 +28,32 @@ public class MangaKatanaSourceTests
 
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
+
+    private static SourceChapter ChapterOf(string id) =>
+        new("mangakatana", "slug.123", id, "1", 1m, null, null, "en", null);
+
+    [Fact]
+    public async Task GetPages_reads_the_array_the_loader_script_names()
+    {
+        const string html = """
+            <script>var other=['x'];var thzq=['https://i.test/1.jpg','https://i.test/2.jpg'];
+            $(function(){ loadImg('data-src', thzq); });</script>
+            """;
+        var source = new MangaKatanaSource(new FakeHttpClientFactory(new() { ["manga/slug.123/c1"] = html }));
+
+        var pages = await source.GetPagesAsync(ChapterOf("c1"));
+
+        Assert.Equal(["https://i.test/1.jpg", "https://i.test/2.jpg"], pages.Pages.Select(p => p.Url));
+    }
+
+    [Fact]
+    public async Task GetPages_throws_when_the_markup_has_no_image_script()
+    {
+        var source = new MangaKatanaSource(
+            new FakeHttpClientFactory(new() { ["manga/slug.123/c1"] = "<html><body>changed</body></html>" }));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(ChapterOf("c1")));
+
+        Assert.Contains("manga/slug.123/c1", ex.Message);
+    }
 }
