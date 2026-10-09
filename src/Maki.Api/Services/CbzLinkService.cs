@@ -643,7 +643,8 @@ public class CbzLinkService(
             return [];
         }
 
-        var languages = ChapterFileLanguage.FromName(cbzPath, ChapterFileLanguage.SeriesLanguages(chapters));
+        var languages = ChapterFileLanguage.ForVolume(
+            ChapterFileLanguage.FromName(cbzPath, ChapterFileLanguage.SeriesLanguages(chapters)));
         List<Chapter> targets = [];
         foreach (var number in numbers)
         {
@@ -695,7 +696,8 @@ public class CbzLinkService(
             }
 
             var filled = 0;
-            var languages = ChapterFileLanguage.FromName(path, ChapterFileLanguage.SeriesLanguages(chapters));
+            var languages = ChapterFileLanguage.ForVolume(
+                ChapterFileLanguage.FromName(path, ChapterFileLanguage.SeriesLanguages(chapters)));
             foreach (var number in VolumeChapterScanner.ScanCbz(path))
             {
                 var chapter = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null && ChapterFileLanguage.Allows(languages, c))
@@ -762,7 +764,7 @@ public class CbzLinkService(
             HashSet<decimal>? markers = null;
             targets = chapters
                 .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId != chapterFileId
-                            && ChapterFileLanguage.Allows(languages, c)
+                            && ChapterFileLanguage.Allows(ChapterFileLanguage.ForVolume(languages), c)
                             && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable))
                 .Where(c =>
                 {

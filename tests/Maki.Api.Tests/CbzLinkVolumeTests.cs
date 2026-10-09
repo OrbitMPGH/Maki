@@ -197,6 +197,43 @@ public class CbzLinkVolumeTests : IDisposable
     }
 
     [Fact]
+    public async Task A_volume_tagged_zh_Hans_links_the_older_zh_rows()
+    {
+        var series = SeedSeries(chapterCount: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.AddRange(
+                new Chapter { SeriesId = series.Id, Number = 1, Language = "en" },
+                new Chapter { SeriesId = series.Id, Number = 1, Language = "zh" });
+            db.SaveChanges();
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk v01 [zh-Hans] (Oak).cbz", 1));
+
+        using var check = _db.NewContext();
+        Assert.Null(check.Chapters.Single(c => c.SeriesId == series.Id && c.Language == "en").ChapterFileId);
+        Assert.NotNull(check.Chapters.Single(c => c.SeriesId == series.Id && c.Language == "zh").ChapterFileId);
+    }
+
+    [Fact]
+    public async Task An_untagged_volume_in_a_series_with_no_english_links_by_range_as_before()
+    {
+        var series = SeedSeries(chapterCount: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.AddRange(
+                new Chapter { SeriesId = series.Id, Number = 1, Volume = 1, Language = "de" },
+                new Chapter { SeriesId = series.Id, Number = 1, Volume = 1, Language = "fr" });
+            db.SaveChanges();
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk v01 (Oak).cbz", 1));
+
+        using var check = _db.NewContext();
+        Assert.All(check.Chapters.Where(c => c.SeriesId == series.Id).ToList(), c => Assert.NotNull(c.ChapterFileId));
+    }
+
+    [Fact]
     public async Task A_rescan_leaves_a_chapter_on_its_file_when_a_spare_twin_also_matches_it()
     {
         var series = SeedSeries(chapterCount: 1);

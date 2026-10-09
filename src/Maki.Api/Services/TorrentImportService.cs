@@ -930,6 +930,11 @@ public class TorrentImportService(
         var languages = fileName is null
             ? null
             : ChapterFileLanguage.FromName(fileName, ChapterFileLanguage.SeriesLanguages(chapters));
+        if (parsed.IsVolume)
+        {
+            languages = ChapterFileLanguage.ForVolume(languages);
+        }
+
         if (languages is not null)
         {
             chapters = chapters.Where(c => ChapterFileLanguage.Allows(languages, c)).ToList();
