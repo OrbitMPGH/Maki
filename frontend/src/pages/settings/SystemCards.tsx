@@ -382,15 +382,11 @@ export function ImageCacheSection() {
       ? Math.min(100, Math.round((status.processed / status.total) * 100))
       : null
 
-  const coverFiles = usage ? plural(usage.coverFiles, { one: '# file', other: '# files' }) : ''
+  const coverFileCount = usage?.coverFiles ?? 0
+  const thumbnailFileCount = usage?.thumbnailFiles ?? 0
+  const seriesTotalCount = usage?.seriesTotal ?? 0
   const coverBytesLabel = usage ? formatBytes(usage.coverBytes) : undefined
   const coversMissingLabel = usage ? formatNumber(usage.coversMissing) : undefined
-  const coversMissing = usage
-    ? plural(usage.seriesTotal, {
-        one: `${coversMissingLabel} of # series has no usable poster`,
-        other: `${coversMissingLabel} of # series have no usable poster`,
-      })
-    : ''
   const thumbnailBytesLabel = usage ? formatBytes(usage.thumbnailBytes) : undefined
 
   const lastError = status?.lastError
@@ -439,18 +435,23 @@ export function ImageCacheSection() {
       {usage && (
         <Stack gap={4} mb="md">
           <Text size="sm" c="var(--ink-3)">
+            {plural(coverFileCount, {
+              one: `Posters: # file, ${coverBytesLabel}`,
+              other: `Posters: # files, ${coverBytesLabel}`,
+            })}
+          </Text>
+          <Text size="sm" c="var(--ink-3)">
             {usage.coversMissing > 0 ? (
-              <Trans>
-                Posters: {coverFiles}, {coverBytesLabel} - {coversMissing}
-              </Trans>
+              plural(seriesTotalCount, {
+                one: `${coversMissingLabel} of # series has no usable poster`,
+                other: `${coversMissingLabel} of # series have no usable poster`,
+              })
             ) : (
-              <Trans>
-                Posters: {coverFiles}, {coverBytesLabel} - every series has one
-              </Trans>
+              <Trans>Every series has a poster.</Trans>
             )}
           </Text>
           <Text size="sm" c="var(--ink-3)">
-            {plural(usage.thumbnailFiles, {
+            {plural(thumbnailFileCount, {
               one: `Reader thumbnails: # file, ${thumbnailBytesLabel}`,
               other: `Reader thumbnails: # files, ${thumbnailBytesLabel}`,
             })}
@@ -518,7 +519,7 @@ export function ImageCacheSection() {
       >
         <Stack>
           <Text size="sm">
-            {plural(usage?.seriesTotal ?? 0, {
+            {plural(seriesTotalCount, {
               one: 'This re-downloads the poster for the # series, one metadata lookup and one image each. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
               other: 'This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
             })}

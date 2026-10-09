@@ -139,6 +139,7 @@ export function DiscoverDetailModal({
   // expression when it is a plain identifier, so a member access or a formatter call would
   // otherwise extract as an unlabelled {0}.
   const readerHint = detail?.readerHint ?? null
+  const readerHintReaders = readerHint?.readers ?? 0
   const readerHintScoreDisplay = readerHint ? formatFixedDecimal(readerHint.score / 10, 1) : null
   const readerHintBaselineDisplay = readerHint ? formatFixedDecimal(readerHint.baseline / 10, 1) : null
   const readerHintHigher = readerHint ? readerHint.score > readerHint.baseline : false
@@ -321,7 +322,7 @@ export function DiscoverDetailModal({
                             multiline
                             w={260}
                             zIndex={1001}
-                            label={plural(readerHint.readers, {
+                            label={plural(readerHintReaders, {
                               one: `${readerHintScoreDisplay} from # reader with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
                               other: `${readerHintScoreDisplay} from # readers with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
                             })}

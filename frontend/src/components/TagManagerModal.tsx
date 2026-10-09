@@ -30,6 +30,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editLabel, setEditLabel] = useState('')
   const [deleting, setDeleting] = useState<{ id: number; label: string; seriesCount: number } | null>(null)
+  const deletingSeriesCount = deleting?.seriesCount ?? 0
 
   const create = () => {
     const label = newLabel.trim()
@@ -157,7 +158,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
           <Text size="sm" fw={600}>{deleting?.label}</Text>
           <Text size="sm">
             <Plural
-              value={deleting?.seriesCount ?? 0}
+              value={deletingSeriesCount}
               one="It is removed from # series. This cannot be undone."
               other="It is removed from # series. This cannot be undone."
             />
