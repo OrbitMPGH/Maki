@@ -264,7 +264,7 @@ export function OpdsSection() {
                 <Group gap="xs" wrap="nowrap">
                   <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
                   <Tooltip label={t`Copy feed URL`}>
-                    <ActionIcon variant="light" onClick={copy}>
+                    <ActionIcon variant="light" onClick={copy} aria-label={t`Copy feed URL`}>
                       <IconCopy size={16} />
                     </ActionIcon>
                   </Tooltip>
