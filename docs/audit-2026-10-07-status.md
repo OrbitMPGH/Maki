@@ -140,6 +140,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | Lane | ID | Tier | State |
 |---|---|---|---|
 | Kavita repair | (wave 2 review) | low | decision (repair mis-attributed Kavita ReadingState rows: move, drop or leave) |
+| DOWNLOADS | DOWNLOADS-02 | medium | done 5e4c759e (missed in wave 2) |
 | HOSTING-08 job | HOSTING-08 | medium | done a17238bd, 0cb22018, 5ae81857 (setting backup.scheduled, default off) |
 | AUTH | AUTH-07 | low | pending |
 | AUTH | AUTH-08 | low | pending |
@@ -227,38 +228,38 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DBPERF | DBPERF-24 | nit | pending |
 | DBPERF | DBPERF-14 | nit | pending |
 | DBPERF | DBPERF-23 | nit | pending |
-| DOWNLOADS | DOWNLOADS-09 | low | pending |
-| DOWNLOADS | DOWNLOADS-10 | low | pending |
-| DOWNLOADS | DOWNLOADS-13 | low | pending |
-| DOWNLOADS | DOWNLOADS-14 | low | pending |
-| DOWNLOADS | DOWNLOADS-17 | low | pending |
-| DOWNLOADS | DOWNLOADS-28 | low | pending |
-| DOWNLOADS | DOWNLOADS-20 | low | pending |
-| DOWNLOADS | DOWNLOADS-21 | low | pending |
-| DOWNLOADS | DOWNLOADS-22 | low | pending |
-| DOWNLOADS | DOWNLOADS-24 | low | pending |
-| DOWNLOADS | DOWNLOADS-29 | low | pending |
-| DOWNLOADS | DOWNLOADS-03 | low | pending |
-| DOWNLOADS | DOWNLOADS-06 | low | pending |
-| DOWNLOADS | DOWNLOADS-16 | low | pending |
-| DOWNLOADS | DOWNLOADS-05 | low | pending |
-| DOWNLOADS | DOWNLOADS-08 | low | pending |
-| DOWNLOADS | DOWNLOADS-18 | low | pending |
-| DOWNLOADS | DOWNLOADS-23 | low | pending |
-| DOWNLOADS | DOWNLOADS-26 | low | pending |
-| DOWNLOADS | DOWNLOADS-04 | low | pending |
-| DOWNLOADS | DOWNLOADS-25 | low | pending |
-| DOWNLOADS | DOWNLOADS-27 | low | pending |
-| DOWNLOADS | DOWNLOADS-19 | low | pending |
-| DOWNLOADS | DOWNLOADS-07 | low | pending |
-| DOWNLOADS | DOWNLOADS-36 | low | pending |
-| DOWNLOADS | DOWNLOADS-30 | nit | pending |
-| DOWNLOADS | DOWNLOADS-34 | nit | pending |
-| DOWNLOADS | DOWNLOADS-15 | nit | pending |
-| DOWNLOADS | DOWNLOADS-33 | nit | pending |
-| DOWNLOADS | DOWNLOADS-32 | nit | pending |
-| DOWNLOADS | DOWNLOADS-35 | nit | pending |
-| DOWNLOADS | DOWNLOADS-31 | nit | pending |
+| DOWNLOADS | DOWNLOADS-09 | low | done d6ae9d72 |
+| DOWNLOADS | DOWNLOADS-10 | low | done d2f47522 |
+| DOWNLOADS | DOWNLOADS-13 | low | done 45a8c486 |
+| DOWNLOADS | DOWNLOADS-14 | low | done e2254868 (early access only) |
+| DOWNLOADS | DOWNLOADS-17 | low | done e2254868 |
+| DOWNLOADS | DOWNLOADS-28 | low | done 7e72929c |
+| DOWNLOADS | DOWNLOADS-20 | low | done a8f43419 |
+| DOWNLOADS | DOWNLOADS-21 | low | done 63b03c4a |
+| DOWNLOADS | DOWNLOADS-22 | low | done d7cca99b, 6defdd86 |
+| DOWNLOADS | DOWNLOADS-24 | low | done 2903f282 |
+| DOWNLOADS | DOWNLOADS-29 | low | done 3c5675bf |
+| DOWNLOADS | DOWNLOADS-03 | low | done efa806d0 |
+| DOWNLOADS | DOWNLOADS-06 | low | done dd02082e |
+| DOWNLOADS | DOWNLOADS-16 | low | done 0df1dbc9 |
+| DOWNLOADS | DOWNLOADS-05 | low | skipped (owner decision: imported reads count as finished) |
+| DOWNLOADS | DOWNLOADS-08 | low | done 9c36f853 |
+| DOWNLOADS | DOWNLOADS-18 | low | done 9b524237, 56d9edfa |
+| DOWNLOADS | DOWNLOADS-23 | low | done d7cca99b |
+| DOWNLOADS | DOWNLOADS-26 | low | done f8d52544 |
+| DOWNLOADS | DOWNLOADS-04 | low | skipped (narrow read, tens of ms at 50k rows) |
+| DOWNLOADS | DOWNLOADS-25 | low | done 5ef23800 |
+| DOWNLOADS | DOWNLOADS-27 | low | skipped (owner decision: Retry stays allowed) |
+| DOWNLOADS | DOWNLOADS-19 | low | done 3c5675bf (server Vol./Ch. labels left) |
+| DOWNLOADS | DOWNLOADS-07 | low | done f59a0ef2 |
+| DOWNLOADS | DOWNLOADS-36 | low | done 2042fa96 |
+| DOWNLOADS | DOWNLOADS-30 | nit | done c49ba63e |
+| DOWNLOADS | DOWNLOADS-34 | nit | done 6a214ffb |
+| DOWNLOADS | DOWNLOADS-15 | nit | done c49ba63e |
+| DOWNLOADS | DOWNLOADS-33 | nit | done d7cca99b |
+| DOWNLOADS | DOWNLOADS-32 | nit | done dd02082e |
+| DOWNLOADS | DOWNLOADS-35 | nit | skipped (behaviour change, timezone-dependent tests) |
+| DOWNLOADS | DOWNLOADS-31 | nit | done c49ba63e |
 | FE-INFRA | FE-INFRA-14 | low | pending |
 | FE-INFRA | FE-INFRA-04 | low | pending |
 | FE-INFRA | FE-INFRA-13 | low | pending |
