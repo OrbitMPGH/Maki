@@ -219,6 +219,7 @@ public class SystemController(
     [CookieSessionOnly]
     [HttpPost("backups/restore-upload")]
     [RequestSizeLimit(1_073_741_824)] // 1 GiB
+    [RequestFormLimits(MultipartBodyLengthLimit = 1_073_741_824)]
     public async Task<IActionResult> RestoreUpload(IFormFile file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
