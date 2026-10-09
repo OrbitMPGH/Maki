@@ -443,7 +443,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | HOSTING | HOSTING-16 | low | done 58c40a8f |
 | HOSTING | HOSTING-30 | low | done 6f2de970, 1723f02e |
 | HOSTING | HOSTING-04 | low | skipped (write probe is the point of the check) |
-| HOSTING | HOSTING-21 | low | pending (owner decided 2026-10-09: every manual run goes onto the background job; lane audit/w3-hosting21) |
+| HOSTING | HOSTING-21 | low | done 50b23db2 (owner decided 2026-10-09: every manual run goes onto the background job, 202 started) |
 | HOSTING | HOSTING-17 | low | done 58c40a8f |
 | HOSTING | HOSTING-18 | low | done 890943d4 |
 | HOSTING | HOSTING-28 | low | done d67793ae (UrlBase removed) |
