@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -35,6 +36,10 @@ public class SmartDownloadJob(
     ILogger<SmartDownloadJob> logger) : IJob
 {
     public static readonly JobKey Key = new("smart-download");
+
+    // Series already reported as skipped, with why. The job is built per run, so this is static: a
+    // series that stays unmapped would otherwise be warned about every five minutes.
+    private static readonly ConcurrentDictionary<int, string> Skipped = new();
 
     public const int MinChapters = 1, MaxChaptersLeft = 10, MaxChaptersPerBatch = 20;
 
@@ -89,7 +94,16 @@ public class SmartDownloadJob(
                 }
                 catch (EnqueueRefusedException ex) when (ex.Key is EnqueueRefusedException.NoMapping or EnqueueRefusedException.HealthReview)
                 {
-                    logger.LogWarning("Smart Download skipped series {SeriesId}: {Reason}", series.Id, ex.Key);
+                    if (Skipped.TryGetValue(series.Id, out var reported) && reported == ex.Key)
+                    {
+                        logger.LogDebug("Smart Download still skipping series {SeriesId}: {Reason}", series.Id, ex.Key);
+                    }
+                    else
+                    {
+                        Skipped[series.Id] = ex.Key;
+                        logger.LogWarning("Smart Download skipped series {SeriesId}: {Reason}", series.Id, ex.Key);
+                    }
+
                     break;
                 }
                 catch (InvalidOperationException ex)
@@ -103,6 +117,7 @@ public class SmartDownloadJob(
                 continue;
             }
 
+            Skipped.TryRemove(series.Id, out _);
             await batches.QueuedAsync(series.Id, series.Title, queuedItemIds, DownloadOrigin.SmartDownload);
             logger.LogInformation(
                 "Smart Download queued {Added} chapters for series {SeriesId}", queuedItemIds.Count, series.Id);
