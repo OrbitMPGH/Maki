@@ -11,6 +11,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate, formatTime } from '../../format'
+import { errorText } from '../../lib/errorText'
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 
@@ -37,7 +38,7 @@ export function SignalsCard() {
   const untitled = (id: number) => t`Catalogue title ${id}`
   const { data: lab, isLoading, error } = useFeedbackLab()
   const undo = useUndoFeedback()
-  const loadError = error ? String(error) : ''
+  const loadError = error ? errorText(error) : ''
   const [manage, setManage] = useState<'titles' | 'anime' | null>(null)
   const [actionError, setActionError] = useState('')
   const [howItWorks, setHowItWorks] = useState(false)
@@ -113,7 +114,7 @@ export function SignalsCard() {
         clientMutationId: randomUUID(),
       })
     } catch (cause) {
-      setActionError(String(cause))
+      setActionError(errorText(cause))
     }
   }
 
@@ -416,7 +417,7 @@ function useShelfPillInfo(item: ShelfPadItem) {
   const { t } = useLingui()
   if (item.kind === 'rated' && item.rating != null) {
     const label = t`★ ${formatRating(item.rating)} rated`
-    if (item.rating >= 4.5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
+    if (item.rating > 5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
     if (item.rating <= AVOID_RATING_CEILING) {
       return { label, color: 'var(--danger)', phrase: t`pushes down titles close to it` }
     }

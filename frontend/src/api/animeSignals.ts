@@ -109,6 +109,7 @@ export function useSetAnimeSignalsEnabled() {
         { method: 'PUT', body: JSON.stringify({ enabled }) },
       ),
     onSuccess: refresh,
+    meta: { silent: true },
   })
 }
 
@@ -125,6 +126,7 @@ export function useSetAnimeSignalsStrength() {
         { method: 'PUT', body: JSON.stringify({ enabled, strength }) },
       ),
     onSuccess: refresh,
+    meta: { silent: true },
   })
 }
 
@@ -138,5 +140,6 @@ export function useSyncAnimeSignals() {
   return useMutation({
     mutationFn: () => api<void>('/recommendations/anime-signals/sync', { method: 'POST' }),
     onSuccess: refresh,
+    meta: { silent: true },
   })
 }

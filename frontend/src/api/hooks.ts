@@ -450,6 +450,9 @@ export function useTasteProfile(view: TasteView, refreshNonce = 0, enabled = tru
   })
 }
 
+/** Requests whose `refresh` has already been sent, so it is not re-sent on a refetch. */
+const REFRESHED_REQUESTS = new Set<string>()
+
 /**
  * Pages through the server's cached recommendation pool ("Show more" = fetchNextPage).
  *
@@ -458,20 +461,26 @@ export function useTasteProfile(view: TasteView, refreshNonce = 0, enabled = tru
  * every page load.
  */
 export function useRecommendations(request: RecommendationRequest, enabled = true) {
+  const { refresh, ...identity } = request
+  const identityKey = JSON.stringify(identity)
   return useInfiniteQuery({
-    queryKey: ['recommendations', request],
-    queryFn: ({ pageParam }) =>
-      api<RecommendationsResult>('/recommendations', {
+    queryKey: ['recommendations', identity],
+    queryFn: ({ pageParam }) => {
+      // A refresh recomputes the pool: only bust the cache on the first page, so deeper pages
+      // read from the pool that page 0 just rebuilt, and only once per applied request so a
+      // later invalidation refetch reads the rebuilt pool instead of rebuilding it again.
+      const bust = pageParam.page === 0 && refresh === true && !REFRESHED_REQUESTS.has(identityKey)
+      if (bust) REFRESHED_REQUESTS.add(identityKey)
+      return api<RecommendationsResult>('/recommendations', {
         method: 'POST',
-        // A refresh recomputes the pool: only bust the cache on the first page, so
-        // deeper pages read from the pool that page 0 just rebuilt.
         body: JSON.stringify({
-          ...request,
+          ...identity,
           page: pageParam.page,
           poolVersion: pageParam.poolVersion,
-          refresh: pageParam.page === 0 ? request.refresh : false,
+          refresh: bust,
         }),
-      }),
+      })
+    },
     initialPageParam: { page: 0, poolVersion: undefined as string | undefined },
     getNextPageParam: (last) => (last.hasMore
       ? { page: last.page + 1, poolVersion: last.poolVersion ?? undefined }

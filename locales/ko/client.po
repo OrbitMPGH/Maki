@@ -4592,12 +4592,10 @@ msgstr "이 시리즈의 계획을 만들지 못했습니다."
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "클립보드에 복사하지 못했습니다. 텍스트를 선택해서 직접 복사하세요."
 
-#. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Could not load anime signals: {0}"
-msgstr "애니메이션 신호를 불러오지 못했습니다: {0}"
+msgid "Could not load anime signals: {reason}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4660,9 +4658,12 @@ msgid "Could not revert this upgrade"
 msgstr "이 업그레이드를 되돌리지 못했습니다"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "{surface} 피드백을 업데이트하지 못했습니다: {reason}"
+msgid "Could not undo: {reason}"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -16423,6 +16424,10 @@ msgstr "보기"
 msgid "View {title}"
 msgstr "{title} 보기"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16440,6 +16445,7 @@ msgstr "활동 보기"
 msgid "View and add {title}"
 msgstr "{title} 보고 추가"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "View in library"

@@ -3766,11 +3766,10 @@ msgstr "Could not build a plan for this series."
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "Could not copy to the clipboard. Select the text and copy it by hand."
 
-#. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-msgid "Could not load anime signals: {0}"
-msgstr "Could not load anime signals: {0}"
+msgid "Could not load anime signals: {reason}"
+msgstr "Could not load anime signals: {reason}"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
@@ -3821,8 +3820,12 @@ msgid "Could not revert this upgrade"
 msgstr "Could not revert this upgrade"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "Could not update {surface} feedback: {reason}"
+msgid "Could not undo: {reason}"
+msgstr "Could not undo: {reason}"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr "Could not update feedback: {reason}"
 
 #: src/api/queue.ts
 msgid "Could not write the chapter to disk"
@@ -13476,6 +13479,10 @@ msgstr "View"
 msgid "View {title}"
 msgstr "View {title}"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr "View {title} in library"
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 msgid "View & add"
@@ -13490,6 +13497,7 @@ msgstr "View activity"
 msgid "View and add {title}"
 msgstr "View and add {title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View in library"
 msgstr "View in library"

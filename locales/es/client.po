@@ -4592,12 +4592,10 @@ msgstr "No se pudo preparar un plan para esta serie."
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "No se pudo copiar al portapapeles. Selecciona el texto y cópialo a mano."
 
-#. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Could not load anime signals: {0}"
-msgstr "No se pudieron cargar las señales de anime: {0}"
+msgid "Could not load anime signals: {reason}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4660,9 +4658,12 @@ msgid "Could not revert this upgrade"
 msgstr "No se pudo revertir esta mejora"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "No se pudo actualizar la valoración de {surface}: {reason}"
+msgid "Could not undo: {reason}"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -16423,6 +16424,10 @@ msgstr "Ver"
 msgid "View {title}"
 msgstr "Ver {title}"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16440,6 +16445,7 @@ msgstr "Ver actividad"
 msgid "View and add {title}"
 msgstr "Ver y añadir {title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "View in library"

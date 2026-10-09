@@ -1,5 +1,8 @@
 import { ActionIcon, Button, Group, Menu, Text, Tooltip } from '@mantine/core'
+import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
+import { ApiError } from '../../api/client'
+import { errorText } from '../../lib/errorText'
 import { notifications } from '@mantine/notifications'
 import {
   IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
@@ -7,6 +10,7 @@ import {
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
   useFeedbackState, useMutateFeedback, useMutateFranchiseFeedback, useUndoFeedback,
+  type FeedbackState,
 } from '../../api/recommendationFeedback'
 
 type Command = {
@@ -24,7 +28,7 @@ type Command = {
  * meaningless: a synthetic activity row has nothing to record feedback against. Every other card is
  * fair game, including the browse rails: hiding a title there is the same fact about the same work.
  */
-export function RecommendationFeedbackMenu({ providerId, surface }: { providerId: string; surface: string }) {
+export function RecommendationFeedbackMenu({ providerId }: { providerId: string }) {
   const id = Number(providerId)
   const { t } = useLingui()
   const describe = useDescribe()
@@ -32,6 +36,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
   const mutation = useMutateFeedback()
   const franchise = useMutateFranchiseFeedback()
   const undo = useUndoFeedback()
+  const queryClient = useQueryClient()
   if (!Number.isSafeInteger(id) || id <= 0) return null
 
   const sentiment = state?.sentiment ?? 'none'
@@ -43,8 +48,9 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
     // Falling back to 0 is what a title with no feedback yet needs. If the state query failed rather
     // than 404'd, a wrong guess here comes back as a 409 carrying the real state, which is a better
     // outcome than the disabled button this used to render.
+    const latest = queryClient.getQueryData<FeedbackState | null>(['feedback-state', id]) ?? state
     const command: Command = retry ?? {
-      id, action, medium, expectedRevision: state?.revision ?? 0,
+      id, action, medium, expectedRevision: latest?.revision ?? 0,
       clientMutationId: randomUUID(),
     }
     try {
@@ -61,20 +67,25 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
         message: <Group gap="xs" wrap="wrap">
           <Text size="sm">{describe(result.feedbackEffect, result.queueEffect)}</Text>
           {eventId && <Button size="xs" variant="subtle" onClick={() => {
-            void undo.mutateAsync({
+            undo.mutateAsync({
               eventId, expectedRevision: revision,
               clientMutationId: randomUUID(),
+            }).catch((error: unknown) => {
+              const reason = errorText(error)
+              notifications.show({ color: 'var(--danger)', message: t`Could not undo: ${reason}` })
             })
           }}><Trans>Undo</Trans></Button>}
         </Group>,
         autoClose: 8000,
       })
     } catch (error) {
-      const reason = String(error)
+      const reason = errorText(error)
+      // A conflict means the revision was stale, so a retry has to start again from the current one.
+      const stale = error instanceof ApiError && error.status === 409
       notifications.show({
         color: 'var(--danger)', autoClose: false, message: <Group gap="xs" wrap="wrap">
-          <Text size="sm"><Trans>Could not update {surface} feedback: {reason}</Trans></Text>
-          <Button size="xs" variant="subtle" onClick={() => void submit(action, medium, command)}>
+          <Text size="sm"><Trans>Could not update feedback: {reason}</Trans></Text>
+          <Button size="xs" variant="subtle" onClick={() => void submit(action, medium, stale ? undefined : command)}>
             <Trans>Retry</Trans>
           </Button>
         </Group>,
@@ -99,10 +110,10 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
         autoClose: 8000,
       })
     } catch (error) {
-      const reason = String(error)
+      const reason = errorText(error)
       notifications.show({
         color: 'var(--danger)', autoClose: false, message: <Group gap="xs" wrap="wrap">
-          <Text size="sm"><Trans>Could not update {surface} feedback: {reason}</Trans></Text>
+          <Text size="sm"><Trans>Could not update feedback: {reason}</Trans></Text>
           <Button size="xs" variant="subtle" onClick={() => void submitFranchise()}>
             <Trans>Retry</Trans>
           </Button>

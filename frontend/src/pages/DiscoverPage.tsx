@@ -270,7 +270,7 @@ function RecommendedTab() {
     setLabelCache((prev) => {
       const next = { ...prev }
       for (const s of library ?? []) {
-        if (s.mangaBakaId != null) next[String(s.mangaBakaId)] = s.title
+        if (s.mangaBakaId != null) next[String(s.mangaBakaId)] = s.displayTitle
       }
       for (const r of seedSearchResults ?? []) next[r.providerId] = r.title
       return next
@@ -1291,7 +1291,7 @@ function DiscoverBrowseTab({
   const sections: Record<DiscoverSectionKey, React.ReactNode> = {
     hero:
       heroItems.length > 0 ? (
-        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} />
+        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} seriesIdFor={seriesIdFor} />
       ) : (isFetching && !rails) || (recentFetching && recentRail === undefined) ? (
         <DiscoverHeroSkeleton />
       ) : null,

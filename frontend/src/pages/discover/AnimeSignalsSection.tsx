@@ -12,6 +12,7 @@ import type {
 import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength } from '../../api/animeSignals'
 import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommendationFeedback'
 import { formatDateTime } from '../../format'
+import { errorText } from '../../lib/errorText'
 import { SeriesThumb } from '../stats/SeriesLink'
 
 export type RoleFilter = AnimeSignalRole | 'all'
@@ -104,7 +105,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
 
   async function toggle(next: boolean) {
     setToggleError('')
-    try { await setEnabled.mutateAsync(next) } catch (cause) { setToggleError(String(cause)) }
+    try { await setEnabled.mutateAsync(next) } catch (cause) { setToggleError(errorText(cause)) }
   }
 
   async function changeStrength(strength: AnimeSignalStrength) {
@@ -112,7 +113,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
     try {
       await setStrength.mutateAsync({ enabled: true, strength })
     } catch (cause) {
-      setToggleError(String(cause))
+      setToggleError(errorText(cause))
     }
   }
 
@@ -128,8 +129,9 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   const total = data?.entries.length ?? 0
 
   if (isLoading || !data) {
+    const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
     ) : null
   }
 
@@ -327,7 +329,7 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
         expectedRevision: overrides?.find((item) => item.mangaBakaId === mangaBakaId)?.revision ?? 0,
       })
     } catch (cause) {
-      setActionError(String(cause))
+      setActionError(errorText(cause))
     }
   }
 

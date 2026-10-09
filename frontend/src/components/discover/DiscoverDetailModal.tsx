@@ -402,10 +402,7 @@ export function DiscoverDetailModal({
                     />
                   )}
                   {feedbackContext && (
-                    <RecommendationFeedbackMenu
-                      providerId={item.providerId}
-                      surface={feedbackContext.surface}
-                    />
+                    <RecommendationFeedbackMenu providerId={item.providerId} />
                   )}
                 </Stack>
               </div>

@@ -218,6 +218,7 @@ export function useMutateFeedback() {
       if (pendingOptimistic.get(command.id) === command.clientMutationId) pendingOptimistic.delete(command.id)
       refresh(restoresTitle(command.action) ? 'full' : 'lazy')
     },
+    meta: { silent: true },
   })
 }
 
@@ -235,6 +236,7 @@ export function useMutateFranchiseFeedback() {
       method: 'POST', body: JSON.stringify({ action, clientMutationId }),
     }),
     onSuccess: () => refresh(),
+    meta: { silent: true },
   })
 }
 
@@ -247,6 +249,7 @@ export function useUndoFeedback() {
       method: 'POST', body: JSON.stringify({ expectedRevision, clientMutationId }),
     }),
     onSuccess: () => refresh(),
+    meta: { silent: true },
   })
 }
 
@@ -259,6 +262,7 @@ export function useMutateSignalOverride() {
       method: 'PUT', body: JSON.stringify({ ignoreAsSeed, expectedRevision, clientMutationId }),
     }),
     onSuccess: () => refresh(),
+    meta: { silent: true },
   })
 }
 

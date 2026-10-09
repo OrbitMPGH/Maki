@@ -4592,12 +4592,10 @@ msgstr "Bu seri için bir plan oluşturulamadı."
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "Panoya kopyalanamadı. Metni seçip elle kopyalayın."
 
-#. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Could not load anime signals: {0}"
-msgstr "Anime sinyalleri yüklenemedi: {0}"
+msgid "Could not load anime signals: {reason}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4660,9 +4658,12 @@ msgid "Could not revert this upgrade"
 msgstr "Bu yükseltme geri alınamadı"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "{surface} geri bildirimi güncellenemedi: {reason}"
+msgid "Could not undo: {reason}"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -16423,6 +16424,10 @@ msgstr "Görünüm"
 msgid "View {title}"
 msgstr "{title} adlı seriyi görüntüle"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16440,6 +16445,7 @@ msgstr "Etkinliği görüntüle"
 msgid "View and add {title}"
 msgstr "{title} adlı seriyi görüntüle ve ekle"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "View in library"

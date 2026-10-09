@@ -4592,12 +4592,10 @@ msgstr "このシリーズの再リンク計画を作成できませんでした
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "クリップボードにコピーできませんでした。テキストを選択して手動でコピーしてください。"
 
-#. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Could not load anime signals: {0}"
-msgstr "アニメシグナルを読み込めませんでした: {0}"
+msgid "Could not load anime signals: {reason}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4660,9 +4658,12 @@ msgid "Could not revert this upgrade"
 msgstr "このアップグレードを元に戻せませんでした"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#, fuzzy
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "{surface}のフィードバックを更新できませんでした: {reason}"
+msgid "Could not undo: {reason}"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -16423,6 +16424,10 @@ msgstr "表示"
 msgid "View {title}"
 msgstr "{title}を表示"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16440,6 +16445,7 @@ msgstr "アクティビティを表示"
 msgid "View and add {title}"
 msgstr "{title}を表示して追加"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "View in library"
