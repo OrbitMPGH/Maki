@@ -1,6 +1,6 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
 import '@mantine/charts/styles.css'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -8,6 +8,7 @@ import {
   Button,
   Collapse,
   Group,
+  Loader,
   Modal,
   MultiSelect,
   RangeSlider,
@@ -118,7 +119,6 @@ import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
-import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
   DensityControl,
@@ -135,6 +135,9 @@ import {
  * because the tab is reached at one path and nothing else on Discover shares its controls.
  */
 const MEM = 'discover-recommended'
+
+// Pulls in the charting library, which the Browse tab never needs.
+const TasteTab = lazy(() => import('./discover/TasteTab').then((m) => ({ default: m.TasteTab })))
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -1635,7 +1638,9 @@ export default function DiscoverPage() {
       {active === 'recommended' ? (
         <RecommendedTab />
       ) : active === 'taste' ? (
-        <TasteTab />
+        <Suspense fallback={<Loader />}>
+          <TasteTab />
+        </Suspense>
       ) : (
         <DiscoverBrowseTab
           refreshNonce={refreshNonce}

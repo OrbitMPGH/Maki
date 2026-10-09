@@ -34,6 +34,19 @@ export default defineConfig(({ mode }) => {
         '@locales': path.resolve(__dirname, '../locales'),
       },
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          advancedChunks: {
+            groups: [
+              // One chunk for the icon set instead of dozens of one-icon modules, each of which was
+              // its own modulepreload request on a LAN served over HTTP/1.1.
+              { name: 'icons', test: /node_modules[\\/]@tabler[\\/]icons-react/ },
+            ],
+          },
+        },
+      },
+    },
     server: {
       // Honor an externally assigned port (e.g. the preview harness); default 5173.
       port: Number(process.env.PORT) || 5173,
