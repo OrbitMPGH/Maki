@@ -124,6 +124,15 @@ public class ChapterProgress : IUserOwned
     /// column default to false.
     /// </summary>
     public bool BulkMarked { get; set; }
+
+    /// <summary>
+    /// When this row's read was first counted as a one-shot <c>ChaptersRead</c> event, else null.
+    /// Never cleared, unlike <see cref="Completed"/>, so reading a one-shot again after marking it
+    /// unread cannot count it twice. Numbered chapters do not need it: the forward-only mark
+    /// absorbs a second completion. Rows from before the column are null, so the next genuine
+    /// completion counts once.
+    /// </summary>
+    public DateTime? CountedAt { get; set; }
 }
 
 /// <summary>

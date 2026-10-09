@@ -1,4 +1,5 @@
-﻿using Maki.Core.Configuration;
+﻿using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Paths;
 
@@ -114,9 +115,9 @@ public record SeriesDto(
     string? AnimeStart,
     string? AnimeEnd,
     /// <summary>
-    /// Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
-    /// when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
-    /// but nothing read).
+    /// Downloaded chapters the caller has finished, counted from their completed progress rows
+    /// (built-in reader and Kavita sync alike). Null when no progress exists for this series yet,
+    /// distinct from 0 (tracked, but nothing read).
     /// </summary>
     int? ReadChapterCount = null,
     /// <summary>
@@ -210,13 +211,16 @@ public record SeriesDto(
     /// </summary>
     /// <param name="version">
     /// Stamped onto the URL as a cache-buster. The route itself never changes, so without this a
-    /// browser that already rendered the cover keeps showing those bytes after a metadata refresh
-    /// overwrites the file in place — same URL, no signal to refetch. <see cref="Series.LastMetadataRefresh"/>
-    /// changes on every refresh (and is set on add), so it doubles as a free version stamp.
+    /// browser that already rendered the cover keeps showing those bytes after a refresh overwrites
+    /// the file in place. The cover file's write time is used when the file is there (read once per series, then cached by
+    /// <see cref="CoverVersionCache"/>): it moves
+    /// only when the bytes are rewritten, whereas <see cref="Series.LastMetadataRefresh"/> moves on
+    /// every daily metadata refresh and would make browsers refetch every unchanged poster.
+    /// <paramref name="version"/> is the fallback for a path that cannot be read.
     /// </param>
     public static string? CoverUrlFor(int seriesId, string? coverPath, DateTime? version = null) =>
         coverPath != null
-            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={(version ?? DateTime.UtcNow).Ticks}"
+            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={CoverVersionCache.Get(seriesId, coverPath) ?? (version ?? DateTime.UtcNow).Ticks}"
             : null;
 
     /// <param name="rating">
@@ -310,11 +314,6 @@ public record SeriesDto(
     }
 }
 
-/// <param name="Incognito">
-/// "Off" | "ScrobbleOnly" | "Full", or null to let the per-content-rating rules
-/// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
-/// to be the fallback rather than a hardcoded Off.
-/// </param>
 public record SeriesOperationDto(Guid Id, string State, int SeriesId, long SignalRevision);
 
 /// <param name="Checked">Null for scans recorded before it was kept.</param>
@@ -339,6 +338,11 @@ public record LastUpgradeScanDto(DateTime At, int Probed, int Queued, int? Check
     }
 }
 
+/// <param name="Incognito">
+/// "Off" | "ScrobbleOnly" | "Full", or null to let the per-content-rating rules
+/// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
+/// to be the fallback rather than a hardcoded Off.
+/// </param>
 public record AddSeriesRequest(
     string MetadataProviderId,
     int RootFolderId,

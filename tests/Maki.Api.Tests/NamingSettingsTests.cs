@@ -86,6 +86,17 @@ public class NamingSettingsTests : IDisposable
         Assert.Null(await _settings.GetAsync(SettingKeys.LibraryChapterFormat));
     }
 
+    [Theory]
+    [InlineData("7")]
+    [InlineData("Loud")]
+    public async Task An_incognito_rule_outside_the_enum_is_refused(string mode)
+    {
+        var result = await Controller().SetLibrary(
+            Payload() with { IncognitoByRating = new() { ["pornographic"] = mode } }, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
     [Fact]
     public async Task A_payload_without_the_formats_leaves_them_alone()
     {

@@ -132,6 +132,11 @@ msgstr "{0, plural, one {# more chapter is in the same volume file and loses it 
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr "{0, plural, one {# page} other {# pages}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+msgstr "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{0, plural, one {# season} other {# seasons}}"
@@ -290,6 +295,11 @@ msgstr "{0, plural, one {Volume file backing # chapter} other {Volume file backi
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
+
+#. placeholder {0}: percent(item.measure)
+#: src/pages/discover/TasteTab.tsx
+msgid "{0} in"
+msgstr "{0} in"
 
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
@@ -634,10 +644,6 @@ msgstr "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
-
-#: src/components/ui/DiscoverRail.tsx
-msgid "{kind} to {relatedTo}"
-msgstr "{kind} to {relatedTo}"
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
@@ -1729,6 +1735,10 @@ msgstr "Account"
 #: src/api/inbox.ts
 msgid "Account security"
 msgstr "Account security"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed or a single sign-on link you removed since then comes back, so redo those afterwards. API keys you revoked since the backup stay revoked."
+msgstr "Accounts are restored too, exactly as they were in that backup. A password you changed or a single sign-on link you removed since then comes back, so redo those afterwards. API keys you revoked since the backup stay revoked."
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -3390,6 +3400,7 @@ msgstr "Client secret"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 msgid "Close"
 msgstr "Close"
 
@@ -3758,6 +3769,11 @@ msgstr "Could not build a plan for this series."
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "Could not copy to the clipboard. Select the text and copy it by hand."
 
+#. {file} is a file name and is never translated. The error text follows it, untranslated.
+#: src/api/queue.ts
+msgid "Could not import {file}"
+msgstr "Could not import {file}"
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -3775,6 +3791,10 @@ msgstr "Could not load libraries from Kavita: {kavitaLibrariesErrorMessage}"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Could not load library stats"
 msgstr "Could not load library stats"
+
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr "Could not load this chapter."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Could not load your progress. The server logs will say why."
@@ -3835,6 +3855,10 @@ msgstr "Couldn't load requests"
 #: src/components/rails/CustomRailSection.tsx
 msgid "Couldn't load this rail"
 msgstr "Couldn't load this rail"
+
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
+msgstr "Couldn't load this section"
 
 #: src/pages/HomePage.tsx
 msgid "Couldn't load your library"
@@ -4514,6 +4538,11 @@ msgstr "Download next chapters"
 msgid "Download order"
 msgstr "Download order"
 
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr "Download path not accessible from Maki: {path}"
+
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Download queue"
@@ -4793,6 +4822,7 @@ msgstr "Era"
 msgid "Erotica"
 msgstr "Erotica"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -5481,6 +5511,10 @@ msgstr "Full screen"
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Fully read owned"
 msgstr "Fully read owned"
+
+#: src/api/queue.ts
+msgid "Gave up after the download time limit"
+msgstr "Gave up after the download time limit"
 
 #: src/components/discover/RecommenderDials.tsx
 msgid "gems"
@@ -7212,6 +7246,10 @@ msgstr "Median"
 msgid "Median wait"
 msgstr "Median wait"
 
+#: src/App.tsx
+msgid "Menu"
+msgstr "Menu"
+
 #: src/pages/ImportPage.tsx
 msgid "Merging folder"
 msgstr "Merging folder"
@@ -7669,6 +7707,10 @@ msgstr "New profile"
 msgid "New rail"
 msgstr "New rail"
 
+#: src/components/settings/AccountSection.tsx
+msgid "New recovery codes"
+msgstr "New recovery codes"
+
 #: src/pages/RequestsPage.tsx
 msgid "New series"
 msgstr "New series"
@@ -7792,6 +7834,11 @@ msgstr "No chapters read in this period."
 #: src/pages/HealthPage.tsx
 msgid "No checks have run yet. Use Check now."
 msgstr "No checks have run yet. Use Check now."
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr "No comics found in the completed download ({detail})"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "No creator shows up often enough yet."
@@ -8825,6 +8872,7 @@ msgstr "Page {pageIndex}/{pageCount}"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/reader/ReaderPage.tsx
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Page {pageNumber} of {pageCount}"
 
@@ -9848,6 +9896,10 @@ msgstr "Related series"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr "Related to {relatedTo}"
+
 #: src/pages/DiscoverPage.tsx
 msgid "Related to your library"
 msgstr "Related to your library"
@@ -10337,6 +10389,7 @@ msgstr "Retry and cancel queued downloads"
 msgid "Retry download"
 msgstr "Retry download"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Retrying…"
@@ -10813,8 +10866,8 @@ msgid "Search"
 msgstr "Search"
 
 #: src/components/CommandPalette.tsx
-msgid "Search (Ctrl+K)"
-msgstr "Search (Ctrl+K)"
+msgid "Search ({shortcut})"
+msgstr "Search ({shortcut})"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search by chapter number or title"
@@ -11136,6 +11189,10 @@ msgstr "series finished"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Series folder format"
 msgstr "Series folder format"
+
+#: src/api/queue.ts
+msgid "Series has no root folder"
+msgstr "Series has no root folder"
 
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Series in your library you haven't started are added to your lists as plan to read. Entries already on your lists are never changed."
@@ -12108,6 +12165,10 @@ msgid "The API token of your Pushover application."
 msgstr "The API token of your Pushover application."
 
 #: src/api/queue.ts
+msgid "The approved repair source is no longer available, request a new replacement"
+msgstr "The approved repair source is no longer available, request a new replacement"
+
+#: src/api/queue.ts
 msgid "The approved source no longer has these pages"
 msgstr "The approved source no longer has these pages"
 
@@ -12150,6 +12211,10 @@ msgstr "The current file moves to trash rather than being deleted outright, so t
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
 msgstr "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
+
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
+msgstr "The download is no longer in qBittorrent"
 
 #: src/pages/settings/registry.ts
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
@@ -12268,6 +12333,10 @@ msgstr "The provider assigns these chapters to this volume. Usually right, compi
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 
+#: src/api/queue.ts
+msgid "The repair is no longer accepting candidates"
+msgstr "The repair is no longer accepting candidates"
+
 #: src/pages/RequestsPage.tsx
 msgid "The request for {removingTitle} is removed. This can't be undone."
 msgstr "The request for {removingTitle} is removed. This can't be undone."
@@ -12288,6 +12357,10 @@ msgstr "The sample download failed"
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "The selected series will be removed from Maki and stop being monitored."
 
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr "The series was deleted or moved while this download was being imported, so nothing was imported"
+
 #: src/pages/HealthPage.tsx
 msgid "the series' sources"
 msgstr "the series' sources"
@@ -12295,6 +12368,14 @@ msgstr "the series' sources"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "The server logs will say why."
 msgstr "The server logs will say why."
+
+#: src/api/client.ts
+msgid "The server returned an error ({status})."
+msgstr "The server returned an error ({status})."
+
+#: src/api/client.ts
+msgid "The server sent a response Maki could not read ({status})."
+msgstr "The server sent a response Maki could not read ({status})."
 
 #: src/components/settings/AccountSection.tsx
 msgid "The single biggest improvement if Maki is reachable from the internet."
@@ -12467,6 +12548,11 @@ msgstr "This month"
 #: src/pages/HealthPage.tsx
 msgid "This operation is {opStatus} and needs no further action."
 msgstr "This operation is {opStatus} and needs no further action."
+
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+msgid "This page failed to load."
+msgstr "This page failed to load."
 
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
@@ -12868,6 +12954,9 @@ msgid "Try a shorter or alternative query."
 msgstr "Try a shorter or alternative query."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Try again"
 msgstr "Try again"
@@ -13611,6 +13700,7 @@ msgstr "Wanted chapters may be downloaded again by existing automation."
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 msgid "Warning"
 msgstr "Warning"

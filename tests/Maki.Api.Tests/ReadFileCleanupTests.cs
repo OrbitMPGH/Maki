@@ -75,12 +75,12 @@ public sealed class ReadFileCleanupTests : IDisposable
         return (seriesId, ids);
     }
 
-    private void Finish(int userId, int seriesId, int chapterId, int daysAgo)
+    private void Finish(int userId, int seriesId, int chapterId, int daysAgo, bool watched = false)
     {
         using var db = _db.NewContext();
         db.ChapterProgress.Add(new ChapterProgress
         {
-            UserId = userId, SeriesId = seriesId, ChapterId = chapterId, Completed = true,
+            UserId = userId, SeriesId = seriesId, ChapterId = chapterId, Completed = true, Watched = watched,
             StartedAt = Now, UpdatedAt = Now, CompletedAt = Now.AddDays(-daysAgo),
         });
         db.SaveChanges();
@@ -111,6 +111,33 @@ public sealed class ReadFileCleanupTests : IDisposable
         Finish(1, seriesId, ch[1m], daysAgo: 30);
         Finish(1, seriesId, ch[2m], daysAgo: 20);
         Finish(1, seriesId, ch[3m], daysAgo: 10);
+
+        using var db = _db.NewContext();
+        var due = await Service(db).ScheduleAsync(seriesId, On7 with { KeepLast = true }, default);
+
+        Assert.Equal([ch[1m], ch[2m]], due.Keys.Order());
+    }
+
+    [Fact]
+    public async Task A_watched_tick_does_not_make_a_file_due()
+    {
+        var (seriesId, ch) = Seed(ReadFileCleanup.Default, [1m], [2m]);
+        Finish(1, seriesId, ch[1m], daysAgo: 30, watched: true);
+        Finish(1, seriesId, ch[2m], daysAgo: 30);
+
+        using var db = _db.NewContext();
+        var due = await Service(db).ScheduleAsync(seriesId, On7, default);
+
+        Assert.Equal(ch[2m], Assert.Single(due).Key);
+    }
+
+    [Fact]
+    public async Task Keep_last_breaks_a_tied_finish_on_chapter_number()
+    {
+        var (seriesId, ch) = Seed(ReadFileCleanup.Default, [1m], [2m], [3m]);
+        Finish(1, seriesId, ch[1m], daysAgo: 30);
+        Finish(1, seriesId, ch[3m], daysAgo: 30);
+        Finish(1, seriesId, ch[2m], daysAgo: 30);
 
         using var db = _db.NewContext();
         var due = await Service(db).ScheduleAsync(seriesId, On7 with { KeepLast = true }, default);

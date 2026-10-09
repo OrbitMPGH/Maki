@@ -97,7 +97,7 @@ public class QBittorrentClient
         }
     }
 
-    public async Task<IReadOnlyList<QbtTorrent>> ListAsync(
+    public virtual async Task<IReadOnlyList<QbtTorrent>> ListAsync(
         string baseUrl, string username, string password, string category, CancellationToken ct = default)
     {
         await EnsureLoginAsync(baseUrl, username, password, force: false, ct);

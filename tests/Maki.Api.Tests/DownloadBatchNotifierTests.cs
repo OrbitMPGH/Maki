@@ -44,6 +44,24 @@ public class DownloadBatchNotifierTests : IDisposable
     private List<(NotificationEventType Type, NotificationMessage Message)> Sent => _notifications.Sent;
 
     [Fact]
+    public async Task Upgrades_and_downloads_of_one_series_are_summarized_apart()
+    {
+        await _batches.QueuedAsync(1, "Berserk", [1, 2], DownloadOrigin.Upgrade);
+        await _batches.QueuedAsync(1, "Berserk", [3, 4], DownloadOrigin.SmartDownload);
+        var queuedPings = Sent.Count;
+
+        Assert.True(await _batches.CompletedAsync(1, 3));
+        Assert.True(await _batches.CompletedAsync(1, 4));
+        Assert.Equal(queuedPings + 1, Sent.Count);
+        Assert.Contains("notify.downloads.complete.title", Sent[^1].Message.Title);
+
+        Assert.True(await _batches.CompletedAsync(1, 1));
+        Assert.True(await _batches.CompletedAsync(1, 2));
+        Assert.Equal(queuedPings + 1, Sent.Count);
+        Assert.Contains(_inbox.RaisedForSeries, r => r.Message.Key == "inbox.upgrade.batch");
+    }
+
+    [Fact]
     public async Task A_batch_announces_once_at_the_start_and_once_when_every_chapter_is_done()
     {
         await _batches.QueuedAsync(1, "Berserk", [10, 11, 12]);

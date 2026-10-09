@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
@@ -37,7 +38,7 @@ export function SignalsCard() {
   const untitled = (id: number) => t`Catalogue title ${id}`
   const { data: lab, isLoading, error } = useFeedbackLab()
   const undo = useUndoFeedback()
-  const loadError = error ? String(error) : ''
+  const loadError = error ? errorText(error) : ''
   const [manage, setManage] = useState<'titles' | 'anime' | null>(null)
   const [actionError, setActionError] = useState('')
   const [howItWorks, setHowItWorks] = useState(false)

@@ -20,6 +20,17 @@ msgstr "A code from your authenticator app is required"
 msgid "error.account.incorrectPassword"
 msgstr "Password is incorrect"
 
+#. Single sign-on accounts have no password to confirm, so minting a key or OPDS token needs a fresh sign-in.
+#: src/Maki.Api/Auth/AccountCredentials.cs
+msgid "error.account.recentSignInRequired"
+msgstr "Sign out and sign in again, then try this within 10 minutes. Creating a key or token needs a recent sign-in."
+
+#. An authenticator code that was already used, so the next one is needed. Shown only after the
+#. password was verified, so it says nothing about which accounts exist.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.totpReplayed"
+msgstr "That code was already used. Wait for the next one and try again"
+
 #. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
 #. sign-in-time 2FA prompt.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -85,6 +96,10 @@ msgstr "Two-factor authentication is already enabled"
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.twoFactorDelegatedToSso"
 msgstr "This account signs in through single sign-on, which handles two-factor itself"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.twoFactorNotEnabled"
+msgstr "Two-factor authentication is not turned on"
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 msgid "error.animeResume.notEnabled"
@@ -676,6 +691,11 @@ msgstr "Name is required"
 msgid "error.recommendation.needsLocalDb"
 msgstr "Recommendations need the local MangaBaka database (Settings → Library → Metadata database)"
 
+#. {feed} is the feed name the client sent; thrown by DiscoverService.GetFeedAsync.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+msgid "error.recommendation.unknownFeed"
+msgstr "Unknown feed \"{feed}\""
+
 #. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
 #. sections that still work with no local database.
 #: src/Maki.Api/Controllers/RecommendationController.cs
@@ -762,6 +782,10 @@ msgid "error.requests.chapterRangeInvalid"
 msgstr "The last chapter can't be lower than the first"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.contentRating"
+msgstr "This series is above your content rating limit"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "error.requests.metadataNotFound"
 msgstr "Series not found on metadata provider"
 
@@ -786,6 +810,10 @@ msgstr "A series is required"
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "error.requests.seriesRequired"
 msgstr "A series to request is required"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.seriesGone"
+msgstr "The series this request is for is no longer in the library. Reject the request instead."
 
 #. Shown as the requester's name when the account no longer exists.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
@@ -1210,6 +1238,11 @@ msgstr "Label is required"
 #: src/Maki.Api/Controllers/TagsController.cs
 msgid "error.tags.unknownTagIds"
 msgstr "One or more tag ids do not exist"
+
+#. {file} is a file name and is never translated. The exception text follows it, untranslated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+msgid "error.torrentImport.copyFailed"
+msgstr "Could not import {file}"
 
 #: src/Maki.Api/Services/TorrentImportService.cs
 msgid "error.torrentImport.noComicsFound"
@@ -1734,9 +1767,18 @@ msgstr "The database in this backup is damaged or is not a Maki database. Nothin
 msgid "error.system.backupTooNew"
 msgstr "Backup is from a newer version (migration \"{migration}\" unknown to this build). Upgrade Maki before restoring it."
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupTooOld"
+msgstr "Backup is from a version too old to restore directly (migration \"{migration}\" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade."
+
 #: src/Maki.Api/Services/BackupService.cs
 msgid "error.system.backupUnreadable"
 msgstr "This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed."
+
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupTooLarge"
+msgstr "The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.backupNameInvalid"
@@ -1950,6 +1992,15 @@ msgstr "{series}: chapter {chapter} is ready to read"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "inbox.download.failed.title"
 msgstr "Download failed"
+
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "inbox.import.awaiting.title"
+msgstr "Import waiting for a decision"
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "inbox.import.awaiting.body"
+msgstr "{series}: {release} needs a Replace or Skip decision in Activity before it is imported"
 
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. placeholder for emptiness. {error} is the source's own wording and is never translated.
@@ -2405,6 +2456,21 @@ msgstr "The torrent never appeared in qBittorrent"
 msgid "error.download.torrentRemoved"
 msgstr "The torrent is no longer in qBittorrent"
 
+#. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
+#: src/Maki.Api/Services/DownloadWorkerHostedService.cs
+msgid "error.download.itemTimedOut"
+msgstr "Gave up after the download time limit"
+
+#. A repair was approved with a source that has since been disabled or removed.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "error.download.repairSourceGone"
+msgstr "The approved repair source is no longer available, request a new replacement"
+
+#. The repair this download belonged to was closed or cancelled before the pages arrived.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "error.download.repairNotAccepting"
+msgstr "The repair is no longer accepting candidates"
+
 #. The library folder is missing or empty, usually a network share that is not mounted. Maki retries
 #. on its own and does not count it as a failed attempt.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
@@ -2434,6 +2500,17 @@ msgstr "Chapter"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "notify.download.failed.title"
 msgstr "Download failed"
+
+#. Sent outward when a finished torrent covers files the library already has and waits for a Replace
+#. or Skip decision. Renders in the instance's own language.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "notify.import.awaiting.title"
+msgstr "Import waiting for a decision"
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "notify.import.awaiting.body"
+msgstr "{series}: {release} needs a Replace or Skip decision in Activity before it is imported"
 
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. value for emptiness. {reason} is one of the error.download.* messages, already rendered.
@@ -2928,10 +3005,6 @@ msgid "health.check.schedulerPaused"
 msgstr "Background scheduler is paused"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# database migration pending} other {# database migrations pending}}"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.databaseCurrent"
 msgstr "Database is reachable and up to date"
 
@@ -3273,18 +3346,16 @@ msgstr "Pushes down titles closer to this one"
 msgid "feedback.taste.unchanged"
 msgstr "Taste unchanged"
 
-#. {list} is titles joined in English regardless of locale (see RecentActivityRailService.Because);
-#. a title is a proper noun a translation would not touch, and there is no list-format primitive in
-#. this catalogue's ICU subset. Same key used for the single-seed grouped rail, where {list} is one
-#. title.
+#. The server sends the literal text {list} and the client replaces it with the titles joined by
+#. Intl.ListFormat in the reader's language, so keep {list} in the translation.
 #: src/Maki.Api/Services/RecentActivityRailService.cs
 msgid "discover.rail.becauseYouRead"
 msgstr "Because you read {list}"
 
-#. {list} as above; {count} is how many further seeds were not named.
-#: src/Maki.Api/Services/RecentActivityRailService.cs
-msgid "discover.rail.becauseYouReadMore"
-msgstr "Because you read {list} and {count, plural, one {# more} other {# more}}"
+#. One entry of the title list, shown last when more series seeded the rail than were named.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+msgid "discover.rail.moreSeeds"
+msgstr "{count, plural, one {# more} other {# more}}"
 
 #: src/Maki.Api/Services/DiscoverService.cs
 msgid "discover.rail.new"
@@ -3324,7 +3395,8 @@ msgstr "Based on your recent activity"
 msgid "discover.rail.sideInterest"
 msgstr "Another side of your library: {name}"
 
-#. {titles} is up to two series titles joined in English, same trade as {list} above. {count} is
+#. The server sends the literal text {titles} and the client replaces it with up to two series titles
+#. joined by Intl.ListFormat, so keep {titles} in the translation. {count} is
 #. how many titles in total share the interest.
 #: src/Maki.Api/Services/SideInterestRailService.cs
 msgid "discover.rail.sideInterestSubtitle"
@@ -3381,6 +3453,11 @@ msgstr "Nothing recurs across enough of your reading to name a group yet."
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "Needs at least {min} series the catalogue knows about. So far this view has {count}."
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.alreadyRunning"
+msgstr "An install of this download is already running."
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 msgid "install.embeddingModel.alreadyOn"
 msgstr "Already using this model."
@@ -3400,6 +3477,10 @@ msgstr "An indexing pass is running; try again once it finishes."
 #: src/Maki.Metadata/Embedding/SeriesEmbeddingIndexer.cs
 msgid "install.embeddingModel.notAvailable"
 msgstr "Embedding model not available"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+msgid "install.embeddingModel.switchFailed"
+msgstr "The model switch failed. Check the server log for details."
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 msgid "install.embeddingModel.switchInProgress"

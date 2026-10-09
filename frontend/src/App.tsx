@@ -187,14 +187,14 @@ function HealthButton() {
         </Group>
         <Stack gap="xs">
           {health.map((issue, i) => (
-            <Group key={i} gap="xs" wrap="nowrap" align="flex-start">
+            <Group key={`${issue.type}-${i}`} gap="xs" wrap="nowrap" align="flex-start">
               <Badge
                 size="xs"
                 color={issue.severity === 'error' ? 'var(--danger)' : 'var(--warn)'}
                 variant="light"
                 mt={2}
               >
-                {issue.severity}
+                {issue.severity === 'error' ? <Trans>Error</Trans> : <Trans>Warning</Trans>}
               </Badge>
               <Text size="xs" c="var(--ink-3)">
                 {issue.message}
@@ -303,19 +303,31 @@ function AuthGate() {
 
   // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
   // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
-  if (location.pathname.startsWith('/read/')) {
-    return (
-      <RouteErrorBoundary>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/read/:chapterId" element={<ReaderPage />} />
-          </Routes>
-        </Suspense>
-      </RouteErrorBoundary>
-    )
-  }
+  const inReader = location.pathname.startsWith('/read/')
 
-  return <AppShellRoutes />
+  // Mounted above the reader/shell split so entering the reader neither drops the live
+  // subscriptions nor leaves it without inbox toasts and cache updates.
+  return (
+    <>
+      <LiveEvents />
+      {inReader ? (
+        <RouteErrorBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/read/:chapterId" element={<ReaderPage />} />
+            </Routes>
+          </Suspense>
+        </RouteErrorBoundary>
+      ) : (
+        <AppShellRoutes />
+      )}
+    </>
+  )
+}
+
+function LiveEvents() {
+  useLiveEvents()
+  return null
 }
 
 function AppShellRoutes() {
@@ -323,17 +335,18 @@ function AppShellRoutes() {
   const navigate = useNavigate()
   const [opened, { toggle, close }] = useDisclosure()
   const { data: setup } = useSetupStatus()
-  const { data: metadata } = useMetadataSettings()
+  const { data: metadata, isError: metadataFailed } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
   const { t } = useLingui()
-  useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
 
   // Both default to "available" while their settings load, so a tab doesn't flash away and back
   // on every visit. HomePage takes the opposite default for its own data, see the note there.
-  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : true
+  // A failed settings request counts as unavailable, so the start page falls through to Home or the
+  // library instead of waiting on an answer that is not coming.
+  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : !metadataFailed
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
@@ -374,7 +387,14 @@ function AppShellRoutes() {
       <AppShell.Header className="app-header">
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="sm"
+              size="sm"
+              aria-label={t`Menu`}
+              aria-expanded={opened}
+            />
             <Group gap="sm" wrap="nowrap" hiddenFrom="sm">
               <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
                 <IconBrandMark />
@@ -419,7 +439,7 @@ function AppShellRoutes() {
       </AppShell.Navbar>
 
       {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
-          series page, Home, and Discover's browse tab. Written as "Discover, but not its other two tabs"
+          series page and Discover's browse tab. Written as "Discover, but not its other two tabs"
           rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
           unrecognised :tab: a stale /discover/genres link lands on the band and has to bleed like
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
@@ -443,7 +463,7 @@ function AppShellRoutes() {
               element={
                 <StartPageRedirect
                   discoverAvailable={discoverAvailable}
-                  discoverKnown={metadata !== undefined}
+                  discoverKnown={metadata !== undefined || metadataFailed}
                 />
               }
             />

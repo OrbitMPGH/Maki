@@ -425,6 +425,12 @@ public class AnimeSignalSyncService(
         }
 
         var matched = await ResolveCatalogueIdsAsync(db, userId, ct);
+        // The seed snapshot is cached per signal revision, so the revision moves on every sync that read
+        // a list or removed rows, whether or not the stored rows ended up different.
+        if (fetchedAny || removed > 0)
+        {
+            await RecommendationFeedbackService.BumpAsync(db, userId, feedback: false, signal: true, ct);
+        }
         // A failed list fetch leaves the stored rows untouched and unrefreshed, so calling that a
         // sync would hide a broken token behind a fresh-looking timestamp on the panel.
         if (fetchedAny && !failed)

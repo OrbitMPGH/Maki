@@ -78,22 +78,3 @@ export function useAuth(): AuthState {
   if (!context) throw new Error('useAuth must be used inside AuthProvider')
   return context
 }
-
-/**
- * Hides children the user has no permission for.
- *
- * Cosmetic only: the server enforces every permission independently. This exists so the UI does not
- * offer buttons that answer 403, not as a security boundary.
- */
-export function PermissionGate({
-  permission,
-  children,
-  fallback = null,
-}: {
-  permission: Permission
-  children: ReactNode
-  fallback?: ReactNode
-}) {
-  const { can } = useAuth()
-  return <>{can(permission) ? children : fallback}</>
-}

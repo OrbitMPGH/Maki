@@ -124,11 +124,8 @@ public class SideInterestRailService(
                 Subtitle: "discover.rail.sideInterestSubtitle",
                 SeedIds: ids, Filters: filters,
                 TitleArgs: new { name = interest.Name },
-                SubtitleArgs: new
-                {
-                    count = interest.Seeds.Count,
-                    titles = string.Join(" and ", interest.Seeds.Take(2).Select(s => s.Title)),
-                }));
+                SubtitleArgs: new { count = interest.Seeds.Count, titles = "{titles}" },
+                SubtitleTitles: [.. interest.Seeds.Take(2).Select(s => s.Title)]));
         }
         return rails;
     }

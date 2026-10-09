@@ -155,6 +155,11 @@ msgstr ""
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr "{0, plural, one {# Seite} other {# Seiten}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -341,6 +346,11 @@ msgstr "{0, plural, one {Volumendatei für # Kapitel} other {Volumendatei für #
 #, fuzzy
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {# Kapitel gewünscht} other {# Kapitel gewünscht}}"
+
+#. placeholder {0}: percent(item.measure)
+#: src/pages/discover/TasteTab.tsx
+msgid "{0} in"
+msgstr ""
 
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
@@ -768,11 +778,6 @@ msgstr "{kind, select, both {Story · Zeichnung} story {Story} art {Zeichnung} o
 #, fuzzy
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {Um {pct}% mehr als im vorherigen Zeitraum.} down {Um {pct}% weniger als im vorherigen Zeitraum.} flat {Etwa gleich wie im vorherigen Zeitraum.} none {} other {}}"
-
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{kind} von {relatedTo}"
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
@@ -2123,6 +2128,10 @@ msgstr ""
 #, fuzzy
 msgid "Account security"
 msgstr "Kontosicherheit"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed or a single sign-on link you removed since then comes back, so redo those afterwards. API keys you revoked since the backup stay revoked."
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -4138,6 +4147,7 @@ msgstr "Client-Secret"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Close"
 msgstr "Schließen"
@@ -4585,6 +4595,11 @@ msgstr "Für diese Serie konnte kein Plan erstellt werden."
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "Das Kopieren in die Zwischenablage hat nicht geklappt. Markiere den Text und kopiere ihn von Hand."
 
+#. {file} is a file name and is never translated. The error text follows it, untranslated.
+#: src/api/queue.ts
+msgid "Could not import {file}"
+msgstr ""
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -4606,6 +4621,10 @@ msgstr "Bibliotheken aus Kavita konnten nicht geladen werden: {kavitaLibrariesEr
 #, fuzzy
 msgid "Could not load library stats"
 msgstr "Bibliotheksstatistiken konnten nicht geladen werden"
+
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -4680,6 +4699,10 @@ msgstr ""
 #, fuzzy
 msgid "Couldn't load this rail"
 msgstr "Diese Leiste konnte nicht geladen werden"
+
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -5504,6 +5527,11 @@ msgstr "Nächste Kapitel herunterladen"
 msgid "Download order"
 msgstr "Download-Reihenfolge"
 
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Download queue"
@@ -5846,6 +5874,7 @@ msgstr "Epoche"
 msgid "Erotica"
 msgstr "Erotik"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -6689,6 +6718,10 @@ msgstr "Vollbild"
 #, fuzzy
 msgid "Fully read owned"
 msgstr "Bestand vollständig gelesen"
+
+#: src/api/queue.ts
+msgid "Gave up after the download time limit"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -8793,6 +8826,10 @@ msgstr "Median"
 msgid "Median wait"
 msgstr "Median-Wartezeit"
 
+#: src/App.tsx
+msgid "Menu"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Merging folder"
@@ -9352,6 +9389,10 @@ msgstr "Neues Profil"
 msgid "New rail"
 msgstr "Neue Rail"
 
+#: src/components/settings/AccountSection.tsx
+msgid "New recovery codes"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "New series"
@@ -9504,6 +9545,11 @@ msgstr "In diesem Zeitraum keine Kapitel gelesen."
 #, fuzzy
 msgid "No checks have run yet. Use Check now."
 msgstr "Noch keine Prüfungen ausgeführt. Verwende „Jetzt prüfen“."
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10766,6 +10812,7 @@ msgstr "Seite {pageIndex}/{pageCount}"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Seite {pageNumber} von {pageCount}"
@@ -12008,6 +12055,10 @@ msgstr "Verwandte Serien"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "verwandte Serien, mehr wie dieses, ähnlich, Empfehlungen, Rails, Fortsetzungen, Spin-offs"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -12602,6 +12653,7 @@ msgstr "Downloads in der Warteschlange wiederholen und abbrechen"
 msgid "Retry download"
 msgstr "Download wiederholen"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -13179,9 +13231,8 @@ msgid "Search"
 msgstr "Suchen"
 
 #: src/components/CommandPalette.tsx
-#, fuzzy
-msgid "Search (Ctrl+K)"
-msgstr "Suchen (Strg+K)"
+msgid "Search ({shortcut})"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13574,6 +13625,10 @@ msgstr "Serien abgeschlossen"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Series folder format"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "Series has no root folder"
 msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
@@ -14757,6 +14812,10 @@ msgid "The API token of your Pushover application."
 msgstr "API-Token deiner Pushover-Anwendung."
 
 #: src/api/queue.ts
+msgid "The approved repair source is no longer available, request a new replacement"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The approved source no longer has these pages"
 msgstr "Die genehmigte Quelle hat diese Seiten nicht mehr"
@@ -14805,6 +14864,10 @@ msgstr "Die aktuelle Datei wird in den Papierkorb verschoben statt sofort gelös
 
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
 msgstr ""
 
 #: src/pages/settings/registry.ts
@@ -14948,6 +15011,10 @@ msgstr "Der Anbieter ordnet diese Kapitel diesem Band zu. Das stimmt meistens, a
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "Der Issuer des Anbieters ohne /.well-known/openid-configuration. Maki ergänzt diesen Teil selbst."
 
+#: src/api/queue.ts
+msgid "The repair is no longer accepting candidates"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "The request for {removingTitle} is removed. This can't be undone."
@@ -14973,6 +15040,10 @@ msgstr "Der Stichproben-Download ist fehlgeschlagen"
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "Die ausgewählten Serien werden aus Maki entfernt und nicht mehr überwacht."
 
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "the series' sources"
@@ -14982,6 +15053,14 @@ msgstr "die Quellen der Serie"
 #, fuzzy
 msgid "The server logs will say why."
 msgstr "In den Serverprotokollen steht der Grund."
+
+#: src/api/client.ts
+msgid "The server returned an error ({status})."
+msgstr ""
+
+#: src/api/client.ts
+msgid "The server sent a response Maki could not read ({status})."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -15195,6 +15274,11 @@ msgstr "Diesen Monat"
 #, fuzzy
 msgid "This operation is {opStatus} and needs no further action."
 msgstr "Dieser Vorgang ist {opStatus} und erfordert keine weitere Aktion."
+
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+msgid "This page failed to load."
+msgstr ""
 
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
@@ -15687,6 +15771,9 @@ msgid "Try a shorter or alternative query."
 msgstr "Versuche eine kürzere oder alternative Suchanfrage."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"
@@ -16594,6 +16681,7 @@ msgstr "Gewünschte Kapitel können durch die bestehende Automatisierung erneut 
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Gewünscht für {spanLabel}: {wantedCount} von {total} Kapiteln"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

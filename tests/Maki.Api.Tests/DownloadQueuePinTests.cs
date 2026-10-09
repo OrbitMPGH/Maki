@@ -34,6 +34,7 @@ public class DownloadQueuePinTests : IDisposable
 
     private ChapterController Controller(DownloadQueueService queue) => new(
         new TestLocalizer(), _db.NewContext(), queue, null!, null!, new SourceRegistry([]),
+        new SourceAvailability(new FakeAppSettings(), new SourceRegistry([])),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         new DownloadBatchNotifier(
             new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),

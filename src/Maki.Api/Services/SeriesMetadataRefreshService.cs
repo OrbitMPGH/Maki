@@ -77,6 +77,7 @@ public class SeriesMetadataRefreshService(
             series.AltTitles = [.. metadata.AltTitles];
         }
 
+        series.Year = metadata.Year ?? series.Year;
         series.TotalChapters = metadata.TotalChapters ?? series.TotalChapters;
         series.TotalVolumes = metadata.TotalVolumes ?? series.TotalVolumes;
         series.AuthorStory = metadata.AuthorStory ?? series.AuthorStory;

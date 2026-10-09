@@ -90,6 +90,29 @@ public class EmbeddingModelSwitcher(
         return new ModelSwitchStart(true, targetKind, "install.embeddingModel.switching");
     }
 
+    /// <summary>
+    /// What the settings page should say about a finished switch. The installer's reason is a
+    /// catalogue key except for "Install failed: {exception}", which must not reach the page as text.
+    /// Another install already running is not a failure: it is fetching the same index, and the
+    /// switch picks it up when that finishes.
+    /// </summary>
+    internal static (string? Error, object? Args) Outcome(bool modelReady, PrebuiltIndexResult install)
+    {
+        if (!modelReady)
+        {
+            return ("install.embeddingModel.downloadFailed", null);
+        }
+
+        if (install.Installed || install.Reason == PrebuiltIndexInstaller.CurrentReason)
+        {
+            return (null, null);
+        }
+
+        return install.Reason.StartsWith("install.", StringComparison.Ordinal)
+            ? (install.Reason, install.ReasonArgs)
+            : ("install.embeddingModel.switchFailed", null);
+    }
+
     private async Task RunAsync(string targetKind, EmbeddingModelProfile? target)
     {
         try
@@ -119,21 +142,21 @@ public class EmbeddingModelSwitcher(
             await modelStore.EnsureAsync();            // downloads the target ONNX + vocab if missing
             var modelReady = await embedder.EnsureReadyAsync();
 
-            // force: fetch the target model's index regardless of the freshness check — this is a
-            // deliberate switch, not the nightly poll.
-            var install = await prebuilt.InstallAsync(force: true);
-
-            _lastError = !modelReady
-                ? "install.embeddingModel.downloadFailed"
-                : install.Installed
-                    ? null
-                    : install.Reason;
-            _lastErrorArgs = !modelReady || install.Installed ? null : install.ReasonArgs;
+            // Not forced: the installer already treats vectors stamped with another model as worth
+            // replacing, so a switch fetches the target's index when the file holds anything else and
+            // leaves it alone when turning embeddings back on finds the right vectors still on disk.
+            var install = await prebuilt.InstallAsync();
+            (_lastError, _lastErrorArgs) = Outcome(modelReady, install);
 
             if (_lastError is null)
             {
                 logger.LogInformation("Model switch to {Model} complete, prebuilt index installed ({Rows} rows)",
                     targetKind, install.RowCount);
+            }
+            else if (_lastError == PrebuiltIndexInstaller.AlreadyRunningReason)
+            {
+                logger.LogInformation(
+                    "Model switch to {Model} complete; the index download is already running elsewhere", targetKind);
             }
             else
             {
@@ -143,7 +166,8 @@ public class EmbeddingModelSwitcher(
         }
         catch (Exception ex)
         {
-            _lastError = ex.Message;
+            _lastError = "install.embeddingModel.switchFailed";
+            _lastErrorArgs = null;
             logger.LogError(ex, "Model switch to {Model} failed", targetKind);
         }
         finally

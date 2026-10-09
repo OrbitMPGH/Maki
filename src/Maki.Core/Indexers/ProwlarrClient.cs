@@ -79,7 +79,8 @@ public class ProwlarrClient(IHttpClientFactory httpClientFactory)
         try
         {
             var client = CreateClient(baseUrl, apiKey);
-            var response = await client.GetAsync("api/v1/system/status", ct);
+            using var response = await client.GetAsync(
+                "api/v1/system/status", HttpCompletionOption.ResponseHeadersRead, ct);
             return response.IsSuccessStatusCode;
         }
         catch

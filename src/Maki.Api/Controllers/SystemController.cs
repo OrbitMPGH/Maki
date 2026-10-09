@@ -26,6 +26,8 @@ public class SystemController(
     Maki.Api.Localization.ILocalizer localizer,
     ILogger<SystemController> logger) : ControllerBase
 {
+    private const long RestoreUploadLimit = 1_073_741_824; // 1 GiB
+
     /// <summary>
     /// Open health issues for the header indicator.
     /// </summary>
@@ -56,6 +58,7 @@ public class SystemController(
     [HttpGet("status")]
     public IActionResult Status()
     {
+        using var process = System.Diagnostics.Process.GetCurrentProcess();
         return Ok(new
         {
             appName = "Maki",
@@ -66,7 +69,7 @@ public class SystemController(
             // Withheld from non-admins: it is an absolute path on the host, which tells a reader
             // account the deployment layout and nothing it has any use for.
             configDir = currentUser.Has(MakiPermission.Admin) ? paths.ConfigDir : null,
-            startTime = System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime()
+            startTime = process.StartTime.ToUniversalTime()
         });
     }
 
@@ -218,7 +221,8 @@ public class SystemController(
     [Authorize(Policy = Policies.Admin)]
     [CookieSessionOnly]
     [HttpPost("backups/restore-upload")]
-    [RequestSizeLimit(1_073_741_824)] // 1 GiB
+    [RequestSizeLimit(RestoreUploadLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = RestoreUploadLimit)]
     public async Task<IActionResult> RestoreUpload(IFormFile file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)

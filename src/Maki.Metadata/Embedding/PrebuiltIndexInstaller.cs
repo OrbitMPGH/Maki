@@ -64,6 +64,14 @@ public class PrebuiltIndexInstaller(
 {
     public const string HttpClientName = "prebuilt-index";
 
+    /// <summary>The reason an install answers when the index on disk is already as new as the published one.</summary>
+    public const string CurrentReason = "install.prebuiltIndex.current";
+
+    /// <summary>The reason a second install answers while one is already downloading.</summary>
+    public const string AlreadyRunningReason = "install.alreadyRunning";
+
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     /// <summary>
     /// Where the artifact for the configured model is published, unless overridden in settings.
     /// Each model has its own release tag, so a base install and a large install fetch different
@@ -165,11 +173,17 @@ public class PrebuiltIndexInstaller(
 
         if (!force && !await IsNewerThanLocalAsync(manifest, ct))
         {
-            return new PrebuiltIndexResult(false, "install.prebuiltIndex.current");
+            return new PrebuiltIndexResult(false, CurrentReason);
         }
 
         Directory.CreateDirectory(options.StagingDirectory);
         var staging = Path.Combine(options.StagingDirectory, "embeddings.db.partial");
+
+        if (!_installGate.Wait(0))
+        {
+            return new PrebuiltIndexResult(false, AlreadyRunningReason);
+        }
+
         try
         {
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
@@ -202,6 +216,7 @@ public class PrebuiltIndexInstaller(
         finally
         {
             TryDelete(staging);
+            _installGate.Release();
         }
     }
 
@@ -287,6 +302,16 @@ public class PrebuiltIndexInstaller(
             {
                 throw new InvalidOperationException($"downloaded index failed its integrity check ({result})");
             }
+        }
+
+        // The manifest is the publisher's claim; the file's own record is what the vectors really
+        // are. An artifact that never stamped one is accepted, since the stamp is written by the
+        // install itself for those.
+        if (EmbeddingStore.ReadModelVersion(staging) is { Length: > 0 } stamped
+            && !string.Equals(stamped, options.ModelVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"downloaded index holds vectors from model {stamped}, this install uses {options.ModelVersion}");
         }
 
         using var stats = conn.CreateCommand();

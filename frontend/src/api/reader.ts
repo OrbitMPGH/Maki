@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import { api, authHeaders, getInitialize } from './client'
@@ -97,6 +97,8 @@ export function useReaderManifest(chapterId: number) {
     queryKey: ['reader-manifest', chapterId],
     queryFn: () => api<ReaderManifest>(`/reader/chapter/${chapterId}`),
     enabled: Number.isFinite(chapterId) && chapterId > 0,
+    // The reader draws its own failure state, so the global error toast would only double it.
+    meta: { silent: true },
     // The page list of a stored archive doesn't change while the reader is open, so nothing
     // refetches mid-chapter, but `resumePage` and `completed` do change, and a cached snapshot of
     // them is poison: reopening a chapter would resume off the position it had when first opened,
@@ -200,8 +202,8 @@ export async function saveProgress(
  * lets the request outlive the document, but it still needs the antiforgery header, since this is a
  * cookie-authenticated PUT like any other.
  *
- * This is the write that means "the sitting is over" — tab hidden, reader closed, chapter changed —
- * so it always sends `final`, which tells the server to log the chapter's banked reading time
+ * This is the write that means "the sitting is over" (tab hidden, reader closed, chapter changed), so it
+ * always sends `final`, which tells the server to log the chapter's banked reading time
  * rather than wait for a report that is not coming.
  */
 export async function flushProgress(
@@ -239,11 +241,13 @@ export interface ReaderSettings {
 
 export type KavitaLiveStatus = 'Off' | 'Connecting' | 'Connected' | 'NotAdmin' | 'Unreachable'
 
+export const readerSettingsQuery = queryOptions({
+  queryKey: ['settings', 'reader'],
+  queryFn: () => api<ReaderSettings>('/settings/reader'),
+})
+
 export function useReaderSettings() {
-  return useQuery({
-    queryKey: ['settings', 'reader'],
-    queryFn: () => api<ReaderSettings>('/settings/reader'),
-  })
+  return useQuery(readerSettingsQuery)
 }
 
 export function useSaveReaderSettings() {
@@ -338,7 +342,7 @@ export type ChapterReadState = 'read' | 'watched' | 'unread'
 /**
  * Bulk read-state change over a set of chapters, for the chapter table's select mode and for
  * ticking a whole anime season off at once. Invalidates the same queries as
- * {@link useSetChapterRead} — read state feeds both Home rails and the series read counts.
+ * {@link useSetChapterRead}, read state feeds both Home rails and the series read counts.
  */
 export function useSetChaptersState(seriesId: number) {
   const queryClient = useQueryClient()

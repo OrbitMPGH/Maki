@@ -120,9 +120,21 @@ public class SourceMatchWorkerHostedService(
             failed = true;
         }
 
-        series.SourceMatchPending = false;
         try
         {
+            if (failed)
+            {
+                // Rows the failed save left tracked would be retried by the save below and fail again.
+                db.ChangeTracker.Clear();
+                series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+                if (series is null)
+                {
+                    logger.LogInformation("Series {Id} was deleted during source matching", seriesId);
+                    return;
+                }
+            }
+
+            series.SourceMatchPending = false;
             await db.SaveChangesAsync(ct);
         }
         catch (DbUpdateConcurrencyException)
