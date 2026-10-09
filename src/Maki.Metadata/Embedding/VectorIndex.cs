@@ -497,7 +497,9 @@ public sealed class VectorIndex(
             resolvedTags,
             // A ceiling-resolved rating list is never empty, so an empty one here means something
             // upstream dropped every rating; matching nothing is the only safe reading of that.
-            ResolveBytes(filters.ContentRatings, vocabularies.ContentRatings, emptyMatchesNothing: true),
+            ResolveBytes(
+                ContentRating.CoversAll(filters.ContentRatings) ? null : filters.ContentRatings,
+                vocabularies.ContentRatings, emptyMatchesNothing: true),
             impossible || filters.CreditIds is { Count: 0 },
             CreditMask: filters.CreditIds is { Count: > 0 } creditIds ? BuildRowMask(creditIds.ToArray()) : null,
             Rules: rules?.ToArray(),

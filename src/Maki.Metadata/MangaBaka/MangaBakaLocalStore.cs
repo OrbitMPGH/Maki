@@ -745,7 +745,8 @@ public class MangaBakaLocalStore(
 
                 var rowContentRating = GetString(reader, 10);
                 var ratingAllowed = contentRatings is { Count: > 0 }
-                    ? contentRatings.Contains(rowContentRating, StringComparer.OrdinalIgnoreCase)
+                    ? ContentRating.CoversAll(contentRatings)
+                        || contentRatings.Contains(rowContentRating, StringComparer.OrdinalIgnoreCase)
                     : rowContentRating != "pornographic";
                 if (GetString(reader, 1) != "active" || !ratingAllowed || GetString(reader, 11) == "novel")
                 {
