@@ -932,7 +932,12 @@ public class SeriesController(
         var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
 
-        var readerPrefs = await readingProfiles.ResolveAsync(id, ct);
+        var userState = await db.UserSeriesStates
+            .Where(x => x.SeriesId == id)
+            .Select(x => new { x.Rating, x.NotificationMode, x.ReaderPrefsJson, x.ReadingProfileId })
+            .FirstOrDefaultAsync(ct);
+        var readerPrefs = await readingProfiles.ResolveForAsync(
+            series.Type, userState?.ReaderPrefsJson, userState?.ReadingProfileId, ct);
         // A profile or series override is an explicit reading-style choice. With only the global
         // default, use the format's conventional style so an unconfigured manhua/manhwa does not
         // borrow a manga pace merely because the application default is paged.
@@ -944,7 +949,6 @@ public class SeriesController(
         var estimate = await readingTimeEstimates.EstimateAsync(
             id, estimateTotal, readRows, estimateMode, ct);
 
-        var userState = await UserStateForAsync(id, ct);
         var pendingProposalId = await db.TorrentProposals
             .Where(p => p.SeriesId == id && p.Status == TorrentProposalStatus.Pending)
             .OrderByDescending(p => p.CreatedAtUtc)
@@ -952,8 +956,8 @@ public class SeriesController(
             .FirstOrDefaultAsync(ct);
         var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
-            rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
-            notificationMode: userState.NotificationMode,
+            rating: userState?.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
+            notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             RemovedChapterCount = counts?.Removed ?? 0,
