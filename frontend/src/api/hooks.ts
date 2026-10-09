@@ -523,6 +523,16 @@ export interface DiscoverRail {
   excludeOwned?: boolean
 }
 
+/** A seed series as the Discover page draws it: the title, the position, and which state that is. */
+export interface DiscoverSeedState {
+  title: string
+  chaptersRead: number
+  /** Chapters on disk, the denominator the reader can actually reach, not the provider's count. */
+  chaptersAvailable: number
+  /** `reading`, `caught-up` (nothing left but the series continues), or `finished`. */
+  state: 'reading' | 'caught-up' | 'finished'
+}
+
 /** Expanded ("Show more") request for a single rail: same feed, user filters, higher limit. */
 export interface DiscoverFeedRequest {
   feed: string
@@ -3527,7 +3537,7 @@ export interface ScrobbleStatus {
 export function useAppVersion() {
   return useQuery({
     queryKey: ['app-version'],
-    queryFn: async () => (await getInitialize()).version,
+    queryFn: async () => (await api<{ version: string }>('/system/status')).version,
     staleTime: Infinity,
   })
 }
@@ -3689,6 +3699,9 @@ export interface ScrobbleSettings {
   kitsuClientSecret: string | null
   kitsuEmail: string | null
   kitsuPassword: string | null
+  /** The server never echoes the secrets back; these say whether one is stored. */
+  kitsuPasswordSet: boolean
+  mangaBakaTokenSet: boolean
   intervalMinutes: number
   planToRead: boolean
   libraryIds: string | null
