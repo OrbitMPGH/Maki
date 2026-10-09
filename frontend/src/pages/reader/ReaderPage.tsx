@@ -52,7 +52,7 @@ export default function ReaderPage() {
     refetch,
   } = useReaderManifest(chapterId)
   const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
-    useReaderPrefs(manifest, !isFetching)
+    useReaderPrefs(manifest, !isFetching && !isError)
 
   const [page, setPage] = useState(0)
   // Bumped on every *explicit* jump (resume, toolbar scrub, page-strip click, Home/End) so
@@ -79,7 +79,11 @@ export default function ReaderPage() {
   // The chrome starts hidden and is summoned by a tap in the middle of the page: the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
-  const [chromeHeld, setChromeHeld] = useState(false)
+  // One hold per source, so one letting go (the cursor leaving a bar) cannot release another
+  // (the cursor arriving on the thumbnail strip).
+  const [toolbarHeld, setToolbarHeld] = useState(false)
+  const [stripHeld, setStripHeld] = useState(false)
+  const chromeHeld = toolbarHeld || stripHeld
   const [fullscreen, setFullscreen] = useState(false)
   const [stripOpen, setStripOpen] = useState(false)
   const [zoom, setZoom] = useState(1)
@@ -474,7 +478,7 @@ export default function ReaderPage() {
     )
   }
 
-  if (isError || !manifest) {
+  if (!manifest || (isError && resumedFor !== manifest.chapterId)) {
     // Only a 404 means the file is the problem; anything else (network, 401, 500) is worth retrying.
     const unreadable = !isError || (error instanceof ApiError && error.status === 404)
     return (
@@ -517,7 +521,8 @@ export default function ReaderPage() {
         pageLabel={pageNumber}
         onSeek={seekToPage}
         onPrevChapter={() => void goToChapter(manifest.previousChapterId, false)}
-        onNextChapter={() => void goToChapter(manifest.nextChapterId, true)}
+        // Skipping ahead is not finishing: only leaving from the last page counts as read.
+        onNextChapter={() => void goToChapter(manifest.nextChapterId, shownTo >= manifest.pageCount - 1)}
         prefs={prefs}
         onPrefs={update}
         selection={selection}
@@ -535,7 +540,7 @@ export default function ReaderPage() {
         stripOpen={stripOpen}
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
-        onHold={setChromeHeld}
+        onHold={setToolbarHeld}
         onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
       />
@@ -592,15 +597,15 @@ export default function ReaderPage() {
         <div
           className="reader-strip-wrap"
           data-visible={chrome}
-          onMouseEnter={() => setChromeHeld(true)}
-          onMouseLeave={() => setChromeHeld(false)}
+          onMouseEnter={() => setStripHeld(true)}
+          onMouseLeave={() => setStripHeld(false)}
           onFocus={(event) => {
             if (!(event.target as HTMLElement).matches(':focus-visible')) return
             setChrome(true)
-            setChromeHeld(true)
+            setStripHeld(true)
           }}
           onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setChromeHeld(false)
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setStripHeld(false)
           }}
         >
           <PageStrip

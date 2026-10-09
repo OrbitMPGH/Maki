@@ -5,6 +5,9 @@ import type { ReadingClock } from './useReadingClock'
 
 const DEBOUNCE_MS = 1500
 
+/** How long a final flush waits for the save in flight before sending anyway. */
+const FLUSH_CHAIN_WAIT_MS = 2000
+
 /**
  * How often banked reading time is reported when nothing else is writing. Page turns carry it
  * along for free, so this only fires on a chapter being read without them: a long continuous
@@ -95,7 +98,7 @@ export function useReaderProgress(
   useEffect(() => {
     if (!enabled) return
 
-    const flush = () => {
+    const flush = (unloading: boolean) => {
       const { chapterId: id, page: at, complete: done } = latest.current
       // Banked seconds are worth a write on their own: this is the last chance to report the
       // stretch since the previous one, and a hidden tab may never come back.
@@ -103,25 +106,39 @@ export function useReaderProgress(
       // The flush carries the latest position, so a debounce still armed would only repeat it.
       clearTimeout(timer.current)
       pending.current = false
-      void flushProgress(id, at, done || undefined, clock.take())
-        .then((unlocked) => {
-          if (unlocked.length > 0) unlockHandler.current?.(unlocked)
-          // Only now has the write committed, so a refetch started any earlier could read the old state.
-          flushedHandler.current?.()
-        })
-        .catch(() => {})
+      const seconds = clock.take()
+      const run = () =>
+        flushProgress(id, at, done || undefined, seconds)
+          .then((unlocked) => {
+            if (unlocked.length > 0) unlockHandler.current?.(unlocked)
+            // Only now has the write committed, so a refetch started any earlier could read the old state.
+            flushedHandler.current?.()
+          })
+          .catch(() => {})
+      // A page that is going away has no time to queue. Otherwise the flush goes after the save
+      // already in flight, so that one cannot land later and put the older position back; a hung
+      // save is only waited on briefly.
+      if (unloading) {
+        void run()
+        return
+      }
+      inflight.current = Promise.race([
+        inflight.current,
+        new Promise<void>((resolve) => setTimeout(resolve, FLUSH_CHAIN_WAIT_MS)),
+      ]).then(run)
     }
 
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') flush()
+      if (document.visibilityState === 'hidden') flush(false)
     }
 
     document.addEventListener('visibilitychange', onVisibility)
-    window.addEventListener('pagehide', flush)
+    const onPageHide = () => flush(true)
+    window.addEventListener('pagehide', onPageHide)
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
-      window.removeEventListener('pagehide', flush)
-      flush()
+      window.removeEventListener('pagehide', onPageHide)
+      flush(false)
     }
   }, [enabled, clock])
 

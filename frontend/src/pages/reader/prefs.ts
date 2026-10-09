@@ -155,17 +155,19 @@ export function useReaderPrefs(manifest: ReaderManifest | undefined, settled = t
       }
 
       // The global write carries the push-back setting, which lives on the same endpoint but is
-      // never edited here. It is read fresh at write time, and a failed read drops the save rather
-      // than guessing a value that would switch push-back off.
+      // never edited here. It is read fresh at write time (silently: the reader has no place for a
+      // toast), falls back to the last copy the app saw, and drops the save when there is none
+      // rather than guessing a value that would switch push-back off.
       void queryClient
-        .fetchQuery({ ...readerSettingsQuery, staleTime: 0 })
-        .then((settings) =>
-          api('/settings/reader', {
+        .fetchQuery({ ...readerSettingsQuery, staleTime: 0, meta: { silent: true } })
+        .catch(() => queryClient.getQueryData(readerSettingsQuery.queryKey))
+        .then((settings) => {
+          if (!settings) return
+          return api('/settings/reader', {
             method: 'PUT',
             body: JSON.stringify({ defaults: next, pushToKavita: settings.pushToKavita }),
-          }),
-        )
-        .then(() => queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] }))
+          }).then(() => queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] }))
+        })
         .catch(() => {})
     },
     [seriesId, queryClient],
