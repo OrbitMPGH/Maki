@@ -50,7 +50,7 @@ public class KavitaClient(IHttpClientFactory httpClientFactory)
     public async Task ScanFolderAsync(string baseUrl, string apiKey, string folderPath, CancellationToken ct = default)
     {
         var client = CreateClient(baseUrl);
-        var response = await client.PostAsJsonAsync(
+        using var response = await client.PostAsJsonAsync(
             "api/Library/scan-folder", new { apiKey, folderPath }, ct);
         response.EnsureSuccessStatusCode();
     }
@@ -124,18 +124,31 @@ public class KavitaClient(IHttpClientFactory httpClientFactory)
 
         var all = new List<KavitaSeriesSummary>();
         const int pageSize = 200;
-        for (var page = 1; ; page++)
+        const int maxPages = 1000;
+        int? previousFirstId = null;
+        for (var page = 1; page <= maxPages; page++)
         {
             using var response = await SendAuthedAsync(baseUrl, apiKey,
                 client => client.PostAsJsonAsync($"api/Series/all-v2?PageNumber={page}&PageSize={pageSize}", filter, ct), ct);
             response.EnsureSuccessStatusCode();
             var batch = await response.Content.ReadFromJsonAsync<List<KavitaSeriesSummary>>(cancellationToken: ct) ?? [];
+            // A proxy or Kavita version that drops the paging query string answers every page with the
+            // same list, so a page that opens on the previous page's first series ends the walk.
+            if (batch.Count > 0 && batch[0].Id == previousFirstId)
+            {
+                return all;
+            }
+
             all.AddRange(batch);
             if (batch.Count < pageSize)
             {
                 return all;
             }
+
+            previousFirstId = batch[0].Id;
         }
+
+        return all;
     }
 
     /// <summary>The volumes/chapters tree with per-chapter page counts and read progress.</summary>
@@ -282,7 +295,7 @@ public class KavitaClient(IHttpClientFactory httpClientFactory)
             }
 
             var client = CreateClient(baseUrl);
-            var response = await client.PostAsync(
+            using var response = await client.PostAsync(
                 $"api/Plugin/authenticate?apiKey={Uri.EscapeDataString(apiKey)}&pluginName=Maki", null, ct);
             response.EnsureSuccessStatusCode();
             var auth = await response.Content.ReadFromJsonAsync<AuthResponse>(cancellationToken: ct);
