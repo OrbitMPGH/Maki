@@ -37,6 +37,21 @@ public class FileLinkerTests : IDisposable
     }
 
     [Fact]
+    public void Place_WithoutHardlink_LeavesNoPartialFileAndRefusesAnExistingTarget()
+    {
+        var source = Write("source.cbz", "payload");
+        var target = Write("taken.cbz", "existing");
+
+        Assert.Throws<IOException>(() => FileLinker.Place(source, target, preferHardlink: false));
+        Assert.Equal("existing", File.ReadAllText(target));
+        Assert.False(File.Exists(target + ".partial"));
+
+        var fresh = Path.Combine(_dir, "fresh.cbz");
+        FileLinker.Place(source, fresh, preferHardlink: false);
+        Assert.False(File.Exists(fresh + ".partial"));
+    }
+
+    [Fact]
     public void Place_WithHardlink_SharesContentInSameFolder()
     {
         var source = Write("source.cbz", "payload");

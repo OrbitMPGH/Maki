@@ -38,8 +38,36 @@ public static class FileLinker
             return FilePlacement.Hardlinked;
         }
 
-        File.Copy(source, target);
+        CopyThroughPartial(source, target);
         return FilePlacement.Copied;
+    }
+
+    /// <summary>
+    /// Copies beside the target under a .partial name and moves it into place, so a crash mid-copy
+    /// never leaves a truncated archive under the real file name. Throws when the target exists.
+    /// </summary>
+    private static void CopyThroughPartial(string source, string target)
+    {
+        if (File.Exists(target))
+        {
+            throw new IOException($"The file '{target}' already exists.");
+        }
+
+        var partial = target + ".partial";
+        try
+        {
+            File.Copy(source, partial, overwrite: true);
+            File.Move(partial, target);
+        }
+        catch
+        {
+            if (File.Exists(partial))
+            {
+                File.Delete(partial);
+            }
+
+            throw;
+        }
     }
 
     /// <summary>
