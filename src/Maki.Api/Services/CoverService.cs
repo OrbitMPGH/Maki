@@ -65,7 +65,25 @@ public class CoverService(
 
             var target = CoverPathFor(seriesId);
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            await image.SaveAsync(target, new JpegEncoder { Quality = 90 }, ct);
+            var temp = target + ".tmp";
+            try
+            {
+                await image.SaveAsync(temp, new JpegEncoder { Quality = 90 }, CancellationToken.None);
+                File.Move(temp, target, overwrite: true);
+            }
+            catch
+            {
+                try
+                {
+                    File.Delete(temp);
+                }
+                catch (IOException)
+                {
+                }
+
+                throw;
+            }
+
             return target;
         }
         catch (Exception ex)
