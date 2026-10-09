@@ -35,6 +35,7 @@ public class ChapterController(
     StatsEventService stats,
     ReaderArchiveCache archives,
     SourceRegistry sourceRegistry,
+    SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
     DownloadBatchNotifier downloadBatches,
     ICurrentUser currentUser,
@@ -255,6 +256,9 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.differentSeries");
         }
 
+        // Held so a rescan cannot insert the same file's row between the lookup below and the save.
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId, ct);
+
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series?.RootFolder is null)
         {
@@ -321,7 +325,6 @@ public class ChapterController(
             };
             ChapterFileQualityService.StampTierOnly(file, sourceRegistry.Find(file.SourceName)?.Kind, null);
             db.ChapterFiles.Add(file);
-            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             await db.SaveChangesAsync(ct);
         }
 
@@ -340,12 +343,26 @@ public class ChapterController(
     public async Task<IActionResult> Unlink([FromBody] int[] chapterIds, CancellationToken ct)
     {
         var chapters = await db.Chapters.Where(c => chapterIds.Contains(c.Id)).ToListAsync(ct);
-        foreach (var chapter in chapters)
+        var locks = new List<IDisposable>();
+        try
         {
-            chapter.ChapterFileId = null;
+            foreach (var seriesId in chapters.Select(c => c.SeriesId).Distinct().Order())
+            {
+                locks.Add(await SeriesLocks.SeriesAsync(seriesId, ct));
+            }
+
+            foreach (var chapter in chapters)
+            {
+                chapter.ChapterFileId = null;
+            }
+
+            await db.SaveChangesAsync(ct);
+        }
+        finally
+        {
+            locks.ForEach(l => l.Dispose());
         }
 
-        await db.SaveChangesAsync(ct);
         return Ok(new { unlinked = chapters.Count });
     }
 
@@ -614,6 +631,11 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.mappingDisabled");
         }
 
+        if (!await sourceAvailability.IsEnabledAsync(mapping.SourceName, ct))
+        {
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = mapping.SourceName });
+        }
+
         try
         {
             var replaceInfo = await ReplaceInfoAsync(id, mapping.SourceName,
@@ -677,6 +699,16 @@ public class ChapterController(
         if (mapping is null || sourceRegistry.Find(request.SourceName) is not { } source)
         {
             return NotFound();
+        }
+
+        if (!mapping.Enabled)
+        {
+            return this.Fail(localizer, "error.chapter.mappingDisabled");
+        }
+
+        if (!await sourceAvailability.IsEnabledAsync(source.Name, ct))
+        {
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = source.Name });
         }
 
         var candidates = (await db.Chapters

@@ -1,5 +1,6 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +37,10 @@ public class ChapterRedownloadTests : IDisposable
         Priority = priority
     };
 
-    private ChapterController BuildController(params ISource[] sources)
+    private ChapterController BuildController(params ISource[] sources) =>
+        BuildController(new FakeAppSettings(), sources);
+
+    private ChapterController BuildController(FakeAppSettings settings, params ISource[] sources)
     {
         var registry = new SourceRegistry(sources);
         var queue = new DownloadQueueService(
@@ -45,6 +49,7 @@ public class ChapterRedownloadTests : IDisposable
 
         return new ChapterController(
             new TestLocalizer(), _db.NewContext(), queue, null!, null!, registry,
+            new SourceAvailability(settings, registry),
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             new DownloadBatchNotifier(
                 new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),
@@ -105,6 +110,18 @@ public class ChapterRedownloadTests : IDisposable
         // Chapter 1 already came from the winner and is left alone.
         Assert.Equal(2, queued);
         Assert.Equal(0, unavailable);
+    }
+
+    [Fact]
+    public async Task A_globally_switched_off_source_is_refused()
+    {
+        var seriesId = SeedDownloaded((1m, "bad"));
+        var settings = new FakeAppSettings().Set(SettingKeys.SourcesDisabled, "good");
+        var controller = BuildController(settings, Source("good", 1m), Source("bad", 1m));
+
+        var result = await controller.Redownload(new(seriesId, "good"), Evaluation(), default);
+
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Theory]

@@ -27,6 +27,7 @@ public class ChapterReplaceTests : IDisposable
 
     private ChapterController Controller(MakiDbContext db, MakiPermission permissions) => new(
         new TestLocalizer(), db, _world.Queue, new StatsEventService(db), _world.Archives, _world.Registry,
+        new SourceAvailability(new FakeAppSettings(), _world.Registry),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         _world.Batches(), new TestCurrentUser(1, permissions: permissions), NullLogger<ChapterController>.Instance);
 
@@ -158,6 +159,7 @@ public class ChapterReplaceTests : IDisposable
         using var db = _world.Db.NewContext();
         var controller = new ChapterController(
             new TestLocalizer(), db, _world.Queue, new StatsEventService(db), _world.Archives, _world.Registry,
+            new SourceAvailability(new FakeAppSettings(), _world.Registry),
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             _world.Batches(), new TestCurrentUser(7, permissions: MakiPermission.DownloadChapters),
             NullLogger<ChapterController>.Instance);
