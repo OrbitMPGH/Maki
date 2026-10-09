@@ -1,11 +1,11 @@
 using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Toonily;
 
@@ -109,23 +109,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
         string.Join("&", form.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
     /// <summary>Title lowercased with every run of non-[a-z0-9] collapsed to a single hyphen.</summary>
-    internal static string SearchSlug(string title)
-    {
-        var slug = new StringBuilder(title.Length);
-        foreach (var c in title.ToLowerInvariant())
-        {
-            if (char.IsAsciiLetterOrDigit(c))
-            {
-                slug.Append(c);
-            }
-            else if (slug.Length > 0 && slug[^1] != '-')
-            {
-                slug.Append('-');
-            }
-        }
-
-        return slug.ToString().Trim('-');
-    }
+    internal static string SearchSlug(string title) => UrlText.Slugify(title, '-');
 
     private IReadOnlyList<SourceSeriesResult> ToResults(IReadOnlyList<MadaraParser.ArchiveItem> items)
     {

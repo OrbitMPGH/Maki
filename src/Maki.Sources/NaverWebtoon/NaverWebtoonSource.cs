@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.NaverWebtoon;
 
@@ -52,7 +53,7 @@ public class NaverWebtoonSource(IHttpClientFactory httpClientFactory) : ISource
             return null;
         }
 
-        var titleId = QueryValue(url.Query, "titleId");
+        var titleId = UrlText.QueryValue(url.Query, "titleId");
         return !string.IsNullOrEmpty(titleId) && titleId.All(char.IsAsciiDigit) ? titleId : null;
     }
 
@@ -284,20 +285,6 @@ public class NaverWebtoonSource(IHttpClientFactory httpClientFactory) : ISource
             JsonValueKind.String => idEl.GetString(),
             _ => null
         };
-    }
-
-    private static string? QueryValue(string query, string key)
-    {
-        foreach (var pair in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var split = pair.IndexOf('=');
-            if (split > 0 && pair[..split].Equals(key, StringComparison.OrdinalIgnoreCase))
-            {
-                return Uri.UnescapeDataString(pair[(split + 1)..]);
-            }
-        }
-
-        return null;
     }
 
     private async Task<JsonElement> GetAsync(string path, CancellationToken ct)

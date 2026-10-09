@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
 using Maki.Core.Http;
@@ -46,23 +45,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
     /// Search is a path, not a query string: /search/story/{keyword}, where the keyword is the title
     /// lowercased with every run of non-alphanumerics collapsed to a single underscore.
     /// </summary>
-    internal static string SearchKeyword(string title)
-    {
-        var keyword = new StringBuilder(title.Length);
-        foreach (var c in title.ToLowerInvariant())
-        {
-            if (char.IsAsciiLetterOrDigit(c))
-            {
-                keyword.Append(c);
-            }
-            else if (keyword.Length > 0 && keyword[^1] != '_')
-            {
-                keyword.Append('_');
-            }
-        }
-
-        return keyword.ToString().Trim('_');
-    }
+    internal static string SearchKeyword(string title) => UrlText.Slugify(title, '_');
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {

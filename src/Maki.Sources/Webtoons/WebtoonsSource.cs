@@ -5,6 +5,7 @@ using System.Text.Json;
 using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Webtoons;
 
@@ -95,7 +96,7 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
 
         var locale = segments[0];
         var tail = SourceUrl.PathTail(url, BaseUrl, $"/{locale}/");
-        var titleNo = QueryValue(url.Query, "title_no");
+        var titleNo = UrlText.QueryValue(url.Query, "title_no");
         if (tail is null || titleNo is null)
         {
             return null;
@@ -456,20 +457,6 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
             DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var date)
             ? date
             : null;
-
-    private static string? QueryValue(string query, string key)
-    {
-        foreach (var pair in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var split = pair.IndexOf('=');
-            if (split > 0 && pair[..split].Equals(key, StringComparison.OrdinalIgnoreCase))
-            {
-                return Uri.UnescapeDataString(pair[(split + 1)..]);
-            }
-        }
-
-        return null;
-    }
 
     /// <summary>Shape of <c>GET m.webtoons.com/api/v1/{type}/{titleNo}/episodes</c>.</summary>
     private sealed record EpisodeListResponse(EpisodeListResult? Result, bool Success);
