@@ -16,7 +16,7 @@ export interface LocalizedTitle {
 export interface SeriesDto {
   id: number
   /**
-   * The canonical title — what the folder on disk, the file names and `sortTitle` are built from.
+   * The canonical title, what the folder on disk, the file names and `sortTitle` are built from.
    * Always the provider's English title when there is one. Render `displayTitle` instead.
    */
   title: string
@@ -108,7 +108,7 @@ export interface SeriesDto {
    */
   incognito: string
   /**
-   * "Default" | "All" | "Reading" | "Muted" — how loudly *you* want to hear about this series.
+   * "Default" | "All" | "Reading" | "Muted", how loudly *you* want to hear about this series.
    * Per-user like `rating`, so two readers see different values for the same series, and "Default"
    * defers to the `seriesDefault` on your inbox prefs.
    */
@@ -123,7 +123,7 @@ export interface SeriesDto {
   } | null
   /**
    * Source keys linked to this series, enabled or not. Only the library list endpoint fills these
-   * three in — elsewhere they come back empty, which means "not loaded", not "none linked".
+   * three in, elsewhere they come back empty, which means "not loaded", not "none linked".
    */
   sources?: string[]
   /** The subset of `sources` that actually runs: mapping enabled and source not globally off. */
@@ -194,7 +194,7 @@ export interface LibraryFilterSpec {
   chapterMode: string
   /**
    * `ContentRating` vocabulary values to include, gated by the signed-in user's ceiling. Empty/null
-   * means "don't filter" — including series that haven't been refreshed yet (`contentRating: null`).
+   * means "don't filter", including series that haven't been refreshed yet (`contentRating: null`).
    */
   contentRatings?: string[] | null
   /** Source keys the series must be linked to (`SeriesDto.sources`). */

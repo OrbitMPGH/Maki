@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useEffect, useRef, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -138,7 +139,7 @@ function SavePresetModal({
           setName('')
           onClose()
         },
-        onError: (err) => setError(String(err)),
+        onError: (err) => setError(errorText(err)),
       },
     )
   }

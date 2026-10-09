@@ -645,10 +645,6 @@ msgstr "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-msgid "{kind} to {relatedTo}"
-msgstr "{kind} to {relatedTo}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 msgid "{label} - page {pageNumber}"
@@ -3404,6 +3400,7 @@ msgstr "Client secret"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 msgid "Close"
 msgstr "Close"
 
@@ -3858,6 +3855,10 @@ msgstr "Couldn't load requests"
 #: src/components/rails/CustomRailSection.tsx
 msgid "Couldn't load this rail"
 msgstr "Couldn't load this rail"
+
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
+msgstr "Couldn't load this section"
 
 #: src/pages/HomePage.tsx
 msgid "Couldn't load your library"
@@ -4821,6 +4822,7 @@ msgstr "Era"
 msgid "Erotica"
 msgstr "Erotica"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -7243,6 +7245,10 @@ msgstr "Median"
 #: src/pages/stats/SourceReliability.tsx
 msgid "Median wait"
 msgstr "Median wait"
+
+#: src/App.tsx
+msgid "Menu"
+msgstr "Menu"
 
 #: src/pages/ImportPage.tsx
 msgid "Merging folder"
@@ -9890,6 +9896,10 @@ msgstr "Related series"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr "Related to {relatedTo}"
+
 #: src/pages/DiscoverPage.tsx
 msgid "Related to your library"
 msgstr "Related to your library"
@@ -10379,6 +10389,7 @@ msgstr "Retry and cancel queued downloads"
 msgid "Retry download"
 msgstr "Retry download"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Retrying…"
@@ -10855,8 +10866,8 @@ msgid "Search"
 msgstr "Search"
 
 #: src/components/CommandPalette.tsx
-msgid "Search (Ctrl+K)"
-msgstr "Search (Ctrl+K)"
+msgid "Search ({shortcut})"
+msgstr "Search ({shortcut})"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search by chapter number or title"
@@ -12358,6 +12369,14 @@ msgstr "the series' sources"
 msgid "The server logs will say why."
 msgstr "The server logs will say why."
 
+#: src/api/client.ts
+msgid "The server returned an error ({status})."
+msgstr "The server returned an error ({status})."
+
+#: src/api/client.ts
+msgid "The server sent a response Maki could not read ({status})."
+msgstr "The server sent a response Maki could not read ({status})."
+
 #: src/components/settings/AccountSection.tsx
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "The single biggest improvement if Maki is reachable from the internet."
@@ -13681,6 +13700,7 @@ msgstr "Wanted chapters may be downloaded again by existing automation."
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 msgid "Warning"
 msgstr "Warning"

@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { useQueryClient } from '@tanstack/react-query'
@@ -340,7 +341,7 @@ function AnimeSignalsPanel() {
 
   if (isLoading || !data) {
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {errorText(error)}</Trans></Alert>
     ) : null
   }
 
