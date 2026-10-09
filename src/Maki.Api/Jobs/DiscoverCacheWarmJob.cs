@@ -33,6 +33,8 @@ public class DiscoverCacheWarmJob(
 {
     public static readonly JobKey Key = new("discover-cache-warm");
 
+    public const string ScheduledTriggerName = "discover-cache-warm-trigger";
+
     public async Task Execute(IJobExecutionContext context)
     {
         try
@@ -46,6 +48,14 @@ public class DiscoverCacheWarmJob(
                 await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
             }
 
+            // The scheduled runs only refresh indexes somebody already has loaded: building them
+            // for an instance nobody is browsing costs ~17s of CPU and an RSS spike, only for the
+            // idle unload to drop them again. A run triggered after a dump install builds them.
+            if (context.Trigger.Key.Name == ScheduledTriggerName && !searchIndex.IsLoaded && !catalogueIndex.IsLoaded)
+            {
+                return;
+            }
+
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
             await searchIndex.GetAsync(context.CancellationToken);
@@ -53,7 +63,7 @@ public class DiscoverCacheWarmJob(
             // dump, which would otherwise land on whichever keystroke arrived first.
             await catalogueIndex.GetAsync(context.CancellationToken);
         }
-        catch (InvalidOperationException)
+        catch (LocalCatalogueUnavailableException)
         {
             // No local MangaBaka database — nothing to warm.
         }

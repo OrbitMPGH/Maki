@@ -1142,7 +1142,7 @@ try
             .WithIdentity(Maki.Api.Jobs.DiscoverCacheWarmJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.DiscoverCacheWarmJob.Key)
-            .WithIdentity("discover-cache-warm-trigger")
+            .WithIdentity(Maki.Api.Jobs.DiscoverCacheWarmJob.ScheduledTriggerName)
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
             // Twelve hours, matching DiscoverService's rail cache rather than doubling it. At
             // twenty-four one of every two expiries landed on whoever opened Discover next, and
