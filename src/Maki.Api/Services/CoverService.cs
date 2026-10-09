@@ -50,6 +50,13 @@ public class CoverService(
         return File.Exists(path) ? path : null;
     }
 
+    private static bool SameBytes(string a, string b)
+    {
+        var first = new FileInfo(a);
+        var second = new FileInfo(b);
+        return second.Exists && first.Length == second.Length && File.ReadAllBytes(a).AsSpan().SequenceEqual(File.ReadAllBytes(b));
+    }
+
     public async Task<string?> DownloadCoverAsync(int seriesId, string coverUrl, CancellationToken ct = default)
     {
         try
@@ -69,7 +76,15 @@ public class CoverService(
             try
             {
                 await image.SaveAsync(temp, new JpegEncoder { Quality = 90 }, CancellationToken.None);
-                File.Move(temp, target, overwrite: true);
+                if (SameBytes(temp, target))
+                {
+                    // Keeps the write time, which is what the cover URL's cache-buster follows.
+                    File.Delete(temp);
+                }
+                else
+                {
+                    File.Move(temp, target, overwrite: true);
+                }
             }
             catch
             {

@@ -210,14 +210,29 @@ public record SeriesDto(
     /// </summary>
     /// <param name="version">
     /// Stamped onto the URL as a cache-buster. The route itself never changes, so without this a
-    /// browser that already rendered the cover keeps showing those bytes after a metadata refresh
-    /// overwrites the file in place — same URL, no signal to refetch. <see cref="Series.LastMetadataRefresh"/>
-    /// changes on every refresh (and is set on add), so it doubles as a free version stamp.
+    /// browser that already rendered the cover keeps showing those bytes after a refresh overwrites
+    /// the file in place. The cover file's own write time is used when the file is there: it moves
+    /// only when the bytes are rewritten, whereas <see cref="Series.LastMetadataRefresh"/> moves on
+    /// every daily metadata refresh and would make browsers refetch every unchanged poster.
+    /// <paramref name="version"/> is the fallback for a path that cannot be read.
     /// </param>
     public static string? CoverUrlFor(int seriesId, string? coverPath, DateTime? version = null) =>
         coverPath != null
-            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={(version ?? DateTime.UtcNow).Ticks}"
+            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={(CoverWrittenAt(coverPath) ?? version ?? DateTime.UtcNow).Ticks}"
             : null;
+
+    private static DateTime? CoverWrittenAt(string coverPath)
+    {
+        try
+        {
+            var info = new FileInfo(coverPath);
+            return info.Exists ? info.LastWriteTimeUtc : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return null;
+        }
+    }
 
     /// <param name="rating">
     /// The <em>viewing user's</em> score, from their <c>UserSeriesState</c> row. Passed in rather than
