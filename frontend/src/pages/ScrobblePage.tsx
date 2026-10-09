@@ -333,10 +333,10 @@ export default function ScrobblePage() {
                           </Tooltip>
                         ) : volume ? (
                           <Trans>
-                            ch {chapter} · vol {volume}
+                            ch. {chapter} · vol. {volume}
                           </Trans>
                         ) : (
-                          <Trans>ch {chapter}</Trans>
+                          <Trans>ch. {chapter}</Trans>
                         )}
                       </Table.Td>
                       <Table.Td>

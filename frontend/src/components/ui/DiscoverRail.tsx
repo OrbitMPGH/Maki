@@ -94,7 +94,7 @@ function DiscoverSub({ item }: { item: RecommendationItem }) {
       <span className="discover-sub-status">{year ? t`${year}, ${status}` : status}</span>
       {totalChapters ? (
         <span className="discover-sub-chapters">
-          <Trans>{totalChapters} ch</Trans>
+          <Trans>{totalChapters} ch.</Trans>
         </span>
       ) : null}
     </div>
@@ -267,7 +267,7 @@ export const RecommendationRow = memo(function RecommendationRow({
           )}
           {totalChapters != null && (
             <span className="cover-count tnum">
-              <Trans>{totalChapters} ch</Trans>
+              <Trans>{totalChapters} ch.</Trans>
             </span>
           )}
         </div>

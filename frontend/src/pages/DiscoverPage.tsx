@@ -516,7 +516,7 @@ function RecommendedTab() {
     if (chapters[0] > CHAPTER_MIN || chapters[1] < CHAPTER_MAX) {
       const chapterMinChip = chapters[0]
       const chapterMaxChip = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
-      chips.push(t`${chapterMinChip}–${chapterMaxChip} ch`)
+      chips.push(t`${chapterMinChip}–${chapterMaxChip} ch.`)
     }
     if (obscurity !== 0) chips.push(obscurity > 0 ? t`hidden gems` : t`mainstream`)
     if (diversity !== 0) {

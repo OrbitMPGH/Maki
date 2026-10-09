@@ -2738,7 +2738,7 @@ function SeriesDetailBody() {
                                         {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                                             <Tooltip label={t`Contained in a volume/compilation file`} withArrow>
                                               <Badge size="sm" color="indigo" variant="light" className="tnum">
-                                                <Trans>Vol.{fileVolume}</Trans>
+                                                <Trans>Vol. {fileVolume}</Trans>
                                               </Badge>
                                             </Tooltip>
                                         )}
@@ -2746,7 +2746,7 @@ function SeriesDetailBody() {
                                           {c.isOneShot || c.number === null
                                               ? chapterLabel(c)
                                               : c.fileVolume !== null
-                                                  ? <Trans>Ch.{chapterNumber}</Trans>
+                                                  ? <Trans>Ch. {chapterNumber}</Trans>
                                                   : chapterLabel(c)}
                                         </Text>
                                       </Group>

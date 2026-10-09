@@ -403,7 +403,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                   <Text key={s.seriesId ?? title} className="rewind-list-line">
                     {title}{' '}
                     <span className="rewind-dim">
-                      - <Trans>stalled at ch {maxChapter}</Trans>
+                      - <Trans>stalled at ch. {maxChapter}</Trans>
                     </span>
                   </Text>
                 )

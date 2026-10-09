@@ -175,7 +175,7 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
             <div className="stats-fact">
               <span className="stats-fact-label">{t`Pace`}</span>
               <span className="stats-fact-value">
-                {minutesPerChapter !== null ? t`${minutesPerChapter} min / ch` : '-'}
+                {minutesPerChapter !== null ? t`${minutesPerChapter} min / ch.` : '-'}
               </span>
               <span className="stats-fact-hint">{medianSecondsPerChapter !== null ? t`median` : '-'}</span>
             </div>
@@ -195,7 +195,7 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
               </span>
               <span className="stats-fact-hint">
                 {perSittingMedian !== null && perSittingMedian > 0
-                  ? t`${perSitting} ch per sitting`
+                  ? t`${perSitting} ch. per sitting`
                   : '-'}
               </span>
             </div>
