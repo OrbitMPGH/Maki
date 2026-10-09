@@ -51,7 +51,6 @@ public class UsersController(
     {
         var users = await db.Users.AsNoTracking().OrderBy(u => u.Id).ToListAsync(ct);
         var grants = await db.UserRootFolders.AsNoTracking().ToListAsync(ct);
-        var allFolders = await db.RootFolders.Select(r => r.Id).ToListAsync(ct);
         var linked = (await db.UserLogins.AsNoTracking()
             .Where(l => l.LoginProvider == AuthSchemes.Oidc)
             .Select(l => l.UserId)
@@ -59,9 +58,7 @@ public class UsersController(
 
         return Ok(users.Select(u => UserDtoMapper.ToSummary(
             u,
-            u.AllRootFolders
-                ? allFolders
-                : grants.Where(g => g.UserId == u.Id).Select(g => g.RootFolderId).ToList(),
+            grants.Where(g => g.UserId == u.Id).Select(g => g.RootFolderId).ToList(),
             linked.Contains(u.Id))));
     }
 
@@ -414,10 +411,10 @@ public class UsersController(
         await db.SaveChangesAsync(ct);
     }
 
+    // The stored grants even for an all-folders account, so unticking "All root folders" in the editor
+    // brings back the selection that was kept rather than every folder.
     private async Task<IReadOnlyList<int>> RootFolderIdsAsync(MakiUser user, CancellationToken ct) =>
-        user.AllRootFolders
-            ? await db.RootFolders.Select(r => r.Id).ToListAsync(ct)
-            : await db.UserRootFolders.Where(g => g.UserId == user.Id).Select(g => g.RootFolderId).ToListAsync(ct);
+        await db.UserRootFolders.Where(g => g.UserId == user.Id).Select(g => g.RootFolderId).ToListAsync(ct);
 
     private static string Describe(IdentityResult result) =>
         string.Join("; ", result.Errors.Select(e => e.Description));

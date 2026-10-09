@@ -3,6 +3,7 @@ using Maki.Api.Auth;
 using Maki.Api.Controllers;
 using Maki.Api.Dtos;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -438,6 +439,27 @@ public sealed class AuthHardeningTests : IDisposable
     {
         using var db = _db.NewContext();
         return db.Users.Single(u => u.Id == userId).Permissions;
+    }
+
+    [Fact]
+    public async Task An_all_folders_account_still_lists_its_kept_grants_so_unticking_restores_them()
+    {
+        var adminId = _db.SeedUser("admin");
+        var readerId = _db.SeedUser("reader", MakiPermission.None, allRootFolders: true);
+        using (var seed = _db.NewContext())
+        {
+            var kept = new RootFolder { Path = "/kept" };
+            seed.RootFolders.AddRange(kept, new RootFolder { Path = "/other" });
+            seed.SaveChanges();
+            seed.UserRootFolders.Add(new UserRootFolder { UserId = readerId, RootFolderId = kept.Id });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+        var ok = Assert.IsType<OkObjectResult>(await Users(db, adminId).List(default));
+
+        var reader = ((IEnumerable<UserSummaryDto>)ok.Value!).Single(u => u.Id == readerId);
+        Assert.Single(reader.RootFolderIds);
     }
 
     [Fact]
