@@ -18,6 +18,13 @@ public class ChapterNumberParserTests
     [InlineData("5.5: Extras", 5.5, null, false)]
     [InlineData("Episode 124", 124, null, false)]
     [InlineData("Ep. 7.5", 7.5, null, false)]
+    [InlineData("Ch10", 10, null, false)]
+    [InlineData("Chapter10", 10, null, false)]
+    [InlineData("Ep5", 5, null, false)]
+    [InlineData("Ch.6,1", 6.1, null, false)]
+    [InlineData("Chapter 6,5", 6.5, null, false)]
+    [InlineData("6,5", 6.5, null, false)]
+    [InlineData("6,5 - Extras", 6.5, null, false)]
     public void Parses_chapter_numbers(string input, double expected, int? volume, bool oneShot)
     {
         var result = ChapterNumberParser.Parse(input);
@@ -70,6 +77,27 @@ public class ChapterNumberParserTests
     {
         var result = ChapterNumberParser.Parse(null);
         Assert.True(result.IsOneShot);
+    }
+
+    [Theory]
+    [InlineData("Chapters")]
+    [InlineData("Episodes 5")]
+    [InlineData("1,000")]
+    public void Keywords_with_more_letters_and_thousands_separators_are_not_chapter_numbers(string label)
+    {
+        var result = ChapterNumberParser.Parse(label);
+        Assert.Null(result.Number);
+    }
+
+    [Theory]
+    [InlineData("Vol. 3 Extras", 3)]
+    [InlineData("Volume 2", 2)]
+    public void Unparseable_text_with_a_volume_is_a_volume_row_not_a_oneshot(string label, int volume)
+    {
+        var result = ChapterNumberParser.Parse(label);
+        Assert.Null(result.Number);
+        Assert.Equal(volume, result.Volume);
+        Assert.False(result.IsOneShot);
     }
 
     [Fact]
