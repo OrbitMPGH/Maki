@@ -62,7 +62,7 @@ public static partial class ChapterNumberParser
             }
         }
 
-        // Direct decimal ("10", "10.5", "10,5") — the common case for API-backed sources.
+        // Direct decimal ("10", "10.5", "10,5"): the common case for API-backed sources.
         if (TryParseNumber(text) is { } direct)
         {
             return new ParsedChapter(direct, volume, false);
