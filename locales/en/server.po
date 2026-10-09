@@ -1734,6 +1734,11 @@ msgstr "The database in this backup is damaged or is not a Maki database. Nothin
 msgid "error.system.backupTooNew"
 msgstr "Backup is from a newer version (migration \"{migration}\" unknown to this build). Upgrade Maki before restoring it."
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupTooOld"
+msgstr "Backup is from a version too old to restore directly (migration \"{migration}\" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade."
+
 #: src/Maki.Api/Services/BackupService.cs
 msgid "error.system.backupUnreadable"
 msgstr "This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed."

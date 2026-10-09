@@ -208,7 +208,8 @@ public class BackupService(
     public Task StagePendingRestoreFromFileAsync(string name, CancellationToken ct)
     {
         using var stream = File.OpenRead(PathFor(name));
-        return StageAsync(stream, ct);
+        Stage(stream);
+        return Task.CompletedTask;
     }
 
     public async Task StagePendingRestoreFromUploadAsync(Stream zip, CancellationToken ct)
@@ -221,7 +222,7 @@ public class BackupService(
                 await zip.CopyToAsync(fs, ct);
 
             await using var reread = File.OpenRead(temp);
-            await StageAsync(reread, ct);
+            Stage(reread);
         }
         finally
         {
@@ -229,7 +230,7 @@ public class BackupService(
         }
     }
 
-    private async Task StageAsync(Stream zipStream, CancellationToken ct)
+    private void Stage(Stream zipStream)
     {
         var parent = Path.GetDirectoryName(paths.RestorePendingDir)!;
         var tempDir = Path.Combine(parent, $".restore-staging-{Guid.NewGuid():N}");
@@ -244,7 +245,6 @@ public class BackupService(
         }
 
         logger.LogWarning("Staged restore, will apply on next startup and then exit");
-        await Task.CompletedTask;
     }
 
     private void ExtractAndValidate(Stream zipStream, string tempDir)
@@ -262,7 +262,7 @@ public class BackupService(
             // are forward-only, so restoring a newer DB into an older build would leave it unmigratable.
             var manifest = ReadManifestFromArchive(archive);
             if (manifest?.LastMigration is { } last && !known.Contains(last))
-                throw Reject("error.system.backupTooNew", new { migration = last });
+                throw RejectUnknownMigration(known, last);
 
             Directory.CreateDirectory(tempDir);
             dbEntry.ExtractToFile(stagedDb, overwrite: true);
@@ -331,11 +331,16 @@ public class BackupService(
         // starting from Initial onto tables that already exist and crash-loop the restored instance.
         // The manifest check above already refuses any unknown id as too new; match that here too.
         if (string.CompareOrdinal(lastApplied, known[0]) < 0 || string.CompareOrdinal(lastApplied, known[^1]) > 0)
-            throw Reject("error.system.backupTooNew", new { migration = lastApplied });
+            throw RejectUnknownMigration(known, lastApplied);
 
         logger.LogWarning("Rejected restore: unknown migration {Migration} in history", lastApplied);
         throw Reject("error.system.backupInvalidDb");
     }
+
+    private BackupRestoreException RejectUnknownMigration(IReadOnlyList<string> known, string migration) =>
+        known.Count > 0 && string.CompareOrdinal(migration, known[0]) < 0
+            ? Reject("error.system.backupTooOld", new { migration })
+            : Reject("error.system.backupTooNew", new { migration });
 
     /// <summary>Moves a validated staging dir into <see cref="AppPaths.RestorePendingDir"/>. An
     /// existing pending restore is only removed once the new one is in place.</summary>

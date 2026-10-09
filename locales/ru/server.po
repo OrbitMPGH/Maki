@@ -2467,6 +2467,12 @@ msgstr "База данных в этой резервной копии повр
 msgid "error.system.backupTooNew"
 msgstr "Резервная копия создана в более новой версии (эта сборка не знает миграцию «{migration}»). Обновите Maki перед восстановлением."
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is from a version too old to restore directly (migration "{migration}" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade.
+msgid "error.system.backupTooOld"
+msgstr ""
+
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
 #, fuzzy
