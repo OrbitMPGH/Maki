@@ -139,31 +139,33 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 
 | Lane | ID | Tier | State |
 |---|---|---|---|
+| Kavita repair | (wave 2 review) | low | decision (repair mis-attributed Kavita ReadingState rows: move, drop or leave) |
+| DOWNLOADS | DOWNLOADS-02 | medium | done 5e4c759e (missed in wave 2) |
 | HOSTING-08 job | HOSTING-08 | medium | done a17238bd, 0cb22018, 5ae81857 (setting backup.scheduled, default off) |
-| AUTH | AUTH-07 | low | pending |
-| AUTH | AUTH-08 | low | pending |
-| AUTH | AUTH-12 | low | pending |
-| AUTH | AUTH-14 | low | pending |
-| AUTH | AUTH-17 | low | pending |
-| AUTH | AUTH-21 | low | pending |
-| AUTH | AUTH-22 | low | pending |
-| AUTH | AUTH-23 | low | pending |
-| AUTH | AUTH-28 | low | pending |
-| AUTH | AUTH-24 | low | pending |
-| AUTH | AUTH-10 | low | pending |
-| AUTH | AUTH-18 | low | pending |
-| AUTH | AUTH-20 | low | pending |
-| AUTH | AUTH-15 | low | pending |
-| AUTH | AUTH-19 | low | pending |
-| AUTH | AUTH-26 | low | pending |
-| AUTH | AUTH-30 | nit | pending |
-| AUTH | AUTH-13 | nit | pending |
-| AUTH | AUTH-29 | nit | pending |
-| AUTH | AUTH-11 | nit | pending |
-| AUTH | AUTH-09 | nit | pending |
-| AUTH | AUTH-25 | nit | pending |
+| AUTH | AUTH-07 | low | done 07efa3dc |
+| AUTH | AUTH-08 | low | done 07efa3dc, d28caf5c |
+| AUTH | AUTH-12 | low | done f8ef9264, 6e3f8f27 |
+| AUTH | AUTH-14 | low | done ade1c02d (recent sign-in within 10 min for passwordless) |
+| AUTH | AUTH-17 | low | done 07efa3dc |
+| AUTH | AUTH-21 | low | done 1c72caa8, 37a64386 (revocations carried forward on restore) |
+| AUTH | AUTH-22 | low | done 07efa3dc, b94fa23b, d28caf5c |
+| AUTH | AUTH-23 | low | done 12480045, b4dbf33f |
+| AUTH | AUTH-28 | low | done 1798eb54, 5eabe2e5 (TOTP replay guard) |
+| AUTH | AUTH-24 | low | done 8bb2893a |
+| AUTH | AUTH-10 | low | skipped (already fixed by HOSTING-01) |
+| AUTH | AUTH-18 | low | done 0214e824 |
+| AUTH | AUTH-20 | low | done 4098ef34 |
+| AUTH | AUTH-15 | low | done 5e6b5d60, 981f212f |
+| AUTH | AUTH-19 | low | done 0214e824, 389a3a8a |
+| AUTH | AUTH-26 | low | done 6d096810, 90fa3430 |
+| AUTH | AUTH-30 | nit | done 70881826 |
+| AUTH | AUTH-13 | nit | done be8b2713 |
+| AUTH | AUTH-29 | nit | done 5e6b5d60 |
+| AUTH | AUTH-11 | nit | skipped (per-GET reissue is deliberate) |
+| AUTH | AUTH-09 | nit | done 07efa3dc |
+| AUTH | AUTH-25 | nit | done 6f2c9bcb |
 | AUTH | AUTH-16 | nit | done (wave 2) |
-| AUTH | AUTH-27 | nit | pending |
+| AUTH | AUTH-27 | nit | done 6f2c9bcb |
 | CORE | CORE-10 | low | pending |
 | CORE | CORE-20 | low | pending |
 | CORE | CORE-23 | low | pending |
@@ -226,38 +228,38 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | DBPERF | DBPERF-24 | nit | pending |
 | DBPERF | DBPERF-14 | nit | pending |
 | DBPERF | DBPERF-23 | nit | pending |
-| DOWNLOADS | DOWNLOADS-09 | low | pending |
-| DOWNLOADS | DOWNLOADS-10 | low | pending |
-| DOWNLOADS | DOWNLOADS-13 | low | pending |
-| DOWNLOADS | DOWNLOADS-14 | low | pending |
-| DOWNLOADS | DOWNLOADS-17 | low | pending |
-| DOWNLOADS | DOWNLOADS-28 | low | pending |
-| DOWNLOADS | DOWNLOADS-20 | low | pending |
-| DOWNLOADS | DOWNLOADS-21 | low | pending |
-| DOWNLOADS | DOWNLOADS-22 | low | pending |
-| DOWNLOADS | DOWNLOADS-24 | low | pending |
-| DOWNLOADS | DOWNLOADS-29 | low | pending |
-| DOWNLOADS | DOWNLOADS-03 | low | pending |
-| DOWNLOADS | DOWNLOADS-06 | low | pending |
-| DOWNLOADS | DOWNLOADS-16 | low | pending |
-| DOWNLOADS | DOWNLOADS-05 | low | pending |
-| DOWNLOADS | DOWNLOADS-08 | low | pending |
-| DOWNLOADS | DOWNLOADS-18 | low | pending |
-| DOWNLOADS | DOWNLOADS-23 | low | pending |
-| DOWNLOADS | DOWNLOADS-26 | low | pending |
-| DOWNLOADS | DOWNLOADS-04 | low | pending |
-| DOWNLOADS | DOWNLOADS-25 | low | pending |
-| DOWNLOADS | DOWNLOADS-27 | low | pending |
-| DOWNLOADS | DOWNLOADS-19 | low | pending |
-| DOWNLOADS | DOWNLOADS-07 | low | pending |
-| DOWNLOADS | DOWNLOADS-36 | low | pending |
-| DOWNLOADS | DOWNLOADS-30 | nit | pending |
-| DOWNLOADS | DOWNLOADS-34 | nit | pending |
-| DOWNLOADS | DOWNLOADS-15 | nit | pending |
-| DOWNLOADS | DOWNLOADS-33 | nit | pending |
-| DOWNLOADS | DOWNLOADS-32 | nit | pending |
-| DOWNLOADS | DOWNLOADS-35 | nit | pending |
-| DOWNLOADS | DOWNLOADS-31 | nit | pending |
+| DOWNLOADS | DOWNLOADS-09 | low | done d6ae9d72 |
+| DOWNLOADS | DOWNLOADS-10 | low | done d2f47522 |
+| DOWNLOADS | DOWNLOADS-13 | low | done 45a8c486 |
+| DOWNLOADS | DOWNLOADS-14 | low | done e2254868 (early access only) |
+| DOWNLOADS | DOWNLOADS-17 | low | done e2254868 |
+| DOWNLOADS | DOWNLOADS-28 | low | done 7e72929c |
+| DOWNLOADS | DOWNLOADS-20 | low | done a8f43419 |
+| DOWNLOADS | DOWNLOADS-21 | low | done 63b03c4a |
+| DOWNLOADS | DOWNLOADS-22 | low | done d7cca99b, 6defdd86 |
+| DOWNLOADS | DOWNLOADS-24 | low | done 2903f282 |
+| DOWNLOADS | DOWNLOADS-29 | low | done 3c5675bf |
+| DOWNLOADS | DOWNLOADS-03 | low | done efa806d0 |
+| DOWNLOADS | DOWNLOADS-06 | low | done dd02082e |
+| DOWNLOADS | DOWNLOADS-16 | low | done 0df1dbc9 |
+| DOWNLOADS | DOWNLOADS-05 | low | skipped (owner decision: imported reads count as finished) |
+| DOWNLOADS | DOWNLOADS-08 | low | done 9c36f853 |
+| DOWNLOADS | DOWNLOADS-18 | low | done 9b524237, 56d9edfa |
+| DOWNLOADS | DOWNLOADS-23 | low | done d7cca99b |
+| DOWNLOADS | DOWNLOADS-26 | low | done f8d52544 |
+| DOWNLOADS | DOWNLOADS-04 | low | skipped (narrow read, tens of ms at 50k rows) |
+| DOWNLOADS | DOWNLOADS-25 | low | done 5ef23800 |
+| DOWNLOADS | DOWNLOADS-27 | low | skipped (owner decision: Retry stays allowed) |
+| DOWNLOADS | DOWNLOADS-19 | low | done 3c5675bf (server Vol./Ch. labels left) |
+| DOWNLOADS | DOWNLOADS-07 | low | done f59a0ef2 |
+| DOWNLOADS | DOWNLOADS-36 | low | done 2042fa96 |
+| DOWNLOADS | DOWNLOADS-30 | nit | done c49ba63e |
+| DOWNLOADS | DOWNLOADS-34 | nit | done 6a214ffb |
+| DOWNLOADS | DOWNLOADS-15 | nit | done c49ba63e |
+| DOWNLOADS | DOWNLOADS-33 | nit | done d7cca99b |
+| DOWNLOADS | DOWNLOADS-32 | nit | done dd02082e |
+| DOWNLOADS | DOWNLOADS-35 | nit | skipped (behaviour change, timezone-dependent tests) |
+| DOWNLOADS | DOWNLOADS-31 | nit | done c49ba63e |
 | FE-INFRA | FE-INFRA-14 | low | pending |
 | FE-INFRA | FE-INFRA-04 | low | pending |
 | FE-INFRA | FE-INFRA-13 | low | pending |
@@ -328,32 +330,32 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-LIBRARY | FE-LIBRARY-49 | nit | pending |
 | FE-LIBRARY | FE-LIBRARY-56 | nit | pending |
 | FE-LIBRARY | FE-LIBRARY-61 | nit | pending |
-| FE-READER | FE-READER-08 | low | pending |
-| FE-READER | FE-READER-24 | low | pending |
-| FE-READER | FE-READER-20 | low | pending |
-| FE-READER | FE-READER-07 | low | pending |
-| FE-READER | FE-READER-10 | low | pending |
-| FE-READER | FE-READER-06 | low | pending |
-| FE-READER | FE-READER-09 | low | pending |
-| FE-READER | FE-READER-34 | low | pending |
-| FE-READER | FE-READER-19 | low | pending |
-| FE-READER | FE-READER-15 | low | pending |
-| FE-READER | FE-READER-17 | low | pending |
-| FE-READER | FE-READER-18 | low | pending |
-| FE-READER | FE-READER-21 | low | pending |
-| FE-READER | FE-READER-22 | low | pending |
-| FE-READER | FE-READER-23 | low | pending |
-| FE-READER | FE-READER-25 | low | pending |
-| FE-READER | FE-READER-26 | low | pending |
-| FE-READER | FE-READER-12 | low | pending |
-| FE-READER | FE-READER-27 | nit | pending |
-| FE-READER | FE-READER-31 | nit | pending |
-| FE-READER | FE-READER-29 | nit | pending |
-| FE-READER | FE-READER-28 | nit | pending |
-| FE-READER | FE-READER-30 | nit | pending |
-| FE-READER | FE-READER-33 | nit | pending |
-| FE-READER | FE-READER-35 | nit | pending |
-| FE-READER | FE-READER-32 | nit | pending |
+| FE-READER | FE-READER-08 | low | done 1c28fad9 |
+| FE-READER | FE-READER-24 | low | done d3762af8 |
+| FE-READER | FE-READER-20 | low | done 2a8da8e9 |
+| FE-READER | FE-READER-07 | low | done 1c28fad9, dd7ed05b |
+| FE-READER | FE-READER-10 | low | skipped (documented write-on-open that Continue relies on) |
+| FE-READER | FE-READER-06 | low | done dd7ed05b (Next chapter completes only from the last page) |
+| FE-READER | FE-READER-09 | low | done d1b40371, dd7ed05b, 0d142894 |
+| FE-READER | FE-READER-34 | low | done d7e48f3c |
+| FE-READER | FE-READER-19 | low | done 6cc7b6c1 (partial) |
+| FE-READER | FE-READER-15 | low | done d852dae9 |
+| FE-READER | FE-READER-17 | low | done d852dae9 |
+| FE-READER | FE-READER-18 | low | done 6cc7b6c1 |
+| FE-READER | FE-READER-21 | low | done d3762af8 |
+| FE-READER | FE-READER-22 | low | done 5c701ea7, dd7ed05b |
+| FE-READER | FE-READER-23 | low | done 5c701ea7 |
+| FE-READER | FE-READER-25 | low | done 4efc724f |
+| FE-READER | FE-READER-26 | low | done 2a41d3f1, dd7ed05b |
+| FE-READER | FE-READER-12 | low | done d1b40371 |
+| FE-READER | FE-READER-27 | nit | done d3762af8 |
+| FE-READER | FE-READER-31 | nit | skipped (under 2 s, touches incognito semantics) |
+| FE-READER | FE-READER-29 | nit | done d3762af8 |
+| FE-READER | FE-READER-28 | nit | done d852dae9 |
+| FE-READER | FE-READER-30 | nit | done 4efc724f |
+| FE-READER | FE-READER-33 | nit | skipped (needs a backend payload change) |
+| FE-READER | FE-READER-35 | nit | done 40e82886 |
+| FE-READER | FE-READER-32 | nit | done 1c28fad9 |
 | FE-SETTINGS | FE-SETTINGS-23 | low | pending |
 | FE-SETTINGS | FE-SETTINGS-20 | low | pending |
 | FE-SETTINGS | FE-SETTINGS-26 | low | pending |
@@ -420,46 +422,46 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-UX | FE-UX-04 | nit | pending |
 | FE-UX | FE-UX-09 | nit | pending |
 | FE-UX | FE-UX-17 | nit | pending |
-| HOSTING | HOSTING-26 | low | pending |
-| HOSTING | HOSTING-32 | low | pending |
-| HOSTING | HOSTING-19 | low | pending |
-| HOSTING | HOSTING-20 | low | pending |
-| HOSTING | HOSTING-24 | low | pending |
-| HOSTING | HOSTING-27 | low | pending |
-| HOSTING | HOSTING-29 | low | pending |
+| HOSTING | HOSTING-26 | low | done ae3a7864, 1723f02e |
+| HOSTING | HOSTING-32 | low | done 27a3a327 (proxy bypass in CORE lane) |
+| HOSTING | HOSTING-19 | low | done ae3a7864, 75957f9e |
+| HOSTING | HOSTING-20 | low | done fdf94fcd |
+| HOSTING | HOSTING-24 | low | done c7a42239 |
+| HOSTING | HOSTING-27 | low | done 940816a1 |
+| HOSTING | HOSTING-29 | low | done 6f2de970 |
 | HOSTING | HOSTING-33 | low | done (wave 2) |
-| HOSTING | HOSTING-37 | low | pending |
-| HOSTING | HOSTING-40 | low | pending |
-| HOSTING | HOSTING-47 | low | pending |
-| HOSTING | HOSTING-11 | low | pending |
-| HOSTING | HOSTING-38 | low | pending |
-| HOSTING | HOSTING-39 | low | pending |
-| HOSTING | HOSTING-23 | low | pending |
-| HOSTING | HOSTING-34 | low | pending |
-| HOSTING | HOSTING-13 | low | pending |
-| HOSTING | HOSTING-15 | low | pending |
-| HOSTING | HOSTING-16 | low | pending |
-| HOSTING | HOSTING-30 | low | pending |
-| HOSTING | HOSTING-04 | low | pending |
-| HOSTING | HOSTING-21 | low | pending |
-| HOSTING | HOSTING-17 | low | pending |
-| HOSTING | HOSTING-18 | low | pending |
-| HOSTING | HOSTING-28 | low | pending |
-| HOSTING | HOSTING-31 | low | pending |
-| HOSTING | HOSTING-36 | low | pending |
-| HOSTING | HOSTING-51 | nit | pending |
-| HOSTING | HOSTING-14 | nit | pending |
-| HOSTING | HOSTING-49 | nit | pending |
-| HOSTING | HOSTING-50 | nit | pending |
-| HOSTING | HOSTING-25 | nit | pending |
-| HOSTING | HOSTING-43 | nit | pending |
-| HOSTING | HOSTING-45 | nit | pending |
-| HOSTING | HOSTING-46 | nit | pending |
-| HOSTING | HOSTING-48 | nit | pending |
-| HOSTING | HOSTING-41 | nit | pending |
-| HOSTING | HOSTING-42 | nit | pending |
-| HOSTING | HOSTING-35 | nit | pending |
-| HOSTING | HOSTING-44 | nit | pending |
+| HOSTING | HOSTING-37 | low | done a4957257 |
+| HOSTING | HOSTING-40 | low | done f4f9ceb6 |
+| HOSTING | HOSTING-47 | low | done aece72a1 |
+| HOSTING | HOSTING-11 | low | done 3ca1ccb0 |
+| HOSTING | HOSTING-38 | low | done ae1e7fbe |
+| HOSTING | HOSTING-39 | low | skipped (owner decision: keep failing startup) |
+| HOSTING | HOSTING-23 | low | done 46135206 |
+| HOSTING | HOSTING-34 | low | done eef1bbd1 |
+| HOSTING | HOSTING-13 | low | done e7bc3e83, 6327a67a |
+| HOSTING | HOSTING-15 | low | done 58c40a8f (resolved toward RECO gate) |
+| HOSTING | HOSTING-16 | low | done 58c40a8f |
+| HOSTING | HOSTING-30 | low | done 6f2de970, 1723f02e |
+| HOSTING | HOSTING-04 | low | skipped (write probe is the point of the check) |
+| HOSTING | HOSTING-21 | low | decision (manual import-list run: off the request onto the job, or inline with a cap) |
+| HOSTING | HOSTING-17 | low | done 58c40a8f |
+| HOSTING | HOSTING-18 | low | done 890943d4 |
+| HOSTING | HOSTING-28 | low | done d67793ae (UrlBase removed) |
+| HOSTING | HOSTING-31 | low | done 0f02480a |
+| HOSTING | HOSTING-36 | low | done ce6701d5 |
+| HOSTING | HOSTING-51 | nit | done 5d4d9608, 75957f9e |
+| HOSTING | HOSTING-14 | nit | skipped (window is milliseconds) |
+| HOSTING | HOSTING-49 | nit | skipped (theoretical) |
+| HOSTING | HOSTING-50 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-25 | nit | done c7a42239 |
+| HOSTING | HOSTING-43 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-45 | nit | skipped (too large) |
+| HOSTING | HOSTING-46 | nit | done e6b572f1, 75957f9e |
+| HOSTING | HOSTING-48 | nit | done 9f199317 |
+| HOSTING | HOSTING-41 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-42 | nit | done 42896055 |
+| HOSTING | HOSTING-35 | nit | done fa68c82e |
+| HOSTING | HOSTING-44 | nit | done eef1bbd1, 703f8a7f |
 | METADATA | METADATA-12 | low | pending |
 | METADATA | METADATA-13 | low | pending |
 | METADATA | METADATA-15 | low | pending |
@@ -483,92 +485,92 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | METADATA | METADATA-27 | low | pending |
 | METADATA | METADATA-25 | nit | pending |
 | METADATA | METADATA-26 | nit | pending |
-| PROGRESS | PROGRESS-27 | low | pending |
-| PROGRESS | PROGRESS-10 | low | pending |
-| PROGRESS | PROGRESS-22 | low | pending |
-| PROGRESS | PROGRESS-28 | low | pending |
-| PROGRESS | PROGRESS-11 | low | pending |
-| PROGRESS | PROGRESS-14 | low | pending |
-| PROGRESS | PROGRESS-15 | low | pending |
-| PROGRESS | PROGRESS-17 | low | pending |
-| PROGRESS | PROGRESS-18 | low | pending |
-| PROGRESS | PROGRESS-19 | low | pending |
-| PROGRESS | PROGRESS-26 | low | pending |
-| PROGRESS | PROGRESS-30 | low | pending |
-| PROGRESS | PROGRESS-32 | low | pending |
-| PROGRESS | PROGRESS-33 | low | pending |
-| PROGRESS | PROGRESS-01 | low | pending |
-| PROGRESS | PROGRESS-02 | low | pending |
-| PROGRESS | PROGRESS-16 | low | pending |
-| PROGRESS | PROGRESS-35 | low | pending |
-| PROGRESS | PROGRESS-25 | low | pending |
-| PROGRESS | PROGRESS-03 | low | pending |
-| PROGRESS | PROGRESS-29 | low | pending |
-| PROGRESS | PROGRESS-34 | nit | pending |
-| PROGRESS | PROGRESS-31 | nit | pending |
-| PROGRESS | PROGRESS-20 | nit | pending |
-| PROGRESS | PROGRESS-04 | nit | pending |
-| PROGRESS | PROGRESS-21 | nit | pending |
-| PROGRESS | PROGRESS-36 | nit | pending |
-| RECO | RECO-19 | low | pending |
-| RECO | RECO-08 | low | pending |
-| RECO | RECO-14 | low | pending |
-| RECO | RECO-21 | low | pending |
-| RECO | RECO-22 | low | pending |
-| RECO | RECO-13 | low | pending |
-| RECO | RECO-15 | low | pending |
-| RECO | RECO-11 | low | pending |
-| RECO | RECO-10 | low | pending |
-| RECO | RECO-12 | low | pending |
-| RECO | RECO-24 | low | pending |
-| RECO | RECO-23 | low | pending |
-| RECO | RECO-29 | low | pending |
-| RECO | RECO-09 | low | pending |
-| RECO | RECO-34 | low | pending |
-| RECO | RECO-20 | nit | pending |
-| RECO | RECO-16 | nit | pending |
-| RECO | RECO-26 | nit | pending |
-| RECO | RECO-28 | nit | pending |
-| RECO | RECO-17 | nit | pending |
-| RECO | RECO-32 | nit | pending |
-| RECO | RECO-25 | nit | pending |
-| RECO | RECO-27 | nit | pending |
-| RECO | RECO-18 | nit | pending |
-| RECO | RECO-30 | nit | pending |
-| RECO | RECO-31 | nit | pending |
-| RECO | RECO-33 | nit | pending |
-| SERIES | SERIES-28 | low | pending |
-| SERIES | SERIES-21 | low | pending |
-| SERIES | SERIES-20 | low | pending |
-| SERIES | SERIES-03 | low | pending |
-| SERIES | SERIES-10 | low | pending |
-| SERIES | SERIES-25 | low | pending |
-| SERIES | SERIES-27 | low | pending |
-| SERIES | SERIES-35 | low | pending |
-| SERIES | SERIES-15 | low | pending |
-| SERIES | SERIES-26 | low | pending |
-| SERIES | SERIES-33 | low | pending |
-| SERIES | SERIES-34 | low | pending |
-| SERIES | SERIES-36 | low | pending |
-| SERIES | SERIES-37 | low | pending |
-| SERIES | SERIES-04 | low | pending |
-| SERIES | SERIES-11 | low | pending |
-| SERIES | SERIES-14 | low | pending |
-| SERIES | SERIES-29 | low | pending |
-| SERIES | SERIES-30 | low | pending |
-| SERIES | SERIES-32 | low | pending |
-| SERIES | SERIES-05 | low | pending |
-| SERIES | SERIES-24 | low | pending |
+| PROGRESS | PROGRESS-27 | low | done eccdea66 |
+| PROGRESS | PROGRESS-10 | low | done 363e5bc7 |
+| PROGRESS | PROGRESS-22 | low | done 71138ce0 |
+| PROGRESS | PROGRESS-28 | low | done 5919a390 (culture only) |
+| PROGRESS | PROGRESS-11 | low | done 363e5bc7 |
+| PROGRESS | PROGRESS-14 | low | done 363e5bc7 |
+| PROGRESS | PROGRESS-15 | low | done 3e5633de, f8a6c69c, fe3fdbc7 |
+| PROGRESS | PROGRESS-17 | low | done 9b48cec6 |
+| PROGRESS | PROGRESS-18 | low | skipped (already fixed by CORE-22) |
+| PROGRESS | PROGRESS-19 | low | skipped (already fixed by CORE-18) |
+| PROGRESS | PROGRESS-26 | low | done 556e0502, 057a09fa |
+| PROGRESS | PROGRESS-30 | low | done b6e0d3dd |
+| PROGRESS | PROGRESS-32 | low | done 9b48cec6 |
+| PROGRESS | PROGRESS-33 | low | done 71138ce0 |
+| PROGRESS | PROGRESS-01 | low | done 71138ce0, 149b6730, dba5c355 (CountedAt column, migration) |
+| PROGRESS | PROGRESS-02 | low | done 33aa057d |
+| PROGRESS | PROGRESS-16 | low | done 9b48cec6, 0c9249e7 |
+| PROGRESS | PROGRESS-35 | low | done 363e5bc7 |
+| PROGRESS | PROGRESS-25 | low | skipped (client refetch coalesced in wave 2; audience cache would delay revocation) |
+| PROGRESS | PROGRESS-03 | low | done 71138ce0 |
+| PROGRESS | PROGRESS-29 | low | done 71138ce0 |
+| PROGRESS | PROGRESS-34 | nit | skipped (documented in reader-progress.md) |
+| PROGRESS | PROGRESS-31 | nit | skipped (existing test pins intended behaviour) |
+| PROGRESS | PROGRESS-20 | nit | done 59b0d22c (em dash only) |
+| PROGRESS | PROGRESS-04 | nit | done 71138ce0 |
+| PROGRESS | PROGRESS-21 | nit | done 59b0d22c |
+| PROGRESS | PROGRESS-36 | nit | done 59b0d22c, a927697b, 907d10d4 (partial: d, e, f skipped) |
+| RECO | RECO-19 | low | done a4f665d3 |
+| RECO | RECO-08 | low | done 7907e866 |
+| RECO | RECO-14 | low | done 92ab6d4e |
+| RECO | RECO-21 | low | done 3fc3d04b |
+| RECO | RECO-22 | low | done 51848b48 (instance switches still wait 60 s) |
+| RECO | RECO-13 | low | done 9e70ba8b, 818ebb82 |
+| RECO | RECO-15 | low | done cdf7e5da |
+| RECO | RECO-11 | low | done 7da4dd5e |
+| RECO | RECO-10 | low | done 3c9ca0cf |
+| RECO | RECO-12 | low | done 57e92fa6 |
+| RECO | RECO-24 | low | done 9881e8b1 (partial) |
+| RECO | RECO-23 | low | done 7f4fd4cb |
+| RECO | RECO-29 | low | done b11301d6 |
+| RECO | RECO-09 | low | done 2dec52ce (Intl.ListFormat on the client) |
+| RECO | RECO-34 | low | done 72c8dafd, 761927a2 (never-show rails still lack an end-to-end test) |
+| RECO | RECO-20 | nit | skipped (already fixed by b956feea) |
+| RECO | RECO-16 | nit | done cdf7e5da |
+| RECO | RECO-26 | nit | done c1a19d7a |
+| RECO | RECO-28 | nit | done 39553041 |
+| RECO | RECO-17 | nit | done cdf7e5da |
+| RECO | RECO-32 | nit | done 19fa5ab5, 818ebb82 |
+| RECO | RECO-25 | nit | done cdf7e5da |
+| RECO | RECO-27 | nit | done 39553041 (partial) |
+| RECO | RECO-18 | nit | done cdf7e5da |
+| RECO | RECO-30 | nit | done 57e92fa6 |
+| RECO | RECO-31 | nit | done 34ba8b03 (grouped route removed) |
+| RECO | RECO-33 | nit | done 1f15adc6 |
+| SERIES | SERIES-28 | low | done 4b07c3c7 |
+| SERIES | SERIES-21 | low | skipped (already fixed by AUTH-01/02) |
+| SERIES | SERIES-20 | low | done a1381c15, e20a2c4b |
+| SERIES | SERIES-03 | low | done 4e3b4256 |
+| SERIES | SERIES-10 | low | done 2af33d7c |
+| SERIES | SERIES-25 | low | done 99d04c7d |
+| SERIES | SERIES-27 | low | done c2943f00, 7acc2fd1 |
+| SERIES | SERIES-35 | low | done 38ac67bb, 9761515b (500-row paging left) |
+| SERIES | SERIES-15 | low | done c482b14e, bf9ef5fb |
+| SERIES | SERIES-26 | low | done 201c4527, 4e2a9e73 |
+| SERIES | SERIES-33 | low | done e1359b21, 80740652 |
+| SERIES | SERIES-34 | low | done e1359b21, dfa4a6e2 |
+| SERIES | SERIES-36 | low | done c76dd650 |
+| SERIES | SERIES-37 | low | done bba31b84 |
+| SERIES | SERIES-04 | low | done 142fa627 |
+| SERIES | SERIES-11 | low | done 2af33d7c |
+| SERIES | SERIES-14 | low | done 4208d220 |
+| SERIES | SERIES-29 | low | done 253738de |
+| SERIES | SERIES-30 | low | skipped (rows capped at 10 per mapping) |
+| SERIES | SERIES-32 | low | done 68c6596b, 6081dbf9 |
+| SERIES | SERIES-05 | low | done bdf2e782, 3afbb752 (cover version from file write time, cached) |
+| SERIES | SERIES-24 | low | skipped (frontend coalesced in wave 2; server projection buys little) |
 | SERIES | SERIES-07 | low | done (wave 2) |
 | SERIES | SERIES-16 | low | done (wave 2) |
 | SERIES | SERIES-22 | low | done (wave 2) |
-| SERIES | SERIES-39 | nit | pending |
-| SERIES | SERIES-42 | nit | pending |
-| SERIES | SERIES-41 | nit | pending |
-| SERIES | SERIES-31 | nit | pending |
-| SERIES | SERIES-38 | nit | pending |
-| SERIES | SERIES-12 | nit | pending |
-| SERIES | SERIES-40 | nit | pending |
+| SERIES | SERIES-39 | nit | done df34afee (partial) |
+| SERIES | SERIES-42 | nit | skipped (already uses SourceLanguages.Same) |
+| SERIES | SERIES-41 | nit | done e60abca7 (partial) |
+| SERIES | SERIES-31 | nit | done df34afee |
+| SERIES | SERIES-38 | nit | done df34afee (partial) |
+| SERIES | SERIES-12 | nit | skipped (owner decision: admins stay scoped) |
+| SERIES | SERIES-40 | nit | done e60abca7 |
 | SOURCES | SOURCES-26 | low | pending |
 | SOURCES | SOURCES-17 | low | pending |
 | SOURCES | SOURCES-21 | low | pending |

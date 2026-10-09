@@ -831,7 +831,9 @@ public class ScrobbleService(
             await Task.Delay(AniListPace, ct);
         }
 
-        await tracker.UpdateAsync(userId, remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct);
+        // A re-read stays a re-read: only progress is written, not the Reading status it maps to.
+        var keepStatus = entry.Repeating && plan.PushStatus == ScrobbleStatus.Reading;
+        await tracker.UpdateAsync(userId, remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct, keepStatus);
         await SaveStateAsync(userId, target, tracker.Name, plan.Chapter, plan.Volume,
             StatusName(plan.RecordStatus), null, ct);
 

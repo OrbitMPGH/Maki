@@ -377,7 +377,7 @@ public class OpdsCatalogService(
             }
 
             var name = includeSeriesTitle && seriesTitles.TryGetValue(row.SeriesId, out var seriesTitle)
-                ? $"{seriesTitle} — {label}"
+                ? $"{seriesTitle} - {label}"
                 : label;
 
             int? lastRead = null;

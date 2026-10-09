@@ -70,7 +70,13 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
         await _lock.WaitAsync(ct);
         try
         {
-            _cache[malId] = (DateTime.UtcNow, reviews);
+            var now = DateTime.UtcNow;
+            foreach (var expired in _cache.Where(e => now - e.Value.At >= CacheFor).Select(e => e.Key).ToList())
+            {
+                _cache.Remove(expired);
+            }
+
+            _cache[malId] = (now, reviews);
         }
         finally
         {
@@ -90,7 +96,7 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
             var html = await client.GetStringAsync($"manga/{malId}/_", ct);
             return ParseReviews(html);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex) when (ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
             logger.LogWarning(ex, "Fetching MAL reviews for {MalId} failed", malId);
             return null;

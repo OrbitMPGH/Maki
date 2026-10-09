@@ -440,6 +440,12 @@ public class SeriesController(
     /// been opened — and nothing could clear it, because the mark may not be lowered.
     /// </para>
     /// </summary>
+    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
+        await ReadCounts.Read(db)
+            .GroupBy(p => p.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
+
     /// <summary>
     /// The caller's own per-series state: their score, and their notification mode. Needed by every
     /// endpoint that hands back a <see cref="SeriesDto"/> after a mutation — neither is a column on
@@ -456,12 +462,6 @@ public class SeriesController(
 
         return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default);
     }
-
-    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
-        await ReadCounts.Read(db)
-            .GroupBy(p => p.SeriesId)
-            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
 
     /// <summary>
     /// Lists the raw CBZ files in the series folder cross-referenced with the database:
@@ -739,19 +739,31 @@ public class SeriesController(
             .Where(k => k.Length > 0)
             .ToHashSet();
 
-        var states = await db.ScrobbleSyncStates.AsNoTracking().ToListAsync(ct);
-        var unmatched = await db.ScrobbleUnmatched.AsNoTracking().ToListAsync(ct);
-        var allMappings = await db.ScrobbleMappings.AsNoTracking().ToListAsync(ct);
-
         bool Matches(string title) => keys.Contains(ScrobbleMatching.NormalizeTitle(title));
 
         // Link this library series to its Kavita series by matching the stored title on any
         // scrobble row. Mappings count too (a review/manual match carries the title but may
-        // have no sync state yet), so a just-resolved series is visible immediately.
-        var kavitaIds = states.Where(s => Matches(s.Title)).Select(s => s.KavitaSeriesId)
-            .Concat(unmatched.Where(u => Matches(u.Title)).Select(u => u.KavitaSeriesId))
-            .Concat(allMappings.Where(m => m.Title.Length > 0 && Matches(m.Title)).Select(m => m.KavitaSeriesId))
+        // have no sync state yet), so a just-resolved series is visible immediately. Only the
+        // title and id columns are read for the match; the full rows are fetched for the hits.
+        var stateTitles = await db.ScrobbleSyncStates.AsNoTracking()
+            .Select(s => new { s.KavitaSeriesId, s.Title }).ToListAsync(ct);
+        var unmatchedTitles = await db.ScrobbleUnmatched.AsNoTracking()
+            .Select(u => new { u.KavitaSeriesId, u.Title }).ToListAsync(ct);
+        var mappingTitles = await db.ScrobbleMappings.AsNoTracking()
+            .Select(m => new { m.KavitaSeriesId, m.Title }).ToListAsync(ct);
+
+        var kavitaIds = stateTitles.Where(s => Matches(s.Title)).Select(s => s.KavitaSeriesId)
+            .Concat(unmatchedTitles.Where(u => Matches(u.Title)).Select(u => u.KavitaSeriesId))
+            .Concat(mappingTitles.Where(m => m.Title.Length > 0 && Matches(m.Title)).Select(m => m.KavitaSeriesId))
             .ToHashSet();
+
+        var kavitaIdList = kavitaIds.ToList();
+        var states = await db.ScrobbleSyncStates.AsNoTracking()
+            .Where(s => kavitaIdList.Contains(s.KavitaSeriesId)).ToListAsync(ct);
+        var unmatched = await db.ScrobbleUnmatched.AsNoTracking()
+            .Where(u => kavitaIdList.Contains(u.KavitaSeriesId)).ToListAsync(ct);
+        var allMappings = await db.ScrobbleMappings.AsNoTracking()
+            .Where(m => kavitaIdList.Contains(m.KavitaSeriesId)).ToListAsync(ct);
 
         var kavitaConfigured =
             !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
@@ -898,7 +910,7 @@ public class SeriesController(
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct)
     {
-        var series = await db.Series.Include(s => s.UserTags).Include(s => s.RootFolder)
+        var series = await db.Series.AsNoTracking().Include(s => s.UserTags).Include(s => s.RootFolder)
             .FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
@@ -911,8 +923,9 @@ public class SeriesController(
         var active = await db.DownloadQueue
             .Where(q => q.SeriesId == id && q.Status != QueueStatus.Completed &&
                         q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+            .Select(q => q.Status)
             .ToListAsync(ct);
-        var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
+        var queued = active.Count(status => status is QueueStatus.Queued or QueueStatus.RateLimited);
 
         // Null means nothing has been read yet, which the UI hides instead of drawing an empty bar.
         // Through ReadCounts so this page and the library grid can't disagree about what "read" is.
@@ -1692,7 +1705,7 @@ public class SeriesController(
     [HttpPost("{id:int}/monitormode")]
     public async Task<IActionResult> SetMonitorMode(int id, [FromBody] MonitorModeRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownMonitorMode", new { mode = request.Mode });
         }
@@ -1791,7 +1804,7 @@ public class SeriesController(
     [HttpPost("{id:int}/incognito")]
     public async Task<IActionResult> SetIncognito(int id, [FromBody] IncognitoRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownIncognitoMode", new { mode = request.Mode });
         }
@@ -1830,22 +1843,45 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
-        if (state is null)
-        {
-            state = new UserSeriesState { SeriesId = id };
-            db.UserSeriesStates.Add(state);
-        }
-
-        state.Rating = request.Rating;
-        state.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        var state = await UpsertUserStateAsync(id, s => s.Rating = request.Rating, ct);
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
         return Ok(new { rating = state.Rating });
+    }
+
+    /// <summary>
+    /// Applies <paramref name="apply"/> to the caller's state row for the series, creating it on the
+    /// first write. Two first writes at once (rating and notification mode) both see no row and both
+    /// insert, so the loser of the unique <c>(UserId, SeriesId)</c> index retries as an update.
+    /// </summary>
+    private async Task<UserSeriesState> UpsertUserStateAsync(
+        int seriesId, Action<UserSeriesState> apply, CancellationToken ct)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
+            var inserting = state is null;
+            if (state is null)
+            {
+                state = new UserSeriesState { SeriesId = seriesId };
+                db.UserSeriesStates.Add(state);
+            }
+
+            apply(state);
+            state.UpdatedAt = DateTime.UtcNow;
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return state;
+            }
+            catch (DbUpdateException) when (inserting && attempt == 0)
+            {
+                db.Entry(state).State = EntityState.Detached;
+            }
+        }
     }
 
     /// <summary>One of the <see cref="SeriesNotificationMode"/> names.</summary>
@@ -1865,7 +1901,7 @@ public class SeriesController(
     public async Task<IActionResult> SetNotificationMode(
         int id, [FromBody] SetSeriesNotificationsRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownNotificationMode", new { mode = request.Mode });
         }
@@ -1875,16 +1911,7 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
-        if (state is null)
-        {
-            state = new UserSeriesState { SeriesId = id };
-            db.UserSeriesStates.Add(state);
-        }
-
-        state.NotificationMode = mode;
-        state.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        await UpsertUserStateAsync(id, s => s.NotificationMode = mode, ct);
         return Ok(new { notificationMode = mode.ToString() });
     }
 
@@ -1897,7 +1924,7 @@ public class SeriesController(
     public async Task<IActionResult> SetNotificationModeBulk(
         [FromBody] BulkSeriesNotificationsRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownNotificationMode", new { mode = request.Mode });
         }
@@ -1972,6 +1999,4 @@ public class SeriesController(
         await db.SaveChangesAsync(ct);
         return Ok(new { tagIds = series.UserTags.Select(t => t.Id).ToList() });
     }
-
-    /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>
 }

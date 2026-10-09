@@ -139,8 +139,9 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(3);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter))
-        .AddHttpMessageHandler(() => new TransientRetryHandler());
+        // Retry outside the limiter, so every attempt takes its own token.
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter));
 
     builder.Services.AddHttpClient("covers", client =>
         {
@@ -182,8 +183,8 @@ try
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36");
             client.Timeout = TimeSpan.FromSeconds(20);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter))
-        .AddHttpMessageHandler(() => new TransientRetryHandler());
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter));
     builder.Services.AddSingleton<MalReviewClient>();
 
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
@@ -192,7 +193,8 @@ try
     builder.Services.AddSingleton<MangaBakaLocalStore>();
     // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
     // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
-    // DiscoverCacheWarmJob builds them so the cost never lands on a keystroke.
+    // DiscoverCacheWarmJob builds them at startup and after a dump install so the cost never lands
+    // on a keystroke.
     builder.Services.AddSingleton<CatalogueIndexCache>();
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
@@ -363,7 +365,10 @@ try
             client.Timeout = TimeSpan.FromMinutes(2);
         })
         .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
-        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true));
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+        // One 5xx or reset on a page of a 200-page chapter should cost a second try, not the chapter.
+        // It leaves 429 and 503 alone, which PageDownloader turns into the source's cooldown.
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
@@ -970,7 +975,6 @@ try
         {
             o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
             o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcDateTimeConverter());
-            o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcNullableDateTimeConverter());
         });
     builder.Services.AddSignalR();
     builder.Services.AddEndpointsApiExplorer();
@@ -982,6 +986,9 @@ try
         // download workers and the fifteen-second completed-download poll must not be behind them.
         q.UseDefaultThreadPool(tp => tp.MaxConcurrency = 20);
         q.AddJobListener<HealthJobListener>();
+        // Start offsets are fixed at registration, before migrations run. Triggers of an hour or
+        // more fire once on a late start (FireNow) instead of skipping a whole interval; the short
+        // polls keep the default so a long stall cannot cause a catch-up burst.
         // Twenty minutes rather than five, to keep the first source sync out of the window where
         // every index is being built. It is the one startup job that launches a headless browser
         // (MangaFire), so it used to add ~120 MB of native memory at exactly the minute the builds
@@ -994,18 +1001,18 @@ try
         q.ScheduleJob<Maki.Api.Jobs.MetadataRefreshJob>(t => t
             .WithIdentity("metadata-refresh")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         q.ScheduleJob<Maki.Api.Jobs.HousekeepingJob>(t => t
             .WithIdentity("housekeeping")
             .StartAt(DateTimeOffset.UtcNow.AddHours(1))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Off unless an admin or a series opts in; the job finds nothing to do until then.
         q.ScheduleJob<Maki.Api.Jobs.ReadFileCleanupJob>(t => t
             .WithIdentity("read-file-cleanup")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         q.ScheduleJob<Maki.Api.Jobs.HealthCheckJob>(t => t
             .WithIdentity("health-check")
@@ -1065,7 +1072,7 @@ try
             .ForJob(Maki.Api.Jobs.AnimeSignalJob.Key)
             .WithIdentity("anime-signal-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Stable job key so the settings endpoint can trigger a refresh on demand.
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
@@ -1074,7 +1081,7 @@ try
             .ForJob(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key)
             .WithIdentity("mangabaka-dump-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Prebuilt embedding index. Runs before the local indexer's trigger so a fresh install
         // downloads the vectors instead of spending an hour deriving them; no-ops when the
@@ -1085,7 +1092,7 @@ try
             .ForJob(Maki.Api.Jobs.PrebuiltIndexJob.Key)
             .WithIdentity("prebuilt-index-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Co-recommendation graph. Last of the three staggered artifact downloads so it is not
         // competing with the dump or the index for bandwidth on a fresh install - it is the
@@ -1096,7 +1103,7 @@ try
             .ForJob(Maki.Api.Jobs.RecoGraphJob.Key)
             .WithIdentity("reco-graph-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Co-read graph, last of the staggered artifact downloads: it is by far the largest of them
         // and the one recommendations least need, so it goes behind the dump, the index and the
@@ -1107,7 +1114,7 @@ try
             .ForJob(Maki.Api.Jobs.CoReadJob.Key)
             .WithIdentity("coread-graph-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Behavioural vectors, behind every other artifact. Installing them invalidates the vector
         // index rather than swapping a file in, so running this while the index is still building
@@ -1118,7 +1125,7 @@ try
             .ForJob(Maki.Api.Jobs.TasteVectorJob.Key)
             .WithIdentity("taste-vectors-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Reader cohorts, behind everything else. Unlike the behavioural vectors this one swaps a
         // file in rather than invalidating the index, so it is last for bandwidth rather than for
@@ -1129,7 +1136,7 @@ try
             .ForJob(Maki.Api.Jobs.ReaderCohortJob.Key)
             .WithIdentity("reader-cohorts-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // New series from followed creators. Triggered after a dump install too; this daily run only
         // covers an install whose trigger a restart swallowed.
@@ -1139,7 +1146,7 @@ try
             .ForJob(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key)
             .WithIdentity("followed-creator-releases-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
         // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
@@ -1147,13 +1154,13 @@ try
             .WithIdentity(Maki.Api.Jobs.DiscoverCacheWarmJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.DiscoverCacheWarmJob.Key)
-            .WithIdentity("discover-cache-warm-trigger")
+            .WithIdentity(Maki.Api.Jobs.DiscoverCacheWarmJob.ScheduledTriggerName)
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
             // Twelve hours, matching DiscoverService's rail cache rather than doubling it. At
             // twenty-four one of every two expiries landed on whoever opened Discover next, and
             // they paid for a cold rebuild of every rail. It is gated behind ArtifactBuildGate, so
             // a second one cannot overlap an index build.
-            .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Frees the embedding session when nothing has used it. Five minutes is the tick, not the
         // idle window - the job reads that itself - so the window can change without rescheduling.
@@ -1195,7 +1202,7 @@ try
             .ForJob(Maki.Api.Jobs.ScheduledBackupJob.Key)
             .WithIdentity("scheduled-backup-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per
         // series, so it only ever runs when an admin asks for it from System settings.
@@ -1218,7 +1225,7 @@ try
             .ForJob(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
             .WithIdentity("chapter-file-measure-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
         // hour (UpgradeScanJob checks the marker), so changing the hour needs no reschedule. First
@@ -1250,7 +1257,7 @@ try
             .ForJob(Maki.Api.Jobs.CheckForUpdatesJob.Key)
             .WithIdentity("check-for-updates-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
     });
     // WaitForJobsToComplete so an in-flight download finishes rather than being torn in half.
     // QuartzShutdownInterrupter is what keeps that from meaning "wait forever" - see its remarks.
@@ -1445,6 +1452,8 @@ try
         }
     }
 
+    app.UseMiddleware<UntrustedForwardedForWarning>();
+
     // What each request is worth a line for lives in HttpRequestLogPolicy, including the rule that
     // keeps OPDS out of the log entirely: its authentication token is in the path, and request
     // logging writes paths.
@@ -1473,8 +1482,9 @@ try
 
     if (authOptions.RequireHttps)
     {
+        // No UseHttpsRedirection: Kestrel binds plain http only and TLS is the proxy's job, so the
+        // middleware could never find an https port to redirect to.
         app.UseHsts();
-        app.UseHttpsRedirection();
     }
 
     // Before authentication, and that ordering is load-bearing.
@@ -1537,7 +1547,6 @@ try
     app.MapGet("/initialize.json", async (MakiDbContext db, CancellationToken ct) => Results.Json(new
     {
         apiRoot = "/api/v1",
-        version = VersionInfo.Version,
         // True while the placeholder account the migration created is unclaimed, which is what sends
         // both a fresh install and an upgraded single-user one through first-run setup.
         setupNeeded = await db.Users.AnyAsync(u => u.PendingSetup, ct),

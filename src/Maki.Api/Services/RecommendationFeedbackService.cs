@@ -33,7 +33,7 @@ public record SignalOverrideMutation(bool Changed, SignalOverrideState State, lo
 public record FranchiseFeedbackCommand(string Action, Guid ClientMutationId);
 public record FranchiseFeedbackTitle(long MangaBakaId, string? Title);
 public record FranchiseFeedbackResult(int Changed, IReadOnlyList<FranchiseFeedbackTitle> Titles,
-    long FeedbackRevision);
+    long FeedbackRevision, int Skipped = 0);
 /// <summary>
 /// A failure this service reports to a caller, carrying the catalogue key rather than a sentence.
 /// The service has no request locale of its own worth spending here and the controller already
@@ -70,10 +70,13 @@ public class RecommendationFeedbackService(
         CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
-        var rows = await db.RecommendationFeedback.AsNoTracking()
-            .Where(x => x.UserId == userId).ToListAsync(ct);
-        return rows.Where(x => RecommendationFeedbackPolicy.Suppresses(x, now))
-            .Select(x => x.ProviderId).ToHashSet();
+        var ids = await db.RecommendationFeedback.AsNoTracking()
+            .Where(x => x.UserId == userId &&
+                (x.Exposure != RecommendationExposure.None ||
+                 x.Suppression == RecommendationSuppression.Hidden ||
+                 x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now))
+            .Select(x => x.ProviderId).ToListAsync(ct);
+        return ids.ToHashSet();
     }
 
     /// <param name="sort">
@@ -106,8 +109,6 @@ public class RecommendationFeedbackService(
             "dismissed" => query.Where(x => x.Suppression == RecommendationSuppression.Dismissed &&
                 x.DismissedUntilUtc > now),
             "exposed" => query.Where(x => x.Exposure != RecommendationExposure.None),
-            "liked" => query.Where(x => x.Sentiment == RecommendationSentiment.Liked),
-            "disliked" => query.Where(x => x.Sentiment == RecommendationSentiment.Disliked),
             _ => query
         };
         var take = Math.Clamp(limit, 1, 100);
@@ -296,8 +297,15 @@ public class RecommendationFeedbackService(
         return result;
     }
 
-    public async Task<FeedbackMutation> MutateAsync(int userId, long id, FeedbackCommand command,
-        CancellationToken ct = default)
+    public Task<FeedbackMutation> MutateAsync(int userId, long id, FeedbackCommand command,
+        CancellationToken ct = default) => MutateAsync(userId, id, command, verified: null, ct);
+
+    /// <param name="verified">
+    /// The title when the caller already resolved it through <see cref="VisibleTitlesAsync"/>, which
+    /// applies the same existence and content-ceiling checks the detail read would.
+    /// </param>
+    private async Task<FeedbackMutation> MutateAsync(int userId, long id, FeedbackCommand command,
+        CatalogueEntry? verified, CancellationToken ct)
     {
         if (id <= 0 || command.ClientMutationId == Guid.Empty || command.ExpectedRevision < 0)
             throw new FeedbackValidationException("error.feedback.titleAndRevisionRequired");
@@ -324,17 +332,24 @@ public class RecommendationFeedbackService(
         }
         var state = await db.RecommendationFeedback
             .FirstOrDefaultAsync(x => x.UserId == userId && x.Provider == "mangabaka" && x.ProviderId == id, ct);
+        var created = state is null;
         if (state is null)
         {
             if (command.ExpectedRevision != 0) throw new FeedbackConflictException("error.feedback.changed");
-            if (!await catalogue.IsAvailableAsync(ct))
-                throw new FeedbackMetadataUnavailableException("error.feedback.catalogueUnavailable");
-            var detail = await catalogue.GetDetailAsync(id, ct)
-                ?? throw new FeedbackNotFoundException("error.feedback.unknownTitle");
-            if (detail.ProviderId != id.ToString() ||
-                !ContentRating.Permits(detail.ContentRating, currentUser.MaxContentRating))
-                throw new FeedbackValidationException("error.feedback.titleNotAvailable");
-            state = new RecommendationFeedback { UserId = userId, ProviderId = id, Title = detail.Title };
+            var title = verified?.Title;
+            if (verified is null)
+            {
+                if (!await catalogue.IsAvailableAsync(ct))
+                    throw new FeedbackMetadataUnavailableException("error.feedback.catalogueUnavailable");
+                var detail = await catalogue.GetDetailAsync(id, ct)
+                    ?? throw new FeedbackNotFoundException("error.feedback.unknownTitle");
+                if (detail.ProviderId != id.ToString() ||
+                    !ContentRating.Permits(detail.ContentRating, currentUser.MaxContentRating))
+                    throw new FeedbackValidationException("error.feedback.titleNotAvailable");
+                title = detail.Title;
+            }
+
+            state = new RecommendationFeedback { UserId = userId, ProviderId = id, Title = title };
             db.RecommendationFeedback.Add(state);
         }
         if (state.Revision != command.ExpectedRevision)
@@ -342,6 +357,11 @@ public class RecommendationFeedbackService(
         var before = JsonSerializer.Serialize(State(state), Json);
         var now = DateTime.UtcNow;
         var changed = RecommendationFeedbackPolicy.Apply(state, action, medium, now);
+        if (created && !changed)
+        {
+            db.Entry(state).State = EntityState.Detached;
+        }
+
         RecommendationFeedbackEvent? evt = null;
         if (changed)
         {
@@ -432,18 +452,29 @@ public class RecommendationFeedbackService(
             .Where(x => x.UserId == userId && wanted.Contains(x.ProviderId))
             .ToDictionaryAsync(x => x.ProviderId, ct);
         var changed = new List<FranchiseFeedbackTitle>();
+        var skipped = 0;
         var revision = (await VersionsAsync(userId, ct)).FeedbackRevision;
         foreach (var member in wanted.Where(visible.ContainsKey))
         {
             var current = existing.GetValueOrDefault(member);
             if (verb == "hide" && current?.Suppression == RecommendationSuppression.Hidden) continue;
-            var result = await MutateAsync(userId, member,
-                new FeedbackCommand(verb, Derive(clientMutationId, member), current?.Revision ?? 0), ct);
-            revision = result.FeedbackRevision;
-            if (result.Changed) changed.Add(new FranchiseFeedbackTitle(member, result.State.Title));
+            try
+            {
+                var result = await MutateAsync(userId, member,
+                    new FeedbackCommand(verb, Derive(clientMutationId, member), current?.Revision ?? 0),
+                    visible[member], ct);
+                revision = result.FeedbackRevision;
+                if (result.Changed) changed.Add(new FranchiseFeedbackTitle(member, result.State.Title));
+            }
+            catch (Exception ex) when (member != id && ex is FeedbackConflictException or FeedbackValidationException)
+            {
+                // A related title that changed under us must not undo the ones already written.
+                db.ChangeTracker.Clear();
+                skipped++;
+            }
         }
 
-        return new FranchiseFeedbackResult(changed.Count, changed, revision);
+        return new FranchiseFeedbackResult(changed.Count, changed, revision, skipped);
     }
 
     /// <summary>
@@ -472,7 +503,8 @@ public class RecommendationFeedbackService(
             ?? throw new FeedbackNotFoundException("error.feedback.eventNotFound");
         var previous = JsonSerializer.Deserialize<FeedbackState>(evt.PreviousState, Json)!;
         var current = await db.RecommendationFeedback
-            .FirstAsync(x => x.UserId == userId && x.ProviderId == evt.ProviderId, ct);
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.ProviderId == evt.ProviderId, ct)
+            ?? throw new FeedbackNotFoundException("error.feedback.eventNotFound");
         if (current.Revision != expectedRevision || current.Revision != evt.StateRevision)
             throw new FeedbackConflictException("error.feedback.changedSinceAction");
         var before = JsonSerializer.Serialize(State(current), Json);

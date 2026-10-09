@@ -250,6 +250,7 @@ public class AniListTracker(
             Status: hasEntry
                 ? StatusToInternal.GetValueOrDefault(GetString(entry, "status") ?? "", ScrobbleStatus.Other)
                 : null,
+            Repeating: hasEntry && GetString(entry, "status") == "REPEATING",
             TotalChapters: GetInt(media, "chapters"),
             TotalVolumes: GetInt(media, "volumes"),
             Title: (titles.ValueKind == JsonValueKind.Object
@@ -267,18 +268,32 @@ public class AniListTracker(
 
     public async Task UpdateAsync(
         int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-        CancellationToken ct = default)
+        CancellationToken ct = default, bool keepStatus = false)
     {
-        object variables = volume > 0
-            ? new { mediaId = int.Parse(remoteId), status = InternalToStatus[status], progress = chapter, progressVolumes = volume }
-            : new { mediaId = int.Parse(remoteId), status = InternalToStatus[status], progress = chapter };
+        var variables = new Dictionary<string, object> { ["mediaId"] = int.Parse(remoteId), ["progress"] = chapter };
+        if (volume > 0)
+        {
+            variables["progressVolumes"] = volume;
+        }
+
+        if (!keepStatus)
+        {
+            variables["status"] = InternalToStatus[status];
+        }
+
         await QueryAsync(
             userId,
-            """
-            mutation($mediaId:Int,$status:MediaListStatus,$progress:Int,$progressVolumes:Int){
-              SaveMediaListEntry(mediaId:$mediaId,status:$status,progress:$progress,
-                                 progressVolumes:$progressVolumes){ id } }
-            """,
+            keepStatus
+                ? """
+                  mutation($mediaId:Int,$progress:Int,$progressVolumes:Int){
+                    SaveMediaListEntry(mediaId:$mediaId,progress:$progress,
+                                       progressVolumes:$progressVolumes){ id } }
+                  """
+                : """
+                  mutation($mediaId:Int,$status:MediaListStatus,$progress:Int,$progressVolumes:Int){
+                    SaveMediaListEntry(mediaId:$mediaId,status:$status,progress:$progress,
+                                       progressVolumes:$progressVolumes){ id } }
+                  """,
             variables, auth: true, ct);
     }
 

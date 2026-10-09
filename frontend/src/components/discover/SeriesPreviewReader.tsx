@@ -8,7 +8,7 @@ import { useReadingProfiles } from '../../api/readingProfiles'
 import ContinuousView from '../../pages/reader/ContinuousView'
 import PagedView from '../../pages/reader/PagedView'
 import { DEFAULT_PREFS } from '../../pages/reader/prefs'
-import { usePreload } from '../../pages/reader/usePageUrls'
+import { pagesFrom, usePreload } from '../../pages/reader/usePageUrls'
 
 type PreviewMode = 'paged' | 'vertical'
 
@@ -86,7 +86,11 @@ export function SeriesPreviewReader({
     setAtEnd(false)
   }, [version])
 
-  usePreload(urls, page, mode === 'vertical' ? 0 : prefs.preload)
+  const preloadPages = useMemo(
+    () => pagesFrom(page, mode === 'vertical' ? 0 : prefs.preload),
+    [page, mode, prefs.preload],
+  )
+  usePreload(urls, preloadPages)
 
   const next = useCallback(() => {
     if (atEnd) return

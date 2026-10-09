@@ -230,6 +230,18 @@ export function useEnableTwoFactor() {
   })
 }
 
+export function useRegenerateRecoveryCodes() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { code: string; password: string }) =>
+      api<{ recoveryCodes: string[] }>('/account/2fa/recovery-codes', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['account', '2fa'] }),
+  })
+}
+
 export function useDisableTwoFactor() {
   const qc = useQueryClient()
   return useMutation({

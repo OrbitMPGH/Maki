@@ -555,6 +555,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         new StatsEventService(db),
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         new SourceRegistry([]),
+        new SourceAvailability(new FakeAppSettings(), new SourceRegistry([])),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         new DownloadBatchNotifier(
             new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),

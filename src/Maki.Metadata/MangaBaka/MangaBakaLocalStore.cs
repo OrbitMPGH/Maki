@@ -1002,6 +1002,42 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// How many of <paramref name="ids"/> carry one of <paramref name="ratings"/> in the dump, by the
+    /// same <c>content_rating IN</c> test <see cref="GetByIdsAsync"/> hydrates with, so a count and the
+    /// page it describes agree. Reads the dump directly, so it also covers series the vector index
+    /// does not hold (unscored titles, novels).
+    /// </summary>
+    public async Task<int> CountWithinRatingsAsync(
+        IReadOnlyList<long> ids, IReadOnlyList<string> ratings, CancellationToken ct = default)
+    {
+        if (ids.Count == 0 || ratings.Count == 0)
+        {
+            return 0;
+        }
+
+        using var conn = Open();
+        var total = 0;
+        foreach (var chunk in ids.Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT COUNT(*) FROM series
+                WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                  AND content_rating IN ({string.Join(",", ratings.Select((_, i) => $"$r{i}"))})
+                """;
+            cmd.CommandTimeout = 600;
+            for (var i = 0; i < ratings.Count; i++)
+            {
+                cmd.Parameters.AddWithValue($"$r{i}", ratings[i]);
+            }
+
+            total += Convert.ToInt32(await cmd.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture);
+        }
+
+        return total;
+    }
+
+    /// <summary>
     /// The anime range and chapter count for each id that has one, for resolving where an anime
     /// ends on titles that are not in the library. Novels are left out, as in <see cref="GetDetailAsync"/>.
     /// </summary>

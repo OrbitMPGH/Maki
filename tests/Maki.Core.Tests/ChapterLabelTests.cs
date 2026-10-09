@@ -26,6 +26,7 @@ public class ChapterLabelTests
         {
             CultureInfo.CurrentCulture = new CultureInfo("de-DE");
             Assert.Equal("Ch.10.5", ChapterLabel.For(10.5m, null, null, false));
+            Assert.Equal("Vol.2 Ch.10.5", ChapterLabel.For(10.5m, 2, null, false));
         }
         finally
         {

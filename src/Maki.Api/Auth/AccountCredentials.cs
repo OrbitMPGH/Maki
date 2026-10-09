@@ -38,6 +38,31 @@ public static class AccountCredentials
         return check.Succeeded ? null : "error.account.incorrectPassword";
     }
 
+    public const string RecentSignInRequiredKey = "error.account.recentSignInRequired";
+
+    /// <summary>How recent a sign-in a passwordless account needs before it may mint a key or token.</summary>
+    public static readonly TimeSpan PasswordlessSignInWindow = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// The check for minting something that outlives the session: an API key or an OPDS token. An
+    /// account with a password confirms it as usual. One without (single sign-on only) has nothing to
+    /// type, so it must have signed in within <see cref="PasswordlessSignInWindow"/> instead, which
+    /// keeps a stolen session from minting a durable credential on its own.
+    /// </summary>
+    public static async Task<string?> ConfirmForMintAsync(
+        UserManager<MakiUser> users, SignInManager<MakiUser> signIn, MakiUser user, string? password,
+        TimeProvider clock)
+    {
+        if (await users.HasPasswordAsync(user))
+        {
+            return await ConfirmPasswordAsync(users, signIn, user, password, requirePassword: true);
+        }
+
+        return user.LastLoginAt is { } at && clock.GetUtcNow().UtcDateTime - at <= PasswordlessSignInWindow
+            ? null
+            : RecentSignInRequiredKey;
+    }
+
     /// <summary>
     /// Whether the account can sign in with a password at all: it has one, and <c>auth.oidconly</c>
     /// does not refuse it (admins are exempt).

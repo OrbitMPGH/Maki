@@ -191,11 +191,13 @@ function BehaviourList({
   title,
   items,
   emptyText,
+  format,
 }: {
   icon: typeof IconClock
   title: string
   items: BehaviourSeries[]
   emptyText: string
+  format: (item: BehaviourSeries) => string
 }) {
   return (
     <Card padding="md" radius="lg" withBorder>
@@ -216,7 +218,7 @@ function BehaviourList({
                 <SeriesLink id={item.seriesId} title={item.title} />
               </Text>
               <Text size="sm" fw={600} className="tnum" style={{ flexShrink: 0 }}>
-                {item.value}
+                {format(item)}
               </Text>
             </Group>
           ))}
@@ -286,18 +288,21 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
           title={t`You slow down for`}
           items={behaviour.savoured}
           emptyText={t`Not enough timed chapters yet.`}
+          format={(item) => formatReadingTime(item.measure)}
         />
         <BehaviourList
           icon={IconSparkles}
           title={t`You tear through`}
           items={behaviour.devoured}
           emptyText={t`Not enough timed chapters yet.`}
+          format={(item) => formatReadingTime(item.measure)}
         />
         <BehaviourList
           icon={IconArrowsShuffle}
           title={t`You put down`}
           items={behaviour.abandoned}
           emptyText={t`You finish what you start.`}
+          format={(item) => t`${percent(item.measure)} in`}
         />
       </SimpleGrid>
     </>

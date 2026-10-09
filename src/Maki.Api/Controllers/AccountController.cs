@@ -71,6 +71,40 @@ public class AccountController(
             ? this.Fail(localizer, key)
             : null;
 
+    /// <summary>
+    /// A stamp rotation kills the other devices' cookies at the next stamp check, but a socket that
+    /// is already open authenticated only at its handshake and would keep receiving this user's
+    /// events. This device's client reconnects with its refreshed cookie.
+    /// </summary>
+    private async Task DropLiveConnectionsAsync(int userId)
+    {
+        if (hub is not null)
+        {
+            await EventsHub.DisconnectUserAsync(hub, userId);
+        }
+    }
+
+    /// <summary>
+    /// Null when the authenticator code is one Identity accepts and that has not been used before, and
+    /// then remembers it; otherwise the key to refuse with.
+    /// </summary>
+    private async Task<string?> RefusedCodeAsync(MakiUser user, string code)
+    {
+        if (!await userManager.VerifyTwoFactorTokenAsync(
+                user, userManager.Options.Tokens.AuthenticatorTokenProvider, code))
+        {
+            return "error.account.invalidCode";
+        }
+
+        if (await TotpReplayGuard.IsReplayAsync(userManager, user, code))
+        {
+            return "error.account.totpReplayed";
+        }
+
+        await TotpReplayGuard.RecordAsync(userManager, user, code);
+        return null;
+    }
+
     [HttpPost("password")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
@@ -96,16 +130,20 @@ public class AccountController(
             return BadRequest(new { error = Describe(IdentityResult.Failed(userManager.ErrorDescriber.PasswordMismatch())) });
         }
 
-        var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        // The current password was just verified above, so this goes through a reset token instead of
+        // ChangePasswordAsync, which would hash-verify it a second time.
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await userManager.ResetPasswordAsync(user, token, request.NewPassword);
         if (!result.Succeeded)
         {
             return BadRequest(new { error = Describe(result) });
         }
 
-        // ChangePasswordAsync rotates the security stamp, which invalidates every issued cookie —
+        // Setting the password rotates the security stamp, which invalidates every issued cookie,
         // including the one making this request. Re-issuing it here keeps the user signed in on this
         // device while every other session dies, which is the behaviour a password change should have.
         await signInManager.RefreshSignInAsync(user);
+        await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.PasswordChanged, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
         return NoContent();
     }
@@ -158,6 +196,7 @@ public class AccountController(
         // Always a fresh secret: reusing one across abandoned enrolment attempts means an old QR
         // screenshot still works.
         await userManager.ResetAuthenticatorKeyAsync(user);
+        await TotpReplayGuard.ClearAsync(userManager, user);
         // Every stamp-rotating call here re-issues this device's cookie, as ChangePassword does.
         // Otherwise the next stamp validation, a minute away, signs the user out mid-enrolment.
         await signInManager.RefreshSignInAsync(user);
@@ -207,11 +246,9 @@ public class AccountController(
             return refused;
         }
 
-        var valid = await userManager.VerifyTwoFactorTokenAsync(
-            user, userManager.Options.Tokens.AuthenticatorTokenProvider, code);
-        if (!valid)
+        if (await RefusedCodeAsync(user, code) is { } refusal)
         {
-            return this.Fail(localizer, "error.account.invalidCode");
+            return this.Fail(localizer, refusal);
         }
 
         await userManager.SetTwoFactorEnabledAsync(user, true);
@@ -220,6 +257,47 @@ public class AccountController(
         await auditLog.LogAsync(AuthEventType.TwoFactorEnabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
 
         // Shown once. Identity stores them hashed, so there is no second chance to read them.
+        return Ok(new { recoveryCodes = codes ?? [] });
+    }
+
+    /// <summary>
+    /// Replaces the recovery codes with a fresh set, for someone down to their last few. Asks for the
+    /// password and a current authenticator code, the same proof enabling takes, since a hijacked
+    /// session minting codes of its own would hold a way past the second factor.
+    /// </summary>
+    [HttpPost("2fa/recovery-codes")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
+    public async Task<IActionResult> RegenerateRecoveryCodes(
+        [FromBody] EnableTwoFactorRequest request, CancellationToken ct)
+    {
+        var user = await LoadAsync();
+        if (user is null) return Unauthorized();
+
+        if (!user.TwoFactorEnabled)
+        {
+            return this.Conflict(localizer, "error.account.twoFactorNotEnabled");
+        }
+
+        var code = request.Code?.Replace(" ", string.Empty).Replace("-", string.Empty);
+        if (string.IsNullOrEmpty(code))
+        {
+            return this.Fail(localizer, "error.account.codeRequired");
+        }
+
+        if (await ConfirmPasswordAsync(user, request.Password, requirePassword: true) is { } refused)
+        {
+            return refused;
+        }
+
+        if (await RefusedCodeAsync(user, code) is { } refusal)
+        {
+            return this.Fail(localizer, refusal);
+        }
+
+        var codes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount);
+        await auditLog.LogAsync(AuthEventType.UserUpdated, user.UserName ?? string.Empty, user.Id,
+            HttpContext, detail: "two-factor recovery codes regenerated", ct: ct);
+
         return Ok(new { recoveryCodes = codes ?? [] });
     }
 
@@ -243,7 +321,9 @@ public class AccountController(
         // Clear the secret too, so re-enabling forces a fresh enrolment rather than silently
         // reactivating whatever app still has the old one.
         await userManager.ResetAuthenticatorKeyAsync(user);
+        await TotpReplayGuard.ClearAsync(userManager, user);
         await signInManager.RefreshSignInAsync(user);
+        await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
         return NoContent();
     }
@@ -262,8 +342,9 @@ public class AccountController(
     }
 
     /// <summary>
-    /// Requires the account password when there is one: a key outlives the session that minted it,
-    /// through a password change and "sign out everywhere" alike.
+    /// Requires the account password when there is one, or a sign-in within the last ten minutes when
+    /// there is not: a key outlives the session that minted it, through a password change and "sign
+    /// out everywhere" alike.
     /// </summary>
     [HttpPost("apikeys")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
@@ -292,9 +373,12 @@ public class AccountController(
         var user = await LoadAsync();
         if (user is null) return Unauthorized();
 
-        if (await ConfirmPasswordAsync(user, request.Password) is { } refused)
+        if (await AccountCredentials.ConfirmForMintAsync(userManager, signInManager, user, request.Password, clock)
+            is { } refusal)
         {
-            return refused;
+            return refusal == AccountCredentials.RecentSignInRequiredKey
+                ? this.Forbidden(localizer, refusal)
+                : this.Fail(localizer, refusal);
         }
 
         var secret = ApiKeyCrypto.Generate();
@@ -393,13 +477,7 @@ public class AccountController(
         // Keep the caller signed in on this device, otherwise "sign out everywhere" also signs you
         // out here, which reads as a bug rather than a feature.
         await signInManager.RefreshSignInAsync(user);
-        // The other devices' cookies die at the next stamp check, but their live sockets would stay
-        // in this user's hub groups until a reload. This device reconnects on its own.
-        if (hub is not null)
-        {
-            await EventsHub.DisconnectUserAsync(hub, user.Id);
-        }
-
+        await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.SessionsRevoked, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
         return NoContent();
     }

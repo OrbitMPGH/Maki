@@ -145,6 +145,8 @@ public static class PublicAddressGuard
         (b[0] == 169 && b[1] == 254) ||               // link-local
         (b[0] == 172 && (b[1] & 0xF0) == 16) ||       // 172.16/12
         (b[0] == 192 && b[1] == 168) ||               // 192.168/16
+        (b[0] == 192 && b[1] == 0 && b[2] == 0) ||    // 192.0.0.0/24, IETF protocol assignments
+        (b[0] == 198 && (b[1] & 0xFE) == 18) ||       // 198.18/15, benchmarking
         b[0] >= 224);                                 // multicast, reserved, broadcast
 
     /// <summary>

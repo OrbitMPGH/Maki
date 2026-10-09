@@ -29,7 +29,17 @@ public class ReaderService(
         long ArchiveSize,
         IReadOnlyList<string> Pages,
         int StartPage,
-        int PageCount);
+        int PageCount,
+        long ArchiveStamp = 0)
+    {
+        public string ArchiveVersion => ArchiveVersionOf(ArchiveSize, ArchiveStamp);
+    }
+
+    /// <summary>
+    /// What a page URL, ETag or cached render is keyed on. The size alone cannot tell a same-size
+    /// replacement from the original, so the write time rides along.
+    /// </summary>
+    internal static string ArchiveVersionOf(long size, long stamp) => $"{size}-{stamp}";
 
     /// <summary>
     /// Resolves the chapter's pages. Returns null when the chapter is unknown, has no file, or
@@ -66,7 +76,7 @@ public class ReaderService(
 
         var file = row.File;
         var absolute = LibraryPaths.Resolve(row.RootPath, file.RelativePath);
-        if (absolute is null || !File.Exists(absolute))
+        if (absolute is null || StampOf(absolute) is not { } stamp)
         {
             logger.LogWarning("Chapter {ChapterId} file is missing: {Path}", chapterId, file.RelativePath);
             return null;
@@ -81,7 +91,7 @@ public class ReaderService(
         var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
 
         return new ChapterSlice(
-            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count);
+            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count, stamp);
     }
 
     /// <summary>Just what serving one page or thumbnail needs: no Chapter or Series entity.</summary>
@@ -92,7 +102,11 @@ public class ReaderService(
         long ArchiveSize,
         IReadOnlyList<string> Pages,
         int StartPage,
-        int PageCount);
+        int PageCount,
+        long ArchiveStamp = 0)
+    {
+        public string ArchiveVersion => ArchiveVersionOf(ArchiveSize, ArchiveStamp);
+    }
 
     /// <summary>
     /// <see cref="SliceAsync"/> for the page, thumbnail and OPDS page endpoints, which run hundreds
@@ -122,7 +136,7 @@ public class ReaderService(
         }
 
         var absolute = LibraryPaths.Resolve(row.RootPath, file.RelativePath);
-        if (absolute is null || !File.Exists(absolute))
+        if (absolute is null || StampOf(absolute) is not { } stamp)
         {
             logger.LogWarning("Chapter {ChapterId} file is missing: {Path}", chapterId, file.RelativePath);
             return null;
@@ -135,7 +149,7 @@ public class ReaderService(
         }
 
         var (start, count) = SliceBounds(info, row.Number, row.SharesFile);
-        return new PageSlice(chapterId, file.Id, absolute, file.Size, info.Pages, start, count);
+        return new PageSlice(chapterId, file.Id, absolute, file.Size, info.Pages, start, count, stamp);
     }
 
     /// <summary>
@@ -182,7 +196,7 @@ public class ReaderService(
             }
 
             var absolute = LibraryPaths.Resolve(row.RootPath, row.File.RelativePath);
-            if (absolute is null || !File.Exists(absolute))
+            if (absolute is null || StampOf(absolute) is not { } stamp)
             {
                 continue;
             }
@@ -195,10 +209,17 @@ public class ReaderService(
 
             var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
             slices[row.Chapter.Id] = new ChapterSlice(
-                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count);
+                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count, stamp);
         }
 
         return slices;
+    }
+
+    /// <summary>The file's write time in ticks, or null when it is not on disk. One stat, shared with the existence check.</summary>
+    private static long? StampOf(string absolute)
+    {
+        var info = new FileInfo(absolute);
+        return info.Exists ? info.LastWriteTimeUtc.Ticks : null;
     }
 
     /// <summary>One page of a resolved slice, or null when it cannot be read. See <see cref="ReaderArchiveCache.OpenPageAsync"/>.</summary>
@@ -345,20 +366,24 @@ public class ReaderService(
     /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct, bool bulk = false)
+        TimeReport time, CancellationToken ct)
     {
         try
         {
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, bulk, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
         }
         catch (DbUpdateException e) when (IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
             db.ChangeTracker.Clear();
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, bulk, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
         }
     }
+
+    /// <summary>The page that is actually stored for a reported one: inside the chapter's own slice.</summary>
+    public static int ClampPage(int pageIndex, int pageCount) =>
+        Math.Clamp(pageIndex, 0, Math.Max(0, pageCount - 1));
 
     // 2067 = SQLITE_CONSTRAINT_UNIQUE, 1555 = SQLITE_CONSTRAINT_PRIMARYKEY. Matched on the
     // *extended* code, never the primary 19, which also covers FK and NOT NULL failures that no
@@ -367,7 +392,7 @@ public class ReaderService(
         e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, bool bulk, CancellationToken ct)
+        TimeReport time, CancellationToken ct)
     {
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
@@ -389,7 +414,7 @@ public class ReaderService(
         }
 
         // The resume position is free to move backwards; completion is not.
-        row.PageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, slice.PageCount - 1));
+        row.PageIndex = ClampPage(pageIndex, slice.PageCount);
         row.PageCount = slice.PageCount;
 
         // A watched row stays ticked off while it is merely opened: the reader writes page 0 a
@@ -407,7 +432,13 @@ public class ReaderService(
                 row.CompletedAt = now;
             }
 
-            row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
+            // An explicit false never un-completes a finished row; only marking unread does that.
+            row.Completed = completed switch
+            {
+                true => true,
+                false => row.Completed,
+                null => row.Completed || row.PageIndex >= slice.PageCount - 1
+            };
             // Read here, so it is no longer external, deliberately un-read, or merely watched.
             row.External = false;
             row.UnreadAt = null;
@@ -415,11 +446,7 @@ public class ReaderService(
         }
 
         var justCompleted = !stillWatched && row.Completed && !wasCompleted;
-        if (bulk)
-        {
-            row.BulkMarked |= justCompleted;
-        }
-        else if (!stillWatched && row.Completed && finishing)
+        if (!stillWatched && row.Completed && finishing)
         {
             row.BulkMarked = false;
         }
@@ -443,7 +470,7 @@ public class ReaderService(
 
         if (justCompleted)
         {
-            await OnChapterCompletedAsync(slice.Series, chapter, ct);
+            await OnChapterCompletedAsync(slice.Series, chapter, row, CancellationToken.None);
         }
 
         return justCompleted;
@@ -566,7 +593,7 @@ public class ReaderService(
 
         var chapters = await db.Chapters
             .Where(c => chapterIds.Contains(c.Id))
-            .Select(c => new { c.Id, c.SeriesId })
+            .Select(c => new { c.Id, c.SeriesId, c.Number })
             .ToListAsync(ct);
         if (chapters.Count == 0)
         {
@@ -580,6 +607,7 @@ public class ReaderService(
 
         var now = DateTime.UtcNow;
         var updated = 0;
+        var tickedTop = new Dictionary<int, double>();
         foreach (var chapter in chapters)
         {
             if (existing.TryGetValue(chapter.Id, out var row))
@@ -610,6 +638,11 @@ public class ReaderService(
             row.UnreadAt = null;
             row.UpdatedAt = now;
             updated++;
+            if (chapter.Number is { } number &&
+                (!tickedTop.TryGetValue(chapter.SeriesId, out var top) || (double)number > top))
+            {
+                tickedTop[chapter.SeriesId] = (double)number;
+            }
         }
 
         if (updated == 0)
@@ -629,6 +662,9 @@ public class ReaderService(
         foreach (var seriesId in seriesIds)
         {
             var (maxChapter, maxVolume) = await RecomputeMarksAsync(seriesId, ct);
+            // Ticked chapters are usually not downloaded, and the recompute only sees file-backed
+            // ones, so the mark would stay put and the next real read would absorb the season.
+            maxChapter = Math.Max(maxChapter, tickedTop.GetValueOrDefault(seriesId));
             await progress.ImportSilentAsync(UserId, seriesId, kavitaSeriesId: null,
                 titles.GetValueOrDefault(seriesId, string.Empty), maxChapter, maxVolume, ct);
         }
@@ -731,15 +767,21 @@ public class ReaderService(
 
         await db.SaveChangesAsync(ct);
 
+        var seriesRows = await db.Series
+            .Where(s => changed.Contains(s.Id))
+            .Select(s => new { s.Id, s.Title, s.Incognito })
+            .ToListAsync(ct);
+        var titles = seriesRows.ToDictionary(s => s.Id, s => s.Title);
+
         foreach (var (seriesId, number) in pushTo)
         {
+            if (seriesRows.Any(s => s.Id == seriesId && s.Incognito == IncognitoMode.Full))
+            {
+                continue;
+            }
+
             kavitaPush.QueuePush(UserId, seriesId, number);
         }
-
-        var titles = await db.Series
-            .Where(s => changed.Contains(s.Id))
-            .Select(s => new { s.Id, s.Title })
-            .ToDictionaryAsync(s => s.Id, s => s.Title, ct);
 
         foreach (var seriesId in changed)
         {
@@ -817,20 +859,42 @@ public class ReaderService(
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task OnChapterCompletedAsync(Series series, Chapter chapter, CancellationToken ct)
+    // The completion is already committed by the time this runs, so a failure here (the progress
+    // gate timing out under a long Kavita pass, say) must not turn a saved read into an error, and
+    // a client that hangs up mid-wait must not lose the event.
+    private async Task OnChapterCompletedAsync(Series series, Chapter chapter, ChapterProgress row, CancellationToken ct)
     {
-        kavitaPush.QueuePush(UserId, series.Id, chapter.Number);
-
-        if (chapter.Number is null)
+        try
         {
-            // A one-shot has no number to raise the high-water mark to — see
-            // ReadingProgressService.RecordUnnumberedReadAsync for why inventing one is wrong.
-            await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct);
-            return;
-        }
+            if (series.Incognito != IncognitoMode.Full)
+            {
+                kavitaPush.QueuePush(UserId, series.Id, chapter.Number);
+            }
 
-        var (maxChapter, maxVolume) = await RecomputeMarksAsync(series.Id, ct);
-        await progress.TrackNativeAsync(UserId, series.Id, series.Title, maxChapter, maxVolume, ct);
+            if (chapter.Number is null)
+            {
+                // A one-shot has no number to raise the high-water mark to, so nothing absorbs a
+                // second completion: CountedAt is the never-cleared token that it was counted once.
+                // See ReadingProgressService.RecordUnnumberedReadAsync for why inventing a number
+                // is wrong.
+                if (row.CountedAt is null &&
+                    await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct))
+                {
+                    row.CountedAt = DateTime.UtcNow;
+                    await db.SaveChangesAsync(ct);
+                }
+
+                return;
+            }
+
+            var (maxChapter, maxVolume) = await RecomputeMarksAsync(series.Id, ct);
+            await progress.TrackNativeAsync(UserId, series.Id, series.Title, maxChapter, maxVolume, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Completion side effects failed for chapter {ChapterId}", chapter.Id);
+            db.ChangeTracker.Clear();
+        }
     }
 
     /// <summary>

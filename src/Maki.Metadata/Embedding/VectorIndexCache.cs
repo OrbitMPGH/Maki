@@ -60,6 +60,12 @@ public sealed class VectorIndexCache(
     /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _loaded is not null;
 
+    /// <summary>
+    /// Identifies the loaded index: it changes when the dump it was built from is replaced or the
+    /// index is invalidated. Null while nothing is loaded.
+    /// </summary>
+    public string? Stamp => _loaded is { } loaded ? $"{loaded.DumpTicks}:{loaded.DumpLength}:{loaded.Generation}" : null;
+
     /// <summary>Whether an index is loaded and was built from the dump on disk now.</summary>
     public bool IsCurrent => _loaded is { } loaded && MatchesDump(loaded);
 

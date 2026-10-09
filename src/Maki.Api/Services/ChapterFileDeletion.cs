@@ -176,7 +176,8 @@ public class ChapterFileDeletion(
             db.ChapterFiles.Remove(file);
         }
 
-        await db.SaveChangesAsync(ct);
+        // The disk has already changed, so an aborted request or a shutdown must not leave rows pointing at deleted files.
+        await db.SaveChangesAsync(CancellationToken.None);
         return new Result(deleted, kept, failed, chaptersRemoved);
     }
 }

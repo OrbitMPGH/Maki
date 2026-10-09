@@ -270,9 +270,7 @@ public class SeriesRenameService(
             return new SeriesRenameResult(plan, true, null, []);
         }
 
-        var active = await db.DownloadQueue.AnyAsync(q => q.SeriesId == series.Id &&
-            q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
-            q.Status != QueueStatus.Cancelled, ct);
+        var active = await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.SeriesId == series.Id, ct);
         if (active)
         {
             return new SeriesRenameResult(plan, false,

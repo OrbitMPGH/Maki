@@ -61,9 +61,12 @@ public static class FileLinker
         }
         catch
         {
-            if (File.Exists(partial))
+            try
             {
                 File.Delete(partial);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
             }
 
             throw;

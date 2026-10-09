@@ -272,10 +272,22 @@ public class OpdsController(
         }
 
         var entry = slice.Pages[slice.StartPage + page];
-        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveSize}-{slice.StartPage + page}\"");
+        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        if (ComicFile.IsPdf(slice.ArchivePath))
+        {
+            var rendered = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, slice.StartPage + page, entry, ct);
+            if (rendered is null)
+            {
+                return NotFound();
+            }
+
+            Response.Headers.CacheControl = "private, no-cache";
+            return PhysicalFile(rendered, CbzReader.ContentType(entry), lastModified: null, entityTag: etag, enableRangeProcessing: false);
         }
 
         var stream = await reader.OpenPageAsync(slice, entry, ct);

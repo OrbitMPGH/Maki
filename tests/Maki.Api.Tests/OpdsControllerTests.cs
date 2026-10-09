@@ -2,6 +2,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -69,6 +70,55 @@ public sealed class OpdsControllerTests : IDisposable
         Assert.IsType<PhysicalFileResult>(await Controller().Cover(token, ungranted, default));
     }
 
+    [Fact]
+    public async Task APdfPageIsRenderedOnceAndServedFromTheDiskCacheAfterwards()
+    {
+        var reader = _db.SeedUser("pdfreader", MakiPermission.UseOpds, allRootFolders: true);
+        EnableCatalogue(reader);
+        var token = _db.SeedApiKey(reader, UserApiKeyScope.Opds);
+        var root = Path.Combine(Path.GetTempPath(), "maki-opds-pdf-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(root);
+        try
+        {
+            var pdf = Path.Combine(root, "Volume.pdf");
+            PdfFixture.Write(pdf, count: 3);
+            int chapterId, fileId;
+            using (var db = _db.NewContext())
+            {
+                var folder = new RootFolder { Path = root };
+                db.RootFolders.Add(folder);
+                db.SaveChanges();
+                var series = new Series { Title = "Pdf", SortTitle = "pdf", FolderName = "", RootFolderId = folder.Id };
+                db.Series.Add(series);
+                db.SaveChanges();
+                var file = new ChapterFile
+                {
+                    SeriesId = series.Id, RelativePath = "Volume.pdf", Size = new FileInfo(pdf).Length,
+                    SourceName = "test", DateAdded = DateTime.UtcNow
+                };
+                db.ChapterFiles.Add(file);
+                db.SaveChanges();
+                var chapter = new Chapter { SeriesId = series.Id, Number = 1, ChapterFileId = file.Id };
+                db.Chapters.Add(chapter);
+                db.SaveChanges();
+                (chapterId, fileId) = (chapter.Id, file.Id);
+            }
+
+            Assert.IsAssignableFrom<FileResult>(await Controller(withReader: true).Page(token, chapterId, 0, default));
+            var dir = Path.Combine(_paths.ReaderCacheDir, fileId.ToString());
+            var cached = Assert.Single(Directory.GetFiles(dir, "*.full.jpg"));
+            var written = File.GetLastWriteTimeUtc(cached);
+
+            Assert.IsAssignableFrom<FileResult>(await Controller(withReader: true).Page(token, chapterId, 0, default));
+
+            Assert.Equal(written, File.GetLastWriteTimeUtc(cached));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     /// <summary>
     /// Two series in two root folders with a cover file each, plus an OPDS token belonging to a
     /// reader granted only the first. <c>SeedSeries</c> creates a root folder per call, so the two
@@ -109,7 +159,7 @@ public sealed class OpdsControllerTests : IDisposable
     /// no cookie and no API-key header, so <c>CurrentUserMiddleware</c> narrows it before routing.
     /// The catalogue and reader services are unreachable from the cover action.
     /// </summary>
-    private OpdsController Controller()
+    private OpdsController Controller(bool withReader = false)
     {
         var nobody = new DataScope();
         nobody.SetNobody();
@@ -118,8 +168,13 @@ public sealed class OpdsControllerTests : IDisposable
         return new OpdsController(
             catalog: null!,
             access: new OpdsAccessService(db, TimeProvider.System),
-            reader: null!,
-            progressWriter: null!,
+            reader: withReader
+                ? new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+                    null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance)
+                : null!,
+            progressWriter: withReader
+                ? new OpdsProgressWriter(_db.ScopeFactory(), NullLogger<OpdsProgressWriter>.Instance)
+                : null!,
             db: db,
             paths: _paths,
             localizer: new TestLocalizer(),

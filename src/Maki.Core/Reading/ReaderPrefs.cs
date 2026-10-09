@@ -3,8 +3,9 @@ using System.Text.Json;
 namespace Maki.Core.Reading;
 
 /// <summary>
-/// How the built-in reader displays a series. Stored as opaque JSON in two places: one global
-/// default in AppConfig, and an optional per-series override on <c>Series.ReaderPrefsJson</c>.
+/// How the built-in reader displays a series. Stored as opaque JSON in two places: the user's
+/// default in the <c>reader.prefs</c> user setting, and an optional per-series override on
+/// <c>UserSeriesState.ReaderPrefsJson</c>.
 /// <para>
 /// Same discipline as <c>SavedFilter.Spec</c>: serialize only through <see cref="Json"/>, and
 /// never rename or reorder a property. A name mismatch does not throw — it silently yields the

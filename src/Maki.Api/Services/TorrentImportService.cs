@@ -141,8 +141,8 @@ public record TorrentImportPlan(
 /// <param name="Deleted">Superseded files moved to the trash, under <see cref="TorrentImportMode.Replace"/>.</param>
 /// <param name="Skipped">Downloaded files left alone because they brought nothing new.</param>
 /// <param name="Error">
-/// Raw text: an exception message from reading somebody else's archive. Null when <see cref="ErrorKey"/>
-/// carries a Maki-worded failure instead; the two are mutually exclusive, same split as
+/// Raw text Maki did not word: an exception message from reading somebody else's archive. Alone it is
+/// the whole reason; beside an <see cref="ErrorKey"/> it is the detail shown after it, same split as
 /// <c>DownloadQueueItem.ErrorKey</c>/<c>ErrorMessage</c>.
 /// </param>
 /// <param name="ErrorKey">Catalogue key for a failure Maki worded, or null. See <see cref="Error"/>.</param>
@@ -287,7 +287,7 @@ public class TorrentImportService(
         foreach (var source in sources.OrderBy(s => s.Name, StringComparer.Ordinal))
         {
             var parsed = ReleaseNameParser.ParseFileName(source.Name);
-            var covered = ChaptersCoveredBy(chapters, parsed, source.Pages, volumeFileIds);
+            var covered = ChaptersCoveredBy(chapters, parsed, source.Pages, volumeFileIds, source.Name);
 
             var upgradeCount = 0;
             var alreadyMetCount = 0;
@@ -457,7 +457,8 @@ public class TorrentImportService(
                     // an import most likely to throw something unforeseen, and a named file in the
                     // outcome beats an unhandled failure inside the completed-download job.
                     return new TorrentImportOutcome(
-                        false, $"Could not import {source.Name}: {ex.Message}", 0, 0, 0, 0, skipped, []);
+                        false, ex.Message, 0, 0, 0, 0, skipped, [], "error.torrentImport.copyFailed",
+                        new { file = source.Name });
                 }
             }
 
@@ -922,8 +923,23 @@ public class TorrentImportService(
     /// </summary>
     public static List<Chapter> ChaptersCoveredBy(
         List<Chapter> chapters, ParsedReleaseFile parsed, IReadOnlyList<string> pages,
-        IReadOnlySet<int>? volumeFileIds = null)
+        IReadOnlySet<int>? volumeFileIds = null, string? fileName = null)
     {
+        // On a series with several languages a file backs the rows of its own language only, as the
+        // linker decides it. Without a file name every language counts.
+        var languages = fileName is null
+            ? null
+            : ChapterFileLanguage.FromName(fileName, ChapterFileLanguage.SeriesLanguages(chapters));
+        if (parsed.IsVolume)
+        {
+            languages = ChapterFileLanguage.ForVolume(languages);
+        }
+
+        if (languages is not null)
+        {
+            chapters = chapters.Where(c => ChapterFileLanguage.Allows(languages, c)).ToList();
+        }
+
         if (volumeFileIds is { Count: > 0 })
         {
             chapters = chapters.Where(c => c.ChapterFileId is not { } fileId || !volumeFileIds.Contains(fileId)).ToList();

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -36,6 +37,10 @@ public class SmartDownloadJob(
 {
     public static readonly JobKey Key = new("smart-download");
 
+    // Series already reported as skipped, with why. The job is built per run, so this is static: a
+    // series that stays unmapped would otherwise be warned about every five minutes.
+    private static readonly ConcurrentDictionary<int, string> Skipped = new();
+
     public const int MinChapters = 1, MaxChaptersLeft = 10, MaxChaptersPerBatch = 20;
 
     /// <summary>A stored 0 (from before the save was validated) would queue nothing, so reads clamp it.</summary>
@@ -71,6 +76,11 @@ public class SmartDownloadJob(
             var backingOff = await BackingOffAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct);
             var missing = Chapter.NextWanted(Ahead(chapters, after), batchSize, backingOff);
 
+            if (missing.Count == 0)
+            {
+                continue;
+            }
+
             var queuedItemIds = new List<int>();
             foreach (var chapterId in missing)
             {
@@ -82,12 +92,32 @@ public class SmartDownloadJob(
                         queuedItemIds.Add(item.Id);
                     }
                 }
+                catch (EnqueueRefusedException ex) when (ex.Key is EnqueueRefusedException.NoMapping or EnqueueRefusedException.HealthReview)
+                {
+                    if (Skipped.TryGetValue(series.Id, out var reported) && reported == ex.Key)
+                    {
+                        logger.LogDebug("Smart Download still skipping series {SeriesId}: {Reason}", series.Id, ex.Key);
+                    }
+                    else
+                    {
+                        Skipped[series.Id] = ex.Key;
+                        logger.LogWarning("Smart Download skipped series {SeriesId}: {Reason}", series.Id, ex.Key);
+                    }
+
+                    break;
+                }
                 catch (InvalidOperationException ex)
                 {
-                    logger.LogError(ex, ex.Message);
+                    logger.LogWarning(ex, "Smart Download could not queue chapter {ChapterId} of series {SeriesId}", chapterId, series.Id);
                 }
             }
 
+            if (queuedItemIds.Count == 0)
+            {
+                continue;
+            }
+
+            Skipped.TryRemove(series.Id, out _);
             await batches.QueuedAsync(series.Id, series.Title, queuedItemIds, DownloadOrigin.SmartDownload);
             logger.LogInformation(
                 "Smart Download queued {Added} chapters for series {SeriesId}", queuedItemIds.Count, series.Id);

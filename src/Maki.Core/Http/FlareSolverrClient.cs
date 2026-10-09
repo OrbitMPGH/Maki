@@ -125,7 +125,8 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
         try
         {
             var client = httpClientFactory.CreateClient(HttpClientName);
-            using var response = await client.GetAsync(flareSolverrUrl.TrimEnd('/') + "/", ct);
+            using var response = await client.GetAsync(
+                flareSolverrUrl.TrimEnd('/') + "/", HttpCompletionOption.ResponseHeadersRead, ct);
             return response.IsSuccessStatusCode;
         }
         catch

@@ -36,7 +36,7 @@ public static class OidcLinkIntent
         {
             HttpOnly = true,
             SameSite = SameSiteMode.Lax,
-            Secure = context.Request.IsHttps,
+            Secure = AuthRuntimeOptions.UseSecureCookie(context),
             Path = CookiePath,
             MaxAge = Lifetime
         });

@@ -83,6 +83,20 @@ public sealed class SeriesNotificationsControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_number_outside_the_enum_is_rejected_rather_than_stored()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = _db.SeedSeries();
+
+        using var db = _db.NewContext(alice);
+        var result = await Controller(db).SetNotificationMode(
+            seriesId, new SeriesController.SetSeriesNotificationsRequest("99"), default);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Empty(db.UserSeriesStates.IgnoreQueryFilters().ToList());
+    }
+
+    [Fact]
     public async Task A_series_that_does_not_exist_is_a_404_not_an_orphan_row()
     {
         var alice = _db.SeedUser("alice");
