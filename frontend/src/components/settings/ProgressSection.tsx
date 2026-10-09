@@ -23,6 +23,7 @@ import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -95,6 +96,7 @@ export function ProgressSection() {
   const [period, setPeriod] = useState<ReadingGoal['period']>('Day')
   const [metric, setMetric] = useState<ReadingGoal['metric']>('Chapters')
   const [target, setTarget] = useState<number | string>(3)
+  const [deletingGoal, setDeletingGoal] = useState<ReadingGoal | null>(null)
 
   // Seed the time zone from the browser the first time somebody opens this, so streaks land on the
   // right day without anybody having to think about it. Only when it is genuinely unset, never
@@ -183,7 +185,7 @@ export function ProgressSection() {
               <ActionIcon
                 variant="subtle"
                 color="var(--danger)"
-                onClick={() => deleteGoal.mutate(goal.id)}
+                onClick={() => setDeletingGoal(goal)}
                 aria-label={t`Remove goal`}
               >
                 <IconTrash size={16} />
@@ -226,6 +228,28 @@ export function ProgressSection() {
           </Group>
         </Stack>
       </Stack>
+
+      <ConfirmDialog
+        opened={deletingGoal !== null}
+        onClose={() => setDeletingGoal(null)}
+        title={<Trans>Remove this reading goal?</Trans>}
+        confirmLabel={<Trans>Remove goal</Trans>}
+        loading={deleteGoal.isPending}
+        onConfirm={() =>
+          deletingGoal && deleteGoal.mutate(deletingGoal.id, { onSuccess: () => setDeletingGoal(null) })
+        }
+      >
+        <Stack gap="xs">
+          {deletingGoal && (
+            <Text size="sm" fw={600}>
+              {periods.find((p) => p.value === deletingGoal.period)?.label}: {goalAmount(deletingGoal)}
+            </Text>
+          )}
+          <Text size="sm">
+            <Trans>Your reading history is not affected. You can set a new goal at any time.</Trans>
+          </Text>
+        </Stack>
+      </ConfirmDialog>
     </SettingsSection>
   )
 }
