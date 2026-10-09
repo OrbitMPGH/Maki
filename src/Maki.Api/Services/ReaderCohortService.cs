@@ -322,13 +322,14 @@ public class ReaderCohortService(
         ICurrentUser scope, ReaderCohortIndex index, CancellationToken ct)
     {
         var readIds = await ReadPopulationAsync(scope, ct);
-        var inputKey = $"{scope.AllRootFolders}:{string.Join(',', scope.RootFolderIds.Order())}:{string.Join(',', readIds.Order())}";
+        var inputKey = PlacementKey(scope.AllRootFolders, scope.RootFolderIds, index.GeneratedAt, readIds);
 
         await _lock.WaitAsync(ct);
         try
         {
-            // Keyed on the size of the read set as well as on age, so finishing something places
-            // again rather than waiting out the half hour.
+            // Keyed on the read set and on the artifact's stamp as well as on age, so finishing
+            // something, or installing a new cohort file, places again rather than waiting out the
+            // half hour.
             if (_placements.TryGetValue(scope.UserId, out var cached)
                 && cached.InputKey == inputKey
                 && DateTime.UtcNow - cached.At < CacheFor)
@@ -354,6 +355,10 @@ public class ReaderCohortService(
             _lock.Release();
         }
     }
+
+    internal static string PlacementKey(
+        bool allRootFolders, IEnumerable<int> rootFolderIds, DateTime? artifactStamp, IEnumerable<long> readIds) =>
+        $"{artifactStamp?.Ticks}:{allRootFolders}:{string.Join(',', rootFolderIds.Order())}:{string.Join(',', readIds.Order())}";
 
     private async Task<IReadOnlyCollection<long>> ReadPopulationAsync(ICurrentUser scope, CancellationToken ct)
     {
