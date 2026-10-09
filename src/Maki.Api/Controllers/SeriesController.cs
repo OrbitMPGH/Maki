@@ -1842,22 +1842,45 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
-        if (state is null)
-        {
-            state = new UserSeriesState { SeriesId = id };
-            db.UserSeriesStates.Add(state);
-        }
-
-        state.Rating = request.Rating;
-        state.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        var state = await UpsertUserStateAsync(id, s => s.Rating = request.Rating, ct);
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
         return Ok(new { rating = state.Rating });
+    }
+
+    /// <summary>
+    /// Applies <paramref name="apply"/> to the caller's state row for the series, creating it on the
+    /// first write. Two first writes at once (rating and notification mode) both see no row and both
+    /// insert, so the loser of the unique <c>(UserId, SeriesId)</c> index retries as an update.
+    /// </summary>
+    private async Task<UserSeriesState> UpsertUserStateAsync(
+        int seriesId, Action<UserSeriesState> apply, CancellationToken ct)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
+            var inserting = state is null;
+            if (state is null)
+            {
+                state = new UserSeriesState { SeriesId = seriesId };
+                db.UserSeriesStates.Add(state);
+            }
+
+            apply(state);
+            state.UpdatedAt = DateTime.UtcNow;
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return state;
+            }
+            catch (DbUpdateException) when (inserting && attempt == 0)
+            {
+                db.Entry(state).State = EntityState.Detached;
+            }
+        }
     }
 
     /// <summary>One of the <see cref="SeriesNotificationMode"/> names.</summary>
@@ -1887,16 +1910,7 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
-        if (state is null)
-        {
-            state = new UserSeriesState { SeriesId = id };
-            db.UserSeriesStates.Add(state);
-        }
-
-        state.NotificationMode = mode;
-        state.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        await UpsertUserStateAsync(id, s => s.NotificationMode = mode, ct);
         return Ok(new { notificationMode = mode.ToString() });
     }
 
