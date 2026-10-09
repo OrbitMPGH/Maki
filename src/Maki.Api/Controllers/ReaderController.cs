@@ -208,8 +208,6 @@ public class ReaderController(
             seriesTitle = slice.Series.Title,
             label = ChapterLabel.For(slice.Chapter),
             number = slice.Chapter.Number,
-            volume = slice.Chapter.Volume,
-            language = slice.Chapter.Language,
             pageCount = slice.PageCount,
             seriesChapterCount,
             seriesReadCount,
@@ -226,10 +224,8 @@ public class ReaderController(
             prefs = resolved.Prefs,
             prefsSource = resolved.Source.ToString(),
             profileId = resolved.ProfileId,
-            profileName = resolved.ProfileName,
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
-            seriesType = slice.Series.Type,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion)
         });
     }
