@@ -3264,6 +3264,13 @@ msgstr "기존 파일을 교체하지 못했습니다. 다른 프로그램이 �
 msgid "error.download.unexpected"
 msgstr "문제가 발생했습니다. Maki가 다시 시도합니다"
 
+#. The site served an anti-bot challenge and no FlareSolverr URL is set. The queue row shows the
+#. host after this, never translated.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)
+msgid "error.download.challengeNotSolved"
+msgstr ""
+
 #. The site answered 401 or 403. The queue row shows the status after this.
 #: src/Maki.Api/Services/DownloadFailureReason.cs
 #. English: The source refused the request
@@ -3865,10 +3872,104 @@ msgid "error.health.selectUpTo100"
 msgstr "파일을 1~100개 선택하세요"
 
 #: src/Maki.Api/Controllers/HealthController.cs
+#: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Explicit confirmation is required
 #, fuzzy
 msgid "error.health.confirmationRequired"
 msgstr "명시적인 확인이 필요합니다"
+
+#. The messages below are the reasons a health review, repair or delete is refused. The cause of a
+#. failure not listed here is in the server log.
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: That file is no longer in the inventory. Rescan and try again.
+msgid "error.health.fileGone"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The review is stale. Rescan and review again.
+msgid "error.health.reviewStale"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The root folder no longer exists.
+msgid "error.health.rootGone"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The root folder is not available.
+msgid "error.health.rootUnavailable"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The file changed after the review. Rescan first.
+msgid "error.health.fileChanged"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The file content changed or was not hashed. Rescan first.
+msgid "error.health.fileContentChanged"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Another operation on this file is active.
+msgid "error.health.operationActive"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Downloads or imports for this series are active.
+msgid "error.health.downloadsActive"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Import and link this archive to one series before replacing it.
+msgid "error.health.needsLinkedSeries"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Select an enabled source mapped to this series.
+msgid "error.health.mappingNotEnabled"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Operation not found.
+msgid "error.health.operationNotFound"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The operation is not ready, or its review is stale.
+msgid "error.health.operationNotReady"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The replacement must cover every linked chapter.
+msgid "error.health.replacementIncomplete"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The candidate changed. Request a new replacement.
+msgid "error.health.candidateChanged"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The candidate failed validation, or its analysis is incomplete.
+msgid "error.health.candidateInvalid"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Confirm resetting the affected bookmarks and resume positions.
+msgid "error.health.resetConfirmationRequired"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The replacement destination already exists.
+msgid "error.health.destinationExists"
+msgstr ""
+
+#. A health action failed for a reason Maki does not name. The cause is in the server log.
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: The operation failed. The server log has the details.
+msgid "error.health.operationFailed"
+msgstr ""
 
 #. The health page's own checks. Admin-only. Each ran on a timer with nobody attached, so nothing
 #. here was worded at the moment it was found: the row stores a key and its values and is rendered

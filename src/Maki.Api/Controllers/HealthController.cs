@@ -20,7 +20,8 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/health")]
 public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOperationService operations,
     HealthMatchService matches, ICurrentUser user, IAppSettings settings,
-    ILocalizer localizer, SourceRegistry sources, HealthSourceRecovery recovery) : ControllerBase
+    ILocalizer localizer, SourceRegistry sources, HealthSourceRecovery recovery,
+    ILogger<HealthController> logger) : ControllerBase
 {
     /// <summary>
     /// The row as the page reads it: same fields, with <c>message</c> worded in the caller's own
@@ -421,7 +422,17 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
             {
-                failures.Add(new { Id = item.FileId, RelativePath = paths.GetValueOrDefault(item.FileId), message = ex.Message });
+                if (ex is not HealthRefusedException)
+                {
+                    logger.LogWarning(ex, "Could not delete health file {FileId}", item.FileId);
+                }
+
+                failures.Add(new
+                {
+                    Id = item.FileId,
+                    RelativePath = paths.GetValueOrDefault(item.FileId),
+                    message = localizer.Get(ex is HealthRefusedException refused ? refused.Key : "error.health.operationFailed"),
+                });
             }
         }
         db.HealthHistory.Add(new()
@@ -513,8 +524,13 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     private async Task<IActionResult> ConflictGuard(Func<Task<IActionResult>> action)
     {
         try { return await action(); }
+        catch (HealthRefusedException ex)
+        { return this.Conflict(localizer, ex.Key); }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
-        { return Conflict(new { message = ex.Message }); }
+        {
+            logger.LogWarning(ex, "A health action failed");
+            return this.Conflict(localizer, "error.health.operationFailed");
+        }
     }
 
     private async Task<IActionResult> VerifiedPreview(string path, string? hash, PageFingerprint page, CancellationToken ct)

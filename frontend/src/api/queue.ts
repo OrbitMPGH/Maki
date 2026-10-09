@@ -67,6 +67,7 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.torrentRemoved': msg`The torrent is no longer in qBittorrent`,
   'error.download.noEnabledMapping': msg`This series has no enabled sources`,
   'error.download.healthReviewActive': msg`A health review is active for this series`,
+  'error.download.challengeNotSolved': msg`The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)`,
   'error.download.sourceRejected': msg`The source refused the request`,
   'error.download.sourceError': msg`The source answered with an error`,
   'error.download.network': msg`Could not reach the source`,
