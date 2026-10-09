@@ -189,7 +189,7 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | CORE | CORE-15 | nit | done 5619b70f |
 | CORE | CORE-17 | nit | done 5619b70f |
 | CORE | CORE-31 | nit | done 79fe6292 |
-| CORE | CORE-32 | nit | pending (owner decided 2026-10-09: delete the dead unscored branches and the UnscoredCredit dial; lane audit/w4-core32) |
+| CORE | CORE-32 | nit | done ba722802 (owner decided 2026-10-09: dead unscored branches and UnscoredCredit removed) |
 | DATA | DATA-04 | low | done 2c4313e8 |
 | DATA | DATA-09 | low | done 2c4313e8, 79d4c05d |
 | DATA | DATA-13 | low | done b03f93fd |
