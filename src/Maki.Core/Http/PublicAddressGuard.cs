@@ -323,12 +323,16 @@ public sealed class ProxiedTargetGuardHandler(IWebProxy? proxy = null, bool foll
     {
         var method = keepsMethod || previous.Method == HttpMethod.Head ? previous.Method : HttpMethod.Get;
         var request = new HttpRequestMessage(method, next) { Version = previous.Version, VersionPolicy = previous.VersionPolicy };
+        var sameHost = string.Equals(previous.RequestUri?.IdnHost, next.IdnHost, StringComparison.OrdinalIgnoreCase);
         foreach (var header in previous.Headers)
         {
-            if (!header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+            if (header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) ||
+                (!sameHost && header.Key.Equals("Cookie", StringComparison.OrdinalIgnoreCase)))
             {
-                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                continue;
             }
+
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
 
         return request;

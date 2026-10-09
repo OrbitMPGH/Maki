@@ -197,6 +197,34 @@ public class PublicAddressGuardTests
     }
 
     [Fact]
+    public async Task A_cookie_follows_a_redirect_on_the_same_host_but_not_to_another_one()
+    {
+        var cookies = new List<string?>();
+        var inner = new RedirectingHandler(uri => uri.AbsolutePath switch
+        {
+            "/start" => Redirect("/same"),
+            "/same" => Redirect("http://8.8.4.4/other"),
+            _ => new HttpResponseMessage(HttpStatusCode.OK)
+        });
+        using var client = FollowingClient(new CapturingHandler(inner, cookies));
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://8.8.8.8/start");
+        request.Headers.TryAddWithoutValidation("Cookie", "session=1");
+
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(["session=1", "session=1", null], cookies);
+    }
+
+    private sealed class CapturingHandler(HttpMessageHandler inner, List<string?> cookies) : DelegatingHandler(inner)
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            cookies.Add(request.Headers.TryGetValues("Cookie", out var values) ? string.Join("; ", values) : null);
+            return base.SendAsync(request, ct);
+        }
+    }
+
+    [Fact]
     public async Task A_redirect_loop_stops_after_five_hops()
     {
         var inner = new RedirectingHandler(_ => Redirect("http://8.8.8.8/again"));
