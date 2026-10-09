@@ -329,7 +329,11 @@ public class CbzLinkService(
             }
 
             var absolutePath = LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(dbFile.RelativePath));
-            var matched = LinkChapters(chapters, parsed, dbFile.Id, absolutePath, volumeFileIds);
+            // A spare single-chapter file only fills a chapter nothing backs. Taking one off another
+            // single file would hand it back on the next rescan, the two swapping ownership forever;
+            // deliberate replacement is relink and import's job.
+            var matched = LinkChapters(chapters, parsed, dbFile.Id, absolutePath, volumeFileIds,
+                replaceExisting: !parsed.IsChapter);
             if (matched.Count == 0 && parsed.IsVolume)
             {
                 if (absolutePath is not null)

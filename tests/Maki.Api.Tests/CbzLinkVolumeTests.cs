@@ -3,6 +3,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
 using Maki.Core.Sources;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -193,6 +194,37 @@ public class CbzLinkVolumeTests : IDisposable
         var chapters = check.Chapters.Where(c => c.SeriesId == series.Id).ToList();
         Assert.All(chapters.Where(c => c.Language == "en"), c => Assert.NotNull(c.ChapterFileId));
         Assert.All(chapters.Where(c => c.Language == "de"), c => Assert.Null(c.ChapterFileId));
+    }
+
+    [Fact]
+    public async Task A_rescan_leaves_a_chapter_on_its_file_when_a_spare_twin_also_matches_it()
+    {
+        var series = SeedSeries(chapterCount: 1);
+        var owner = WriteVolume("Berserk c001.cbz");
+        var twin = WriteVolume("Berserk Ch.1.cbz");
+        int ownerId;
+        using (var db = _db.NewContext())
+        {
+            var ownerRow = new ChapterFile { SeriesId = series.Id, RelativePath = Path.Combine("Berserk", Path.GetFileName(owner)), DateAdded = DateTime.UtcNow };
+            var twinRow = new ChapterFile { SeriesId = series.Id, RelativePath = Path.Combine("Berserk", Path.GetFileName(twin)), DateAdded = DateTime.UtcNow };
+            db.ChapterFiles.AddRange(ownerRow, twinRow);
+            db.SaveChanges();
+            db.Chapters.Single(c => c.SeriesId == series.Id).ChapterFileId = ownerRow.Id;
+            db.SaveChanges();
+            ownerId = ownerRow.Id;
+        }
+
+        for (var run = 0; run < 2; run++)
+        {
+            using (var db = _db.NewContext())
+            {
+                await Service(db).RescanSeriesAsync(
+                    db.Series.Include(s => s.RootFolder).Single(s => s.Id == series.Id));
+            }
+
+            using var check = _db.NewContext();
+            Assert.Equal(ownerId, check.Chapters.Single(c => c.SeriesId == series.Id).ChapterFileId);
+        }
     }
 
     [Fact]
