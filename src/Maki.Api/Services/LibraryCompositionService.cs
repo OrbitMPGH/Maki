@@ -51,15 +51,33 @@ public class LibraryCompositionService(MakiDbContext db, ICurrentUser currentUse
         var series = db.Series.AsNoTracking();
         var files = db.ChapterFiles.AsNoTracking();
 
+        // An empty table gives no group at all, hence the null fallbacks.
+        var seriesTotals = await series
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Total = g.Count(),
+                Monitored = g.Count(s => s.MonitorNewItems != NewChapterMonitorMode.None),
+                Completed = g.Count(s => s.Status == SeriesStatus.Completed),
+            })
+            .FirstOrDefaultAsync(ct);
+        var chapterTotals = await db.Chapters.AsNoTracking()
+            .GroupBy(_ => 1)
+            .Select(g => new { Total = g.Count(), Downloaded = g.Count(c => c.ChapterFileId != null) })
+            .FirstOrDefaultAsync(ct);
+        var fileTotals = await files
+            .GroupBy(_ => 1)
+            .Select(g => new { Total = g.Count(), Bytes = g.Sum(f => (long)f.Size) })
+            .FirstOrDefaultAsync(ct);
+
         var totals = new LibraryCompositionTotalsDto(
-            await series.CountAsync(ct),
-            await series.CountAsync(s => s.MonitorNewItems != NewChapterMonitorMode.None, ct),
-            await series.CountAsync(s => s.Status == SeriesStatus.Completed, ct),
-            await db.Chapters.AsNoTracking().CountAsync(ct),
-            await db.Chapters.AsNoTracking().CountAsync(c => c.ChapterFileId != null, ct),
-            await files.CountAsync(ct),
-            // Sum over an empty table is NULL in SQL, hence the nullable projection.
-            await files.SumAsync(f => (long?)f.Size, ct) ?? 0);
+            seriesTotals?.Total ?? 0,
+            seriesTotals?.Monitored ?? 0,
+            seriesTotals?.Completed ?? 0,
+            chapterTotals?.Total ?? 0,
+            chapterTotals?.Downloaded ?? 0,
+            fileTotals?.Total ?? 0,
+            fileTotals?.Bytes ?? 0);
 
         var byType = (await series
                 .GroupBy(s => s.Type)

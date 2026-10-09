@@ -255,9 +255,11 @@ public class TorrentImportService(
         {
             // Naming what was actually there: "no comics found" on its own reads exactly like a
             // download that arrived empty, and the two want completely different things done.
-            // {detail} is ComicSourceScanner's own summary of what it found and is not translated.
-            return Empty("error.torrentImport.noComicsFound",
-                new { detail = ComicSourceScanner.Describe(contentPath) });
+            var census = ComicSourceScanner.Census(contentPath);
+            return census.Count == 0
+                ? Empty("error.torrentImport.noComicsEmpty")
+                : Empty("error.torrentImport.noComicsOfType",
+                    new { census = string.Join(", ", census.Select(c => $"{c.Count} {c.Extension}")) });
         }
 
         var upgradeInfo = TorrentUpgradeInfo.Parse(item.UpgradeInfoJson);

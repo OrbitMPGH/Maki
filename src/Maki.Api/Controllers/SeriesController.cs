@@ -332,9 +332,9 @@ public class SeriesController(
 
         var readCounts = await ReadChapterCountsBySeriesAsync(ct);
 
-        // Flat join-table read scoped to these series in SQL, since SeriesTags has no visibility filter of its own.
+        // Flat join-table read; the SeriesTag query filter keeps it to series the caller can see.
         var tagIdsBySeries = (await db.SeriesTags
-                .Where(x => db.Series.Any(s => s.Id == x.SeriesId))
+                .AsNoTracking()
                 .ToListAsync(ct))
             .GroupBy(x => x.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
@@ -473,7 +473,7 @@ public class SeriesController(
     public async Task<IActionResult> Files(int id, [FromServices] UpgradeEvaluationService upgrades,
         [FromServices] IMemoryCache cache, CancellationToken ct)
     {
-        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        var series = await db.Series.AsNoTracking().Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -484,7 +484,7 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        var records = await db.ChapterFiles.Where(f => f.SeriesId == id).ToListAsync(ct);
+        var records = await db.ChapterFiles.AsNoTracking().Where(f => f.SeriesId == id).ToListAsync(ct);
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == id && c.ChapterFileId != null)
             .Select(c => new { c.ChapterFileId, c.Number, c.Language })
@@ -835,7 +835,7 @@ public class SeriesController(
     [HttpGet("{id:int}/related")]
     public async Task<IActionResult> Related(int id, [FromServices] HiddenContentService hidden, CancellationToken ct)
     {
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -872,7 +872,7 @@ public class SeriesController(
     [HttpGet("{id:int}/similar")]
     public async Task<IActionResult> Similar(int id, [FromServices] HiddenContentService hidden, CancellationToken ct)
     {
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -932,7 +932,12 @@ public class SeriesController(
         var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
 
-        var readerPrefs = await readingProfiles.ResolveAsync(id, ct);
+        var userState = await db.UserSeriesStates
+            .Where(x => x.SeriesId == id)
+            .Select(x => new { x.Rating, x.NotificationMode, x.ReaderPrefsJson, x.ReadingProfileId })
+            .FirstOrDefaultAsync(ct);
+        var readerPrefs = await readingProfiles.ResolveForAsync(
+            series.Type, userState?.ReaderPrefsJson, userState?.ReadingProfileId, ct);
         // A profile or series override is an explicit reading-style choice. With only the global
         // default, use the format's conventional style so an unconfigured manhua/manhwa does not
         // borrow a manga pace merely because the application default is paged.
@@ -944,7 +949,6 @@ public class SeriesController(
         var estimate = await readingTimeEstimates.EstimateAsync(
             id, estimateTotal, readRows, estimateMode, ct);
 
-        var userState = await UserStateForAsync(id, ct);
         var pendingProposalId = await db.TorrentProposals
             .Where(p => p.SeriesId == id && p.Status == TorrentProposalStatus.Pending)
             .OrderByDescending(p => p.CreatedAtUtc)
@@ -952,8 +956,8 @@ public class SeriesController(
             .FirstOrDefaultAsync(ct);
         var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
-            rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
-            notificationMode: userState.NotificationMode,
+            rating: userState?.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
+            notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             RemovedChapterCount = counts?.Removed ?? 0,
@@ -1782,14 +1786,10 @@ public class SeriesController(
         // Resolved through db.Series, like the notification bulk: ids outside the caller's root
         // folders are dropped by the query filter instead of written.
         var wanted = (request.SeriesIds ?? []).Distinct().ToList();
-        var series = await db.Series.Where(s => wanted.Contains(s.Id)).ToListAsync(ct);
-        foreach (var s in series)
-        {
-            s.UpgradeProfileId = request.UpgradeProfileId;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { updated = series.Count });
+        var updated = await db.Series
+            .Where(s => wanted.Contains(s.Id))
+            .ExecuteUpdateAsync(u => u.SetProperty(s => s.UpgradeProfileId, request.UpgradeProfileId), ct);
+        return Ok(new { updated });
     }
 
     public record IncognitoRequest(string Mode);

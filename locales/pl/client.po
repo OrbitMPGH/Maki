@@ -84,9 +84,11 @@ msgstr "{0, plural, one {Ponownie powiązano # rozdział} few {Ponownie powiąza
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {Wybrano # rozdział} few {Wybrano # rozdziały} many {Wybrano # rozdziałów} other {Wybrano # rozdziału}}"
 
+#. placeholder {0}: goal.target
 #. placeholder {0}: removed.length
 #. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
 msgstr "{0, plural, one {# rozdział} few {# rozdziały} many {# rozdziałów} other {# rozdziału}}"
@@ -144,6 +146,11 @@ msgstr "{0, plural, one {Zachowano #} few {Zachowano #} many {Zachowano #} other
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, one {# dopasowanie} few {# dopasowania} many {# dopasowań} other {# dopasowania}}"
 
+#. placeholder {0}: goal.target
+#: src/components/settings/ProgressSection.tsx
+msgid "{0, plural, one {# minute read} other {# minutes read}}"
+msgstr ""
+
 #. placeholder {0}: deleteFilesPlan.others
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
@@ -179,6 +186,11 @@ msgstr "{0, plural, one {# tytuł bazowy} few {# tytuły bazowe} many {# tytuł�
 #, fuzzy
 msgid "{0, plural, one {# selected} other {# selected}}"
 msgstr "{0, plural, one {# zaznaczony} few {# zaznaczone} many {# zaznaczonych} other {# zaznaczonego}}"
+
+#. placeholder {0}: goal.target
+#: src/components/settings/ProgressSection.tsx
+msgid "{0, plural, one {# series finished} other {# series finished}}"
+msgstr ""
 
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
@@ -376,8 +388,8 @@ msgstr "{active, plural, one {# pobieranie w toku} few {# pobierania w toku} man
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Dodano: {added}, zgłoszono próśb: {requested}, pominięto: {skipped}, błędy: {errors}"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Dodano: {added}, zgłoszono próśb: {requested}, pominięto: {skipped}, błędy: {errors}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -471,14 +483,22 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, one {pobrany rozdział} few {pobrane rozdziały} many {pobranych rozdziałów} other {pobranego rozdziału}}"
 
 #: src/pages/settings/ReadingCards.tsx
-#, fuzzy
-msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
-msgstr "{chaptersMarked, plural, one {# rozdział} few {# rozdziały} many {# rozdziałów} other {# rozdziału}} oznaczono jako przeczytane w {seriesMatched} seriach"
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
-msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series, {seriesUnmatched} Kavita series unmatched"
-msgstr "{chaptersMarked, plural, one {# rozdział} few {# rozdziały} many {# rozdziałów} other {# rozdziału}} oznaczono jako przeczytane w {seriesMatched} seriach, {seriesUnmatched} serii Kavity niedopasowanych"
+#~ msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
+#~ msgstr "{chaptersMarked, plural, one {# rozdział} few {# rozdziały} many {# rozdziałów} other {# rozdziału}} oznaczono jako przeczytane w {seriesMatched} seriach"
+
+#: src/pages/settings/ReadingCards.tsx
+#, fuzzy
+#~ msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series, {seriesUnmatched} Kavita series unmatched"
+#~ msgstr "{chaptersMarked, plural, one {# rozdział} few {# rozdziały} many {# rozdziałów} other {# rozdziału}} oznaczono jako przeczytane w {seriesMatched} seriach, {seriesUnmatched} serii Kavity niedopasowanych"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -775,9 +795,13 @@ msgid "{kind, select, both {Story · Art} story {Story} art {Art} other {}}"
 msgstr "{kind, select, both {Scenariusz · rysunki} story {Scenariusz} art {Rysunki} other {}}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
+msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
+msgstr ""
+
+#: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
-msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
-msgstr "{kind, select, up {Wzrost o {pct}% względem poprzedniego okresu.} down {Spadek o {pct}% względem poprzedniego okresu.} flat {Podobnie jak w poprzednim okresie.} none {} other {}}"
+#~ msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
+#~ msgstr "{kind, select, up {Wzrost o {pct}% względem poprzedniego okresu.} down {Spadek o {pct}% względem poprzedniego okresu.} flat {Podobnie jak w poprzednim okresie.} none {} other {}}"
 
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
@@ -916,6 +940,10 @@ msgstr "{missingCount, plural, one {dodaje # rozdział, którego nie masz} few {
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} musi zapisać migawkę rozdziałów, zanim Maki będzie mogło bezpiecznie wyczyścić listę. Kolejne usunięcia źródeł korzystają z zapisanych migawek i nie wysyłają żadnych zapytań do źródła."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
@@ -923,8 +951,8 @@ msgstr "{missingWanted, plural, one {# chciany, nie pobrany} few {# chciane, nie
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{missingWanted} wanted chapter(s) are missing"
-msgstr "Brakuje {missingWanted} chcianych rozdziałów"
+#~ msgid "{missingWanted} wanted chapter(s) are missing"
+#~ msgstr "Brakuje {missingWanted} chcianych rozdziałów"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -981,6 +1009,14 @@ msgstr "{name}: powodzenie dla {ok}/{total}, pierwszy błąd: {firstError}"
 msgid "{name}: {reason}"
 msgstr "{name}: {reason}"
 
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped after {ok}/{total}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
+msgstr ""
+
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
@@ -1021,9 +1057,13 @@ msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it
 msgstr "{pending, plural, one {Potrzebny jest jeszcze # rozdział. Pojawi się tutaj po pobraniu.} few {Potrzebne są jeszcze # rozdziały. Pojawią się tutaj po pobraniu.} many {Potrzebnych jest jeszcze # rozdziałów. Pojawią się tutaj po pobraniu.} other {Potrzebny jest jeszcze # rozdziału. Pojawi się tutaj po pobraniu.}}"
 
 #: src/pages/stats/sections/RhythmSection.tsx
+msgid "{perSitting} ch per sitting"
+msgstr ""
+
+#: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
-msgid "{perSittingMedian} ch per sitting"
-msgstr "{perSittingMedian} rozdz. na sesję"
+#~ msgid "{perSittingMedian} ch per sitting"
+#~ msgstr "{perSittingMedian} rozdz. na sesję"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -1133,6 +1173,12 @@ msgstr "{reasonText} - {measurement}"
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
 msgstr "{remaining, plural, one {jeszcze # w kolejce} few {jeszcze # w kolejce} many {jeszcze # w kolejce} other {jeszcze # w kolejce}}"
 
+#. placeholder {0}: formatNumber(failed)
+#. placeholder {1}: formatNumber(failed)
+#: src/pages/settings/LibraryCards.tsx
+msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # series, {1} failed}}"
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
@@ -1178,6 +1224,10 @@ msgstr "{review, plural, one {# pobieranie oczekujące na decyzję o imporcie} f
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Zmierzono na podstawie # rozdziału z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} few {Zmierzono na podstawie # rozdziałów z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} many {Zmierzono na podstawie # rozdziałów z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} other {Zmierzono na podstawie # rozdziału z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.}}"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{searchCap}+ matches"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -1192,6 +1242,10 @@ msgstr "{selectedCount, plural, one {Zaimportować # folder?} few {Zaimportować
 #, fuzzy
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr "{selectedCount, plural, one {Importuj # zaznaczony} few {Importuj # zaznaczone} many {Importuj # zaznaczonych} other {Importuj # zaznaczonego}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -1718,8 +1772,8 @@ msgstr "<0>{seriesCount, plural, one {# seria} few {# serie} many {# serii} othe
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
-msgid "<0>{streak}</0> day streak, best <1>{best}</1>"
-msgstr "<0>{streak}</0> kolejnych dni czytania, rekord: <1>{best}</1>"
+#~ msgid "<0>{streak}</0> day streak, best <1>{best}</1>"
+#~ msgstr "<0>{streak}</0> kolejnych dni czytania, rekord: <1>{best}</1>"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2224,6 +2278,10 @@ msgstr "Dodaj {title} do biblioteki"
 msgid "Add a rail"
 msgstr "Dodaj sekcję"
 
+#: src/pages/ImportPage.tsx
+msgid "Add a root folder in Settings, then come back to scan it for series to import."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2645,6 +2703,10 @@ msgstr "Bursztynowy"
 msgid "Ambiguous names"
 msgstr "Niejednoznaczne nazwy"
 
+#: src/api/ssoErrors.ts
+msgid "An account with that username already exists"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
@@ -2803,8 +2865,12 @@ msgid "Applies automatically to"
 msgstr "Stosuje się automatycznie do"
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Applies the series folder format and chapter file format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+msgid "Applies the series folder format and chapter file format above to all {seriesCount, plural, one {# series} other {# series}} in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
 msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+#~ msgid "Applies the series folder format and chapter file format above to all {seriesCount} series in the library, renaming folders and files on disk to match. Series already matching the format are left alone. This can take a while for a large library."
+#~ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3410,6 +3476,10 @@ msgstr "C:\\Manga (opcjonalnie)"
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga lub /biblioteka"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Can't load this import"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
@@ -3727,6 +3797,10 @@ msgstr "Zmieniaj własną klasyfikację treści"
 #, fuzzy
 msgid "Change the chapter range"
 msgstr "Zmień zakres rozdziałów"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Change the issuer URL?"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -4353,6 +4427,10 @@ msgstr "Potwierdź hasło, aby połączyć"
 msgid "Confirm your password to turn it off"
 msgstr "Potwierdź hasło, aby to wyłączyć"
 
+#: src/api/ssoErrors.ts
+msgid "Confirm your password, then start linking single sign-on again"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connect"
@@ -4377,8 +4455,8 @@ msgstr "Połącz tracker AniList lub MyAnimeList, aby z tego korzystać. <0>Otw�
 #: src/pages/stats/sections/RhythmSection.tsx
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
-msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "Połącz Kavita w Ustawieniach, a Maki zacznie śledzić czytane przez Ciebie rozdziały. Pobrane pliki i zmiany w bibliotece są śledzone niezależnie od tego."
+#~ msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
+#~ msgstr "Połącz Kavita w Ustawieniach, a Maki zacznie śledzić czytane przez Ciebie rozdziały. Pobrane pliki i zmiany w bibliotece są śledzone niezależnie od tego."
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -4600,12 +4678,29 @@ msgstr "Nie udało się skopiować do schowka. Zaznacz tekst i skopiuj go ręczn
 msgid "Could not import {file}"
 msgstr ""
 
-#. placeholder {0}: String(error)
+#: src/api/ssoErrors.ts
+msgid "Could not link single sign-on to your account"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that login to a new account"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "Could not link that single sign-on account"
+msgstr ""
+
+#. placeholder {0}: errorText(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
-msgid "Could not load anime signals: {0}"
-msgstr "Nie udało się wczytać sygnałów anime: {0}"
+#~ msgid "Could not load anime signals: {0}"
+#~ msgstr "Nie udało się wczytać sygnałów anime: {0}"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Could not load anime signals: {reason}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4666,15 +4761,27 @@ msgstr "Nie udało się odczytać Twojego profilu"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "Nie udało się usunąć {seriesTitle}: {reason}"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not restore {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Could not revert this upgrade"
 msgstr "Nie udało się cofnąć tego ulepszenia"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not undo: {reason}"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "Nie udało się zaktualizować opinii dla {surface}: {reason}"
+#~ msgid "Could not update {surface} feedback: {reason}"
+#~ msgstr "Nie udało się zaktualizować opinii dla {surface}: {reason}"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -4695,6 +4802,10 @@ msgstr "Nie udało się wczytać połączeń powiadomień"
 msgid "Couldn't load requests"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load the details for this title."
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -4702,6 +4813,10 @@ msgstr "Nie udało się wczytać tej sekcji"
 
 #: src/pages/ActivityPage.tsx
 msgid "Couldn't load this section"
+msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load this title"
 msgstr ""
 
 #: src/pages/HomePage.tsx
@@ -4893,6 +5008,10 @@ msgstr "Bieżąca kopia"
 #, fuzzy
 msgid "Current file"
 msgstr "Obecny plik"
+
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Current streak: <0>{streak, plural, one {# day} other {# days}}</0>. Best: <1>{best, plural, one {# day} other {# days}}</1>."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -5218,6 +5337,11 @@ msgstr "Usuń użytkownika"
 msgid "Deleted \"{name}\""
 msgstr "Usunięto „{name}”"
 
+#: src/components/DiscoverPresets.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Deleted saved filter {name}."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
 msgstr ""
@@ -5254,8 +5378,8 @@ msgstr "Gęstość: {densityLabel}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "Describe what you're after, a title, or author:\"Junji Ito\""
-msgstr "Opisz, czego szukasz, podaj tytuł lub author:\"Junji Ito\""
+#~ msgid "Describe what you're after, a title, or author:\"Junji Ito\""
+#~ msgstr "Opisz, czego szukasz, podaj tytuł lub author:\"Junji Ito\""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -6143,6 +6267,15 @@ msgstr "Nie udało się wczytać biblioteki"
 msgid "Failed to load this creator"
 msgstr "Nie udało się wczytać tego twórcy"
 
+#. placeholder {0}: errorText(err)
+#: src/pages/LibraryPage.tsx
+msgid "Failed to restore filter: {0}"
+msgstr ""
+
+#: src/components/DiscoverPresets.tsx
+msgid "Failed to restore filter: {detail}"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -6302,6 +6435,10 @@ msgstr ""
 #, fuzzy
 msgid "Files"
 msgstr "Pliki"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Files on disk are not touched. Every user's access to this folder is removed, and adding it back later starts with no grants."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -7257,6 +7394,14 @@ msgstr "Potwierdzam trwałe usunięcie tego archiwum i wszystkich jego powiąza�
 msgid "I confirm removing the file links for this missing archive."
 msgstr "Potwierdzam usunięcie powiązań z plikami dla tego brakującego archiwum."
 
+#: src/components/settings/AccountSection.tsx
+msgid "I have copied it"
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
+msgid "I have saved them"
+msgstr ""
+
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/HealthPage.tsx
@@ -7308,6 +7453,10 @@ msgstr "Formaty obrazu"
 #, fuzzy
 msgid "Import"
 msgstr "Import"
+
+#: src/pages/ImportPage.tsx
+msgid "Import {folderName}"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -9131,6 +9280,13 @@ msgid "Move {selectedCount} series"
 msgstr "Przenieś {selectedCount} serii"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Move {tierLabel} down"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Move {tierLabel} up"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -9167,7 +9323,6 @@ msgstr "Przenieś na górę"
 msgid "Move to top of queue"
 msgstr "Przenieś na górę kolejki"
 
-#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -9551,6 +9706,15 @@ msgstr "Żadne sprawdzenia jeszcze się nie odbyły. Użyj przycisku Sprawdź te
 msgid "No comics found in the completed download ({detail})"
 msgstr ""
 
+#. {census} lists the most common file types that were there with their counts, such as "2 .pdf, 1 .txt". The extensions are never translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download (found {census})"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "No comics found in the completed download (it is empty)"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "No creator shows up often enough yet."
@@ -9610,6 +9774,10 @@ msgstr "Nie dodano jeszcze folderu biblioteki. Serie potrzebują folderu docelow
 #, fuzzy
 msgid "no longer steers your taste"
 msgstr "nie wpływa już na Twój gust"
+
+#: src/api/ssoErrors.ts
+msgid "No Maki account is linked to that login"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -9726,6 +9894,10 @@ msgstr "Brak profili jakości. Serie bez profilu używają profilu domyślnego d
 msgid "No reading time recorded."
 msgstr "Nie zarejestrowano czasu czytania."
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "No reading tracked yet"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No release-year data yet"
@@ -9760,6 +9932,10 @@ msgstr "Brak wyników."
 #, fuzzy
 msgid "No reviews on MyAnimeList yet."
 msgstr "Na MyAnimeList nie ma jeszcze recenzji."
+
+#: src/pages/ImportPage.tsx
+msgid "No root folders yet"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -9899,6 +10075,10 @@ msgstr "Brak"
 #, fuzzy
 msgid "None available"
 msgstr "Brak dostępnych"
+
+#: src/pages/NotificationsPage.tsx
+msgid "None in the latest notifications"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10158,8 +10338,8 @@ msgstr "Nic nie jest ostateczne. Każdą opcję znajdziesz też w Ustawieniach."
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Nic nie zaimportowano: listy importu wymagają lokalnej bazy danych MangaBaka."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Nic nie zaimportowano: listy importu wymagają lokalnej bazy danych MangaBaka."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -10170,6 +10350,10 @@ msgstr "Nic w nim nie jest lepsze od tego, co masz"
 #, fuzzy
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "Plik nie zawiera informacji o tych rozdziałach, więc obecne powiązanie pozostaje."
+
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -10459,6 +10643,10 @@ msgstr "oidc, openid connect, sso, authelia, authentik, keycloak, wystawca, iden
 msgid "OK"
 msgstr "OK"
 
+#: src/pages/NotificationsPage.tsx
+msgid "Older ones may match. Load more to look further back."
+msgstr ""
+
 #: src/api/customRails.ts
 #: src/api/hooks.ts
 #, fuzzy
@@ -10560,6 +10748,10 @@ msgstr "One-shot"
 #, fuzzy
 msgid "Ongoing"
 msgstr "W trakcie"
+
+#: src/pages/HealthPage.tsx
+msgid "Only {scanRootPath}, the root chosen on the Files tab"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -10691,6 +10883,10 @@ msgstr "Od teraz otwieraj Polecane z tymi filtrami"
 #, fuzzy
 msgid "Open series"
 msgstr "Otwórz serię"
+
+#: src/pages/ImportPage.tsx
+msgid "Open settings"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -11618,6 +11814,10 @@ msgstr "Przeczytaj {nextChapter}"
 msgid "Read {nextChapterLabel}"
 msgstr "Czytaj {nextChapterLabel}"
 
+#: src/pages/stats/ReadTrackingEmpty.tsx
+msgid "Read a chapter in Maki's reader and it starts tracking. An admin can also connect Kavita in Settings. Downloads and library changes are tracked either way."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Read a few chapters and this fills in."
@@ -11781,8 +11981,8 @@ msgstr "Postęp czytania z Kavity…"
 #: src/pages/stats/sections/RhythmSection.tsx
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
-msgid "Reading stats need Kavita"
-msgstr "Statystyki czytania wymagają Kavita"
+#~ msgid "Reading stats need Kavita"
+#~ msgstr "Statystyki czytania wymagają Kavita"
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -12162,6 +12362,10 @@ msgstr ""
 msgid "Remove condition"
 msgstr "Usuń warunek"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove folder"
+msgstr ""
+
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
 msgid "Remove from Continue reading"
@@ -12217,6 +12421,10 @@ msgstr "Usunąć serię?"
 msgid "Remove single sign-on"
 msgstr "Usuń logowanie jednokrotne"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Remove single sign-on for {editName}?"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove source only"
@@ -12236,6 +12444,10 @@ msgstr "Usunąć źródło?"
 #, fuzzy
 msgid "Remove the record"
 msgstr "Usuń wpis"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Remove this root folder?"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12323,8 +12535,8 @@ msgstr "Zmieniono nazwę"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Renamed {renamed}, {failed} failed"
-msgstr "Zmieniono nazwę: {renamed}, nieudanych: {failed}"
+#~ msgid "Renamed {renamed}, {failed} failed"
+#~ msgstr "Zmieniono nazwę: {renamed}, nieudanych: {failed}"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -12459,6 +12671,10 @@ msgid "Require HTTPS"
 msgstr "Wymagaj HTTPS"
 
 #: src/components/settings/SecuritySection.tsx
+msgid "Require HTTPS from a plain HTTP address?"
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Require single sign-on"
 msgstr "Wymagaj logowania jednokrotnego"
@@ -12504,6 +12720,10 @@ msgstr "Przywróć domyślne"
 #, fuzzy
 msgid "Reset two-factor"
 msgstr "Zresetuj uwierzytelnianie dwuskładnikowe"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Reset two-factor for {editName}?"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -12622,8 +12842,10 @@ msgstr "Ponowiono {retryCount}x - następna próba {nextAttemptTime}"
 msgid "Retries"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -12774,6 +12996,10 @@ msgstr "Losuj ponownie"
 msgid "Romance"
 msgstr "Romans"
 
+#: src/api/titles.ts
+msgid "Romanized"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/ImportListsSection.tsx
 #: src/pages/ImportPage.tsx
@@ -12887,6 +13113,10 @@ msgstr "Zapisuj plik cover.jpg w folderze każdej serii"
 #, fuzzy
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Zapisz cover.jpg w folderze biblioteki każdej serii"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Save anyway"
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -13132,6 +13362,11 @@ msgstr "wynik {score}"
 #, fuzzy
 msgid "Score {score}"
 msgstr "Wynik {score}"
+
+#. placeholder {0}: format.name
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Score for {0}"
+msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 #, fuzzy
@@ -13988,6 +14223,10 @@ msgstr "Wyloguj wszędzie indziej"
 msgid "Sign-in"
 msgstr ""
 
+#: src/api/ssoErrors.ts
+msgid "Sign-in failed"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
 msgid "Sign-in policy"
@@ -14051,6 +14290,10 @@ msgstr "Logowanie jednokrotne"
 #, fuzzy
 msgid "Single sign-on linked to your account"
 msgstr "Logowanie jednokrotne połączone z Twoim kontem"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Single sign-on logins are tied to the issuer. After a restart, people who signed in through the old one are matched again by their verified email where they have one, and otherwise have to link single sign-on again."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -14523,6 +14766,10 @@ msgstr "Nadal wczesny dostęp na {source}, Maki sprawdzi ponownie później"
 msgid "Still going"
 msgstr "Nadal czytane"
 
+#: src/pages/LibraryPage.tsx
+msgid "Stop"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Stop showing their new titles on Home and Discover"
@@ -14532,6 +14779,10 @@ msgstr "Przestań pokazywać ich nowe tytuły na Starcie i w Odkrywaniu"
 #, fuzzy
 msgid "Stopped before finishing"
 msgstr "Przerwane przed ukończeniem"
+
+#: src/pages/LibraryPage.tsx
+msgid "Stopping"
+msgstr ""
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -14771,6 +15022,14 @@ msgstr "Wysłano powiadomienie testowe"
 msgid "Thai"
 msgstr "Tajski"
 
+#: src/api/ssoErrors.ts
+msgid "That account has not been set up yet"
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "That account is disabled"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "That chapter no longer exists"
@@ -14780,6 +15039,10 @@ msgstr "Ten rozdział już nie istnieje"
 #, fuzzy
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr "Tak się dzieje w przypadku wydań zbiorczych i nazw, których dopasowywanie nie potrafi odczytać. Najpierw spróbuj opcji „Ponownie powiąż pliki”, która odczytuje każdy tom, aby znaleźć zawarte w nim rozdziały. Użyj przycisku powiązania w wierszu dla elementów, których nie uda się przypisać."
+
+#: src/api/ssoErrors.ts
+msgid "That single sign-on account is already linked to a different user"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -14912,6 +15175,14 @@ msgstr "Folder i każdy plik już pasują do bieżących formatów nazewnictwa."
 #, fuzzy
 msgid "The full breakdown is waiting behind this slide."
 msgstr "Pełne zestawienie czeka za tym slajdem."
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider rejected the sign-in request. Check the OIDC client configuration."
+msgstr ""
+
+#: src/api/ssoErrors.ts
+msgid "The identity provider returned no subject"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -15062,6 +15333,10 @@ msgstr ""
 msgid "The server sent a response Maki could not read ({status})."
 msgstr ""
 
+#: src/api/ssoErrors.ts
+msgid "The sign-in did not complete. Please try again."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
@@ -15151,6 +15426,10 @@ msgstr "Cały katalog"
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
 msgstr "W ich folderach są komiksy, które nie są jeszcze połączone. Import połączy je z istniejącymi seriami."
 
+#: src/components/settings/UsersSection.tsx
+msgid "Their second factor is turned off and the authenticator reset, so a password is all that protects the account until they set it up again."
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -15193,9 +15472,17 @@ msgid "They come from the catalogue, so a library the dump does not cover has no
 msgstr "Pochodzą z katalogu, więc biblioteka nieobjęta zrzutem danych ich nie ma."
 
 #: src/components/settings/UsersSection.tsx
+msgid "They will have to link single sign-on again, or use a password, to sign in."
+msgstr ""
+
+#: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "They will no longer be able to sign in. This can't be undone."
 msgstr "Logowanie na to konto nie będzie już możliwe. Tej zmiany nie można cofnąć."
+
+#: src/api/ssoErrors.ts
+msgid "This account already has a single sign-on login. Remove it before linking another."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -15295,8 +15582,8 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "To trwale usuwa archiwum. Wpisy rozdziałów i historia czytania pozostają."
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
-msgstr ""
+#~ msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
+#~ msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -15921,18 +16208,24 @@ msgid "Underscore (_)"
 msgstr "Podkreślenie (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo"
 msgstr "Cofnij"
 
-#. placeholder {0}: String(error)
+#. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Undo failed: {0}"
-msgstr "Nie udało się cofnąć: {0}"
+#~ msgid "Undo failed: {0}"
+#~ msgstr "Nie udało się cofnąć: {0}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {reason}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16493,6 +16786,10 @@ msgstr "Widok"
 msgid "View {title}"
 msgstr "Zobacz {title}"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16510,6 +16807,7 @@ msgstr "Zobacz aktywność"
 msgid "View and add {title}"
 msgstr "Zobacz i dodaj {title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "View in library"
@@ -17037,6 +17335,14 @@ msgstr "Ty"
 msgid "you · {readChapter}"
 msgstr "ty · {readChapter}"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "You are on this page over plain HTTP. After a restart, signing in at this address will be refused. Open Maki through its HTTPS address first, or make sure you can reach it that way."
+msgstr ""
+
+#: src/components/settings/SecuritySection.tsx
+msgid "You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address, and getting back in needs a TLS proxy in front of Maki or an edit to the database."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "You bail around"
@@ -17123,9 +17429,17 @@ msgid "You put down"
 msgstr "Odkładasz"
 
 #: src/pages/stats/sections/TasteSection.tsx
+msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {points from the crowd}}"
+msgstr ""
+
+#: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
-msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {the same as the crowd}}"
-msgstr "Oceniasz o {meanGapValue} {meanGapKind, select, above {punktów wyżej niż społeczność} below {punktów niżej niż społeczność} other {tak samo jak społeczność}}"
+#~ msgid "You rate {meanGapValue} {meanGapKind, select, above {points above the crowd} below {points below the crowd} other {the same as the crowd}}"
+#~ msgstr "Oceniasz o {meanGapValue} {meanGapKind, select, above {punktów wyżej niż społeczność} below {punktów niżej niż społeczność} other {tak samo jak społeczność}}"
+
+#: src/pages/stats/sections/TasteSection.tsx
+msgid "You rate the same as the crowd"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

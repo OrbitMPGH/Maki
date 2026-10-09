@@ -42,7 +42,8 @@ export interface Me {
   id: number
   userName: string
   displayName: string | null
-  permissions: number
+  /** The flags enum as the server serialises it, e.g. "AddSeries, UseOpds"; read `permissionNames` instead. */
+  permissions: string
   permissionNames: Permission[]
   isAdmin: boolean
   maxContentRating: string
@@ -53,7 +54,7 @@ export interface Me {
   oidcUserName: string | null
 }
 
-export interface UserSummary extends Me {
+export interface UserSummary extends Omit<Me, 'oidcUserName'> {
   disabled: boolean
   pendingSetup: boolean
   createdAt: string
@@ -152,6 +153,8 @@ export function useLogin() {
   return useMutation({
     mutationFn: (body: { username: string; password: string }) =>
       api<Me & LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+    // The form shows the failure inline.
+    meta: { silent: true },
     onSuccess: (result) => {
       // Two-factor is still pending, so there is no session yet and nothing to cache.
       if (result.requiresTwoFactor) return
@@ -167,6 +170,8 @@ export function useVerifyTwoFactor() {
   return useMutation({
     mutationFn: (body: { code: string; rememberMachine: boolean }) =>
       api<Me>('/auth/2fa', { method: 'POST', body: JSON.stringify(body) }),
+    // The form shows the failure inline.
+    meta: { silent: true },
     onSuccess: (me) => {
       noteSignedInUser(me.id)
       dropAccountData(qc)
@@ -180,6 +185,8 @@ export function useSetup() {
   return useMutation({
     mutationFn: (body: { username: string; password: string; displayName?: string }) =>
       api<Me>('/auth/setup', { method: 'POST', body: JSON.stringify(body) }),
+    // The form shows the failure inline.
+    meta: { silent: true },
     onSuccess: (me) => {
       noteSignedInUser(me.id)
       dropAccountData(qc)

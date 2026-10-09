@@ -1,4 +1,4 @@
-﻿import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
+import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
 import { useState } from 'react'
 import {
     IconBell,

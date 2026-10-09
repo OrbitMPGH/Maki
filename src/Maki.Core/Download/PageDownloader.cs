@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Maki.Core.Http;
+using Maki.Core.Reading;
 using Maki.Core.Sources;
 using Microsoft.Extensions.Logging;
 
@@ -91,8 +92,12 @@ public class PageDownloader(
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             if (response.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable)
             {
-                var retryAfter = response.Headers.RetryAfter?.Delta
-                    ?? (response.Headers.RetryAfter?.Date is { } date ? date - DateTimeOffset.UtcNow : null);
+                var retryAfter = response.Headers.RetryAfter?.Delta;
+                if (retryAfter is null && response.Headers.RetryAfter?.Date is { } date)
+                {
+                    retryAfter = TimeSpan.FromTicks(Math.Max(0, (date - time.GetUtcNow()).Ticks));
+                }
+
                 throw new RateLimitException(
                     $"Rate limited by {request.RequestUri?.Host} (HTTP {(int)response.StatusCode})", retryAfter);
             }
@@ -103,13 +108,6 @@ public class PageDownloader(
             {
                 await CopyWithStallTimeoutAsync(response.Content, file, page.Url, StallTimeout, time, ct);
             }
-        }
-
-        if (page.ScrambleOffset > 0)
-        {
-            await MangaFireDescrambler.DescrambleFileAsync(temp, page.ScrambleOffset, ct);
-            logger.LogDebug("Descrambled page {Target} (offset {Offset})",
-                Path.GetFileName(target), page.ScrambleOffset);
         }
 
         if (!string.IsNullOrEmpty(page.XorKeyHex))
@@ -179,10 +177,11 @@ public class PageDownloader(
         await File.WriteAllBytesAsync(path, data, ct);
     }
 
-    private static string ExtensionFor(string url)
+    // An image proxy URL like "/image.php?id=1" would otherwise name the page "001.php", which readers
+    // that filter entries by image extension then skip.
+    internal static string ExtensionFor(string url)
     {
-        var path = new Uri(url).AbsolutePath;
-        var extension = Path.GetExtension(path);
-        return string.IsNullOrEmpty(extension) ? ".jpg" : extension;
+        var extension = Path.GetExtension(new Uri(url).AbsolutePath);
+        return CbzReader.IsImage("page" + extension) ? extension : ".jpg";
     }
 }

@@ -1,43 +1,39 @@
+import { i18n } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
 import type { LocalizedTitle } from './types'
 
-/**
- * Display names for the language codes metadata providers actually use, so an alt-title line reads
- * "ベルセルク (Japanese)" rather than "(ja)". A code that isn't here falls back to itself, the list
- * is a courtesy, not a whitelist, and providers invent regional spellings faster than this grows.
- */
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: 'English',
-  sv: 'Swedish',
-  nl: 'Dutch',
-  ja: 'Japanese',
-  ko: 'Korean',
-  zh: 'Chinese',
-  'zh-hans': 'Chinese (Simplified)',
-  'zh-hant': 'Chinese (Traditional)',
-  'zh-hk': 'Chinese (HK)',
-  es: 'Spanish',
-  'es-la': 'Spanish (LATAM)',
-  fr: 'French',
-  de: 'German',
-  it: 'Italian',
-  pt: 'Portuguese',
-  'pt-br': 'Portuguese (Brazil)',
-  ru: 'Russian',
-  ar: 'Arabic',
-  id: 'Indonesian',
-  th: 'Thai',
-  vi: 'Vietnamese',
-  pl: 'Polish',
-  tr: 'Turkish',
-  'ja-latn': 'Romanized Japanese',
-  'ko-latn': 'Romanized Korean',
-  'zh-latn': 'Romanized Chinese',
-  romaji: 'Romanized',
+/** Provider codes that are not valid BCP-47 for `Intl.DisplayNames`. */
+const CODE_ALIASES: Record<string, string> = { 'es-la': 'es-419' }
+
+const displayNames = new Map<string, Intl.DisplayNames | null>()
+
+function namesFor(locale: string): Intl.DisplayNames | null {
+  let names = displayNames.get(locale)
+  if (names === undefined) {
+    try {
+      names = new Intl.DisplayNames([locale || 'en'], { type: 'language' })
+    } catch {
+      names = null
+    }
+    displayNames.set(locale, names)
+  }
+  return names
 }
 
+/**
+ * The name of a provider language code in the interface language, so an alt-title line reads
+ * "ベルセルク (Japanese)" or "ベルセルク (Japonais)" rather than "(ja)". A code the browser cannot
+ * name falls back to itself: providers invent regional spellings faster than any list grows.
+ */
 export function languageName(code: string | null | undefined): string | null {
   if (!code) return null
-  return LANGUAGE_NAMES[code.toLowerCase()] ?? code
+  const lower = code.toLowerCase()
+  if (lower === 'romaji') return i18n._(msg`Romanized`)
+  try {
+    return namesFor(i18n.locale)?.of(CODE_ALIASES[lower] ?? code) ?? code
+  } catch {
+    return code
+  }
 }
 
 /** `"ベルセルク (Japanese)"`, or the bare title when the provider gave no language for it. */

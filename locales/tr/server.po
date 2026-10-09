@@ -296,15 +296,6 @@ msgstr "Bu oturum açma bilgilerine bağlı bir Maki hesabı yok"
 msgid "error.auth.ssoNoSubject"
 msgstr "Kimlik sağlayıcı bir subject döndürmedi"
 
-#. The generic fallback when a single sign-on failure has neither a catalogue key
-#. (OidcSignInResult.ErrorKey) nor text the identity provider library worded itself
-#. (OidcSignInResult.RawError, RemoteFailureContext.Failure.Message in AuthServiceCollectionExtensions).
-#: src/Maki.Api/Controllers/AuthController.cs
-#. English: Sign-in failed
-#, fuzzy
-msgid "error.auth.ssoSignInFailed"
-msgstr "Oturum açılamadı"
-
 #. A provisioned account collides with an existing local username.
 #: src/Maki.Api/Auth/OidcSignInService.cs
 #. English: An account with that username already exists
@@ -1755,10 +1746,15 @@ msgid "error.torrentImport.copyFailed"
 msgstr ""
 
 #: src/Maki.Api/Services/TorrentImportService.cs
-#. English: No comics found in the completed download ({detail})
-#, fuzzy
-msgid "error.torrentImport.noComicsFound"
-msgstr "Tamamlanan indirmede çizgi roman bulunamadı ({detail})"
+#. English: No comics found in the completed download (it is empty)
+msgid "error.torrentImport.noComicsEmpty"
+msgstr ""
+
+#. {census} lists the most common file types that were there with their counts, such as "2 .pdf, 1 .txt". The extensions are never translated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: No comics found in the completed download (found {census})
+msgid "error.torrentImport.noComicsOfType"
+msgstr ""
 
 #: src/Maki.Api/Services/TorrentImportService.cs
 #. English: Series has no root folder

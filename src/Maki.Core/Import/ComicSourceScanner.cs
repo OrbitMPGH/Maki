@@ -85,26 +85,25 @@ public static class ComicSourceScanner
     }
 
     /// <summary>
-    /// What the path actually held, for an error message when none of it was a comic. "No comics
-    /// found" on its own reads exactly like a download that arrived empty.
+    /// What the path actually held, for an error message when none of it was a comic: the three most
+    /// common file extensions with their counts, empty when there was nothing. "No comics found" on
+    /// its own reads exactly like a download that arrived empty.
     /// </summary>
-    public static string Describe(string contentPath)
+    public static IReadOnlyList<(string Extension, int Count)> Census(string contentPath)
     {
         string[] files = File.Exists(contentPath) ? [contentPath]
             : Directory.Exists(contentPath) ? LibraryPaths.EnumerateFilesNoLinks(contentPath).ToArray()
             : [];
 
-        var census = files
+        return files
             .Select(f => System.IO.Path.GetExtension(f).ToLowerInvariant())
             .Where(e => e.Length > 0)
             .GroupBy(e => e, StringComparer.Ordinal)
             .OrderByDescending(g => g.Count())
             .ThenBy(g => g.Key, StringComparer.Ordinal)
             .Take(3)
-            .Select(g => $"{g.Count()} {g.Key}")
+            .Select(g => (g.Key, g.Count()))
             .ToList();
-
-        return census.Count == 0 ? "it is empty" : $"found {string.Join(", ", census)}";
     }
 
     private static IEnumerable<ComicSource> FromArchive(string path)

@@ -24,12 +24,15 @@ public static class CbzPackager
                     writer.Write(comicInfoXml);
                 }
 
+                // Padded past three digits only when the chapter needs it, so entry names still sort
+                // in page order in a reader that compares them as plain text.
+                var format = new string('0', Math.Max(3, pageFiles.Count.ToString().Length));
                 for (var i = 0; i < pageFiles.Count; i++)
                 {
                     var extension = Path.GetExtension(pageFiles[i]);
                     archive.CreateEntryFromFile(
                         pageFiles[i],
-                        $"{i + 1:000}{extension}",
+                        $"{(i + 1).ToString(format)}{extension}",
                         CompressionLevel.NoCompression);
                 }
             }

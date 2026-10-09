@@ -40,6 +40,9 @@ export function SignalsCard() {
   const undo = useUndoFeedback()
   const loadError = error ? errorText(error) : ''
   const [manage, setManage] = useState<'titles' | 'anime' | null>(null)
+  // The modal fetches its own data on mount, so it is only mounted once someone has opened it.
+  const [manageOpened, setManageOpened] = useState(false)
+  if (manage !== null && !manageOpened) setManageOpened(true)
   const [actionError, setActionError] = useState('')
   const [howItWorks, setHowItWorks] = useState(false)
 
@@ -114,7 +117,7 @@ export function SignalsCard() {
         clientMutationId: randomUUID(),
       })
     } catch (cause) {
-      setActionError(String(cause))
+      setActionError(errorText(cause))
     }
   }
 
@@ -316,9 +319,11 @@ export function SignalsCard() {
           </>
         )}
       </Stack>
-      <ManageSignalsModal
-        opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
-      />
+      {manageOpened && (
+        <ManageSignalsModal
+          opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
+        />
+      )}
     </>
   )
 }
@@ -417,7 +422,7 @@ function useShelfPillInfo(item: ShelfPadItem) {
   const { t } = useLingui()
   if (item.kind === 'rated' && item.rating != null) {
     const label = t`★ ${formatRating(item.rating)} rated`
-    if (item.rating >= 4.5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
+    if (item.rating > 5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
     if (item.rating <= AVOID_RATING_CEILING) {
       return { label, color: 'var(--danger)', phrase: t`pushes down titles close to it` }
     }

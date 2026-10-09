@@ -691,18 +691,8 @@ export interface ImportListsStatusDto {
   skipped: ImportListSkipDto[]
 }
 
-export interface ImportListRunResult {
-  added: number
-  requested: number
-  skipped: number
-  alreadyPresent: number
-  errors: number
-  dumpUnavailable: boolean
-}
-
 /**
- * `POST /importlists/run` reply. A `full` run kicks off in the background and answers 202 with
+ * `POST /importlists/run` reply. Every manual run kicks off in the background and answers 202 with
  * `started: true`; the outcome arrives later via the inbox and `ImportListTrackerDto.lastRun`.
- * A partial run still answers inline with the counts.
  */
-export type ImportListRunResponse = ImportListRunResult | { started: true }
+export type ImportListRunResponse = { started: true }

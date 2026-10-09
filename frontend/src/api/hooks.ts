@@ -451,6 +451,9 @@ export function useTasteProfile(view: TasteView, refreshNonce = 0, enabled = tru
   })
 }
 
+/** Requests whose `refresh` has already been sent, so it is not re-sent on a refetch. */
+const REFRESHED_REQUESTS = new Set<string>()
+
 /**
  * Pages through the server's cached recommendation pool ("Show more" = fetchNextPage).
  *
@@ -459,20 +462,26 @@ export function useTasteProfile(view: TasteView, refreshNonce = 0, enabled = tru
  * every page load.
  */
 export function useRecommendations(request: RecommendationRequest, enabled = true) {
+  const { refresh, ...identity } = request
+  const identityKey = JSON.stringify(identity)
   return useInfiniteQuery({
-    queryKey: ['recommendations', request],
-    queryFn: ({ pageParam }) =>
-      api<RecommendationsResult>('/recommendations', {
+    queryKey: ['recommendations', identity],
+    queryFn: ({ pageParam }) => {
+      // A refresh recomputes the pool: only bust the cache on the first page, so deeper pages
+      // read from the pool that page 0 just rebuilt, and only once per applied request so a
+      // later invalidation refetch reads the rebuilt pool instead of rebuilding it again.
+      const bust = pageParam.page === 0 && refresh === true && !REFRESHED_REQUESTS.has(identityKey)
+      if (bust) REFRESHED_REQUESTS.add(identityKey)
+      return api<RecommendationsResult>('/recommendations', {
         method: 'POST',
-        // A refresh recomputes the pool: only bust the cache on the first page, so
-        // deeper pages read from the pool that page 0 just rebuilt.
         body: JSON.stringify({
-          ...request,
+          ...identity,
           page: pageParam.page,
           poolVersion: pageParam.poolVersion,
-          refresh: pageParam.page === 0 ? request.refresh : false,
+          refresh: bust,
         }),
-      }),
+      })
+    },
     initialPageParam: { page: 0, poolVersion: undefined as string | undefined },
     getNextPageParam: (last) => (last.hasMore
       ? { page: last.page + 1, poolVersion: last.poolVersion ?? undefined }
@@ -671,7 +680,7 @@ export function useDiscoverGenres(refreshNonce = 0, enabled = true) {
  * that the browser clamps the scroll position to the top. Callers that swap between unrelated
  * feeds leave it off, since holding the previous feed's rows would flash the wrong rail.
  */
-export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPrevious = false) {
+export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPrevious = false, inlineError = false) {
   return useQuery({
     queryKey: ['discover-feed', request],
     queryFn: ({ signal }) =>
@@ -684,6 +693,7 @@ export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPreviou
     staleTime: 5 * 60 * 1000,
     retry: false,
     ...(keepPrevious ? { placeholderData: keepPreviousData } : {}),
+    meta: { silent: inlineError },
   })
 }
 
@@ -744,6 +754,7 @@ export function useDiscoverSearch(
     enabled,
     staleTime: 5 * 60 * 1000,
     retry: false,
+    meta: { silent: true },
   })
 }
 
@@ -785,6 +796,7 @@ export function useCreator(request: CreatorRequest | null) {
     },
     staleTime: 5 * 60 * 1000,
     retry: false,
+    meta: { silent: true },
   })
 }
 
@@ -875,6 +887,7 @@ export function useHideHomeReading() {
       )
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['home', 'reading'] }),
+    meta: { silent: true },
   })
 }
 
@@ -1412,12 +1425,13 @@ export interface MangaReview {
 }
 
 /** Rich detail for a Discover recommendation. `id` is a MangaBaka id; null disables the query. */
-export function useRecommendationDetail(id: string | null) {
+export function useRecommendationDetail(id: string | null, inlineError = false) {
   return useQuery({
     queryKey: ['recommendation-detail', id],
     queryFn: () => api<MangaBakaDetail>(`/recommendations/detail/${id}`),
     enabled: id != null,
     staleTime: 30 * 60 * 1000,
+    meta: { silent: inlineError },
   })
 }
 
@@ -2005,11 +2019,28 @@ export function useDeleteSeriesFiles(seriesId: number) {
   })
 }
 
-/** The active queue. Paginated server-side; `total` tells you if the page is truncated. */
-export function useQueue(page = 1, pageSize = 200) {
+/**
+ * The active queue. Paginated server-side; `total` tells you if the page is truncated.
+ * `pauseWhenIdle` stops the poll while the shell's queue summary reports nothing active: the
+ * socket patches new items in, so an idle queue needs no 10 s refetch.
+ */
+export function useQueue(page = 1, pageSize = 200, enabled = true, pauseWhenIdle = false) {
+  const { data: summary } = useQueueSummary()
+  const idle = pauseWhenIdle && summary !== undefined && summary.active === 0
   return useQuery({
     queryKey: ['queue', page, pageSize],
     queryFn: ({ signal }) => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`, { signal }),
+    enabled,
+    refetchInterval: idle ? false : 10_000,
+  })
+}
+
+/** One series' active queue items, so its page does not depend on them landing in the global first page. */
+export function useSeriesQueue(seriesId: number) {
+  return useQuery({
+    queryKey: ['queue', 'series', seriesId],
+    queryFn: ({ signal }) =>
+      api<QueueHistoryDto>(`/queue?page=1&pageSize=200&seriesId=${seriesId}`, { signal }),
     refetchInterval: 10_000,
   })
 }
@@ -2049,9 +2080,10 @@ export function useRetryQueueItem() {
  */
 export function useImportPlan(id: number | null) {
   return useQuery({
-    queryKey: ['queue', 'import-plan', id],
+    queryKey: ['import-plan', id],
     queryFn: () => api<TorrentImportPlanDto>(`/queue/${id}/import-plan`),
     enabled: id !== null,
+    meta: { silent: true },
   })
 }
 
@@ -2099,7 +2131,8 @@ export function useClearQueue() {
 export function useReorderQueue() {
   const queryClient = useQueryClient()
   // Queue list pages are keyed ['queue', page, pageSize]; this predicate keeps the reorder off
-  // ['queue', 'import-plan', id], whose cached value has no `items`.
+  // the per-series ['queue', 'series', id] lists. The import plan, ['import-plan', id], sits outside
+  // the ['queue'] prefix and has no `items`.
   const isQueuePage = (q: { queryKey: readonly unknown[] }) => typeof q.queryKey[1] === 'number'
   return useMutation({
     mutationFn: (orderedIds: number[]) =>
@@ -2963,6 +2996,7 @@ export function useReleaseSearch(seriesId: number, enabled: boolean, query?: str
     enabled,
     staleTime: 5 * 60 * 1000,
     retry: false,
+    meta: { silent: true },
   })
 }
 
@@ -3542,11 +3576,11 @@ export function useAppVersion() {
   })
 }
 
-export function useScrobbleStatus() {
+export function useScrobbleStatus(refetchInterval = 5000) {
   return useQuery({
     queryKey: ['scrobble', 'status'],
     queryFn: () => api<ScrobbleStatus>('/scrobble/status'),
-    refetchInterval: 5000,
+    refetchInterval,
   })
 }
 
@@ -4317,18 +4351,10 @@ export function useProgressSettings() {
 
 export function useSaveProgressSettings() {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (settings: ProgressSettings) =>
-      api<ProgressSettings>('/progress/settings', {
-        method: 'PUT',
-        body: JSON.stringify(settings),
-      }),
-    onSuccess: (saved) => {
-      queryClient.setQueryData(['progress', 'settings'], saved)
-      // Every surface depends on the switches and on which calendar days are bucketed into.
-      queryClient.invalidateQueries({ queryKey: ['progress'] })
-    },
-  })
+  return useSaveSettingsRecord<ProgressSettings>(['progress', 'settings'], '/progress/settings', () => {
+    // Every surface depends on the switches and on which calendar days are bucketed into.
+    void queryClient.invalidateQueries({ queryKey: ['progress'] })
+  }, { optimistic: true })
 }
 
 export function useSaveReadingGoal() {

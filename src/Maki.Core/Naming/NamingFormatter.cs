@@ -60,6 +60,14 @@ public static class NamingFormatter
         return FileNameSanitizer.Sanitize(Cleanup(rendered));
     }
 
+    /// <summary>Whether the template names <paramref name="token"/> in any spelling, e.g. <c>{Chapter.Language}</c>.</summary>
+    public static bool UsesToken(string template, string token)
+    {
+        var key = NamingTokens.NormalizeKey(token.Trim('{', '}'));
+        return TokenPattern.Matches(template)
+            .Any(m => NamingTokens.Find(SplitPadding(m.Groups[1].Value).Name)?.Key == key);
+    }
+
     /// <summary>
     /// Every reason this format can't be saved, in the order they were found. Empty means good.
     /// </summary>

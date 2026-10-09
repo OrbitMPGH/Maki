@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// Appends rows to the activity log. <see cref="Record"/> only stages the row on the
+/// Appends rows to the activity log. <see cref="StageAsync"/> only stages the row on the
 /// shared scoped context — use it when the caller's own SaveChanges is about to run anyway;
 /// <see cref="RecordAsync"/> saves immediately for call sites with no save of their own left.
 /// <para>
@@ -21,18 +21,19 @@ public class StatsEventService(MakiDbContext db)
     /// the key before the row goes, so the removal event lands under the same identity as the reads
     /// that preceded it and the add that may follow.
     /// </param>
-    public void Record(StatsEventType type, int? seriesId, string seriesTitle, int value = 1,
-        int? kavitaSeriesId = null, string? payloadJson = null, string? seriesKey = null)
+    public async Task StageAsync(StatsEventType type, int? seriesId, string seriesTitle, int value = 1,
+        int? kavitaSeriesId = null, string? payloadJson = null, string? seriesKey = null,
+        CancellationToken ct = default)
     {
         if (seriesId is int sid)
         {
-            var row = db.Series.AsNoTracking().IgnoreQueryFilters()
+            var row = await db.Series.AsNoTracking().IgnoreQueryFilters()
                 .Where(s => s.Id == sid)
                 .Select(s => new
                 {
                     s.Incognito, s.Title, s.MangaBakaId, s.MangaDexUuid, s.AniListId, s.MalId
                 })
-                .FirstOrDefault();
+                .FirstOrDefaultAsync(ct);
 
             if (row?.Incognito == IncognitoMode.Full)
             {
@@ -72,7 +73,7 @@ public class StatsEventService(MakiDbContext db)
         int? kavitaSeriesId = null, string? payloadJson = null, string? seriesKey = null,
         CancellationToken ct = default)
     {
-        Record(type, seriesId, seriesTitle, value, kavitaSeriesId, payloadJson, seriesKey);
+        await StageAsync(type, seriesId, seriesTitle, value, kavitaSeriesId, payloadJson, seriesKey, ct);
         await db.SaveChangesAsync(ct);
     }
 }

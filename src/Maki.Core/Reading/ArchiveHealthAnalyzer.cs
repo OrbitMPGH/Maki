@@ -210,7 +210,10 @@ public static class ArchiveHealthAnalyzer
                             incomplete.Add("health.finding.pixelLimit");
                         fingerprints.Add(new(name, rawHash, info.Width, info.Height));
                     }
-                    catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
+                    // A malformed header surfaces as more than the two documented types (BMP throws
+                    // NotSupportedException, JPEG and PNG can throw NullReference or range errors),
+                    // and none of them should abort the whole archive's analysis.
+                    catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException))
                     {
                         if (ex is UnknownImageFormatException &&
                             Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase))

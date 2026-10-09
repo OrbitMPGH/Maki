@@ -86,6 +86,11 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
     message: `Download path not accessible from Maki: {path}`,
     comment: `{path} is a filesystem path and is never translated.`,
   }),
+  'error.torrentImport.noComicsEmpty': msg`No comics found in the completed download (it is empty)`,
+  'error.torrentImport.noComicsOfType': msg({
+    message: `No comics found in the completed download (found {census})`,
+    comment: `{census} lists the most common file types that were there with their counts, such as "2 .pdf, 1 .txt". The extensions are never translated.`,
+  }),
   'error.torrentImport.noComicsFound': msg({
     message: `No comics found in the completed download ({detail})`,
     comment: `{detail} is a summary of the folder's contents and is not translated.`,

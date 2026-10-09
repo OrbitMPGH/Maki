@@ -91,6 +91,7 @@ public class AniListTracker(
             throw new TrackerException($"AniList token request failed: {e.Message}", e);
         }
 
+        using var _ = response;
         var body = await response.Content.ReadAsStringAsync(ct);
         if (!response.IsSuccessStatusCode)
         {

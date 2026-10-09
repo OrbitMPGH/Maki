@@ -315,7 +315,7 @@ public class ComicSourceScannerTests : IDisposable
     {
         WriteLooseFiles("scans", "a.txt", "b.txt", "c.pdf");
 
-        Assert.Equal("found 2 .txt, 1 .pdf", ComicSourceScanner.Describe(_root));
-        Assert.Equal("it is empty", ComicSourceScanner.Describe(At("nothing")));
+        Assert.Equal([(".txt", 2), (".pdf", 1)], ComicSourceScanner.Census(_root));
+        Assert.Empty(ComicSourceScanner.Census(At("nothing")));
     }
 }

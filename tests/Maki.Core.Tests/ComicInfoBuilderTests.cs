@@ -103,6 +103,19 @@ public class ComicInfoBuilderTests
         Assert.Equal("2020", info.Year);
     }
 
+    [Theory]
+    [InlineData("manga", "YesAndRightToLeft")]
+    [InlineData("manhwa", "Yes")]
+    [InlineData("manhua", "Yes")]
+    [InlineData("oel", "No")]
+    [InlineData(null, "YesAndRightToLeft")]
+    public void Manga_reading_direction_follows_the_series_type(string? type, string expected)
+    {
+        var series = TestSeries();
+        series.Type = type;
+        Assert.Equal(expected, ComicInfoBuilder.Build(series, new Chapter { Number = 1 }, 10).Manga);
+    }
+
     [Fact]
     public void Count_set_when_completed()
     {

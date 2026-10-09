@@ -92,7 +92,7 @@ public class AuthOidcLinkChallengeTests : IDisposable
         var result = await controller.OidcLink();
 
         var redirect = Assert.IsType<RedirectResult>(result);
-        Assert.Equal("/settings?oidcLinkError=error.auth.ssoChallengeRejected", redirect.Url);
+        Assert.Equal("/settings?oidcLinkError=challengeRejected", redirect.Url);
     }
 
     [Fact]
@@ -104,7 +104,7 @@ public class AuthOidcLinkChallengeTests : IDisposable
         var result = await controller.OidcLink();
 
         var redirect = Assert.IsType<RedirectResult>(result);
-        Assert.Equal("/settings?oidcLinkError=error.auth.ssoLinkNeedsPassword", redirect.Url);
+        Assert.Equal("/settings?oidcLinkError=linkNeedsPassword", redirect.Url);
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public class AuthOidcLinkChallengeTests : IDisposable
         var result = await controller.OidcLink();
 
         var redirect = Assert.IsType<RedirectResult>(result);
-        Assert.Equal("/settings?oidcLinkError=error.auth.ssoLinkNeedsPassword", redirect.Url);
+        Assert.Equal("/settings?oidcLinkError=linkNeedsPassword", redirect.Url);
     }
 
     [Fact]

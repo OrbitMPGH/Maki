@@ -37,6 +37,48 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
         }
     }
 
+    internal static readonly TimeSpan BaselineMargin = TimeSpan.FromHours(1);
+
+    internal static IQueryable<ChapterFile> UnanalysedSince(MakiDbContext db, DateTime baseline) =>
+        db.ChapterFiles.Where(f => f.DateAdded >= baseline &&
+            !db.HealthFiles.Any(h => h.ChapterFileId == f.Id && !h.Removed && h.AnalyzedAt >= f.DateAdded));
+
+    /// <summary>
+    /// Moves the incremental baseline up to the oldest file still waiting for its first analysis, or
+    /// to the newest file once none is. Without it every file added since the feature first ran is
+    /// probed against the inventory on every pass for as long as the library exists.
+    /// <para>
+    /// The move never passes <see cref="BaselineMargin"/> before <paramref name="now"/>: a download
+    /// stamps DateAdded before it measures and commits later, and a restored or renamed file keeps
+    /// its old DateAdded, so a row can land below the newest one already seen.
+    /// </para>
+    /// </summary>
+    internal static async Task<DateTime> AdvanceBaselineAsync(
+        MakiDbContext db, IAppSettings settings, DateTime baseline, DateTime now, CancellationToken ct)
+    {
+        var next = await UnanalysedSince(db, baseline).MinAsync(f => (DateTime?)f.DateAdded, ct)
+                   ?? await db.ChapterFiles.Where(f => f.DateAdded >= baseline).MaxAsync(f => (DateTime?)f.DateAdded, ct);
+        if (next is not { } moved)
+        {
+            return baseline;
+        }
+
+        var utc = DateTime.SpecifyKind(moved, DateTimeKind.Utc);
+        var ceiling = DateTime.SpecifyKind(now, DateTimeKind.Utc) - BaselineMargin;
+        if (utc > ceiling)
+        {
+            utc = ceiling;
+        }
+
+        if (utc <= baseline)
+        {
+            return baseline;
+        }
+
+        await settings.SetAsync(SettingKeys.HealthIncrementalSince, utc.ToString("O"), ct);
+        return utc;
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -71,7 +113,8 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     // queued again on every pass.
                     var onlineRoots = (await db.RootFolders.Select(r => new { r.Id, r.Path }).ToListAsync(stoppingToken))
                         .Where(r => Directory.Exists(r.Path)).Select(r => r.Id).ToList();
-                    var series = await db.ChapterFiles.Where(f => f.DateAdded >= baseline && !db.HealthFiles.Any(h => h.ChapterFileId == f.Id && !h.Removed && h.AnalyzedAt >= f.DateAdded))
+                    var unanalysed = UnanalysedSince(db, baseline);
+                    var series = await unanalysed
                         .Where(f => db.Series.Any(s => s.Id == f.SeriesId && onlineRoots.Contains(s.RootFolderId)))
                         .Where(f => !db.DownloadQueue.Any(q => q.SeriesId == f.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled))
                         .Select(f => f.SeriesId).Distinct().Order().Take(100).ToListAsync(stoppingToken);
@@ -83,6 +126,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                         if (!await db.HealthScans.AnyAsync(s => s.SeriesId == seriesId && (s.Status == "pending" || s.Status == "running"), stoppingToken))
                             db.HealthScans.Add(new() { SeriesId = seriesId, Verify = true });
                     await db.SaveChangesAsync(stoppingToken);
+                    await AdvanceBaselineAsync(db, settings, baseline, DateTime.UtcNow, stoppingToken);
                 }
                 var scan = await db.HealthScans.Where(s => s.Status == "pending" || s.Status == "running").OrderBy(s => s.Id).FirstOrDefaultAsync(stoppingToken);
                 if (scan != null)

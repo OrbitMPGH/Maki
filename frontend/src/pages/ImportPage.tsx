@@ -255,6 +255,7 @@ export default function ImportPage() {
             className="import-root-select"
             label={t`Root folder`}
             data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+            disabled={doImport.isPending}
             value={rootFolderId}
             onChange={(v) => {
               setRootFolderId(v)
@@ -268,7 +269,7 @@ export default function ImportPage() {
             leftSection={<IconFolderSearch size={16} />}
             onClick={() => rootFolderId && scan.mutate(Number(rootFolderId))}
             loading={scan.isPending}
-            disabled={!rootFolderId}
+            disabled={!rootFolderId || doImport.isPending}
           >
             <Trans>Scan</Trans>
           </Button>
@@ -412,6 +413,16 @@ export default function ImportPage() {
         />
       )}
 
+      {rootFolders && rootFolders.length === 0 && (
+        <EmptyState
+          mood="asking"
+          title={t`No root folders yet`}
+          description={t`Add a root folder in Settings, then come back to scan it for series to import.`}
+          actionLabel={t`Open settings`}
+          actionTo="/settings?tab=library&s=root-folders"
+        />
+      )}
+
       {visibleCandidates && visibleCandidates.length === 0 && (
         <EmptyState
           mood="asleep"
@@ -443,12 +454,13 @@ export default function ImportPage() {
                   const selected = selection[c.folderName] ?? ''
                   const match = c.matches.find((m) => m.providerId === selected)
                   const rowProgress = progress[c.folderName]
-                  const { cleanedTitle, comicCount, recognizedCount } = c
+                  const { cleanedTitle, comicCount, recognizedCount, folderName } = c
                   const unrecognizedCount = comicCount - recognizedCount
                   return (
                     <Table.Tr key={c.folderName}>
                       <Table.Td>
                         <Checkbox
+                          aria-label={t`Import ${folderName}`}
                           checked={selected !== ''}
                           disabled={c.matches.length === 0 || doImport.isPending}
                           onChange={(e) => {

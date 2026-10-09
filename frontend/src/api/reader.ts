@@ -1,5 +1,5 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import { api, authHeaders, getInitialize } from './client'
 
@@ -299,10 +299,15 @@ export function useKavitaReadImport() {
     },
   })
 
-  // A finished import changes read state across the whole library.
-  const finishedAt = query.data?.finishedAt
+  // A finished import changes read state across the whole library. The first finishedAt seen is
+  // an earlier run's and must not refetch it; only a change after that is a run ending here.
+  const finishedAt = query.data ? (query.data.finishedAt ?? null) : undefined
+  const seenFinishedAt = useRef<string | null | undefined>(undefined)
   useEffect(() => {
-    if (!finishedAt) return
+    if (finishedAt === undefined) return
+    const previous = seenFinishedAt.current
+    seenFinishedAt.current = finishedAt
+    if (previous === undefined || previous === finishedAt) return
     void queryClient.invalidateQueries({ queryKey: ['series'] })
     void queryClient.invalidateQueries({ queryKey: ['reader-progress'] })
     void queryClient.invalidateQueries({ queryKey: ['reader-used'] })

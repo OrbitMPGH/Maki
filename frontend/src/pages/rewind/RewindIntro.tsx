@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ActionIcon } from '@mantine/core'
 import { IconX } from '@tabler/icons-react'
@@ -29,6 +29,8 @@ export function RewindIntro({
   // language switch would otherwise leave the deck frozen in whatever language built it.
   const slides = useMemo(() => buildSlides(stats, label), [stats, label, i18n.locale])
   const [index, setIndex] = useState(0)
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
   const isLast = index === slides.length - 1
 
   const next = useCallback(() => {
@@ -43,11 +45,31 @@ export function RewindIntro({
     return () => clearTimeout(timer)
   }, [index, isLast, next])
 
+  // Focus moves into the overlay while it is open and goes back to the Play button afterwards.
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    overlayRef.current?.focus()
+    return () => opener?.focus()
+  }, [])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      else if (e.key === 'ArrowRight' || e.key === ' ') next()
-      else if (e.key === 'ArrowLeft') prev()
+      if (e.key === 'Escape') {
+        onClose()
+      } else if (e.key === 'Tab') {
+        // Nothing behind the overlay is reachable: Tab only hops between the overlay and its close button.
+        e.preventDefault()
+        if (document.activeElement === closeRef.current) overlayRef.current?.focus()
+        else closeRef.current?.focus()
+      } else if (e.key === ' ' && e.target instanceof HTMLButtonElement) {
+        // Space on the focused close button closes; it should not also advance the slide.
+      } else if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault()
+        next()
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        prev()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -76,7 +98,16 @@ export function RewindIntro({
   const backdropKey = slide.mosaic ? 'mosaic' : (slide.backdrop ?? 'none')
 
   return createPortal(
-    <div className="rewind-overlay" role="dialog" aria-label={t`${label} Rewind`} onClick={onTap}>
+    <div
+      ref={overlayRef}
+      className="rewind-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t`${label} Rewind`}
+      tabIndex={-1}
+      style={{ outline: 'none' }}
+      onClick={onTap}
+    >
       <AnimatePresence>
         {backdropKey !== 'none' && (
           <motion.div
@@ -134,6 +165,7 @@ export function RewindIntro({
       </div>
 
       <ActionIcon
+        ref={closeRef}
         className="rewind-close"
         variant="subtle"
         color="gray.0"
