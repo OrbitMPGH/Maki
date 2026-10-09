@@ -916,6 +916,10 @@ msgstr "{missingCount, plural, one {dodaje # rozdział, którego nie masz} few {
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} musi zapisać migawkę rozdziałów, zanim Maki będzie mogło bezpiecznie wyczyścić listę. Kolejne usunięcia źródeł korzystają z zapisanych migawek i nie wysyłają żadnych zapytań do źródła."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
@@ -923,8 +927,8 @@ msgstr "{missingWanted, plural, one {# chciany, nie pobrany} few {# chciane, nie
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{missingWanted} wanted chapter(s) are missing"
-msgstr "Brakuje {missingWanted} chcianych rozdziałów"
+#~ msgid "{missingWanted} wanted chapter(s) are missing"
+#~ msgstr "Brakuje {missingWanted} chcianych rozdziałów"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -980,6 +984,10 @@ msgstr "{name}: powodzenie dla {ok}/{total}, pierwszy błąd: {firstError}"
 #, fuzzy
 msgid "{name}: {reason}"
 msgstr "{name}: {reason}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped after {ok}/{total}"
+msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
@@ -1178,6 +1186,10 @@ msgstr "{review, plural, one {# pobieranie oczekujące na decyzję o imporcie} f
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Zmierzono na podstawie # rozdziału z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} few {Zmierzono na podstawie # rozdziałów z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} many {Zmierzono na podstawie # rozdziałów z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.} other {Zmierzono na podstawie # rozdziału z {series} serii w Twojej bibliotece: {bpp} bitów na piksel, odpowiednik JPG.}}"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{searchCap}+ matches"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -1192,6 +1204,10 @@ msgstr "{selectedCount, plural, one {Zaimportować # folder?} few {Zaimportować
 #, fuzzy
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr "{selectedCount, plural, one {Importuj # zaznaczony} few {Importuj # zaznaczone} many {Importuj # zaznaczonych} other {Importuj # zaznaczonego}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -2223,6 +2239,10 @@ msgstr "Dodaj {title} do biblioteki"
 #, fuzzy
 msgid "Add a rail"
 msgstr "Dodaj sekcję"
+
+#: src/pages/ImportPage.tsx
+msgid "Add a root folder in Settings, then come back to scan it for series to import."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -3409,6 +3429,10 @@ msgstr "C:\\Manga (opcjonalnie)"
 #, fuzzy
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga lub /biblioteka"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Can't load this import"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -4604,8 +4628,13 @@ msgstr ""
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
-msgid "Could not load anime signals: {0}"
-msgstr "Nie udało się wczytać sygnałów anime: {0}"
+#~ msgid "Could not load anime signals: {0}"
+#~ msgstr "Nie udało się wczytać sygnałów anime: {0}"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Could not load anime signals: {reason}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4666,15 +4695,27 @@ msgstr "Nie udało się odczytać Twojego profilu"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "Nie udało się usunąć {seriesTitle}: {reason}"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not restore {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Could not revert this upgrade"
 msgstr "Nie udało się cofnąć tego ulepszenia"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not undo: {reason}"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "Nie udało się zaktualizować opinii dla {surface}: {reason}"
+#~ msgid "Could not update {surface} feedback: {reason}"
+#~ msgstr "Nie udało się zaktualizować opinii dla {surface}: {reason}"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -4695,6 +4736,10 @@ msgstr "Nie udało się wczytać połączeń powiadomień"
 msgid "Couldn't load requests"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load the details for this title."
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -4702,6 +4747,10 @@ msgstr "Nie udało się wczytać tej sekcji"
 
 #: src/pages/ActivityPage.tsx
 msgid "Couldn't load this section"
+msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load this title"
 msgstr ""
 
 #: src/pages/HomePage.tsx
@@ -5218,6 +5267,11 @@ msgstr "Usuń użytkownika"
 msgid "Deleted \"{name}\""
 msgstr "Usunięto „{name}”"
 
+#: src/components/DiscoverPresets.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Deleted saved filter {name}."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
 msgstr ""
@@ -5254,8 +5308,8 @@ msgstr "Gęstość: {densityLabel}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "Describe what you're after, a title, or author:\"Junji Ito\""
-msgstr "Opisz, czego szukasz, podaj tytuł lub author:\"Junji Ito\""
+#~ msgid "Describe what you're after, a title, or author:\"Junji Ito\""
+#~ msgstr "Opisz, czego szukasz, podaj tytuł lub author:\"Junji Ito\""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -6142,6 +6196,15 @@ msgstr "Nie udało się wczytać biblioteki"
 #, fuzzy
 msgid "Failed to load this creator"
 msgstr "Nie udało się wczytać tego twórcy"
+
+#. placeholder {0}: errorText(err)
+#: src/pages/LibraryPage.tsx
+msgid "Failed to restore filter: {0}"
+msgstr ""
+
+#: src/components/DiscoverPresets.tsx
+msgid "Failed to restore filter: {detail}"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
@@ -7308,6 +7371,10 @@ msgstr "Formaty obrazu"
 #, fuzzy
 msgid "Import"
 msgstr "Import"
+
+#: src/pages/ImportPage.tsx
+msgid "Import {folderName}"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -9761,6 +9828,10 @@ msgstr "Brak wyników."
 msgid "No reviews on MyAnimeList yet."
 msgstr "Na MyAnimeList nie ma jeszcze recenzji."
 
+#: src/pages/ImportPage.tsx
+msgid "No root folders yet"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
@@ -10691,6 +10762,10 @@ msgstr "Od teraz otwieraj Polecane z tymi filtrami"
 #, fuzzy
 msgid "Open series"
 msgstr "Otwórz serię"
+
+#: src/pages/ImportPage.tsx
+msgid "Open settings"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12622,8 +12697,10 @@ msgstr "Ponowiono {retryCount}x - następna próba {nextAttemptTime}"
 msgid "Retries"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -12773,6 +12850,10 @@ msgstr "Losuj ponownie"
 #, fuzzy
 msgid "Romance"
 msgstr "Romans"
+
+#: src/api/titles.ts
+msgid "Romanized"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/ImportListsSection.tsx
@@ -14523,6 +14604,10 @@ msgstr "Nadal wczesny dostęp na {source}, Maki sprawdzi ponownie później"
 msgid "Still going"
 msgstr "Nadal czytane"
 
+#: src/pages/LibraryPage.tsx
+msgid "Stop"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Stop showing their new titles on Home and Discover"
@@ -15295,8 +15380,8 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "To trwale usuwa archiwum. Wpisy rozdziałów i historia czytania pozostają."
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
-msgstr ""
+#~ msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
+#~ msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -15921,8 +16006,10 @@ msgid "Underscore (_)"
 msgstr "Podkreślenie (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo"
@@ -15931,8 +16018,12 @@ msgstr "Cofnij"
 #. placeholder {0}: String(error)
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Undo failed: {0}"
-msgstr "Nie udało się cofnąć: {0}"
+#~ msgid "Undo failed: {0}"
+#~ msgstr "Nie udało się cofnąć: {0}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {reason}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16493,6 +16584,10 @@ msgstr "Widok"
 msgid "View {title}"
 msgstr "Zobacz {title}"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16510,6 +16605,7 @@ msgstr "Zobacz aktywność"
 msgid "View and add {title}"
 msgstr "Zobacz i dodaj {title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "View in library"
