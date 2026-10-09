@@ -60,8 +60,18 @@ public class ContinueReadingService(MakiDbContext db)
         var result = new Dictionary<int, NextChapter>();
         foreach (var group in chapters.GroupBy(c => c.SeriesId))
         {
+            // A chapter read in one language is read: another language's copy of the same
+            // (number, volume) is not something left to read, or a series with two languages
+            // downloaded would never drop off the rail.
+            var readSlots = group
+                .Where(c => c.Number is not null && completed.Contains(c.Id))
+                .Select(c => (c.Number, c.Volume))
+                .ToHashSet();
+            bool IsRead(int id, decimal? number, int? volume) =>
+                completed.Contains(id) || (number is not null && readSlots.Contains((number, volume)));
+
             var ordered = ChapterOrder.Sort(group, c => c.Number, c => c.Volume, c => c.Id);
-            var unread = ordered.Where(c => c.HasFile && !completed.Contains(c.Id)).ToList();
+            var unread = ordered.Where(c => c.HasFile && !IsRead(c.Id, c.Number, c.Volume)).ToList();
             if (unread.Count == 0)
             {
                 continue;
@@ -70,10 +80,10 @@ public class ContinueReadingService(MakiDbContext db)
             // The earliest unread chapter after the furthest one read, else the earliest unread
             // (everything past the furthest read is done, so offer what was skipped). Another
             // language's copy of the furthest chapter is not "next".
-            var furthestRead = ordered.FindLastIndex(c => c.Number is not null && completed.Contains(c.Id));
+            var furthestRead = ordered.FindLastIndex(c => c.Number is not null && IsRead(c.Id, c.Number, c.Volume));
             var furthestNumber = furthestRead < 0 ? null : ordered[furthestRead].Number;
             var next = ordered.Skip(furthestRead + 1)
-                           .FirstOrDefault(c => c.HasFile && !completed.Contains(c.Id) && (furthestRead < 0 || c.Number != furthestNumber))
+                           .FirstOrDefault(c => c.HasFile && !IsRead(c.Id, c.Number, c.Volume) && (furthestRead < 0 || c.Number != furthestNumber))
                        ?? unread[0];
 
             result[group.Key] = new NextChapter(
