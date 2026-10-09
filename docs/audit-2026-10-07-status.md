@@ -422,46 +422,46 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | FE-UX | FE-UX-04 | nit | pending |
 | FE-UX | FE-UX-09 | nit | pending |
 | FE-UX | FE-UX-17 | nit | pending |
-| HOSTING | HOSTING-26 | low | pending |
-| HOSTING | HOSTING-32 | low | pending |
-| HOSTING | HOSTING-19 | low | pending |
-| HOSTING | HOSTING-20 | low | pending |
-| HOSTING | HOSTING-24 | low | pending |
-| HOSTING | HOSTING-27 | low | pending |
-| HOSTING | HOSTING-29 | low | pending |
+| HOSTING | HOSTING-26 | low | done ae3a7864, 1723f02e |
+| HOSTING | HOSTING-32 | low | done 27a3a327 (proxy bypass in CORE lane) |
+| HOSTING | HOSTING-19 | low | done ae3a7864, 75957f9e |
+| HOSTING | HOSTING-20 | low | done fdf94fcd |
+| HOSTING | HOSTING-24 | low | done c7a42239 |
+| HOSTING | HOSTING-27 | low | done 940816a1 |
+| HOSTING | HOSTING-29 | low | done 6f2de970 |
 | HOSTING | HOSTING-33 | low | done (wave 2) |
-| HOSTING | HOSTING-37 | low | pending |
-| HOSTING | HOSTING-40 | low | pending |
-| HOSTING | HOSTING-47 | low | pending |
-| HOSTING | HOSTING-11 | low | pending |
-| HOSTING | HOSTING-38 | low | pending |
-| HOSTING | HOSTING-39 | low | pending |
-| HOSTING | HOSTING-23 | low | pending |
-| HOSTING | HOSTING-34 | low | pending |
-| HOSTING | HOSTING-13 | low | pending |
-| HOSTING | HOSTING-15 | low | pending |
-| HOSTING | HOSTING-16 | low | pending |
-| HOSTING | HOSTING-30 | low | pending |
-| HOSTING | HOSTING-04 | low | pending |
-| HOSTING | HOSTING-21 | low | pending |
-| HOSTING | HOSTING-17 | low | pending |
-| HOSTING | HOSTING-18 | low | pending |
-| HOSTING | HOSTING-28 | low | pending |
-| HOSTING | HOSTING-31 | low | pending |
-| HOSTING | HOSTING-36 | low | pending |
-| HOSTING | HOSTING-51 | nit | pending |
-| HOSTING | HOSTING-14 | nit | pending |
-| HOSTING | HOSTING-49 | nit | pending |
-| HOSTING | HOSTING-50 | nit | pending |
-| HOSTING | HOSTING-25 | nit | pending |
-| HOSTING | HOSTING-43 | nit | pending |
-| HOSTING | HOSTING-45 | nit | pending |
-| HOSTING | HOSTING-46 | nit | pending |
-| HOSTING | HOSTING-48 | nit | pending |
-| HOSTING | HOSTING-41 | nit | pending |
-| HOSTING | HOSTING-42 | nit | pending |
-| HOSTING | HOSTING-35 | nit | pending |
-| HOSTING | HOSTING-44 | nit | pending |
+| HOSTING | HOSTING-37 | low | done a4957257 |
+| HOSTING | HOSTING-40 | low | done f4f9ceb6 |
+| HOSTING | HOSTING-47 | low | done aece72a1 |
+| HOSTING | HOSTING-11 | low | done 3ca1ccb0 |
+| HOSTING | HOSTING-38 | low | done ae1e7fbe |
+| HOSTING | HOSTING-39 | low | skipped (owner decision: keep failing startup) |
+| HOSTING | HOSTING-23 | low | done 46135206 |
+| HOSTING | HOSTING-34 | low | done eef1bbd1 |
+| HOSTING | HOSTING-13 | low | done e7bc3e83, 6327a67a |
+| HOSTING | HOSTING-15 | low | done 58c40a8f (resolved toward RECO gate) |
+| HOSTING | HOSTING-16 | low | done 58c40a8f |
+| HOSTING | HOSTING-30 | low | done 6f2de970, 1723f02e |
+| HOSTING | HOSTING-04 | low | skipped (write probe is the point of the check) |
+| HOSTING | HOSTING-21 | low | decision (manual import-list run: off the request onto the job, or inline with a cap) |
+| HOSTING | HOSTING-17 | low | done 58c40a8f |
+| HOSTING | HOSTING-18 | low | done 890943d4 |
+| HOSTING | HOSTING-28 | low | done d67793ae (UrlBase removed) |
+| HOSTING | HOSTING-31 | low | done 0f02480a |
+| HOSTING | HOSTING-36 | low | done ce6701d5 |
+| HOSTING | HOSTING-51 | nit | done 5d4d9608, 75957f9e |
+| HOSTING | HOSTING-14 | nit | skipped (window is milliseconds) |
+| HOSTING | HOSTING-49 | nit | skipped (theoretical) |
+| HOSTING | HOSTING-50 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-25 | nit | done c7a42239 |
+| HOSTING | HOSTING-43 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-45 | nit | skipped (too large) |
+| HOSTING | HOSTING-46 | nit | done e6b572f1, 75957f9e |
+| HOSTING | HOSTING-48 | nit | done 9f199317 |
+| HOSTING | HOSTING-41 | nit | skipped (behaviour change) |
+| HOSTING | HOSTING-42 | nit | done 42896055 |
+| HOSTING | HOSTING-35 | nit | done fa68c82e |
+| HOSTING | HOSTING-44 | nit | done eef1bbd1, 703f8a7f |
 | METADATA | METADATA-12 | low | pending |
 | METADATA | METADATA-13 | low | pending |
 | METADATA | METADATA-15 | low | pending |
@@ -539,38 +539,38 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | RECO | RECO-30 | nit | done 57e92fa6 |
 | RECO | RECO-31 | nit | done 34ba8b03 (grouped route removed) |
 | RECO | RECO-33 | nit | done 1f15adc6 |
-| SERIES | SERIES-28 | low | pending |
-| SERIES | SERIES-21 | low | pending |
-| SERIES | SERIES-20 | low | pending |
-| SERIES | SERIES-03 | low | pending |
-| SERIES | SERIES-10 | low | pending |
-| SERIES | SERIES-25 | low | pending |
-| SERIES | SERIES-27 | low | pending |
-| SERIES | SERIES-35 | low | pending |
-| SERIES | SERIES-15 | low | pending |
-| SERIES | SERIES-26 | low | pending |
-| SERIES | SERIES-33 | low | pending |
-| SERIES | SERIES-34 | low | pending |
-| SERIES | SERIES-36 | low | pending |
-| SERIES | SERIES-37 | low | pending |
-| SERIES | SERIES-04 | low | pending |
-| SERIES | SERIES-11 | low | pending |
-| SERIES | SERIES-14 | low | pending |
-| SERIES | SERIES-29 | low | pending |
-| SERIES | SERIES-30 | low | pending |
-| SERIES | SERIES-32 | low | pending |
-| SERIES | SERIES-05 | low | pending |
-| SERIES | SERIES-24 | low | pending |
+| SERIES | SERIES-28 | low | done 4b07c3c7 |
+| SERIES | SERIES-21 | low | skipped (already fixed by AUTH-01/02) |
+| SERIES | SERIES-20 | low | done a1381c15, e20a2c4b |
+| SERIES | SERIES-03 | low | done 4e3b4256 |
+| SERIES | SERIES-10 | low | done 2af33d7c |
+| SERIES | SERIES-25 | low | done 99d04c7d |
+| SERIES | SERIES-27 | low | done c2943f00, 7acc2fd1 |
+| SERIES | SERIES-35 | low | done 38ac67bb, 9761515b (500-row paging left) |
+| SERIES | SERIES-15 | low | done c482b14e, bf9ef5fb |
+| SERIES | SERIES-26 | low | done 201c4527, 4e2a9e73 |
+| SERIES | SERIES-33 | low | done e1359b21, 80740652 |
+| SERIES | SERIES-34 | low | done e1359b21, dfa4a6e2 |
+| SERIES | SERIES-36 | low | done c76dd650 |
+| SERIES | SERIES-37 | low | done bba31b84 |
+| SERIES | SERIES-04 | low | done 142fa627 |
+| SERIES | SERIES-11 | low | done 2af33d7c |
+| SERIES | SERIES-14 | low | done 4208d220 |
+| SERIES | SERIES-29 | low | done 253738de |
+| SERIES | SERIES-30 | low | skipped (rows capped at 10 per mapping) |
+| SERIES | SERIES-32 | low | done 68c6596b, 6081dbf9 |
+| SERIES | SERIES-05 | low | done bdf2e782, 3afbb752 (cover version from file write time, cached) |
+| SERIES | SERIES-24 | low | skipped (frontend coalesced in wave 2; server projection buys little) |
 | SERIES | SERIES-07 | low | done (wave 2) |
 | SERIES | SERIES-16 | low | done (wave 2) |
 | SERIES | SERIES-22 | low | done (wave 2) |
-| SERIES | SERIES-39 | nit | pending |
-| SERIES | SERIES-42 | nit | pending |
-| SERIES | SERIES-41 | nit | pending |
-| SERIES | SERIES-31 | nit | pending |
-| SERIES | SERIES-38 | nit | pending |
-| SERIES | SERIES-12 | nit | pending |
-| SERIES | SERIES-40 | nit | pending |
+| SERIES | SERIES-39 | nit | done df34afee (partial) |
+| SERIES | SERIES-42 | nit | skipped (already uses SourceLanguages.Same) |
+| SERIES | SERIES-41 | nit | done e60abca7 (partial) |
+| SERIES | SERIES-31 | nit | done df34afee |
+| SERIES | SERIES-38 | nit | done df34afee (partial) |
+| SERIES | SERIES-12 | nit | skipped (owner decision: admins stay scoped) |
+| SERIES | SERIES-40 | nit | done e60abca7 |
 | SOURCES | SOURCES-26 | low | pending |
 | SOURCES | SOURCES-17 | low | pending |
 | SOURCES | SOURCES-21 | low | pending |
