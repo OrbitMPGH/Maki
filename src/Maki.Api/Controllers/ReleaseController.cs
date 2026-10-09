@@ -3,6 +3,7 @@ using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Quality;
 using Maki.Core.Security;
@@ -92,6 +93,15 @@ public class ReleaseController(
         catch (ReleaseRefusedException ex)
         {
             return this.Fail(localizer, ex.Key);
+        }
+        catch (QBittorrentException ex)
+        {
+            logger.LogWarning(ex, "qBittorrent refused the grab for series {SeriesId}", request.SeriesId);
+            return this.BadGateway(localizer, ex.Failure switch
+            {
+                QBittorrentFailure.LoginFailed => "error.release.qbittorrentLoginFailed",
+                _ => "error.release.qbittorrentRejected",
+            });
         }
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException)
         {

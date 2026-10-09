@@ -243,7 +243,7 @@ msgstr "Chapters belong to different series"
 #. The cause is in the server log.
 #: src/Maki.Api/Controllers/ChapterController.cs
 msgid "error.chapter.enqueueFailed"
-msgstr "Could not queue the chapter. The server log has the details."
+msgstr "Could not queue the chapter. Details are in the server log."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 msgid "error.chapter.fileNotFound"
@@ -421,7 +421,7 @@ msgstr "\"{title}\" is already in the library with downloaded files. Delete it f
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.failed"
-msgstr "Import failed. The server log has the details."
+msgstr "Import failed. Details are in the server log."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.folderGone"
@@ -689,7 +689,7 @@ msgstr "Your taste profile needs the local MangaBaka database (Settings → Libr
 #. The Prowlarr or qBittorrent call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.grabFailed"
-msgstr "Could not send the release to qBittorrent. The server log has the details."
+msgstr "Could not send the release to qBittorrent. Details are in the server log."
 
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.noDownloadLink"
@@ -699,14 +699,24 @@ msgstr "This release has no download link"
 msgid "error.release.prowlarrNotConfigured"
 msgstr "Prowlarr is not configured (Settings → Downloads → Prowlarr)"
 
+#. qBittorrent rejected the username or password Maki has stored for it.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+msgid "error.release.qbittorrentLoginFailed"
+msgstr "qBittorrent rejected the login. Check the username and password in Settings → Downloads."
+
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.qbittorrentNotConfigured"
 msgstr "qBittorrent is not configured (Settings → Downloads → qBittorrent)"
 
+#. qBittorrent answered but refused to add the torrent.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+msgid "error.release.qbittorrentRejected"
+msgstr "qBittorrent refused to add the torrent."
+
 #. The Prowlarr call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.searchFailed"
-msgstr "The release search failed. The server log has the details."
+msgstr "The release search failed. Details are in the server log."
 
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.seriesNotFound"
@@ -856,7 +866,7 @@ msgstr "Search query is required"
 #. {source} is the source's display name, never translated. The cause is in the server log.
 #: src/Maki.Api/Controllers/SearchController.cs
 msgid "error.search.seriesPageFailed"
-msgstr "The URL matched {source} but its series page could not be fetched. The server log has the details."
+msgstr "The URL matched {source} but its series page could not be fetched. Details are in the server log."
 
 #: src/Maki.Api/Controllers/SearchController.cs
 msgid "error.search.tooManyRedirects"
@@ -930,7 +940,7 @@ msgstr "Metadata lookup failed - series has no provider id or the provider retur
 #. The cause is in the server log. Anything already moved was put back.
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.moveFailed"
-msgstr "Could not move the series folder. The server log has the details."
+msgstr "Could not move the series folder. Details are in the server log."
 
 #. {message} is an exception message and is never translated. The files already moved; only the
 #. database write failed, so the move is rolled back.
@@ -1002,15 +1012,15 @@ msgstr "One or more tag ids do not exist"
 #. Shown as warnings after the series row is already saved. The cause is in the server log.
 #: src/Maki.Api/Services/SeriesCreationService.cs
 msgid "error.seriesCreation.coverFailed"
-msgstr "Could not finish cover setup. The server log has the details."
+msgstr "Could not finish cover setup. Details are in the server log."
 
 #: src/Maki.Api/Services/SeriesCreationService.cs
 msgid "error.seriesCreation.folderFailed"
-msgstr "Could not create the series folder. The server log has the details."
+msgstr "Could not create the series folder. Details are in the server log."
 
 #: src/Maki.Api/Services/SeriesCreationService.cs
 msgid "error.seriesCreation.historyFailed"
-msgstr "Could not finish library history setup. The server log has the details."
+msgstr "Could not finish library history setup. Details are in the server log."
 
 #: src/Maki.Api/Services/SeriesCreationService.cs
 msgid "error.seriesCreation.sourceMatchFailed"
@@ -1033,7 +1043,7 @@ msgstr "{file} is wanted by both {first} and {second}"
 #. {file} is a file name, never translated. The cause is in the server log.
 #: src/Maki.Api/Services/SeriesRenameService.cs
 msgid "error.seriesRename.fileFailed"
-msgstr "Could not rename {file}. The server log has the details."
+msgstr "Could not rename {file}. Details are in the server log."
 
 #. {file} is a filesystem path relative to the root folder, never translated.
 #: src/Maki.Api/Services/SeriesRenameService.cs
@@ -1048,7 +1058,7 @@ msgstr "Skipped {from}: {to} already exists"
 #. The cause is in the server log.
 #: src/Maki.Api/Services/SeriesRenameService.cs
 msgid "error.seriesRename.folderFailed"
-msgstr "Could not rename the series folder. The server log has the details."
+msgstr "Could not rename the series folder. Details are in the server log."
 
 #: src/Maki.Api/Services/SeriesRenameService.cs
 msgid "error.seriesRename.formatCollision"
@@ -1745,7 +1755,7 @@ msgstr "Restore staged. Restarting to apply."
 #. The cause is in the server log.
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.restoreFailed"
-msgstr "Could not stage the restore. The server log has the details."
+msgstr "Could not stage the restore. Details are in the server log."
 
 #. Shown when an image cache rebuild is requested while one is already in progress.
 #: src/Maki.Api/Controllers/SystemController.cs
@@ -2768,7 +2778,7 @@ msgstr "That file is no longer in the inventory. Rescan and try again."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.reviewStale"
-msgstr "The review is stale. Rescan and review again."
+msgstr "This review is out of date. Rescan and review again."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.rootGone"
@@ -2784,15 +2794,15 @@ msgstr "The file changed after the review. Rescan first."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.fileContentChanged"
-msgstr "The file content changed or was not hashed. Rescan first."
+msgstr "The file's contents changed, or it was not fully scanned. Rescan first."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.operationActive"
-msgstr "Another operation on this file is active."
+msgstr "Another operation on this file is in progress."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.downloadsActive"
-msgstr "Downloads or imports for this series are active."
+msgstr "Downloads or imports for this series are in progress."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.needsLinkedSeries"
@@ -2808,7 +2818,7 @@ msgstr "Operation not found."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.operationNotReady"
-msgstr "The operation is not ready, or its review is stale."
+msgstr "The operation is not ready, or its review is out of date."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.replacementIncomplete"
@@ -2816,11 +2826,11 @@ msgstr "The replacement must cover every linked chapter."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.candidateChanged"
-msgstr "The candidate changed. Request a new replacement."
+msgstr "The replacement file changed. Request a new one."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.candidateInvalid"
-msgstr "The candidate failed validation, or its analysis is incomplete."
+msgstr "The replacement file failed its checks, or its analysis is not finished."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.resetConfirmationRequired"
@@ -2833,7 +2843,7 @@ msgstr "The replacement destination already exists."
 #. A health action failed for a reason Maki does not name. The cause is in the server log.
 #: src/Maki.Api/Controllers/HealthController.cs
 msgid "error.health.operationFailed"
-msgstr "The operation failed. The server log has the details."
+msgstr "The operation failed. Details are in the server log."
 
 #. The health page's own checks. Admin-only. Each ran on a timer with nobody attached, so nothing
 #. here was worded at the moment it was found: the row stores a key and its values and is rendered
