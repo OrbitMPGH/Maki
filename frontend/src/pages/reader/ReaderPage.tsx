@@ -177,10 +177,16 @@ export default function ReaderPage() {
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement))
     document.addEventListener('fullscreenchange', onChange)
-    return () => document.removeEventListener('fullscreenchange', onChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      // Leaving the reader must not leave the whole app fullscreen.
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
+    }
   }, [])
 
   const toggleFullscreen = useCallback(() => {
+    // iPhone Safari has no element fullscreen; the method is missing there, not just rejected.
+    if (!document.fullscreenEnabled) return
     if (document.fullscreenElement) {
       void document.exitFullscreen().catch(() => {})
     } else {

@@ -491,16 +491,18 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              onClick={onToggleFullscreen}
-              aria-label={t`Toggle full screen`}
-            >
-              {fullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
-            </ActionIcon>
-          </Tooltip>
+          {document.fullscreenEnabled && (
+            <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                onClick={onToggleFullscreen}
+                aria-label={t`Toggle full screen`}
+              >
+                {fullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
+              </ActionIcon>
+            </Tooltip>
+          )}
         </Group>
       </div>
     </>
