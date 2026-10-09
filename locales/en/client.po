@@ -3390,6 +3390,7 @@ msgstr "Client secret"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 msgid "Close"
 msgstr "Close"
 
@@ -7211,6 +7212,10 @@ msgstr "Median"
 #: src/pages/stats/SourceReliability.tsx
 msgid "Median wait"
 msgstr "Median wait"
+
+#: src/App.tsx
+msgid "Menu"
+msgstr "Menu"
 
 #: src/pages/ImportPage.tsx
 msgid "Merging folder"

@@ -4138,6 +4138,7 @@ msgstr "クライアントシークレット"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Close"
 msgstr "閉じる"
@@ -8792,6 +8793,10 @@ msgstr "中央値"
 #, fuzzy
 msgid "Median wait"
 msgstr "待ち時間の中央値"
+
+#: src/App.tsx
+msgid "Menu"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

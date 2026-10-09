@@ -4138,6 +4138,7 @@ msgstr "客户端密钥"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Close"
 msgstr "关闭"
@@ -8792,6 +8793,10 @@ msgstr "中位数"
 #, fuzzy
 msgid "Median wait"
 msgstr "等待时间中位数"
+
+#: src/App.tsx
+msgid "Menu"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy

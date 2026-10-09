@@ -4138,6 +4138,7 @@ msgstr "Sekret klienta"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Close"
 msgstr "Zamknij"
@@ -8792,6 +8793,10 @@ msgstr "Mediana"
 #, fuzzy
 msgid "Median wait"
 msgstr "Mediana czasu oczekiwania"
+
+#: src/App.tsx
+msgid "Menu"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
