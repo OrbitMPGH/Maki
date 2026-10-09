@@ -267,41 +267,18 @@ public class ReaderCohortInstaller(
     }
 
     /// <summary>Opens the staged file and proves it is usable before it replaces the live one.</summary>
-    private static long ValidateStaged(string staging, ReaderCohortManifest manifest)
+    internal static long ValidateStaged(string staging, ReaderCohortManifest manifest)
     {
         using var conn = new SqliteConnection($"Data Source={staging};Mode=ReadOnly;Pooling=False");
         conn.Open();
 
-        using (var check = conn.CreateCommand())
-        {
-            check.CommandText = "PRAGMA quick_check";
-            check.CommandTimeout = 600;
-            var result = check.ExecuteScalar()?.ToString();
-            if (!string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException($"downloaded file failed its integrity check ({result})");
-            }
-        }
+        ArtifactChecks.RequireIntegrity(conn, "file");
 
         // FIRST, before any shape check. The cohorts are derived from coread-graph.db, which holds
         // one row per user per series read and sits in the same folder on the machine that builds
         // this. Refusing it here does not undo a publish, but it stops every install that would
-        // otherwise have downloaded and kept a copy. Matched by prefix rather than by three exact
-        // names, so a working table nobody remembered to list is caught too.
-        using (var personal = conn.CreateCommand())
-        {
-            personal.CommandText =
-                """
-                SELECT COUNT(*) FROM sqlite_master
-                WHERE type = 'table' AND (name LIKE 'user\_%' ESCAPE '\' OR name = 'pending_user')
-                """;
-            if (personal.ExecuteScalar() is long found && found > 0)
-            {
-                throw new InvalidOperationException(
-                    "downloaded file holds per-user reading tables; this is the fetcher's working "
-                    + "database, not an export, and it must not be distributed");
-            }
-        }
+        // otherwise have downloaded and kept a copy.
+        ArtifactChecks.RefusePerUserTables(conn, "fetcher's");
 
         foreach (var table in new[] { "cohort", "cohort_item", "item_global" })
         {

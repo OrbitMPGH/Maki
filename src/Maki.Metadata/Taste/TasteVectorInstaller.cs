@@ -186,6 +186,12 @@ public class TasteVectorInstaller(
             // No SwapDatabaseAsync to call: the vectors live inside the index, so the file is moved
             // into place and the index dropped. The next request rebuilds it.
             Directory.CreateDirectory(Path.GetDirectoryName(options.DatabasePath)!);
+            SqliteConnection.ClearAllPools();
+            foreach (var sidecar in new[] { options.DatabasePath + "-wal", options.DatabasePath + "-shm" })
+            {
+                File.Delete(sidecar);
+            }
+
             File.Move(staging, options.DatabasePath, overwrite: true);
             index.Invalidate();
 
@@ -275,17 +281,8 @@ public class TasteVectorInstaller(
         // the same folder on the machine that builds this and is the likeliest mispublish. Refusing
         // it here does not undo a publish, but it stops every install that would otherwise have
         // downloaded and kept a copy.
-        using (var personal = conn.CreateCommand())
-        {
-            personal.CommandText =
-                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('user_entry', 'user_state', 'pending_user')";
-            if (personal.ExecuteScalar() is long found && found > 0)
-            {
-                throw new InvalidOperationException(
-                    "downloaded file holds per-user reading tables; this is the trainer's working "
-                    + "database, not an export, and it must not be distributed");
-            }
-        }
+        ArtifactChecks.RefusePerUserTables(conn, "trainer's");
+        ArtifactChecks.RequireIntegrity(conn, "file");
 
         using (var shape = conn.CreateCommand())
         {
