@@ -160,6 +160,27 @@ public class HealthWorkspaceTests : IDisposable
         Assert.Equal(scan.Total,scan.Completed);
         Assert.Equal(analysedAt,db.HealthFiles.AsNoTracking().Single(f=>f.Id==file.Id).AnalyzedAt);
     }
+    [Fact] public async Task The_incremental_baseline_stops_at_the_oldest_unanalysed_file_then_follows_the_newest()
+    {
+        using var db=fixture.NewContext(); var file=await Seed(db,true);
+        var settings=new FakeAppSettings();
+        var start=new DateTime(2026,1,1,0,0,0,DateTimeKind.Utc);
+        var analysed=db.ChapterFiles.Single(f=>f.Id==file.ChapterFileId);
+        analysed.DateAdded=start.AddDays(1);
+        file.AnalyzedAt=start.AddDays(2);
+        var waiting=new ChapterFile { SeriesId=analysed.SeriesId,RelativePath="two.cbz",Size=1,DateAdded=start.AddDays(3) };
+        db.ChapterFiles.Add(waiting); await db.SaveChangesAsync();
+
+        var first=await HealthWorker.AdvanceBaselineAsync(db,settings,start,default);
+        Assert.Equal(start.AddDays(3),first);
+        Assert.Equal(start.AddDays(3).ToString("O"),await settings.GetAsync(Maki.Core.Configuration.SettingKeys.HealthIncrementalSince));
+
+        db.HealthFiles.Add(new HealthFile { RootFolderId=file.RootFolderId,RelativePath="two.cbz",ChapterFileId=waiting.Id,AnalyzedAt=start.AddDays(4) });
+        await db.SaveChangesAsync();
+        Assert.Equal(first,await HealthWorker.AdvanceBaselineAsync(db,settings,first,default));
+        var older=await HealthWorker.AdvanceBaselineAsync(db,settings,start,default);
+        Assert.Equal(start.AddDays(3),older);
+    }
     [Fact] public async Task A_verified_file_is_not_downgraded_by_a_later_index_pass()
     {
         using var db=fixture.NewContext();
