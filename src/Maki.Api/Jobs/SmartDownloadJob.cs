@@ -84,9 +84,11 @@ public class SmartDownloadJob(
                 }
                 catch (InvalidOperationException ex)
                 {
-                    logger.LogError(ex, ex.Message);
+                    logger.LogError(ex, "Smart Download could not queue chapter {ChapterId}", chapterId);
                 }
             }
+
+            if (queuedItemIds.Count == 0) continue;
 
             await batches.QueuedAsync(series.Id, series.Title, queuedItemIds, DownloadOrigin.SmartDownload);
             logger.LogInformation(
