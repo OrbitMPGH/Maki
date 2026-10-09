@@ -142,30 +142,30 @@ One lane per slice, lows then nits; plus the HOSTING-08 backup job lane. Started
 | Kavita repair | (wave 2 review) | low | decision (repair mis-attributed Kavita ReadingState rows: move, drop or leave) |
 | DOWNLOADS | DOWNLOADS-02 | medium | done 5e4c759e (missed in wave 2) |
 | HOSTING-08 job | HOSTING-08 | medium | done a17238bd, 0cb22018, 5ae81857 (setting backup.scheduled, default off) |
-| AUTH | AUTH-07 | low | pending |
-| AUTH | AUTH-08 | low | pending |
-| AUTH | AUTH-12 | low | pending |
-| AUTH | AUTH-14 | low | pending |
-| AUTH | AUTH-17 | low | pending |
-| AUTH | AUTH-21 | low | pending |
-| AUTH | AUTH-22 | low | pending |
-| AUTH | AUTH-23 | low | pending |
-| AUTH | AUTH-28 | low | pending |
-| AUTH | AUTH-24 | low | pending |
-| AUTH | AUTH-10 | low | pending |
-| AUTH | AUTH-18 | low | pending |
-| AUTH | AUTH-20 | low | pending |
-| AUTH | AUTH-15 | low | pending |
-| AUTH | AUTH-19 | low | pending |
-| AUTH | AUTH-26 | low | pending |
-| AUTH | AUTH-30 | nit | pending |
-| AUTH | AUTH-13 | nit | pending |
-| AUTH | AUTH-29 | nit | pending |
-| AUTH | AUTH-11 | nit | pending |
-| AUTH | AUTH-09 | nit | pending |
-| AUTH | AUTH-25 | nit | pending |
+| AUTH | AUTH-07 | low | done 07efa3dc |
+| AUTH | AUTH-08 | low | done 07efa3dc, d28caf5c |
+| AUTH | AUTH-12 | low | done f8ef9264, 6e3f8f27 |
+| AUTH | AUTH-14 | low | done ade1c02d (recent sign-in within 10 min for passwordless) |
+| AUTH | AUTH-17 | low | done 07efa3dc |
+| AUTH | AUTH-21 | low | done 1c72caa8, 37a64386 (revocations carried forward on restore) |
+| AUTH | AUTH-22 | low | done 07efa3dc, b94fa23b, d28caf5c |
+| AUTH | AUTH-23 | low | done 12480045, b4dbf33f |
+| AUTH | AUTH-28 | low | done 1798eb54, 5eabe2e5 (TOTP replay guard) |
+| AUTH | AUTH-24 | low | done 8bb2893a |
+| AUTH | AUTH-10 | low | skipped (already fixed by HOSTING-01) |
+| AUTH | AUTH-18 | low | done 0214e824 |
+| AUTH | AUTH-20 | low | done 4098ef34 |
+| AUTH | AUTH-15 | low | done 5e6b5d60, 981f212f |
+| AUTH | AUTH-19 | low | done 0214e824, 389a3a8a |
+| AUTH | AUTH-26 | low | done 6d096810, 90fa3430 |
+| AUTH | AUTH-30 | nit | done 70881826 |
+| AUTH | AUTH-13 | nit | done be8b2713 |
+| AUTH | AUTH-29 | nit | done 5e6b5d60 |
+| AUTH | AUTH-11 | nit | skipped (per-GET reissue is deliberate) |
+| AUTH | AUTH-09 | nit | done 07efa3dc |
+| AUTH | AUTH-25 | nit | done 6f2c9bcb |
 | AUTH | AUTH-16 | nit | done (wave 2) |
-| AUTH | AUTH-27 | nit | pending |
+| AUTH | AUTH-27 | nit | done 6f2c9bcb |
 | CORE | CORE-10 | low | pending |
 | CORE | CORE-20 | low | pending |
 | CORE | CORE-23 | low | pending |
