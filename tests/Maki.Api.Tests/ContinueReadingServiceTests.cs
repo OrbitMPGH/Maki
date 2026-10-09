@@ -101,4 +101,14 @@ public class ContinueReadingServiceTests : IDisposable
 
         Assert.Equal(1, next!.UnreadChapters);
     }
+
+    [Fact]
+    public async Task Another_languages_copy_with_a_different_volume_still_counts_as_read()
+    {
+        var seriesId = _db.SeedSeries();
+        Read(seriesId, Seed(seriesId, 5, 1));
+        Seed(seriesId, 5, null, language: "es");
+
+        Assert.Null(await Next(seriesId));
+    }
 }

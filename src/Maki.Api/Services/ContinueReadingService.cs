@@ -60,15 +60,18 @@ public class ContinueReadingService(MakiDbContext db)
         var result = new Dictionary<int, NextChapter>();
         foreach (var group in chapters.GroupBy(c => c.SeriesId))
         {
-            // A chapter read in one language is read: another language's copy of the same
-            // (number, volume) is not something left to read, or a series with two languages
-            // downloaded would never drop off the rail.
+            // A chapter read in one language is read: another language's copy of the same number is
+            // not something left to read, or a series with two languages downloaded would never
+            // drop off the rail. Sources can disagree on the volume, so the number alone identifies
+            // it; only a volume's chapter 0 repeats across volumes and keeps the volume in its key.
+            static (decimal Number, int? Volume)? SlotOf(decimal? number, int? volume) =>
+                number is { } n ? (n, n > 0 ? null : volume) : null;
             var readSlots = group
-                .Where(c => c.Number is not null && completed.Contains(c.Id))
-                .Select(c => (c.Number, c.Volume))
+                .Where(c => completed.Contains(c.Id) && SlotOf(c.Number, c.Volume) is not null)
+                .Select(c => SlotOf(c.Number, c.Volume)!.Value)
                 .ToHashSet();
             bool IsRead(int id, decimal? number, int? volume) =>
-                completed.Contains(id) || (number is not null && readSlots.Contains((number, volume)));
+                completed.Contains(id) || (SlotOf(number, volume) is { } slot && readSlots.Contains(slot));
 
             var ordered = ChapterOrder.Sort(group, c => c.Number, c => c.Volume, c => c.Id);
             var unread = ordered.Where(c => c.HasFile && !IsRead(c.Id, c.Number, c.Volume)).ToList();
