@@ -313,6 +313,7 @@ public class UsersController(
 
         await userManager.SetTwoFactorEnabledAsync(user, false);
         await userManager.ResetAuthenticatorKeyAsync(user);
+        await TotpReplayGuard.ClearAsync(userManager, user);
         await EventsHub.DisconnectUserAsync(hub, user.Id);
 
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, currentUser.UserName, currentUser.UserId,

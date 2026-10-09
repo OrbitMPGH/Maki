@@ -41,6 +41,10 @@ public static class TotpReplayGuard
         }
     }
 
+    /// <summary>Forgets the last step. Called wherever the authenticator key is reset, since steps of the old key mean nothing.</summary>
+    public static Task ClearAsync(UserManager<MakiUser> users, MakiUser user) =>
+        users.RemoveAuthenticationTokenAsync(user, TokenProvider, TokenName);
+
     private static async Task<long?> LastStepAsync(UserManager<MakiUser> users, MakiUser user) =>
         long.TryParse(await users.GetAuthenticationTokenAsync(user, TokenProvider, TokenName),
             NumberStyles.None, CultureInfo.InvariantCulture, out var last) ? last : null;

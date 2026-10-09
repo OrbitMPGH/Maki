@@ -84,18 +84,25 @@ public class AccountController(
         }
     }
 
-    /// <summary>An authenticator code Identity accepts and that has not been used before; remembered once accepted.</summary>
-    private async Task<bool> CodeAcceptedAsync(MakiUser user, string code)
+    /// <summary>
+    /// Null when the authenticator code is one Identity accepts and that has not been used before, and
+    /// then remembers it; otherwise the key to refuse with.
+    /// </summary>
+    private async Task<string?> RefusedCodeAsync(MakiUser user, string code)
     {
         if (!await userManager.VerifyTwoFactorTokenAsync(
-                user, userManager.Options.Tokens.AuthenticatorTokenProvider, code)
-            || await TotpReplayGuard.IsReplayAsync(userManager, user, code))
+                user, userManager.Options.Tokens.AuthenticatorTokenProvider, code))
         {
-            return false;
+            return "error.account.invalidCode";
+        }
+
+        if (await TotpReplayGuard.IsReplayAsync(userManager, user, code))
+        {
+            return "error.account.totpReplayed";
         }
 
         await TotpReplayGuard.RecordAsync(userManager, user, code);
-        return true;
+        return null;
     }
 
     [HttpPost("password")]
@@ -189,6 +196,7 @@ public class AccountController(
         // Always a fresh secret: reusing one across abandoned enrolment attempts means an old QR
         // screenshot still works.
         await userManager.ResetAuthenticatorKeyAsync(user);
+        await TotpReplayGuard.ClearAsync(userManager, user);
         // Every stamp-rotating call here re-issues this device's cookie, as ChangePassword does.
         // Otherwise the next stamp validation, a minute away, signs the user out mid-enrolment.
         await signInManager.RefreshSignInAsync(user);
@@ -238,9 +246,9 @@ public class AccountController(
             return refused;
         }
 
-        if (!await CodeAcceptedAsync(user, code))
+        if (await RefusedCodeAsync(user, code) is { } refusal)
         {
-            return this.Fail(localizer, "error.account.invalidCode");
+            return this.Fail(localizer, refusal);
         }
 
         await userManager.SetTwoFactorEnabledAsync(user, true);
@@ -281,9 +289,9 @@ public class AccountController(
             return refused;
         }
 
-        if (!await CodeAcceptedAsync(user, code))
+        if (await RefusedCodeAsync(user, code) is { } refusal)
         {
-            return this.Fail(localizer, "error.account.invalidCode");
+            return this.Fail(localizer, refusal);
         }
 
         var codes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount);
@@ -313,6 +321,7 @@ public class AccountController(
         // Clear the secret too, so re-enabling forces a fresh enrolment rather than silently
         // reactivating whatever app still has the old one.
         await userManager.ResetAuthenticatorKeyAsync(user);
+        await TotpReplayGuard.ClearAsync(userManager, user);
         await signInManager.RefreshSignInAsync(user);
         await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);

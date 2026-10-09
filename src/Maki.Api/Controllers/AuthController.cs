@@ -254,7 +254,7 @@ public class AuthController(
                 HttpContext, detail: result.IsLockedOut ? "locked out at 2fa"
                     : replayed ? "reused 2fa code"
                     : isAuthenticatorCode ? "wrong 2fa code" : "wrong recovery code", ct: ct);
-            return AuthUnauthorized("error.auth.invalidCode");
+            return AuthUnauthorized(replayed ? "error.account.totpReplayed" : "error.auth.invalidCode");
         }
 
         if (isAuthenticatorCode)

@@ -291,8 +291,37 @@ public sealed class AuthHardeningTests : IDisposable
         var replay = await controller.TwoFactor(new TwoFactorRequest(code, false), default);
 
         Assert.IsType<OkObjectResult>(first);
-        Assert.IsType<UnauthorizedObjectResult>(replay);
+        Assert.Equal("error.account.totpReplayed", CodeOf(replay));
         Assert.Contains(db.AuthEvents, e => e.Detail == "reused 2fa code");
+    }
+
+    private static Task<string?> LastTotpStepAsync(UserManager<MakiUser> users, MakiUser user) =>
+        users.GetAuthenticationTokenAsync(user, "Maki", "TotpLastStep");
+
+    [Fact]
+    public async Task Resetting_the_authenticator_key_forgets_the_last_used_step()
+    {
+        var adminId = _db.SeedUser("admin");
+        var userId = SeedWithPassword("ada");
+        var (controller, db, users, user, code) = await RealAuthenticatorAsync(userId);
+        using var _ = db;
+        await controller.TwoFactor(new TwoFactorRequest(code, false), default);
+        Assert.NotNull(await LastTotpStepAsync(users, user));
+
+        // Turning it off, and then starting a fresh enrolment.
+        await Account(db, userId, users).DisableTwoFactor(new DisableTwoFactorRequest(Password), default);
+        Assert.Null(await LastTotpStepAsync(users, user));
+        await users.SetAuthenticationTokenAsync(user, "Maki", "TotpLastStep", "5");
+        Assert.IsType<OkObjectResult>(await Account(db, userId, users).SetupTwoFactor());
+        Assert.Null(await LastTotpStepAsync(users, user));
+
+        // And the admin reset.
+        await users.SetAuthenticationTokenAsync(user, "Maki", "TotpLastStep", "5");
+        using var adminDb = _db.NewContext();
+        await Users(adminDb, adminId).ResetTwoFactor(userId, default);
+        using var check = _db.NewContext();
+        var checkUsers = IdentityTestKit.UserManager(check);
+        Assert.Null(await LastTotpStepAsync(checkUsers, (await checkUsers.FindByIdAsync(userId.ToString()))!));
     }
 
     [Fact]
@@ -308,7 +337,7 @@ public sealed class AuthHardeningTests : IDisposable
         var replay = await account.RegenerateRecoveryCodes(new EnableTwoFactorRequest(code, Password), default);
 
         Assert.IsType<OkObjectResult>(first);
-        Assert.Equal("error.account.invalidCode", CodeOf(replay));
+        Assert.Equal("error.account.totpReplayed", CodeOf(replay));
     }
 
     [Fact]
