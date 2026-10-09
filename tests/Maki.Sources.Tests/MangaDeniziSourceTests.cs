@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Maki.Core.Http;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 using Maki.Sources.MangaDenizi;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -132,6 +133,7 @@ public class MangaDeniziSourceTests
         {
             Assert.Null(p.Data);
             Assert.Equal("https://mangadenizi.net/", p.Headers!["Referer"]);
+            Assert.Equal(BrowserUserAgent.Value, p.Headers["User-Agent"]);
         });
         Assert.DoesNotContain(factory.Requests, r => r.Contains(".webp"));
     }

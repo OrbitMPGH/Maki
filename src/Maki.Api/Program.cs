@@ -370,7 +370,7 @@ try
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
-    const string browserUa = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
+    const string browserUa = BrowserUserAgent.Value;
     foreach (var (name, baseUrl) in new[]
              {
                  (MangaPillSource.HttpClientName, "https://mangapill.com/"),

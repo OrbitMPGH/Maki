@@ -179,6 +179,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         }
 
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
+        var cleanHeaders = new Dictionary<string, string>(headers) { ["User-Agent"] = BrowserUserAgent.Value };
         var pages = new List<PageRequest>();
         foreach (var pageEl in pagesEl.EnumerateArray())
         {
@@ -190,11 +191,12 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
             }
 
             // Only a scrambled page has to be fetched here; a clean one goes to the downloader
-            // as a plain URL so it streams with progress and uses the page cache.
+            // as a plain URL so it streams with progress and uses the page cache. The downloader's
+            // client does not carry the browser User-Agent, so the page asks for it.
             if (!pageEl.TryGetProperty("scramble", out var scrambleEl) || scrambleEl.ValueKind == JsonValueKind.Null)
             {
                 PublicAddressGuard.EnsureAllowed(imageUrl);
-                pages.Add(new PageRequest(imageUrl, headers));
+                pages.Add(new PageRequest(imageUrl, cleanHeaders));
                 continue;
             }
 
