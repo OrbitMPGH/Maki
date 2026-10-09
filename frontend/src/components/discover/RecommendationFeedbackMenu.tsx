@@ -1,8 +1,8 @@
+import { errorText } from '../../api/errorText'
 import { ActionIcon, Button, Group, Menu, Text, Tooltip } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
 import { ApiError } from '../../api/client'
-import { errorText } from '../../lib/errorText'
 import { notifications } from '@mantine/notifications'
 import {
   IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,

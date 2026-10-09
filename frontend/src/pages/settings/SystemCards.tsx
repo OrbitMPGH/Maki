@@ -237,6 +237,13 @@ export function BackupSection() {
               Docker and systemd bring Maki back up on their own; otherwise start it again yourself.
             </Trans>
           </Text>
+          <Text size="sm">
+            <Trans>
+              Accounts are restored too, exactly as they were in that backup. A password you changed or a
+              single sign-on link you removed since then comes back, so redo those afterwards. API keys you
+              revoked since the backup stay revoked.
+            </Trans>
+          </Text>
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setTarget(null)}>
               <Trans>Cancel</Trans>

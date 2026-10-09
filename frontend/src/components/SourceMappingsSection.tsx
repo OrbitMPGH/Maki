@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
@@ -878,7 +879,7 @@ export function SourceMappingsSection({
             )}
             {pastedUrl && resolveError && (
               <Text c="var(--danger)" size="sm">
-                {String(resolveError)}
+                {errorText(resolveError)}
               </Text>
             )}
             {!pastedUrl && results?.map((r) => (

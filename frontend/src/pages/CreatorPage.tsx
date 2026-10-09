@@ -86,22 +86,16 @@ export default function CreatorPage() {
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
 
   // Clicking a credit on this page navigates to the same route with a different name, so React
-  // Router re-renders rather than unmounting and every one of these would otherwise survive,
-  // leaving the previous creator's modal open over the new page.
+  // Router re-renders rather than unmounting and the previous creator's modal would otherwise
+  // survive over the new page. The filters, sort and paging are keyed on `scope`, so
+  // usePageState swaps them for the new creator's remembered ones (or the defaults) by itself.
   //
-  // Only on an actual change of creator: on mount these hold whatever the last visit left, and
-  // clearing that is exactly what the restore is here to prevent.
+  // Only on an actual change of creator: on mount this holds whatever the last visit left.
   const sameCreator = useUnchangedSinceMount([decoded, role])
   useEffect(() => {
     if (sameCreator) return
     setDetailItem(null)
-    setApplied({})
-    setSort('popular')
-    setPages(1)
-    setFiltersOpen(false)
-    catalogue.reset()
-    // catalogue.reset is stable by design; see useCatalogueFilters.
-  }, [sameCreator, decoded, role, catalogue.reset, setApplied, setSort, setPages, setFiltersOpen])
+  }, [sameCreator, decoded, role])
 
   const appliedCount = Object.keys(applied).length
 

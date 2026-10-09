@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { Alert, Badge, Button, Center, Group, Loader, Modal, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
@@ -16,7 +17,6 @@ import {
 } from '../api/upgrades'
 import { useLabel } from '../i18n-context'
 import { formatBytes } from '../format'
-import { errorText } from '../lib/errorText'
 
 export function ReleaseSearchModal({
   seriesId,

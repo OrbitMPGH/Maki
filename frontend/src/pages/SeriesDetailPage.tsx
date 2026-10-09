@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -169,7 +170,6 @@ import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis } from '../lib/synopsis'
 import { onPressKey, pressable } from '../lib/pressable'
-import { errorText } from '../lib/errorText'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
 

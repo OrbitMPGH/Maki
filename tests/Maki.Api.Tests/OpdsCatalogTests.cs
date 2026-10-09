@@ -318,7 +318,7 @@ public sealed class OpdsCatalogTests : IDisposable
         var feed = await Catalog().OnDeckFeedAsync(Ctx, CancellationToken.None);
 
         // Mixed-series shelves prefix the series title — one bare "Ch.2" among many is useless.
-        Assert.Equal("Deck — Ch.2", Assert.Single(feed.Entries).Title);
+        Assert.Equal("Deck - Ch.2", Assert.Single(feed.Entries).Title);
     }
 
     [Fact]
@@ -329,7 +329,7 @@ public sealed class OpdsCatalogTests : IDisposable
 
         var feed = await Catalog().RecentFeedAsync(Ctx, CancellationToken.None);
 
-        Assert.Equal(["New — Ch.1", "Old — Ch.1"], feed.Entries.Select(e => e.Title));
+        Assert.Equal(["New - Ch.1", "Old - Ch.1"], feed.Entries.Select(e => e.Title));
     }
 
     // ---- seeding ----

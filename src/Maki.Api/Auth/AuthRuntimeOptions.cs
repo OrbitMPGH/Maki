@@ -97,6 +97,13 @@ public class AuthRuntimeOptions
     public bool SessionCookieWouldBeDropped(string? origin) =>
         RequireHttps && IsInsecureOrigin(origin);
 
+    /// <summary>
+    /// Whether a cookie the app builds by hand should be marked <c>Secure</c>: the request is HTTPS,
+    /// or <c>auth.requirehttps</c> is on, which stays true behind a TLS proxy that is not trusted.
+    /// </summary>
+    public static bool UseSecureCookie(HttpContext context) =>
+        context.Request.IsHttps || context.RequestServices.GetService<AuthRuntimeOptions>()?.RequireHttps == true;
+
     public static bool IsInsecureOrigin(string? origin) =>
         Uri.TryCreate(origin, UriKind.Absolute, out var uri)
         && uri.Scheme == Uri.UriSchemeHttp

@@ -1,9 +1,9 @@
+import { errorText } from '../api/errorText'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
-import { errorText } from '../lib/errorText'
 import {
   ActionIcon,
   Alert,

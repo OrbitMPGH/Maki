@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
@@ -11,7 +12,6 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate, formatTime } from '../../format'
-import { errorText } from '../../lib/errorText'
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 

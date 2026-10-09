@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useEffect, useRef, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -30,7 +31,6 @@ import {
   type RecommendationFilters,
 } from '../api/hooks'
 import type { CustomRailSpec } from '../api/customRails'
-import { errorText } from '../lib/errorText'
 import { filtersFromSpec } from './CatalogueFilters'
 import { TermPicker } from './CatalogueRules'
 import { CustomRailEditor } from './rails/CustomRailEditor'

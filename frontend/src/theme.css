@@ -840,7 +840,7 @@ body::before {
 }
 
 /* One notification in the bell dropdown or on the notifications page. The whole row is a button,
-   so it needs a hover affordance of its own — a Mantine variant can't be used here because the row
+   so it needs a hover affordance of its own, a Mantine variant can't be used here because the row
    is an UnstyledButton laid out as a grid of text. */
 .inbox-row {
   width: 100%;
@@ -1974,7 +1974,7 @@ body::before {
   color: var(--ink-4);
   margin-bottom: 8px;
 }
-/* Poster and title are the click target, so they are buttons — but they must not look like one. */
+/* Poster and title are the click target, so they are buttons, but they must not look like one. */
 .discover-hero-poster,
 .discover-hero-title {
   padding: 0;
@@ -2941,7 +2941,7 @@ body::before {
   padding: 1px 7px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand);
+  color: var(--brand-fg);
   font-size: 11px;
   font-weight: var(--fw-semibold);
   white-space: nowrap;
@@ -3839,7 +3839,7 @@ body::before {
   border-bottom-color: var(--brand);
 }
 /* The gap on `.series-tab` never reaches this: Mantine wraps a tab's children in its own label
-   span, so the count and the word are inline siblings inside it — and JSX eats the newline
+   span, so the count and the word are inline siblings inside it, and JSX eats the newline
    between them, leaving them touching. The margin is the space. */
 .series-tab-count {
   margin-left: 9px;
@@ -4332,7 +4332,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 /* A season's run is drawn as an overlay ON TOP of the table, measured in
    SeriesDetailPage from the start and end badges' own DOM rects. Nothing about
    it participates in table layout, which is the point: earlier attempts that
-   did — a merged <td rowSpan>, per-cell borders, inset box-shadows — each
+   did, a merged <td rowSpan>, per-cell borders, inset box-shadows, each
    distorted the rows they crossed (broken row heights, the read-state tint
    clipped at span boundaries) and could only ever draw per-row segments rather
    than one continuous line.
@@ -4391,7 +4391,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 }
 
 /* The marker badges sit in a fixed slot at the right of the Chapter cell, and
-   EVERY Chapter cell reserves that slot as padding — not just the handful that
+   EVERY Chapter cell reserves that slot as padding, not just the handful that
    carry a badge. The width is measured in SeriesDetailPage (the labels are free
    text from MangaBaka, so "S1" and "Film + OVA" differ wildly) and fed in as
    --chapter-marker-slot. Reserving it only where a badge exists is what let the
@@ -4406,7 +4406,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 
    `min-width` rather than `width`: the slot is measured from these very boxes,
    and pinning their width to the value they produce would feed the measurement
-   its own output — on the first pass, before the variable is set, every box
+   its own output, on the first pass, before the variable is set, every box
    would measure 0 and the slot would never grow past it. With min-width the
    first pass still measures intrinsic content, and the second settles. */
 .chapter-span-markers {
@@ -4613,7 +4613,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   cursor: pointer;
 }
 .stats-series-link:hover {
-  color: var(--brand);
+  color: var(--brand-fg);
   text-decoration: underline;
 }
 
@@ -6457,7 +6457,7 @@ body.reader-open {
    page and the discover modal. Positions are percentages of the chapter domain,
    computed in AnimeCoverageBar; everything here is presentation only.
 
-   Lane offsets come through as inline `top` because the lane count is data —
+   Lane offsets come through as inline `top` because the lane count is data:
    most series need one row, a few need four. */
 .anime-coverage-track {
   position: relative;
@@ -6495,7 +6495,7 @@ body.reader-open {
   border-color: color-mix(in srgb, var(--neutral) 55%, transparent);
 }
 /* A season still airing has no end chapter, so its right edge is a fade rather
-   than a wall — same idiom the chapter-table line uses for a clipped span. */
+   than a wall, same idiom the chapter-table line uses for a clipped span. */
 .anime-coverage-span[data-open-ended] {
   border-right: 0;
   mask-image: linear-gradient(to right, #000 65%, transparent);
@@ -8054,7 +8054,7 @@ body.reader-open {
   height: 30px;
   border-radius: var(--mantine-radius-md);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand);
+  color: var(--brand-fg);
 }
 .layout-edit-badge {
   font-size: 11px;
@@ -8066,7 +8066,7 @@ body.reader-open {
   border: 1px solid var(--border);
 }
 .layout-edit-badge[data-tone='brand'] {
-  color: var(--brand);
+  color: var(--brand-fg);
   border-color: color-mix(in srgb, var(--brand) 40%, transparent);
 }
 .layout-edit-badge[data-tone='warn'] {
@@ -8108,7 +8108,7 @@ body.reader-open {
   cursor: pointer;
 }
 .layout-edit-add:hover {
-  color: var(--brand);
+  color: var(--brand-fg);
   border-color: var(--brand);
 }
 

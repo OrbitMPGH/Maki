@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef } from 'react'
-import { useLingui } from '@lingui/react/macro'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { Button, Stack, Text } from '@mantine/core'
+import { Trans, useLingui } from '@lingui/react/macro'
 import type { ReaderDirection, ReaderFit } from './prefs'
 import type { Spread } from './useSpreads'
 
@@ -8,6 +9,79 @@ const FIT_CLASS: Record<ReaderFit, string> = {
   height: 'reader-fit-height',
   screen: 'reader-fit-screen',
   original: 'reader-fit-original',
+}
+
+type PageState = 'loading' | 'ready' | 'failed'
+
+/**
+ * One page with its own loading and failure state: the page's outline while it loads, and a retry
+ * where a failed one would otherwise show the browser's broken-image icon. The image stays mounted
+ * (hidden until it is ready) so a retry just re-requests it with a cache-busting suffix.
+ */
+function PagedPage({
+  src,
+  alt,
+  className,
+  style,
+  onLoaded,
+}: {
+  src: string
+  alt: string
+  className: string
+  style: React.CSSProperties | undefined
+  onLoaded: (image: HTMLImageElement) => void
+}) {
+  const [state, setState] = useState<PageState>('loading')
+  const [attempt, setAttempt] = useState(0)
+  const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
+
+  const loaded = useRef(onLoaded)
+  loaded.current = onLoaded
+  const markReady = useCallback((image: HTMLImageElement) => {
+    setState('ready')
+    loaded.current(image)
+  }, [])
+  // A page already in the browser cache is complete before React attaches its load listener.
+  const setRef = useCallback(
+    (image: HTMLImageElement | null) => {
+      if (image?.complete && image.naturalWidth > 0) markReady(image)
+    },
+    [markReady],
+  )
+
+  return (
+    <>
+      {state === 'loading' && <div className="reader-page-skeleton" aria-hidden />}
+      {state === 'failed' && (
+        <Stack align="center" gap="xs" onClick={(event) => event.stopPropagation()}>
+          <Text c="var(--ink-3)" size="sm">
+            <Trans>This page failed to load.</Trans>
+          </Text>
+          <Button
+            variant="light"
+            size="xs"
+            onClick={() => {
+              setState('loading')
+              setAttempt((n) => n + 1)
+            }}
+          >
+            <Trans>Try again</Trans>
+          </Button>
+        </Stack>
+      )}
+      <img
+        ref={setRef}
+        src={url}
+        alt={alt}
+        className={className}
+        style={state === 'ready' ? style : { ...style, display: 'none' }}
+        decoding="async"
+        draggable={false}
+        onLoad={(event) => markReady(event.currentTarget)}
+        onError={() => setState('failed')}
+      />
+    </>
+  )
 }
 
 /**
@@ -71,15 +145,13 @@ export default function PagedView({
         if (!src) return null
         const pageNumber = page + 1
         return (
-          <img
+          <PagedPage
             key={src}
             src={src}
             alt={t`${label} - page ${pageNumber}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
             style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
-            decoding="async"
-            draggable={false}
-            onLoad={(event) => onMeasure(page, event.currentTarget)}
+            onLoaded={(image) => onMeasure(page, image)}
           />
         )
       })}

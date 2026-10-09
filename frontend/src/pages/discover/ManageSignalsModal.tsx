@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { useQueryClient } from '@tanstack/react-query'
@@ -18,7 +19,6 @@ import { AnimeSignalRow, AnimeSignalsStatusLine, useAnimeRoleFilters } from './A
 import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate } from '../../format'
-import { errorText } from '../../lib/errorText'
 import { useLabel } from '../../i18n-context'
 
 /** Wire values of a feedback state's `exposure` field, labeled for display. */

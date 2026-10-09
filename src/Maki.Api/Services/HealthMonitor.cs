@@ -39,9 +39,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
         return scheduled ? ("warning", key) : ("disabled", "health.check.backupScheduleOff");
     }
 
-    public async Task RefreshAsync(CancellationToken ct)
+    /// <summary>Runs the checks, or returns false at once when another run already holds the gate.</summary>
+    public async Task<bool> RefreshAsync(CancellationToken ct)
     {
-        if (!await Gate.WaitAsync(0, ct)) return;
+        if (!await Gate.WaitAsync(0, ct)) return false;
         try
         {
             var options = System.Text.Json.JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync(SettingKeys.HealthOptions, ct) ?? "{}", HealthScanService.Json) ?? new();
@@ -127,7 +128,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     "/settings?tab=system&s=backup");
             }
             catch { Add("backup", "system", "unavailable", "health.check.backupUnreadable"); }
-            var failed = await db.DownloadQueue.CountAsync(q => q.Status == QueueStatus.Failed, ct);
+            var failedNow = DateTime.UtcNow;
+            var failed = await Maki.Api.Jobs.HousekeepingJob
+                .RecentFailures(db.DownloadQueue, failedNow, failedNow.AddDays(-30)).CountAsync(ct);
             foreach (var root in roots)
             {
                 try
@@ -188,10 +191,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 var running = scheduler.IsStarted && !scheduler.InStandbyMode;
                 Add("scheduler", "system", running ? "healthy" : "warning",
                     running ? "health.check.schedulerRunning" : "health.check.schedulerPaused");
-                var pending = (await db.Database.GetPendingMigrationsAsync(ct)).Count();
-                Add("database", "system", pending > 0 ? "warning" : "healthy",
-                    pending > 0 ? "health.check.migrationsPending" : "health.check.databaseCurrent",
-                    pending > 0 ? new { count = pending } : null);
+                var reachable = await db.Database.CanConnectAsync(ct);
+                Add("database", "system", reachable ? "healthy" : "unavailable",
+                    reachable ? "health.check.databaseCurrent" : "health.check.diagnosticsUnavailable");
                 if (MigrationErrorMarker.Exists(paths.ConfigDir, DateTime.UtcNow))
                 {
                     if (MigrationErrorMarker.Read(paths.ConfigDir, DateTime.UtcNow) is { } migrationError)
@@ -266,6 +268,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
         }
         finally { Gate.Release(); }
+        return true;
     }
 
     /// <summary>
@@ -280,11 +283,11 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
 
         // A row written before the checks were keyed still has its English, and a check whose key
         // this build does not know still has an id worth naming.
+        var locale = await locales.DefaultAsync(ct);
         var detail = row.MessageKey is { Length: > 0 } key
-            ? localizer.GetFor(await locales.DefaultAsync(ct), key, HealthParams(row.ParamsJson))
+            ? localizer.GetFor(locale, key, HealthParams(row.ParamsJson))
             : row.Message;
 
-        var locale = await locales.DefaultAsync(ct);
         var title = localizer.GetFor(locale, recovered ? "notify.health.recovered.title" : "notify.health.issue.title");
         var body = recovered
             ? localizer.GetFor(locale, "notify.health.recovered.body", new { detail })

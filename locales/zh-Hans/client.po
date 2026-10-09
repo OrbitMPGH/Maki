@@ -155,6 +155,11 @@ msgstr ""
 msgid "{0, plural, one {# page} other {# pages}}"
 msgstr "{0, plural, other {# 页}}"
 
+#. placeholder {0}: status.recoveryCodesLeft
+#: src/components/settings/AccountSection.tsx
+msgid "{0, plural, one {# recovery code left. A new set replaces the old codes.} other {# recovery codes left. A new set replaces the old codes.}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -341,6 +346,11 @@ msgstr "{0, plural, other {卷文件支持 # 个章节}}"
 #, fuzzy
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {想要 # 个章节}}"
+
+#. placeholder {0}: percent(item.measure)
+#: src/pages/discover/TasteTab.tsx
+msgid "{0} in"
+msgstr ""
 
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
@@ -769,11 +779,6 @@ msgstr "{kind, select, both {剧情 · 绘画} story {剧情} art {绘画} other
 msgid "{kind, select, up {Up {pct}% on the period before.} down {Down {pct}% on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {比上一时段增加 {pct}%。} down {比上一时段减少 {pct}%。} flat {与上一时段大致相同。} none {} other {}}"
 
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{kind} to {relatedTo}"
-msgstr "{kind}：{relatedTo}"
-
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -911,14 +916,15 @@ msgstr "{missingCount, plural, other {新增 # 个你没有的章节}}"
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} 必须先记录章节快照，Maki 才能安全清理列表。之后移除来源时会使用已保存的快照，不会请求来源。"
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
-msgstr ""
-
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
 msgstr "{missingWanted, plural, other {# 个想要，未获取}}"
+
+#: src/pages/SeriesDetailPage.tsx
+#, fuzzy
+msgid "{missingWanted} wanted chapter(s) are missing"
+msgstr "缺少 {missingWanted} 个想要的章节"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -1172,10 +1178,6 @@ msgstr "{review, plural, other {# 个下载正在等待导入决定}}"
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {根据你资料库中 {series} 个系列的 # 个章节测得：每像素 {bpp} 位，按 JPG 折算。}}"
 
-#: src/components/CatalogueBrowser.tsx
-msgid "{searchCap}+ matches"
-msgstr ""
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -1190,10 +1192,6 @@ msgstr "{selectedCount, plural, other {导入 # 个文件夹？}}"
 #, fuzzy
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr "{selectedCount, plural, other {导入已选 # 个}}"
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
-msgstr ""
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -2131,6 +2129,10 @@ msgstr ""
 msgid "Account security"
 msgstr "账户安全"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Accounts are restored too, exactly as they were in that backup. A password you changed or a single sign-on link you removed since then comes back, so redo those afterwards. API keys you revoked since the backup stay revoked."
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "accounts, permissions, disable user, add user, admin"
@@ -2221,10 +2223,6 @@ msgstr "将 {title} 添加到资料库"
 #, fuzzy
 msgid "Add a rail"
 msgstr "添加推荐栏"
-
-#: src/pages/ImportPage.tsx
-msgid "Add a root folder in Settings, then come back to scan it for series to import."
-msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -3412,10 +3410,6 @@ msgstr "C:\\Manga（可选）"
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga 或 /library"
 
-#: src/components/ImportReviewModal.tsx
-msgid "Can't load this import"
-msgstr ""
-
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
@@ -4153,6 +4147,7 @@ msgstr "客户端密钥"
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Close"
 msgstr "关闭"
@@ -4600,10 +4595,17 @@ msgstr "无法为此系列生成重新关联方案。"
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
 msgstr "无法复制到剪贴板。请选中文本后手动复制。"
 
+#. {file} is a file name and is never translated. The error text follows it, untranslated.
+#: src/api/queue.ts
+msgid "Could not import {file}"
+msgstr ""
+
+#. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-msgid "Could not load anime signals: {reason}"
-msgstr ""
+#, fuzzy
+msgid "Could not load anime signals: {0}"
+msgstr "无法加载动画信号：{0}"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4619,6 +4621,10 @@ msgstr "无法从 Kavita 加载图书馆：{kavitaLibrariesErrorMessage}"
 #, fuzzy
 msgid "Could not load library stats"
 msgstr "无法加载资料库统计数据"
+
+#: src/pages/reader/ReaderPage.tsx
+msgid "Could not load this chapter."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -4660,22 +4666,15 @@ msgstr "无法读取你的资料"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "无法移除 {seriesTitle}：{reason}"
 
-#: src/components/home/ReadingCardMenu.tsx
-msgid "Could not restore {seriesTitle}: {reason}"
-msgstr ""
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Could not revert this upgrade"
 msgstr "无法还原此次升级"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-msgid "Could not undo: {reason}"
-msgstr ""
-
-#: src/components/discover/RecommendationFeedbackMenu.tsx
-msgid "Could not update feedback: {reason}"
-msgstr ""
+#, fuzzy
+msgid "Could not update {surface} feedback: {reason}"
+msgstr "无法更新 {surface} 反馈：{reason}"
 
 #: src/api/queue.ts
 #, fuzzy
@@ -4696,17 +4695,13 @@ msgstr "无法加载通知连接"
 msgid "Couldn't load requests"
 msgstr ""
 
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "Couldn't load the details for this title."
-msgstr ""
-
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
 msgstr "无法加载此横栏"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "Couldn't load this title"
+#: src/pages/ActivityPage.tsx
+msgid "Couldn't load this section"
 msgstr ""
 
 #: src/pages/HomePage.tsx
@@ -5223,11 +5218,6 @@ msgstr "删除用户"
 msgid "Deleted \"{name}\""
 msgstr "已删除“{name}”"
 
-#: src/components/DiscoverPresets.tsx
-#: src/pages/LibraryPage.tsx
-msgid "Deleted saved filter {name}."
-msgstr ""
-
 #: src/pages/settings/DownloadCards.tsx
 msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
 msgstr ""
@@ -5261,6 +5251,11 @@ msgstr "受众类型"
 #, fuzzy
 msgid "Density: {densityLabel}"
 msgstr "密度：{densityLabel}"
+
+#: src/pages/DiscoverPage.tsx
+#, fuzzy
+msgid "Describe what you're after, a title, or author:\"Junji Ito\""
+msgstr "描述你想找的内容、标题，或作者：“Junji Ito”"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -5531,6 +5526,11 @@ msgstr "下载后续章节"
 #, fuzzy
 msgid "Download order"
 msgstr "下载顺序"
+
+#. {path} is a filesystem path and is never translated.
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki: {path}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
@@ -5874,6 +5874,7 @@ msgstr "年代"
 msgid "Erotica"
 msgstr "情色"
 
+#: src/App.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
@@ -6141,15 +6142,6 @@ msgstr "加载资料库失败"
 #, fuzzy
 msgid "Failed to load this creator"
 msgstr "无法加载此创作者"
-
-#. placeholder {0}: errorText(err)
-#: src/pages/LibraryPage.tsx
-msgid "Failed to restore filter: {0}"
-msgstr ""
-
-#: src/components/DiscoverPresets.tsx
-msgid "Failed to restore filter: {detail}"
-msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6726,6 +6718,10 @@ msgstr "全屏"
 #, fuzzy
 msgid "Fully read owned"
 msgstr "已读完的收藏"
+
+#: src/api/queue.ts
+msgid "Gave up after the download time limit"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -7312,10 +7308,6 @@ msgstr "图片格式"
 #, fuzzy
 msgid "Import"
 msgstr "导入"
-
-#: src/pages/ImportPage.tsx
-msgid "Import {folderName}"
-msgstr ""
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -8834,6 +8826,10 @@ msgstr "中位数"
 msgid "Median wait"
 msgstr "等待时间中位数"
 
+#: src/App.tsx
+msgid "Menu"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Merging folder"
@@ -9393,6 +9389,10 @@ msgstr "新配置文件"
 msgid "New rail"
 msgstr "新推荐栏"
 
+#: src/components/settings/AccountSection.tsx
+msgid "New recovery codes"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "New series"
@@ -9545,6 +9545,11 @@ msgstr "此时间段没有已读章节。"
 #, fuzzy
 msgid "No checks have run yet. Use Check now."
 msgstr "尚未运行任何检查。请使用“立即检查”。"
+
+#. {detail} is a summary of the folder's contents and is not translated.
+#: src/api/queue.ts
+msgid "No comics found in the completed download ({detail})"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -9755,10 +9760,6 @@ msgstr "没有结果。"
 #, fuzzy
 msgid "No reviews on MyAnimeList yet."
 msgstr "MyAnimeList 上暂无评论。"
-
-#: src/pages/ImportPage.tsx
-msgid "No root folders yet"
-msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -10691,10 +10692,6 @@ msgstr "以后使用这些筛选条件打开推荐内容"
 msgid "Open series"
 msgstr "打开系列"
 
-#: src/pages/ImportPage.tsx
-msgid "Open settings"
-msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Open source page"
@@ -10815,6 +10812,7 @@ msgstr "第 {pageIndex}/{pageCount} 页"
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "第 {pageNumber}/{pageCount} 页"
@@ -12057,6 +12055,10 @@ msgstr "相关系列"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "相关系列，更多类似内容，相似，推荐，横栏，续作，衍生作"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Related to {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Related to your library"
@@ -12620,10 +12622,8 @@ msgstr "已重试 {retryCount} 次 - 下次尝试时间 {nextAttemptTime}"
 msgid "Retries"
 msgstr ""
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
-#: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -12653,6 +12653,7 @@ msgstr "重试和取消排队的下载"
 msgid "Retry download"
 msgstr "重试下载"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12772,10 +12773,6 @@ msgstr "再抽一次"
 #, fuzzy
 msgid "Romance"
 msgstr "恋爱"
-
-#: src/api/titles.ts
-msgid "Romanized"
-msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/ImportListsSection.tsx
@@ -13234,9 +13231,8 @@ msgid "Search"
 msgstr "搜索"
 
 #: src/components/CommandPalette.tsx
-#, fuzzy
-msgid "Search (Ctrl+K)"
-msgstr "搜索（Ctrl+K）"
+msgid "Search ({shortcut})"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13629,6 +13625,10 @@ msgstr "已完成系列"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Series folder format"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "Series has no root folder"
 msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
@@ -14812,6 +14812,10 @@ msgid "The API token of your Pushover application."
 msgstr "你的 Pushover 应用 API 令牌。"
 
 #: src/api/queue.ts
+msgid "The approved repair source is no longer available, request a new replacement"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The approved source no longer has these pages"
 msgstr "批准的来源不再有这些页面"
@@ -14860,6 +14864,10 @@ msgstr "当前文件会移入回收站而不是直接删除，因此如果新副
 
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The download is no longer in qBittorrent"
 msgstr ""
 
 #: src/pages/settings/registry.ts
@@ -15003,6 +15011,10 @@ msgstr "元数据提供方将这些章节分配给此卷。通常准确，但合
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "提供方的签发者 URL，不要包含 /.well-known/openid-configuration。Maki 会自行追加该路径。"
 
+#: src/api/queue.ts
+msgid "The repair is no longer accepting candidates"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "The request for {removingTitle} is removed. This can't be undone."
@@ -15028,6 +15040,10 @@ msgstr "样本下载失败"
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "所选系列将从 Maki 中移除并停止监控。"
 
+#: src/api/queue.ts
+msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "the series' sources"
@@ -15037,6 +15053,14 @@ msgstr "系列的来源"
 #, fuzzy
 msgid "The server logs will say why."
 msgstr "服务器日志会说明原因。"
+
+#: src/api/client.ts
+msgid "The server returned an error ({status})."
+msgstr ""
+
+#: src/api/client.ts
+msgid "The server sent a response Maki could not read ({status})."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -15251,6 +15275,11 @@ msgstr "本月"
 msgid "This operation is {opStatus} and needs no further action."
 msgstr "此操作为 {opStatus}，无需进一步操作。"
 
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+msgid "This page failed to load."
+msgstr ""
+
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
 msgstr ""
@@ -15264,6 +15293,10 @@ msgstr "这会从磁盘永久删除 {count, plural, other {这些文件}}。章�
 #, fuzzy
 msgid "This permanently deletes the archive. Chapter records and reading history remain."
 msgstr "这会永久删除归档。章节记录和阅读历史会保留。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -15738,6 +15771,9 @@ msgid "Try a shorter or alternative query."
 msgstr "尝试更短或不同的查询。"
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/reader/ContinuousView.tsx
+#: src/pages/reader/PagedView.tsx
+#: src/pages/reader/ReaderPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Try again"
@@ -15885,18 +15921,18 @@ msgid "Underscore (_)"
 msgstr "下划线（_）"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo"
 msgstr "撤销"
 
+#. placeholder {0}: String(error)
 #: src/pages/SeriesDetailPage.tsx
-msgid "Undo failed: {reason}"
-msgstr ""
+#, fuzzy
+msgid "Undo failed: {0}"
+msgstr "撤销失败：{0}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16457,10 +16493,6 @@ msgstr "视图"
 msgid "View {title}"
 msgstr "查看 {title}"
 
-#: src/components/discover/DiscoverHero.tsx
-msgid "View {title} in library"
-msgstr ""
-
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16478,7 +16510,6 @@ msgstr "查看活动"
 msgid "View and add {title}"
 msgstr "查看并添加 {title}"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "View in library"
@@ -16650,6 +16681,7 @@ msgstr "现有自动化任务可能会再次下载想要的章节。"
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "{spanLabel} 想要：{total} 个章节中的 {wantedCount} 个"
 
+#: src/App.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Warning"

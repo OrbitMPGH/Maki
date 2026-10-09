@@ -169,6 +169,37 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task A_taste_artifact_holding_a_null_vector_does_not_break_the_build()
+    {
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (2L, "h", [0f, 1f, 0f, 0f])]);
+        var tastePath = Path.Combine(_dir, "taste-vectors.db");
+        using (var conn = new SqliteConnection($"Data Source={tastePath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE item_vectors (id INTEGER PRIMARY KEY, scale REAL, vec BLOB);
+                INSERT INTO meta VALUES ('dimensions', '4');
+                INSERT INTO item_vectors VALUES (1, 0.1, NULL);
+                INSERT INTO item_vectors VALUES (2, 0.1, x'01020304');
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var cache = new VectorIndexCache(
+            new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base with { Dimensions = 4 }),
+            new MangaBakaDumpOptions(_dumpPath, _dir),
+            NullLogger<VectorIndexCache>.Instance,
+            new Maki.Metadata.Taste.TasteVectorOptions(tastePath, _dir));
+
+        var index = await cache.GetAsync();
+
+        Assert.NotNull(index);
+        Assert.Equal(1, index!.Taste?.Covered);
+    }
+
+    [Fact]
     public async Task Invalidate_ForcesARebuild()
     {
         var store = Store();

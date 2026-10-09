@@ -29,6 +29,16 @@ public class LibraryRailFilterTests
     }
 
     [Fact]
+    public void A_filter_listing_every_rating_accepts_an_unrated_series()
+    {
+        var all = new RecommendationFilters(ContentRatings: [.. ContentRating.All]);
+
+        Assert.True(LibraryRailFilter.MatchesLocal(Row(contentRating: null), all));
+        Assert.False(LibraryRailFilter.MatchesLocal(
+            Row(contentRating: null), new RecommendationFilters(ContentRatings: [.. ContentRating.All.Take(3)])));
+    }
+
+    [Fact]
     public void An_unconstrained_filter_matches_a_null_content_rating()
     {
         Assert.True(LibraryRailFilter.MatchesLocal(Row(contentRating: null), RecommendationFilters.None));

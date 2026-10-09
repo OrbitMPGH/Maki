@@ -14,6 +14,7 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAppVersion, useUpdateStatus } from '../../api/hooks'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
+import { useAuth } from '../../auth/AuthProvider'
 import { UserMenu } from '../UserMenu'
 
 const REPO_URL = 'https://github.com/OrbitMPGH/Maki'
@@ -30,12 +31,14 @@ function readStarDismissed(): boolean {
 export default function SidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useLingui()
   const { data: version } = useAppVersion()
-  const { data: update } = useUpdateStatus()
+  // Only an admin can act on an update, so only an admin is told about one.
+  const { can } = useAuth()
+  const { data: update } = useUpdateStatus(can('Admin'))
   const skipped = useSyncExternalStore(subscribeSkippedVersion, getSkippedVersion)
   const [starDismissed, setStarDismissed] = useState(readStarDismissed)
 
   const latestVersion = update?.latestVersion ?? null
-  const updateAvailable = !!update?.updateAvailable && !!latestVersion
+  const updateAvailable = can('Admin') && !!update?.updateAvailable && !!latestVersion
   const isSkipped = updateAvailable && skipped === latestVersion
   const showUpdate = updateAvailable && !isSkipped
   const showStar = !showUpdate && !starDismissed

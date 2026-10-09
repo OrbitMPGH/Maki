@@ -613,6 +613,24 @@ public class AuthorizationTests
     public void OnlyAPlainHttpNonLoopbackOriginDropsTheSecureCookie(string? origin, bool insecure) =>
         Assert.Equal(insecure, AuthRuntimeOptions.IsInsecureOrigin(origin));
 
+    [Theory]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, true)]
+    [InlineData(false, false, false)]
+    public async Task HandBuiltCookiesAreSecureWhenHttpsIsRequiredEvenOverPlainHttp(
+        bool requireHttps, bool requestIsHttps, bool expected)
+    {
+        using var db = new TestDb();
+        db.SetConfig((SettingKeys.AuthRequireHttps, requireHttps ? "true" : "false"));
+        var options = new AuthRuntimeOptions();
+        await options.LoadAsync(db.NewContext());
+        var services = new ServiceCollection().AddSingleton(options).BuildServiceProvider();
+        var context = new DefaultHttpContext { RequestServices = services };
+        context.Request.IsHttps = requestIsHttps;
+
+        Assert.Equal(expected, AuthRuntimeOptions.UseSecureCookie(context));
+    }
+
     [Fact]
     public async Task LoginOverPlainHttpIsRefusedWhenHttpsIsRequired()
     {

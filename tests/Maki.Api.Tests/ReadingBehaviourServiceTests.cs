@@ -246,8 +246,8 @@ public class ReadingBehaviourServiceTests : IDisposable
 
         Assert.Equal("Slow", behaviour.Savoured[0].Title);
         Assert.Equal("Quick", behaviour.Devoured[0].Title);
-        Assert.Equal("15 min", behaviour.Savoured[0].Value);
-        Assert.Equal("2 min", behaviour.Devoured[0].Value);
+        Assert.Equal(900, behaviour.Savoured[0].Measure);
+        Assert.Equal(120, behaviour.Devoured[0].Measure);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { ReaderFit } from './prefs'
 
@@ -15,6 +16,94 @@ const PAST_END_THRESHOLD = 1000
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
 // fractional in some browsers, so an exact `=== ` check misses by sub-pixel amounts.
 const BOTTOM_EPSILON = 2
+// Scroll banked towards the next chapter is dropped after this long without more of it, so a
+// half-filled meter left behind does not turn the next wheel notch into a chapter jump.
+const PAST_END_IDLE_MS = 1200
+
+interface StripPageProps {
+  index: number
+  src: string
+  label: string
+  fit: ReaderFit
+  scale: number
+  eager: boolean
+  register: (index: number, element: HTMLImageElement | null) => void
+  onSettled: (index: number, element: HTMLImageElement) => void
+}
+
+/**
+ * One page of the strip. Memoised with stable callbacks so a page change, which re-renders the
+ * view on every scroll step, only touches the few pages whose eager window moved.
+ */
+const StripPage = memo(function StripPage({
+  index,
+  src,
+  label,
+  fit,
+  scale,
+  eager,
+  register,
+  onSettled,
+}: StripPageProps) {
+  const { t } = useLingui()
+  const image = useRef<HTMLImageElement | null>(null)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const pageNumber = index + 1
+  const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
+
+  const setRef = useCallback(
+    (element: HTMLImageElement | null) => {
+      image.current = element
+      register(index, element)
+    },
+    [index, register],
+  )
+
+  const retry = () => {
+    image.current?.removeAttribute('data-loaded')
+    setFailed(false)
+    setAttempt((n) => n + 1)
+  }
+
+  return (
+    <>
+      <img
+        ref={setRef}
+        data-page={index}
+        src={url}
+        alt={t`${label} - page ${pageNumber}`}
+        className={`reader-page ${FIT_CLASS[fit]}`}
+        style={{
+          ...(fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined),
+          ...(failed ? { display: 'none' } : undefined),
+        }}
+        // A window around the current page rather than the whole prefix: resuming at page 300
+        // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
+        // pages close enough to shift the target's offset need forcing. Unloaded pages hold a
+        // min-height placeholder (theme.css), which is what gives lazy loading real positions.
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+        draggable={false}
+        onLoad={(event) => onSettled(index, event.currentTarget)}
+        onError={(event) => {
+          setFailed(true)
+          onSettled(index, event.currentTarget)
+        }}
+      />
+      {failed && (
+        <Stack align="center" gap="xs" py="xl">
+          <Text c="var(--ink-3)" size="sm">
+            <Trans>This page failed to load.</Trans>
+          </Text>
+          <Button variant="light" size="xs" onClick={retry}>
+            <Trans>Try again</Trans>
+          </Button>
+        </Stack>
+      )}
+    </>
+  )
+})
 
 /**
  * The webtoon strip: every page stacked, scrolled continuously. The current page is whichever
@@ -55,7 +144,6 @@ export default function ContinuousView({
   gap: number
   label: string
 }) {
-  const { t } = useLingui()
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
   const sentinel = useRef<HTMLDivElement>(null)
@@ -106,12 +194,16 @@ export default function ContinuousView({
     )
   }, [seekVersion, urls])
 
-  const onPageSettled = (index: number, element: HTMLImageElement) => {
+  const onPageSettled = useCallback((index: number, element: HTMLImageElement) => {
     element.dataset.loaded = 'true'
     reportEnd.current()
     if (!settling.current.delete(index)) return
     pages.current[seekTarget.current]?.scrollIntoView({ block: 'start' })
-  }
+  }, [])
+
+  const registerPage = useCallback((index: number, element: HTMLImageElement | null) => {
+    pages.current[index] = element
+  }, [])
 
   useEffect(() => {
     if (urls.length === 0) return
@@ -186,7 +278,14 @@ export default function ContinuousView({
     const atBottom = () =>
       scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < BOTTOM_EPSILON
 
+    let idle: ReturnType<typeof setTimeout> | undefined
+    const decay = () => {
+      progress.current = 0
+      setPastEndProgress(0)
+    }
+
     const advance = (delta: number) => {
+      clearTimeout(idle)
       if (delta <= 0 || !atBottom()) {
         setAtLibraryEnd(false)
         if (progress.current !== 0) {
@@ -204,10 +303,11 @@ export default function ContinuousView({
       progress.current = Math.min(PAST_END_THRESHOLD, progress.current + delta)
       setPastEndProgress(progress.current / PAST_END_THRESHOLD)
       if (progress.current >= PAST_END_THRESHOLD) {
-        progress.current = 0
-        setPastEndProgress(0)
+        decay()
         onPastEnd()
+        return
       }
+      idle = setTimeout(decay, PAST_END_IDLE_MS)
     }
 
     // Once the reader has scrolled by hand, the pending seek is history: a later image load must
@@ -239,6 +339,7 @@ export default function ContinuousView({
     scroller.addEventListener('touchmove', onTouchMove, { passive: true })
     scroller.addEventListener('touchend', onTouchEnd, { passive: true })
     return () => {
+      clearTimeout(idle)
       scroller.removeEventListener('wheel', onWheel)
       scroller.removeEventListener('touchstart', onTouchStart)
       scroller.removeEventListener('touchmove', onTouchMove)
@@ -256,31 +357,19 @@ export default function ContinuousView({
         data-zoomed={fit === 'original' && scale > 100}
         style={{ gap: `${gap}px` }}
       >
-        {urls.map((src, index) => {
-          const pageNumber = index + 1
-          return (
-            <img
-              key={src}
-              ref={(element) => {
-                pages.current[index] = element
-              }}
-              data-page={index}
-              src={src}
-              alt={t`${label} - page ${pageNumber}`}
-              className={`reader-page ${FIT_CLASS[fit]}`}
-              style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
-              // A window around the current page rather than the whole prefix: resuming at page 300
-              // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
-              // pages close enough to shift the target's offset need forcing. Unloaded pages hold a
-              // min-height placeholder (theme.css), which is what gives lazy loading real positions.
-              loading={index < 3 || Math.abs(index - pageRef.current) <= 2 ? 'eager' : 'lazy'}
-              decoding="async"
-              draggable={false}
-              onLoad={(event) => onPageSettled(index, event.currentTarget)}
-              onError={(event) => onPageSettled(index, event.currentTarget)}
-            />
-          )
-        })}
+        {urls.map((src, index) => (
+          <StripPage
+            key={src}
+            index={index}
+            src={src}
+            label={label}
+            fit={fit}
+            scale={scale}
+            eager={index < 3 || Math.abs(index - page) <= 2}
+            register={registerPage}
+            onSettled={onPageSettled}
+          />
+        ))}
         <div ref={sentinel} style={{ height: 1 }} />
       </div>
       {(pastEndProgress > 0 || atLibraryEnd) && (

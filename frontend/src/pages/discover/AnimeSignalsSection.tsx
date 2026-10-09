@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
@@ -12,7 +13,6 @@ import type {
 import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength } from '../../api/animeSignals'
 import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommendationFeedback'
 import { formatDateTime } from '../../format'
-import { errorText } from '../../lib/errorText'
 import { SeriesThumb } from '../stats/SeriesLink'
 
 export type RoleFilter = AnimeSignalRole | 'all'

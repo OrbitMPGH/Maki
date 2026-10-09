@@ -70,6 +70,22 @@ public class SemanticRecommender(
 
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
     private long _activeCount; // cached count of active dump series, the N in idf = log(N/df)
+    private (long Ticks, long Length) _dumpStamp; // the dump the two figures above were read from
+
+    /// <summary>Forgets the dump-derived figures when the dump file has been replaced since they were read.</summary>
+    private void DropStatsIfDumpChanged()
+    {
+        var info = new FileInfo(dumpOptions.DatabasePath);
+        var stamp = info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (0L, 0L);
+        if (stamp == _dumpStamp)
+        {
+            return;
+        }
+
+        _maxPopularity = 0;
+        _activeCount = 0;
+        _dumpStamp = stamp;
+    }
 
     /// <summary>
     /// True once embeddings are on and enough vectors exist to recommend from.
@@ -80,6 +96,12 @@ public class SemanticRecommender(
     /// </para>
     /// </summary>
     public virtual bool IsReady() => options.Enabled && store.Count() >= 1000;
+
+    /// <summary>
+    /// Identifies the vector index currently loaded, so a caller holding results computed from one
+    /// can tell the index has since been rebuilt. Null while nothing is loaded.
+    /// </summary>
+    public virtual string? IndexStamp => cache.Stamp;
 
     /// <summary>
     /// Which same-work component each of <paramref name="ids"/> sits in
@@ -173,7 +195,6 @@ public class SemanticRecommender(
         return members;
     }
 
-    /// <summary>One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the centroid.</summary>
     /// <summary>
     /// One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the
     /// centroid, and also for a seed the dump has no title for, which is why
@@ -291,6 +312,7 @@ public class SemanticRecommender(
         obscurity = Math.Clamp(obscurity, -1, 1);
         diversity = Math.Clamp(diversity, 0, 1);
         store.EnsureSchema(); // older DBs predate the tag tables the index build joins
+        DropStatsIfDumpChanged();
 
         var index = await cache.GetAsync(ct);
         if (index is null || index.Count == 0)
@@ -337,7 +359,7 @@ public class SemanticRecommender(
             w = w with { CoRead = coReadTuning.Weight };
         }
 
-        using var conn = new SqliteConnection($"Data Source={store.DbPath};Pooling=False");
+        using var conn = new SqliteConnection($"Data Source={store.DbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
         using (var attach = conn.CreateCommand())
         {
@@ -400,24 +422,6 @@ public class SemanticRecommender(
             CategoryWeight,
             _tuning.TagConsensusPower,
             tagTree);
-
-        // Tag filter: each selected name maps to its vocab id(s) (case-insensitive — casing
-        // variants map to distinct ids); a candidate must carry every selected tag. An unknown
-        // name can never match, so bail out early.
-        List<int[]>? requiredTagIds = null;
-        if (filters.Tags is { Count: > 0 } wantedTags)
-        {
-            requiredTagIds = wantedTags
-                .Select(name => vocab
-                    .Where(kv => string.Equals(kv.Value.Name, name, StringComparison.OrdinalIgnoreCase))
-                    .Select(kv => kv.Key)
-                    .ToArray())
-                .ToList();
-            if (requiredTagIds.Any(ids => ids.Length == 0))
-            {
-                return [];
-            }
-        }
 
         var seedTitles = await GetTitlesAsync(conn, seedVectors.Keys, ct);
         var queries = BuildQueries(seedVectors, seedWeights, seedTitles, _tuning);
@@ -483,7 +487,7 @@ public class SemanticRecommender(
 
         var started = DateTime.UtcNow;
         using var scan = Scan(
-            index, plan, queries, tasteQueries, avoidQueries, exclude, requiredTagIds, ct);
+            index, plan, queries, tasteQueries, avoidQueries, exclude, ct);
         var cosines = scan.Text;
         // Collapsed to one number per row before anything reads it: the behavioural channel has no
         // attribution to do, so unlike the text channels there is nothing to gain from keeping the
@@ -1139,13 +1143,6 @@ public class SemanticRecommender(
     }
 
     /// <summary>
-    /// One pass over the index, cosining every surviving row against every query. Structured this
-    /// way (row outer, query inner) so a row's packed bytes are read once and reused across the
-    /// queries — nine queries cost far less than nine scans. A rejected row is
-    /// <see cref="float.NegativeInfinity"/> in every channel, which also keeps it out of the
-    /// rankings below without a second membership test.
-    /// </summary>
-    /// <summary>
     /// One pass over every row, answering both spaces. The filter predicate is the expensive part
     /// and it is identical for both, so scanning twice would pay for it twice; the behavioural
     /// vectors are also a fraction of the text vectors&apos; width, which is what makes the second
@@ -1153,8 +1150,7 @@ public class SemanticRecommender(
     /// </summary>
     private static ScanBuffers Scan(
         VectorIndex index, FilterPlan plan, List<SeedQuery> queries, List<SeedQuery> tasteQueries,
-        List<SeedQuery> avoidQueries, HashSet<long> exclude, List<int[]>? requiredTagIds,
-        CancellationToken ct)
+        List<SeedQuery> avoidQueries, HashSet<long> exclude, CancellationToken ct)
     {
         var buffers = ScanBuffers.Rent(
             queries.Count, tasteQueries.Count, avoidQueries.Count, index.Count);
@@ -1170,9 +1166,7 @@ public class SemanticRecommender(
                 new ParallelOptions { CancellationToken = ct },
                 row =>
                 {
-                    var keep = index.Matches(row, plan) &&
-                               !exclude.Contains(index.IdAt(row)) &&
-                               (requiredTagIds is null || TagMath.ContainsAll(index.TagsAt(row), requiredTagIds));
+                    var keep = index.Matches(row, plan) && !exclude.Contains(index.IdAt(row));
                     // Expanded once for the whole query loop. Stored rows are 4-bit levels packed
                     // two to a byte, so asking the index for a cosine per query would expand the
                     // same row once per query: measured at 48 seed queries, that doubled the time a
@@ -1293,15 +1287,15 @@ public class SemanticRecommender(
         return kept;
     }
 
-    /// <summary>Best score per row across a set of channels, with no evidence reading as 0.</summary>
+    /// <summary>Best score per row across a set of channels, with no evidence reading as 0. No channels gives an empty array, which every reader treats as 0.</summary>
     private static float[] BestPerRow(float[][] channels, int rows)
     {
-        var best = new float[rows];
         if (channels.Length == 0)
         {
-            return best;
+            return [];
         }
 
+        var best = new float[rows];
         for (var row = 0; row < rows; row++)
         {
             var top = float.NegativeInfinity;

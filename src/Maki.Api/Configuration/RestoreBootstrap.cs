@@ -44,6 +44,8 @@ public static class RestoreBootstrap
                     continue;
                 }
                 File.Move(live, live + PreRestoreSuffix, overwrite: true);
+                // A rename keeps the old mtime, and the housekeeping purge ages the copy by it.
+                File.SetLastWriteTimeUtc(live + PreRestoreSuffix, DateTime.UtcNow);
                 renamed.Add(live);
             }
 
@@ -74,6 +76,35 @@ public static class RestoreBootstrap
 
         TryDeleteDirectory(paths.RestorePendingDir, logger);
         logger.LogInformation("Restore complete");
+    }
+
+    /// <summary>
+    /// Deletes the rollback copies a restore leaves behind once they are older than
+    /// <paramref name="maxAge"/>. They hold the old database in full, secrets included, outside
+    /// backup retention, so they cannot stay forever.
+    /// </summary>
+    public static void PurgeStalePreRestoreCopies(AppPaths paths, TimeSpan maxAge, ILogger logger)
+    {
+        var cutoff = DateTime.UtcNow - maxAge;
+        var main = paths.DatabasePath + PreRestoreSuffix;
+        // The -wal and -shm copies go with the database copy, aged by it.
+        var mainExpired = File.Exists(main) && File.GetLastWriteTimeUtc(main) < cutoff;
+        foreach (var suffix in Sidecars)
+        {
+            var copy = paths.DatabasePath + suffix + PreRestoreSuffix;
+            try
+            {
+                if (File.Exists(copy) && (mainExpired || File.GetLastWriteTimeUtc(copy) < cutoff))
+                {
+                    File.Delete(copy);
+                    logger.LogInformation("Deleted old pre-restore database copy {Path}", copy);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "Could not delete {Path}", copy);
+            }
+        }
     }
 
     /// <summary>Migration ids known to this build, read off the <see cref="MigrationAttribute"/> on

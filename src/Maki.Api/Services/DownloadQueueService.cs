@@ -20,7 +20,10 @@ public class DownloadQueueService(
     ChapterSourceResolver sourceResolver,
     ILogger<DownloadQueueService> logger) : IDownloadCooldown
 {
-    private readonly Channel<int> _channel = Channel.CreateUnbounded<int>();
+    // A write is only a wake-up, so a full channel drops the extra rather than letting the five-second
+    // poll pile signals up behind busy workers.
+    private readonly Channel<int> _channel = Channel.CreateBounded<int>(
+        new BoundedChannelOptions(64) { FullMode = BoundedChannelFullMode.DropWrite });
 
     // Ids currently owned by a worker (claimed, not yet settled) and ids currently being resolved by
     // a detached ResolveAndActivateAsync. An in-flight *status* on a row whose id is in neither set
@@ -240,21 +243,9 @@ public class DownloadQueueService(
     }
 
     /// <summary>
-    /// Queues a chapter for download. Returns as soon as the row exists — finding which mapping
-    /// actually has this chapter means listing each source's catalog over the network, too slow to
-    /// make "Download this chapter" or "Search missing" wait on. The item shows up immediately as
-    /// <see cref="QueueStatus.Resolving"/>; <see cref="ResolveAndActivateAsync"/> fills in the real
-    /// source in the background and flips it to Queued (or RateLimited) once found.
+    /// Queues a health repair's approved replacement for a chapter. Already resolved, so it goes
+    /// straight to Queued with the approved mapping and source chapter.
     /// </summary>
-    /// <param name="origin">
-    /// What triggered this. Recorded on the row because every path funnels through here and is
-    /// otherwise indistinguishable afterwards, and because the in-app inbox notifies on automatic
-    /// downloads only — somebody who clicked Download watched it happen.
-    /// </param>
-    /// <param name="queuedByUserId">
-    /// Who the download is for, when that is one person. For a request approval that is the
-    /// <em>requester</em>, not the admin who approved it.
-    /// </param>
     public async Task EnqueueRepairAsync(MakiDbContext db, int operationId, Chapter chapter,
         ResolvedChapterSource source, int userId, CancellationToken ct)
     {
@@ -411,6 +402,22 @@ public class DownloadQueueService(
     private static bool IsUniqueViolation(DbUpdateException e) =>
         e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 
+    /// <summary>
+    /// Queues a chapter for download. Returns as soon as the row exists, because finding which mapping
+    /// actually has this chapter means listing each source's catalog over the network, too slow to
+    /// make "Download this chapter" or "Search missing" wait on. The item shows up immediately as
+    /// <see cref="QueueStatus.Resolving"/>; <see cref="ResolveAndActivateAsync"/> fills in the real
+    /// source in the background and flips it to Queued (or RateLimited) once found.
+    /// </summary>
+    /// <param name="origin">
+    /// What triggered this. Recorded on the row because every path funnels through here and is
+    /// otherwise indistinguishable afterwards, and because the in-app inbox notifies on automatic
+    /// downloads only: somebody who clicked Download watched it happen.
+    /// </param>
+    /// <param name="queuedByUserId">
+    /// Who the download is for, when that is one person. For a request approval that is the
+    /// <em>requester</em>, not the admin who approved it.
+    /// </param>
     /// <param name="preferMappingId">
     /// Pins the download to one of the series' enabled source mappings, e.g. a user picking a
     /// specific source copy of the chapter from the compare view. Tried first regardless of priority
@@ -732,6 +739,11 @@ public class DownloadQueueService(
             item.Status = QueueStatus.Failed;
             item.SetError("error.download.repairNeedsReview");
             await db.SaveChangesAsync(ct);
+            if (item.Series is { } repairSeries)
+            {
+                await events.QueueUpdated(QueueItemDto.FromEntity(item, null, repairSeries, "?"));
+            }
+
             return;
         }
 

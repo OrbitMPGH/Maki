@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -31,7 +32,6 @@ import {
   type CustomRailSpec,
 } from '../../api/customRails'
 import { useLabel } from '../../i18n-context'
-import { errorText } from '../../lib/errorText'
 import { CatalogueFilters, filtersFromSpec, useCatalogueFilters } from '../CatalogueFilters'
 import { RecommenderDials } from '../discover/RecommenderDials'
 

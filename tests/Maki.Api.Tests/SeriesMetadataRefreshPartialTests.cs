@@ -72,4 +72,16 @@ public class SeriesMetadataRefreshPartialTests
         Assert.Equal("The Mage Frieren", series.Title);
         Assert.Equal(SeriesMetadataMapper.SortTitleFor("The Mage Frieren"), series.SortTitle);
     }
+
+    [Fact]
+    public async Task A_refresh_fills_a_missing_year_and_keeps_a_known_one()
+    {
+        var series = Existing();
+
+        await Refresh(series, new SeriesMetadata { ProviderId = "42", Title = "Frieren", Year = 2020 });
+        Assert.Equal(2020, series.Year);
+
+        await Refresh(series, new SeriesMetadata { ProviderId = "42", Title = "Frieren" });
+        Assert.Equal(2020, series.Year);
+    }
 }

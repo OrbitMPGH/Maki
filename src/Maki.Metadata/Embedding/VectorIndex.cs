@@ -108,7 +108,8 @@ public sealed record VectorIndexColumns(
 
 /// <summary>
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
-/// integer comparisons rather than string work. All are case-insensitive, matching the SQL clause.
+/// integer comparisons rather than string work. Lookups are case-insensitive; the SQL clause compares
+/// type and status exactly, which agrees for the lowercase values the dump holds.
 /// </summary>
 /// <param name="Tags">
 /// Tag name → every vocabulary id carrying that name. One name can have several ids because
@@ -280,7 +281,12 @@ public sealed class VectorIndex(
     /// Every vocabulary id carrying this tag name. Several, because casing variants are interned
     /// separately; a row carrying any one of them carries the name.
     /// </summary>
-    public bool TryGetTagIds(string name, out int[] ids) => vocabularies.Tags.TryGetValue(name, out ids!);
+    public bool TryGetTagIds(string name, out IReadOnlyList<int> ids)
+    {
+        var found = vocabularies.Tags.TryGetValue(name, out var tagIds);
+        ids = tagIds ?? [];
+        return found;
+    }
 
     /// <summary>Every interned genre name with its id.</summary>
     public IReadOnlyDictionary<string, int> GenreVocabulary => vocabularies.Genres;
@@ -497,7 +503,9 @@ public sealed class VectorIndex(
             resolvedTags,
             // A ceiling-resolved rating list is never empty, so an empty one here means something
             // upstream dropped every rating; matching nothing is the only safe reading of that.
-            ResolveBytes(filters.ContentRatings, vocabularies.ContentRatings, emptyMatchesNothing: true),
+            ResolveBytes(
+                ContentRating.CoversAll(filters.ContentRatings) ? null : filters.ContentRatings,
+                vocabularies.ContentRatings, emptyMatchesNothing: true),
             impossible || filters.CreditIds is { Count: 0 },
             CreditMask: filters.CreditIds is { Count: > 0 } creditIds ? BuildRowMask(creditIds.ToArray()) : null,
             Rules: rules?.ToArray(),

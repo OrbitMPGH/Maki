@@ -131,6 +131,17 @@ public class QueueControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Remove_leaves_a_row_a_worker_already_completed()
+    {
+        var id = SeedItem(QueueStatus.Completed);
+
+        var result = await Controller().Remove(id, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(QueueStatus.Completed, StatusOf(id));
+    }
+
+    [Fact]
     public async Task Clear_removes_pending_items_and_cancels_in_flight_items()
     {
         var queuedId = SeedItem(QueueStatus.Queued);

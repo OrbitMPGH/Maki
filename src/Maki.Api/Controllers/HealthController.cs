@@ -142,7 +142,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     };
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh(CancellationToken ct) { await monitor.RefreshAsync(ct); return Ok(new { refreshed = true }); }
+    public async Task<IActionResult> Refresh(CancellationToken ct) => Ok(new { refreshed = await monitor.RefreshAsync(ct) });
 
     [HttpGet("options")]
     public async Task<IActionResult> Options(CancellationToken ct) => Ok(JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync(SettingKeys.HealthOptions, ct) ?? "{}", HealthScanService.Json) ?? new());

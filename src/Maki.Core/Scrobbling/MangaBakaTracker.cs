@@ -217,7 +217,8 @@ public class MangaBakaTracker(
 
     public async Task UpdateAsync(
         int userId,
-        string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default)
+        string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default,
+        bool keepStatus = false)
     {
         object body = volume > 0
             ? new { state = InternalToState[status], progress_chapter = chapter, progress_volume = volume }

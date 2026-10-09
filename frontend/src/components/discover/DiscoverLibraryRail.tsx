@@ -10,8 +10,8 @@ import {
   type MangaBakaDetail,
   type RecommendationItem,
 } from '../../api/hooks'
-import { useUpgradeProfiles } from '../../api/upgrades'
 import { ApiError } from '../../api/client'
+import { useUpgradeProfiles } from '../../api/upgrades'
 import { useCreateSeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
 import { useAuth } from '../../auth/AuthProvider'

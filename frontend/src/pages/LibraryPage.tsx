@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
 import {
@@ -96,7 +97,6 @@ import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } from '../components/ui/viewPrefs'
-import { errorText } from '../lib/errorText'
 import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
 

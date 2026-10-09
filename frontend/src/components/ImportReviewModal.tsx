@@ -19,7 +19,7 @@ import type { ImportDecision, ImportPlanFileDto } from '../api/types'
 import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { formatBytes } from '../format'
-import { errorText } from '../lib/errorText'
+import { errorText } from '../api/errorText'
 
 /** "Ch. 1, 2, 3" with a tail when the list runs long, so a 40-chapter volume stays one line. */
 function ChapterList({ chapters }: { chapters: string[] }) {

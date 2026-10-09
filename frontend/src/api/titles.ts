@@ -44,7 +44,7 @@ export function altTitleLabel(alt: LocalizedTitle): string {
 
 /**
  * The alt titles worth showing beside `displayed`: the original-script title first, then everything
- * the provider tagged, with anything already on screen dropped. Duplicates are common — the English
+ * the provider tagged, with anything already on screen dropped. Duplicates are common, the English
  * alt title of an English-titled series is the title again.
  */
 export function otherTitles(

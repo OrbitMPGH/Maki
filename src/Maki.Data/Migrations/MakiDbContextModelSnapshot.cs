@@ -239,6 +239,9 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("CountedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("External")
                         .HasColumnType("INTEGER");
 
