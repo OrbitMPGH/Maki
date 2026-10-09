@@ -218,7 +218,7 @@ public class ReaderController(
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
             seriesType = slice.Series.Type,
-            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveSize)
+            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion)
         });
     }
 
@@ -233,7 +233,7 @@ public class ReaderController(
 
         var entry = slice.Pages[slice.StartPage + page];
 
-        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveSize}-{slice.StartPage + page}\"");
+        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
@@ -241,7 +241,7 @@ public class ReaderController(
 
         if (ComicFile.IsPdf(slice.ArchivePath))
         {
-            var cached = await GetOrRenderFullPageAsync(slice, slice.StartPage + page, entry, ct);
+            var cached = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, slice.StartPage + page, entry, ct);
             if (cached is null)
             {
                 return NotFound();
@@ -261,7 +261,7 @@ public class ReaderController(
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }
 
-    private static string PageVersion(int chapterFileId, long archiveSize) => $"{chapterFileId}-{archiveSize}";
+    private static string PageVersion(int chapterFileId, string archiveVersion) => $"{chapterFileId}-{archiveVersion}";
 
     /// <summary>
     /// Page URLs are the same before and after a re-download, so a year-long immutable response is
@@ -269,62 +269,9 @@ public class ReaderController(
     /// file on disk. Anything else revalidates against the ETag.
     /// </summary>
     private void SetPageCacheControl(ReaderService.PageSlice slice) =>
-        Response.Headers.CacheControl = Request.Query["v"] == PageVersion(slice.ChapterFileId, slice.ArchiveSize)
+        Response.Headers.CacheControl = Request.Query["v"] == PageVersion(slice.ChapterFileId, slice.ArchiveVersion)
             ? "private, max-age=31536000, immutable"
             : "private, no-cache";
-
-    /// <summary>
-    /// Full-size PDF page render, disk-cached alongside the thumbnail cache for the same chapter
-    /// file so a page opened twice (once by the reader, once to build its thumbnail) is only ever
-    /// rendered once. Named <c>{ArchiveSize}-{index}.full.jpg</c> so it shares the thumbnail
-    /// cache's per-directory eviction (missing ChapterFile row, stale archive size) without
-    /// colliding with the thumbnail's own <c>{ArchiveSize}-{index}.jpg</c> name.
-    /// </summary>
-    private async Task<string?> GetOrRenderFullPageAsync(ReaderService.PageSlice slice, int absoluteIndex, string entry, CancellationToken ct)
-    {
-        var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
-        var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.full.jpg");
-        if (System.IO.File.Exists(cached))
-        {
-            return cached;
-        }
-
-        await using var source = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
-        if (source is null)
-        {
-            return null;
-        }
-
-        Directory.CreateDirectory(dir);
-        var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
-        try
-        {
-            await using (var file = System.IO.File.Create(tmp))
-            {
-                await source.CopyToAsync(file, ct);
-            }
-
-            try
-            {
-                System.IO.File.Move(tmp, cached, overwrite: true);
-            }
-            catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException &&
-                                              System.IO.File.Exists(cached))
-            {
-                // Another request already finished rendering the same page and has it open for
-                // reading (Windows refuses to replace an open file); the bytes are deterministic,
-                // so the loser can just use what is there.
-                System.IO.File.Delete(tmp);
-            }
-        }
-        catch
-        {
-            if (System.IO.File.Exists(tmp)) System.IO.File.Delete(tmp);
-            throw;
-        }
-
-        return cached;
-    }
 
     [HttpGet("chapter/{id:int}/thumb/{page:int}")]
     public async Task<IActionResult> Thumbnail(int id, int page, CancellationToken ct)
@@ -337,7 +284,7 @@ public class ReaderController(
 
         var absoluteIndex = slice.StartPage + page;
         var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
-        var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.jpg");
+        var cached = Path.Combine(dir, $"{slice.ArchiveVersion}-{absoluteIndex}.jpg");
 
         if (!System.IO.File.Exists(cached))
         {
@@ -352,7 +299,7 @@ public class ReaderController(
                 string? fullCached = null;
                 if (ComicFile.IsPdf(slice.ArchivePath))
                 {
-                    fullCached = await GetOrRenderFullPageAsync(slice, absoluteIndex, entry, ct);
+                    fullCached = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, absoluteIndex, entry, ct);
                     if (fullCached is null)
                     {
                         return NotFound();
@@ -453,7 +400,7 @@ public class ReaderController(
         return Ok(new
         {
             chapterId = id,
-            pageIndex = request.PageIndex,
+            pageIndex = ReaderService.ClampPage(request.PageIndex, slice.PageCount),
             completed = finished || request.Completed == true,
             unlocked = finished ? await UnlockedAsync(ct) : [],
         });
@@ -513,15 +460,12 @@ public class ReaderController(
     [HttpPost("chapter/{id:int}/read")]
     public async Task<IActionResult> MarkRead(int id, CancellationToken ct)
     {
-        var slice = await reader.SliceAsync(id, ct);
-        if (slice is null)
+        // The same silent tick as the chapter table's select mode: no event, no reading time.
+        if (await reader.MarkReadAsync([id], ct) == 0)
         {
             return NotFound();
         }
 
-        // No time: ticking a chapter off from the chapter table is not a sitting with it.
-        await reader.SaveProgressAsync(
-            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct, bulk: true);
         return Ok(new { chapterId = id, completed = true });
     }
 

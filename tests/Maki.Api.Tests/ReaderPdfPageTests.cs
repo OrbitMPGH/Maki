@@ -109,6 +109,21 @@ public sealed class ReaderPdfPageTests : IDisposable
     }
 
     [Fact]
+    public async Task ACompletingSaveFromAStaleManifestEchoesThePageThatWasStored()
+    {
+        var chapterId = SeedPdfChapter();
+        using var db = _db.NewContext(1);
+
+        var result = await Controller(db).SaveProgress(
+            chapterId, new SaveProgressRequest(PageIndex: 99, Completed: true, Seconds: null, Final: null),
+            CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var echoed = ok.Value!.GetType().GetProperty("pageIndex")!.GetValue(ok.Value);
+        Assert.Equal(2, echoed);
+    }
+
+    [Fact]
     public async Task APageIndexPastTheDocumentsPageCountIsNotFound()
     {
         var chapterId = SeedPdfChapter();

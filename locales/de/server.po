@@ -966,6 +966,12 @@ msgstr "Name ist erforderlich"
 msgid "error.recommendation.needsLocalDb"
 msgstr "Für Empfehlungen wird die lokale MangaBaka-Datenbank benötigt (Einstellungen → Metadaten → lokale DB)"
 
+#. {feed} is the feed name the client sent; thrown by DiscoverService.GetFeedAsync.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: Unknown feed "{feed}"
+msgid "error.recommendation.unknownFeed"
+msgstr ""
+
 #. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
 #. sections that still work with no local database.
 #: src/Maki.Api/Controllers/RecommendationController.cs
@@ -4600,22 +4606,19 @@ msgstr "Drückt Titel nach unten, die diesem ähnlich sind"
 msgid "feedback.taste.unchanged"
 msgstr "Geschmack unverändert"
 
-#. {list} is titles joined in English regardless of locale (see RecentActivityRailService.Because);
-#. a title is a proper noun a translation would not touch, and there is no list-format primitive in
-#. this catalogue's ICU subset. Same key used for the single-seed grouped rail, where {list} is one
-#. title.
+#. The server sends the literal text {list} and the client replaces it with the titles joined by
+#. Intl.ListFormat in the reader's language, so keep {list} in the translation.
 #: src/Maki.Api/Services/RecentActivityRailService.cs
 #. English: Because you read {list}
 #, fuzzy
 msgid "discover.rail.becauseYouRead"
 msgstr "Weil du {list} gelesen hast"
 
-#. {list} as above; {count} is how many further seeds were not named.
-#: src/Maki.Api/Services/RecentActivityRailService.cs
-#. English: Because you read {list} and {count, plural, one {# more} other {# more}}
-#, fuzzy
-msgid "discover.rail.becauseYouReadMore"
-msgstr "Weil du {list} und {count, plural, one {# weitere} other {# weitere}} gelesen hast"
+#. One entry of the title list, shown last when more series seeded the rail than were named.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: {count, plural, one {# more} other {# more}}
+msgid "discover.rail.moreSeeds"
+msgstr ""
 
 #: src/Maki.Api/Services/DiscoverService.cs
 #. English: Newly released
@@ -4673,7 +4676,8 @@ msgstr "Basierend auf deiner letzten Aktivität"
 msgid "discover.rail.sideInterest"
 msgstr "Eine andere Seite deiner Bibliothek: {name}"
 
-#. {titles} is up to two series titles joined in English, same trade as {list} above. {count} is
+#. The server sends the literal text {titles} and the client replaces it with up to two series titles
+#. joined by Intl.ListFormat, so keep {titles} in the translation. {count} is
 #. how many titles in total share the interest.
 #: src/Maki.Api/Services/SideInterestRailService.cs
 #. English: A smaller thread shared by {count, plural, one {# title} other {# titles}}, including {titles}

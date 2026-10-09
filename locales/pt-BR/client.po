@@ -342,6 +342,11 @@ msgstr "{0, plural, one {Arquivo de volume associado a # capítulo} many {Arquiv
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Quer # capítulo} many {Quer # capítulos}other {Quer # capítulos}}"
 
+#. placeholder {0}: percent(item.measure)
+#: src/pages/discover/TasteTab.tsx
+msgid "{0} in"
+msgstr ""
+
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

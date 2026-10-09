@@ -39,13 +39,9 @@ public class ReaderCohortJob(
             using var build = await gate.EnterAsync(nameof(ReaderCohortJob), context.CancellationToken);
 
             var result = await installer.InstallAsync(force, context.CancellationToken);
-            if (!result.Installed)
-            {
-                build.NothingBuilt();
-            }
-
             if (result.Installed)
             {
+                build.MarkBuilt();
                 logger.LogInformation("Reader cohorts: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else

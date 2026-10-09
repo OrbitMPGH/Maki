@@ -33,12 +33,7 @@ public class DiscoverCacheWarmJob(
 {
     public static readonly JobKey Key = new("discover-cache-warm");
 
-    /// <summary>Job-data flag set after a new dump installs: rebuild the in-memory indexes against it.</summary>
-    public const string IndexesKey = "indexes";
-
-    // The idle unloader drops both indexes within the hour, so rebuilding them on every 12-hour
-    // pass only builds, holds and compacts for nothing. Once per process, then after a new dump.
-    private static int _indexesPrimed;
+    public const string ScheduledTriggerName = "discover-cache-warm-trigger";
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -53,14 +48,33 @@ public class DiscoverCacheWarmJob(
                 await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
             }
 
-            var forced = context.MergedJobDataMap.TryGetValue(IndexesKey, out var flag) && flag is true;
-            if (Interlocked.Exchange(ref _indexesPrimed, 1) == 0 || forced)
+            // A run triggered after a dump install, and the first scheduled run after startup, build
+            // both indexes so the cost never lands on the first keystroke. Later scheduled runs only
+            // refresh an index somebody already has loaded: building one for an instance nobody is
+            // browsing costs ~9s of CPU and an RSS spike, only for the idle unload to drop it again.
+            var everything = context.Trigger.Key.Name != ScheduledTriggerName || context.PreviousFireTimeUtc is null;
+
+            // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
+            // the first natural-language query doesn't wear it.
+            if (everything || searchIndex.IsLoaded)
             {
-                // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
-                // the first natural-language query doesn't wear it.
+                if (!searchIndex.IsCurrent)
+                {
+                    build.MarkBuilt();
+                }
+
                 await searchIndex.GetAsync(context.CancellationToken);
-                // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
-                // dump, which would otherwise land on whichever keystroke arrived first.
+            }
+
+            // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
+            // dump, which would otherwise land on whichever keystroke arrived first.
+            if (everything || catalogueIndex.IsLoaded)
+            {
+                if (!catalogueIndex.IsCurrent)
+                {
+                    build.MarkBuilt();
+                }
+
                 await catalogueIndex.GetAsync(context.CancellationToken);
             }
         }

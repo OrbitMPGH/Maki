@@ -87,10 +87,19 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
         public readonly SemaphoreSlim Gate = new(1, 1);
         public IReadOnlyList<MangaBakaRecommendation>? Results;
         public DateTime ComputedAt = DateTime.MinValue;
+        public string? Stamp;
         public long LastUsedTicks;
     }
 
     private readonly ConcurrentDictionary<string, Entry> _entries = new();
+
+    /// <summary>
+    /// How many distinct series may scan the index at once. The per-entry gate only dedupes one key,
+    /// so several series pages opened together would otherwise run that many full scans in parallel.
+    /// </summary>
+    private readonly SemaphoreSlim _scans = new(MaxConcurrentScans, MaxConcurrentScans);
+
+    private const int MaxConcurrentScans = 2;
 
     /// <summary>
     /// The pool for one seed, computed at most once per <see cref="Ttl"/>; concurrent callers for the
@@ -116,7 +125,7 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
         var now = DateTime.UtcNow;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
-        if (IsFresh(entry, now))
+        if (IsFresh(entry, now, semantic.IndexStamp))
         {
             return entry.Results!;
         }
@@ -125,25 +134,35 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
         try
         {
             // Somebody else computed it while this call waited for the gate.
-            if (IsFresh(entry, DateTime.UtcNow))
+            if (IsFresh(entry, DateTime.UtcNow, semantic.IndexStamp))
             {
                 return entry.Results!;
             }
 
-            var results = await semantic.GetSimilarAsync(
-                [mangaBakaId],
-                [],
-                PoolSize,
-                RecommendationFilters.None with { ContentRatings = allowedRatings },
-                obscurity: 0,
-                seedWeights: null,
-                diversity: Diversity,
-                coGraph: false,
-                coRead: false,
-                taste: false,
-                ct: ct);
+            IReadOnlyList<MangaBakaRecommendation> results;
+            await _scans.WaitAsync(ct);
+            try
+            {
+                results = await semantic.GetSimilarAsync(
+                    [mangaBakaId],
+                    [],
+                    PoolSize,
+                    RecommendationFilters.None with { ContentRatings = allowedRatings },
+                    obscurity: 0,
+                    seedWeights: null,
+                    diversity: Diversity,
+                    coGraph: false,
+                    coRead: false,
+                    taste: false,
+                    ct: ct);
+            }
+            finally
+            {
+                _scans.Release();
+            }
 
             entry.Results = results;
+            entry.Stamp = semantic.IndexStamp;
             entry.ComputedAt = DateTime.UtcNow;
             logger.LogInformation(
                 "Computed {Count} similar series for MangaBaka {Id}", results.Count, mangaBakaId);
@@ -156,8 +175,9 @@ public class SimilarSeriesService(SemanticRecommender semantic, ILogger<SimilarS
         }
     }
 
-    private static bool IsFresh(Entry entry, DateTime now) =>
-        entry.Results is not null && now - entry.ComputedAt < Ttl;
+    private static bool IsFresh(Entry entry, DateTime now, string? stamp) =>
+        entry.Results is not null && now - entry.ComputedAt < Ttl &&
+        (stamp is null || entry.Stamp is null || entry.Stamp == stamp);
 
     /// <summary>Evicts the least recently used entries once over capacity.</summary>
     private void Trim()

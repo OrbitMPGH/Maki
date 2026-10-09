@@ -26,7 +26,12 @@ public record RemoteEntry(
     /// Whether the tracker says the work is still being published (releasing, on hiatus, not yet
     /// out); null when it doesn't say.
     /// </summary>
-    bool? Releasing = null);
+    bool? Releasing = null,
+    /// <summary>
+    /// The tracker marks this entry as a re-read (AniList REPEATING), which <see cref="Status"/>
+    /// reports as <see cref="ScrobbleStatus.Reading"/>.
+    /// </summary>
+    bool Repeating = false);
 
 /// <summary>
 /// One entry of a user's remote list, as returned by <see cref="IScrobbleTracker.ListAsync"/>.
@@ -98,9 +103,13 @@ public interface IScrobbleTracker
     Task<string?> UsernameAsync(int userId, CancellationToken ct = default);
 
     Task<RemoteEntry> GetEntryAsync(int userId, string remoteId, CancellationToken ct = default);
+    /// <param name="keepStatus">
+    /// Write progress only and leave the entry's status as it is. Set when the entry is in a state
+    /// the internal statuses cannot express (AniList's REPEATING), so a push does not overwrite it.
+    /// </param>
     Task UpdateAsync(
         int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-        CancellationToken ct = default);
+        CancellationToken ct = default, bool keepStatus = false);
 
     /// <summary>
     /// Pushes the user's rating to the tracker. <paramref name="score"/> is on the internal 1–10

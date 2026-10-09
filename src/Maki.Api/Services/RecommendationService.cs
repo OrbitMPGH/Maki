@@ -57,6 +57,21 @@ public class RecommendationService(
     ILogger<RecommendationService> logger)
 {
     private const int PageSize = 40;
+
+    /// <summary>Matches the custom rails' seed cap, so a bound request cannot build a megabyte cache key.</summary>
+    internal const int MaxSeeds = 100;
+
+    /// <summary>The page ceiling; the pool is a few hundred rows, so no real pager gets near it.</summary>
+    internal const int MaxPage = 1000;
+
+    /// <summary>Clamps the dials, seed count and page of a request bound from a POST body.</summary>
+    internal static RecommendationRequest Normalize(RecommendationRequest request) => request with
+    {
+        SeedIds = request.SeedIds?.Distinct().Take(MaxSeeds).ToList(),
+        Obscurity = Math.Clamp(double.IsFinite(request.Obscurity) ? request.Obscurity : 0, -1, 1),
+        Diversity = Math.Clamp(double.IsFinite(request.Diversity) ? request.Diversity : 0, 0, 1),
+        Page = Math.Clamp(request.Page, 0, MaxPage),
+    };
     private const int PoolSize = 200;
 
     /// <summary>
@@ -140,6 +155,7 @@ public class RecommendationService(
         RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default,
         PoolOrigin origin = PoolOrigin.Interactive)
     {
+        request = Normalize(request);
         if (!await store.IsAvailableAsync(ct))
         {
             throw new LocalCatalogueUnavailableException("error.recommendation.needsLocalDb");
@@ -478,8 +494,8 @@ public class RecommendationService(
     }
 
     private static string FilterKey(RecommendationFilters f) =>
-        $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{string.Join('.', f.Types ?? [])}-{string.Join('.', f.Statuses ?? [])}" +
-        $"-{string.Join('.', f.Genres ?? [])}-{f.MinChapters}-{f.MaxChapters}-{string.Join('.', f.Tags ?? [])}" +
-        $"-{string.Join('.', f.ContentRatings ?? [])}-{CatalogueRules.Key(f.Rules)}-{CatalogueRules.TermsKey(f.Hidden)}" +
+        $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{KeyPart.List(f.Types)}-{KeyPart.List(f.Statuses)}" +
+        $"-{KeyPart.List(f.Genres)}-{f.MinChapters}-{f.MaxChapters}-{KeyPart.List(f.Tags)}" +
+        $"-{KeyPart.List(f.ContentRatings)}-{CatalogueRules.Key(f.Rules)}-{CatalogueRules.TermsKey(f.Hidden)}" +
         $"-{CatalogueCredits.Key(f.Credits)}";
 }

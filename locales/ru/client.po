@@ -342,6 +342,11 @@ msgstr "{0, plural, one {Файл тома для # главы} few {Файлы 
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Нужна # глава} few {Нужны # главы} many {Нужно # глав} other {Нужна # глава}}"
 
+#. placeholder {0}: percent(item.measure)
+#: src/pages/discover/TasteTab.tsx
+msgid "{0} in"
+msgstr ""
+
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

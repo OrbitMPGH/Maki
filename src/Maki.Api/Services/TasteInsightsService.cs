@@ -255,7 +255,7 @@ public class TasteInsightsService(
         }
         var key = $"{scope.UserId}:{view}:{feedbackRevision}:{signalRevision}:{nextDismissalExpiry}:{scope.MaxContentRating}:" +
             $"{scope.AllRootFolders}:{string.Join(',', scope.RootFolderIds.Order())}:{snapshot.Fingerprint()}:" +
-            string.Join('|', (hidden ?? []).Select(t => $"{t.Kind}={t.Name}={t.Subtags}={t.Central}"));
+            CatalogueRules.TermsKey(hidden);
         await _lock.WaitAsync(ct);
         try
         {

@@ -82,6 +82,12 @@ public class SemanticRecommender(
     public virtual bool IsReady() => options.Enabled && store.Count() >= 1000;
 
     /// <summary>
+    /// Identifies the vector index currently loaded, so a caller holding results computed from one
+    /// can tell the index has since been rebuilt. Null while nothing is loaded.
+    /// </summary>
+    public virtual string? IndexStamp => cache.Stamp;
+
+    /// <summary>
     /// Which same-work component each of <paramref name="ids"/> sits in
     /// (<see cref="MangaBaka.FranchiseGraph"/>). Ids the index does not know, and ids in no
     /// franchise at all, are simply absent from the result rather than mapped to a placeholder:

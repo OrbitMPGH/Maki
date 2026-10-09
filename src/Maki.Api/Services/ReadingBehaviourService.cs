@@ -8,13 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>A series named as an example of how the reader reads, not of what they read.</summary>
-/// <param name="Value">Server-formatted English, kept for the Taste tab. New callers format <paramref name="Measure"/>.</param>
 /// <param name="Measure">
-/// The number behind <paramref name="Value"/>: median seconds per chapter in
+/// Median seconds per chapter in
 /// <see cref="ReadingBehaviour.Savoured"/> and <see cref="ReadingBehaviour.Devoured"/>, the completion
 /// fraction (0 to 1) in <see cref="ReadingBehaviour.Abandoned"/>.
 /// </param>
-public record BehaviourSeries(int SeriesId, string Title, string? CoverUrl, string Value, double Measure);
+public record BehaviourSeries(int SeriesId, string Title, string? CoverUrl, double Measure);
 
 /// <summary>
 /// How somebody reads, as opposed to what. Every field is null when there is not enough to say,
@@ -276,14 +275,13 @@ public class ReadingBehaviourService(
             MedianChaptersPerReadingDay: Median([.. days.Select(d => (double)d.Count)]),
             BiggestDayCount: days.Count == 0 ? null : biggest.Count,
             BiggestDay: days.Count == 0 ? null : biggest.Day,
-            Savoured: Name(paceBySeries.OrderByDescending(p => p.Median), titles, Minutes),
-            Devoured: Name(paceBySeries.OrderBy(p => p.Median), titles, Minutes),
+            Savoured: Name(paceBySeries.OrderByDescending(p => p.Median), titles),
+            Devoured: Name(paceBySeries.OrderBy(p => p.Median), titles),
             Abandoned: Name(
                 unfinished.Where(u => u.Fraction >= MinProgressToAbandon)
                     .OrderByDescending(u => u.Read)
                     .Select(u => (u.SeriesId, Median: u.Fraction)),
-                titles,
-                f => $"{Math.Round(f * 100)}% in"),
+                titles),
             GeneratedAt: DateTime.UtcNow,
             StopPointHistogram: histogram);
 
@@ -294,20 +292,14 @@ public class ReadingBehaviourService(
         return behaviour;
     }
 
-    private static string Minutes(double seconds) =>
-        seconds >= 90
-            ? $"{Math.Round(seconds / 60)} min"
-            : $"{Math.Round(seconds)} s";
-
     private static IReadOnlyList<BehaviourSeries> Name(
         IEnumerable<(int SeriesId, double Median)> ranked,
-        Dictionary<int, (string Title, string? CoverUrl)> titles,
-        Func<double, string> format) =>
+        Dictionary<int, (string Title, string? CoverUrl)> titles) =>
         [.. ranked
             .Where(r => titles.ContainsKey(r.SeriesId))
             .Take(Named)
             .Select(r => new BehaviourSeries(
-                r.SeriesId, titles[r.SeriesId].Title, titles[r.SeriesId].CoverUrl, format(r.Median), r.Median))];
+                r.SeriesId, titles[r.SeriesId].Title, titles[r.SeriesId].CoverUrl, r.Median))];
 
     /// <summary>Median, or null for an empty set. Even counts take the mean of the middle pair.</summary>
     private static double? Median(List<double> values)

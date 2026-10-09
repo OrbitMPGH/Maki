@@ -1,3 +1,4 @@
+using System.Globalization;
 using Maki.Api.Dtos;
 using Maki.Core.Entities;
 using Maki.Core.Security;
@@ -107,7 +108,7 @@ public class LibraryCompositionService(MakiDbContext db, ICurrentUser currentUse
         var growth = new List<LibraryGrowthDto>();
         var running = 0;
         foreach (var month in shape
-                     .GroupBy(s => s.Added.ToString("yyyy-MM"))
+                     .GroupBy(s => s.Added.ToString("yyyy-MM", CultureInfo.InvariantCulture))
                      .OrderBy(g => g.Key))
         {
             running += month.Count();

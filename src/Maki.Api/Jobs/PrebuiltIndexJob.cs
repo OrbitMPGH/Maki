@@ -33,13 +33,9 @@ public class PrebuiltIndexJob(
             using var build = await gate.EnterAsync(nameof(PrebuiltIndexJob), context.CancellationToken);
 
             var result = await installer.InstallAsync(force, context.CancellationToken);
-            if (!result.Installed)
-            {
-                build.NothingBuilt();
-            }
-
             if (result.Installed)
             {
+                build.MarkBuilt();
                 logger.LogInformation("Prebuilt embedding index: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else

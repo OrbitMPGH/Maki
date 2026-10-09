@@ -24,8 +24,9 @@ public sealed record CatalogueIndexes(CreditIndex Credits, FuzzyTermIndex Terms)
 ///
 /// <para>
 /// A cold build is about 3.5 s of the two scans combined, which is why
-/// <c>DiscoverCacheWarmJob</c> triggers it at startup and again after a new dump installs, rather
-/// than letting it land on whichever keystroke happens to arrive first.
+/// <c>DiscoverCacheWarmJob</c> builds it on its first run after startup and again after a new dump
+/// installs, rather than letting it land on whichever keystroke happens to arrive first. Its later
+/// scheduled runs only refresh it while it is loaded.
 /// </para>
 /// </summary>
 public sealed class CatalogueIndexCache(
@@ -40,6 +41,11 @@ public sealed class CatalogueIndexCache(
 
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _entry is not null;
+
+    /// <summary>Whether the indexes are in memory and were built from the dump on disk now.</summary>
+    public bool IsCurrent => _entry is { } entry && DumpInfo() is { } info && Matches(entry, info);
+
+    private FileInfo? DumpInfo() => File.Exists(dumpOptions.DatabasePath) ? new FileInfo(dumpOptions.DatabasePath) : null;
 
     /// <summary>How long since anything last read it. Meaningless while unloaded.</summary>
     public TimeSpan IdleFor => _idle.Idle;
