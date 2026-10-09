@@ -1,5 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Slider, Text } from '@mantine/core'
+import { formatFixedDecimal } from '../../format'
 
 /**
  * The recommender's two dials, obscurity and variety. Two grid cells rather than one block so the
@@ -17,8 +18,8 @@ export function RecommenderDials({
   setDiversity: (value: number) => void
 }) {
   const { t } = useLingui()
-  const obscurityDisplay = obscurity.toFixed(2)
-  const diversityDisplay = diversity.toFixed(2)
+  const obscurityDisplay = formatFixedDecimal(obscurity, 2)
+  const diversityDisplay = formatFixedDecimal(diversity, 2)
 
   return (
     <>
@@ -61,7 +62,7 @@ export function RecommenderDials({
           step={0.1}
           value={diversity}
           onChange={setDiversity}
-          label={(v) => (v === 0 ? t`closest` : v.toFixed(1))}
+          label={(v) => (v === 0 ? t`closest` : formatFixedDecimal(v, 1))}
           marks={[
             { value: 0, label: t`closest` },
             { value: 0.5, label: '·' },

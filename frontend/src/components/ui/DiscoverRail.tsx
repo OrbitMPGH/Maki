@@ -262,7 +262,7 @@ export const RecommendationRow = memo(function RecommendationRow({
           {item.rating != null && (
             <span className="cover-badge" style={{ flexShrink: 0 }}>
               <IconStar size={11} style={{ color: 'var(--rating)' }} />
-              {(item.rating / 10).toFixed(1)}
+              {formatFixedDecimal(item.rating / 10, 1)}
             </span>
           )}
           {totalChapters != null && (

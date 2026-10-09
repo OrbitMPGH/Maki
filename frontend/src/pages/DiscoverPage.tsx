@@ -131,6 +131,7 @@ import {
   type Density,
   type DensityPref,
 } from '../components/ui/viewPrefs'
+import { formatFixedDecimal } from '../format'
 
 /**
  * Where the Recommended panel is remembered between visits. Its own key rather than the route,
@@ -511,7 +512,7 @@ function RecommendedTab() {
       chips.push(plural(seedIds.length, { one: '# seed', other: '# seeds' }))
     }
     if (years[0] > YEAR_MIN || years[1] < YEAR_MAX) chips.push(`${years[0]}–${years[1]}`)
-    if (minRating > 0) chips.push(`★ ≥ ${minRating.toFixed(1)}`)
+    if (minRating > 0) chips.push(`★ ≥ ${formatFixedDecimal(minRating, 1)}`)
     if (chapters[0] > CHAPTER_MIN || chapters[1] < CHAPTER_MAX) {
       const chapterMinChip = chapters[0]
       const chapterMaxChip = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
@@ -519,7 +520,7 @@ function RecommendedTab() {
     }
     if (obscurity !== 0) chips.push(obscurity > 0 ? t`hidden gems` : t`mainstream`)
     if (diversity !== 0) {
-      const diversityChip = diversity.toFixed(2)
+      const diversityChip = formatFixedDecimal(diversity, 2)
       chips.push(t`varied (${diversityChip})`)
     }
     chips.push(...ruleChips(terms.rules))
@@ -576,7 +577,7 @@ function RecommendedTab() {
   const chapterRangeMax = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
   const yearRangeMin = years[0]
   const yearRangeMax = years[1]
-  const minRatingDisplay = minRating.toFixed(1)
+  const minRatingDisplay = formatFixedDecimal(minRating, 1)
 
   return (
     <>
@@ -699,7 +700,7 @@ function RecommendedTab() {
                   step={0.5}
                   value={minRating}
                   onChange={setMinRating}
-                  label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : t`any`)}
+                  label={(v) => (v > 0 ? `★ ${formatFixedDecimal(v, 1)}` : t`any`)}
                   marks={[
                     { value: 0, label: t`any` },
                     { value: 7, label: '7' },

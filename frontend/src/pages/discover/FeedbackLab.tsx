@@ -11,7 +11,7 @@ import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedbac
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesThumb } from '../stats/SeriesLink'
-import { formatDate, formatTime } from '../../format'
+import { formatDate, formatDecimal, formatTime } from '../../format'
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 
@@ -414,7 +414,7 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
 type ShelfPadItem = FeedbackLabData['sources'][number] & { kind: 'rated' | 'read' | 'added' }
 
 function formatRating(rating: number): string {
-  return Number.isInteger(rating) ? String(rating) : rating.toFixed(1)
+  return formatDecimal(rating)
 }
 
 /** Pill + tertiary label for a shelf-derived row padding the recent-feedback card. */

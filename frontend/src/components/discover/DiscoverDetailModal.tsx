@@ -28,7 +28,7 @@ import {
 } from '../../api/hooks'
 import { altTitleLabel, readableTitles } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
-import { formatNumber } from '../../format'
+import { formatFixedDecimal, formatNumber } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
@@ -135,12 +135,12 @@ export function DiscoverDetailModal({
   ].filter(Boolean)
 
   // Named locals for the tooltip sentence below: Lingui only names a placeholder after the
-  // expression when it is a plain identifier, so a member access or a `.toFixed()` call would
+  // expression when it is a plain identifier, so a member access or a formatter call would
   // otherwise extract as an unlabelled {0}.
   const readerHint = detail?.readerHint ?? null
-  const readerHintScoreDisplay = readerHint ? (readerHint.score / 10).toFixed(1) : null
+  const readerHintScoreDisplay = readerHint ? formatFixedDecimal(readerHint.score / 10, 1) : null
   const readerHintReadersDisplay = readerHint ? formatNumber(readerHint.readers) : null
-  const readerHintBaselineDisplay = readerHint ? (readerHint.baseline / 10).toFixed(1) : null
+  const readerHintBaselineDisplay = readerHint ? formatFixedDecimal(readerHint.baseline / 10, 1) : null
   const readerHintHigher = readerHint ? readerHint.score > readerHint.baseline : false
 
   return (
@@ -287,7 +287,7 @@ export function DiscoverDetailModal({
                             style={{ '--band': `var(--${band.token})` } as CSSProperties}
                           >
                             <IconStar size={18} />
-                            <span className="hero-score-n figure">{(score / 10).toFixed(1)}</span>
+                            <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
                           </span>
                         </Tooltip>
                       )}
@@ -357,7 +357,7 @@ export function DiscoverDetailModal({
                                 />
                               }
                             >
-                              {(r.rating / 10).toFixed(1)}
+                              {formatFixedDecimal(r.rating / 10, 1)}
                             </Badge>
                           </Tooltip>
                         ))}
