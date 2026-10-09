@@ -24,6 +24,7 @@ import {
   useCreateDiscoverPreset,
   useDeleteDiscoverPreset,
   useDiscoverPresets,
+  type DiscoverPreset,
   useHiddenContent,
   useSaveHiddenContent,
   type CatalogueTerm,
@@ -54,8 +55,46 @@ export function PresetMenu({
   const { t } = useLingui()
   const { data: presets } = useDiscoverPresets()
   const remove = useDeleteDiscoverPreset()
+  const restore = useCreateDiscoverPreset()
   const [saveOpen, setSaveOpen] = useState(false)
   const [railSpec, setRailSpec] = useState<CustomRailSpec | null>(null)
+
+  const removePreset = (preset: DiscoverPreset) => {
+    const name = preset.name
+    remove.mutate(preset.id, {
+      onSuccess: () => {
+        const toastId = notifications.show({
+          autoClose: 8000,
+          message: (
+            <Group gap="xs" wrap="nowrap" justify="space-between">
+              <Text size="sm">
+                <Trans>Deleted saved filter {name}.</Trans>
+              </Text>
+              <Button
+                size="xs"
+                variant="subtle"
+                style={{ flexShrink: 0 }}
+                onClick={() => {
+                  notifications.hide(toastId)
+                  restore.mutate(
+                    { name: preset.name, spec: preset.spec },
+                    {
+                      onError: (err) => {
+                        const detail = errorText(err)
+                        notifications.show({ color: 'var(--danger)', message: now`Failed to restore filter: ${detail}` })
+                      },
+                    },
+                  )
+                }}
+              >
+                <Trans>Undo</Trans>
+              </Button>
+            </Group>
+          ),
+        })
+      },
+    })
+  }
 
   return (
     <>
@@ -82,7 +121,7 @@ export function PresetMenu({
                 variant="subtle"
                 color="var(--neutral)"
                 aria-label={t`Delete saved filter`}
-                onClick={() => remove.mutate(preset.id)}
+                onClick={() => removePreset(preset)}
               >
                 <IconTrash size={14} />
               </ActionIcon>

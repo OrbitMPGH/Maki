@@ -29,18 +29,21 @@ public class QueueController(
 {
     /// <summary>
     /// The active queue, paginated like <see cref="History"/>. <c>Total</c> is the full count, so a
-    /// caller can tell a full page from a truncated one — the old fixed <c>.Take(200)</c> dropped
-    /// the rest silently and a big queue simply looked like exactly 200 items.
+    /// caller can tell a full page from a truncated one; the old fixed <c>.Take(200)</c> dropped
+    /// the rest silently and a big queue simply looked like exactly 200 items. <c>seriesId</c>
+    /// narrows it to one series, which is what a series page needs to see its own queued chapters.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> List(
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 200, CancellationToken ct = default)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 200, [FromQuery] int? seriesId = null,
+        CancellationToken ct = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 200);
 
         var query = db.DownloadQueue
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled);
+        if (seriesId is { } onlySeries) query = query.Where(q => q.SeriesId == onlySeries);
 
         var total = await query.CountAsync(ct);
         var rows = await Rows(query

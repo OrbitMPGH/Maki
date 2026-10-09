@@ -104,7 +104,7 @@ import {
   RecommendationCard,
   RecommendationRow,
 } from '../components/ui/DiscoverRail'
-import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
+import { PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
@@ -275,7 +275,7 @@ function RecommendedTab() {
     setLabelCache((prev) => {
       const next = { ...prev }
       for (const s of library ?? []) {
-        if (s.mangaBakaId != null) next[String(s.mangaBakaId)] = s.title
+        if (s.mangaBakaId != null) next[String(s.mangaBakaId)] = s.displayTitle
       }
       for (const r of seedSearchResults ?? []) next[r.providerId] = r.title
       return next
@@ -1095,14 +1095,7 @@ function FeedExpandModal({
   )
 }
 
-/**
- * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search box
- * takes over the tab while it has a query: rails are for wandering, search is for looking.
- *
- * Everything below the rails now lives in `CatalogueBrowser`, shared with the Add series page and
- * the creator page. Discover keeps its curated rails by handing them over as the idle state; the
- * pages that have no rails browse the filtered catalogue there instead.
- */
+/** Catalogue browse: Popular / New / Trending / … rails, independent of the library. */
 function DiscoverBrowseTab({
   refreshNonce,
   onRefresh,
@@ -1296,7 +1289,7 @@ function DiscoverBrowseTab({
   const sections: Record<DiscoverSectionKey, React.ReactNode> = {
     hero:
       heroItems.length > 0 ? (
-        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} />
+        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} seriesIdFor={seriesIdFor} />
       ) : (isFetching && !rails) || (recentFetching && recentRail === undefined) ? (
         <DiscoverHeroSkeleton />
       ) : null,
@@ -1538,14 +1531,7 @@ function DiscoverBrowseTab({
     </div>
   )
 
-  return (
-    <CatalogueBrowser
-      scope="discover"
-      idle={body}
-      placeholder={t`Describe what you're after, a title, or author:"Junji Ito"`}
-      hideSearch
-    />
-  )
+  return body
 }
 
 type DiscoverTab = 'browse' | 'recommended' | 'taste'
@@ -1556,8 +1542,8 @@ const TAB_PATHS: Record<DiscoverTab, string> = {
 }
 
 /**
- * Discover shell: four URL-synced tabs - catalogue Browse (default), per-Genre, Recommended, and
- * the reader's own taste profile.
+ * Discover shell: three URL-synced tabs - catalogue Browse (default), Recommended, and the
+ * reader's own taste profile.
  */
 export default function DiscoverPage() {
   const { t } = useLingui()

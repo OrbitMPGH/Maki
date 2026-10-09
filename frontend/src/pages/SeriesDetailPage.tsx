@@ -95,7 +95,7 @@ import {
   useUnlinkChapters,
   useDeleteChapterFiles,
   useDeleteChapters,
-  useQueue, useSeriesFilesSummary,
+  useSeriesQueue, useSeriesFilesSummary,
   useRecommendationDetail,
 } from '../api/hooks'
 import {
@@ -170,6 +170,8 @@ import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis } from '../lib/synopsis'
 import { onPressKey, pressable } from '../lib/pressable'
+import { useIncognitoOptions } from '../components/ui/incognito'
+import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
@@ -315,6 +317,8 @@ export default function SeriesDetailPage() {
 
 function SeriesDetailBody() {
   const renderLabel = useLabel()
+  const incognitoOptions = useIncognitoOptions()
+  const notificationOptions = useSeriesNotificationOptions()
   const { t, i18n } = useLingui()
   const chapterPageSizeOptions = useChapterPageSizeOptions()
   const { id } = useParams()
@@ -415,7 +419,7 @@ function SeriesDetailBody() {
       (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
       [readProgress],
   )
-  const { data: queue } = useQueue()
+  const { data: queue } = useSeriesQueue(seriesId)
   const queueByChapterId = useMemo(
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
       [queue, seriesId],
@@ -473,7 +477,7 @@ function SeriesDetailBody() {
     if (!scanWasRunning.current) return
     scanWasRunning.current = false
     void queryClient.invalidateQueries({ queryKey: ['series'] })
-    void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
     void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
     const { queued, chaptersChecked } = scanStatus
     if (scanStatus.state === 'done') {
@@ -752,8 +756,7 @@ function SeriesDetailBody() {
    * metadata refresh that adds a season doesn't silently re-point an open fold at a different one.
    */
   const [foldedSpans, setFoldedSpans] = useState<Set<string>>(new Set())
-  /** Whether the fold seed below has already run for the series currently on screen. */
-  const seededFoldsFor = useRef<number | null>(null)
+  const foldsSeeded = useRef(false)
 
   const chaptersInSpan = useCallback(
       (span: AnimeSpan) =>
@@ -772,8 +775,8 @@ function SeriesDetailBody() {
    */
   useEffect(() => {
     if (progressRows === undefined || animeSpans.length === 0) return
-    if (seededFoldsFor.current === seriesId) return
-    seededFoldsFor.current = seriesId
+    if (foldsSeeded.current) return
+    foldsSeeded.current = true
 
     const folded = new Set<string>()
     for (const span of animeSpans) {
@@ -1301,11 +1304,6 @@ function SeriesDetailBody() {
   const location = useLocation()
   const arrivedLucky = Boolean((location.state as { lucky?: boolean } | null)?.lucky)
   const [lucky, setLucky] = useState(arrivedLucky)
-  const [luckyFor, setLuckyFor] = useState(seriesId)
-  if (luckyFor !== seriesId) {
-    setLuckyFor(seriesId)
-    setLucky(arrivedLucky)
-  }
   const { data: library } = useSeries()
   const luckyPool = useMemo(
     () =>
@@ -1428,14 +1426,14 @@ function SeriesDetailBody() {
       : []
 
   const queueNext = (count: number) => {
-    setNextCountOpen(false)
     downloadNext.mutate(
         { seriesId, count },
         {
-          onSuccess: (r) =>
-              r.queued > 0
-                  ? notify.ok(plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }))
-                  : notify.info(staticT`Nothing left to queue. Every wanted chapter is on disk or already queued.`),
+          onSuccess: (r) => {
+            setNextCountOpen(false)
+            if (r.queued > 0) notify.ok(plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }))
+            else notify.info(staticT`Nothing left to queue. Every wanted chapter is on disk or already queued.`)
+          },
         },
     )
   }
@@ -1525,6 +1523,7 @@ function SeriesDetailBody() {
         await dismissAnimeResumeMutation.mutateAsync({ undo: true })
         notifications.hide(id)
       } catch (error) {
+        const reason = errorText(error)
         notifications.update({
           id,
           color: 'var(--danger)',
@@ -1532,7 +1531,7 @@ function SeriesDetailBody() {
           message: (
             <Group gap="xs" wrap="nowrap" justify="space-between">
               <Text size="sm">
-                <Trans>Undo failed: {errorText(error)}</Trans>
+                <Trans>Undo failed: {reason}</Trans>
               </Text>
               <Button size="xs" variant="subtle" style={{ flexShrink: 0 }} onClick={performUndo}>
                 <Trans>Retry</Trans>
@@ -1751,7 +1750,7 @@ function SeriesDetailBody() {
                             { seriesId, mode },
                             {
                               onSuccess: (r) => {
-                                const { incognito } = r
+                                const incognito = incognitoOptions.find((o) => o.value === r.incognito)?.label ?? r.incognito
                                 notify.ok(staticT`Incognito: ${incognito}`)
                               },
                             },
@@ -1762,7 +1761,8 @@ function SeriesDetailBody() {
                             { seriesId, mode },
                             {
                               onSuccess: (r) => {
-                                const { notificationMode } = r
+                                const notificationMode =
+                                    notificationOptions.find((o) => o.value === r.notificationMode)?.label ?? r.notificationMode
                                 notify.ok(staticT`Notifications: ${notificationMode}`)
                               },
                             },
@@ -1772,7 +1772,10 @@ function SeriesDetailBody() {
                     searchingVolumes={runVolumeSearch.isPending}
                     onSearchVolumes={searchSeriesVolumes}
                     canRemove={can('DeleteSeries')}
-                    onRemove={() => setDeleteSeriesModalOpen(true)}
+                    onRemove={() => {
+                      setDeleteSeriesFiles(false)
+                      setDeleteSeriesModalOpen(true)
+                    }}
                 />
               </>
             }
@@ -2074,7 +2077,9 @@ function SeriesDetailBody() {
           >
             <NumberInput
                 label={t`How many`}
-                description={t`${missingWanted} wanted chapter(s) are missing`}
+                description={
+                  <Plural value={missingWanted} one="# wanted chapter is missing" other="# wanted chapters are missing" />
+                }
                 min={1}
                 value={nextCount}
                 onChange={setNextCount}
@@ -2510,8 +2515,11 @@ function SeriesDetailBody() {
             >
               <Stack gap="md">
                 <Text size="sm" c="var(--ink-3)">
-                  <Trans>This permanently removes {selectedCount} chapter row(s), not just their file link,
-                    along with any backing file on disk and everyone's read history for them.</Trans>{' '}
+                  <Plural
+                    value={selectedCount}
+                    one="This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it."
+                    other="This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them."
+                  />{' '}
                   <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
                   <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>
@@ -2697,7 +2705,10 @@ function SeriesDetailBody() {
                                       <Switch
                                           size="xs"
                                           checked={c.wanted}
-                                          disabled={!canEditMetadata}
+                                          disabled={
+                                            !canEditMetadata ||
+                                            (toggleWanted.isPending && toggleWanted.variables?.chapterId === c.id)
+                                          }
                                           aria-label={t`Want ${chapterLbl}`}
                                           onChange={(e) =>
                                               toggleWanted.mutate({ chapterId: c.id, wanted: e.currentTarget.checked })
@@ -2929,6 +2940,7 @@ function SeriesDetailBody() {
                                               <ActionIcon
                                                   variant={read ? 'light' : 'subtle'}
                                                   color={read ? 'var(--ok)' : 'gray'}
+                                                  loading={setRead.isPending && setRead.variables?.chapterId === c.id}
                                                   onClick={() => setRead.mutate({ chapterId: c.id, read: !read })}
                                                   aria-label={t`Toggle read state of ${chapterLbl}`}
                                               >
@@ -3285,7 +3297,7 @@ function CreatorNames({
   return (
       <Text size="sm" c="var(--ink-2)">
         {values.map((value, i) => (
-            <span key={value}>
+            <span key={`${i}:${value}`}>
           {i > 0 && ', '}
               <Anchor component={Link} to={`/creator/${encodeURIComponent(value)}?role=${role}`} inherit>
             {value}

@@ -1641,12 +1641,15 @@ body::before {
   border-radius: var(--radius-pill);
   background: var(--brand);
 }
-/* Recently added's jump-to-reader button, top-right. It sits inside the corners row, so the row
-   keeps its full width instead of clearing room for an outside menu. */
-.cover-corners:has(> .cover-corner-right > .home-read-button) {
-  right: 8px;
-}
+/* Recently added's jump-to-reader button, top-right. A sibling of the card link inside a
+   .reading-card wrapper, which owns the hover lift. */
 .home-read-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  padding: 0;
+  border: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1659,10 +1662,14 @@ body::before {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
-.home-read-button:hover {
+.reading-card:hover > .home-read-button {
+  transform: translateY(-4px);
+}
+.home-read-button:hover,
+.reading-card:hover > .home-read-button:hover {
   color: var(--brand-on);
   background: var(--brand);
-  transform: translateY(-1px);
+  transform: translateY(-5px);
 }
 .home-read-button:focus-visible {
   outline: 2px solid var(--brand);
@@ -6106,7 +6113,9 @@ body.reader-open {
   }
   .cover-card:hover,
   .reading-card:hover > .cover-card,
-  .reading-card:hover > .reading-card-menu {
+  .reading-card:hover > .reading-card-menu,
+  .reading-card:hover > .home-read-button,
+  .reading-card:hover > .home-read-button:hover {
     transform: none;
   }
   /* The chapter flash is information, not decoration: collapsing its animation to nothing would

@@ -16,17 +16,7 @@ import {
   spanVerdictKey,
 } from '../api/upgrades'
 import { useLabel } from '../i18n-context'
-
-function formatSize(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB']
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit++
-  }
-  return `${value.toFixed(1)} ${units[unit]}`
-}
+import { formatBytes } from '../format'
 
 export function ReleaseSearchModal({
   seriesId,
@@ -104,110 +94,113 @@ export function ReleaseSearchModal({
         </Text>
       )}
       {releases && releases.length > 0 && (
-        <Table highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th><Trans>Title</Trans></Table.Th>
-              <Table.Th><Trans>Indexer</Trans></Table.Th>
-              <Table.Th><Trans>Size</Trans></Table.Th>
-              <Table.Th><Trans>Seeds</Trans></Table.Th>
-              <Table.Th><Trans>Upgrade</Trans></Table.Th>
-              <Table.Th />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {releases.map((r) => {
-              const { parsed, ...release } = r
-              const { title, indexer, infoUrl, size, seeders } = release
-              const spanText = parsed ? releaseSpanText(parsed.span) : null
-              const verdictKey = parsed ? spanVerdictKey(parsed) : null
-              return (
-                <Table.Tr key={r.guid}>
-                  <Table.Td>
-                    <Text size="sm" style={{ wordBreak: 'break-word' }}>
-                      {infoUrl ? (
-                        <a href={infoUrl} target="_blank" rel="noreferrer">
-                          {title}
-                        </a>
-                      ) : (
-                        title
-                      )}
-                    </Text>
-                    {spanText && (
-                      <Text size="xs" c="var(--ink-3)">
-                        {spanText}
+        <Table.ScrollContainer minWidth={720}>
+          <Table highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th><Trans>Title</Trans></Table.Th>
+                <Table.Th><Trans>Indexer</Trans></Table.Th>
+                <Table.Th><Trans>Size</Trans></Table.Th>
+                <Table.Th><Trans>Seeds</Trans></Table.Th>
+                <Table.Th><Trans>Upgrade</Trans></Table.Th>
+                <Table.Th />
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {releases.map((r) => {
+                const { parsed, ...release } = r
+                const { title, indexer, infoUrl, size, seeders } = release
+                const spanText = parsed ? releaseSpanText(parsed.span) : null
+                const verdictKey = parsed ? spanVerdictKey(parsed) : null
+                return (
+                  <Table.Tr key={r.guid}>
+                    <Table.Td>
+                      <Text size="sm" style={{ wordBreak: 'break-word' }}>
+                        {infoUrl ? (
+                          <a href={infoUrl} target="_blank" rel="noreferrer">
+                            {title}
+                          </a>
+                        ) : (
+                          title
+                        )}
                       </Text>
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge size="sm" variant="light">
-                      {indexer}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{formatSize(size)}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" c={(seeders ?? 0) > 0 ? 'var(--ok)' : 'var(--danger)'}>
-                      {seeders ?? '?'}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    {parsed && verdictKey && (
-                      <Tooltip
-                        withArrow
-                        multiline
-                        maw={320}
-                        label={
-                          <Stack gap={2}>
-                            <Text size="xs">{proposalCountsText(parsed)}</Text>
-                            {parsed.reasons.map((code) => (
-                              <Text key={code} size="xs">
-                                {proposalReasonLabel(renderLabel, code)}
-                              </Text>
-                            ))}
-                          </Stack>
+                      {spanText && (
+                        <Text size="xs" c="var(--ink-3)">
+                          {spanText}
+                        </Text>
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge size="sm" variant="light">
+                        {indexer}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{formatBytes(size)}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c={(seeders ?? 0) > 0 ? 'var(--ok)' : 'var(--danger)'}>
+                        {seeders ?? '?'}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      {parsed && verdictKey && (
+                        <Tooltip
+                          withArrow
+                          multiline
+                          maw={320}
+                          label={
+                            <Stack gap={2}>
+                              <Text size="xs">{proposalCountsText(parsed)}</Text>
+                              {parsed.reasons.map((code) => (
+                                <Text key={code} size="xs">
+                                  {proposalReasonLabel(renderLabel, code)}
+                                </Text>
+                              ))}
+                            </Stack>
+                          }
+                        >
+                          <Group gap={4} wrap="nowrap">
+                            <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[parsed.tier]}>
+                              {renderLabel(QUALITY_TIER_LABELS[parsed.tier])}
+                            </Badge>
+                            <Badge size="sm" variant="light" color={SPAN_VERDICT_COLOR[verdictKey]}>
+                              {renderLabel(SPAN_VERDICT_LABELS[verdictKey])}
+                            </Badge>
+                          </Group>
+                        </Tooltip>
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <Button
+                        size="compact-xs"
+                        variant="light"
+                        loading={grab.isPending && grab.variables?.release.guid === r.guid}
+                        disabled={grab.isPending}
+                        onClick={() =>
+                          grab.mutate(
+                            { seriesId, release },
+                            {
+                              onSuccess: () => {
+                                notifications.show({
+                                  message: now`Sent to qBittorrent: ${title}`,
+                                  color: 'var(--ok)',
+                                })
+                                onClose()
+                              },
+                            },
+                          )
                         }
                       >
-                        <Group gap={4} wrap="nowrap">
-                          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[parsed.tier]}>
-                            {renderLabel(QUALITY_TIER_LABELS[parsed.tier])}
-                          </Badge>
-                          <Badge size="sm" variant="light" color={SPAN_VERDICT_COLOR[verdictKey]}>
-                            {renderLabel(SPAN_VERDICT_LABELS[verdictKey])}
-                          </Badge>
-                        </Group>
-                      </Tooltip>
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    <Button
-                      size="compact-xs"
-                      variant="light"
-                      loading={grab.isPending && grab.variables?.release.guid === r.guid}
-                      onClick={() =>
-                        grab.mutate(
-                          { seriesId, release },
-                          {
-                            onSuccess: () => {
-                              notifications.show({
-                                message: now`Sent to qBittorrent: ${title}`,
-                                color: 'var(--ok)',
-                              })
-                              onClose()
-                            },
-                          },
-                        )
-                      }
-                    >
-                      <Trans>Grab</Trans>
-                    </Button>
-                  </Table.Td>
-                </Table.Tr>
-              )
-            })}
-          </Table.Tbody>
-        </Table>
+                        <Trans>Grab</Trans>
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                )
+              })}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
     </Modal>
   )

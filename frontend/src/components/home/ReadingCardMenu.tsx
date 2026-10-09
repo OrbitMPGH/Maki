@@ -50,7 +50,10 @@ export function ReadingCardMenu({
             style={{ flexShrink: 0 }}
             onClick={() => {
               notifications.hide(id)
-              void hide.mutateAsync({ seriesId, hidden: false })
+              hide.mutateAsync({ seriesId, hidden: false }).catch((error: unknown) => {
+                const reason = errorText(error)
+                notifications.show({ color: 'var(--danger)', message: t`Could not restore ${seriesTitle}: ${reason}` })
+              })
             }}
           >
             <Trans>Undo</Trans>

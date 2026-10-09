@@ -15,24 +15,35 @@ export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) 
   return (
     <Rail>
       {items.map((item) => (
-        <div key={item.seriesId} className="discover-rail-item">
+        <div key={item.seriesId} className="discover-rail-item reading-card">
           <RecentCard item={item} />
+          {item.readChapterId != null && <ReadNextButton chapterId={item.readChapterId} />}
         </div>
       ))}
     </Rail>
   )
 }
 
-// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
-const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
+// A sibling of the card link rather than inside it: interactive content nested in an anchor is invalid.
+function ReadNextButton({ chapterId }: { chapterId: number }) {
   const navigate = useNavigate()
   const { t } = useLingui()
+  return (
+    <button
+      type="button"
+      className="home-read-button"
+      data-tip={t`Read next chapter`}
+      aria-label={t`Read next chapter`}
+      onClick={() => navigate(`/read/${chapterId}`)}
+    >
+      <IconPlayerPlayFilled size={10} />
+    </button>
+  )
+}
+
+// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
+const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
   const { newChapterCount } = item
-  const openReader = (e: React.SyntheticEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    navigate(`/read/${item.readChapterId}`)
-  }
 
   return (
     <Link to={`/series/${item.seriesId}`} className="cover-card" aria-label={item.seriesTitle}>
@@ -49,25 +60,6 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
             <div className="cover-corner cover-corner-left">
               <span className="cover-chapter">
                 <span>{item.newestChapterLabel}</span>
-              </span>
-            </div>
-          )}
-          {item.readChapterId != null && (
-            <div className="cover-corner cover-corner-right">
-              {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
-                  imperatively and stops the outer card's navigation. */}
-              <span
-                className="home-read-button"
-                role="button"
-                tabIndex={0}
-                data-tip={t`Read next chapter`}
-                aria-label={t`Read next chapter`}
-                onClick={openReader}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') openReader(e)
-                }}
-              >
-                <IconPlayerPlayFilled size={10} />
               </span>
             </div>
           )}

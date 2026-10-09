@@ -163,7 +163,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
     try {
       await work()
     } catch (cause) {
-      setActionError(String(cause))
+      setActionError(errorText(cause))
     } finally {
       setPending((prev) => {
         const next = new Set(prev)
@@ -335,13 +335,14 @@ function AnimeSignalsPanel() {
     try {
       await sync.mutateAsync()
     } catch (cause) {
-      setSyncError(String(cause))
+      setSyncError(errorText(cause))
     }
   }
 
   if (isLoading || !data) {
+    const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {errorText(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
     ) : null
   }
 

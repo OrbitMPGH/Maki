@@ -193,7 +193,7 @@ export function CustomRailForm({
               onChange={(v) => changePlacement(v as CustomRailPlacement)}
               data={[
                 { value: 'home', label: t`Home` },
-                { value: 'discover', label: t`Discover` },
+                { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
               ]}
             />
           </Stack>

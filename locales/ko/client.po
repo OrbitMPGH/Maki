@@ -940,6 +940,10 @@ msgstr "{missingCount, plural, other {없는 챕터 #개 추가}}"
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames}에 챕터 스냅샷을 저장해야 Maki가 목록을 안전하게 정리할 수 있습니다. 이후 소스에서 제거된 항목은 저장된 스냅샷을 사용하므로 소스 요청을 보내지 않습니다."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
@@ -947,8 +951,8 @@ msgstr "{missingWanted, plural, other {#개 원함, 가져오지 않음}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{missingWanted} wanted chapter(s) are missing"
-msgstr "원하는 챕터 {missingWanted}개가 누락됨"
+#~ msgid "{missingWanted} wanted chapter(s) are missing"
+#~ msgstr "원하는 챕터 {missingWanted}개가 누락됨"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -1004,6 +1008,14 @@ msgstr "{name}: {ok}/{total} 성공, 첫 오류: {firstError}"
 #, fuzzy
 msgid "{name}: {reason}"
 msgstr "{name}: {reason}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped after {ok}/{total}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
+msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
@@ -1212,6 +1224,10 @@ msgstr "{review, plural, other {가져오기 결정 대기 중인 다운로드 #
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {라이브러리의 시리즈 {series}개에 걸친 챕터 #개에서 측정: 픽셀당 {bpp}비트, JPG 환산.}}"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{searchCap}+ matches"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -1226,6 +1242,10 @@ msgstr "{selectedCount, plural, other {폴더 #개 가져올까요?}}"
 #, fuzzy
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr "{selectedCount, plural, other {선택 항목 #개 가져오기}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -2257,6 +2277,10 @@ msgstr "라이브러리에 {title} 추가"
 #, fuzzy
 msgid "Add a rail"
 msgstr "섹션 추가"
+
+#: src/pages/ImportPage.tsx
+msgid "Add a root folder in Settings, then come back to scan it for series to import."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -3451,6 +3475,10 @@ msgstr "C:\\Manga (선택 사항)"
 #, fuzzy
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga 또는 /library"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Can't load this import"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -4666,8 +4694,13 @@ msgstr ""
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
-msgid "Could not load anime signals: {0}"
-msgstr "애니메이션 신호를 불러오지 못했습니다: {0}"
+#~ msgid "Could not load anime signals: {0}"
+#~ msgstr "애니메이션 신호를 불러오지 못했습니다: {0}"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Could not load anime signals: {reason}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4728,15 +4761,27 @@ msgstr "프로필을 읽을 수 없습니다"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "{seriesTitle}을(를) 삭제하지 못했습니다: {reason}"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not restore {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Could not revert this upgrade"
 msgstr "이 업그레이드를 되돌리지 못했습니다"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not undo: {reason}"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "{surface} 피드백을 업데이트하지 못했습니다: {reason}"
+#~ msgid "Could not update {surface} feedback: {reason}"
+#~ msgstr "{surface} 피드백을 업데이트하지 못했습니다: {reason}"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -4757,6 +4802,10 @@ msgstr "알림 연결을 불러오지 못했습니다"
 msgid "Couldn't load requests"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load the details for this title."
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -4764,6 +4813,10 @@ msgstr "이 섹션을 불러오지 못했습니다"
 
 #: src/pages/ActivityPage.tsx
 msgid "Couldn't load this section"
+msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load this title"
 msgstr ""
 
 #: src/pages/HomePage.tsx
@@ -5284,6 +5337,11 @@ msgstr "사용자 삭제"
 msgid "Deleted \"{name}\""
 msgstr "\"{name}\" 삭제됨"
 
+#: src/components/DiscoverPresets.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Deleted saved filter {name}."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
 msgstr ""
@@ -5320,8 +5378,8 @@ msgstr "밀도: {densityLabel}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
-msgid "Describe what you're after, a title, or author:\"Junji Ito\""
-msgstr "원하는 내용, 제목 또는 작가를 설명하세요:\"Junji Ito\""
+#~ msgid "Describe what you're after, a title, or author:\"Junji Ito\""
+#~ msgstr "원하는 내용, 제목 또는 작가를 설명하세요:\"Junji Ito\""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -6208,6 +6266,15 @@ msgstr "라이브러리를 불러오지 못했습니다"
 #, fuzzy
 msgid "Failed to load this creator"
 msgstr "이 작가를 불러오지 못했습니다"
+
+#. placeholder {0}: errorText(err)
+#: src/pages/LibraryPage.tsx
+msgid "Failed to restore filter: {0}"
+msgstr ""
+
+#: src/components/DiscoverPresets.tsx
+msgid "Failed to restore filter: {detail}"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
@@ -7386,6 +7453,10 @@ msgstr "이미지 형식"
 #, fuzzy
 msgid "Import"
 msgstr "가져오기"
+
+#: src/pages/ImportPage.tsx
+msgid "Import {folderName}"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -9862,6 +9933,10 @@ msgstr "결과 없음."
 msgid "No reviews on MyAnimeList yet."
 msgstr "MyAnimeList에 아직 리뷰가 없습니다."
 
+#: src/pages/ImportPage.tsx
+msgid "No root folders yet"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
@@ -10808,6 +10883,10 @@ msgstr "앞으로 이 필터로 Recommended 열기"
 #, fuzzy
 msgid "Open series"
 msgstr "시리즈 열기"
+
+#: src/pages/ImportPage.tsx
+msgid "Open settings"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -12763,8 +12842,10 @@ msgstr "{retryCount}회 재시도함 - 다음 시도 {nextAttemptTime}"
 msgid "Retries"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -12914,6 +12995,10 @@ msgstr "다시 뽑기"
 #, fuzzy
 msgid "Romance"
 msgstr "로맨스"
+
+#: src/api/titles.ts
+msgid "Romanized"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/ImportListsSection.tsx
@@ -14681,6 +14766,10 @@ msgstr "{source}에서 아직 얼리 액세스 상태입니다. Maki가 나중�
 msgid "Still going"
 msgstr "계속 읽는 중"
 
+#: src/pages/LibraryPage.tsx
+msgid "Stop"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Stop showing their new titles on Home and Discover"
@@ -14690,6 +14779,10 @@ msgstr "홈과 탐색에서 이들의 신작 표시 중지"
 #, fuzzy
 msgid "Stopped before finishing"
 msgstr "완결 전에 중단함"
+
+#: src/pages/LibraryPage.tsx
+msgid "Stopping"
+msgstr ""
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -15489,8 +15582,8 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "보관 파일을 영구 삭제합니다. 챕터 기록과 읽기 기록은 유지됩니다."
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
-msgstr ""
+#~ msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
+#~ msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -16115,8 +16208,10 @@ msgid "Underscore (_)"
 msgstr "밑줄 (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo"
@@ -16125,8 +16220,12 @@ msgstr "실행 취소"
 #. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Undo failed: {0}"
-msgstr "실행 취소 실패: {0}"
+#~ msgid "Undo failed: {0}"
+#~ msgstr "실행 취소 실패: {0}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {reason}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -16687,6 +16786,10 @@ msgstr "보기"
 msgid "View {title}"
 msgstr "{title} 보기"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -16704,6 +16807,7 @@ msgstr "활동 보기"
 msgid "View and add {title}"
 msgstr "{title} 보고 추가"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "View in library"

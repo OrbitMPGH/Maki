@@ -779,13 +779,17 @@ msgstr "{missingCount, plural, one {adds # chapter you don't have} other {adds #
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 msgstr "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
+msgstr "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
+
 #: src/components/series/SeriesHero.tsx
 msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
 msgstr "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "{missingWanted} wanted chapter(s) are missing"
-msgstr "{missingWanted} wanted chapter(s) are missing"
+#~ msgid "{missingWanted} wanted chapter(s) are missing"
+#~ msgstr "{missingWanted} wanted chapter(s) are missing"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
@@ -830,6 +834,14 @@ msgstr "{name}: {ok}/{total} succeeded, first error: {firstError}"
 #: src/pages/ImportPage.tsx
 msgid "{name}: {reason}"
 msgstr "{name}: {reason}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped after {ok}/{total}"
+msgstr "{name}: stopped after {ok}/{total}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
+msgstr "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
@@ -1000,6 +1012,10 @@ msgstr "{review, plural, one {# download waiting for an import decision} other {
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{searchCap}+ matches"
+msgstr "{searchCap}+ matches"
+
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
 msgstr "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -1011,6 +1027,10 @@ msgstr "{selectedCount, plural, one {Import # folder?} other {Import # folders?}
 #: src/pages/ImportPage.tsx
 msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 msgstr "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+msgstr "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
 
 #: src/components/RatingImportModal.tsx
 msgid "{selectedCount} of {totalCount} selected"
@@ -1850,6 +1870,10 @@ msgstr "Add {title} to library"
 #: src/components/rails/CustomRailSection.tsx
 msgid "Add a rail"
 msgstr "Add a rail"
+
+#: src/pages/ImportPage.tsx
+msgid "Add a root folder in Settings, then come back to scan it for series to import."
+msgstr "Add a root folder in Settings, then come back to scan it for series to import."
 
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -2833,6 +2857,10 @@ msgstr "C:\\Manga (optional)"
 #: src/pages/settings/LibraryCards.tsx
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga or /library"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Can't load this import"
+msgstr "Can't load this import"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
@@ -3839,8 +3867,13 @@ msgstr "Could not link that single sign-on account"
 #. placeholder {0}: errorText(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-msgid "Could not load anime signals: {0}"
-msgstr "Could not load anime signals: {0}"
+#~ msgid "Could not load anime signals: {0}"
+#~ msgstr "Could not load anime signals: {0}"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Could not load anime signals: {reason}"
+msgstr "Could not load anime signals: {reason}"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
@@ -3890,13 +3923,25 @@ msgstr "Could not read your profile"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "Could not remove {seriesTitle}: {reason}"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not restore {seriesTitle}: {reason}"
+msgstr "Could not restore {seriesTitle}: {reason}"
+
 #: src/pages/ActivityPage.tsx
 msgid "Could not revert this upgrade"
 msgstr "Could not revert this upgrade"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
-msgid "Could not update {surface} feedback: {reason}"
-msgstr "Could not update {surface} feedback: {reason}"
+msgid "Could not undo: {reason}"
+msgstr "Could not undo: {reason}"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+#~ msgid "Could not update {surface} feedback: {reason}"
+#~ msgstr "Could not update {surface} feedback: {reason}"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update feedback: {reason}"
+msgstr "Could not update feedback: {reason}"
 
 #: src/api/queue.ts
 msgid "Could not write the chapter to disk"
@@ -3914,6 +3959,10 @@ msgstr "Couldn't load notification connections"
 msgid "Couldn't load requests"
 msgstr "Couldn't load requests"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load the details for this title."
+msgstr "Couldn't load the details for this title."
+
 #: src/components/rails/CustomRailSection.tsx
 msgid "Couldn't load this rail"
 msgstr "Couldn't load this rail"
@@ -3921,6 +3970,10 @@ msgstr "Couldn't load this rail"
 #: src/pages/ActivityPage.tsx
 msgid "Couldn't load this section"
 msgstr "Couldn't load this section"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load this title"
+msgstr "Couldn't load this title"
 
 #: src/pages/HomePage.tsx
 msgid "Couldn't load your library"
@@ -4351,6 +4404,11 @@ msgstr "Delete user"
 msgid "Deleted \"{name}\""
 msgstr "Deleted \"{name}\""
 
+#: src/components/DiscoverPresets.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Deleted saved filter {name}."
+msgstr "Deleted saved filter {name}."
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
 msgstr "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
@@ -4380,8 +4438,8 @@ msgid "Density: {densityLabel}"
 msgstr "Density: {densityLabel}"
 
 #: src/pages/DiscoverPage.tsx
-msgid "Describe what you're after, a title, or author:\"Junji Ito\""
-msgstr "Describe what you're after, a title, or author:\"Junji Ito\""
+#~ msgid "Describe what you're after, a title, or author:\"Junji Ito\""
+#~ msgstr "Describe what you're after, a title, or author:\"Junji Ito\""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Description"
@@ -5105,6 +5163,15 @@ msgstr "Failed to load library"
 #: src/pages/CreatorPage.tsx
 msgid "Failed to load this creator"
 msgstr "Failed to load this creator"
+
+#. placeholder {0}: errorText(err)
+#: src/pages/LibraryPage.tsx
+msgid "Failed to restore filter: {0}"
+msgstr "Failed to restore filter: {0}"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Failed to restore filter: {detail}"
+msgstr "Failed to restore filter: {detail}"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6076,6 +6143,10 @@ msgstr "Image formats"
 #: src/pages/ImportPage.tsx
 msgid "Import"
 msgstr "Import"
+
+#: src/pages/ImportPage.tsx
+msgid "Import {folderName}"
+msgstr "Import {folderName}"
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -8110,6 +8181,10 @@ msgstr "No results."
 msgid "No reviews on MyAnimeList yet."
 msgstr "No reviews on MyAnimeList yet."
 
+#: src/pages/ImportPage.tsx
+msgid "No root folders yet"
+msgstr "No root folders yet"
+
 #: src/components/CatalogueRules.tsx
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
 msgstr "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
@@ -8891,6 +8966,10 @@ msgstr "Open Recommended with these filters from now on"
 #: src/pages/RequestsPage.tsx
 msgid "Open series"
 msgstr "Open series"
+
+#: src/pages/ImportPage.tsx
+msgid "Open settings"
+msgstr "Open settings"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Open source page"
@@ -10503,8 +10582,10 @@ msgstr "Retried {retryCount}x - next attempt {nextAttemptTime}"
 msgid "Retries"
 msgstr "Retries"
 
+#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -10627,6 +10708,10 @@ msgstr "Roll again"
 #: src/components/CatalogueFilters.tsx
 msgid "Romance"
 msgstr "Romance"
+
+#: src/api/titles.ts
+msgid "Romanized"
+msgstr "Romanized"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/ImportListsSection.tsx
@@ -12087,6 +12172,10 @@ msgstr "Still early access on {source}, Maki will check again later"
 msgid "Still going"
 msgstr "Still going"
 
+#: src/pages/LibraryPage.tsx
+msgid "Stop"
+msgstr "Stop"
+
 #: src/pages/CreatorPage.tsx
 msgid "Stop showing their new titles on Home and Discover"
 msgstr "Stop showing their new titles on Home and Discover"
@@ -12094,6 +12183,10 @@ msgstr "Stop showing their new titles on Home and Discover"
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Stopped before finishing"
 msgstr "Stopped before finishing"
+
+#: src/pages/LibraryPage.tsx
+msgid "Stopping"
+msgstr "Stopping"
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -12761,8 +12854,8 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "This permanently deletes the archive. Chapter records and reading history remain."
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
-msgstr "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
+#~ msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
+#~ msgstr "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk and everyone's read history for them."
 
 #: src/api/queue.ts
 msgid "This queue item has no chapter to find a source for"
@@ -13271,16 +13364,22 @@ msgid "Underscore (_)"
 msgstr "Underscore (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Undo"
 msgstr "Undo"
 
 #. placeholder {0}: errorText(error)
 #: src/pages/SeriesDetailPage.tsx
-msgid "Undo failed: {0}"
-msgstr "Undo failed: {0}"
+#~ msgid "Undo failed: {0}"
+#~ msgstr "Undo failed: {0}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {reason}"
+msgstr "Undo failed: {reason}"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Undone"
@@ -13740,6 +13839,10 @@ msgstr "View"
 msgid "View {title}"
 msgstr "View {title}"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "View {title} in library"
+msgstr "View {title} in library"
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 msgid "View & add"
@@ -13754,6 +13857,7 @@ msgstr "View activity"
 msgid "View and add {title}"
 msgstr "View and add {title}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View in library"
 msgstr "View in library"
