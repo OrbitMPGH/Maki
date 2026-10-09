@@ -406,6 +406,12 @@ public class ScrobbleService(
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
 
+        var readingEnabled = new Dictionary<string, bool>();
+        foreach (var tracker in trackers)
+        {
+            readingEnabled[tracker.Name] = await SyncReadingEnabledAsync(userId, tracker.Name, ct);
+        }
+
         foreach (var series in seriesList)
         {
             ct.ThrowIfCancellationRequested();
@@ -539,7 +545,7 @@ public class ScrobbleService(
             {
                 // Per-tracker "scrobble reading" toggle — skip pushing progress to a tracker the
                 // user turned reading off for (local Rewind stats above are unaffected).
-                if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
+                if (!readingEnabled[tracker.Name])
                 {
                     continue;
                 }
