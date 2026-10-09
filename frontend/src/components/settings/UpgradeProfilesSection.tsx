@@ -31,6 +31,7 @@ import {
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { EmptyState } from '../ui/EmptyState'
 import {
   FORMAT_CONDITION_TYPE_LABELS,
   FORMAT_CONDITION_TYPES,
@@ -694,9 +695,7 @@ export function QualityFormatsSection() {
           <FormatRow key={format.id} format={format} />
         ))}
         {formats && formats.length === 0 && !creating && (
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>No quality formats yet.</Trans>
-          </Text>
+          <EmptyState compact mood="asleep" title={t`No quality formats yet.`} />
         )}
       </Stack>
     </SettingsSection>

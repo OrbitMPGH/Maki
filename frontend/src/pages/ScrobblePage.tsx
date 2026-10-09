@@ -436,9 +436,7 @@ export default function ScrobblePage() {
               })}
             </Stack>
           ) : (
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>Empty.</Trans>
-            </Text>
+            <EmptyState compact mood="asleep" title={t`No activity yet.`} />
           )}
         </ScrollArea.Autosize>
       </Panel>

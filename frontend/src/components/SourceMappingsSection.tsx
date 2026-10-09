@@ -70,6 +70,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { EmptyState } from './ui/EmptyState'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -416,9 +417,7 @@ export function SourceMappingsSection({
 
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
-          <Text c="var(--ink-3)" size="sm">
-            <Trans>No sources linked. Chapters cannot be synced or downloaded.</Trans>
-          </Text>
+          <EmptyState compact mood="asleep" title={t`No sources linked. Chapters cannot be synced or downloaded.`} />
         )
       ) : (
         // A persistent scrollbar, since a hover-to-reveal one gave no hint that Enabled/Refreshed were off the visible edge.
