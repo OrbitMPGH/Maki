@@ -53,9 +53,10 @@ export function BackupSection() {
   const upload = useUploadRestore()
   const saveRetention = useSaveBackupSettings()
 
-  const kindLabel = (kind: string) => (kind === 'auto' ? t`Automatic` : kind === 'manual' ? t`Manual` : kind)
+  const kindLabel = (kind: string) => (kind === 'auto' ? t`Automatic` : kind === 'manual' ? t`Manual` : kind === 'scheduled' ? t`Scheduled` : kind)
 
   const [retention, setRetention] = useState<number>(5)
+  const [scheduled, setScheduled] = useState(false)
   const [target, setTarget] = useState<RestoreTarget | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -64,11 +65,15 @@ export function BackupSection() {
     target?.kind === 'upload' ? target.file.name : target?.kind === 'existing' ? target.name : ''
 
   useEffect(() => {
-    if (retentionSettings) setRetention(retentionSettings.retention)
+    if (retentionSettings) {
+      setRetention(retentionSettings.retention)
+      setScheduled(retentionSettings.scheduled)
+    }
   }, [retentionSettings])
 
   const retentionDirty =
-    retentionSettings !== undefined && Number(retention) !== retentionSettings.retention
+    retentionSettings !== undefined &&
+    (Number(retention) !== retentionSettings.retention || scheduled !== retentionSettings.scheduled)
 
   const restarting = () =>
     notifications.show({
@@ -99,16 +104,20 @@ export function BackupSection() {
         <Trans>
           A zip of the database and <Code>config.json</Code>: every series record, reading history
           and setting, but not the manga files, the MangaBaka copy or covers. One is taken
-          automatically before an upgrade migration. There is no schedule, so take one yourself
-          before big changes.
+          automatically before an upgrade migration. Scheduled backups are off unless you turn
+          them on below, so take one yourself before big changes.
         </Trans>
       }
       dirty={retentionDirty}
       saving={saveRetention.isPending}
-      onDiscard={() => retentionSettings && setRetention(retentionSettings.retention)}
+      onDiscard={() => {
+        if (!retentionSettings) return
+        setRetention(retentionSettings.retention)
+        setScheduled(retentionSettings.scheduled)
+      }}
       onSave={() =>
         saveRetention.mutate(
-          { retention: Number(retention) },
+          { retention: Number(retention), scheduled },
           { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
         )
       }
@@ -201,9 +210,16 @@ export function BackupSection() {
           </FileButton>
         </Group>
 
+        <Switch
+          label={t`Back up on a schedule`}
+          description={t`Checks every hour and takes a backup when the newest one is older than the backup freshness set on the Health page (7 days by default).`}
+          checked={scheduled}
+          onChange={(e) => setScheduled(e.currentTarget.checked)}
+        />
+
         <SettingsNumberInput
           label={t`Backups to keep`}
-          description={t`Per kind: the newest N automatic and the newest N manual backups stay. Older ones are removed when a new backup is taken.`}
+          description={t`Per kind: the newest N automatic, manual and scheduled backups stay. Older ones are removed when a new backup is taken.`}
           min={1}
           max={50}
           value={retention}

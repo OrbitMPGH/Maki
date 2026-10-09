@@ -28,6 +28,17 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     private static readonly SemaphoreSlim Gate = new(1);
     private const string UnmeasuredFilesId = "unmeasured-files";
     private const string UpgradeTrashId = "upgrade-trash";
+    /// <summary>
+    /// With the schedule off nothing keeps a backup fresh, so a stale or missing one is reported as
+    /// disabled rather than warned about forever; a fresh one still reads as healthy.
+    /// </summary>
+    public static (string Status, string Key) BackupCheck(DateTime latestUtc, DateTime nowUtc, int backupDays, bool scheduled)
+    {
+        var key = latestUtc == DateTime.MinValue ? "health.check.noBackup" : "health.check.lastBackup";
+        if (latestUtc >= nowUtc.AddDays(-backupDays)) return ("healthy", key);
+        return scheduled ? ("warning", key) : ("disabled", "health.check.backupScheduleOff");
+    }
+
     public async Task RefreshAsync(CancellationToken ct)
     {
         if (!await Gate.WaitAsync(0, ct)) return;
@@ -108,11 +119,11 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     await settings.GetAsync(SettingKeys.QBittorrentUsername, token) ?? "", await settings.GetAsync(SettingKeys.QBittorrentPassword, token) ?? "", token));
             try
             {
-                var latest = Directory.EnumerateFiles(paths.BackupDir, "*.zip").Select(File.GetLastWriteTimeUtc).DefaultIfEmpty(DateTime.MinValue).Max();
-                Add("backup", "system",
-                    latest < DateTime.UtcNow.AddDays(-options.BackupDays) ? "warning" : "healthy",
-                    latest == DateTime.MinValue ? "health.check.noBackup" : "health.check.lastBackup",
-                    latest == DateTime.MinValue ? null : new { at = latest },
+                var latest = BackupService.NewestBackupUtc(paths);
+                var scheduled = await settings.GetAsync(SettingKeys.BackupScheduled, ct) == "true";
+                var (status, key) = BackupCheck(latest, DateTime.UtcNow, options.BackupDays, scheduled);
+                Add("backup", "system", status, key,
+                    key == "health.check.lastBackup" ? new { at = latest } : null,
                     "/settings?tab=system&s=backup");
             }
             catch { Add("backup", "system", "unavailable", "health.check.backupUnreadable"); }

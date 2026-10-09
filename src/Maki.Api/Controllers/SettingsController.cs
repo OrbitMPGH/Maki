@@ -158,7 +158,7 @@ public class SettingsController(
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
-    public record BackupSettings(int Retention);
+    public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
     /// <param name="UserId">
@@ -1134,7 +1134,8 @@ public class SettingsController(
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("backup")]
     public async Task<IActionResult> GetBackup(CancellationToken ct) => Ok(new BackupSettings(
-        int.TryParse(await settings.GetAsync(SettingKeys.BackupRetention, ct), out var n) ? n : 5));
+        int.TryParse(await settings.GetAsync(SettingKeys.BackupRetention, ct), out var n) ? n : 5,
+        await settings.GetAsync(SettingKeys.BackupScheduled, ct) == "true"));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("backup")]
@@ -1149,7 +1150,12 @@ public class SettingsController(
             SettingKeys.BackupRetention,
             request.Retention.ToString(CultureInfo.InvariantCulture),
             ct);
-        return Ok(request);
+        if (request.Scheduled is { } scheduled)
+        {
+            await settings.SetAsync(SettingKeys.BackupScheduled, scheduled ? "true" : "false", ct);
+        }
+
+        return await GetBackup(ct);
     }
 
     /// <summary>

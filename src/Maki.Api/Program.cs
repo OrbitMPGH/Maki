@@ -1182,6 +1182,16 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
+        // Opt-in scheduled backup (backup.scheduled). The job itself decides whether the newest
+        // backup is stale, so the hourly tick is cheap when nothing is due.
+        q.AddJob<Maki.Api.Jobs.ScheduledBackupJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ScheduledBackupJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ScheduledBackupJob.Key)
+            .WithIdentity("scheduled-backup-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
+
         // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per
         // series, so it only ever runs when an admin asks for it from System settings.
         q.AddJob<Maki.Api.Jobs.ImageCacheRebuildJob>(j => j

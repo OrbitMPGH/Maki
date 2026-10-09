@@ -1687,8 +1687,8 @@ msgid "A watched anime counts for as much as a manga you rated yourself."
 msgstr "A watched anime counts for as much as a manga you rated yourself."
 
 #: src/pages/settings/SystemCards.tsx
-msgid "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. There is no schedule, so take one yourself before big changes."
-msgstr "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. There is no schedule, so take one yourself before big changes."
+msgid "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. Scheduled backups are off unless you turn them on below, so take one yourself before big changes."
+msgstr "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. Scheduled backups are off unless you turn them on below, so take one yourself before big changes."
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Abandoned"
@@ -2509,6 +2509,10 @@ msgstr "Back to the series"
 msgid "Back up now"
 msgstr "Back up now"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Back up on a schedule"
+msgstr "Back up on a schedule"
+
 #: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -3241,6 +3245,10 @@ msgstr "Checked after each nightly catalogue update. Follow someone from their c
 #: src/components/MetadataDumpProgress.tsx
 msgid "Checking for a new metadata snapshot"
 msgstr "Checking for a new metadata snapshot"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Checks every hour and takes a backup when the newest one is older than the backup freshness set on the Health page (7 days by default)."
+msgstr "Checks every hour and takes a backup when the newest one is older than the backup freshness set on the Health page (7 days by default)."
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Checks GitHub daily for a new release and shows a card in the sidebar and a notification when there is one. Updating is manual: {howToUpdate}."
@@ -8973,8 +8981,8 @@ msgid "per chapter"
 msgstr "per chapter"
 
 #: src/pages/settings/SystemCards.tsx
-msgid "Per kind: the newest N automatic and the newest N manual backups stay. Older ones are removed when a new backup is taken."
-msgstr "Per kind: the newest N automatic and the newest N manual backups stay. Older ones are removed when a new backup is taken."
+msgid "Per kind: the newest N automatic, manual and scheduled backups stay. Older ones are removed when a new backup is taken."
+msgstr "Per kind: the newest N automatic, manual and scheduled backups stay. Older ones are removed when a new backup is taken."
 
 #: src/components/NamingTokenModal.tsx
 msgid "Period (.)"
@@ -10687,6 +10695,10 @@ msgstr "Scanning the MangaBaka database for matches…"
 #: src/pages/ImportPage.tsx
 msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
 msgstr "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Scheduled"
+msgstr "Scheduled"
 
 #: src/components/CatalogueFilters.tsx
 msgid "School Life"

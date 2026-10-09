@@ -139,6 +139,11 @@ public class BackupService(
         }
     }
 
+    /// <summary>Write time of the newest backup zip of any kind, or <see cref="DateTime.MinValue"/> when there is none.</summary>
+    public static DateTime NewestBackupUtc(AppPaths paths) =>
+        Directory.EnumerateFiles(paths.BackupDir, "*.zip").Select(File.GetLastWriteTimeUtc)
+            .DefaultIfEmpty(DateTime.MinValue).Max();
+
     public IReadOnlyList<BackupInfo> List()
     {
         if (!Directory.Exists(paths.BackupDir))
