@@ -342,6 +342,11 @@ msgstr "{0, plural, one {Plik tomu obejmujący # rozdział} few {Plik tomu obejm
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Oznaczono jako chciane: # rozdział} few {Oznaczono jako chciane: # rozdziały} many {Oznaczono jako chciane: # rozdziałów} other {Oznaczono jako chciane: # rozdziału}}"
 
+#. placeholder {0}: percent(item.measure)
+#: src/pages/discover/TasteTab.tsx
+msgid "{0} in"
+msgstr ""
+
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

@@ -340,9 +340,7 @@ export interface BehaviourSeries {
   seriesId: number
   title: string
   coverUrl: string | null
-  /** Pre-formatted server-side, because the three lists measure different things. */
-  value: string
-  /** The number behind `value`, for pages that format it themselves. */
+  /** Median seconds per chapter for savoured and devoured, the completion fraction (0 to 1) for abandoned. */
   measure: number
 }
 
