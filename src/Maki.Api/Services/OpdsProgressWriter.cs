@@ -112,7 +112,10 @@ public sealed class OpdsProgressWriter(IServiceScopeFactory scopes, ILogger<Opds
                 existing is { Watched: false } || pending.LastPageAfterEarlierFetch, pending.Page, slice.PageCount);
             // No reading time: a page fetch says a page was asked for, not that anybody was
             // looking at it, and readers that prefetch would bill a whole chapter in one burst.
-            await reader.SaveProgressAsync(slice, pending.Page, completed, ReaderService.TimeReport.None, ct);
+            // A lone last-page prefetch keeps the row but not the position: resuming at the last page
+            // would make Continue jump to a chapter nobody opened.
+            var page = completed == false ? 0 : pending.Page;
+            await reader.SaveProgressAsync(slice, page, completed, ReaderService.TimeReport.None, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

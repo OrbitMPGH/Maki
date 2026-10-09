@@ -126,6 +126,21 @@ public sealed class OpdsProgressWriterTests : IDisposable
     }
 
     [Fact]
+    public async Task A_lone_last_page_prefetch_does_not_leave_a_resume_position()
+    {
+        var userId = _db.SeedUser("reader");
+        var chapterId = SeedChapter();
+        var writer = Writer();
+
+        writer.Enqueue(userId, true, chapterId, page: Pages - 1, pageCount: Pages);
+        await writer.FlushAsync(default);
+
+        var row = Progress(chapterId)!;
+        Assert.Equal(0, row.PageIndex);
+        Assert.False(row.Completed);
+    }
+
+    [Fact]
     public async Task A_lone_last_page_prefetch_does_not_turn_a_watched_chapter_into_a_read()
     {
         var userId = _db.SeedUser("reader");
