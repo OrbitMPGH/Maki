@@ -227,6 +227,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // so it must be unique and it must be indexed — every OPDS page image goes through it.
             e.HasIndex(k => k.KeyHash).IsUnique();
             e.HasIndex(k => k.UserId);
+            // One live OPDS key per user. A plain API key may have several, hence the Scope term. In the
+            // model so a table rebuild keeps it and EnsureCreated builds it (Scope = 1 is Opds).
+            e.HasIndex(k => new { k.UserId, k.Scope }, "IX_UserApiKeys_Opds_Live_UserId")
+                .IsUnique()
+                .HasFilter("RevokedAt IS NULL AND Scope = 1");
             e.HasOne<MakiUser>().WithMany().HasForeignKey(k => k.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -360,8 +365,6 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
         modelBuilder.Entity<AuthEvent>(e =>
         {
-            e.HasIndex(a => a.Timestamp);
-            e.HasIndex(a => a.UserId);
             // No FK to MakiUser: a failed login for a username that does not exist has no user to
             // point at, and the row must outlive a deleted account (UserName is denormalized for
             // exactly that).
@@ -432,6 +435,9 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // ignores the owner.
             e.HasIndex(r => new { r.Status, r.Created });
             e.HasIndex(r => new { r.UserId, r.Created });
+            // IX_SeriesRequests_Pending_Identity (a unique partial index over COALESCE expressions) exists
+            // only in the SeriesRequestPendingUnique migration; EF cannot model it. Any migration that makes
+            // SQLite rebuild this table must re-create it.
 
             // REAL, for the same reason Chapter.Number is: a decimal lands in SQLite as TEXT, and
             // these two are compared against chapter numbers. Keeping both sides in one
