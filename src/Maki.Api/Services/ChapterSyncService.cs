@@ -43,10 +43,11 @@ public class ChapterSyncService(
     {
         var series = await db.Series
             .Include(s => s.SourceMappings)
-            .ThenInclude(m => m.ChapterLinks)
             .FirstOrDefaultAsync(s => s.Id == seriesId, ct)
             ?? throw new InvalidOperationException($"Series {seriesId} not found");
 
+        // Loading every chapter's links also fills each mapping's ChapterLinks through fix-up, so the
+        // series read does not repeat them.
         var existing = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
             .Include(c => c.SourceLinks)
