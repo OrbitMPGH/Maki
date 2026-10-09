@@ -3,7 +3,13 @@ using Maki.Api.Auth;
 using Maki.Api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Maki.Api.Tests;
 
@@ -13,11 +19,15 @@ namespace Maki.Api.Tests;
 /// legitimate in places and both are exactly what a forgotten attribute looks like. A new action that
 /// lands in either group fails here until someone reads it and adds it to the list below.
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public sealed class ControllerAuthorizationInventoryTests
 {
     private static readonly string[] ReadVerbs = ["GET", "HEAD", "OPTIONS"];
 
-    private sealed record Action(string Name, string[] Verbs, bool Anonymous, bool HasPolicy);
+    private sealed record Action(string Name, string[] Verbs, bool Anonymous, string[] Policies)
+    {
+        public bool HasPolicy => Policies.Length > 0;
+    }
 
     private static IEnumerable<Action> Actions()
     {
@@ -48,7 +58,8 @@ public sealed class ControllerAuthorizationInventoryTests
                     $"{controller.Name}.{method.Name}",
                     verbs,
                     all.OfType<AllowAnonymousAttribute>().Any(),
-                    all.OfType<AuthorizeAttribute>().Any(a => !string.IsNullOrEmpty(a.Policy)));
+                    all.OfType<AuthorizeAttribute>().Select(a => a.Policy).OfType<string>()
+                        .Where(p => p.Length > 0).Distinct().ToArray());
             }
         }
     }
@@ -74,11 +85,56 @@ public sealed class ControllerAuthorizationInventoryTests
     }
 
     [Fact]
-    public void Settings_reads_and_writes_are_admin_except_the_reviewed_per_user_ones()
+    public void Settings_actions_are_admin_except_the_reviewed_ones()
     {
-        var found = Names(Actions().Where(a => a.Name.StartsWith("SettingsController.") && !a.HasPolicy));
+        var settings = Actions().Where(a => a.Name.StartsWith("SettingsController.")).ToList();
 
-        Assert.True(found.SequenceEqual(SettingsWithoutPolicy), Diff(found, SettingsWithoutPolicy));
+        var notAdmin = settings
+            .Where(a => !a.Policies.SequenceEqual([Auth.Policies.Admin]))
+            .Select(a => $"{a.Name}={(a.HasPolicy ? string.Join("+", a.Policies) : "none")}")
+            .Distinct().Order(StringComparer.Ordinal).ToArray();
+
+        Assert.True(notAdmin.SequenceEqual(SettingsNotAdmin), Diff(notAdmin, SettingsNotAdmin));
+    }
+
+    [Fact]
+    public void Endpoints_outside_the_controllers_are_the_reviewed_ones()
+    {
+        var previous = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
+        var configDir = Path.Combine(Path.GetTempPath(), "maki-inventory-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(configDir);
+        CookieSession.EnsureWebRoot();
+        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", configDir);
+        try
+        {
+            using var factory = new WebApplicationFactory<Program>();
+            var found = factory.Services.GetServices<EndpointDataSource>()
+                .SelectMany(d => d.Endpoints)
+                .OfType<RouteEndpoint>()
+                .Where(e => e.Metadata.GetMetadata<ControllerActionDescriptor>() is null)
+                .Select(e =>
+                {
+                    var verbs = e.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods;
+                    var access = e.Metadata.GetMetadata<IAllowAnonymous>() is not null
+                        ? "anonymous"
+                        : e.Metadata.GetOrderedMetadata<IAuthorizeData>().Any() ? "authorize" : "fallback policy";
+                    return $"{(verbs is null ? "ANY" : string.Join("/", verbs))} {e.RoutePattern.RawText} ({access})";
+                })
+                .Distinct().Order(StringComparer.Ordinal).ToArray();
+
+            Assert.True(found.SequenceEqual(OtherEndpoints), Diff(found, OtherEndpoints));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", previous);
+            try
+            {
+                Directory.Delete(configDir, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+        }
     }
 
     private static string Diff(string[] found, string[] expected) =>
@@ -187,20 +243,38 @@ public sealed class ControllerAuthorizationInventoryTests
         "ScrobbleController.OAuthCallback",
     ];
 
-    /// <summary>Per-user settings and the reads the shell needs before it knows whether the caller is an admin.</summary>
-    private static readonly string[] SettingsWithoutPolicy =
+    /// <summary>
+    /// Every SettingsController action that is not admin-only, with the policy it has instead. The
+    /// per-user settings and the reads the shell needs before it knows whether the caller is an admin.
+    /// </summary>
+    private static readonly string[] SettingsNotAdmin =
     [
-        "SettingsController.GetAnnouncements",
-        "SettingsController.GetDiscover",
-        "SettingsController.GetLibrary",
-        "SettingsController.GetMetadata",
-        "SettingsController.GetNamingTokens",
-        "SettingsController.GetReader",
-        "SettingsController.GetSetup",
-        "SettingsController.GetUi",
-        "SettingsController.SeenAppearanceAnnouncement",
-        "SettingsController.SeenLanguageAnnouncement",
-        "SettingsController.SetReader",
-        "SettingsController.SetUi",
+        "SettingsController.GetAnnouncements=none",
+        "SettingsController.GetDiscover=none",
+        "SettingsController.GetLibrary=none",
+        "SettingsController.GetMetadata=none",
+        "SettingsController.GetNamingTokens=none",
+        "SettingsController.GetOpds=UseOpds",
+        "SettingsController.GetReader=none",
+        "SettingsController.GetScrobble=UseTrackers",
+        "SettingsController.GetSetup=none",
+        "SettingsController.GetUi=none",
+        "SettingsController.RotateOpdsToken=UseOpds",
+        "SettingsController.SeenAppearanceAnnouncement=none",
+        "SettingsController.SeenLanguageAnnouncement=none",
+        "SettingsController.SetDiscover=ChangeContentRating",
+        "SettingsController.SetOpds=UseOpds",
+        "SettingsController.SetReader=none",
+        "SettingsController.SetScrobble=UseTrackers",
+        "SettingsController.SetUi=none",
+    ];
+
+    /// <summary>Everything mapped outside the controllers: the SPA bootstrap, the SPA fallback and the hub.</summary>
+    private static readonly string[] OtherEndpoints =
+    [
+        "ANY /signalr/events (authorize)",
+        "ANY /signalr/events/negotiate (authorize)",
+        "GET /initialize.json (anonymous)",
+        "GET/HEAD {*path:nonfile} (anonymous)",
     ];
 }
