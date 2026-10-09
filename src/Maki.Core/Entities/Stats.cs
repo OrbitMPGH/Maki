@@ -2,21 +2,22 @@ using Maki.Core.Security;
 
 namespace Maki.Core.Entities;
 
+/// <summary>Stored as an integer in the never-purged activity log: append only, never renumber or reuse.</summary>
 public enum StatsEventType
 {
-    SeriesAdded,
-    SeriesRemoved,
-    ChapterDownloaded,
-    ChaptersRead,
-    VolumesRead,
-    SeriesFinished,
+    SeriesAdded = 0,
+    SeriesRemoved = 1,
+    ChapterDownloaded = 2,
+    ChaptersRead = 3,
+    VolumesRead = 4,
+    SeriesFinished = 5,
 
     /// <summary>
     /// Seconds spent reading, in <see cref="StatsEvent.Value"/> like every other type — the one
     /// event whose value is not a count of things. Emitted by the built-in reader only, in chunks
     /// (see <c>ChapterProgress.ReportedSeconds</c>), so a series accumulates several per sitting.
     /// </summary>
-    ReadingTime
+    ReadingTime = 6
 }
 
 /// <summary>
