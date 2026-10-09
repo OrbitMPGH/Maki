@@ -6,6 +6,8 @@ using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Indexers;
+using Maki.Core.Inbox;
+using Maki.Core.Notifications;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -15,6 +17,8 @@ public class CompletedDownloadJobTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly FakeQbt _qbt = new();
+    private readonly RecordingNotifications _notifications = new();
+    private readonly RecordingInbox _inbox = new();
     private int _seriesId;
 
     public CompletedDownloadJobTests()
@@ -65,7 +69,8 @@ public class CompletedDownloadJobTests : IDisposable
             NullLogger<TorrentImportService>.Instance);
         var job = new CompletedDownloadJob(
             db, releases, _qbt, importer, new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
-            null!, NullLogger<CompletedDownloadJob>.Instance);
+            null!, _notifications, _inbox, new TestLocalizer(), new TestUserLocaleResolver(),
+            NullLogger<CompletedDownloadJob>.Instance);
         await job.Execute(new TestJobContext());
     }
 
@@ -85,6 +90,40 @@ public class CompletedDownloadJobTests : IDisposable
         var item = Reload(id);
         Assert.Equal(QueueStatus.Failed, item.Status);
         Assert.Equal("error.download.torrentMissing", item.ErrorKey);
+
+        var sent = Assert.Single(_notifications.Sent);
+        Assert.Equal(NotificationEventType.DownloadFailed, sent.Type);
+        Assert.Contains("error.download.torrentMissing", sent.Message.Body);
+        Assert.Empty(_inbox.RaisedForSeries);
+    }
+
+    [Fact]
+    public async Task An_automatic_torrent_failure_also_reaches_the_inbox()
+    {
+        var id = SeedItem(QueueStatus.Downloading, hash: null, DateTime.UtcNow.AddHours(-3));
+        using (var db = _db.NewContext())
+        {
+            db.DownloadQueue.Single(q => q.Id == id).Origin = DownloadOrigin.MonitorRefresh;
+            db.SaveChanges();
+        }
+
+        await RunAsync();
+
+        var raised = Assert.Single(_inbox.RaisedForSeries);
+        Assert.Equal(InboxEventType.DownloadFailed, raised.Type);
+        Assert.Equal("inbox.download.failed", raised.Message.Key);
+        Assert.Equal("error.download.torrentMissing", raised.Message.Params!["error"]);
+    }
+
+    [Fact]
+    public async Task A_failure_already_announced_is_not_announced_again_on_the_next_poll()
+    {
+        SeedItem(QueueStatus.Downloading, hash: null, DateTime.UtcNow.AddHours(-3));
+
+        await RunAsync();
+        await RunAsync();
+
+        Assert.Single(_notifications.Sent);
     }
 
     [Fact]

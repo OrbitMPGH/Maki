@@ -3,10 +3,13 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Entities;
+using Maki.Core.Inbox;
 using Maki.Core.Indexers;
+using Maki.Core.Notifications;
 using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +36,10 @@ public class CompletedDownloadJob(
     TorrentImportService importer,
     EventBroadcaster events,
     ISchedulerFactory schedulerFactory,
+    NotificationService notifications,
+    InboxService inbox,
+    IMessageCatalog localizer,
+    IUserLocaleResolver locales,
     ILogger<CompletedDownloadJob> logger) : IJob
 {
     /// <summary>How long a torrent whose hash is known may be missing from qBittorrent before its row fails.</summary>
@@ -119,6 +126,9 @@ public class CompletedDownloadJob(
                 .OfType<string>());
         }
 
+        // Sent after the poll's single save, so a failed save cannot announce the same row twice.
+        var announcements = new List<(DownloadQueueItem Item, bool Parked)>();
+
         foreach (var item in pending)
         {
             var info = ReleaseInfoOf(item);
@@ -158,6 +168,7 @@ public class CompletedDownloadJob(
                     item.Status = QueueStatus.Failed;
                     item.SetError("error.download.torrentMissing");
                     await BroadcastAsync(item);
+                    announcements.Add((item, false));
                 }
                 else if (info.TorrentHash is not null && item.Status != QueueStatus.AwaitingImport &&
                          DateTime.UtcNow - MissingSince.GetOrAdd(item.Id, DateTime.UtcNow) > MissingTorrentGrace)
@@ -168,6 +179,7 @@ public class CompletedDownloadJob(
                     item.SetError("error.download.torrentRemoved");
                     MissingSince.TryRemove(item.Id, out _);
                     await BroadcastAsync(item);
+                    announcements.Add((item, false));
                 }
 
                 continue;
@@ -219,9 +231,112 @@ public class CompletedDownloadJob(
             {
                 await BroadcastAsync(item);
             }
+
+            if (item.Status != previousStatus && item.Status is QueueStatus.Failed or QueueStatus.AwaitingImport)
+            {
+                announcements.Add((item, item.Status == QueueStatus.AwaitingImport));
+            }
         }
 
         await db.SaveChangesAsync(ct);
+
+        foreach (var (announced, parked) in announcements)
+        {
+            try
+            {
+                await AnnounceAsync(announced, parked, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Could not announce torrent '{Title}'", announced.Title);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tells people about a torrent row that stopped, the way the scraper pipeline does for a failed
+    /// chapter: a chat or webhook message in the instance language (never for an upgrade, which
+    /// leaves the library as it was) and, for an automatic grab, an inbox row. A parked import needs
+    /// somebody to decide, so it also reaches the inbox for a grab the user started themselves.
+    /// </summary>
+    private async Task AnnounceAsync(DownloadQueueItem item, bool parked, CancellationToken ct)
+    {
+        var locale = await locales.DefaultAsync(ct);
+        var series = item.Series?.Title ?? localizer.GetFor(locale, "inbox.unknownSeries");
+        var isUpgrade = item.Origin == DownloadOrigin.Upgrade || item.UpgradeInfoJson is not null;
+        var release = item.Title ?? string.Empty;
+
+        if (parked)
+        {
+            if (!isUpgrade)
+            {
+                notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
+                    NotificationEventType.DownloadFailed,
+                    Title: localizer.GetFor(locale, "notify.import.awaiting.title"),
+                    Body: localizer.GetFor(locale, "notify.import.awaiting.body", new { series, release }),
+                    Level: NotificationLevel.Warning,
+                    SeriesTitle: item.Series?.Title,
+                    SeriesId: item.SeriesId));
+            }
+
+            inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
+                Key: "inbox.import.awaiting",
+                Params: InboxMessage.Args(new { release }),
+                Level: NotificationLevel.Warning,
+                SeriesId: item.SeriesId,
+                Url: "/activity"), item.SeriesId);
+            return;
+        }
+
+        var args = new Dictionary<string, object?>();
+        if (!string.IsNullOrEmpty(item.ErrorParamsJson))
+        {
+            try
+            {
+                foreach (var (name, value) in JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(item.ErrorParamsJson) ?? [])
+                {
+                    args[name] = value.ValueKind == JsonValueKind.String ? value.GetString() : value.ToString();
+                }
+            }
+            catch (JsonException)
+            {
+                // A reason with no values still reads better than none.
+            }
+        }
+
+        var reason = item.ErrorKey is { } key
+            ? localizer.GetFor(locale, key, args) + (item.ErrorMessage is { Length: > 0 } detail ? $": {detail}" : "")
+            : item.ErrorMessage ?? localizer.GetFor(locale, "error.download.unexpected");
+
+        if (!isUpgrade)
+        {
+            notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
+                NotificationEventType.DownloadFailed,
+                Title: localizer.GetFor(locale, "notify.download.failed.title"),
+                Body: localizer.GetFor(locale, "notify.download.failed.body", new
+                {
+                    series,
+                    hasChapter = "no",
+                    chapter = string.Empty,
+                    reason,
+                }),
+                Level: NotificationLevel.Error,
+                SeriesTitle: item.Series?.Title,
+                SeriesId: item.SeriesId));
+        }
+
+        if (item.IsAutomatic)
+        {
+            args["hasChapter"] = "no";
+            args["chapter"] = null;
+            args["error"] = item.ErrorKey ?? item.ErrorMessage;
+            inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
+                Key: "inbox.download.failed",
+                Params: args,
+                Level: NotificationLevel.Error,
+                SeriesId: item.SeriesId,
+                Url: $"/series/{item.SeriesId}"), item.SeriesId);
+        }
     }
 
     private Task BroadcastAsync(DownloadQueueItem item) =>

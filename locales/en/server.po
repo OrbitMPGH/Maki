@@ -1956,6 +1956,15 @@ msgstr "{series}: chapter {chapter} is ready to read"
 msgid "inbox.download.failed.title"
 msgstr "Download failed"
 
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "inbox.import.awaiting.title"
+msgstr "Import waiting for a decision"
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "inbox.import.awaiting.body"
+msgstr "{series}: {release} needs a Replace or Skip decision in Activity before it is imported"
+
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. placeholder for emptiness. {error} is the source's own wording and is never translated.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
@@ -2454,6 +2463,17 @@ msgstr "Chapter"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "notify.download.failed.title"
 msgstr "Download failed"
+
+#. Sent outward when a finished torrent covers files the library already has and waits for a Replace
+#. or Skip decision. Renders in the instance's own language.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "notify.import.awaiting.title"
+msgstr "Import waiting for a decision"
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "notify.import.awaiting.body"
+msgstr "{series}: {release} needs a Replace or Skip decision in Activity before it is imported"
 
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. value for emptiness. {reason} is one of the error.download.* messages, already rendered.
