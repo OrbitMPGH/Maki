@@ -125,9 +125,19 @@ public static class ComicInfoBuilder
         .Where(p => p.PropertyType == typeof(string) && p.CanRead && p.CanWrite)
         .ToArray();
 
+    // XmlAnyElement matches names case-sensitively, so "<summary>" in an imported file lands in
+    // Unmodelled; written back beside the modelled <Summary> it would make a duplicate field.
+    private static readonly HashSet<string> ModelledElements = new(
+        typeof(ComicInfo).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.GetCustomAttribute<XmlAnyElementAttribute>() is null &&
+                        p.GetCustomAttribute<XmlAnyAttributeAttribute>() is null)
+            .Select(p => p.GetCustomAttribute<XmlElementAttribute>()?.ElementName ?? p.Name),
+        StringComparer.OrdinalIgnoreCase);
+
     /// <remarks>Strips characters XML cannot carry from every text field of <paramref name="info"/> first.</remarks>
     public static string Serialize(ComicInfo info)
     {
+        info.Unmodelled = info.Unmodelled?.Where(e => !ModelledElements.Contains(e.LocalName)).ToArray();
         foreach (var property in TextProperties)
         {
             property.SetValue(info, XmlChars.Strip((string?)property.GetValue(info)));

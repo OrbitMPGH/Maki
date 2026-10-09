@@ -128,6 +128,20 @@ public class ComicInfoUpdaterTests : IDisposable
     }
 
     [Fact]
+    public void A_differently_cased_modelled_element_is_not_written_twice()
+    {
+        var path = CreateCbz("Berserk v01.cbz", "<ComicInfo><summary>Old</summary><Characters>Guts</Characters></ComicInfo>");
+
+        ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null);
+
+        using var archive = ZipFile.OpenRead(path);
+        using var reader = new StreamReader(archive.Entries.Single(e => e.Name == "ComicInfo.xml").Open());
+        var root = System.Xml.Linq.XDocument.Parse(reader.ReadToEnd()).Root!;
+        Assert.Equal("Dark fantasy.", Assert.Single(root.Elements().Where(e => string.Equals(e.Name.LocalName, "summary", StringComparison.OrdinalIgnoreCase))).Value);
+        Assert.Equal("Guts", root.Element("Characters")!.Value);
+    }
+
+    [Fact]
     public void Creates_comicinfo_when_archive_has_none()
     {
         var path = CreateCbz("Berserk 010.5.cbz", comicInfoXml: null);
