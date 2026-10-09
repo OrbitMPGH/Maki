@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core'
 import { ssoLinkErrorLabel } from '../../api/ssoErrors'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Alert,
@@ -131,7 +131,12 @@ function SsoCard() {
     error: searchParams.get('oidcLinkError'),
   }))
 
+  // setSearchParams changes identity once the params are dropped, and StrictMode runs effects twice,
+  // so the effect re-runs; the toast must still only show once.
+  const linkResultShown = useRef(false)
   useEffect(() => {
+    if (linkResultShown.current) return
+    linkResultShown.current = true
     if (linkResult.linked) {
       notifications.show({ message: now`Single sign-on linked to your account`, color: 'var(--ok)' })
     } else if (linkResult.error) {
