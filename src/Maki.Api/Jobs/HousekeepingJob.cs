@@ -211,7 +211,11 @@ public class HousekeepingJob(
         await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);
 
         await PruneInboxAsync(ct);
-        await PruneHealthScansAsync(db, cutoff, ct);
+        var prunedScans = await PruneHealthScansAsync(db, cutoff, ct);
+        if (prunedScans > 0)
+        {
+            logger.LogDebug("Housekeeping removed {Count} old health scans", prunedScans);
+        }
 
         // 0x10002: consider every table, not only the ones this pooled connection happened to query.
         await db.Database.ExecuteSqlRawAsync("PRAGMA optimize=0x10002;", ct);
@@ -242,7 +246,7 @@ public class HousekeepingJob(
         }
 
         return await db.HealthScans
-            .Where(s => s.Id < oldestKept && s.Status != "pending" && s.Status != "running" && s.CreatedAt < cutoff)
+            .Where(s => s.Id < oldestKept && s.Status != "pending" && s.Status != "running" && (s.FinishedAt ?? s.CreatedAt) < cutoff)
             .ExecuteDeleteAsync(ct);
     }
 
