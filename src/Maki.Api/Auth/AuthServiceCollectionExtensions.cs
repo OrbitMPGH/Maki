@@ -3,7 +3,6 @@ using Maki.Api.Configuration;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -315,8 +314,6 @@ public static class AuthServiceCollectionExtensions
             o.Cookie.HttpOnly = true;
             o.Cookie.SameSite = SameSiteMode.Lax;
         });
-        services.AddOptions<AntiforgeryOptions>()
-            .Configure<AuthRuntimeOptions>((o, auth) => o.Cookie.SecurePolicy = SecurePolicy(auth));
 
         services.AddRateLimiter(o =>
         {
