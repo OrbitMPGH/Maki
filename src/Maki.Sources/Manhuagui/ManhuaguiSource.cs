@@ -4,6 +4,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Manhuagui;
 
@@ -58,12 +59,6 @@ public partial class ManhuaguiSource(IHttpClientFactory httpClientFactory) : ISo
     [GeneratedRegex(@"^/comic/(\d+)/?$")]
     private static partial Regex SeriesPathRegex();
 
-    [GeneratedRegex(@"第?\s*(\d+(?:\.\d+)?)\s*[话話回]")]
-    private static partial Regex ChapterMarkerRegex();
-
-    [GeneratedRegex(@"第?\s*(\d+)\s*[卷巻]")]
-    private static partial Regex VolumeMarkerRegex();
-
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
         if (!AllowedHosts.Contains(url.Host)
@@ -94,7 +89,12 @@ public partial class ManhuaguiSource(IHttpClientFactory httpClientFactory) : ISo
                 continue;
             }
 
-            var seriesId = SourceUrl.PathTail(new Uri(BaseUrl + href), BaseUrl, "/comic/", firstSegmentOnly: true);
+            if (!Uri.TryCreate(new Uri(BaseUrl), href, out var seriesUri))
+            {
+                continue;
+            }
+
+            var seriesId = SourceUrl.PathTail(seriesUri, BaseUrl, "/comic/", firstSegmentOnly: true);
             if (seriesId is null)
             {
                 continue;
@@ -275,19 +275,12 @@ public partial class ManhuaguiSource(IHttpClientFactory httpClientFactory) : ISo
     /// </summary>
     private static (decimal? Number, int? Volume) ClassifyEntry(string label)
     {
-        var chapterMatch = ChapterMarkerRegex().Match(label);
-        if (chapterMatch.Success)
+        if (CjkChapterNumber.Chapter(label) is { } chapter)
         {
-            return (decimal.Parse(chapterMatch.Groups[1].Value, CultureInfo.InvariantCulture), null);
+            return (chapter, null);
         }
 
-        var volumeMatch = VolumeMarkerRegex().Match(label);
-        if (volumeMatch.Success)
-        {
-            return (null, int.Parse(volumeMatch.Groups[1].Value, CultureInfo.InvariantCulture));
-        }
-
-        return (null, null);
+        return (null, CjkChapterNumber.Volume(label));
     }
 
     private static string? FirstStatusRedText(IHtmlDocument doc) =>
