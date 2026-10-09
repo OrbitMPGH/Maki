@@ -4265,6 +4265,10 @@ msgstr "Delete user"
 msgid "Deleted \"{name}\""
 msgstr "Deleted \"{name}\""
 
+#: src/pages/LibraryPage.tsx
+msgid "Deleted saved filter {name}."
+msgstr "Deleted saved filter {name}."
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
 msgstr "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
@@ -5013,6 +5017,11 @@ msgstr "Failed to load library"
 #: src/pages/CreatorPage.tsx
 msgid "Failed to load this creator"
 msgstr "Failed to load this creator"
+
+#. placeholder {0}: errorText(err)
+#: src/pages/LibraryPage.tsx
+msgid "Failed to restore filter: {0}"
+msgstr "Failed to restore filter: {0}"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
@@ -12990,6 +12999,7 @@ msgstr "Underscore (_)"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Undo"
 msgstr "Undo"

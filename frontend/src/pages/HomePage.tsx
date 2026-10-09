@@ -177,7 +177,7 @@ export default function HomePage() {
               <Trans>Edit layout</Trans>
             </Button>
             <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
-              <Trans>Add series</Trans>
+              {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
             </Button>
           </>
         )

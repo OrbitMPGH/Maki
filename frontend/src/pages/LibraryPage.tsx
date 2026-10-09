@@ -80,7 +80,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import type { LibraryFilterSpec, SeriesDto } from '../api/types'
+import type { LibraryFilterSpec, SavedFilterDto, SeriesDto } from '../api/types'
 import { PosterSkeletons } from '../components/CatalogueBrowser'
 import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard } from '../components/ui/CoverCard'
@@ -95,7 +95,9 @@ import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
-import { POSTER_COLS_BY_DENSITY, useDensityOptions } from '../components/ui/viewPrefs'
+import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } from '../components/ui/viewPrefs'
+import { errorText } from '../lib/errorText'
+import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
 
 const SORT_VALUES = ['added', 'title', 'incomplete', 'status'] as const
@@ -116,17 +118,6 @@ const MEM = 'library'
 const LS_VIEW = 'library-view'
 const LS_DENSITY = 'library-density'
 
-function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
-  try {
-    const v = localStorage.getItem(key)
-    return valid.includes(v as T) ? (v as T) : fallback
-  } catch { return fallback }
-}
-
-function writeStored(key: string, value: string) {
-  try { localStorage.setItem(key, value) } catch { /* noop */ }
-}
-
 function titleSortKey(s: SeriesDto): string {
   if (s.displayTitle === s.title) return s.sortTitle
   const lowered = s.displayTitle.toLowerCase()
@@ -135,9 +126,8 @@ function titleSortKey(s: SeriesDto): string {
 }
 
 /**
- * How much of the series has been read, 0–100. Kavita is the only source of read progress, so a
- * series it has never reported (`readChapterCount === null`) counts as 0% rather than being
- * dropped: the whole library would otherwise vanish the moment the slider left 0.
+ * How much of the series has been read, 0–100. A series with no read count
+ * (`readChapterCount === null`) counts as 0% rather than being dropped: the whole library would otherwise vanish the moment the slider left 0.
  */
 function readPercent(s: SeriesDto): number {
   const total = s.wantedChapterCount || s.knownChapterCount || 0
@@ -610,6 +600,45 @@ export default function LibraryPage() {
     setSelected(new Set())
   }
 
+  const removeSavedFilter = (f: SavedFilterDto) => {
+    deleteSavedFilter.mutate(f.id, {
+      onSuccess: () => {
+        const name = f.name
+        const toastId = notifications.show({
+          autoClose: 8000,
+          message: (
+            <Group gap="xs" wrap="nowrap" justify="space-between">
+              <Text size="sm">
+                <Trans>Deleted saved filter {name}.</Trans>
+              </Text>
+              <Button
+                size="xs"
+                variant="subtle"
+                style={{ flexShrink: 0 }}
+                onClick={() => {
+                  notifications.hide(toastId)
+                  saveFilter.mutate(
+                    { name: f.name, spec: f.spec },
+                    {
+                      onError: (err) =>
+                        notifications.show({
+                          color: 'var(--danger)',
+                          message: now`Failed to restore filter: ${errorText(err)}`,
+                        }),
+                    },
+                  )
+                }}
+              >
+                <Trans>Undo</Trans>
+              </Button>
+            </Group>
+          ),
+        })
+      },
+    })
+    if (activeFilterId === f.id) setActiveFilterId(null)
+  }
+
   /** Runs an action against every selected series sequentially with a live progress notification. */
   const runBulk = async (action: string, fn: (id: number) => Promise<unknown>) => {
     const ids = [...selected]
@@ -633,7 +662,7 @@ export default function LibraryPage() {
         await fn(id)
         ok++
       } catch (err) {
-        errors.push(String(err))
+        errors.push(errorText(err))
       }
       const done = ok + errors.length
       notifications.update({
@@ -847,7 +876,7 @@ export default function LibraryPage() {
                 <Trans>Select</Trans>
               </Button>
               <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
-                <Trans>Add series</Trans>
+                {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
               </Button>
             </>
           ) : undefined
@@ -953,7 +982,10 @@ export default function LibraryPage() {
                   setMoveFiles(true)
                   setMoveModalOpen(true)
                 })}
-                {can('DeleteSeries') && bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
+                {can('DeleteSeries') && bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => {
+                  setDeleteFiles(false)
+                  setDeleteModalOpen(true)
+                }, 'red')}
                 <Button
                   visibleFrom="sm"
                   size="xs"
@@ -1073,10 +1105,7 @@ export default function LibraryPage() {
                 variant="subtle"
                 color="var(--ink-4)"
                 aria-label={t`Delete saved filter`}
-                onClick={() => {
-                  deleteSavedFilter.mutate(f.id)
-                  if (activeFilterId === f.id) setActiveFilterId(null)
-                }}
+                onClick={() => removeSavedFilter(f)}
               >
                 <IconX size={11} />
               </ActionIcon>
@@ -1128,7 +1157,7 @@ export default function LibraryPage() {
             label={t`Status`}
             data={statusOptions.map((s) => ({
               value: s,
-              label: s === 'all' ? t`All statuses` : s,
+              label: s === 'all' ? t`All statuses` : renderLabel(seriesStatusVisual(s).label),
             }))}
             value={statusFilter}
             onChange={(v) => setStatusFilter(v ?? 'all')}

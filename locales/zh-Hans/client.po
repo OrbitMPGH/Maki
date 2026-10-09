@@ -5198,6 +5198,10 @@ msgstr "删除用户"
 msgid "Deleted \"{name}\""
 msgstr "已删除“{name}”"
 
+#: src/pages/LibraryPage.tsx
+msgid "Deleted saved filter {name}."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Deletes a chapter's file once everyone reading the series has finished it and the days below have passed. The chapter stays in the list with its read history, and Maki won't download it again unless you ask. A series can turn this on or off for itself from its menu."
 msgstr ""
@@ -6116,6 +6120,11 @@ msgstr "加载资料库失败"
 #, fuzzy
 msgid "Failed to load this creator"
 msgstr "无法加载此创作者"
+
+#. placeholder {0}: errorText(err)
+#: src/pages/LibraryPage.tsx
+msgid "Failed to restore filter: {0}"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
@@ -15835,6 +15844,7 @@ msgstr "下划线（_）"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo"
