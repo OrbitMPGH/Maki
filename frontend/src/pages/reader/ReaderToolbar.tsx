@@ -423,7 +423,7 @@ export default function ReaderToolbar({
                       <Trans>Scale ({scale}%)</Trans>
                     </Text>
                     <Slider
-                      aria-label={t`Scale`}
+                      thumbLabel={t`Scale`}
                       size="xs"
                       min={25}
                       max={400}
