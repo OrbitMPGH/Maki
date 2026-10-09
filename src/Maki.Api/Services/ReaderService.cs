@@ -397,9 +397,6 @@ public class ReaderService(
         // being read, so finishing it must fire the completion branch below and become a genuine
         // read. Once Watched clears, the flag is sticky again and a re-read emits nothing.
         var wasCompleted = row is { Completed: true, Watched: false };
-        // The tombstone marks a row that was read and then marked unread, so finishing it again is
-        // a re-read. A one-shot has no mark to absorb that, unlike a numbered chapter.
-        var reRead = row?.UnreadAt is not null;
 
         if (row is null)
         {
@@ -469,7 +466,7 @@ public class ReaderService(
 
         if (justCompleted)
         {
-            await OnChapterCompletedAsync(slice.Series, chapter, reRead, ct);
+            await OnChapterCompletedAsync(slice.Series, chapter, row, CancellationToken.None);
         }
 
         return justCompleted;
@@ -859,8 +856,9 @@ public class ReaderService(
     }
 
     // The completion is already committed by the time this runs, so a failure here (the progress
-    // gate timing out under a long Kavita pass, say) must not turn a saved read into an error.
-    private async Task OnChapterCompletedAsync(Series series, Chapter chapter, bool reRead, CancellationToken ct)
+    // gate timing out under a long Kavita pass, say) must not turn a saved read into an error, and
+    // a client that hangs up mid-wait must not lose the event.
+    private async Task OnChapterCompletedAsync(Series series, Chapter chapter, ChapterProgress row, CancellationToken ct)
     {
         try
         {
@@ -871,12 +869,15 @@ public class ReaderService(
 
             if (chapter.Number is null)
             {
-                // A one-shot has no number to raise the high-water mark to, so a re-read after
-                // marking it unread would count again: see
-                // ReadingProgressService.RecordUnnumberedReadAsync for why inventing one is wrong.
-                if (!reRead)
+                // A one-shot has no number to raise the high-water mark to, so nothing absorbs a
+                // second completion: CountedAt is the never-cleared token that it was counted once.
+                // See ReadingProgressService.RecordUnnumberedReadAsync for why inventing a number
+                // is wrong.
+                if (row.CountedAt is null &&
+                    await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct))
                 {
-                    await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct);
+                    row.CountedAt = DateTime.UtcNow;
+                    await db.SaveChangesAsync(ct);
                 }
 
                 return;

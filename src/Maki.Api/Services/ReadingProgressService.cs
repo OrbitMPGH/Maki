@@ -159,7 +159,7 @@ public class ReadingProgressService(
 
     /// <summary>
     /// The user's completed, numbered chapters of a series. Genuine means read in Maki's own reader:
-    /// not watched, not observed in Kavita, and not an import (those carry <c>PageCount = 0</c>).
+    /// not watched, not observed in Kavita, not bulk-ticked, and not an import (those carry <c>PageCount = 0</c>).
     /// </summary>
     private async Task<List<CompletedNumber>> CompletedNumbersAsync(int userId, int seriesId,
         CancellationToken ct)
@@ -168,13 +168,13 @@ public class ReadingProgressService(
                 from p in db.ChapterProgress.IgnoreQueryFilters()
                 join c in db.Chapters.IgnoreQueryFilters() on p.ChapterId equals c.Id
                 where p.UserId == userId && p.SeriesId == seriesId && p.Completed && c.Number != null
-                select new { c.Number, p.Watched, p.External, p.PageCount })
+                select new { c.Number, p.Watched, p.External, p.BulkMarked, p.PageCount })
             .AsNoTracking()
             .ToListAsync(ct);
 
         return rows
             .Select(r => new CompletedNumber((double)r.Number!.Value,
-                !r.Watched && !r.External && r.PageCount > 0))
+                !r.Watched && !r.External && !r.BulkMarked && r.PageCount > 0))
             .ToList();
     }
 
@@ -246,14 +246,15 @@ public class ReadingProgressService(
     /// would falsely mark numbered chapters read in the library's progress ring.
     /// </para>
     /// </summary>
-    public async Task RecordUnnumberedReadAsync(int userId, int seriesId, string title, CancellationToken ct) =>
+    public async Task<bool> RecordUnnumberedReadAsync(int userId, int seriesId, string title, CancellationToken ct) =>
         await WithGateAsync(async () =>
         {
             var now = DateTime.UtcNow;
             // Same stable pick as everywhere else — see PickAsync.
             var kavitaSeriesId = (await PickAsync(userId, seriesId, ct))?.KavitaSeriesId;
 
-            if (!await IsFullIncognitoAsync(seriesId, ct))
+            var emit = !await IsFullIncognitoAsync(seriesId, ct);
+            if (emit)
             {
                 db.StatsEvents.Add(new StatsEvent
                 {
@@ -268,7 +269,7 @@ public class ReadingProgressService(
                 });
             }
             await db.SaveChangesAsync(ct);
-            return true;
+            return emit;
         }, ct);
 
     /// <summary>

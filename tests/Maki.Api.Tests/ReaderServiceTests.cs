@@ -1155,6 +1155,82 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.True(after.ChapterProgress.Single(p => p.ChapterId == chapters[1m]).StartedAt > ticked.AddDays(1));
     }
 
+    private async Task<(ReaderService Reader, int ChapterId, ReaderService.ChapterSlice Slice)> OneShotAsync(string name)
+    {
+        var seriesId = SeedSeriesAt();
+        var path = WriteCbz(name, "001.jpg");
+        var chapterId = LinkChapters(seriesId, path, [(null, null)]).Single().Id;
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapterId, CancellationToken.None);
+        return (reader, chapterId, slice!);
+    }
+
+    [Fact]
+    public async Task ABulkTickedOneShotMarkedUnreadStillCountsItsFirstGenuineRead()
+    {
+        var (reader, chapterId, slice) = await OneShotAsync("oneshot-ticked.cbz");
+        await reader.MarkReadAsync([chapterId], CancellationToken.None);
+        await reader.ClearProgressAsync(chapterId, CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        Assert.Single(Events(), e => e.Type == StatsEventType.ChaptersRead);
+    }
+
+    [Fact]
+    public async Task AnOpenedOneShotMarkedUnreadStillCountsItsFirstGenuineRead()
+    {
+        var (reader, chapterId, slice) = await OneShotAsync("oneshot-opened.cbz");
+        await reader.SaveProgressAsync(slice, 0, false, ReaderService.TimeReport.None, CancellationToken.None);
+        await reader.ClearProgressAsync(chapterId, CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        Assert.Single(Events(), e => e.Type == StatsEventType.ChaptersRead);
+    }
+
+    [Fact]
+    public async Task AOneShotReadUnreadWatchedAndReadAgainCountsOnce()
+    {
+        var (reader, chapterId, slice) = await OneShotAsync("oneshot-cycle.cbz");
+        await reader.SaveProgressAsync(slice, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+        await reader.ClearProgressAsync(chapterId, CancellationToken.None);
+        await reader.MarkWatchedAsync([chapterId], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        Assert.Single(Events(), e => e.Type == StatsEventType.ChaptersRead);
+    }
+
+    [Fact]
+    public async Task ABulkTickWhoseMarkNeverLandedDoesNotEmitTheWholeTickOnTheNextRead()
+    {
+        var (seriesId, chapters) = SeedFromCbz("ticknomark.cbz", ["001.jpg"],
+            [(1m, null), (2m, null), (3m, null), (4m, null)]);
+        using (var db = _db.NewContext())
+        {
+            foreach (var n in new[] { 1m, 2m, 3m })
+            {
+                db.ChapterProgress.Add(new ChapterProgress
+                {
+                    UserId = TestUser, SeriesId = seriesId, ChapterId = chapters[n], PageCount = 1,
+                    Completed = true, BulkMarked = true, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+                });
+            }
+
+            db.ReadingStates.Add(new ReadingState
+            {
+                UserId = TestUser, SeriesId = seriesId, Title = "Reader Series",
+                LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+
+        await ReadAsync(Reader(), chapters[4m]);
+
+        Assert.Equal([1], ChaptersRead());
+    }
+
     /// <summary>A watched chapter re-read a second time is a plain re-read and emits nothing more.</summary>
     [Fact]
     public async Task ReadingAnUnwatchedChapterAgainIsStillIdempotent()
