@@ -5,6 +5,7 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Manhwa18Net;
 
@@ -69,8 +70,8 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
         var results = new List<SourceSeriesResult>();
         foreach (var item in rows.EnumerateArray())
         {
-            var slug = String(item, "slug");
-            var name = String(item, "name");
+            var slug = JsonRead.Property(item, "slug");
+            var name = JsonRead.Property(item, "name");
             if (string.IsNullOrEmpty(slug) || string.IsNullOrEmpty(name))
             {
                 continue;
@@ -85,7 +86,7 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
             }
 
             results.Add(new SourceSeriesResult(
-                slug, name, $"{BaseUrl}/manga/{slug}", String(item, "cover_url"), PlainText(String(item, "pilot"))));
+                slug, name, $"{BaseUrl}/manga/{slug}", JsonRead.Property(item, "cover_url"), BodyText.Plain(JsonRead.Property(item, "pilot"))));
         }
 
         return results;
@@ -101,15 +102,15 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
 
         // description is empty on every title observed so far; pilot (the search synopsis) is
         // the fallback rather than the other way round.
-        var description = String(manga, "description");
-        description = string.IsNullOrWhiteSpace(description) ? String(manga, "pilot") : description;
+        var description = JsonRead.Property(manga, "description");
+        description = string.IsNullOrWhiteSpace(description) ? JsonRead.Property(manga, "pilot") : description;
 
         return new SourceSeriesDetail(
             sourceSeriesId,
-            String(manga, "name") ?? sourceSeriesId,
+            JsonRead.Property(manga, "name") ?? sourceSeriesId,
             $"{BaseUrl}/manga/{sourceSeriesId}",
-            String(manga, "cover_url"),
-            PlainText(description));
+            JsonRead.Property(manga, "cover_url"),
+            BodyText.Plain(description));
     }
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
@@ -128,14 +129,14 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
         // raws by name), and it stops Korean pages being filed as an English chapter.
         var isRaw = manga.TryGetProperty("genres", out var genres) && genres.ValueKind == JsonValueKind.Array &&
                     genres.EnumerateArray().Any(g =>
-                        string.Equals(String(g, "name"), "Raw", StringComparison.OrdinalIgnoreCase));
+                        string.Equals(JsonRead.Property(g, "name"), "Raw", StringComparison.OrdinalIgnoreCase));
         var language = isRaw ? "ko" : "en";
 
         var chapters = new List<(SourceChapter Chapter, string Label)>();
         foreach (var row in rows.EnumerateArray())
         {
-            var slug = String(row, "slug");
-            var label = String(row, "name");
+            var slug = JsonRead.Property(row, "slug");
+            var label = JsonRead.Property(row, "name");
             if (string.IsNullOrEmpty(slug) || string.IsNullOrEmpty(label))
             {
                 continue;
@@ -184,7 +185,7 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
         {
             foreach (var image in images.EnumerateArray())
             {
-                var src = String(image, "src");
+                var src = JsonRead.Property(image, "src");
                 if (!string.IsNullOrEmpty(src))
                 {
                     pages.Add(new PageRequest(src, headers));
@@ -249,18 +250,5 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
             ? parsed
             : null;
 
-    /// <summary>Reads a property as a string whether the site stored it as one or as a number.</summary>
-    private static string? String(JsonElement element, string name) =>
-        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value)
-            ? value.ValueKind switch
-            {
-                JsonValueKind.String => value.GetString(),
-                JsonValueKind.Number => value.GetRawText(),
-                _ => null
-            }
-            : null;
-
-    /// <summary>Synopses are stored as rendered HTML (a single &lt;p&gt; in practice).</summary>
-    private static string? PlainText(string? html) =>
-        string.IsNullOrWhiteSpace(html) ? null : Parser.ParseDocument(html).Body?.TextContent.Trim();
 }
+

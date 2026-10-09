@@ -40,4 +40,16 @@ internal static class JsonRead
                 return null;
         }
     }
+
+    /// <summary>A property of an object as <see cref="Text"/>; null when the element is not an object or lacks it.</summary>
+    public static string? Property(JsonElement element, string name) =>
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) ? Text(value) : null;
+
+    /// <summary>Fetches a JSON document through the client and returns a root that outlives the parse.</summary>
+    public static async Task<JsonElement> GetAsync(HttpClient client, string path, CancellationToken ct)
+    {
+        var body = await client.GetStringAsync(path, ct);
+        using var document = JsonDocument.Parse(body);
+        return document.RootElement.Clone();
+    }
 }

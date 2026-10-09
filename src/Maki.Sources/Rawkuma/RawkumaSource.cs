@@ -60,7 +60,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         var root = ParseJson(body, url);
         if (root.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
 
         var results = new List<SourceSeriesResult>();
@@ -178,7 +178,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         var root = ParseJson(body, url);
         if (root.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
 
         foreach (var item in root.EnumerateArray())
@@ -326,9 +326,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
     }
-
-    private static string Truncate(string body) => body.Length <= 100 ? body : body[..100];
 }

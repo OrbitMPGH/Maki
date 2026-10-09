@@ -53,7 +53,8 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
         // medium:=Comic drops the prose novels the same index holds — they have no page images.
         // hidden:!=true is what the site's own search sends; hidden rows are unreadable.
         var filter = Uri.EscapeDataString("medium:=Comic && hidden:!=true");
-        var root = await GetAsync(
+        var root = await JsonRead.GetAsync(
+            Client,
             $"search/manga?q={Uri.EscapeDataString(title)}" +
             $"&query_by={SearchFields}&query_by_weights=4,3,2&num_typos=2,2,1&prefix=true,true,true" +
             "&include_fields=id,title,englishTitle,poster,posterMedium,synopsis,weebCentralId" +
@@ -69,14 +70,14 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
         foreach (var hit in hits.EnumerateArray())
         {
             var document = hit.TryGetProperty("document", out var d) ? d : hit;
-            var id = String(document, "id");
+            var id = JsonRead.Property(document, "id");
             if (string.IsNullOrEmpty(id))
             {
                 continue;
             }
 
-            var name = String(document, "title") ?? String(document, "englishTitle") ?? "Unknown";
-            var cover = ImageUrl(String(document, "posterMedium") ?? String(document, "poster"));
+            var name = JsonRead.Property(document, "title") ?? JsonRead.Property(document, "englishTitle") ?? "Unknown";
+            var cover = ImageUrl(JsonRead.Property(document, "posterMedium") ?? JsonRead.Property(document, "poster"));
 
             // The index records which WeebCentral entry each title is, and nothing else cross-site —
             // the trackers live on the series page instead. Carrying it here makes a confirmed
@@ -85,7 +86,7 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
                 (ExternalIdService.WeebCentral, Id(document, "weebCentralId")));
 
             results.Add(new SourceSeriesResult(
-                id, name, SeriesUrl(id), cover, String(document, "synopsis"), crossRefs));
+                id, name, SeriesUrl(id), cover, JsonRead.Property(document, "synopsis"), crossRefs));
         }
 
         return results;
@@ -93,22 +94,22 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        var root = await GetAsync($"manga/page?id={Uri.EscapeDataString(sourceSeriesId)}", ct);
+        var root = await JsonRead.GetAsync(Client, $"manga/page?id={Uri.EscapeDataString(sourceSeriesId)}", ct);
         var page = root.TryGetProperty("mangaPage", out var p) ? p : root;
 
         string? cover = null;
         if (page.TryGetProperty("poster", out var poster) && poster.ValueKind == JsonValueKind.Object)
         {
-            cover = ImageUrl(String(poster, "mediumImage") ?? String(poster, "image"));
+            cover = ImageUrl(JsonRead.Property(poster, "mediumImage") ?? JsonRead.Property(poster, "image"));
         }
 
         return new SourceSeriesDetail(
             sourceSeriesId,
-            String(page, "title") ?? String(page, "englishTitle") ?? sourceSeriesId,
+            JsonRead.Property(page, "title") ?? JsonRead.Property(page, "englishTitle") ?? sourceSeriesId,
             SeriesUrl(sourceSeriesId),
             cover,
-            String(page, "synopsis"),
-            String(page, "status"));
+            JsonRead.Property(page, "synopsis"),
+            JsonRead.Property(page, "status"));
     }
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
@@ -116,7 +117,7 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
     {
         // manga/info carries the same chapter array the series page shows but tags each row with
         // its scanlation group (scanId), which is what makes picking between duplicates possible.
-        var root = await GetAsync($"manga/info?mangaId={Uri.EscapeDataString(sourceSeriesId)}", ct);
+        var root = await JsonRead.GetAsync(Client, $"manga/info?mangaId={Uri.EscapeDataString(sourceSeriesId)}", ct);
         if (!root.TryGetProperty("chapters", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
             throw new InvalidOperationException(
@@ -126,7 +127,7 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
         var listed = new List<ListedChapter>();
         foreach (var row in rows.EnumerateArray())
         {
-            var id = String(row, "id");
+            var id = JsonRead.Property(row, "id");
             if (string.IsNullOrEmpty(id) ||
                 !row.TryGetProperty("number", out var numberEl) ||
                 numberEl.ValueKind != JsonValueKind.Number)
@@ -141,8 +142,8 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
                 id,
                 numberEl.GetDecimal(),
                 numberEl.GetRawText(),
-                String(row, "title"),
-                String(row, "scanId") ?? string.Empty));
+                JsonRead.Property(row, "title"),
+                JsonRead.Property(row, "scanId") ?? string.Empty));
         }
 
         // Every group's chapters arrive in one array, so most numbers appear several times.
@@ -175,7 +176,8 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var root = await GetAsync(
+        var root = await JsonRead.GetAsync(
+            Client,
             $"read/chapter?mangaId={Uri.EscapeDataString(chapter.SourceSeriesId)}" +
             $"&chapterId={Uri.EscapeDataString(chapter.SourceChapterId)}",
             ct);
@@ -194,7 +196,7 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
                      .EnumerateArray()
                      .OrderBy(p => p.TryGetProperty("number", out var n) ? JsonRead.Int(n) ?? int.MaxValue : int.MaxValue))
         {
-            var url = ImageUrl(String(page, "image"));
+            var url = ImageUrl(JsonRead.Property(page, "image"));
             if (url is not null)
             {
                 pages.Add(new PageRequest(url, headers));
@@ -213,7 +215,7 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
     public async Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
         string sourceSeriesId, CancellationToken ct = default)
     {
-        var root = await GetAsync($"manga/page?id={Uri.EscapeDataString(sourceSeriesId)}", ct);
+        var root = await JsonRead.GetAsync(Client, $"manga/page?id={Uri.EscapeDataString(sourceSeriesId)}", ct);
         var page = root.TryGetProperty("mangaPage", out var p) ? p : root;
 
         return SourceExternalIds.From(
@@ -270,20 +272,6 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
             JsonValueKind.Number => value.GetRawText(),
             _ => null
         };
-    }
-
-    private static string? String(JsonElement element, string property) =>
-        element.ValueKind == JsonValueKind.Object &&
-        element.TryGetProperty(property, out var value) &&
-        value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
-
-    private async Task<JsonElement> GetAsync(string path, CancellationToken ct)
-    {
-        var body = await Client.GetStringAsync(path, ct);
-        using var document = JsonDocument.Parse(body);
-        return document.RootElement.Clone();
     }
 
     /// <summary>A chapter row as listed, before duplicates across scanlation groups are resolved.</summary>

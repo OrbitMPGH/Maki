@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Dynasty;
 
@@ -74,12 +75,12 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        var root = await GetJsonAsync($"series/{sourceSeriesId}.json", ct);
+        var root = await JsonRead.GetAsync(Client, $"series/{sourceSeriesId}.json", ct);
         RequireSeries(sourceSeriesId, root);
 
-        var name = String(root, "name") ?? sourceSeriesId;
-        var cover = String(root, "cover");
-        var description = PlainText(String(root, "description"));
+        var name = JsonRead.Property(root, "name") ?? sourceSeriesId;
+        var cover = JsonRead.Property(root, "cover");
+        var description = BodyText.Plain(JsonRead.Property(root, "description"));
 
         return new SourceSeriesDetail(
             sourceSeriesId,
@@ -93,7 +94,7 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var root = await GetJsonAsync($"series/{sourceSeriesId}.json", ct);
+        var root = await JsonRead.GetAsync(Client, $"series/{sourceSeriesId}.json", ct);
         RequireSeries(sourceSeriesId, root);
 
         if (!root.TryGetProperty("taggings", out var initial) || initial.ValueKind != JsonValueKind.Array)
@@ -111,7 +112,7 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
             var totalPages = totalPagesEl.GetInt32();
             for (var page = 2; page <= totalPages; page++)
             {
-                var pageRoot = await GetJsonAsync($"series/{sourceSeriesId}.json?page={page}", ct);
+                var pageRoot = await JsonRead.GetAsync(Client, $"series/{sourceSeriesId}.json?page={page}", ct);
                 if (pageRoot.TryGetProperty("taggings", out var more) && more.ValueKind == JsonValueKind.Array)
                 {
                     taggings.AddRange(more.EnumerateArray());
@@ -132,13 +133,13 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
                 continue;
             }
 
-            var permalink = String(tagging, "permalink");
+            var permalink = JsonRead.Property(tagging, "permalink");
             if (string.IsNullOrEmpty(permalink))
             {
                 continue;
             }
 
-            var rawTitle = String(tagging, "title");
+            var rawTitle = JsonRead.Property(tagging, "title");
             var parsed = ChapterNumberParser.Parse(rawTitle, volume?.ToString(CultureInfo.InvariantCulture));
 
             // ChapterIdentity.Matches identifies a null-number chapter by (IsOneShot, Language,
@@ -169,7 +170,7 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var root = await GetJsonAsync($"chapters/{chapter.SourceChapterId}.json", ct);
+        var root = await JsonRead.GetAsync(Client, $"chapters/{chapter.SourceChapterId}.json", ct);
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
 
         if (!root.TryGetProperty("pages", out var pageArray) || pageArray.ValueKind != JsonValueKind.Array)
@@ -181,7 +182,7 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
         var pages = new List<PageRequest>();
         foreach (var page in pageArray.EnumerateArray())
         {
-            var url = String(page, "url");
+            var url = JsonRead.Property(page, "url");
             if (!string.IsNullOrEmpty(url))
             {
                 pages.Add(new PageRequest($"{BaseUrl}{url}", headers));
@@ -193,7 +194,7 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
 
     private static void RequireSeries(string sourceSeriesId, JsonElement root)
     {
-        var type = String(root, "type");
+        var type = JsonRead.Property(root, "type");
         if (!string.Equals(type, "Series", StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
@@ -203,7 +204,7 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
 
     private static DateTime? ReleasedOn(JsonElement tagging)
     {
-        var text = String(tagging, "released_on");
+        var text = JsonRead.Property(tagging, "released_on");
         return text is not null &&
             DateTime.TryParseExact(
                 text, "yyyy-MM-dd", CultureInfo.InvariantCulture,
@@ -221,29 +222,12 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
 
         foreach (var tag in tags.EnumerateArray())
         {
-            if (string.Equals(String(tag, "type"), "Status", StringComparison.Ordinal))
+            if (string.Equals(JsonRead.Property(tag, "type"), "Status", StringComparison.Ordinal))
             {
-                return String(tag, "name");
+                return JsonRead.Property(tag, "name");
             }
         }
 
         return null;
-    }
-
-    /// <summary>Descriptions are stored as rendered HTML, tags and all.</summary>
-    private static string? PlainText(string? html) =>
-        string.IsNullOrWhiteSpace(html) ? null : Parser.ParseDocument(html).Body?.TextContent.Trim();
-
-    private static string? String(JsonElement element, string name) =>
-        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) &&
-            value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
-
-    private async Task<JsonElement> GetJsonAsync(string path, CancellationToken ct)
-    {
-        var body = await Client.GetStringAsync(path, ct);
-        using var doc = JsonDocument.Parse(body);
-        return doc.RootElement.Clone();
     }
 }

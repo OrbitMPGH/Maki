@@ -8,6 +8,7 @@ using Maki.Core.Sources;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.MangaDenizi;
 
@@ -233,7 +234,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         if (!scrambleEl.TryGetProperty("grid", out var gridEl) || !scrambleEl.TryGetProperty("seed", out var seedEl))
         {
             throw new InvalidOperationException(
-                $"Unexpected scramble payload for page {url}: {Truncate(scrambleEl.GetRawText())}");
+                $"Unexpected scramble payload for page {url}: {BodyText.Snippet(scrambleEl.GetRawText())}");
         }
 
         var grid = gridEl.GetInt32();
@@ -293,7 +294,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
     }
 
@@ -318,9 +319,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
     }
 
     private static InvalidOperationException Unexpected(JsonResponse response) =>
-        new($"Unexpected response from {response.Url}: {Truncate(response.Body)}");
-
-    private static string Truncate(string body) => body.Length <= 100 ? body : body[..100];
+        new($"Unexpected response from {response.Url}: {BodyText.Snippet(response.Body)}");
 
     private static string? GetString(JsonElement element, string property) =>
         element.ValueKind == JsonValueKind.Object &&

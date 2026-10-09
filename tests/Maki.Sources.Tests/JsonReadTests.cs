@@ -44,4 +44,31 @@ public class JsonReadTests
 
         Assert.Equal(["7", "8"], results.Select(r => r.SourceSeriesId));
     }
+
+    [Theory]
+    [InlineData("{\"id\":\"a\"}", "id", "a")]
+    [InlineData("{\"id\":7}", "id", "7")]
+    [InlineData("{\"id\":null}", "id", null)]
+    [InlineData("{}", "id", null)]
+    [InlineData("[1]", "id", null)]
+    public void Property_reads_a_field_of_an_object_and_tolerates_anything_else(string json, string name, string? expected)
+    {
+        Assert.Equal(expected, JsonRead.Property(Parse(json), name));
+    }
+
+    [Theory]
+    [InlineData("<p>Hello <b>there</b></p>", "Hello there")]
+    [InlineData("   ", null)]
+    [InlineData(null, null)]
+    public void Plain_strips_markup_and_drops_blank_input(string? html, string? expected)
+    {
+        Assert.Equal(expected, BodyText.Plain(html));
+    }
+
+    [Fact]
+    public void Snippet_cuts_a_long_body_to_100_characters()
+    {
+        Assert.Equal(100, BodyText.Snippet(new string('x', 300)).Length);
+        Assert.Equal("short", BodyText.Snippet("short"));
+    }
 }

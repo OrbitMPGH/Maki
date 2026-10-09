@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Taiyo;
 
@@ -71,7 +72,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
             if (!response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(
-                    $"Meilisearch search at {url} failed with {(int)response.StatusCode}: {Truncate(body)}");
+                    $"Meilisearch search at {url} failed with {(int)response.StatusCode}: {BodyText.Snippet(body)}");
             }
 
             return ParseSearchResults(url, body);
@@ -510,7 +511,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
             var batch = root.Element;
             if (batch.ValueKind != JsonValueKind.Array || batch.GetArrayLength() == 0)
             {
-                throw new InvalidOperationException($"Unexpected tRPC response shape from {url}: {Truncate(body)}");
+                throw new InvalidOperationException($"Unexpected tRPC response shape from {url}: {BodyText.Snippet(body)}");
             }
 
             var entry = batch[0];
@@ -526,7 +527,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
                 !result.TryGetProperty("data", out var data2) ||
                 !data2.TryGetProperty("json", out var json))
             {
-                throw new InvalidOperationException($"Unexpected tRPC response shape from {url}: {Truncate(body)}");
+                throw new InvalidOperationException($"Unexpected tRPC response shape from {url}: {BodyText.Snippet(body)}");
             }
 
             return json.Clone();
@@ -542,11 +543,9 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
     }
-
-    private static string Truncate(string body) => body.Length <= 100 ? body : body[..100];
 
     [GeneratedRegex("NEXT_PUBLIC_MEILISEARCH_PUBLIC_KEY:\\s*\"([^\"]+)\"")]
     private static partial Regex MeilisearchKeyPattern();
