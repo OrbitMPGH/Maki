@@ -323,7 +323,7 @@ public class RecommendationController(
             return Ok(Array.Empty<ResolvedCredit>());
         }
 
-        return Ok(await discover.SuggestCreditsAsync(q, role, limit <= 0 ? 10 : limit, ct));
+        return Ok(await discover.SuggestCreditsAsync(q, role, limit <= 0 ? 10 : limit, ct, currentUser.MaxContentRating));
     }
 
     /// <summary>

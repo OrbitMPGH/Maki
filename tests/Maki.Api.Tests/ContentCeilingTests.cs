@@ -6,10 +6,10 @@ using Xunit;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// The cohort rail draws its slots before hydration, so the content-rating ceiling has to be part
-/// of the draw's predicate or a restricted reader gets a short rail.
+/// Places where the content-rating ceiling has to be applied before hydration: the cohort rail's
+/// draw, so a restricted reader does not get a short rail, and the creator work counts.
 /// </summary>
-public class ReaderCohortRailCeilingTests
+public class ContentCeilingTests
 {
     private const int Dim = 4;
 
@@ -40,6 +40,16 @@ public class ReaderCohortRailCeilingTests
     public void AnUnrestrictedCeilingLeavesTheFiltersAlone()
     {
         Assert.Null(ReaderCohortRailService.WithCeiling(null, ContentRating.Pornographic));
+    }
+
+    [Fact]
+    public void ACreditCountsOnlyTheWorksInsideTheCeiling()
+    {
+        var index = Build();
+
+        Assert.Equal(1, DiscoverService.VisibleWorkCount(index, [100L, 101L, 102L, 999L], ContentRating.Allowed(ContentRating.Safe)));
+        Assert.Equal(2, DiscoverService.VisibleWorkCount(index, [100L, 101L, 102L], ContentRating.Allowed(ContentRating.Erotica)));
+        Assert.Equal(0, DiscoverService.VisibleWorkCount(index, [102L], ContentRating.Allowed(ContentRating.Safe)));
     }
 
     private static VectorIndex Build()

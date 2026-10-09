@@ -553,6 +553,18 @@ public class DiscoverService(
         }
 
         var works = catalogue.Credits.WorksOf(nameId, role);
+        var vector = await vectorIndex.GetAsync(ct);
+        var visibleWorks = works.Length;
+        if (vector is not null && request.Filters?.ContentRatings is { Count: > 0 } ceiling &&
+            ceiling.Count < ContentRating.All.Length)
+        {
+            visibleWorks = VisibleWorkCount(vector, works, ceiling);
+            if (visibleWorks == 0)
+            {
+                return null;
+            }
+        }
+
         // 600 rather than 300: the in-memory path already scans and sorts the whole index whatever
         // the page size is, so the only cost of a deeper page is the hydration query, and browsing a
         // filtered catalogue is exactly the case where people keep pressing Load more.
@@ -564,7 +576,7 @@ public class DiscoverService(
         // filter that must not degrade with it — it is what the caller is allowed to see, not how
         // they asked to narrow it — so it is applied during hydration on both paths instead.
         IReadOnlyList<long> page;
-        if (await vectorIndex.GetAsync(ct) is { } index)
+        if (vector is { } index)
         {
             var plan = index.Plan(request.Filters).RestrictTo(index.BuildRowMask(works));
             page = OrderRows(index, plan, request.Sort, offset, limit);
@@ -577,13 +589,18 @@ public class DiscoverService(
         return new CreatorProfile(
             catalogue.Credits.NameAt(nameId),
             catalogue.Credits.RoleLabelsAt(nameId),
-            works.Length,
+            visibleWorks,
             await store.GetByIdsAsync(page, request.Filters?.ContentRatings, ct));
     }
 
-    /// <summary>Name suggestions for a partly typed creator or publisher.</summary>
+    /// <summary>
+    /// Name suggestions for a partly typed creator or publisher. With a restricted
+    /// <paramref name="maxContentRating"/> a name only counts its works inside the ceiling and is
+    /// dropped when it has none, so the autocomplete does not reveal circles whose catalogue the
+    /// caller cannot open.
+    /// </summary>
     public async Task<IReadOnlyList<ResolvedCredit>> SuggestCreditsAsync(
-        string query, string? role, int limit, CancellationToken ct = default)
+        string query, string? role, int limit, CancellationToken ct = default, string? maxContentRating = null)
     {
         if (await catalogueIndex.GetAsync(ct) is not { } catalogue)
         {
@@ -591,13 +608,50 @@ public class DiscoverService(
         }
 
         var wanted = CreditIndex.ParseRole(role);
+        var take = Math.Clamp(limit, 1, 50);
+        var allowed = ContentRating.Allowed(maxContentRating);
+        if (allowed.Count == ContentRating.All.Length || await vectorIndex.GetAsync(ct) is not { } index)
+        {
+            return catalogue.Credits
+                .Suggest(query, wanted, take)
+                .Select(m => new ResolvedCredit(
+                    catalogue.Credits.NameAt(m.NameId),
+                    catalogue.Credits.RoleLabelsAt(m.NameId),
+                    m.WorkCount))
+                .ToList();
+        }
+
         return catalogue.Credits
-            .Suggest(query, wanted, Math.Clamp(limit, 1, 50))
-            .Select(m => new ResolvedCredit(
-                catalogue.Credits.NameAt(m.NameId),
-                catalogue.Credits.RoleLabelsAt(m.NameId),
-                m.WorkCount))
+            .Suggest(query, wanted, 50)
+            .Select(m => (Match: m, Visible: VisibleWorkCount(index, catalogue.Credits.WorksOf(m.NameId, wanted), allowed)))
+            .Where(x => x.Visible > 0)
+            .Take(take)
+            .Select(x => new ResolvedCredit(
+                catalogue.Credits.NameAt(x.Match.NameId),
+                catalogue.Credits.RoleLabelsAt(x.Match.NameId),
+                x.Visible))
             .ToList();
+    }
+
+    /// <summary>How many of <paramref name="works"/> the index holds inside <paramref name="ratings"/>.</summary>
+    internal static int VisibleWorkCount(VectorIndex index, IReadOnlyList<long> works, IReadOnlyList<string> ratings)
+    {
+        var plan = index.Plan(new RecommendationFilters(ContentRatings: ratings));
+        if (plan.Impossible)
+        {
+            return 0;
+        }
+
+        var count = 0;
+        foreach (var id in works)
+        {
+            if (index.TryGetRow(id, out var row) && index.Matches(row, plan))
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     /// <summary>Feeds whose ordering the vector index can reproduce exactly.</summary>
