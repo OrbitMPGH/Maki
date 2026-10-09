@@ -1430,6 +1430,8 @@ try
         }
     }
 
+    app.UseMiddleware<UntrustedForwardedForWarning>();
+
     // What each request is worth a line for lives in HttpRequestLogPolicy, including the rule that
     // keeps OPDS out of the log entirely: its authentication token is in the path, and request
     // logging writes paths.
