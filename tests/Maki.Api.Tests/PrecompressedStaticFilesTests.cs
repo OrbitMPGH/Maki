@@ -63,7 +63,7 @@ public sealed class PrecompressedStaticFilesTests : IDisposable
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, path);
         if (acceptEncoding is not null)
-            request.Headers.AcceptEncoding.Add(StringWithQualityHeaderValue.Parse(acceptEncoding));
+            request.Headers.AcceptEncoding.ParseAdd(acceptEncoding);
         return await client.SendAsync(request);
     }
 
@@ -121,7 +121,56 @@ public sealed class PrecompressedStaticFilesTests : IDisposable
         using var response = await Get(client, "/assets/tiny.js", "br");
 
         Assert.Empty(response.Content.Headers.ContentEncoding);
+        Assert.DoesNotContain("Accept-Encoding", response.Headers.Vary);
         Assert.Equal("x", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task A_sibling_older_than_its_source_is_ignored()
+    {
+        var path = Path.Combine(_webRoot, "assets", "stale-abc123.js");
+        WriteWithSiblings("assets/stale-abc123.js", Script);
+        File.SetLastWriteTimeUtc(path + ".br", File.GetLastWriteTimeUtc(path).AddMinutes(-5));
+        File.SetLastWriteTimeUtc(path + ".gz", File.GetLastWriteTimeUtc(path).AddMinutes(-5));
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = Client(factory);
+
+        using var response = await Get(client, "/assets/stale-abc123.js", "br, gzip");
+
+        Assert.Empty(response.Content.Headers.ContentEncoding);
+        Assert.Equal(Script, await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task A_not_modified_answer_names_no_encoding_but_still_varies()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = Client(factory);
+        using var first = await Get(client, "/assets/app-abc123.js", "br");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/assets/app-abc123.js");
+        request.Headers.AcceptEncoding.ParseAdd("br");
+        request.Headers.IfNoneMatch.Add(first.Headers.ETag!);
+        using var second = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotModified, second.StatusCode);
+        Assert.Empty(second.Content.Headers.ContentEncoding);
+        Assert.Contains("Accept-Encoding", second.Headers.Vary);
+    }
+
+    [Fact]
+    public async Task A_direct_request_for_a_sibling_is_a_plain_file_with_no_content_encoding()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = Client(factory);
+
+        using var response = await Get(client, "/assets/app-abc123.js.gz", "gzip");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Empty(response.Content.Headers.ContentEncoding);
+        Assert.Equal(
+            await File.ReadAllBytesAsync(Path.Combine(_webRoot, "assets", "app-abc123.js.gz")),
+            await response.Content.ReadAsByteArrayAsync());
     }
 
     [Theory]
@@ -136,7 +185,18 @@ public sealed class PrecompressedStaticFilesTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
+        Assert.Equal(encoding is null ? [] : [encoding], response.Content.Headers.ContentEncoding);
+        Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+
+        var bytes = await response.Content.ReadAsByteArrayAsync();
         if (encoding is null)
-            Assert.Equal(Shell, await response.Content.ReadAsStringAsync());
+        {
+            Assert.Equal(Shell, Encoding.UTF8.GetString(bytes));
+            return;
+        }
+
+        await using var brotli = new BrotliStream(new MemoryStream(bytes), CompressionMode.Decompress);
+        using var reader = new StreamReader(brotli);
+        Assert.Equal(Shell, await reader.ReadToEndAsync());
     }
 }
