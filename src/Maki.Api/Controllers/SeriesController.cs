@@ -334,6 +334,7 @@ public class SeriesController(
 
         // Flat join-table read scoped to these series in SQL, since SeriesTags has no visibility filter of its own.
         var tagIdsBySeries = (await db.SeriesTags
+                .AsNoTracking()
                 .Where(x => db.Series.Any(s => s.Id == x.SeriesId))
                 .ToListAsync(ct))
             .GroupBy(x => x.SeriesId)
