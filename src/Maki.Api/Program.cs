@@ -361,7 +361,10 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(2);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
+        // One 5xx or reset on a page of a 200-page chapter should cost a second try, not the chapter.
+        // It leaves 429 and 503 alone, which PageDownloader turns into the source's cooldown.
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
