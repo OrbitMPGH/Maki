@@ -55,7 +55,7 @@ const AnimeResumeCard = memo(function AnimeResumeCard({
           onClick={() => onOpen(catalogue)}
         />
         <AnimeResumePoster item={item}>
-          <span className="discover-corner" data-add="true" data-tip={t`View & add`} aria-hidden="true">
+          <span className="discover-corner" data-add="true" data-tip={t`View and add`} aria-hidden="true">
             <IconPlus size={16} />
           </span>
         </AnimeResumePoster>

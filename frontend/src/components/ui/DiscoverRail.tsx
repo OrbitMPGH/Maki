@@ -167,7 +167,7 @@ export const RecommendationCard = memo(function RecommendationCard({
           <span
             className="discover-corner"
             data-add="true"
-            data-tip={t`View & add`}
+            data-tip={t`View and add`}
             aria-hidden="true"
           >
             <IconPlus size={16} stroke={2} />
@@ -357,7 +357,7 @@ export const EngineCard = memo(function EngineCard({
             <IconCheck size={14} stroke={2.2} />
           </span>
         ) : (
-          <span className="discover-corner" data-add="true" data-tip={t`View & add`} aria-hidden="true">
+          <span className="discover-corner" data-add="true" data-tip={t`View and add`} aria-hidden="true">
             <IconPlus size={16} stroke={2} />
           </span>
         )}
