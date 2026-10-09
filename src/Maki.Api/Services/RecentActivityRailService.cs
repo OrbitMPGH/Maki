@@ -342,6 +342,14 @@ public class RecentActivityRailService(
         return best;
     }
 
+    /// <summary>
+    /// How many of the newest completed progress rows to group for the seed list. A bounded,
+    /// index-ordered scan like <c>HomeController</c>'s reading rails: an unbounded GROUP BY after a
+    /// Kavita import aggregates every read chapter on each Discover visit. The per-series read
+    /// counts are then taken for just the candidate series.
+    /// </summary>
+    private const int RecentProgressScan = 2000;
+
     /// <summary>A tag match is worth this many genre matches when attributing a pick to a seed.</summary>
     private const int TagWeight = 3;
 
@@ -398,18 +406,31 @@ public class RecentActivityRailService(
         // Over-fetch: the rows dropped below (no MangaBaka id, fully incognito, out of scope) are
         // only knowable after the join, and taking exactly SeedCount here would hand back fewer
         // seeds than asked for whenever any of them applies.
-        var recent = await ReadCounts.ReadFor(db, scope.UserId)
+        var newest = await ReadCounts.ReadFor(db, scope.UserId)
+            .OrderByDescending(p => p.UpdatedAt)
+            .Take(RecentProgressScan)
+            .Select(p => new { p.SeriesId, p.UpdatedAt })
+            .ToListAsync(ct);
+
+        var lastRead = newest
             .GroupBy(p => p.SeriesId)
-            .Select(g => new
-            {
-                SeriesId = g.Key,
-                LastReadAt = g.Max(p => p.UpdatedAt),
-                // Counted here rather than re-queried per seed: the grouping is already running.
-                Read = g.Count(),
-            })
+            .Select(g => new { SeriesId = g.Key, LastReadAt = g.Max(p => p.UpdatedAt) })
             .OrderByDescending(x => x.LastReadAt)
             .Take(SeedCount * 4)
-            .ToListAsync(ct);
+            .ToList();
+
+        var recentIds = lastRead.Select(x => x.SeriesId).ToList();
+        var readBySeries = recentIds.Count == 0
+            ? new Dictionary<int, int>()
+            : await ReadCounts.ReadFor(db, scope.UserId)
+                .Where(p => recentIds.Contains(p.SeriesId))
+                .GroupBy(p => p.SeriesId)
+                .Select(g => new { SeriesId = g.Key, Read = g.Count() })
+                .ToDictionaryAsync(x => x.SeriesId, x => x.Read, ct);
+
+        var recent = lastRead
+            .Select(x => new { x.SeriesId, x.LastReadAt, Read = readBySeries.GetValueOrDefault(x.SeriesId) })
+            .ToList();
 
         if (recent.Count == 0)
         {
