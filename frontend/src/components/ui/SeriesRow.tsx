@@ -71,7 +71,7 @@ export const SeriesRow = memo(function SeriesRow({
         {series.coverUrl ? (
           <img src={series.coverUrl} alt="" loading="lazy" decoding="async" />
         ) : (
-          <div className="row-cover-placeholder">{series.displayTitle}</div>
+          <div className="row-cover-placeholder" aria-hidden>{series.displayTitle}</div>
         )}
       </div>
 

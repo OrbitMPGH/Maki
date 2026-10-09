@@ -153,7 +153,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             decoding="async"
           />
         ) : (
-          <div className="cover-placeholder">{item.title}</div>
+          <div className="cover-placeholder" aria-hidden>{item.title}</div>
         )}
         <div className="cover-scrim" />
 
@@ -236,7 +236,7 @@ export const RecommendationRow = memo(function RecommendationRow({
             decoding="async"
           />
         ) : (
-          <div className="row-cover-placeholder">{item.title}</div>
+          <div className="row-cover-placeholder" aria-hidden>{item.title}</div>
         )}
       </div>
 
@@ -346,7 +346,7 @@ export const EngineCard = memo(function EngineCard({
             decoding="async"
           />
         ) : (
-          <div className="cover-placeholder">{item.title}</div>
+          <div className="cover-placeholder" aria-hidden>{item.title}</div>
         )}
         <div className="cover-scrim" />
 

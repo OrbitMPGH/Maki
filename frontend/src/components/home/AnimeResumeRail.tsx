@@ -78,7 +78,7 @@ function AnimeResumePoster({ item, children }: { item: HomeAnimeResumeItem; chil
       {item.coverUrl ? (
         <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
       ) : (
-        <div className="cover-placeholder">{item.seriesTitle}</div>
+        <div className="cover-placeholder" aria-hidden>{item.seriesTitle}</div>
       )}
       <div className="cover-scrim" />
 

@@ -93,7 +93,7 @@ export const CoverCard = memo(function CoverCard({
         {series.coverUrl ? (
           <img src={series.coverUrl} alt="" loading="lazy" decoding="async" />
         ) : (
-          <div className="cover-placeholder">{series.displayTitle}</div>
+          <div className="cover-placeholder" aria-hidden>{series.displayTitle}</div>
         )}
         <div className="cover-scrim" />
 
