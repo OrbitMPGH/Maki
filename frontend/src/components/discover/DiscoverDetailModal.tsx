@@ -4,6 +4,7 @@ import {
   ActionIcon,
   Badge,
   Box,
+  Button,
   CloseButton, Divider,
   Group,
   Modal,
@@ -72,7 +73,7 @@ export function DiscoverDetailModal({
   /** Shows a dice beside the close button that swaps in another random pick. */
   onReroll?: () => void
 }) {
-  const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
+  const { data: detail, isLoading, isError, refetch } = useRecommendationDetail(item?.providerId ?? null)
   const { scope: diceScope, tumble } = useDiceTumble()
   const rerolling = useRef(false)
   const rerollTimer = useRef<number | undefined>(undefined)
@@ -216,6 +217,7 @@ export function DiscoverDetailModal({
                     // come down to stylesheet order. The class only carries the phone rule that
                     // takes the poster slot out entirely.
                     <Skeleton
+                      animate={!isError}
                       className="discover-poster-skeleton"
                       w={176}
                       h={264}
@@ -226,7 +228,7 @@ export function DiscoverDetailModal({
 
                   <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                     <Title order={1} className="series-hero-title">
-                      {title}
+                      {title || (isError ? t`Couldn't load this title` : '')}
                     </Title>
 
                     {(detail?.nativeTitle || detail?.romanizedTitle) && (
@@ -421,6 +423,16 @@ export function DiscoverDetailModal({
                         <Skeleton h={12} />
                         <Skeleton h={12} w="70%" />
                       </Stack>
+                    )}
+                    {isError && !detail && (
+                      <Group gap="sm">
+                        <Text size="sm" c="var(--ink-3)">
+                          <Trans>Couldn't load the details for this title.</Trans>
+                        </Text>
+                        <Button size="xs" variant="default" onClick={() => void refetch()}>
+                          <Trans>Retry</Trans>
+                        </Button>
+                      </Group>
                     )}
 
                     <Title order={3} fz={17}>

@@ -40,6 +40,9 @@ export function SignalsCard() {
   const undo = useUndoFeedback()
   const loadError = error ? errorText(error) : ''
   const [manage, setManage] = useState<'titles' | 'anime' | null>(null)
+  // The modal fetches its own data on mount, so it is only mounted once someone has opened it.
+  const [manageOpened, setManageOpened] = useState(false)
+  if (manage !== null && !manageOpened) setManageOpened(true)
   const [actionError, setActionError] = useState('')
   const [howItWorks, setHowItWorks] = useState(false)
 
@@ -316,9 +319,11 @@ export function SignalsCard() {
           </>
         )}
       </Stack>
-      <ManageSignalsModal
-        opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
-      />
+      {manageOpened && (
+        <ManageSignalsModal
+          opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
+        />
+      )}
     </>
   )
 }

@@ -4652,6 +4652,10 @@ msgstr "プロフィールを読み込めませんでした"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "{seriesTitle}を削除できませんでした: {reason}"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not restore {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Could not revert this upgrade"
@@ -4684,10 +4688,18 @@ msgstr "通知の接続先を読み込めませんでした"
 msgid "Couldn't load requests"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load the details for this title."
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
 msgstr "このレールを読み込めませんでした"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load this title"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -5241,11 +5253,6 @@ msgstr "属性"
 #, fuzzy
 msgid "Density: {densityLabel}"
 msgstr "密度：{densityLabel}"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Describe what you're after, a title, or author:\"Junji Ito\""
-msgstr "探しているもの、タイトル、または著者を説明：「Junji Ito」"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -12593,6 +12600,7 @@ msgstr "{retryCount}回再試行 - 次の試行{nextAttemptTime}"
 msgid "Retries"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/NotificationsSection.tsx

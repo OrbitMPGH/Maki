@@ -4,6 +4,7 @@ import { notifications } from '@mantine/notifications'
 import { IconBook, IconDots, IconEyeOff } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useHideHomeReading, type HomeReadingItem } from '../../api/hooks'
+import { errorText } from '../../lib/errorText'
 
 export type ReadingRailKind = 'continue' | 'jumpback'
 
@@ -32,7 +33,7 @@ export function ReadingCardMenu({
     try {
       await hide.mutateAsync({ seriesId, hidden: true })
     } catch (error) {
-      const reason = String(error)
+      const reason = errorText(error)
       notifications.show({ color: 'var(--danger)', message: t`Could not remove ${seriesTitle}: ${reason}` })
       return
     }
@@ -49,7 +50,10 @@ export function ReadingCardMenu({
             style={{ flexShrink: 0 }}
             onClick={() => {
               notifications.hide(id)
-              void hide.mutateAsync({ seriesId, hidden: false })
+              hide.mutateAsync({ seriesId, hidden: false }).catch((error: unknown) => {
+                const reason = errorText(error)
+                notifications.show({ color: 'var(--danger)', message: t`Could not restore ${seriesTitle}: ${reason}` })
+              })
             }}
           >
             <Trans>Undo</Trans>

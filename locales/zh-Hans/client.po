@@ -4652,6 +4652,10 @@ msgstr "无法读取你的资料"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "无法移除 {seriesTitle}：{reason}"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not restore {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Could not revert this upgrade"
@@ -4684,10 +4688,18 @@ msgstr "无法加载通知连接"
 msgid "Couldn't load requests"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load the details for this title."
+msgstr ""
+
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
 msgstr "无法加载此横栏"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load this title"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -5241,11 +5253,6 @@ msgstr "受众类型"
 #, fuzzy
 msgid "Density: {densityLabel}"
 msgstr "密度：{densityLabel}"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Describe what you're after, a title, or author:\"Junji Ito\""
-msgstr "描述你想找的内容、标题，或作者：“Junji Ito”"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -12593,6 +12600,7 @@ msgstr "已重试 {retryCount} 次 - 下次尝试时间 {nextAttemptTime}"
 msgid "Retries"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/NotificationsSection.tsx

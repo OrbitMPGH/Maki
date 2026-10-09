@@ -11,6 +11,7 @@ import {
   type RecommendationItem,
 } from '../../api/hooks'
 import { useUpgradeProfiles } from '../../api/upgrades'
+import { ApiError } from '../../api/client'
 import { useCreateSeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
 import { useAuth } from '../../auth/AuthProvider'
@@ -151,7 +152,7 @@ export function DiscoverLibraryRail({
           // 410 means this mutation id belongs to an add that committed and was then deleted. The
           // id is sticky so a retry cannot double-add; keeping it after a 410 would make every
           // later press fail the same way, so adding again becomes a genuinely new operation.
-          if (error.message.startsWith('API 410')) addMutationId.current = null
+          if (error instanceof ApiError && error.status === 410) addMutationId.current = null
         },
       },
     )
@@ -333,21 +334,6 @@ export function DiscoverLibraryRail({
         </>
       )}
 
-      {addSeries.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(addSeries.error)}
-        </Alert>
-      )}
-      {applyAnimeResume.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(applyAnimeResume.error)}
-        </Alert>
-      )}
-      {createRequest.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(createRequest.error)}
-        </Alert>
-      )}
     </Paper>
   )
 }

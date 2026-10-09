@@ -3815,6 +3815,10 @@ msgstr "Could not read your profile"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "Could not remove {seriesTitle}: {reason}"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not restore {seriesTitle}: {reason}"
+msgstr "Could not restore {seriesTitle}: {reason}"
+
 #: src/pages/ActivityPage.tsx
 msgid "Could not revert this upgrade"
 msgstr "Could not revert this upgrade"
@@ -3843,9 +3847,17 @@ msgstr "Couldn't load notification connections"
 msgid "Couldn't load requests"
 msgstr "Couldn't load requests"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load the details for this title."
+msgstr "Couldn't load the details for this title."
+
 #: src/components/rails/CustomRailSection.tsx
 msgid "Couldn't load this rail"
 msgstr "Couldn't load this rail"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Couldn't load this title"
+msgstr "Couldn't load this title"
 
 #: src/pages/HomePage.tsx
 msgid "Couldn't load your library"
@@ -4304,10 +4316,6 @@ msgstr "Demographic"
 #: src/pages/LibraryPage.tsx
 msgid "Density: {densityLabel}"
 msgstr "Density: {densityLabel}"
-
-#: src/pages/DiscoverPage.tsx
-msgid "Describe what you're after, a title, or author:\"Junji Ito\""
-msgstr "Describe what you're after, a title, or author:\"Junji Ito\""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Description"
@@ -10335,6 +10343,7 @@ msgstr "Retried {retryCount}x - next attempt {nextAttemptTime}"
 msgid "Retries"
 msgstr "Retries"
 
+#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/NotificationsSection.tsx

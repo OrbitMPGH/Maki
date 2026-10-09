@@ -884,6 +884,7 @@ export function useHideHomeReading() {
       )
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['home', 'reading'] }),
+    meta: { silent: true },
   })
 }
 

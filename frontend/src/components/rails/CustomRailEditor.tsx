@@ -31,6 +31,7 @@ import {
   type CustomRailSpec,
 } from '../../api/customRails'
 import { useLabel } from '../../i18n-context'
+import { errorText } from '../../lib/errorText'
 import { CatalogueFilters, filtersFromSpec, useCatalogueFilters } from '../CatalogueFilters'
 import { RecommenderDials } from '../discover/RecommenderDials'
 
@@ -161,7 +162,7 @@ export function CustomRailForm({
         notifications.show({ color: 'var(--ok)', message: rail ? now`Rail saved` : now`Rail added` })
         onSaved?.(saved)
       },
-      onError: (err: unknown) => setError(String(err)),
+      onError: (err: unknown) => setError(errorText(err)),
     }
     if (rail) update.mutate({ id: rail.id, ...body }, options)
     else create.mutate(body, options)
@@ -192,7 +193,7 @@ export function CustomRailForm({
               onChange={(v) => changePlacement(v as CustomRailPlacement)}
               data={[
                 { value: 'home', label: t`Home` },
-                { value: 'discover', label: t`Discover` },
+                { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
               ]}
             />
           </Stack>
