@@ -29,8 +29,9 @@ internal static class JsonRead
                     return whole;
                 }
 
-                return element.TryGetDouble(out var real) && real is >= int.MinValue and <= int.MaxValue
-                    ? (int)Math.Round(real)
+                return element.TryGetDouble(out var real) && real == Math.Truncate(real) &&
+                       real is >= int.MinValue and <= int.MaxValue
+                    ? (int)real
                     : null;
             case JsonValueKind.String:
                 return int.TryParse(element.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)

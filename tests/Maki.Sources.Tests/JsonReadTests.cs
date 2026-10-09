@@ -21,6 +21,7 @@ public class JsonReadTests
     [Theory]
     [InlineData("3", 3)]
     [InlineData("3.0", 3)]
+    [InlineData("3.5", null)]
     [InlineData("\"4\"", 4)]
     [InlineData("\"x\"", null)]
     [InlineData("null", null)]

@@ -284,10 +284,9 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
         {
             if (int.TryParse(property.Name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var position))
             {
-                if (JsonRead.Int(property.Value) is { } count)
-                {
-                    counts[position] = count;
-                }
+                counts[position] = JsonRead.Int(property.Value)
+                    ?? throw new InvalidDataException(
+                        $"Anime-Sama page count for position {position} is not an integer: {BodyText.Snippet(property.Value.GetRawText())}");
             }
         }
 

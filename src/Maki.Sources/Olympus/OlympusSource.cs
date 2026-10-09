@@ -218,8 +218,14 @@ public class OlympusSource : ISource
             throw new InvalidOperationException($"Olympus chapter {chapter.SourceChapterId} response has no pages array");
         }
 
+        if (pagesEl.EnumerateArray().Any(p => p.ValueKind != JsonValueKind.String))
+        {
+            throw new InvalidOperationException(
+                $"Olympus chapter {chapter.SourceChapterId} has a page entry that is not a URL string");
+        }
+
         var pages = pagesEl.EnumerateArray()
-            .Select(JsonRead.Text)
+            .Select(p => p.GetString())
             .Where(url => !string.IsNullOrEmpty(url))
             .Select(url => new PageRequest(url!, new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" }))
             .ToList();

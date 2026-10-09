@@ -293,4 +293,16 @@ public class AnimeSamaSourceTests
 
         Assert.Equal(["1", "2", "Bonus (partie 1)", "3"], labels);
     }
+
+    [Fact]
+    public async Task ListChapters_throws_on_a_non_integer_page_count()
+    {
+        var source = new AnimeSamaSource(new FakeHtmlFetcher(new()
+        {
+            ["/catalogue/foo/scan/vf/"] = "<html><body><h4 id=\"titreOeuvre\">Foo</h4></body></html>",
+            ["get_nb_chap_et_img.php"] = """{"1":5,"2":"many"}"""
+        }));
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => source.ListChaptersAsync("foo/scan/vf"));
+    }
 }
