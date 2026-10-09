@@ -388,8 +388,8 @@ msgstr "{active, plural, other {다운로드 #개 진행 중}}"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "{added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류 {errors}개"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "{added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류 {errors}개"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1168,10 +1168,6 @@ msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # ser
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
-#~ msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
-#~ msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, other {시리즈 #개 이름 변경됨}}"
@@ -1753,10 +1749,6 @@ msgstr "전체 {total, plural, other {개 소스}} 중 <0>{enabledCount}</0>개 
 #, fuzzy
 msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
 msgstr "디스크에 <0>{seriesCount, plural, other {시리즈 #개}}</0>, <1>{diskSize}</1> 사용 중."
-
-#: src/pages/stats/sections/ProgressSection.tsx
-#~ msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
-#~ msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10262,8 +10254,8 @@ msgstr "여기서 설정한 내용은 언제든 변경할 수 있습니다. 모�
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "가져온 항목이 없습니다. 가져오기 목록을 사용하려면 로컬 MangaBaka 데이터베이스가 필요합니다."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "가져온 항목이 없습니다. 가져오기 목록을 사용하려면 로컬 MangaBaka 데이터베이스가 필요합니다."
 
 #: src/api/upgrades.ts
 #, fuzzy

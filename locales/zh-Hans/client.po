@@ -388,8 +388,8 @@ msgstr "{active, plural, other {# 个下载正在进行中}}"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "已添加{added}个，已申请{requested}个，已跳过{skipped}个，{errors}个错误"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "已添加{added}个，已申请{requested}个，已跳过{skipped}个，{errors}个错误"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1168,10 +1168,6 @@ msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # ser
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
-#~ msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
-#~ msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, other {已重命名 # 个系列}}"
@@ -1753,10 +1749,6 @@ msgstr "已启用 <0>{enabledCount}</0> / {total, plural, other {# 个来源}}"
 #, fuzzy
 msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
 msgstr "磁盘上有 <0>{seriesCount, plural, other {# 个系列}}</0>，共 <1>{diskSize}</1>。"
-
-#: src/pages/stats/sections/ProgressSection.tsx
-#~ msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
-#~ msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10262,8 +10254,8 @@ msgstr "这里的设置都不是最终决定。之后也可以在“设置”中
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "未导入任何内容：导入列表需要本地 MangaBaka 数据库。"
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "未导入任何内容：导入列表需要本地 MangaBaka 数据库。"
 
 #: src/api/upgrades.ts
 #, fuzzy

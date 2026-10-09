@@ -388,8 +388,8 @@ msgstr "{active, plural, one {# загрузка выполняется} few {# 
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Добавлено: {added}, запрошено: {requested}, пропущено: {skipped}, ошибок: {errors}"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Добавлено: {added}, запрошено: {requested}, пропущено: {skipped}, ошибок: {errors}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1168,10 +1168,6 @@ msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # ser
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
-#~ msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
-#~ msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, one {Переименована # серия} few {Переименованы # серии} many {Переименовано # серий} other {Переименована # серия}}"
@@ -1753,10 +1749,6 @@ msgstr "Включено <0>{enabledCount}</0> из {total, plural, one {# ис�
 #, fuzzy
 msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
 msgstr "<0>{seriesCount, plural, one {# серия} few {# серии} many {# серий} other {# серии}}</0>, занимают <1>{diskSize}</1> на диске."
-
-#: src/pages/stats/sections/ProgressSection.tsx
-#~ msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
-#~ msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10262,8 +10254,8 @@ msgstr "Эти настройки не окончательные. Все пар
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Ничего не импортировано: для списков импорта нужна локальная база MangaBaka."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Ничего не импортировано: для списков импорта нужна локальная база MangaBaka."
 
 #: src/api/upgrades.ts
 #, fuzzy

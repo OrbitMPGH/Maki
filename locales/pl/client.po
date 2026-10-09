@@ -388,8 +388,8 @@ msgstr "{active, plural, one {# pobieranie w toku} few {# pobierania w toku} man
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "Dodano: {added}, zgłoszono próśb: {requested}, pominięto: {skipped}, błędy: {errors}"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "Dodano: {added}, zgłoszono próśb: {requested}, pominięto: {skipped}, błędy: {errors}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1168,10 +1168,6 @@ msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # ser
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
-#~ msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
-#~ msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, one {Zmieniono nazwę # serii} few {Zmieniono nazwę # serii} many {Zmieniono nazwę # serii} other {Zmieniono nazwę # serii}}"
@@ -1753,10 +1749,6 @@ msgstr "Włączono <0>{enabledCount}</0> z {total, plural, one {# źródła} few
 #, fuzzy
 msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
 msgstr "<0>{seriesCount, plural, one {# seria} few {# serie} many {# serii} other {# serii}}</0> i <1>{diskSize}</1> na dysku."
-
-#: src/pages/stats/sections/ProgressSection.tsx
-#~ msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
-#~ msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10262,8 +10254,8 @@ msgstr "Nic nie jest ostateczne. Każdą opcję znajdziesz też w Ustawieniach."
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Nic nie zaimportowano: listy importu wymagają lokalnej bazy danych MangaBaka."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Nic nie zaimportowano: listy importu wymagają lokalnej bazy danych MangaBaka."
 
 #: src/api/upgrades.ts
 #, fuzzy

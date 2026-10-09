@@ -332,8 +332,8 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, one {# download in progress} other {# downloads in progress}}"
 
 #: src/components/ImportListsSection.tsx
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "{adds} added by you, {excluded} excluded from taste"
@@ -965,10 +965,6 @@ msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # ser
 msgstr "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # series, {1} failed}}"
 
 #: src/pages/settings/LibraryCards.tsx
-#~ msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
-#~ msgstr "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
-
-#: src/pages/settings/LibraryCards.tsx
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 
@@ -1436,10 +1432,6 @@ msgstr "<0>{enabledCount}</0> of {total, plural, one {# source} other {# sources
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
 msgstr "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
-
-#: src/pages/stats/sections/ProgressSection.tsx
-#~ msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
-#~ msgstr "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #~ msgid "<0>{streak}</0> day streak, best <1>{best}</1>"
@@ -8434,8 +8426,8 @@ msgid "Nothing here is final. Every option is also in Settings."
 msgstr "Nothing here is final. Every option is also in Settings."
 
 #: src/components/ImportListsSection.tsx
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Nothing imported: import lists need the local MangaBaka database."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Nothing imported: import lists need the local MangaBaka database."
 
 #: src/api/upgrades.ts
 msgid "Nothing in it beats what you have"

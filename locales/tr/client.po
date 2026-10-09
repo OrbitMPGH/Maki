@@ -388,8 +388,8 @@ msgstr "{active, plural, one {# indirme devam ediyor} other {# indirme devam edi
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
-msgstr "{added} eklendi, {requested} istendi, {skipped} atlandı, {errors} hata"
+#~ msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+#~ msgstr "{added} eklendi, {requested} istendi, {skipped} atlandı, {errors} hata"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1168,10 +1168,6 @@ msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # ser
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
-#~ msgid "{renamed, plural, one {Renamed # series, {failed} failed} other {Renamed # series, {failed} failed}}"
-#~ msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, one {# seri yeniden adlandırıldı} other {# seri yeniden adlandırıldı}}"
@@ -1753,10 +1749,6 @@ msgstr "{total, plural, one {# kaynağın} other {# kaynağın}}</0> <0>{enabled
 #, fuzzy
 msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
 msgstr "<0>{seriesCount, plural, one {# seri} other {# seri}}</0> ve diskte <1>{diskSize}</1>."
-
-#: src/pages/stats/sections/ProgressSection.tsx
-#~ msgid "<0>{streak, plural, one {# day} other {# days}}</0> streak, best <1>{best, plural, one {# day} other {# days}}</1>"
-#~ msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10262,8 +10254,8 @@ msgstr "Buradaki hiçbir ayar kesin değil. Her seçenek Ayarlar'da da bulunur."
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
-msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr "Hiçbir şey içe aktarılmadı: içe aktarma listeleri için yerel MangaBaka veritabanı gerekir."
+#~ msgid "Nothing imported: import lists need the local MangaBaka database."
+#~ msgstr "Hiçbir şey içe aktarılmadı: içe aktarma listeleri için yerel MangaBaka veritabanı gerekir."
 
 #: src/api/upgrades.ts
 #, fuzzy

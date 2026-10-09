@@ -67,23 +67,9 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
     runList.mutate(
       { service, full },
       {
-        onSuccess: (result) => {
-          if ('started' in result) {
-            notifications.show({
-              message: t`Sync started, you will get a notification when it finishes`,
-            })
-            return
-          }
-          if (result.dumpUnavailable) {
-            notifications.show({
-              color: 'var(--warn)',
-              message: t`Nothing imported: import lists need the local MangaBaka database.`,
-            })
-            return
-          }
-          const { added, requested, skipped, errors } = result
+        onSuccess: () => {
           notifications.show({
-            message: t`${added} added, ${requested} requested, ${skipped} skipped, ${errors} errors`,
+            message: t`Sync started, you will get a notification when it finishes`,
           })
         },
       },
