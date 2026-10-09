@@ -113,6 +113,23 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         var result = await ArchiveHealthAnalyzer.AnalyzeAsync(archive, default, null, null, verify: true);
         Assert.Contains(result.Problems,p=>p.Kind=="damagedImage");
     }
+    [Fact] public async Task A_header_ImageSharp_fails_on_oddly_is_reported_not_thrown()
+    {
+        // Truncated BMP, JPEG and WebP data makes Identify throw ImageFormatException,
+        // NotSupportedException, NullReferenceException and similar, not only the two types it documents.
+        using var image = new Image<Rgba32>(40, 30);
+        using var bmp = new MemoryStream(); image.Save(bmp, new SixLabors.ImageSharp.Formats.Bmp.BmpEncoder());
+        using var jpg = new MemoryStream(); image.Save(jpg, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder());
+        using var webp = new MemoryStream(); image.Save(webp, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder());
+        foreach (var (name, good) in new[] { ("1.bmp", bmp.ToArray()), ("1.jpg", jpg.ToArray()), ("1.webp", webp.ToArray()) })
+        {
+            for (var cut = 4; cut < Math.Min(good.Length, 120); cut += 2)
+            {
+                var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive((name, good[..cut])), default, null, null, verify: true);
+                Assert.Single(result.Pages);
+            }
+        }
+    }
     [Fact] public async Task Too_many_entries_are_incomplete_not_corrupt()
     {
         var path = Archive(Enumerable.Range(0,10001).Select(i=>($"{i}.txt",Array.Empty<byte>())).ToArray());
