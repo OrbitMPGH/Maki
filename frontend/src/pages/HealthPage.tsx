@@ -232,7 +232,8 @@ export default function HealthPage() {
     action.mutate({ path, body }, { onSuccess: () => setSelected(new Map()) })
   const ids = [...selected.keys()]
   const pageIds = files.data?.items.map((f) => f.id) ?? []
-  const error = overview.error ?? files.error ?? operations.error ?? history.error ?? action.error ?? quick.error ?? refresh.error
+  const queryError = overview.error ?? files.error ?? operations.error ?? history.error
+  const error = queryError ?? action.error ?? quick.error ?? refresh.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
   // so they do not belong in a number whose job is to say "something needs you".
   const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
@@ -304,7 +305,7 @@ export default function HealthPage() {
         <Alert
           color="var(--danger)"
           mb="lg"
-          withCloseButton
+          withCloseButton={!queryError}
           onClose={() => {
             action.reset()
             quick.reset()
