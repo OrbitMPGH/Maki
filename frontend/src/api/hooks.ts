@@ -3528,7 +3528,7 @@ export interface ScrobbleStatus {
 export function useAppVersion() {
   return useQuery({
     queryKey: ['app-version'],
-    queryFn: async () => (await getInitialize()).version,
+    queryFn: async () => (await api<{ version: string }>('/system/status')).version,
     staleTime: Infinity,
   })
 }
