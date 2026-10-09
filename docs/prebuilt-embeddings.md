@@ -67,10 +67,11 @@ without it the file stays at 401 MB and the whole exercise gains nothing.
 Building the in-memory search index also got faster (7.8 s → 3.9 s), since the payload now copies
 in verbatim instead of being parsed from float32 and re-quantized.
 
-Search quantizes to int8 on load anyway (`EmbeddingMath.Quantize`), and a quantized round-trip
-agrees with the float32 cosine **to three decimals** (`VectorIndexTests.Quantize_RoundTrips_WithinTolerance`) —
-far finer than the gap between adjacent results. Paying 3.5× the bandwidth to ship precision that
-is discarded at load makes no sense.
+Search packs rows down to 4-bit levels, two to a byte, when it builds the in-memory index
+(`EmbeddingMath.PackQuantized`), and a quantized round-trip agrees with the float32 cosine **to
+three decimals** (`VectorIndexTests.Quantize_RoundTrips_WithinTolerance`) — far finer than the gap
+between adjacent results. Paying 3.5× the bandwidth to ship precision that is discarded at load
+makes no sense.
 
 ### How it works
 
@@ -118,19 +119,23 @@ everything, defeating the point.
 
 ## Install sequence (implemented in `PrebuiltIndexInstaller`)
 
-1. **Poll** `manifest.json` (ETag / `If-None-Match`).
+1. **Fetch** `manifest.json` with a plain GET. There is no conditional request; the file is small.
 2. **Compatibility gate** — require `modelVersion == EmbeddingOptions.ModelVersion` **and**
    `dimensions == options.Dimensions`. This is the critical guard: a 384-dim file dropped into a
    768-dim build has every row filtered as wrong-width, and search goes silently empty while
    falling back to title matching. Refuse, log once, leave local indexing alone.
-3. **Freshness gate** — skip if `generatedAt` is not newer than the recorded local marker, and
-   skip if the local index is already complete for the user's dump. Never install *older* than
-   what's on disk; that would throw away work and move backwards.
+3. **Freshness gate** — install when the local file holds fewer than 1,000 rows or vectors stamped
+   with another model. Otherwise skip if `generatedAt` is not newer than the recorded local marker,
+   and skip if the local row count already meets the artifact's `rowCount`. Never install *older*
+   than what's on disk; that would throw away work and move backwards. A manual "Download now"
+   skips only this gate.
 4. **Download** to `{ConfigDir}/cache/embeddings.db.partial`, decompress, then verify: sha256
-   against the manifest, `PRAGMA quick_check`, `meta` matches the manifest, row count within
-   tolerance of the stated count.
-5. **Quiesce** — refuse the swap while `EmbeddingIndexStatus.Running`; take
-   `VectorIndexCache`'s build lock so no reader is mid-build.
+   against the manifest, `PRAGMA quick_check`, the file's own `meta` `model_version` (when it has
+   one) against this build's model, vector width, and a row count within 5% of the stated count.
+   Only one install runs at a time; a second answers `install.alreadyRunning` rather than sharing
+   the staging file.
+5. **Quiesce** — refuse the install while `EmbeddingIndexStatus.Running`, before and again after the
+   download; the swap itself runs under `VectorIndexCache`'s build lock so no reader is mid-build.
 6. **Swap** — `File.Move(overwrite: true)`, and delete stale `-wal` / `-shm` sidecars. Stores open
    with `Pooling=False`, so no connection outlives its call.
 7. **Invalidate** `VectorIndexCache`, record `embeddings.prebuiltGeneratedAt` in settings.
@@ -147,10 +152,12 @@ require the dates to match.
 
 ## Cadence and cost
 
-Nightly full artifacts would be ~80 MB × every user × 365. Better: **publish weekly, let the local
-incremental pass cover the daily delta.** Once the bulk exists, a day's new series is a few
-hundred rows — well under a minute locally. That cuts hosting ~7× with no meaningful freshness
-loss. Per-dump-date delta artifacts are a possible v2 if even weekly proves heavy.
+Nightly full artifacts would be ~80 MB × every user × 365. Better: **publish weekly.** The local
+incremental pass only runs when an admin presses Build in settings, so series added to the dump
+between artifacts have no vectors until the next artifact lands or someone builds locally; a day's
+new series is a few hundred rows, well under a minute when that pass is run. That cuts hosting ~7×
+at the cost of that lag. Per-dump-date delta artifacts are a possible v2 if even weekly proves
+heavy.
 
 ## Generation — maintainer-run, not CI (implemented)
 
@@ -302,8 +309,8 @@ is a hostile SQLite file.
 
 - **Publish the first artifact.** Until something exists at `PrebuiltIndexInstaller.DefaultManifestUrl`,
   the job simply no-ops and everyone builds locally as before.
-- **Decide the cadence.** Weekly is the recommendation above; the local incremental pass covers
-  the days in between.
+- **Decide the cadence.** Weekly is the recommendation above; new series wait for the next artifact
+  or a manual local pass in between.
 - The `url` field in the manifest is written by the publish script from `gh repo view`, so a fork
   publishing its own artifact gets its own URL for free — but the *default* URL compiled into the
   client still points at this repo. Forks need the `recommendations.prebuilturl` setting.

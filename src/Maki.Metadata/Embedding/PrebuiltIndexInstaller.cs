@@ -301,6 +301,16 @@ public class PrebuiltIndexInstaller(
             }
         }
 
+        // The manifest is the publisher's claim; the file's own record is what the vectors really
+        // are. An artifact that never stamped one is accepted, since the stamp is written by the
+        // install itself for those.
+        if (EmbeddingStore.ReadModelVersion(staging) is { Length: > 0 } stamped
+            && !string.Equals(stamped, options.ModelVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"downloaded index holds vectors from model {stamped}, this install uses {options.ModelVersion}");
+        }
+
         using var stats = conn.CreateCommand();
         stats.CommandText = "SELECT COUNT(*), COALESCE(MIN(length(vec)), 0), COALESCE(MAX(length(vec)), 0) FROM series_vectors";
         stats.CommandTimeout = 600;

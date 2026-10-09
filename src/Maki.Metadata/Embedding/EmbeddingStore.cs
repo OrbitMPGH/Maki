@@ -531,7 +531,7 @@ public class EmbeddingStore(EmbeddingOptions options)
         WriteModelVersion(conn, version);
     }
 
-    private static string? ReadModelVersion(string dbPath)
+    internal static string? ReadModelVersion(string dbPath)
     {
         using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
