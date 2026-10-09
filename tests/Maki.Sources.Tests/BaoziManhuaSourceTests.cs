@@ -39,4 +39,12 @@ public class BaoziManhuaSourceTests
         Assert.Equal("番外篇", special.NumberRaw);
         Assert.Equal("0_1", special.SourceChapterId);
     }
+
+    [Fact]
+    public async Task Search_throws_when_the_catalog_page_lists_no_series()
+    {
+        var source = SourceFor(new() { ["classify"] = "<html><body>Just a moment...</body></html>" });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("test"));
+    }
 }

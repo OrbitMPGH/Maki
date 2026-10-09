@@ -136,6 +136,11 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
             catalog.Add(new SourceSeriesResult(seriesId, title, $"{BaseUrl}/mangas/{seriesId}", cover));
         }
 
+        if (catalog.Count == 0)
+        {
+            throw new InvalidOperationException("TCB Scans's catalog page listed no series");
+        }
+
         return catalog;
     }
 

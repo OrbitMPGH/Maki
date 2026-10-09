@@ -82,6 +82,11 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
             catalog.Add(new SourceSeriesResult(seriesId, title, $"{BaseUrl}/comic/{seriesId}", cover));
         }
 
+        if (catalog.Count == 0)
+        {
+            throw new InvalidOperationException("Baozi Manhua's catalog page listed no series");
+        }
+
         return catalog;
     }
 
