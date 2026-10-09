@@ -1,6 +1,20 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 
 const PREFIX = 'maki-page:'
+export const SCROLL_PREFIX = 'maki-scroll:'
+
+/**
+ * Forgets everything the tab remembered about where the previous account was: page filters, search
+ * text and scroll offsets. sessionStorage outlives a sign-out on the same tab, so without this the
+ * next account opens Library with the last one's search applied.
+ */
+export function clearTabState(): void {
+  try {
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith(PREFIX) || key.startsWith(SCROLL_PREFIX)) sessionStorage.removeItem(key)
+    }
+  } catch { /* storage unavailable; there is nothing remembered to leak */ }
+}
 
 /**
  * `useState` that survives the page being unmounted and mounted again.
@@ -22,24 +36,42 @@ export function usePageState<T>(
   key: string | null,
   initial: T | (() => T),
 ): [T, Dispatch<SetStateAction<T>>] {
-  const [value, setValue] = useState<T>(() => {
+  const load = (k: string | null): T => {
     try {
-      const raw = key == null ? null : sessionStorage.getItem(PREFIX + key)
+      const raw = k == null ? null : sessionStorage.getItem(PREFIX + k)
       // Wrapped rather than stored bare so `null`, `0` and `""` are all distinguishable from
       // "nothing stored", which `getItem` reports the same way.
       if (raw) return (JSON.parse(raw) as { v: T }).v
     } catch { /* unparseable or unavailable; the default is a fine answer */ }
     return typeof initial === 'function' ? (initial as () => T)() : initial
-  })
+  }
+
+  const [slot, setSlot] = useState<{ key: string | null; value: T }>(() => ({ key, value: load(key) }))
+
+  // A page that stays mounted while its scope changes (one component, many creators) must show the
+  // new scope's remembered value, not carry the old one across and write it under the new key.
+  // Moving to or from an opted-out `null` keeps the value, as it always did.
+  let current = slot
+  if (slot.key !== key) {
+    current = key != null && slot.key != null ? { key, value: load(key) } : { key, value: slot.value }
+    setSlot(current)
+  }
+
+  const setValue = useCallback<Dispatch<SetStateAction<T>>>((action) => {
+    setSlot((prev) => ({
+      key: prev.key,
+      value: typeof action === 'function' ? (action as (p: T) => T)(prev.value) : action,
+    }))
+  }, [])
 
   useEffect(() => {
-    if (key == null) return
+    if (current.key == null) return
     try {
-      sessionStorage.setItem(PREFIX + key, JSON.stringify({ v: value }))
+      sessionStorage.setItem(PREFIX + current.key, JSON.stringify({ v: current.value }))
     } catch { /* private mode or a full quota; losing the snapshot beats failing the render */ }
-  }, [key, value])
+  }, [current.key, current.value])
 
-  return [value, setValue]
+  return [current.value, setValue]
 }
 
 /**

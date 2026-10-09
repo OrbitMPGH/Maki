@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { stopConnection } from './signalr'
 import { api, invalidateInitialize } from './client'
+import { clearTabState } from '../lib/pageState'
 import { useSaveSettingsRecord } from './settingsRecord'
 
 type SetupDoneHandler = () => void
@@ -109,6 +110,8 @@ export function dropAccountData(qc: QueryClient): void {
   // The sign-in page reads SSO state from the bootstrap payload, which an admin may have changed
   // since this tab loaded it.
   invalidateInitialize()
+  // Per-tab memory of the last account's filters, search text and scroll offsets.
+  clearTabState()
   qc.removeQueries({
     predicate: (query) =>
       query.queryKey.length !== ME_QUERY_KEY.length ||
