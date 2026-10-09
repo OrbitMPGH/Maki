@@ -6,7 +6,6 @@ public class ConfigFile
 {
     public int Port { get; set; } = 8990;
     public string LogLevel { get; set; } = "Information";
-    public string UrlBase { get; set; } = string.Empty;
 
     /// <summary>
     /// <c>Off</c>, <c>Minimal</c> or <c>Full</c>. See <c>Maki.Api.Logging.HttpRequestLogMode</c>.
