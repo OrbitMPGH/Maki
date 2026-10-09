@@ -6,7 +6,7 @@ namespace Maki.Core.Sources;
 /// <para>
 /// The value is an ordered comma-separated list of codes ("en,es"). It used to be a single code,
 /// and a single code is still what a stored filter usually holds — parsing rather than splitting at
-/// every call site is what keeps the two readings from drifting apart across the three sources that
+/// every call site is what keeps the two readings from drifting apart across the sources that
 /// honour it.
 /// </para>
 /// </summary>

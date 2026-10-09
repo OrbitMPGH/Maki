@@ -522,7 +522,7 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(baoziLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    // Manga Livre — Brazilian Portuguese, standard Madara/WordPress theme, no Cloudflare.
+    // Manga Livre, Brazilian Portuguese, WordPress/Madara search with a customised chapter markup, no Cloudflare.
     var mangaLivreLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
     builder.Services.AddHttpClient(MangaLivreSource.HttpClientName, client =>
         {

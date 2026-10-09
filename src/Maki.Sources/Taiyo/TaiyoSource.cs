@@ -106,9 +106,9 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
     };
 
     /// <summary>
-    /// Trackers come off the same medias.getById payload as GetSeriesAsync, not a separate
-    /// endpoint, so a candidate the caller is about to fetch series details for anyway costs
-    /// nothing extra here beyond the one call it would make regardless.
+    /// Trackers come off the same medias.getById procedure as GetSeriesAsync, not a separate
+    /// endpoint. It is still its own request: the two calls share no cache, so a candidate the
+    /// caller also fetches series details for costs two getById calls.
     /// </summary>
     public Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
         string sourceSeriesId, CancellationToken ct = default) =>
