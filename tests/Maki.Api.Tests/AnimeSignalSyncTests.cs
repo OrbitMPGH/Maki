@@ -390,7 +390,7 @@ public class AnimeSignalSyncTests : IDisposable
             throw new NotSupportedException();
         public Task UpdateAsync(
             int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-            CancellationToken ct = default) => throw new NotSupportedException();
+            CancellationToken ct = default, bool keepStatus = false) => throw new NotSupportedException();
         public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
             throw new NotSupportedException();
         public Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(

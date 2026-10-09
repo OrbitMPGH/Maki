@@ -66,36 +66,45 @@ public class AniListTrackerRepeatingTests
         NullLogger<AniListTracker>.Instance);
 
     [Fact]
-    public async Task A_push_on_a_repeating_entry_leaves_the_status_alone()
+    public async Task A_repeating_entry_is_read_as_reading_and_flagged()
     {
-        var handler = new ScriptedHandler("""{"data":{"Media":{"mediaListEntry":{"status":"REPEATING"}}}}""");
+        var handler = new ScriptedHandler(
+            """{"data":{"Media":{"mediaListEntry":{"status":"REPEATING","progress":4}}}}""");
 
-        await Build(handler).UpdateAsync(1, "42", 12, 0, ScrobbleStatus.Reading);
+        var entry = await Build(handler).GetEntryAsync(1, "42");
 
-        var mutation = handler.Bodies.Single(b => b.Contains("mutation", StringComparison.Ordinal));
+        Assert.Equal(ScrobbleStatus.Reading, entry.Status);
+        Assert.True(entry.Repeating);
+    }
+
+    [Fact]
+    public async Task A_current_entry_is_not_flagged_as_repeating()
+    {
+        var handler = new ScriptedHandler(
+            """{"data":{"Media":{"mediaListEntry":{"status":"CURRENT","progress":4}}}}""");
+
+        Assert.False((await Build(handler).GetEntryAsync(1, "42")).Repeating);
+    }
+
+    [Fact]
+    public async Task Keeping_the_status_writes_progress_only()
+    {
+        var handler = new ScriptedHandler("{}");
+
+        await Build(handler).UpdateAsync(1, "42", 12, 0, ScrobbleStatus.Reading, keepStatus: true);
+
+        var mutation = Assert.Single(handler.Bodies);
         Assert.DoesNotContain("CURRENT", mutation, StringComparison.Ordinal);
         Assert.DoesNotContain("$status", mutation, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task A_push_on_a_current_entry_still_writes_the_status()
+    public async Task A_normal_push_still_writes_the_status()
     {
-        var handler = new ScriptedHandler("""{"data":{"Media":{"mediaListEntry":{"status":"CURRENT"}}}}""");
+        var handler = new ScriptedHandler("{}");
 
         await Build(handler).UpdateAsync(1, "42", 12, 0, ScrobbleStatus.Reading);
 
-        var mutation = handler.Bodies.Single(b => b.Contains("mutation", StringComparison.Ordinal));
-        Assert.Contains("CURRENT", mutation, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task Completing_a_repeating_entry_still_writes_completed()
-    {
-        var handler = new ScriptedHandler("""{"data":{"Media":{"mediaListEntry":{"status":"REPEATING"}}}}""");
-
-        await Build(handler).UpdateAsync(1, "42", 30, 0, ScrobbleStatus.Completed);
-
-        var mutation = handler.Bodies.Single(b => b.Contains("mutation", StringComparison.Ordinal));
-        Assert.Contains("COMPLETED", mutation, StringComparison.Ordinal);
+        Assert.Contains("CURRENT", Assert.Single(handler.Bodies), StringComparison.Ordinal);
     }
 }

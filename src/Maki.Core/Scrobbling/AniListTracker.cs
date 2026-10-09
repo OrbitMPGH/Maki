@@ -249,6 +249,7 @@ public class AniListTracker(
             Status: hasEntry
                 ? StatusToInternal.GetValueOrDefault(GetString(entry, "status") ?? "", ScrobbleStatus.Other)
                 : null,
+            Repeating: hasEntry && GetString(entry, "status") == "REPEATING",
             TotalChapters: GetInt(media, "chapters"),
             TotalVolumes: GetInt(media, "volumes"),
             Title: (titles.ValueKind == JsonValueKind.Object
@@ -266,15 +267,9 @@ public class AniListTracker(
 
     public async Task UpdateAsync(
         int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-        CancellationToken ct = default)
+        CancellationToken ct = default, bool keepStatus = false)
     {
-        var mediaId = int.Parse(remoteId);
-
-        // A re-read is REPEATING on AniList, which we read as Reading. Writing CURRENT back would
-        // end the re-read, so a push on such an entry leaves the status alone.
-        var keepStatus = status == ScrobbleStatus.Reading && await IsRepeatingAsync(userId, mediaId, ct);
-
-        var variables = new Dictionary<string, object> { ["mediaId"] = mediaId, ["progress"] = chapter };
+        var variables = new Dictionary<string, object> { ["mediaId"] = int.Parse(remoteId), ["progress"] = chapter };
         if (volume > 0)
         {
             variables["progressVolumes"] = volume;
@@ -299,17 +294,6 @@ public class AniListTracker(
                                        progressVolumes:$progressVolumes){ id } }
                   """,
             variables, auth: true, ct);
-    }
-
-    private async Task<bool> IsRepeatingAsync(int userId, int mediaId, CancellationToken ct)
-    {
-        var data = await QueryAsync(
-            userId,
-            "query($id:Int){ Media(id:$id, type:MANGA){ mediaListEntry{ status } } }",
-            new { id = mediaId }, auth: true, ct);
-        return data.TryGetProperty("Media", out var media) && media.ValueKind == JsonValueKind.Object &&
-               media.TryGetProperty("mediaListEntry", out var entry) && entry.ValueKind == JsonValueKind.Object &&
-               GetString(entry, "status") == "REPEATING";
     }
 
     public async Task UpdateRatingAsync(
