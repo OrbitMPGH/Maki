@@ -121,26 +121,53 @@ public class OpdsCatalogService(
         // Maki is merely tracking, so they would render as empty folders.
         var source = db.Series.AsNoTracking().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
 
+        List<SeriesRow> rows;
+        int total;
         if (query is { Length: > 0 })
         {
-            var needle = query.Trim().ToLowerInvariant();
-            source = source.Where(s =>
-                s.SortTitle.Contains(needle) ||
-                s.Title.ToLower().Contains(needle) ||
-                (s.OriginalTitle != null && s.OriginalTitle.ToLower().Contains(needle)));
-        }
+            // AltTitles is a JSON text column behind a value converter, so SQL cannot see into it.
+            // Match in memory over a narrow projection, then page the surviving ids.
+            var needle = query.Trim();
+            var candidates = await source
+                .Select(s => new
+                {
+                    s.Id, s.SortTitle, s.Title, s.OriginalTitle, s.AltTitles, s.AuthorStory, s.AuthorArt
+                })
+                .ToListAsync(ct);
 
-        var total = await source.CountAsync(ct);
-        var rows = await source
-            .OrderBy(s => s.SortTitle)
-            .ThenBy(s => s.Id)
-            .Skip(page * SeriesPageSize)
-            .Take(SeriesPageSize)
-            .Select(s => new
-            {
-                s.Id, s.Title, s.Overview, s.AuthorStory, s.Genres, s.CoverPath, s.Added, s.Year
-            })
-            .ToListAsync(ct);
+            var ids = candidates
+                .Where(s =>
+                    Contains(s.SortTitle, needle) ||
+                    Contains(s.Title, needle) ||
+                    Contains(s.OriginalTitle, needle) ||
+                    Contains(s.AuthorStory, needle) ||
+                    Contains(s.AuthorArt, needle) ||
+                    s.AltTitles.Any(a => Contains(a.Title, needle)))
+                .OrderBy(s => s.SortTitle, StringComparer.Ordinal)
+                .ThenBy(s => s.Id)
+                .Select(s => s.Id)
+                .ToList();
+
+            total = ids.Count;
+            var pageIds = ids.Skip(page * SeriesPageSize).Take(SeriesPageSize).ToList();
+            var byId = (await db.Series.AsNoTracking()
+                    .Where(s => pageIds.Contains(s.Id))
+                    .Select(s => new SeriesRow(s.Id, s.Title, s.Overview, s.AuthorStory, s.Genres, s.CoverPath, s.Added, s.Year))
+                    .ToListAsync(ct))
+                .ToDictionary(r => r.Id);
+            rows = [.. pageIds.Where(byId.ContainsKey).Select(id => byId[id])];
+        }
+        else
+        {
+            total = await source.CountAsync(ct);
+            rows = await source
+                .OrderBy(s => s.SortTitle)
+                .ThenBy(s => s.Id)
+                .Skip(page * SeriesPageSize)
+                .Take(SeriesPageSize)
+                .Select(s => new SeriesRow(s.Id, s.Title, s.Overview, s.AuthorStory, s.Genres, s.CoverPath, s.Added, s.Year))
+                .ToListAsync(ct);
+        }
 
         var entries = rows.Select(s =>
         {
@@ -182,6 +209,13 @@ public class OpdsCatalogService(
             SeriesPageSize,
             page * SeriesPageSize);
     }
+
+    private static bool Contains(string? haystack, string needle) =>
+        haystack is not null && haystack.Contains(needle, StringComparison.OrdinalIgnoreCase);
+
+    private record SeriesRow(
+        int Id, string Title, string? Overview, string? AuthorStory, List<string> Genres, string? CoverPath,
+        DateTime Added, int? Year);
 
     /// <summary>A series' downloaded chapters, in reading order.</summary>
     /// <returns>Null when the series does not exist.</returns>

@@ -292,6 +292,52 @@ public sealed class OpdsCatalogTests : IDisposable
         Assert.Equal("Hajime no Ippo", Assert.Single(feed.Entries).Title);
     }
 
+    [Fact]
+    public async Task SearchMatchesAlternateTitlesAndAuthors()
+    {
+        var (spy, _) = SeedSeriesWithChapters("Spy x Family", "s.cbz", ["001.jpg"], [1m]);
+        var (other, _) = SeedSeriesWithChapters("Vagabond", "v.cbz", ["001.jpg"], [1m]);
+        using (var db = _db.NewContext())
+        {
+            var series = db.Series.First(s => s.Id == spy);
+            series.AltTitles = [new LocalizedTitle("SPY×FAMILY", "ja-Latn"), new LocalizedTitle("Familia Espia", "es")];
+            db.Series.First(s => s.Id == other).AuthorArt = "Takehiko Inoue";
+            db.SaveChanges();
+        }
+
+        var catalog = Catalog();
+        var byAlt = await catalog.SearchFeedAsync(Ctx, "espia", 0, CancellationToken.None);
+        var byAuthor = await catalog.SearchFeedAsync(Ctx, "INOUE", 0, CancellationToken.None);
+
+        Assert.Equal("Spy x Family", Assert.Single(byAlt.Entries).Title);
+        Assert.Equal("Vagabond", Assert.Single(byAuthor.Entries).Title);
+    }
+
+    [Fact]
+    public async Task SearchPagesOverTheMatchesNotTheLibrary()
+    {
+        var total = OpdsCatalogService.SeriesPageSize + 1;
+        for (var i = 0; i < total + 5; i++)
+        {
+            var (id, _) = SeedSeriesWithChapters($"Series {i:D3}", $"s{i}.cbz", ["001.jpg"], [1m]);
+            if (i < total)
+            {
+                using var db = _db.NewContext();
+                db.Series.First(s => s.Id == id).AltTitles = [new LocalizedTitle("Shared Alias", "en")];
+                db.SaveChanges();
+            }
+        }
+
+        var catalog = Catalog();
+        var first = await catalog.SearchFeedAsync(Ctx, "shared alias", 0, CancellationToken.None);
+        var second = await catalog.SearchFeedAsync(Ctx, "shared alias", 1, CancellationToken.None);
+
+        Assert.Equal(OpdsCatalogService.SeriesPageSize, first.Entries.Count);
+        Assert.Contains(first.Links, l => l.Rel == "next");
+        Assert.Single(second.Entries);
+        Assert.DoesNotContain(second.Links, l => l.Rel == "next");
+    }
+
     // ---- shelves ----
 
     [Fact]
