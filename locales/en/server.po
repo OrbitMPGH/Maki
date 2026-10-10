@@ -848,6 +848,12 @@ msgstr "Could not move the file back. Details are in the server log."
 msgid "error.recycleBin.retentionRange"
 msgstr "Recycle bin retention must be between {min} and {max} days"
 
+#. .maki-trash/bin could not be created under the root folder (read-only share, permissions). The
+#. client then offers to delete permanently instead.
+#: src/Maki.Api/Services/RecycleBinService.cs
+msgid "error.recycleBin.unavailable"
+msgstr "The recycle bin folder could not be created in this root folder. Nothing was deleted."
+
 #. Restore never overwrites. Something, usually a new download of the same chapter, now sits where
 #. the deleted file used to be.
 #: src/Maki.Api/Controllers/RecycleBinController.cs

@@ -1577,8 +1577,8 @@ export function useAddSeries() {
 export function useDeleteSeries() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, deleteFiles }: { id: number; deleteFiles: boolean }) =>
-      api<void>(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
+    mutationFn: ({ id, deleteFiles, permanent = false }: { id: number; deleteFiles: boolean; permanent?: boolean }) =>
+      api<void>(`/series/${id}?deleteFiles=${deleteFiles}&permanent=${permanent}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
@@ -1975,8 +1975,8 @@ export function useUnlinkChapters() {
 export function useDeleteChapters() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (chapterIds: number[]) =>
-      api<{ deleted: number }>('/chapter', {
+    mutationFn: ({ chapterIds, permanent = false }: { chapterIds: number[]; permanent?: boolean }) =>
+      api<{ deleted: number }>(`/chapter?permanent=${permanent}`, {
         method: 'DELETE',
         body: JSON.stringify(chapterIds),
       }),
@@ -1997,8 +1997,8 @@ export function useDeleteChapters() {
 export function useDeleteChapterFiles() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (chapterIds: number[]) =>
-      api<{ deleted: number; kept: number; failed: number; chaptersRemoved: number }>('/chapter/deletefiles', {
+    mutationFn: ({ chapterIds, permanent = false }: { chapterIds: number[]; permanent?: boolean }) =>
+      api<{ deleted: number; kept: number; failed: number; chaptersRemoved: number }>(`/chapter/deletefiles?permanent=${permanent}`, {
         method: 'POST',
         body: JSON.stringify(chapterIds),
       }),
@@ -2014,8 +2014,8 @@ export function useDeleteChapterFiles() {
 export function useDeleteSeriesFiles(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (relativePaths: string[]) =>
-      api<{ deleted: number; failed: number }>(`/series/${seriesId}/files`, {
+    mutationFn: ({ relativePaths, permanent = false }: { relativePaths: string[]; permanent?: boolean }) =>
+      api<{ deleted: number; failed: number }>(`/series/${seriesId}/files?permanent=${permanent}`, {
         method: 'DELETE',
         body: JSON.stringify(relativePaths),
       }),

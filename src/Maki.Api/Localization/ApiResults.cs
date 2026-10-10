@@ -80,6 +80,13 @@ public static class ApiResults
         this ControllerBase controller, ILocalizer localizer, string key, object? args = null) =>
         controller.StatusCode(StatusCodes.Status502BadGateway, Body(localizer, key, args));
 
+    /// <summary>
+    /// 400 for a delete that could not use the recycle bin. <c>permanentDeleteAvailable</c> tells the
+    /// client it may offer the same delete again with <c>permanent=true</c>.
+    /// </summary>
+    public static IActionResult BinRefused(this ControllerBase controller, ILocalizer localizer, string key) =>
+        controller.BadRequest(new { code = key, error = localizer.Get(key, null), permanentDeleteAvailable = true });
+
     private static object Body(ILocalizer localizer, string key, object? args) =>
         new { code = key, error = localizer.Get(key, args) };
 }

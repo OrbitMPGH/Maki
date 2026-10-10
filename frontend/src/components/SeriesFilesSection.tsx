@@ -13,7 +13,8 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
-import { useRecycleBinDays } from '../api/recycleBin'
+import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
+import { PermanentDeleteFallback } from './PermanentDeleteFallback'
 import { useSetFileTrusted } from '../api/upgrades'
 import type { SeriesFileDto } from '../api/types'
 import { formatBytes } from '../format'
@@ -52,6 +53,38 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { data: files, isLoading, isFetching, refetch } = useSeriesFiles(seriesId)
   const deleteFiles = useDeleteSeriesFiles(seriesId)
   const binDays = useRecycleBinDays(confirmOpen)
+  const [binRefused, setBinRefused] = useState(false)
+  const closeConfirm = () => {
+    setConfirmOpen(false)
+    setBinRefused(false)
+  }
+
+  const deleteSelected = (permanent: boolean) =>
+    deleteFiles.mutate(
+      { relativePaths: [...selected], permanent },
+      {
+        onSuccess: (r) => {
+          const done = permanent
+            ? plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' })
+            : plural(r.deleted, { one: 'Moved # file to the recycle bin', other: 'Moved # files to the recycle bin' })
+          notifications.show({
+            color: r.failed > 0 ? 'var(--warn)' : 'var(--ok)',
+            message:
+              r.failed > 0
+                ? `${done}, ${plural(r.failed, {
+                    one: '# could not be moved (locked or permission denied)',
+                    other: '# could not be moved (locked or permission denied)',
+                  })}`
+                : done,
+          })
+          closeConfirm()
+          exitSelectMode()
+        },
+        onError: (error) => {
+          if (offersPermanentDelete(error)) setBinRefused(true)
+        },
+      },
+    )
   const setFileTrusted = useSetFileTrusted()
 
   const problems = files?.filter((f) => f.status !== 'linked').length ?? 0
@@ -373,7 +406,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
 
           <Modal
             opened={confirmOpen}
-            onClose={() => setConfirmOpen(false)}
+            onClose={closeConfirm}
             title={t`Delete files?`}
             centered
             attributes={{ content: { 'data-edge': 'danger' } }}
@@ -395,41 +428,22 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                 />
               </Text>
               <Group justify="flex-end">
-                <Button variant="default" onClick={() => setConfirmOpen(false)}>
+                <Button variant="default" onClick={closeConfirm}>
                   <Trans>Cancel</Trans>
                 </Button>
                 <Button
                   color="var(--danger-fill)"
                   leftSection={<IconTrash size={16} />}
                   loading={deleteFiles.isPending}
-                  onClick={() =>
-                    deleteFiles.mutate([...selected], {
-                      onSuccess: (r) => {
-                        notifications.show({
-                          color: r.failed > 0 ? 'var(--warn)' : 'var(--ok)',
-                          message:
-                            r.failed > 0
-                              ? `${plural(r.deleted, { one: 'Moved # file to the recycle bin', other: 'Moved # files to the recycle bin' })}, ${plural(
-                                  r.failed,
-                                  {
-                                    one: '# could not be moved (locked or permission denied)',
-                                    other: '# could not be moved (locked or permission denied)',
-                                  },
-                                )}`
-                              : plural(r.deleted, {
-                                  one: 'Moved # file to the recycle bin',
-                                  other: 'Moved # files to the recycle bin',
-                                }),
-                        })
-                        setConfirmOpen(false)
-                        exitSelectMode()
-                      },
-                    })
-                  }
+                  disabled={binRefused}
+                  onClick={() => deleteSelected(false)}
                 >
                   <Trans>Delete</Trans>
                 </Button>
               </Group>
+              {binRefused && (
+                <PermanentDeleteFallback loading={deleteFiles.isPending} onConfirm={() => deleteSelected(true)} />
+              )}
             </Stack>
           </Modal>
         </>

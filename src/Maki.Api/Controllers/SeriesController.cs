@@ -633,7 +633,8 @@ public class SeriesController(
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}/files")]
     public async Task<IActionResult> DeleteFiles(
-        int id, [FromBody] string[] relativePaths, [FromServices] ChapterFileDeletion deletion, CancellationToken ct)
+        int id, [FromBody] string[] relativePaths, [FromServices] ChapterFileDeletion deletion, CancellationToken ct,
+        [FromQuery] bool permanent = false)
     {
         if (relativePaths.Length == 0)
             return this.Fail(localizer, "error.series.noFilesSelected");
@@ -654,18 +655,18 @@ public class SeriesController(
         var everything = relativePaths
             .Select(p => LibraryPaths.ResolveForDelete(series.RootFolder.Path, LibraryPaths.ComparisonKey(p)))
             .OfType<string>();
-        if (!deletion.Bin.SameVolume(series.RootFolder.Path, everything))
-            return this.Fail(localizer, "error.recycleBin.crossVolume");
+        if (!permanent && deletion.Bin.Refusal(series.RootFolder.Path, everything) is { } refusal)
+            return this.BinRefused(localizer, refusal);
 
         // The Files tab also lists comics on disk that have no record (never adopted), and those
         // are what this dialog is most often used to clean up.
         var (strayDeleted, strayFailed) = await DeleteStrayFilesAsync(
             series, relativePaths.Except(files.Select(f => f.RelativePath), StringComparer.Ordinal).ToList(),
-            deletion, ct);
+            deletion, permanent, ct);
 
         // A file another series still points at stays on disk, but this series has let go of it,
         // which is what the user asked for here, so it reads as deleted.
-        var result = await deletion.DeleteAsync(series, files, ct, RecycleReason.DeleteFile);
+        var result = await deletion.DeleteAsync(series, files, ct, permanent ? null : RecycleReason.DeleteFile);
         return Ok(new { deleted = strayDeleted + result.Deleted + result.Kept, failed = strayFailed + result.Failed });
     }
 
@@ -674,7 +675,7 @@ public class SeriesController(
     /// this series' folders, never through a link, and never a path another series has a record for.
     /// </summary>
     private async Task<(int Deleted, int Failed)> DeleteStrayFilesAsync(
-        Series series, List<string> relativePaths, ChapterFileDeletion deletion, CancellationToken ct)
+        Series series, List<string> relativePaths, ChapterFileDeletion deletion, bool permanent, CancellationToken ct)
     {
         if (relativePaths.Count == 0)
         {
@@ -694,6 +695,7 @@ public class SeriesController(
             ct);
 
         var failed = 0;
+        var permanentDeleted = 0;
         var entries = new List<RecycleBinEntry>();
         foreach (var path in relativePaths)
         {
@@ -709,12 +711,23 @@ public class SeriesController(
                 continue;
             }
 
-            entries.Add(deletion.Bin.Record(series, rootPath, key, absolute, null, [], RecycleReason.DeleteFile));
+            if (!permanent)
+            {
+                entries.Add(deletion.Bin.Record(series, rootPath, key, absolute, null, [], RecycleReason.DeleteFile));
+            }
+            else if (deletion.DeleteFromDisk(absolute))
+            {
+                permanentDeleted++;
+            }
+            else
+            {
+                failed++;
+            }
         }
 
         if (entries.Count == 0)
         {
-            return (0, failed);
+            return (permanentDeleted, failed);
         }
 
         await db.SaveChangesAsync(ct);
@@ -1073,7 +1086,8 @@ public class SeriesController(
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(
-        int id, [FromQuery] bool deleteFiles, [FromServices] ChapterFileDeletion deletion, CancellationToken ct)
+        int id, [FromQuery] bool deleteFiles, [FromServices] ChapterFileDeletion deletion, CancellationToken ct,
+        [FromQuery] bool permanent = false)
     {
         var bin = deletion.Bin;
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
@@ -1098,18 +1112,24 @@ public class SeriesController(
 
         // Saved with the series row's removal, so a failed save leaves both, and moved only after it.
         var binned = new List<RecycleBinEntry>();
+        var doomed = new List<string>();
         if (diskPlan is not null && deleteFiles)
         {
             var targets = await SeriesBinTargetsAsync(series, diskPlan, deletion, ct);
-            if (!bin.SameVolume(series.RootFolder!.Path, targets.Select(t => t.Absolute)))
+            if (permanent)
             {
-                return this.Fail(localizer, "error.recycleBin.crossVolume");
+                doomed = targets.Select(t => t.Absolute).ToList();
+                targets = [];
+            }
+            else if (bin.Refusal(series.RootFolder!.Path, targets.Select(t => t.Absolute)) is { } refusal)
+            {
+                return this.BinRefused(localizer, refusal);
             }
 
             var chapters = (await db.Chapters.Where(c => c.SeriesId == id && c.ChapterFileId != null).ToListAsync(ct))
                 .ToLookup(c => c.ChapterFileId!.Value);
             binned = targets
-                .Select(t => bin.Record(series, series.RootFolder.Path, t.Relative, t.Absolute, t.File,
+                .Select(t => bin.Record(series, series.RootFolder!.Path, t.Relative, t.Absolute, t.File,
                     t.File is null ? [] : chapters[t.File.Id], RecycleReason.SeriesDelete))
                 .ToList();
         }
@@ -1125,7 +1145,7 @@ public class SeriesController(
         await db.SaveChangesAsync(ct);
         if (diskPlan is not null)
         {
-            await DeleteSeriesFromDiskAsync(diskPlan, binned, bin, id);
+            await DeleteSeriesFromDiskAsync(diskPlan, binned, doomed, deletion, id);
         }
 
         // Still on somebody's tracker list, so an import list would add it straight back otherwise.
@@ -1288,9 +1308,11 @@ public class SeriesController(
     /// are pruned bottom-up and never deleted recursively: whatever did not reach the bin, a claimed
     /// file, a link or a file that arrived mid-delete keeps its folder.
     /// </summary>
+    /// <param name="doomed">Files the caller chose to delete for good instead of binning.</param>
     private async Task DeleteSeriesFromDiskAsync(
-        SeriesDiskPlan plan, List<RecycleBinEntry> binned, RecycleBinService bin, int seriesId)
+        SeriesDiskPlan plan, List<RecycleBinEntry> binned, List<string> doomed, ChapterFileDeletion deletion, int seriesId)
     {
+        var bin = deletion.Bin;
         void Attempt(string path, Action delete)
         {
             try
@@ -1313,6 +1335,10 @@ public class SeriesController(
         }
 
         await bin.ForgetAsync(stuck);
+        foreach (var file in doomed)
+        {
+            deletion.DeleteFromDisk(file);
+        }
 
         if (plan is { RemoveFolderWhole: true, Folder: { } folder } && Directory.Exists(folder))
         {

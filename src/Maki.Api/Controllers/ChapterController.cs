@@ -368,7 +368,8 @@ public class ChapterController(
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete]
     public async Task<IActionResult> Delete(
-        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct)
+        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct,
+        [FromQuery] bool permanent = false)
     {
         if (chapterIds.Length == 0)
         {
@@ -477,12 +478,13 @@ public class ChapterController(
             db.ChapterFiles.Remove(file);
         }
 
-        if (toBin.Count > 0 && !deletion.Bin.SameVolume(series!.RootFolder!.Path, toBin.Select(f => f.AbsPath)))
+        if (!permanent && toBin.Count > 0 &&
+            deletion.Bin.Refusal(series!.RootFolder!.Path, toBin.Select(f => f.AbsPath)) is { } refusal)
         {
-            return this.Fail(localizer, "error.recycleBin.crossVolume");
+            return this.BinRefused(localizer, refusal);
         }
 
-        var entries = toBin
+        var entries = (permanent ? [] : toBin)
             .Select(f => deletion.Bin.Record(series!, series!.RootFolder!.Path, f.File.RelativePath, f.AbsPath, f.File,
                 f.Chapters, RecycleReason.RemoveChapter))
             .ToList();
@@ -502,6 +504,14 @@ public class ChapterController(
         }
 
         await deletion.Bin.ForgetAsync(stuck);
+        if (permanent)
+        {
+            foreach (var (_, absPath, _) in toBin)
+            {
+                deletion.DeleteFromDisk(absPath);
+            }
+        }
+
         return Ok(new { deleted = chapters.Count });
     }
 
@@ -513,7 +523,8 @@ public class ChapterController(
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpPost("deletefiles")]
     public async Task<IActionResult> DeleteFiles(
-        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct)
+        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct,
+        [FromQuery] bool permanent = false)
     {
         if (chapterIds.Length == 0)
         {
@@ -564,10 +575,15 @@ public class ChapterController(
         }
 
         var files = await db.ChapterFiles.Where(f => fileIds.Contains(f.Id)).ToListAsync(ct);
-        var paths = files.Select(f => LibraryPaths.ResolveForDelete(series.RootFolder.Path, f.RelativePath)).OfType<string>();
-        if (!deletion.Bin.SameVolume(series.RootFolder.Path, paths))
+        if (permanent)
         {
-            return this.Fail(localizer, "error.recycleBin.crossVolume");
+            return Ok(await deletion.DeleteAsync(series, files, ct));
+        }
+
+        var paths = files.Select(f => LibraryPaths.ResolveForDelete(series.RootFolder.Path, f.RelativePath)).OfType<string>();
+        if (deletion.Bin.Refusal(series.RootFolder.Path, paths) is { } refusal)
+        {
+            return this.BinRefused(localizer, refusal);
         }
 
         return Ok(await deletion.DeleteAsync(series, files, ct, RecycleReason.DeleteFile));

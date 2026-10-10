@@ -57,12 +57,15 @@ export class ApiError extends Error {
   readonly status: number
   /** The stable dotted key behind `message` (`error.upgrades.trashGone`), or null when the body carried none. */
   readonly code: string | null
+  /** A delete the recycle bin refused, which the same request with `permanent=true` may carry out instead. */
+  readonly permanentDeleteAvailable: boolean
 
-  constructor(status: number, message: string, code: string | null = null) {
+  constructor(status: number, message: string, code: string | null = null, permanentDeleteAvailable = false) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.permanentDeleteAvailable = permanentDeleteAvailable
   }
 }
 
@@ -171,7 +174,12 @@ async function readResponse<T>(res: Response): Promise<T> {
     // The status stays on ApiError.status. A body that is not the server's own JSON (a reverse
     // proxy's HTML error page, say) is never shown.
     const status = res.status
-    throw new ApiError(status, errorMessage(body) ?? t`The server returned an error (${status}).`, errorCode(body))
+    throw new ApiError(
+      status,
+      errorMessage(body) ?? t`The server returned an error (${status}).`,
+      errorCode(body),
+      offersPermanentDelete(body),
+    )
   }
   // 204, and any 200 whose handler wrote no body, have nothing to parse.
   const body = await res.text()
@@ -203,6 +211,15 @@ function errorMessage(body: string): string | null {
 }
 
 /** The `code` field from a `{ "error": "...", "code": "..." }` body, or null when there isn't one. */
+function offersPermanentDelete(body: string): boolean {
+  if (!body) return false
+  try {
+    return (JSON.parse(body) as { permanentDeleteAvailable?: boolean }).permanentDeleteAvailable === true
+  } catch {
+    return false
+  }
+}
+
 function errorCode(body: string): string | null {
   if (!body) return null
   try {

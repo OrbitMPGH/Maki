@@ -135,15 +135,32 @@ public class RecycleBinService(
     public sealed record RestoreResult(RestoreStatus Status, int ChaptersLinked = 0);
 
     /// <summary>
-    /// True unless a folder holding one of <paramref name="absolutePaths"/> is on another volume than
-    /// the bin. Probes with a throwaway file per folder rather than guessing from drive letters or
-    /// mount tables, which are wrong under Docker bind mounts. A probe that fails for any other reason
-    /// says nothing, and the real move will then find out on its own.
+    /// Null when <paramref name="absolutePaths"/> can go to the bin, otherwise the key saying why not:
+    /// the bin folder cannot be created, or a folder holding one of them is on another volume.
+    /// Probes with a throwaway file per folder rather than guessing from drive letters or mount
+    /// tables, which are wrong under Docker bind mounts. A probe that fails for any other reason says
+    /// nothing, and the real move will then find out on its own.
     /// </summary>
-    public bool SameVolume(string rootPath, IEnumerable<string> absolutePaths)
+    public string? Refusal(string rootPath, IEnumerable<string> absolutePaths)
     {
         var bin = RecycleBin.Folder(rootPath);
-        foreach (var directory in absolutePaths.Select(Path.GetDirectoryName).OfType<string>()
+        var paths = absolutePaths.ToList();
+        if (paths.Count == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            UpgradeTrash.EnsureDirectory(rootPath, bin);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not create the recycle bin in {Root}", rootPath);
+            return "error.recycleBin.unavailable";
+        }
+
+        foreach (var directory in paths.Select(Path.GetDirectoryName).OfType<string>()
                      .Distinct(LibraryPaths.FolderComparer))
         {
             var name = $".maki-bin-probe-{Guid.NewGuid():N}";
@@ -156,7 +173,6 @@ public class RecycleBinService(
                     continue;
                 }
 
-                UpgradeTrash.EnsureDirectory(rootPath, bin);
                 using (new FileStream(probe, FileMode.CreateNew, FileAccess.Write))
                 {
                 }
@@ -164,7 +180,7 @@ public class RecycleBinService(
                 if (mover.Move(probe, landed).Result == MoveResult.CrossVolume)
                 {
                     logger.LogWarning("{Directory} is on another volume than the recycle bin in {Root}", directory, rootPath);
-                    return false;
+                    return "error.recycleBin.crossVolume";
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -178,7 +194,7 @@ public class RecycleBinService(
             }
         }
 
-        return true;
+        return null;
     }
 
     /// <summary>Adds an entry for a file about to be binned. The caller saves it, then calls <see cref="MoveInAsync"/>.</summary>

@@ -176,7 +176,8 @@ import { onPressKey, pressable } from '../lib/pressable'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
 import { scrollBehavior } from '../lib/scrollBehavior'
-import { useRecycleBinDays } from '../api/recycleBin'
+import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
+import { PermanentDeleteFallback } from '../components/PermanentDeleteFallback'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
@@ -594,6 +595,11 @@ function SeriesDetailBody() {
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
   const binDays = useRecycleBinDays(deleteChaptersModalOpen || deleteFileIds !== null)
+  // Which delete dialog the server answered with "the recycle bin cannot take these".
+  const [binRefused, setBinRefused] = useState<'chapters' | 'files' | 'series' | null>(null)
+  const onBinRefused = (dialog: 'chapters' | 'files' | 'series') => (error: unknown) => {
+    if (offersPermanentDelete(error)) setBinRefused(dialog)
+  }
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
@@ -1597,6 +1603,69 @@ function SeriesDetailBody() {
     })
   }
 
+  const closeRemoveChapters = () => {
+    setDeleteChaptersModalOpen(false)
+    setBinRefused(null)
+  }
+
+  const removeChapters = (permanent = false) =>
+    deleteChapters.mutate(
+      { chapterIds: [...selected], permanent },
+      {
+        onSuccess: (r) => {
+          notify.ok(plural(r.deleted, { one: 'Removed # chapter', other: 'Removed # chapters' }))
+          closeRemoveChapters()
+          exitSelectMode()
+        },
+        onError: onBinRefused('chapters'),
+      },
+    )
+
+  const closeDeleteFiles = () => {
+    setDeleteFileIds(null)
+    setBinRefused(null)
+  }
+
+  const deleteFilesOf = (permanent = false) =>
+    deleteChapterFiles.mutate(
+      { chapterIds: deleteFileIds ?? [], permanent },
+      {
+        onSuccess: (r) => {
+          const gone = r.deleted + r.kept
+          if (gone > 0) {
+            notify.ok(
+              permanent
+                ? plural(gone, { one: 'Deleted # file', other: 'Deleted # files' })
+                : plural(gone, { one: 'Moved # file to the recycle bin', other: 'Moved # files to the recycle bin' }),
+            )
+          }
+          if (r.failed > 0) {
+            notify.err(
+              plural(r.failed, {
+                one: "Couldn't delete # file, check the log",
+                other: "Couldn't delete # files, check the log",
+              }),
+            )
+          }
+          closeDeleteFiles()
+          if (selectMode) exitSelectMode()
+        },
+        onError: onBinRefused('files'),
+      },
+    )
+
+  const removeSeries = (permanent = false) =>
+    deleteSeries.mutate(
+      { id: series.id, deleteFiles: deleteSeriesFiles, permanent },
+      {
+        onSuccess: () => {
+          notify.ok(staticT`Series removed`)
+          navigate('/library')
+        },
+        onError: onBinRefused('series'),
+      },
+    )
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <Tabs
@@ -2592,7 +2661,7 @@ function SeriesDetailBody() {
 
             <Modal
                 opened={deleteChaptersModalOpen}
-                onClose={() => setDeleteChaptersModalOpen(false)}
+                onClose={closeRemoveChapters}
                 title={t`Remove chapters?`}
                 centered
             >
@@ -2615,34 +2684,28 @@ function SeriesDetailBody() {
                   <Trans>Removed chapter rows and their read history cannot be restored.</Trans>
                 </Text>
                 <Group justify="flex-end">
-                  <Button variant="default" onClick={() => setDeleteChaptersModalOpen(false)}>
+                  <Button variant="default" onClick={closeRemoveChapters}>
                     <Trans>Cancel</Trans>
                   </Button>
                   <Button
                       color="var(--danger-fill)"
                       leftSection={<IconTrash size={16} />}
                       loading={deleteChapters.isPending}
-                      onClick={() =>
-                          deleteChapters.mutate([...selected], {
-                            onSuccess: (r) => {
-                              notify.ok(
-                                  plural(r.deleted, { one: 'Removed # chapter', other: 'Removed # chapters' }),
-                              )
-                              setDeleteChaptersModalOpen(false)
-                              exitSelectMode()
-                            },
-                          })
-                      }
+                      disabled={binRefused === 'chapters'}
+                      onClick={() => removeChapters()}
                   >
                     <Trans>Remove</Trans>
                   </Button>
                 </Group>
+                {binRefused === 'chapters' && (
+                    <PermanentDeleteFallback loading={deleteChapters.isPending} onConfirm={() => removeChapters(true)} />
+                )}
               </Stack>
             </Modal>
 
             <Modal
                 opened={deleteFileIds !== null}
-                onClose={() => setDeleteFileIds(null)}
+                onClose={closeDeleteFiles}
                 title={t`Delete files?`}
                 centered
             >
@@ -2677,43 +2740,22 @@ function SeriesDetailBody() {
                     </Text>
                 )}
                 <Group justify="flex-end">
-                  <Button variant="default" onClick={() => setDeleteFileIds(null)}>
+                  <Button variant="default" onClick={closeDeleteFiles}>
                     <Trans>Cancel</Trans>
                   </Button>
                   <Button
                       color="var(--danger-fill)"
                       leftSection={<IconTrash size={16} />}
-                      disabled={!deleteFilesPlan || deleteFilesPlan.files === 0}
+                      disabled={!deleteFilesPlan || deleteFilesPlan.files === 0 || binRefused === 'files'}
                       loading={deleteChapterFiles.isPending}
-                      onClick={() =>
-                          deleteChapterFiles.mutate(deleteFileIds ?? [], {
-                            onSuccess: (r) => {
-                              const gone = r.deleted + r.kept
-                              if (gone > 0) {
-                                notify.ok(
-                                    plural(gone, {
-                                      one: 'Moved # file to the recycle bin',
-                                      other: 'Moved # files to the recycle bin',
-                                    }),
-                                )
-                              }
-                              if (r.failed > 0) {
-                                notify.err(
-                                    plural(r.failed, {
-                                      one: "Couldn't delete # file, check the log",
-                                      other: "Couldn't delete # files, check the log",
-                                    }),
-                                )
-                              }
-                              setDeleteFileIds(null)
-                              if (selectMode) exitSelectMode()
-                            },
-                          })
-                      }
+                      onClick={() => deleteFilesOf()}
                   >
                     <Trans>Delete files</Trans>
                   </Button>
                 </Group>
+                {binRefused === 'files' && (
+                    <PermanentDeleteFallback loading={deleteChapterFiles.isPending} onConfirm={() => deleteFilesOf(true)} />
+                )}
               </Stack>
             </Modal>
 
@@ -3244,22 +3286,16 @@ function SeriesDetailBody() {
         {/* This action lives in the hero, so its dialog must not be deactivated with any tab panel. */}
         <RemoveSeriesDialog
           opened={deleteSeriesModalOpen}
-          onClose={() => setDeleteSeriesModalOpen(false)}
+          onClose={() => {
+            setDeleteSeriesModalOpen(false)
+            setBinRefused(null)
+          }}
           title={<Trans>Remove series?</Trans>}
           deleteFiles={deleteSeriesFiles}
           onDeleteFilesChange={setDeleteSeriesFiles}
           loading={deleteSeries.isPending}
-          onConfirm={() =>
-            deleteSeries.mutate(
-              { id: series.id, deleteFiles: deleteSeriesFiles },
-              {
-                onSuccess: () => {
-                  notify.ok(staticT`Series removed`)
-                  navigate('/library')
-                },
-              },
-            )
-          }
+          onConfirm={() => removeSeries()}
+          onConfirmPermanent={binRefused === 'series' ? () => removeSeries(true) : undefined}
         >
           <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
         </RemoveSeriesDialog>

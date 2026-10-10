@@ -630,6 +630,7 @@ public class RecycleBinTests : IDisposable
         {
             var result = await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db, CrossVolume()), default);
             Assert.Equal("error.recycleBin.crossVolume", Code(result));
+            Assert.True(OffersPermanent(result));
         }
 
         using (var db = _db.NewContext())
@@ -645,6 +646,63 @@ public class RecycleBinTests : IDisposable
         Assert.Empty(check.RecycleBin);
         Assert.All(check.Chapters, c => Assert.Null(c.FileRemovedAt));
         Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root, "Berserk"), ".maki-bin-probe*"));
+    }
+
+    private static bool OffersPermanent(IActionResult result) =>
+        (result as ObjectResult)?.Value?.GetType().GetProperty("permanentDeleteAvailable")?.GetValue(((ObjectResult)result).Value) is true;
+
+    [Fact]
+    public async Task A_refused_bin_offers_a_permanent_delete_that_works()
+    {
+        var s = Seed();
+        using (var db = _db.NewContext())
+        {
+            var refused = await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db, CrossVolume()), default);
+            Assert.True(OffersPermanent(refused));
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var result = Assert.IsType<OkObjectResult>(
+                await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db, CrossVolume()), default, permanent: true));
+            Assert.Equal(1, Assert.IsType<ChapterFileDeletion.Result>(result.Value).Deleted);
+        }
+
+        Assert.False(File.Exists(s.Absolute));
+        using var check = _db.NewContext();
+        Assert.Empty(check.RecycleBin);
+        Assert.Empty(check.ChapterFiles);
+        Assert.All(check.Chapters, c => Assert.NotNull(c.FileRemovedAt));
+    }
+
+    [Fact]
+    public async Task A_series_delete_can_go_permanent_when_the_bin_is_unavailable()
+    {
+        var s = Seed();
+        var extra = Path.Combine(_root, "Berserk", "notes.txt");
+        File.WriteAllText(extra, "notes");
+        // A file where the bin folder should be: it cannot be created.
+        Directory.CreateDirectory(Path.Combine(_root, ".maki-trash"));
+        File.WriteAllText(Path.Combine(_root, ".maki-trash", "bin"), "in the way");
+
+        using (var db = _db.NewContext())
+        {
+            var refused = await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db), default);
+            Assert.Equal("error.recycleBin.unavailable", Code(refused));
+            Assert.True(OffersPermanent(refused));
+        }
+
+        Assert.True(File.Exists(s.Absolute));
+        using (var db = _db.NewContext())
+        {
+            Assert.IsType<NoContentResult>(
+                await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db), default, permanent: true));
+        }
+
+        Assert.False(Directory.Exists(Path.Combine(_root, "Berserk")));
+        using var check = _db.NewContext();
+        Assert.Empty(check.Series);
+        Assert.Empty(check.RecycleBin);
     }
 
     [Fact]

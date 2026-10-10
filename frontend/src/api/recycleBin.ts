@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from './client'
+import { api, ApiError } from './client'
 
 export type RecycleReason = 'deleteFile' | 'removeChapter' | 'seriesDelete'
 
@@ -25,6 +25,11 @@ export interface RecycleBin {
   retentionDays: number
   totalBytes: number
   entries: RecycleBinEntry[]
+}
+
+/** True when a delete failed only because the recycle bin could not take the files. */
+export function offersPermanentDelete(error: unknown): boolean {
+  return error instanceof ApiError && error.permanentDeleteAvailable
 }
 
 export function useRecycleBin(enabled = true) {
