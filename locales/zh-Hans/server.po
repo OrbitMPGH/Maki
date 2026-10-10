@@ -694,6 +694,12 @@ msgstr "一次请求中的项目过多（{count}），请分批导入，每批�
 msgid "error.libraryImport.undoAlreadyDone"
 msgstr ""
 
+#. {folder} is a folder name, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Not everything in "{folder}" could be put back. Undo it again once the folder is free to retry.
+msgid "error.libraryImport.undoDiskPending"
+msgstr ""
+
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: Chapters were downloaded into this series since the import. Delete those files first, or keep the import.
 msgid "error.libraryImport.undoDownloadedSince"
@@ -713,6 +719,11 @@ msgstr ""
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: {name} could not be moved back and is still in "{folder}"
 msgid "error.libraryImport.undoFileNotMoved"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Files of this series were renamed or moved since the import, so undo cannot tell where they are. Rename them back first, or keep the import.
+msgid "error.libraryImport.undoFilesRenamed"
 msgstr ""
 
 #. {folder} is the folder the import left the files in, not translated.
@@ -747,6 +758,11 @@ msgstr ""
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: Sources are still being searched for this series. Try again in a minute.
 msgid "error.libraryImport.undoMatchRunning"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Undoing this import removes a series. That needs the Delete series permission, unless you ran the import yourself.
+msgid "error.libraryImport.undoNeedsDeleteSeries"
 msgstr ""
 
 #: src/Maki.Api/Services/LibraryImportUndoService.cs

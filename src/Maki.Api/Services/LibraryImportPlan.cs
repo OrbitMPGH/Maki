@@ -107,7 +107,15 @@ public record LibraryImportPlan(
 /// <param name="Name">The CBZ Maki wrote, relative to the folder the files ended up in.</param>
 /// <param name="Source">The original it was built from, relative to the same folder.</param>
 /// <param name="Aside">For a rebuild in place, where the original was renamed to.</param>
-public sealed record ImportBuiltFile(string Name, string Source, string? Entry, string Action, string? Aside);
+/// <param name="Kind">The container the build read: zip, repack or looseImages.</param>
+/// <param name="Pages">
+/// The page names the build read. Undo deletes the CBZ only while every one of them is still in the
+/// original, so a CBZ whose original was deleted or emptied since is kept as the only copy. Empty for
+/// an archive nested in another one, whose pages cannot be listed without extracting it.
+/// </param>
+public sealed record ImportBuiltFile(
+    string Name, string Source, string? Entry, string Action, string? Aside, string? Kind = null,
+    IReadOnlyList<string>? Pages = null);
 
 /// <summary>
 /// What one folder's import changed, stored on <c>ImportBatchFolder.OperationsJson</c>. Undo
@@ -126,6 +134,18 @@ public sealed class ImportOperations
 
     /// <summary>The ChapterFile rows this import added.</summary>
     public List<int> RegisteredFileIds { get; set; } = [];
+
+    /// <summary>
+    /// Each registered row's path when the import wrote it, relative to the root. A row whose path
+    /// changed since (a series rename) means the recorded names no longer say where the files are.
+    /// </summary>
+    public Dictionary<int, string> RegisteredPaths { get; set; } = [];
+
+    /// <summary>
+    /// The undo's database half is done but part of the disk half failed; another undo retries the
+    /// disk half only.
+    /// </summary>
+    public bool DiskPending { get; set; }
 
     /// <summary>The import wrote cover.jpg into a folder that had none.</summary>
     public bool WroteCover { get; set; }

@@ -9,8 +9,11 @@ using Maki.Core.Entities;
 using Maki.Core.Kavita;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
+using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -117,10 +120,12 @@ public class LibraryImportUndoTests : IDisposable
         new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance), new TestLocalizer(),
         new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
 
-    private LibraryImportUndoService UndoService(MakiDbContext db) => new(
+    private LibraryImportUndoService UndoService(MakiDbContext db, ICurrentUser? user = null) => new(
         db, _queue, new CoverService(null!, new AppPaths(), _settings, NullLogger<CoverService>.Instance),
         new StatsEventService(db), new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
-        new TestLocalizer(), new TestCurrentUser(1), NullLogger<LibraryImportUndoService>.Instance);
+        new MangaBakaLocalStore(
+            new MangaBakaDumpOptions("", _configDir), _settings, NullLogger<MangaBakaLocalStore>.Instance),
+        new TestLocalizer(), user ?? new TestCurrentUser(1), NullLogger<LibraryImportUndoService>.Instance);
 
     private SourceMatchWorkerHostedService Worker()
     {
@@ -142,10 +147,12 @@ public class LibraryImportUndoTests : IDisposable
         return root.Id;
     }
 
-    private async Task<ImportResult> ImportAsync(int rootId, string folder, string batch = "batch-1")
+    private async Task<ImportResult> ImportAsync(
+        int rootId, string folder, string batch = "batch-1", string providerId = "42")
     {
         await using var db = _db.NewContext();
-        var result = await ImportService(db).ImportAsync(rootId, new ImportRequestItem(folder, "42"), operationId: batch);
+        var result = await ImportService(db).ImportAsync(
+            rootId, new ImportRequestItem(folder, providerId), operationId: batch);
         Assert.True(result.Success, result.Error);
         return result;
     }
@@ -156,10 +163,10 @@ public class LibraryImportUndoTests : IDisposable
         return (await db.ImportBatchFolders.SingleAsync()).Id;
     }
 
-    private async Task<ImportUndoOutcome> UndoAsync(int recordId)
+    private async Task<ImportUndoOutcome> UndoAsync(int recordId, ICurrentUser? user = null)
     {
         await using var db = _db.NewContext();
-        return (await UndoService(db).UndoFolderAsync(recordId, CancellationToken.None))!;
+        return (await UndoService(db, user).UndoFolderAsync(recordId, CancellationToken.None))!;
     }
 
     [Fact]
@@ -410,6 +417,235 @@ public class LibraryImportUndoTests : IDisposable
         Assert.Equal(originals, Fingerprint(At("chainsaw raws")));
     }
 
+    [Fact]
+    public async Task A_built_CBZ_whose_loose_pages_were_deleted_since_is_kept_as_the_only_copy()
+    {
+        var rootId = SeedRoot();
+        // Pages at the folder root: the folder itself is the source, and it never stops existing.
+        Directory.CreateDirectory(At("loose raws"));
+        File.WriteAllText(At("loose raws", "001.png"), "page one");
+        File.WriteAllText(At("loose raws", "002.png"), "page two");
+        var result = await ImportAsync(rootId, "loose raws");
+        // Named after the folder it was built in, which by then has the series' name.
+        var builtName = result.NewFolderName + ".cbz";
+        Assert.True(File.Exists(At(result.NewFolderName!, builtName)));
+        File.Delete(At(result.NewFolderName!, "002.png"));
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(outcome.Undone, outcome.Error);
+        Assert.Contains(outcome.Warnings!, w => w.StartsWith("error.libraryImport.undoKeptBuilt"));
+        Assert.True(File.Exists(At("loose raws", builtName)));
+        Assert.True(File.Exists(At("loose raws", "001.png")));
+    }
+
+    [Fact]
+    public async Task A_match_that_is_still_running_gets_its_flags_back_and_no_early_link()
+    {
+        var rootId = SeedRoot();
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        var seriesId = result.SeriesId!.Value;
+        while (_queue.TryReadMatch(out _))
+        {
+        }
+
+        // The running match has already saved its mappings and is now syncing chapters.
+        await using (var db = _db.NewContext())
+        {
+            db.SourceMappings.Add(new SourceMapping
+            {
+                SeriesId = seriesId, SourceName = "mangadex", SourceSeriesId = "x", Url = "https://example.invalid/x",
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var running = new TaskCompletionSource();
+        Assert.True(_queue.TryBeginMatch(seriesId, running.Task));
+        var wait = LibraryImportUndoService.MatchWait;
+        LibraryImportUndoService.MatchWait = TimeSpan.FromMilliseconds(100);
+        try
+        {
+            var refused = await UndoAsync(await RecordIdAsync());
+
+            Assert.StartsWith("error.libraryImport.undoMatchRunning", refused.Error);
+            await using var check = _db.NewContext();
+            var series = await check.Series.SingleAsync();
+            Assert.True(series.SourceMatchPending);
+            Assert.Equal(PendingImportLink.LinkAndComicInfo, series.PendingImportLink);
+            Assert.False(_queue.LinkReader.TryRead(out _));
+        }
+        finally
+        {
+            LibraryImportUndoService.MatchWait = wait;
+            _queue.EndMatch(seriesId);
+            running.SetResult();
+        }
+    }
+
+    [Fact]
+    public async Task Undo_refuses_to_rename_back_onto_a_name_another_series_owns()
+    {
+        var rootId = SeedRoot();
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        // A keep-new-standard series points at a folder that does not exist on disk yet.
+        await using (var db = _db.NewContext())
+        {
+            db.Series.Add(new Series
+            {
+                Title = "Other", SortTitle = "Other", FolderName = "chainsaw raws", RootFolderId = rootId,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.False(outcome.Undone);
+        Assert.StartsWith("error.libraryImport.folderOwnedByOtherSeries", outcome.Error);
+        Assert.True(Directory.Exists(At(result.NewFolderName!)));
+        Assert.False(Directory.Exists(At("chainsaw raws")));
+    }
+
+    [Fact]
+    public async Task A_failed_save_puts_the_pending_match_back_and_a_batch_keeps_going()
+    {
+        var rootId = SeedRoot();
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        WriteZip(At("monster raws", "Monster 001.cbz"));
+        await ImportAsync(rootId, "chainsaw raws");
+        await ImportAsync(rootId, "monster raws", providerId: "43");
+        while (_queue.TryReadMatch(out _))
+        {
+        }
+
+        var options = new DbContextOptionsBuilder<MakiDbContext>(_db.Options)
+            .AddInterceptors(new FailingSave())
+            .Options;
+        await using (var failing = new MakiDbContext(options))
+        {
+            var outcomes = await UndoService(failing).UndoBatchAsync("batch-1", CancellationToken.None);
+
+            Assert.Equal(2, outcomes!.Count);
+            Assert.All(outcomes, o => Assert.StartsWith("error.libraryImport.undoFailed", o.Error));
+        }
+
+        await using var check = _db.NewContext();
+        Assert.All(await check.Series.ToListAsync(), s =>
+        {
+            Assert.True(s.SourceMatchPending);
+            Assert.Equal(PendingImportLink.LinkAndComicInfo, s.PendingImportLink);
+        });
+        Assert.All(await check.ImportBatchFolders.ToListAsync(), r => Assert.Null(r.UndoneAt));
+        Assert.True(_queue.TryReadMatch(out _));
+    }
+
+    [Fact]
+    public async Task Removing_a_created_series_needs_DeleteSeries_unless_the_caller_ran_the_import()
+    {
+        var rootId = SeedRoot();
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        await ImportAsync(rootId, "chainsaw raws");
+        var id = await RecordIdAsync();
+
+        var stranger = await UndoAsync(id, new TestCurrentUser(2, permissions: MakiPermission.ImportLibrary));
+        Assert.False(stranger.Undone);
+        Assert.StartsWith("error.libraryImport.undoNeedsDeleteSeries", stranger.Error);
+
+        var importer = await UndoAsync(id, new TestCurrentUser(1, permissions: MakiPermission.ImportLibrary));
+        Assert.True(importer.Undone, importer.Error);
+
+        // Recorded the way SeriesController.Delete records a removal.
+        await using var check = _db.NewContext();
+        var removed = await check.StatsEvents.SingleAsync(e => e.Type == StatsEventType.SeriesRemoved);
+        Assert.Contains("\"providerId\":\"42\"", removed.PayloadJson);
+    }
+
+    [Fact]
+    public async Task Undo_refuses_when_the_series_files_were_renamed_since()
+    {
+        var rootId = SeedRoot();
+        WriteFixture("chainsaw raws");
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        var folder = result.NewFolderName!;
+        File.Move(At(folder, "Chainsaw Man 002.cbz"), At(folder, "Chainsaw Man - Ch.2.cbz"));
+        await using (var db = _db.NewContext())
+        {
+            var row = await db.ChapterFiles.SingleAsync(f => f.RelativePath.EndsWith("Chainsaw Man 002.cbz"));
+            row.RelativePath = Path.Combine(folder, "Chainsaw Man - Ch.2.cbz");
+            await db.SaveChangesAsync();
+        }
+
+        var after = Fingerprint(At(folder));
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.False(outcome.Undone);
+        Assert.StartsWith("error.libraryImport.undoFilesRenamed", outcome.Error);
+        Assert.Equal(after, Fingerprint(At(folder)));
+    }
+
+    [Fact]
+    public async Task Two_undos_at_once_undo_once_and_the_second_says_so()
+    {
+        _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
+        var rootId = SeedRoot();
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        var id = await RecordIdAsync();
+
+        Task<ImportUndoOutcome> first, second;
+        using (await SeriesLocks.SeriesAsync(result.SeriesId!.Value, CancellationToken.None))
+        {
+            first = Task.Run(() => UndoAsync(id));
+            second = Task.Run(() => UndoAsync(id));
+            await Task.Delay(300);
+        }
+
+        var outcomes = await Task.WhenAll(first, second);
+
+        Assert.Single(outcomes, o => o.Undone);
+        Assert.Single(outcomes, o => o.Error?.StartsWith("error.libraryImport.undoAlreadyDone") == true);
+    }
+
+    [Fact]
+    public async Task A_folder_that_could_not_be_moved_back_can_be_retried()
+    {
+        var rootId = SeedRoot();
+        WriteFixture("chainsaw raws");
+        var originals = Fingerprint(At("chainsaw raws"));
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        // A file under the old name: not a folder, so the undo starts, and the move back then fails.
+        File.WriteAllText(At("chainsaw raws"), "in the way");
+
+        var first = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(first.Undone, first.Error);
+        Assert.Contains(first.Warnings!, w => w.StartsWith("error.libraryImport.undoDiskPending"));
+        Assert.True(Directory.Exists(At(result.NewFolderName!)));
+        await using (var db = _db.NewContext())
+        {
+            var folder = Assert.Single(Assert.Single(await UndoService(db).RecentAsync(rootId, default)).Folders);
+            Assert.True(folder.DiskPending);
+        }
+
+        File.Delete(At("chainsaw raws"));
+        var retry = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(retry.Undone, retry.Error);
+        Assert.Null(retry.Warnings);
+        Assert.Equal(originals, Fingerprint(At("chainsaw raws")));
+        await using var check = _db.NewContext();
+        Assert.False(ImportOperations.Parse((await check.ImportBatchFolders.SingleAsync()).OperationsJson).DiskPending);
+    }
+
+    private sealed class FailingSave : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            throw new DbUpdateException("the database refused the save");
+    }
+
     private sealed class FixedProvider : IMetadataProvider
     {
         public string Name => "fake";
@@ -421,7 +657,7 @@ public class LibraryImportUndoTests : IDisposable
         public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default) =>
             Task.FromResult<SeriesMetadata?>(new SeriesMetadata
             {
-                ProviderId = providerId, Title = "Chainsaw Man", MangaBakaId = 42,
+                ProviderId = providerId, Title = "Chainsaw Man", MangaBakaId = int.Parse(providerId),
             });
     }
 }

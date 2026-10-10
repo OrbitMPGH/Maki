@@ -126,6 +126,8 @@ export interface ImportBatchFolder {
   /** Still waiting on its source match or file link; undo cancels that. */
   linkPending: boolean
   seriesGone: boolean
+  /** Undone, but part of the disk half failed; undoing again retries it. */
+  diskPending: boolean
 }
 
 export interface ImportBatch {

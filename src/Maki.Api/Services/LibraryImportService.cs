@@ -618,14 +618,15 @@ public class LibraryImportService(
                 }
             }
 
-            var (added, skipped, built, fileIds) =
+            var (added, skipped, built, registered) =
                 await RegisterAndDeferLinkAsync(series, item, targetDir, owedLink, operationId, ct);
             await RecordBatchFolderAsync(rootFolder.Id, operationId, series, created: true, item.FolderName, targetDir,
                 new ImportOperations
                 {
                     FolderAction = decision.Action,
                     Built = built,
-                    RegisteredFileIds = fileIds,
+                    RegisteredFileIds = registered.Keys.ToList(),
+                    RegisteredPaths = registered,
                     WroteCover = !coverExisted && File.Exists(folderCover),
                 });
 
@@ -656,7 +657,8 @@ public class LibraryImportService(
     /// files are on record and leave them unlinked.
     /// </para>
     /// </summary>
-    private async Task<(int Added, List<ImportSkippedFile> Unreadable, List<ImportBuiltFile> Built, List<int> FileIds)>
+    private async Task<(int Added, List<ImportSkippedFile> Unreadable, List<ImportBuiltFile> Built,
+            Dictionary<int, string> Registered)>
         RegisterAndDeferLinkAsync(
             Series series, ImportRequestItem item, string targetDir, PendingImportLink owedLink, string? operationId,
             CancellationToken ct, bool locked = false)
@@ -668,15 +670,18 @@ public class LibraryImportService(
         series.SourceMatchPending = true;
         series.PendingImportLink = owedLink;
         await db.SaveChangesAsync(ct);
-        // Every row the series has: an import only ever runs into a series with no files.
-        var fileIds = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).Select(f => f.Id).ToListAsync(ct);
+        var registered = await RegisteredFilesAsync(series.Id, ct);
         sourceMatchQueue.Enqueue(series.Id, SourceMatchLane.Background);
 
         var skipped = unreadable
             .Select(f => new ImportSkippedFile(Path.GetRelativePath(targetDir, f), ImportSkipReason.Unreadable))
             .ToList();
-        return (added, skipped, BuiltFiles(targetDir, built), fileIds);
+        return (added, skipped, BuiltFiles(targetDir, built), registered);
     }
+
+    /// <summary>Every row the series has, with its path: an import only ever runs into a series with no files.</summary>
+    private Task<Dictionary<int, string>> RegisteredFilesAsync(int seriesId, CancellationToken ct) =>
+        db.ChapterFiles.Where(f => f.SeriesId == seriesId).ToDictionaryAsync(f => f.Id, f => f.RelativePath, ct);
 
     private static List<ImportBuiltFile> BuiltFiles(string dir, IEnumerable<PlannedComic> built) =>
         built.Select(c => new ImportBuiltFile(
@@ -684,7 +689,9 @@ public class LibraryImportService(
                 Path.GetRelativePath(dir, c.Source.Path),
                 c.Source.Entry,
                 c.Action,
-                c.Aside is null ? null : Path.GetRelativePath(dir, c.Aside)))
+                c.Aside is null ? null : Path.GetRelativePath(dir, c.Aside),
+                JsonNamingPolicy.CamelCase.ConvertName(c.Source.Kind.ToString()),
+                c.Source.Pages))
             .ToList();
 
     /// <summary>
@@ -975,10 +982,11 @@ public class LibraryImportService(
         if (!await db.Chapters.AnyAsync(c => c.SeriesId == series.Id, ct))
         {
             var owedLink = updateComicInfo ? PendingImportLink.LinkAndComicInfo : PendingImportLink.Link;
-            var (added, unreadableSkipped, deferredBuilt, deferredIds) = await RegisterAndDeferLinkAsync(
+            var (added, unreadableSkipped, deferredBuilt, deferredFiles) = await RegisterAndDeferLinkAsync(
                 series, item, targetDir, owedLink, operationId, ct, locked: true);
             operations.Built = deferredBuilt;
-            operations.RegisteredFileIds = deferredIds;
+            operations.RegisteredFileIds = deferredFiles.Keys.ToList();
+            operations.RegisteredPaths = deferredFiles;
             await RecordBatchFolderAsync(
                 rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
             return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName,
@@ -995,8 +1003,8 @@ public class LibraryImportService(
             updateComicInfo, ct: ct);
         var skipped = await SkippedFilesAsync(series.Id, targetDir, cbzFiles, unreadable, ct);
         operations.Built = BuiltFiles(targetDir, built);
-        operations.RegisteredFileIds =
-            await db.ChapterFiles.Where(f => f.SeriesId == series.Id).Select(f => f.Id).ToListAsync(ct);
+        operations.RegisteredPaths = await RegisteredFilesAsync(series.Id, ct);
+        operations.RegisteredFileIds = operations.RegisteredPaths.Keys.ToList();
         await RecordBatchFolderAsync(
             rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
 

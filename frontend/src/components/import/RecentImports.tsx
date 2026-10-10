@@ -163,7 +163,11 @@ function FolderRow({
             </>
           )}
         </Text>
-        {undoneOn ? (
+        {undoneOn && folder.diskPending ? (
+          <Text size="xs" c="var(--warn)">
+            <Trans>Undone {undoneOn}, but not every file could be put back. Retry once the folder is free.</Trans>
+          </Text>
+        ) : undoneOn ? (
           <Text size="xs" c="var(--ink-3)">
             <Trans>Undone {undoneOn}</Trans>
           </Text>
@@ -177,10 +181,17 @@ function FolderRow({
           </Text>
         ) : null}
       </div>
-      {!folder.undoneAt && !folder.seriesGone && (
+      {folder.diskPending ? (
         <Button size="xs" variant="default" leftSection={<IconArrowBackUp size={14} />} onClick={onUndo} disabled={busy}>
-          <Trans>Undo</Trans>
+          <Trans>Retry</Trans>
         </Button>
+      ) : (
+        !folder.undoneAt &&
+        !folder.seriesGone && (
+          <Button size="xs" variant="default" leftSection={<IconArrowBackUp size={14} />} onClick={onUndo} disabled={busy}>
+            <Trans>Undo</Trans>
+          </Button>
+        )
       )}
     </Group>
   )
@@ -188,7 +199,7 @@ function FolderRow({
 
 function BatchCard({ batch, onUndo, busy }: { batch: ImportBatch; onUndo: (t: UndoTarget) => void; busy: boolean }) {
   const when = formatDateTime(batch.createdAt)
-  const open = batch.folders.filter((f) => !f.undoneAt && !f.seriesGone)
+  const open = batch.folders.filter((f) => f.diskPending || (!f.undoneAt && !f.seriesGone))
   return (
     <Card withBorder padding="sm" radius="md">
       <Group justify="space-between" mb="xs">
