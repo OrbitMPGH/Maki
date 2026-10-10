@@ -289,7 +289,7 @@ public sealed class TextEmbedder(
         provider = EmbeddingProvider.Cpu;
         if (options.Provider != EmbeddingProvider.Cuda)
         {
-            return new SessionOptions();
+            return CpuSessionOptions();
         }
 
         if (options.Precision == EmbeddingPrecision.Int8)
@@ -328,8 +328,33 @@ public sealed class TextEmbedder(
                 : "the GPU build is loaded but no CUDA device was reached. Check that CUDA 13.x and " +
                   "cuDNN 9.x are on PATH and that the driver sees the card.";
             logger.LogWarning(ex, "CUDA execution provider unavailable; falling back to CPU: {Cause}", cause);
-            return new SessionOptions();
+            return CpuSessionOptions();
         }
+    }
+
+    /// <summary>
+    /// ONNX Runtime's intra-op threads spin between work items by default, which on an always-on
+    /// NAS reads as CPU burned while an indexing pass waits on the dump between batches.
+    /// </summary>
+    private static SessionOptions CpuSessionOptions()
+    {
+        var sessionOptions = new SessionOptions();
+        sessionOptions.AddSessionConfigEntry("session.intra_op.allow_spinning", "0");
+        return sessionOptions;
+    }
+
+    /// <summary>
+    /// The CPU arena otherwise keeps the high-water mark of the largest batch it has run (a full
+    /// batch of 512-token passages) until the session is disposed. Shrinking after each run hands
+    /// that back between batches and costs a fresh allocation per batch.
+    /// </summary>
+    private static readonly RunOptions CpuRunOptions = CreateCpuRunOptions();
+
+    private static RunOptions CreateCpuRunOptions()
+    {
+        var runOptions = new RunOptions();
+        runOptions.AddRunConfigEntry("memory.enable_memory_arena_shrinkage", "cpu:0");
+        return runOptions;
     }
 
     /// <summary>
@@ -503,12 +528,15 @@ public sealed class TextEmbedder(
             inputs.Add(NamedOnnxValue.CreateFromTensor(TokenTypeIdsInput, types));
         }
 
-        using var results = _session.Run(inputs);
         var pooled = options.Model.Pooling == EmbeddingPooling.Pooled;
+        var outputName = pooled ? PooledOutput : HiddenStateOutput;
+        using var results = ActiveProvider == EmbeddingProvider.Cpu
+            ? _session.Run(inputs, [outputName], CpuRunOptions)
+            : _session.Run(inputs);
         // Both supported precisions emit a float tensor: int8 models are QDQ graphs that dequantize
         // before the output, and fp32 is float by definition. See EmbeddingPrecision for why there
         // is no half-precision case to handle here.
-        var output = results.First(r => r.Name == (pooled ? PooledOutput : HiddenStateOutput)).AsTensor<float>();
+        var output = results.First(r => r.Name == outputName).AsTensor<float>();
         var dim = output.Dimensions[^1];
         var mean = options.Model.Pooling == EmbeddingPooling.Mean;
 

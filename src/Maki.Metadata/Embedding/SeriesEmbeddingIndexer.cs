@@ -26,6 +26,13 @@ public class SeriesEmbeddingIndexer(
     // Per forward pass. 32 on CPU, larger on a GPU, which idles between passes at that size.
     private int BatchSize => options.BatchSize;
 
+    /// <summary>
+    /// Batches of rows held back before embedding, so they can be sorted by length first. A batch
+    /// is padded to its longest row, and in dump order one long description pads 31 short ones to
+    /// 512 tokens; sorting groups like lengths, which cuts both the compute and the arena's peak.
+    /// </summary>
+    private const int SortWindowBatches = 8;
+
     /// <summary>Rows between progress lines. ~7 s apart on a GPU, ~1 min on a CPU.</summary>
     private const int ProgressEvery = 2048;
 
@@ -208,7 +215,7 @@ public class SeriesEmbeddingIndexer(
                 pendingTexts.Add(text);
                 pendingTags.Add(tagBlob);
 
-                if (pendingTexts.Count >= BatchSize)
+                if (pendingTexts.Count >= BatchSize * SortWindowBatches)
                 {
                     embedded += Flush(pendingIds, pendingHashes, pendingTexts, pendingTags);
                     status.Report(scanned, embedded);
@@ -311,13 +318,17 @@ public class SeriesEmbeddingIndexer(
             return 0;
         }
 
-        var vectors = embedder.EmbedBatch(texts);
+        var order = Enumerable.Range(0, texts.Count).OrderBy(i => texts[i].Length).ToArray();
         var rows = new List<(long, string, float[])>(texts.Count);
         var tagRows = new List<(long, byte[])>(texts.Count);
-        for (var i = 0; i < texts.Count; i++)
+        foreach (var chunk in order.Chunk(BatchSize))
         {
-            rows.Add((ids[i], hashes[i], vectors[i]));
-            tagRows.Add((ids[i], tags[i]));
+            var vectors = embedder.EmbedBatch(chunk.Select(i => texts[i]).ToList());
+            for (var j = 0; j < chunk.Length; j++)
+            {
+                rows.Add((ids[chunk[j]], hashes[chunk[j]], vectors[j]));
+                tagRows.Add((ids[chunk[j]], tags[chunk[j]]));
+            }
         }
 
         store.UpsertBatch(rows);
