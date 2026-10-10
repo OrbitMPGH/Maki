@@ -100,6 +100,10 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     public Task QueueUpdated(object queueItem) =>
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queueUpdated", queueItem);
 
+    /// <summary>The download pause changed, by a person or because a resume time passed.</summary>
+    public Task QueuePauseChanged(object pause) =>
+        hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queuePauseChanged", pause);
+
     /// <summary>
     /// A chapter finished importing. Unlike the rest of this class the audience is not "admins" —
     /// a reader with a grant on the folder genuinely wants to know their series just gained a

@@ -153,7 +153,7 @@ public class UpgradeRevertServiceTests : IDisposable
             using var db = _world.Db.NewContext();
             using var batches = _world.Batches();
             var controller = new Maki.Api.Controllers.QueueController(new TestLocalizer(), db, _world.Queue, batches,
-                null!, new Maki.Api.Hubs.EventBroadcaster(new NoopHubContext(), _world.Db.ScopeFactory()), null!,
+                null!, null!, null!, new Maki.Api.Hubs.EventBroadcaster(new NoopHubContext(), _world.Db.ScopeFactory()), null!,
                 NullLogger<Maki.Api.Controllers.QueueController>.Instance);
             var ok = Assert.IsType<Microsoft.AspNetCore.Mvc.OkObjectResult>(await controller.History(1, 25, default));
             var page = Assert.IsType<Maki.Api.Dtos.QueueHistoryDto>(ok.Value);

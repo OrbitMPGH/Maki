@@ -848,6 +848,14 @@ msgstr "{name} (disabled in Prowlarr)"
 msgid "{name} {year}"
 msgstr "{name} {year}"
 
+#: src/components/QueuePause.tsx
+msgid "{name} paused"
+msgstr "{name} paused"
+
+#: src/components/QueuePause.tsx
+msgid "{name} paused until {time}"
+msgstr "{name} paused until {time}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{name}: {ok}/{total} succeeded"
 msgstr "{name}: {ok}/{total} succeeded"
@@ -2199,6 +2207,7 @@ msgid "All series"
 msgstr "All series"
 
 #: src/components/FailedQueueActions.tsx
+#: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "All sources"
 msgstr "All sources"
@@ -2978,6 +2987,7 @@ msgstr "Can't read this download"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
@@ -3360,6 +3370,10 @@ msgstr "chapters {ranges}"
 #: src/components/SourceCompareModal.tsx
 msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files imported from disk."
 msgstr "Chapters {winnerDisplayName} doesn't carry are left alone, as are files imported from disk."
+
+#: src/components/QueuePause.tsx
+msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
+msgstr "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4098,6 +4112,10 @@ msgstr "Couldn't load your notifications"
 msgid "Couldn't load your reading progress"
 msgstr "Couldn't load your reading progress"
 
+#: src/components/QueuePause.tsx
+msgid "Couldn't pause the downloads"
+msgstr "Couldn't pause the downloads"
+
 #: src/components/RatingImportModal.tsx
 msgid "Couldn't reach {label}."
 msgstr "Couldn't reach {label}."
@@ -4105,6 +4123,10 @@ msgstr "Couldn't reach {label}."
 #: src/components/FailedQueueActions.tsx
 msgid "Couldn't remove the failed downloads"
 msgstr "Couldn't remove the failed downloads"
+
+#: src/components/QueuePause.tsx
+msgid "Couldn't resume the downloads"
+msgstr "Couldn't resume the downloads"
 
 #: src/components/FailedQueueActions.tsx
 msgid "Couldn't retry the failed downloads"
@@ -4879,6 +4901,14 @@ msgstr "Downloads"
 #: src/components/SourceMeasurePanel.tsx
 msgid "Downloads now try {bestName} first."
 msgstr "Downloads now try {bestName} first."
+
+#: src/components/QueuePause.tsx
+msgid "Downloads paused"
+msgstr "Downloads paused"
+
+#: src/components/QueuePause.tsx
+msgid "Downloads paused until {time}"
+msgstr "Downloads paused until {time}"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
@@ -5690,6 +5720,10 @@ msgstr "Following"
 #: src/components/ui/seriesNotifications.ts
 msgid "Follows the default on your notification settings."
 msgstr "Follows the default on your notification settings."
+
+#: src/components/QueuePause.tsx
+msgid "For 1 hour"
+msgstr "For 1 hour"
 
 #: src/components/SetupWizard.tsx
 msgid "For readers like Komga and Kavita that pick up a poster from the folder."
@@ -7362,6 +7396,10 @@ msgstr "Maki is restarting to apply it. Reload in a moment."
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki speaks your language"
 msgstr "Maki speaks your language"
+
+#: src/components/QueuePause.tsx
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
+msgstr "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
 
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
@@ -9443,7 +9481,16 @@ msgstr "Path mapping - Maki side"
 msgid "Path mapping - qBittorrent side"
 msgstr "Path mapping - qBittorrent side"
 
+#: src/components/QueuePause.tsx
+msgid "Pause"
+msgstr "Pause"
+
+#: src/components/QueuePause.tsx
+msgid "Pause downloads"
+msgstr "Pause downloads"
+
 #: src/components/discover/DiscoverHero.tsx
+#: src/pages/ActivityPage.tsx
 msgid "Paused"
 msgstr "Paused"
 
@@ -9500,6 +9547,10 @@ msgstr "Pick a root folder"
 #: src/pages/settings/DownloadCards.tsx
 msgid "Pick a source by"
 msgstr "Pick a source by"
+
+#: src/components/QueuePause.tsx
+msgid "Pick a time in the future"
+msgstr "Pick a time in the future"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Pick another default profile first"
@@ -10827,6 +10878,7 @@ msgstr "Restrict release searches to specific indexers and categories. With noth
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Resume"
 msgstr "Resume"
@@ -10834,6 +10886,10 @@ msgstr "Resume"
 #: src/components/home/ContinueLead.tsx
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "Resume {seriesTitle}, {chapterLabel}"
+
+#: src/components/QueuePause.tsx
+msgid "Resume at"
+msgstr "Resume at"
 
 #: src/pages/ActivityPage.tsx
 msgid "Retried {retryCount}x"
@@ -13772,9 +13828,21 @@ msgstr "Unsupported file type"
 msgid "Untagged only"
 msgstr "Untagged only"
 
+#: src/components/QueuePause.tsx
+msgid "Until a time I choose"
+msgstr "Until a time I choose"
+
+#: src/components/QueuePause.tsx
+msgid "Until I resume"
+msgstr "Until I resume"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Until it is built, the badges compare against your own library only."
 msgstr "Until it is built, the badges compare against your own library only."
+
+#: src/components/QueuePause.tsx
+msgid "Until tomorrow morning"
+msgstr "Until tomorrow morning"
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "Until: {end}"
@@ -14358,6 +14426,10 @@ msgstr "What shapes your recommendations"
 #: src/components/SetupWizard.tsx
 msgid "What to download"
 msgstr "What to download"
+
+#: src/components/QueuePause.tsx
+msgid "What to pause"
+msgstr "What to pause"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "What you read"

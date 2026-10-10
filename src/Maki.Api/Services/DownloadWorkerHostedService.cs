@@ -21,7 +21,8 @@ public class DownloadWorkerHostedService(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     IServiceScopeFactory scopeFactory,
-    ILogger<DownloadWorkerHostedService> logger) : BackgroundService
+    ILogger<DownloadWorkerHostedService> logger,
+    DownloadPauseService? pauses = null) : BackgroundService
 {
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
@@ -110,7 +111,42 @@ public class DownloadWorkerHostedService(
         while (await timer.WaitForNextTickAsync(ct))
         {
             await RefreshSettingsAsync(ct);
+            await LiftElapsedPausesAsync(ct);
             await queue.SignalAsync(0, ct);
+        }
+    }
+
+    /// <summary>
+    /// A pause with a resume time lifts on the next poll tick, which is also the signal that wakes the
+    /// workers, so no timer of its own is needed. Claiming already ignores an elapsed pause; this
+    /// clears the stored copy and tells the open Activity pages.
+    /// </summary>
+    private async Task LiftElapsedPausesAsync(CancellationToken ct)
+    {
+        if (pauses is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await pauses.ExpireAsync(ct))
+            {
+                return;
+            }
+
+            logger.LogInformation("Download pause reached its resume time");
+            using var scope = scopeFactory.CreateScope();
+            if (scope.ServiceProvider.GetService<EventBroadcaster>() is { } events)
+            {
+                await events.QueuePauseChanged(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+            }
+
+            await queue.WakeWorkersAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not lift an elapsed download pause");
         }
     }
 

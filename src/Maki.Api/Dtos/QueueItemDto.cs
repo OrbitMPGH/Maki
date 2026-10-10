@@ -145,3 +145,24 @@ public record QueueFailedActionDto(string? Reason = null, string? Source = null,
 public record QueueBulkResultDto(int Affected);
 
 public record ReorderQueueDto(IReadOnlyList<int> OrderedIds);
+
+/// <param name="Until">When the pause lifts by itself, in UTC; null means until somebody resumes.</param>
+public record QueuePauseEntryDto(DateTime? Until);
+
+public record QueueSourcePauseDto(string SourceName, DateTime? Until);
+
+/// <param name="All">Set while every scraper download is paused.</param>
+/// <param name="Sources">Sources paused on their own, whether or not everything is.</param>
+public record QueuePauseDto(QueuePauseEntryDto? All, IReadOnlyList<QueueSourcePauseDto> Sources)
+{
+    public static QueuePauseDto From(Services.DownloadPauseState state) => new(
+        state.All is { } all ? new QueuePauseEntryDto(all.Until) : null,
+        state.Sources
+            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => new QueueSourcePauseDto(pair.Key, pair.Value.Until))
+            .ToList());
+}
+
+/// <param name="Source">The source to pause, or null for every scraper download.</param>
+/// <param name="ResumeAt">When to resume by itself; null pauses until somebody resumes.</param>
+public record QueuePauseRequestDto(string? Source = null, DateTime? ResumeAt = null);

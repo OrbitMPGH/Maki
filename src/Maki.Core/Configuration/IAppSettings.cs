@@ -346,6 +346,13 @@ public static class SettingKeys
     public const string DownloadItemTimeoutMinutes = "download.itemtimeoutminutes";
 
     /// <summary>
+    /// JSON for the scraper download pause: an optional global pause and a set of paused source names,
+    /// each with an optional resume time. Absent means nothing is paused. Owned by
+    /// <c>DownloadPauseService</c>.
+    /// </summary>
+    public const string DownloadPause = "download.pause";
+
+    /// <summary>
     /// "false" → import completed torrents by copying the CBZ files into the library. Default on:
     /// hardlink first, copy when the link can't be made (download folder and library on different
     /// volumes, or a filesystem without hardlink support), so the library and the still-seeding

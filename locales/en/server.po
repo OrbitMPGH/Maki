@@ -589,6 +589,14 @@ msgstr "Only failed items can be retried"
 msgid "error.queue.onlyTorrentImportable"
 msgstr "Only torrent downloads are imported as files"
 
+#: src/Maki.Api/Controllers/QueueController.cs
+msgid "error.queue.pauseResumeInPast"
+msgstr "The resume time has already passed"
+
+#: src/Maki.Api/Controllers/QueueController.cs
+msgid "error.queue.pauseUnknownSource"
+msgstr "That source is not known"
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.chapterNotReadable"
 msgstr "Chapter has no readable file"

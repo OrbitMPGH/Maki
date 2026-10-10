@@ -837,6 +837,16 @@ msgstr "只有失败的项目可以重试"
 msgid "error.queue.onlyTorrentImportable"
 msgstr "只有 torrent 下载可以导入为文件"
 
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: The resume time has already passed
+msgid "error.queue.pauseResumeInPast"
+msgstr ""
+
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: That source is not known
+msgid "error.queue.pauseUnknownSource"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Chapter has no readable file
 #, fuzzy

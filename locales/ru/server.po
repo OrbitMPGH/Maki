@@ -837,6 +837,16 @@ msgstr "Повторить можно только неудачные элеме
 msgid "error.queue.onlyTorrentImportable"
 msgstr "Файлами импортируются только торрент-загрузки"
 
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: The resume time has already passed
+msgid "error.queue.pauseResumeInPast"
+msgstr ""
+
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: That source is not known
+msgid "error.queue.pauseUnknownSource"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Chapter has no readable file
 #, fuzzy

@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro'
 import { t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import type { QueueItemDto, QueueOrigin } from './types'
+import type { QueueItemDto, QueueOrigin, QueuePauseDto } from './types'
 import { upgradeReasonLabel } from './upgrades'
 
 const QUEUE_ORIGINS: QueueOrigin[] = [
@@ -13,6 +13,12 @@ const QUEUE_ORIGINS: QueueOrigin[] = [
   'healthrepair',
   'upgrade',
 ]
+
+/** True when a scraper row waiting in the queue is held back by the pause rather than by anything wrong with it. */
+export function isHeldByPause(pause: QueuePauseDto | undefined, sourceName: string): boolean {
+  if (!pause || sourceName === 'torrent') return false
+  return pause.all !== null || pause.sources.some((s) => s.sourceName === sourceName)
+}
 
 /** A newer server can send an origin this build has no case for; treat it as 'unknown' rather than crash. */
 export function queueOriginOrUnknown(value: string): QueueOrigin {

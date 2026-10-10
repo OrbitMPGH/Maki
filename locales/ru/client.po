@@ -1009,6 +1009,14 @@ msgstr "{name} (отключено в Prowlarr)"
 msgid "{name} {year}"
 msgstr "{name} {year}"
 
+#: src/components/QueuePause.tsx
+msgid "{name} paused"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "{name} paused until {time}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded"
@@ -2633,6 +2641,7 @@ msgid "All series"
 msgstr "Все серии"
 
 #: src/components/FailedQueueActions.tsx
+#: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "All sources"
@@ -3576,6 +3585,7 @@ msgstr "Не удаётся прочитать эту загрузку"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
@@ -4038,6 +4048,10 @@ msgstr "главы {ranges}"
 #, fuzzy
 msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files imported from disk."
 msgstr "Главы, которых нет у {winnerDisplayName}, остаются без изменений, как и файлы, импортированные с диска."
+
+#: src/components/QueuePause.tsx
+msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4917,6 +4931,10 @@ msgstr "Не удалось загрузить уведомления"
 msgid "Couldn't load your reading progress"
 msgstr "Не удалось загрузить прогресс чтения"
 
+#: src/components/QueuePause.tsx
+msgid "Couldn't pause the downloads"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "Couldn't reach {label}."
@@ -4924,6 +4942,10 @@ msgstr "Не удалось подключиться к {label}."
 
 #: src/components/FailedQueueActions.tsx
 msgid "Couldn't remove the failed downloads"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Couldn't resume the downloads"
 msgstr ""
 
 #: src/components/FailedQueueActions.tsx
@@ -5849,6 +5871,14 @@ msgstr "Загрузки"
 #, fuzzy
 msgid "Downloads now try {bestName} first."
 msgstr "Теперь загрузка сначала пробует {bestName}."
+
+#: src/components/QueuePause.tsx
+msgid "Downloads paused"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Downloads paused until {time}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -6830,6 +6860,10 @@ msgstr "Вы подписаны"
 #, fuzzy
 msgid "Follows the default on your notification settings."
 msgstr "Следует значению по умолчанию в настройках уведомлений."
+
+#: src/components/QueuePause.tsx
+msgid "For 1 hour"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8846,6 +8880,10 @@ msgstr "Maki перезапускается для применения наст
 #, fuzzy
 msgid "Maki speaks your language"
 msgstr "Maki говорит на вашем языке"
+
+#: src/components/QueuePause.tsx
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -11364,7 +11402,16 @@ msgstr "Сопоставление путей: сторона Maki"
 msgid "Path mapping - qBittorrent side"
 msgstr "Сопоставление путей: сторона qBittorrent"
 
+#: src/components/QueuePause.tsx
+msgid "Pause"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Pause downloads"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Paused"
 msgstr "Приостановлено"
@@ -11432,6 +11479,10 @@ msgstr "Выберите корневую папку"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Pick a source by"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Pick a time in the future"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -13032,6 +13083,7 @@ msgstr ""
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Resume"
@@ -13041,6 +13093,10 @@ msgstr "Продолжить"
 #, fuzzy
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "Продолжить чтение: {seriesTitle}, {chapterLabel}"
+
+#: src/components/QueuePause.tsx
+msgid "Resume at"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16579,10 +16635,22 @@ msgstr "Неподдерживаемый тип файла"
 msgid "Untagged only"
 msgstr ""
 
+#: src/components/QueuePause.tsx
+msgid "Until a time I choose"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Until I resume"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Until it is built, the badges compare against your own library only."
 msgstr "Пока индекс не построен, значки сравниваются только с вашей библиотекой."
+
+#: src/components/QueuePause.tsx
+msgid "Until tomorrow morning"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -17291,6 +17359,10 @@ msgstr "Что формирует ваши рекомендации"
 #, fuzzy
 msgid "What to download"
 msgstr "Что загружать"
+
+#: src/components/QueuePause.tsx
+msgid "What to pause"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

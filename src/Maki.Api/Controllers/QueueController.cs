@@ -8,6 +8,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Core.Quality;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,8 @@ public class QueueController(
     MakiDbContext db,
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
+    DownloadPauseService pauses,
+    SourceRegistry sourceRegistry,
     TorrentImportService importer,
     EventBroadcaster events,
     ISchedulerFactory schedulerFactory,
@@ -124,6 +127,57 @@ public class QueueController(
             Active: counts.Where(kv => kv.Key is not (QueueStatus.Failed or QueueStatus.AwaitingImport)).Sum(kv => kv.Value),
             AwaitingImport: counts.GetValueOrDefault(QueueStatus.AwaitingImport),
             Failed: counts.GetValueOrDefault(QueueStatus.Failed)));
+    }
+
+    /// <summary>What is paused right now. Torrents already handed to qBittorrent are not part of it.</summary>
+    [HttpGet("pause")]
+    public async Task<IActionResult> GetPause(CancellationToken ct) =>
+        Ok(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+
+    /// <summary>
+    /// Stops workers claiming new scraper downloads, for every source or one, until resumed or until
+    /// <c>ResumeAt</c>. Items already downloading finish, and no row changes status.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpPut("pause")]
+    public async Task<IActionResult> Pause([FromBody] QueuePauseRequestDto request, CancellationToken ct)
+    {
+        string? source = null;
+        if (!string.IsNullOrWhiteSpace(request.Source))
+        {
+            source = sourceRegistry.Find(request.Source)?.Name;
+            if (source is null)
+            {
+                return this.Fail(localizer, "error.queue.pauseUnknownSource");
+            }
+        }
+
+        DateTime? until = request.ResumeAt is { } at
+            ? at.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(at, DateTimeKind.Utc) : at.ToUniversalTime()
+            : null;
+        if (until <= DateTime.UtcNow)
+        {
+            return this.Fail(localizer, "error.queue.pauseResumeInPast");
+        }
+
+        return Ok(await ChangePauseAsync(await pauses.PauseAsync(source, until, ct), ct));
+    }
+
+    /// <summary>Lifts the pause on one source, or the global one when <c>source</c> is omitted.</summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpDelete("pause")]
+    public async Task<IActionResult> Resume([FromQuery] string? source, CancellationToken ct)
+    {
+        var name = string.IsNullOrWhiteSpace(source) ? null : source;
+        return Ok(await ChangePauseAsync(await pauses.ResumeAsync(name, ct), ct));
+    }
+
+    private async Task<QueuePauseDto> ChangePauseAsync(DownloadPauseState state, CancellationToken ct)
+    {
+        var dto = QueuePauseDto.From(state);
+        await events.QueuePauseChanged(dto);
+        await queue.WakeWorkersAsync(ct);
+        return dto;
     }
 
     private sealed record QueueRow(DownloadQueueItem Item, Chapter? Chapter, Series? Series, string SourceName);

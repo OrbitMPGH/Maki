@@ -40,7 +40,7 @@ public class QueueBulkFailedTests : IDisposable
     }
 
     private QueueController Controller() => new(
-        new TestLocalizer(), _db.NewContext(), _queue, _batches, null!, null!, null!, NullLogger<QueueController>.Instance);
+        new TestLocalizer(), _db.NewContext(), _queue, _batches, null!, null!, null!, null!, null!, NullLogger<QueueController>.Instance);
 
     private int SeedScraper(string source, string? errorKey, QueueStatus status = QueueStatus.Failed, int retryCount = 0,
         DateTime? nextAttempt = null)

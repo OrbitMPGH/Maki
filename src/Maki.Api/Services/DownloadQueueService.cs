@@ -17,7 +17,8 @@ public class DownloadQueueService(
     IServiceScopeFactory scopeFactory,
     TimeProvider time,
     ChapterSourceResolver sourceResolver,
-    ILogger<DownloadQueueService> logger) : IDownloadCooldown
+    ILogger<DownloadQueueService> logger,
+    DownloadPauseService? pauses = null) : IDownloadCooldown
 {
     // A write is only a wake-up, so a full channel drops the extra rather than letting the five-second
     // poll pile signals up behind busy workers.
@@ -894,13 +895,28 @@ public class DownloadQueueService(
     public ValueTask SignalAsync(int queueItemId, CancellationToken ct = default) =>
         _channel.Writer.WriteAsync(queueItemId, ct);
 
+    private const int WorkerWakeCount = 8;
+
+    /// <summary>
+    /// Wakes every worker, for a pause lifting: nothing else signals the channel when work that has
+    /// been claimable all along is suddenly allowed. A full channel drops the extras.
+    /// </summary>
+    public async Task WakeWorkersAsync(CancellationToken ct = default)
+    {
+        for (var i = 0; i < WorkerWakeCount; i++)
+        {
+            await SignalAsync(0, ct);
+        }
+    }
+
     /// <summary>
     /// Claims the highest-priority claimable scraper item (lowest <see cref="DownloadQueueItem.SortOrder"/>,
     /// ties broken by <see cref="DownloadQueueItem.QueuedAt"/>) whose source isn't currently cooling down.
     /// Claimable status means <c>Queued</c> (never attempted) or <c>RateLimited</c> (a previous attempt was
     /// throttled — its own tracker's cooldown may have lifted since). Skipping past a cooling-down tracker
     /// to the next-highest-priority item on a different one is the whole point of a per-tracker cooldown:
-    /// one rate-limited source shouldn't stall everything else in the queue. The status flip is a
+    /// one rate-limited source shouldn't stall everything else in the queue. A paused source is skipped
+    /// the same way, and a global pause claims nothing; items already in flight are never touched. The status flip is a
     /// conditional update so two workers racing on the same candidate can't both grab it.
     /// <para>
     /// A claimable item can legitimately have no mapping: resolution failing leaves the row Failed with
@@ -913,6 +929,12 @@ public class DownloadQueueService(
     /// </summary>
     public async Task<int?> ClaimNextAsync(CancellationToken ct = default)
     {
+        var pause = pauses is null ? DownloadPauseState.None : await pauses.ActiveAsync(ct);
+        if (pause.All is not null)
+        {
+            return null;
+        }
+
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
@@ -927,6 +949,7 @@ public class DownloadQueueService(
             // restart, and a row parked RateLimited must still wait out its own time.
             var now = time.GetUtcNow().UtcDateTime;
             var cooling = CoolingDownSources();
+            cooling.AddRange(pause.Sources.Keys);
             var candidate = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
                             (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited) &&

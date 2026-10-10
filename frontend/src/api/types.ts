@@ -424,6 +424,23 @@ export interface QueueFailureGroupDto {
   count: number
 }
 
+/** `until` is when the pause lifts by itself (UTC), or null for "until somebody resumes". */
+export interface QueuePauseEntry {
+  until: string | null
+}
+
+/** What is paused on scraper downloads. Torrents already handed to qBittorrent are never part of it. */
+export interface QueuePauseDto {
+  all: QueuePauseEntry | null
+  sources: { sourceName: string; until: string | null }[]
+}
+
+/** `source` unset pauses every scraper download; `resumeAt` unset pauses until resumed. */
+export interface QueuePauseRequest {
+  source?: string
+  resumeAt?: string
+}
+
 /** Which Failed rows a bulk retry or remove acts on; both filters unset means all of them. */
 export interface QueueFailedAction {
   reason?: string

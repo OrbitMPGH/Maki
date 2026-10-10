@@ -36,7 +36,7 @@ public class QueueControllerTests : IDisposable
     // importer/events are only reached by the import-decision endpoints, which have their own
     // tests; everything here settles before either is touched.
     private QueueController Controller(MakiDbContext? db = null) => new(
-        new TestLocalizer(), db ?? _db.NewContext(), _queue, _batches, null!, null!, null!,
+        new TestLocalizer(), db ?? _db.NewContext(), _queue, _batches, null!, null!, null!, null!, null!,
         NullLogger<QueueController>.Instance);
 
     private int SeedItem(QueueStatus status, int? seriesId = null)

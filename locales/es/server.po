@@ -837,6 +837,16 @@ msgstr "Solo se pueden reintentar elementos fallidos"
 msgid "error.queue.onlyTorrentImportable"
 msgstr "Solo las descargas torrent se importan como archivos"
 
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: The resume time has already passed
+msgid "error.queue.pauseResumeInPast"
+msgstr ""
+
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: That source is not known
+msgid "error.queue.pauseUnknownSource"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Chapter has no readable file
 #, fuzzy

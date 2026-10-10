@@ -1009,6 +1009,14 @@ msgstr "{name} (Prowlarr'da devre dışı)"
 msgid "{name} {year}"
 msgstr "{name} {year}"
 
+#: src/components/QueuePause.tsx
+msgid "{name} paused"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "{name} paused until {time}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded"
@@ -2633,6 +2641,7 @@ msgid "All series"
 msgstr "Tüm seriler"
 
 #: src/components/FailedQueueActions.tsx
+#: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "All sources"
@@ -3576,6 +3585,7 @@ msgstr "Bu indirme okunamıyor"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
@@ -4038,6 +4048,10 @@ msgstr "bölümler {ranges}"
 #, fuzzy
 msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files imported from disk."
 msgstr "{winnerDisplayName}'ın sahip olmadığı bölümler, diskten içe aktarılan dosyalar gibi olduğu gibi bırakılır."
+
+#: src/components/QueuePause.tsx
+msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4917,6 +4931,10 @@ msgstr "Bildirimleriniz yüklenemedi"
 msgid "Couldn't load your reading progress"
 msgstr "Okuma ilerlemeniz yüklenemedi"
 
+#: src/components/QueuePause.tsx
+msgid "Couldn't pause the downloads"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "Couldn't reach {label}."
@@ -4924,6 +4942,10 @@ msgstr "{label} ile bağlantı kurulamadı."
 
 #: src/components/FailedQueueActions.tsx
 msgid "Couldn't remove the failed downloads"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Couldn't resume the downloads"
 msgstr ""
 
 #: src/components/FailedQueueActions.tsx
@@ -5849,6 +5871,14 @@ msgstr "İndirmeler"
 #, fuzzy
 msgid "Downloads now try {bestName} first."
 msgstr "İndirmeler artık önce {bestName} kaynağını deniyor."
+
+#: src/components/QueuePause.tsx
+msgid "Downloads paused"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Downloads paused until {time}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -6830,6 +6860,10 @@ msgstr "Takip ediliyor"
 #, fuzzy
 msgid "Follows the default on your notification settings."
 msgstr "Bildirim ayarlarınızdaki varsayılanı takip eder."
+
+#: src/components/QueuePause.tsx
+msgid "For 1 hour"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8846,6 +8880,10 @@ msgstr "Maki bunu uygulamak için yeniden başlıyor. Birazdan yeniden yükleyin
 #, fuzzy
 msgid "Maki speaks your language"
 msgstr "Maki sizin dilinizi konuşuyor"
+
+#: src/components/QueuePause.tsx
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -11364,7 +11402,16 @@ msgstr "Yol eşleme - Maki tarafı"
 msgid "Path mapping - qBittorrent side"
 msgstr "Yol eşleme - qBittorrent tarafı"
 
+#: src/components/QueuePause.tsx
+msgid "Pause"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Pause downloads"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Paused"
 msgstr "Duraklatıldı"
@@ -11432,6 +11479,10 @@ msgstr "Bir kök klasör seçin"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Pick a source by"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Pick a time in the future"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -13032,6 +13083,7 @@ msgstr ""
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Resume"
@@ -13041,6 +13093,10 @@ msgstr "Devam et"
 #, fuzzy
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "{seriesTitle}, {chapterLabel} konumundan devam et"
+
+#: src/components/QueuePause.tsx
+msgid "Resume at"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16579,10 +16635,22 @@ msgstr "Desteklenmeyen dosya türü"
 msgid "Untagged only"
 msgstr ""
 
+#: src/components/QueuePause.tsx
+msgid "Until a time I choose"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Until I resume"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Until it is built, the badges compare against your own library only."
 msgstr "Oluşturulana kadar rozetler yalnızca kendi kitaplığınızla karşılaştırılır."
+
+#: src/components/QueuePause.tsx
+msgid "Until tomorrow morning"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -17291,6 +17359,10 @@ msgstr "Önerilerinizi ne şekillendiriyor"
 #, fuzzy
 msgid "What to download"
 msgstr "İndirilecekler"
+
+#: src/components/QueuePause.tsx
+msgid "What to pause"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

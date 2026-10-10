@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { inboxPrefsQuery, type InboxPush } from './inbox'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
-import type { QueueHistoryDto, QueueItemDto } from './types'
+import type { QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
 
 let connection: HubConnection | null = null
 let connectionPromise: Promise<HubConnection> | null = null
@@ -151,6 +151,7 @@ export function useLiveEvents() {
         ['queue'],
         ['queue-summary'],
         ['queue-history'],
+        ['queue-pause'],
         ['inbox'],
         ['series'],
         ['chapters'],
@@ -215,6 +216,10 @@ export function useLiveEvents() {
             void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
           }, 1000)
         }
+      })
+
+      listen(conn, 'queuePauseChanged', (pause: QueuePauseDto) => {
+        queryClient.setQueryData<QueuePauseDto>(['queue-pause'], pause)
       })
 
       // The flush also refreshes Home's recently-added rail (keyed on ChapterFile.DateAdded, which

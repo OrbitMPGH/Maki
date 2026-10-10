@@ -1009,6 +1009,14 @@ msgstr "{name} (Prowlarr에서 비활성화됨)"
 msgid "{name} {year}"
 msgstr "{name} {year}"
 
+#: src/components/QueuePause.tsx
+msgid "{name} paused"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "{name} paused until {time}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded"
@@ -2633,6 +2641,7 @@ msgid "All series"
 msgstr "모든 시리즈"
 
 #: src/components/FailedQueueActions.tsx
+#: src/components/QueuePause.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "All sources"
@@ -3576,6 +3585,7 @@ msgstr "이 다운로드를 읽을 수 없음"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
@@ -4038,6 +4048,10 @@ msgstr "챕터 {ranges}"
 #, fuzzy
 msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files imported from disk."
 msgstr "{winnerDisplayName}에 없는 챕터는 그대로 두며, 디스크에서 가져온 파일도 마찬가지입니다."
+
+#: src/components/QueuePause.tsx
+msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4917,6 +4931,10 @@ msgstr "알림을 불러오지 못했습니다"
 msgid "Couldn't load your reading progress"
 msgstr "읽기 진행 상황을 불러오지 못했습니다"
 
+#: src/components/QueuePause.tsx
+msgid "Couldn't pause the downloads"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "Couldn't reach {label}."
@@ -4924,6 +4942,10 @@ msgstr "{label}에 연결하지 못했습니다."
 
 #: src/components/FailedQueueActions.tsx
 msgid "Couldn't remove the failed downloads"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Couldn't resume the downloads"
 msgstr ""
 
 #: src/components/FailedQueueActions.tsx
@@ -5849,6 +5871,14 @@ msgstr "다운로드"
 #, fuzzy
 msgid "Downloads now try {bestName} first."
 msgstr "이제 다운로드는 {bestName}을(를) 먼저 시도합니다."
+
+#: src/components/QueuePause.tsx
+msgid "Downloads paused"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Downloads paused until {time}"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -6830,6 +6860,10 @@ msgstr "팔로우 중"
 #, fuzzy
 msgid "Follows the default on your notification settings."
 msgstr "알림 설정의 기본값을 따릅니다."
+
+#: src/components/QueuePause.tsx
+msgid "For 1 hour"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8846,6 +8880,10 @@ msgstr "Maki를 적용하기 위해 다시 시작하는 중입니다. 잠시 후
 #, fuzzy
 msgid "Maki speaks your language"
 msgstr "Maki가 이제 당신의 언어를 지원합니다"
+
+#: src/components/QueuePause.tsx
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -11364,7 +11402,16 @@ msgstr "경로 매핑 - Maki 측"
 msgid "Path mapping - qBittorrent side"
 msgstr "경로 매핑 - qBittorrent 측"
 
+#: src/components/QueuePause.tsx
+msgid "Pause"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Pause downloads"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Paused"
 msgstr "일시 중지됨"
@@ -11432,6 +11479,10 @@ msgstr "루트 폴더 선택"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Pick a source by"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Pick a time in the future"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -13032,6 +13083,7 @@ msgstr ""
 
 #: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+#: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Resume"
@@ -13041,6 +13093,10 @@ msgstr "이어 읽기"
 #, fuzzy
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "{seriesTitle} 이어 읽기, {chapterLabel}"
+
+#: src/components/QueuePause.tsx
+msgid "Resume at"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16579,10 +16635,22 @@ msgstr "지원하지 않는 파일 형식"
 msgid "Untagged only"
 msgstr ""
 
+#: src/components/QueuePause.tsx
+msgid "Until a time I choose"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Until I resume"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Until it is built, the badges compare against your own library only."
 msgstr "빌드되기 전까지 배지는 내 라이브러리만 기준으로 비교합니다."
+
+#: src/components/QueuePause.tsx
+msgid "Until tomorrow morning"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -17291,6 +17359,10 @@ msgstr "추천에 영향을 주는 요소"
 #, fuzzy
 msgid "What to download"
 msgstr "다운로드 항목"
+
+#: src/components/QueuePause.tsx
+msgid "What to pause"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

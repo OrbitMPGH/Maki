@@ -832,6 +832,7 @@ try
     builder.Services.AddSingleton<SourceScoutService>();
     builder.Services.AddSingleton<UpgradeScanTracker>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
+    builder.Services.AddSingleton<DownloadPauseService>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
