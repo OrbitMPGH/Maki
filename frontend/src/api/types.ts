@@ -405,6 +405,21 @@ export interface QueueSummaryDto {
   failed: number
 }
 
+/** Failed queue rows sharing a failure key and a source. `reasonKey` is null when the reason is another program's own text. */
+export interface QueueFailureGroupDto {
+  reasonKey: string | null
+  sourceName: string
+  count: number
+}
+
+/** Which Failed rows a bulk retry or remove acts on; both filters unset means all of them. */
+export interface QueueFailedAction {
+  reason?: string
+  source?: string
+  /** Remove only: also stop the volume search grabbing the removed torrent releases again. */
+  blockReleases?: boolean
+}
+
 /** An existing library file a downloaded file would leave backing nothing. */
 export interface ImportPlanExistingDto {
   chapterFileId: number

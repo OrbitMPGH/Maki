@@ -392,6 +392,14 @@ msgstr "{active, plural, other {# 个下载正在进行中}}"
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} 个由你添加，{excluded} 个已从品味中排除"
 
+#: src/components/FailedQueueActions.tsx
+msgid "{affected, plural, one {Removed # failed download} other {Removed # failed downloads}}"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "{alreadyMetCount} already at cutoff"
@@ -892,6 +900,14 @@ msgstr "{markerLabel} 动画改编从此处开始 · 点击展开"
 #, fuzzy
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} / {total} 个匹配，{positive} 个正向，{avoided} 个已避开，{superseded} 个已经拥有"
+
+#: src/components/FailedQueueActions.tsx
+msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
+msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
@@ -2593,6 +2609,10 @@ msgstr "全部为可选项。即使不配置这些，Maki 也能通过自带来�
 msgid "all read"
 msgstr "全部已读"
 
+#: src/components/FailedQueueActions.tsx
+msgid "All reasons"
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "All requests"
@@ -2608,6 +2628,7 @@ msgstr "所有根目录"
 msgid "All series"
 msgstr "所有系列"
 
+#: src/components/FailedQueueActions.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "All sources"
@@ -3537,6 +3558,7 @@ msgid "Can't read this download"
 msgstr "无法读取此下载"
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/FailedQueueActions.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
@@ -4720,6 +4742,10 @@ msgstr "无法复制到剪贴板。请选中文本后手动复制。"
 msgid "Could not import {file}"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Could not import a file"
+msgstr ""
+
 #: src/api/ssoErrors.ts
 msgid "Could not link single sign-on to your account"
 msgstr ""
@@ -4873,6 +4899,14 @@ msgstr "无法加载你的阅读进度"
 #, fuzzy
 msgid "Couldn't reach {label}."
 msgstr "无法连接到 {label}。"
+
+#: src/components/FailedQueueActions.tsx
+msgid "Couldn't remove the failed downloads"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "Couldn't retry the failed downloads"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5574,6 +5608,14 @@ msgstr "文档"
 msgid "Don't auto-queue more than (chapters)"
 msgstr ""
 
+#: src/components/FailedQueueActions.tsx
+msgid "Don't grab removed torrent releases again"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Don't grab this release again"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Don't want"
@@ -5665,6 +5707,10 @@ msgstr "下载后续章节"
 #, fuzzy
 msgid "Download order"
 msgstr "下载顺序"
+
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki"
+msgstr ""
 
 #. {path} is a filesystem path and is never translated.
 #: src/api/queue.ts
@@ -7133,6 +7179,10 @@ msgstr "高度"
 #, fuzzy
 msgid "Held back before importing"
 msgstr "导入前已暂缓"
+
+#: src/api/queue.ts
+msgid "Held back for review"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -9737,6 +9787,10 @@ msgstr "此时间段没有已读章节。"
 msgid "No checks have run yet. Use Check now."
 msgstr "尚未运行任何检查。请使用“立即检查”。"
 
+#: src/api/queue.ts
+msgid "No comics found in the completed download"
+msgstr ""
+
 #. {detail} is a summary of the folder's contents and is not translated.
 #: src/api/queue.ts
 msgid "No comics found in the completed download ({detail})"
@@ -10494,6 +10548,10 @@ msgstr "暂无推荐内容"
 #, fuzzy
 msgid "Nothing to relink"
 msgstr "无需重新关联"
+
+#: src/components/FailedQueueActions.tsx
+msgid "Nothing to retry"
+msgstr ""
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -11747,6 +11805,7 @@ msgstr "本次运行的探测次数已用完"
 msgid "Rate a few series to compare yourself with the crowd."
 msgstr "给几部系列评分，就能与大众进行比较。"
 
+#: src/api/queue.ts
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Rate limited"
@@ -12020,6 +12079,10 @@ msgstr "读取每个字节并与归档自身的校验和进行核对，这样可
 #, fuzzy
 msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
 msgstr "从 Kavita 读取阅读进度，并每 {intervalMinutes, plural, other {# 分钟}} 向你的跟踪器推送只前进不后退的更新。远程进度不会降低，已完成条目也不会降级。在设置中配置凭据。"
+
+#: src/components/FailedQueueActions.tsx
+msgid "Reason"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12328,6 +12391,7 @@ msgstr "重新关联操作会读取每个卷文件以查找其中的章节。无
 msgid "Reload"
 msgstr ""
 
+#: src/components/FailedQueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -12374,6 +12438,14 @@ msgstr ""
 #, fuzzy
 msgid "Remove condition"
 msgstr "移除条件"
+
+#: src/components/FailedQueueActions.tsx
+msgid "Remove failed"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "Remove failed downloads"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -12471,6 +12543,10 @@ msgstr ""
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "Remove this root folder?"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Remove this torrent?"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -12863,6 +12939,7 @@ msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
@@ -12895,6 +12972,14 @@ msgstr "重试和取消排队的下载"
 #, fuzzy
 msgid "Retry download"
 msgstr "重试下载"
+
+#: src/components/FailedQueueActions.tsx
+msgid "Retry failed"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "Retry failed downloads"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -14474,6 +14559,7 @@ msgstr "按最新优先排序"
 msgid "Sort oldest first"
 msgstr "按最早优先排序"
 
+#: src/components/FailedQueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
@@ -14756,6 +14842,10 @@ msgstr "影响这些推荐"
 #, fuzzy
 msgid "Step {stepNumber} of {stepTotal}"
 msgstr "第 {stepNumber}/{stepTotal} 步"
+
+#: src/api/queue.ts
+msgid "Still early access"
+msgstr ""
 
 #. {source} is a site name and is never translated.
 #: src/api/queue.ts

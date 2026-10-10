@@ -101,6 +101,26 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
 }
 
 /**
+ * Wording for a reason picked from a list of failed rows. The rows' own wording is for one row and
+ * fills in its parameters (a source, a file); a group has no single value for them.
+ */
+const REASON_GROUP_LABELS: Record<string, MessageDescriptor> = {
+  'error.download.rateLimited': msg`Rate limited`,
+  'error.download.earlyAccess': msg`Still early access`,
+  'error.torrentImport.copyFailed': msg`Could not import a file`,
+  'error.torrentImport.pathNotAccessible': msg`Download path not accessible from Maki`,
+  'error.torrentImport.noComicsOfType': msg`No comics found in the completed download`,
+  'error.torrentImport.noComicsFound': msg`No comics found in the completed download`,
+  'error.upgrades.volumeGuard': msg`Held back for review`,
+}
+
+/** A failure key as a short label for a filter list. A key this build has no wording for shows as itself. */
+export function queueFailureKeyLabel(key: string, render: (m: MessageDescriptor) => string): string {
+  const label = REASON_GROUP_LABELS[key] ?? ERROR_LABELS[key]
+  return label ? render(label) : key
+}
+
+/**
  * What names a row: the release title for a torrent grab, the chapter's own title for a one-shot,
  * otherwise the volume and chapter numbers.
  *

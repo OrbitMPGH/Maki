@@ -134,4 +134,14 @@ public record ImportDecisionResultDto(int Imported, int Linked, int Skipped, int
 
 public record QueueClearDto(int Cleared);
 
+/// <summary>One bucket of Failed rows: how many share a failure key and a source.</summary>
+/// <param name="ReasonKey">Null for a row whose reason is another program's own text.</param>
+public record QueueFailureGroupDto(string? ReasonKey, string SourceName, int Count);
+
+/// <summary>Which Failed rows a bulk retry or remove acts on; both filters null means all of them.</summary>
+/// <param name="BlockReleases">Remove only: also stop the volume search grabbing the removed torrent releases again.</param>
+public record QueueFailedActionDto(string? Reason = null, string? Source = null, bool BlockReleases = true);
+
+public record QueueBulkResultDto(int Affected);
+
 public record ReorderQueueDto(IReadOnlyList<int> OrderedIds);

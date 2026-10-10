@@ -1152,29 +1152,71 @@ public class DownloadQueueService(
     /// <summary>Failures no retry can change, which <see cref="RequeueEligibleFailuresAsync"/> never picks up.</summary>
     public static readonly string[] PermanentErrorKeys = ["error.download.upgradeTargetGone"];
 
+    /// <summary>The source name <see cref="QueueItemDto"/> shows for a torrent grab, which has no mapping.</summary>
+    public const string TorrentSourceName = "torrent";
+
+    /// <summary>The source name shown for a scraper row whose mapping is gone or was never resolved.</summary>
+    public const string UnknownSourceName = "?";
+
+    /// <summary>
+    /// Failed rows, optionally narrowed to one failure key and/or one source as the queue lists it
+    /// (a source name, <see cref="TorrentSourceName"/> or <see cref="UnknownSourceName"/>).
+    /// </summary>
+    public static IQueryable<DownloadQueueItem> FailedWhere(
+        IQueryable<DownloadQueueItem> query, string? reasonKey, string? source)
+    {
+        query = query.Where(q => q.Status == QueueStatus.Failed);
+        if (!string.IsNullOrEmpty(reasonKey))
+        {
+            query = query.Where(q => q.ErrorKey == reasonKey);
+        }
+
+        if (string.IsNullOrEmpty(source))
+        {
+            return query;
+        }
+
+        return source switch
+        {
+            TorrentSourceName => query.Where(q => q.Protocol == AcquisitionProtocol.Torrent),
+            UnknownSourceName => query.Where(q => q.Protocol != AcquisitionProtocol.Torrent && q.SourceMapping == null),
+            _ => query.Where(q => q.SourceMapping != null && q.SourceMapping.SourceName == source),
+        };
+    }
+
     /// <summary>
     /// Re-queues Failed scraper items whose backoff has elapsed and whose attempt count is still
     /// under <paramref name="maxAttempts"/>. Torrent items are excluded — they're tracked
     /// externally by <c>CompletedDownloadJob</c> against qBittorrent, and re-signalling one
     /// wouldn't resubmit the grab. Returns the number re-queued.
     /// </summary>
-    public async Task<int> RequeueEligibleFailuresAsync(int maxAttempts, CancellationToken ct = default)
+    public Task<int> RequeueEligibleFailuresAsync(int maxAttempts, CancellationToken ct = default) =>
+        RequeueFailuresAsync(maxAttempts, null, null, manual: false, ct);
+
+    /// <summary>
+    /// A retry somebody asked for: every Failed scraper item, narrowed by failure key and/or source,
+    /// whatever its attempt count or backoff, the way the single-item retry ignores both.
+    /// </summary>
+    public Task<int> RetryFailedAsync(string? reasonKey, string? source, CancellationToken ct = default) =>
+        RequeueFailuresAsync(int.MaxValue, reasonKey, source, manual: true, ct);
+
+    private async Task<int> RequeueFailuresAsync(
+        int maxAttempts, string? reasonKey, string? source, bool manual, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
 
         var now = time.GetUtcNow().UtcDateTime;
-        var eligible = await db.DownloadQueue
+        var eligible = await FailedWhere(db.DownloadQueue, reasonKey, source)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
             .Include(q => q.SourceMapping)
             .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
-                        q.Status == QueueStatus.Failed &&
                         q.HealthOperationId == null &&
                         q.RetryCount < maxAttempts &&
                         (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
-                        (q.NextAttempt == null || q.NextAttempt <= now) &&
+                        (manual || q.NextAttempt == null || q.NextAttempt <= now) &&
                         (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)))
             .ToListAsync(ct);
 

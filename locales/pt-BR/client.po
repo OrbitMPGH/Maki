@@ -392,6 +392,14 @@ msgstr "{active, plural, one {# download em andamento} many {# downloads em anda
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} adicionados por você, {excluded} excluídos do gosto"
 
+#: src/components/FailedQueueActions.tsx
+msgid "{affected, plural, one {Removed # failed download} other {Removed # failed downloads}}"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "{affected, plural, one {Retrying # failed download} other {Retrying # failed downloads}}"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "{alreadyMetCount} already at cutoff"
@@ -892,6 +900,14 @@ msgstr "{markerLabel} A adaptação de anime começa aqui · clique para expandi
 #, fuzzy
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} de {total} correspondidos, {positive} positivos, {avoided} evitados, {superseded} já seus"
+
+#: src/components/FailedQueueActions.tsx
+msgid "{matchingCount, plural, one {# failed download will be queued again, ignoring the automatic retry limit.} other {# failed downloads will be queued again, ignoring the automatic retry limit.}}"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "{matchingCount, plural, one {# failed download will be removed from the queue.} other {# failed downloads will be removed from the queue.}}"
+msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
@@ -2593,6 +2609,10 @@ msgstr "Tudo é opcional. O Maki baixa de suas próprias fontes sem precisar des
 msgid "all read"
 msgstr "todos lidos"
 
+#: src/components/FailedQueueActions.tsx
+msgid "All reasons"
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "All requests"
@@ -2608,6 +2628,7 @@ msgstr "Todas as raízes"
 msgid "All series"
 msgstr "Todas as séries"
 
+#: src/components/FailedQueueActions.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "All sources"
@@ -3537,6 +3558,7 @@ msgid "Can't read this download"
 msgstr "Não é possível ler este download"
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/FailedQueueActions.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
@@ -4720,6 +4742,10 @@ msgstr "Não foi possível copiar para a área de transferência. Selecione o te
 msgid "Could not import {file}"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Could not import a file"
+msgstr ""
+
 #: src/api/ssoErrors.ts
 msgid "Could not link single sign-on to your account"
 msgstr ""
@@ -4873,6 +4899,14 @@ msgstr "Não foi possível carregar seu progresso de leitura"
 #, fuzzy
 msgid "Couldn't reach {label}."
 msgstr "Não foi possível acessar {label}."
+
+#: src/components/FailedQueueActions.tsx
+msgid "Couldn't remove the failed downloads"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "Couldn't retry the failed downloads"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5574,6 +5608,14 @@ msgstr "Documentação"
 msgid "Don't auto-queue more than (chapters)"
 msgstr ""
 
+#: src/components/FailedQueueActions.tsx
+msgid "Don't grab removed torrent releases again"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Don't grab this release again"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Don't want"
@@ -5665,6 +5707,10 @@ msgstr "Baixar próximos capítulos"
 #, fuzzy
 msgid "Download order"
 msgstr "Ordem de download"
+
+#: src/api/queue.ts
+msgid "Download path not accessible from Maki"
+msgstr ""
 
 #. {path} is a filesystem path and is never translated.
 #: src/api/queue.ts
@@ -7133,6 +7179,10 @@ msgstr "Altura"
 #, fuzzy
 msgid "Held back before importing"
 msgstr "Retido antes de importar"
+
+#: src/api/queue.ts
+msgid "Held back for review"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -9737,6 +9787,10 @@ msgstr "Nenhum capítulo lido neste período."
 msgid "No checks have run yet. Use Check now."
 msgstr "Nenhuma verificação foi executada ainda. Use Verificar agora."
 
+#: src/api/queue.ts
+msgid "No comics found in the completed download"
+msgstr ""
+
 #. {detail} is a summary of the folder's contents and is not translated.
 #: src/api/queue.ts
 msgid "No comics found in the completed download ({detail})"
@@ -10494,6 +10548,10 @@ msgstr "Ainda não há recomendações"
 #, fuzzy
 msgid "Nothing to relink"
 msgstr "Nada para reassociar"
+
+#: src/components/FailedQueueActions.tsx
+msgid "Nothing to retry"
+msgstr ""
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -11747,6 +11805,7 @@ msgstr "As sondagens desta execução acabaram"
 msgid "Rate a few series to compare yourself with the crowd."
 msgstr "Avalie algumas séries para se comparar com outros leitores."
 
+#: src/api/queue.ts
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Rate limited"
@@ -12020,6 +12079,10 @@ msgstr "Lê cada byte e o verifica contra as próprias somas de verificação do
 #, fuzzy
 msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
 msgstr "Lê o progresso de leitura do Kavita e envia atualizações somente para frente aos seus trackers a cada {intervalMinutes, plural, one {# minuto} many {# minutos}other {# minutos}}. O progresso remoto nunca é reduzido e entradas concluídas nunca são rebaixadas. Configure as credenciais em Configurações."
+
+#: src/components/FailedQueueActions.tsx
+msgid "Reason"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12328,6 +12391,7 @@ msgstr "Reassociar arquivos lê cada arquivo de volume para encontrar os capítu
 msgid "Reload"
 msgstr ""
 
+#: src/components/FailedQueueActions.tsx
 #: src/components/series/RemoveSeriesDialog.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -12374,6 +12438,14 @@ msgstr ""
 #, fuzzy
 msgid "Remove condition"
 msgstr "Remover condição"
+
+#: src/components/FailedQueueActions.tsx
+msgid "Remove failed"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "Remove failed downloads"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -12471,6 +12543,10 @@ msgstr ""
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "Remove this root folder?"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Remove this torrent?"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -12863,6 +12939,7 @@ msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
@@ -12895,6 +12972,14 @@ msgstr "Tentar novamente e cancelar downloads enfileirados"
 #, fuzzy
 msgid "Retry download"
 msgstr "Tentar download novamente"
+
+#: src/components/FailedQueueActions.tsx
+msgid "Retry failed"
+msgstr ""
+
+#: src/components/FailedQueueActions.tsx
+msgid "Retry failed downloads"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -14474,6 +14559,7 @@ msgstr "Ordenar pelos mais recentes primeiro"
 msgid "Sort oldest first"
 msgstr "Ordenar pelos mais antigos primeiro"
 
+#: src/components/FailedQueueActions.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
@@ -14756,6 +14842,10 @@ msgstr "Orientando estas escolhas"
 #, fuzzy
 msgid "Step {stepNumber} of {stepTotal}"
 msgstr "Etapa {stepNumber} de {stepTotal}"
+
+#: src/api/queue.ts
+msgid "Still early access"
+msgstr ""
 
 #. {source} is a site name and is never translated.
 #: src/api/queue.ts

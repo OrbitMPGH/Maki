@@ -33,6 +33,8 @@ import type {
   LibraryFilterSpec,
   ImportDecision,
   ImportDecisionResultDto,
+  QueueFailedAction,
+  QueueFailureGroupDto,
   QueueHistoryDto,
   QueueSummaryDto,
   TorrentImportPlanDto,
@@ -2071,6 +2073,7 @@ export function useRetryQueueItem() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
       void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-failed'] })
     },
   })
 }
@@ -2105,13 +2108,52 @@ export function useSettleImport() {
   })
 }
 
+/** `blockRelease` only matters for a torrent row: it keeps the volume search from grabbing that release again. */
 export function useRemoveQueueItem() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api<void>(`/queue/${id}`, { method: 'DELETE' }),
+    mutationFn: ({ id, blockRelease = true }: { id: number; blockRelease?: boolean }) =>
+      api<void>(`/queue/${id}?blockRelease=${blockRelease}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
       void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-failed'] })
+    },
+  })
+}
+
+/** Failed rows bucketed by failure key and source, for picking what a bulk retry or remove acts on. */
+export function useFailedQueueGroups(enabled = true) {
+  return useQuery({
+    queryKey: ['queue-failed'],
+    queryFn: () => api<QueueFailureGroupDto[]>('/queue/failed'),
+    enabled,
+    refetchInterval: 10_000,
+  })
+}
+
+export function useRetryFailedQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (filter: QueueFailedAction) =>
+      api<{ affected: number }>('/queue/retry-failed', { method: 'POST', body: JSON.stringify(filter) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-failed'] })
+    },
+  })
+}
+
+export function useRemoveFailedQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (filter: QueueFailedAction) =>
+      api<{ affected: number }>('/queue/remove-failed', { method: 'POST', body: JSON.stringify(filter) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-failed'] })
     },
   })
 }

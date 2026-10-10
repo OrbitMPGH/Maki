@@ -4,6 +4,7 @@ import {
   Anchor,
   Badge,
   Button,
+  Checkbox,
   Group,
   Loader,
   Modal,
@@ -64,6 +65,7 @@ import type {
 } from '../api/upgrades'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
+import { FailedQueueActions } from '../components/FailedQueueActions'
 import { ImportReviewModal } from '../components/ImportReviewModal'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
@@ -227,6 +229,8 @@ export default function ActivityPage() {
   const [historyPage, setHistoryPage] = useState(1)
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
   const [reviewing, setReviewing] = useState<number | null>(null)
+  const [removingRelease, setRemovingRelease] = useState<number | null>(null)
+  const [blockRelease, setBlockRelease] = useState(true)
   const historyQuery = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
   const history = historyQuery.data
   const historyPageCount = history ? Math.ceil(history.total / HISTORY_PAGE_SIZE) : 0
@@ -380,9 +384,12 @@ export default function ActivityPage() {
         description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
         actions={
           canManageQueue && queue && queue.total > 0 ? (
-            <Button color="var(--danger)" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
-              <Trans>Clear queue</Trans>
-            </Button>
+            <Group gap="xs">
+              <FailedQueueActions />
+              <Button color="var(--danger)" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
+                <Trans>Clear queue</Trans>
+              </Button>
+            </Group>
           ) : undefined
         }
       />
@@ -607,7 +614,14 @@ export default function ActivityPage() {
                             <ActionIcon
                               variant="subtle"
                               color="var(--danger)"
-                              onClick={() => remove.mutate(q.id)}
+                              onClick={() => {
+                                if (q.releaseTitle === null) {
+                                  remove.mutate({ id: q.id })
+                                  return
+                                }
+                                setBlockRelease(true)
+                                setRemovingRelease(q.id)
+                              }}
                               aria-label={t`Remove from queue`}
                             >
                               <IconX size={16} />
@@ -634,6 +648,36 @@ export default function ActivityPage() {
       )}
 
       <ImportReviewModal queueItemId={reviewing} onClose={() => setReviewing(null)} />
+
+      <Modal
+        opened={removingRelease !== null}
+        onClose={() => setRemovingRelease(null)}
+        title={<Trans>Remove this torrent?</Trans>}
+        centered
+      >
+        <Stack gap="sm">
+          <Checkbox
+            checked={blockRelease}
+            onChange={(e) => setBlockRelease(e.currentTarget.checked)}
+            label={t`Don't grab this release again`}
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setRemovingRelease(null)}>
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button
+              color="var(--danger-fill)"
+              loading={remove.isPending}
+              onClick={() => {
+                if (removingRelease === null) return
+                remove.mutate({ id: removingRelease, blockRelease }, { onSuccess: () => setRemovingRelease(null) })
+              }}
+            >
+              <Trans>Remove</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={clearConfirmOpen}
