@@ -6527,6 +6527,10 @@ msgid "Items {start}–{end}"
 msgstr "Items {start}–{end}"
 
 #: src/api/upgrades.ts
+msgid "Its download failed too many times"
+msgstr "Its download failed too many times"
+
+#: src/api/upgrades.ts
 msgid "Its volumes aren't mapped to your chapters yet"
 msgstr "Its volumes aren't mapped to your chapters yet"
 

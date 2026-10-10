@@ -7861,6 +7861,10 @@ msgid "Items {start}–{end}"
 msgstr "항목 {start}–{end}"
 
 #: src/api/upgrades.ts
+msgid "Its download failed too many times"
+msgstr ""
+
+#: src/api/upgrades.ts
 #, fuzzy
 msgid "Its volumes aren't mapped to your chapters yet"
 msgstr "권이 아직 챕터와 매핑되지 않았습니다"

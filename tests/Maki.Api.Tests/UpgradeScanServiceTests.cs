@@ -313,6 +313,76 @@ public class UpgradeScanServiceTests : IDisposable
         Assert.Single(Attempts());
     }
 
+    private void FailUpgradeDownloads(int total)
+    {
+        using var db = _world.Db.NewContext();
+        var first = db.DownloadQueue.AsNoTracking().OrderBy(q => q.Id).First();
+        db.DownloadQueue.ExecuteUpdate(s => s.SetProperty(q => q.Status, QueueStatus.Failed));
+        for (var i = 1; i < total; i++)
+        {
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = first.SeriesId, ChapterId = first.ChapterId, SourceMappingId = first.SourceMappingId,
+                SourceChapterId = first.SourceChapterId, Origin = DownloadOrigin.Upgrade, Status = QueueStatus.Failed,
+                QueuedAt = DateTime.UtcNow
+            });
+        }
+
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_copy_whose_download_failed_three_times_is_not_queued_by_the_daily_scan_again()
+    {
+        _world.Seed();
+        _world.Chapter(1);
+        Assert.Equal(1, (await ScanAsync()).Enqueued);
+        FailUpgradeDownloads(3);
+
+        var daily = await DailyScanAsync();
+
+        Assert.Equal(0, daily.CandidatesProbed);
+        Assert.Equal(0, daily.Enqueued);
+        Assert.Equal(1, daily.Skipped["memoised"]);
+        Assert.Equal(UpgradeReasons.RepeatedFailure, Assert.Single(Attempts()).Reason);
+
+        var later = await DailyScanAsync();
+        Assert.Equal(0, later.Enqueued);
+        Assert.Equal(3, Queue().Count);
+    }
+
+    [Fact]
+    public async Task A_copy_whose_download_failed_twice_is_still_reopened_by_the_daily_scan()
+    {
+        _world.Seed();
+        _world.Chapter(1);
+        Assert.Equal(1, (await ScanAsync()).Enqueued);
+        FailUpgradeDownloads(2);
+
+        var daily = await DailyScanAsync();
+
+        Assert.Equal(1, daily.Enqueued);
+    }
+
+    [Fact]
+    public async Task A_scan_by_hand_tries_a_copy_that_keeps_failing_again()
+    {
+        _world.Seed();
+        _world.Chapter(1);
+        Assert.Equal(1, (await ScanAsync()).Enqueued);
+        FailUpgradeDownloads(3);
+
+        Assert.Equal(1, (await ScanAsync()).Enqueued);
+    }
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(2, false)]
+    [InlineData(3, true)]
+    [InlineData(7, true)]
+    public void Giving_up_starts_at_the_failure_limit(int failures, bool givenUp) =>
+        Assert.Equal(givenUp, UpgradeCandidateRules.GivenUp(failures));
+
     [Fact]
     public async Task An_enqueued_memo_whose_download_is_still_live_blocks_the_chapter()
     {

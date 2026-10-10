@@ -238,6 +238,16 @@ public class CompletedDownloadJob(
             }
         }
 
+        // A release that vanished or could not be imported would be found by the volume search again.
+        foreach (var (failed, parked) in announcements)
+        {
+            if (!parked && BlamesRelease(failed.ErrorKey))
+            {
+                await TorrentUpgradeService.DeclineAsync(
+                    db, failed.SeriesId, failed.ReleaseInfoJson, null, DateTime.UtcNow, ct);
+            }
+        }
+
         await db.SaveChangesAsync(ct);
 
         foreach (var (announced, parked) in announcements)
@@ -252,6 +262,15 @@ public class CompletedDownloadJob(
             }
         }
     }
+
+    /// <summary>
+    /// Whether a failed row says something about the release, rather than about this machine: a
+    /// qBittorrent that is unreachable, a path Maki cannot read or a disk that refused the copy would
+    /// fail the next release the same way, and blocking this one would only hide it after the fix.
+    /// </summary>
+    internal static bool BlamesRelease(string? errorKey) =>
+        errorKey is not ("error.torrentImport.notInQbittorrent" or "error.torrentImport.pathNotAccessible"
+            or "error.torrentImport.noRootFolder" or "error.torrentImport.copyFailed");
 
     /// <summary>
     /// Tells people about a torrent row that stopped, the way the scraper pipeline does for a failed

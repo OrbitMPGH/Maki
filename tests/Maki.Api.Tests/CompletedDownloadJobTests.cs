@@ -74,6 +74,12 @@ public class CompletedDownloadJobTests : IDisposable
         await job.Execute(new TestJobContext());
     }
 
+    private string ReleaseGuidOf(int id)
+    {
+        using var db = _db.NewContext();
+        return JsonSerializer.Deserialize<ReleaseInfo>(db.DownloadQueue.Single(q => q.Id == id).ReleaseInfoJson!)!.Guid;
+    }
+
     private DownloadQueueItem Reload(int id)
     {
         using var db = _db.NewContext();
@@ -96,6 +102,44 @@ public class CompletedDownloadJobTests : IDisposable
         Assert.Contains("error.download.torrentMissing", sent.Message.Body);
         Assert.Empty(_inbox.RaisedForSeries);
     }
+
+    [Fact]
+    public async Task A_torrent_that_never_appears_blocks_its_release_for_the_volume_search()
+    {
+        var id = SeedItem(QueueStatus.Downloading, hash: null, DateTime.UtcNow.AddHours(-3));
+        var guid = ReleaseGuidOf(id);
+
+        await RunAsync();
+
+        using var db = _db.NewContext();
+        var proposal = Assert.Single(db.TorrentProposals);
+        Assert.Equal(guid, proposal.ReleaseGuid);
+        Assert.Equal(TorrentProposalStatus.Dismissed, proposal.Status);
+        Assert.Equal(_seriesId, proposal.SeriesId);
+    }
+
+    [Fact]
+    public async Task A_release_is_not_blocked_while_its_torrent_is_still_coming()
+    {
+        SeedItem(QueueStatus.Downloading, hash: null, DateTime.UtcNow.AddMinutes(-5));
+
+        await RunAsync();
+
+        using var db = _db.NewContext();
+        Assert.Empty(db.TorrentProposals);
+    }
+
+    [Theory]
+    [InlineData("error.download.torrentMissing", true)]
+    [InlineData("error.download.torrentRemoved", true)]
+    [InlineData("error.torrentImport.noComicsEmpty", true)]
+    [InlineData(null, true)]
+    [InlineData("error.torrentImport.notInQbittorrent", false)]
+    [InlineData("error.torrentImport.pathNotAccessible", false)]
+    [InlineData("error.torrentImport.noRootFolder", false)]
+    [InlineData("error.torrentImport.copyFailed", false)]
+    public void Only_failures_that_are_the_releases_own_block_it(string? key, bool blocks) =>
+        Assert.Equal(blocks, CompletedDownloadJob.BlamesRelease(key));
 
     [Fact]
     public async Task An_automatic_torrent_failure_also_reaches_the_inbox()

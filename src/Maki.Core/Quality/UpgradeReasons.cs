@@ -20,6 +20,12 @@ public static class UpgradeReasons
     public const string RevertedByUser = "reverted_by_user";
 
     /// <summary>
+    /// The download of this copy failed <see cref="UpgradeCandidateRules.FailedAttemptLimit"/> times, so the
+    /// daily scan stops queuing it. A scan asked for by hand, or a profile edit, tries it again.
+    /// </summary>
+    public const string RepeatedFailure = "repeated_failure";
+
+    /// <summary>
     /// Not probed: the source's recent measurements (<see cref="SourceQualityEstimate"/>) say it would
     /// not win. Expires after <see cref="EstimateMemoLifetime"/>, since a source can improve.
     /// </summary>
