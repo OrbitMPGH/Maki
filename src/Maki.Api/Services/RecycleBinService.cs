@@ -21,6 +21,9 @@ public static class RecycleBin
     public const string FolderName = "bin";
     public const int DefaultRetentionDays = 14;
 
+    /// <summary>How old an entry must be before a purge may take it, whatever the retention.</summary>
+    public static readonly TimeSpan SettleTime = TimeSpan.FromMinutes(5);
+
     public static string Folder(string rootPath) => Path.Combine(rootPath, UpgradeTrash.FolderName, FolderName);
 
     /// <summary><c>.maki-trash/bin/&lt;seriesId&gt;/&lt;tag&gt;-&lt;name&gt;</c>. The tag keeps two deletions of one name apart.</summary>

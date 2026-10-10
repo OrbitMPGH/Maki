@@ -291,6 +291,14 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
     /// <summary>Deletes bin entries older than <paramref name="cutoff"/>: the file first, the entry only once it is gone.</summary>
     private async Task<int> PurgeBinAsync(DateTime cutoff, CancellationToken ct)
     {
+        // An entry this fresh may belong to a delete still moving its file (retention 0 makes every
+        // entry due at once): leave it for the next run rather than pull the row out from under it.
+        var settled = DateTime.UtcNow - RecycleBin.SettleTime;
+        if (cutoff > settled)
+        {
+            cutoff = settled;
+        }
+
         var purged = 0;
         foreach (var entry in await db.RecycleBin.IgnoreQueryFilters().Where(e => e.DeletedAtUtc < cutoff).ToListAsync(ct))
         {

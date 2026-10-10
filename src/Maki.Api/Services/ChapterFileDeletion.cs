@@ -207,6 +207,7 @@ public class ChapterFileDeletion(
         if (binning.Count > 0)
         {
             await db.SaveChangesAsync(ct);
+            var stuck = new List<RecycleBinEntry>();
             foreach (var (file, entry) in binning)
             {
                 if (await bin.MoveInAsync(entry, CancellationToken.None))
@@ -217,9 +218,11 @@ public class ChapterFileDeletion(
                 else
                 {
                     failed++;
-                    db.RecycleBin.Remove(entry);
+                    stuck.Add(entry);
                 }
             }
+
+            await bin.ForgetAsync(stuck);
         }
 
         // The disk has already changed, so an aborted request or a shutdown must not leave rows pointing at deleted files.

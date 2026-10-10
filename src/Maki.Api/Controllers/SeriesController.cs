@@ -719,6 +719,7 @@ public class SeriesController(
 
         await db.SaveChangesAsync(ct);
         var deleted = 0;
+        var stuck = new List<RecycleBinEntry>();
         foreach (var entry in entries)
         {
             if (await deletion.Bin.MoveInAsync(entry, CancellationToken.None))
@@ -728,11 +729,11 @@ public class SeriesController(
             else
             {
                 failed++;
-                db.RecycleBin.Remove(entry);
+                stuck.Add(entry);
             }
         }
 
-        await db.SaveChangesAsync(CancellationToken.None);
+        await deletion.Bin.ForgetAsync(stuck);
         return (deleted, failed);
     }
 

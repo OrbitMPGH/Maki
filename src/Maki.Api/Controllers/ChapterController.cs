@@ -501,12 +501,7 @@ public class ChapterController(
             }
         }
 
-        if (stuck.Count > 0)
-        {
-            db.RecycleBin.RemoveRange(stuck);
-            await db.SaveChangesAsync(CancellationToken.None);
-        }
-
+        await deletion.Bin.ForgetAsync(stuck);
         return Ok(new { deleted = chapters.Count });
     }
 

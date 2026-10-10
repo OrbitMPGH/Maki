@@ -520,6 +520,62 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
+    public async Task A_purge_with_retention_zero_leaves_an_entry_that_was_just_recorded()
+    {
+        var s = Seed();
+        _settings.Set(SettingKeys.RecycleBinRetentionDays, "0");
+        using (var db = _db.NewContext())
+        {
+            await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db), default);
+        }
+
+        using (var db = _db.NewContext())
+        {
+            await new UpgradeTrashService(db, _settings, NullLogger<UpgradeTrashService>.Instance).PurgeAsync(default);
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var entry = Assert.Single(db.RecycleBin);
+            entry.DeletedAtUtc = DateTime.UtcNow.AddMinutes(-10);
+            db.SaveChanges();
+            await new UpgradeTrashService(db, _settings, NullLogger<UpgradeTrashService>.Instance).PurgeAsync(default);
+        }
+
+        using var check = _db.NewContext();
+        Assert.Empty(check.RecycleBin);
+    }
+
+    [Fact]
+    public async Task A_failed_move_whose_entry_a_purge_already_took_still_keeps_the_rows()
+    {
+        var s = Seed();
+        var mover = new ScriptedMover((source, _) =>
+        {
+            if (Path.GetFileName(source).StartsWith(".maki-bin-probe", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            using var other = _db.NewContext();
+            other.RecycleBin.ExecuteDelete();
+            return new MoveOutcome(MoveResult.Failed, new IOException("locked"));
+        });
+
+        using (var db = _db.NewContext())
+        {
+            var result = Assert.IsType<OkObjectResult>(await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db, mover), default));
+            Assert.Equal(1, Assert.IsType<ChapterFileDeletion.Result>(result.Value).Failed);
+        }
+
+        Assert.True(File.Exists(s.Absolute));
+        using var check = _db.NewContext();
+        Assert.Empty(check.RecycleBin);
+        Assert.Single(check.ChapterFiles);
+        Assert.All(check.Chapters, c => Assert.Equal(s.FileId, c.ChapterFileId));
+    }
+
+    [Fact]
     public async Task A_bin_on_another_volume_refuses_the_delete_and_touches_nothing()
     {
         var s = Seed();
