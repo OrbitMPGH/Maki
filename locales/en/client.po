@@ -5543,9 +5543,21 @@ msgstr "Filters ({appliedCount})"
 msgid "Find a better copy of {pickLabel}"
 msgstr "Find a better copy of {pickLabel}"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Find a match for {folderName}"
+msgstr "Find a match for {folderName}"
+
+#: src/pages/ImportPage.tsx
+msgid "Find another match for {folderName}"
+msgstr "Find another match for {folderName}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Find better copy"
 msgstr "Find better copy"
+
+#: src/pages/ImportPage.tsx
+msgid "Find match"
+msgstr "Find match"
 
 #: src/pages/HomePage.tsx
 msgid "Find more"
@@ -7448,6 +7460,10 @@ msgstr "Manga manager"
 msgid "MangaBaka aggregate score"
 msgstr "MangaBaka aggregate score"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
+msgstr "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "mangabaka, local database, dump, snapshot, refresh metadata"
@@ -8358,8 +8374,12 @@ msgid "No matching page"
 msgstr "No matching page"
 
 #: src/pages/ImportPage.tsx
-msgid "No metadata match, rename the folder closer to the title and rescan."
-msgstr "No metadata match, rename the folder closer to the title and rescan."
+msgid "No metadata match found."
+msgstr "No metadata match found."
+
+#: src/pages/ImportPage.tsx
+#~ msgid "No metadata match, rename the folder closer to the title and rescan."
+#~ msgstr "No metadata match, rename the folder closer to the title and rescan."
 
 #: src/pages/reader/ContinuousView.tsx
 msgid "No more chapters"
@@ -8765,6 +8785,10 @@ msgstr "Nothing enabled. Turn a source on to rank it."
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Nothing fast enough to call a rush yet."
 msgstr "Nothing fast enough to call a rush yet."
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Nothing found for that title."
+msgstr "Nothing found for that title."
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Nothing from this series. Admins still get download failures."
@@ -9284,6 +9308,10 @@ msgstr "Optional, and yours to set. Maki never adds one for you."
 #: src/pages/LoginPage.tsx
 msgid "or"
 msgstr "or"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "or paste an id or link"
+msgstr "or paste an id or link"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Order changed"
@@ -11450,6 +11478,10 @@ msgstr "Search by chapter number or title"
 msgid "Search by name"
 msgstr "Search by name"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Search by title"
+msgstr "Search by title"
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Search by title, description, or author:\"Junji Ito\""
 msgstr "Search by title, description, or author:\"Junji Ito\""
@@ -11501,6 +11533,10 @@ msgstr "Search missing"
 #: src/components/SourceMappingsSection.tsx
 msgid "Search or paste a series URL"
 msgstr "Search or paste a series URL"
+
+#: src/pages/ImportPage.tsx
+msgid "Search or paste an id"
+msgstr "Search or paste an id"
 
 #: src/components/ReleaseSearchModal.tsx
 msgid "Search query"
@@ -13986,10 +14022,15 @@ msgstr "Upper Case"
 msgid "URL"
 msgstr "URL"
 
+#: src/components/import/ImportMatchFinder.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ScrobblePage.tsx
 msgid "Use"
 msgstr "Use"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Use {title}"
+msgstr "Use {title}"
 
 #: src/pages/LoginPage.tsx
 msgid "Use a recovery code"

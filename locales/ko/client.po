@@ -6647,10 +6647,22 @@ msgstr "필터 ({appliedCount})"
 msgid "Find a better copy of {pickLabel}"
 msgstr "{pickLabel}의 더 나은 사본 찾기"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Find a match for {folderName}"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "Find another match for {folderName}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Find better copy"
 msgstr "더 나은 파일 찾기"
+
+#: src/pages/ImportPage.tsx
+msgid "Find match"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -8942,6 +8954,10 @@ msgstr "만화 관리 도구"
 msgid "MangaBaka aggregate score"
 msgstr "MangaBaka 통합 점수"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -10045,9 +10061,13 @@ msgid "No matching page"
 msgstr "일치하는 페이지 없음"
 
 #: src/pages/ImportPage.tsx
+msgid "No metadata match found."
+msgstr ""
+
+#: src/pages/ImportPage.tsx
 #, fuzzy
-msgid "No metadata match, rename the folder closer to the title and rescan."
-msgstr "메타데이터 일치 항목이 없습니다. 폴더 이름을 제목에 더 가깝게 변경한 다음 다시 스캔하세요."
+#~ msgid "No metadata match, rename the folder closer to the title and rescan."
+#~ msgstr "메타데이터 일치 항목이 없습니다. 폴더 이름을 제목에 더 가깝게 변경한 다음 다시 스캔하세요."
 
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
@@ -10545,6 +10565,10 @@ msgstr "활성화된 소스가 없습니다. 순위를 매길 소스를 켜세�
 #, fuzzy
 msgid "Nothing fast enough to call a rush yet."
 msgstr "아직 빠른 완독으로 볼 만큼 빠른 작품이 없습니다."
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Nothing found for that title."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11166,6 +11190,10 @@ msgstr "선택 사항이며 직접 설정합니다. Maki가 대신 추가하지 
 #, fuzzy
 msgid "or"
 msgstr "또는"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "or paste an id or link"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -13764,6 +13792,10 @@ msgstr "챕터 번호 또는 제목으로 검색"
 msgid "Search by name"
 msgstr "이름으로 검색"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Search by title"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Search by title, description, or author:\"Junji Ito\""
@@ -13828,6 +13860,10 @@ msgstr "누락 검색"
 #, fuzzy
 msgid "Search or paste a series URL"
 msgstr "시리즈 URL 검색 또는 붙여넣기"
+
+#: src/pages/ImportPage.tsx
+msgid "Search or paste an id"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -16826,11 +16862,16 @@ msgstr "대문자"
 msgid "URL"
 msgstr "URL"
 
+#: src/components/import/ImportMatchFinder.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Use"
 msgstr "사용"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Use {title}"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy

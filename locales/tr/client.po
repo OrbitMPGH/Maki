@@ -6647,10 +6647,22 @@ msgstr "Filtreler ({appliedCount})"
 msgid "Find a better copy of {pickLabel}"
 msgstr "{pickLabel} için daha iyi bir kopya bul"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Find a match for {folderName}"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "Find another match for {folderName}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Find better copy"
 msgstr "Daha iyi kopya bul"
+
+#: src/pages/ImportPage.tsx
+msgid "Find match"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -8942,6 +8954,10 @@ msgstr "Manga yöneticisi"
 msgid "MangaBaka aggregate score"
 msgstr "MangaBaka toplam puanı"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -10045,9 +10061,13 @@ msgid "No matching page"
 msgstr "Eşleşen sayfa yok"
 
 #: src/pages/ImportPage.tsx
+msgid "No metadata match found."
+msgstr ""
+
+#: src/pages/ImportPage.tsx
 #, fuzzy
-msgid "No metadata match, rename the folder closer to the title and rescan."
-msgstr "Meta veri eşleşmesi yok, klasörü başlığa daha yakın olacak şekilde yeniden adlandırın ve yeniden tarayın."
+#~ msgid "No metadata match, rename the folder closer to the title and rescan."
+#~ msgstr "Meta veri eşleşmesi yok, klasörü başlığa daha yakın olacak şekilde yeniden adlandırın ve yeniden tarayın."
 
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
@@ -10545,6 +10565,10 @@ msgstr "Etkin kaynak yok. Sıralamak için bir kaynağı etkinleştir."
 #, fuzzy
 msgid "Nothing fast enough to call a rush yet."
 msgstr "Henüz aceleyle okunmuş sayılacak kadar hızlı bir okuma yok."
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Nothing found for that title."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11166,6 +11190,10 @@ msgstr "İsteğe bağlıdır ve ayarlamak size kalmış. Maki sizin için asla b
 #, fuzzy
 msgid "or"
 msgstr "veya"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "or paste an id or link"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -13764,6 +13792,10 @@ msgstr "Bölüm numarasına veya başlığa göre ara"
 msgid "Search by name"
 msgstr "Ada göre ara"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Search by title"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Search by title, description, or author:\"Junji Ito\""
@@ -13828,6 +13860,10 @@ msgstr "Eksikleri ara"
 #, fuzzy
 msgid "Search or paste a series URL"
 msgstr "Bir seri URL'si arayın veya yapıştırın"
+
+#: src/pages/ImportPage.tsx
+msgid "Search or paste an id"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -16826,11 +16862,16 @@ msgstr "Büyük Harf"
 msgid "URL"
 msgstr "URL"
 
+#: src/components/import/ImportMatchFinder.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Use"
 msgstr "Kullan"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Use {title}"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy

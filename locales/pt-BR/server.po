@@ -617,6 +617,21 @@ msgstr "A pasta não existe mais"
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "Esta pasta já pertence a outra série da biblioteca"
 
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: AniList and MyAnimeList ids are looked up in the local MangaBaka database, which is not downloaded yet. Paste a MangaBaka id or link instead.
+msgid "error.libraryImport.idNeedsDump"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: No MangaBaka series has that id
+msgid "error.libraryImport.idNotFound"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: Paste a MangaBaka id, or a MangaBaka, AniList or MyAnimeList link
+msgid "error.libraryImport.idUnrecognized"
+msgstr ""
+
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Invalid folder name
 #, fuzzy

@@ -6647,10 +6647,22 @@ msgstr "フィルター（{appliedCount}）"
 msgid "Find a better copy of {pickLabel}"
 msgstr "{pickLabel}のより良いコピーを探す"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Find a match for {folderName}"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "Find another match for {folderName}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Find better copy"
 msgstr "より良いファイルを探す"
+
+#: src/pages/ImportPage.tsx
+msgid "Find match"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -8942,6 +8954,10 @@ msgstr "マンガ管理ツール"
 msgid "MangaBaka aggregate score"
 msgstr "MangaBaka総合スコア"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -10045,9 +10061,13 @@ msgid "No matching page"
 msgstr "一致するページなし"
 
 #: src/pages/ImportPage.tsx
+msgid "No metadata match found."
+msgstr ""
+
+#: src/pages/ImportPage.tsx
 #, fuzzy
-msgid "No metadata match, rename the folder closer to the title and rescan."
-msgstr "メタデータに一致しません。フォルダー名をタイトルに近づけて変更し、再スキャンしてください。"
+#~ msgid "No metadata match, rename the folder closer to the title and rescan."
+#~ msgstr "メタデータに一致しません。フォルダー名をタイトルに近づけて変更し、再スキャンしてください。"
 
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
@@ -10545,6 +10565,10 @@ msgstr "有効なソースがありません。ソースを有効にすると順
 #, fuzzy
 msgid "Nothing fast enough to call a rush yet."
 msgstr "一気読みと呼べるほど早く読了した作品はまだありません。"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Nothing found for that title."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11166,6 +11190,10 @@ msgstr "任意で、自分で設定します。Makiが代わりに追加する�
 #, fuzzy
 msgid "or"
 msgstr "または"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "or paste an id or link"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -13764,6 +13792,10 @@ msgstr "章番号またはタイトルで検索"
 msgid "Search by name"
 msgstr "名前で検索"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Search by title"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Search by title, description, or author:\"Junji Ito\""
@@ -13828,6 +13860,10 @@ msgstr "不足分を検索"
 #, fuzzy
 msgid "Search or paste a series URL"
 msgstr "シリーズURLを検索または貼り付け"
+
+#: src/pages/ImportPage.tsx
+msgid "Search or paste an id"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -16826,11 +16862,16 @@ msgstr "大文字"
 msgid "URL"
 msgstr "URL"
 
+#: src/components/import/ImportMatchFinder.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Use"
 msgstr "使用"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Use {title}"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy

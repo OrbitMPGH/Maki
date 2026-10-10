@@ -6935,6 +6935,14 @@ body.reader-open {
 .import-table .mantine-Table-td:last-child {
   min-width: 22rem;
 }
+.import-match-option {
+  border-radius: var(--radius-control);
+  padding: 0.35rem 0.5rem;
+}
+.import-match-option:hover,
+.import-match-option:focus-visible {
+  background: var(--surface-2);
+}
 
 @media (max-width: 47.9375em) {
   .import-workspace {

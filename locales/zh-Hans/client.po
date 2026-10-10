@@ -6647,10 +6647,22 @@ msgstr "筛选条件（{appliedCount}）"
 msgid "Find a better copy of {pickLabel}"
 msgstr "查找 {pickLabel} 的更好副本"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Find a match for {folderName}"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "Find another match for {folderName}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Find better copy"
 msgstr "查找更好的版本"
+
+#: src/pages/ImportPage.tsx
+msgid "Find match"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -8942,6 +8954,10 @@ msgstr "漫画管理器"
 msgid "MangaBaka aggregate score"
 msgstr "MangaBaka 综合评分"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -10045,9 +10061,13 @@ msgid "No matching page"
 msgstr "没有匹配的页面"
 
 #: src/pages/ImportPage.tsx
+msgid "No metadata match found."
+msgstr ""
+
+#: src/pages/ImportPage.tsx
 #, fuzzy
-msgid "No metadata match, rename the folder closer to the title and rescan."
-msgstr "没有匹配的元数据，请将文件夹重命名为更接近标题的名称，然后重新扫描。"
+#~ msgid "No metadata match, rename the folder closer to the title and rescan."
+#~ msgstr "没有匹配的元数据，请将文件夹重命名为更接近标题的名称，然后重新扫描。"
 
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
@@ -10545,6 +10565,10 @@ msgstr "尚未启用任何来源。启用来源后即可调整顺序。"
 #, fuzzy
 msgid "Nothing fast enough to call a rush yet."
 msgstr "还没有读得足够快、称得上快速读完的系列。"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Nothing found for that title."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11166,6 +11190,10 @@ msgstr "可选，由你自行设置。Maki 不会替你添加。"
 #, fuzzy
 msgid "or"
 msgstr "或"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "or paste an id or link"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -13764,6 +13792,10 @@ msgstr "按章节编号或标题搜索"
 msgid "Search by name"
 msgstr "按名称搜索"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Search by title"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Search by title, description, or author:\"Junji Ito\""
@@ -13828,6 +13860,10 @@ msgstr "搜索缺失项"
 #, fuzzy
 msgid "Search or paste a series URL"
 msgstr "搜索或粘贴系列 URL"
+
+#: src/pages/ImportPage.tsx
+msgid "Search or paste an id"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -16826,11 +16862,16 @@ msgstr "大写"
 msgid "URL"
 msgstr "URL"
 
+#: src/components/import/ImportMatchFinder.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Use"
 msgstr "使用"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Use {title}"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy

@@ -77,6 +77,28 @@ public class LibraryImportController(
         }
     }
 
+    /// <summary>
+    /// A pasted MangaBaka id or link, or an AniList or MyAnimeList one, as the match for a folder the
+    /// title search could not place.
+    /// </summary>
+    [HttpGet("resolve")]
+    public async Task<IActionResult> Resolve(
+        [FromQuery] string? value, [FromServices] LibraryImportResolver resolver, CancellationToken ct)
+    {
+        ImportIdResolution resolution;
+        try
+        {
+            resolution = await resolver.ResolveAsync(value, ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning(ex, "Could not resolve {Value} for the import review", value);
+            return this.Fail(localizer, "error.libraryImport.metadataLookupFailed");
+        }
+
+        return resolution.Match is { } match ? Ok(match) : this.Fail(localizer, resolution.ErrorKey!);
+    }
+
     [HttpPost("import")]
     public async Task<IActionResult> Import([FromBody] ImportRequest request, CancellationToken ct)
     {

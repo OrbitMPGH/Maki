@@ -6647,10 +6647,22 @@ msgstr "Filtres ({appliedCount})"
 msgid "Find a better copy of {pickLabel}"
 msgstr "Trouver une meilleure copie de {pickLabel}"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Find a match for {folderName}"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "Find another match for {folderName}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Find better copy"
 msgstr "Trouver une meilleure copie"
+
+#: src/pages/ImportPage.tsx
+msgid "Find match"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -8942,6 +8954,10 @@ msgstr "Gestionnaire de mangas"
 msgid "MangaBaka aggregate score"
 msgstr "Score agrégé MangaBaka"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -10045,9 +10061,13 @@ msgid "No matching page"
 msgstr "Aucune page correspondante"
 
 #: src/pages/ImportPage.tsx
+msgid "No metadata match found."
+msgstr ""
+
+#: src/pages/ImportPage.tsx
 #, fuzzy
-msgid "No metadata match, rename the folder closer to the title and rescan."
-msgstr "Aucune correspondance de métadonnées, renommez le dossier plus près du titre et relancez l'analyse."
+#~ msgid "No metadata match, rename the folder closer to the title and rescan."
+#~ msgstr "Aucune correspondance de métadonnées, renommez le dossier plus près du titre et relancez l'analyse."
 
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
@@ -10545,6 +10565,10 @@ msgstr "Aucune source n'est activée. Activez-en une pour définir son ordre."
 #, fuzzy
 msgid "Nothing fast enough to call a rush yet."
 msgstr "Aucune série n'a encore été lue assez vite pour parler de rythme effréné."
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Nothing found for that title."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11166,6 +11190,10 @@ msgstr "Facultatif, à définir par vos soins. Maki n'en ajoute jamais pour vous
 #, fuzzy
 msgid "or"
 msgstr "ou"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "or paste an id or link"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -13764,6 +13792,10 @@ msgstr "Rechercher par numéro ou titre de chapitre"
 msgid "Search by name"
 msgstr "Rechercher par nom"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Search by title"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Search by title, description, or author:\"Junji Ito\""
@@ -13828,6 +13860,10 @@ msgstr "Rechercher les éléments manquants"
 #, fuzzy
 msgid "Search or paste a series URL"
 msgstr "Rechercher ou coller l'URL d'une série"
+
+#: src/pages/ImportPage.tsx
+msgid "Search or paste an id"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -16826,11 +16862,16 @@ msgstr "Majuscules"
 msgid "URL"
 msgstr "URL"
 
+#: src/components/import/ImportMatchFinder.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Use"
 msgstr "Utiliser"
+
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Use {title}"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy

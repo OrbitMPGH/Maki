@@ -617,6 +617,21 @@ msgstr "폴더가 더 이상 없습니다"
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "이 폴더는 이미 라이브러리의 다른 시리즈에 속해 있습니다"
 
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: AniList and MyAnimeList ids are looked up in the local MangaBaka database, which is not downloaded yet. Paste a MangaBaka id or link instead.
+msgid "error.libraryImport.idNeedsDump"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: No MangaBaka series has that id
+msgid "error.libraryImport.idNotFound"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: Paste a MangaBaka id, or a MangaBaka, AniList or MyAnimeList link
+msgid "error.libraryImport.idUnrecognized"
+msgstr ""
+
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Invalid folder name
 #, fuzzy

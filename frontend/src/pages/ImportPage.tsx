@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import {
+  ActionIcon,
   Badge,
   Button,
   Checkbox,
@@ -12,8 +13,9 @@ import {
   Switch,
   Table,
   Text,
+  Tooltip,
 } from '@mantine/core'
-import { IconFolderSearch, IconPackageImport } from '@tabler/icons-react'
+import { IconFolderSearch, IconPackageImport, IconSearch } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -25,6 +27,7 @@ import { useHubEvent } from '../api/signalr'
 import { useLabel } from '../i18n-context'
 import { randomUUID } from '../lib/uuid'
 import type { MetadataSearchResult } from '../api/types'
+import { ImportMatchFinder } from '../components/import/ImportMatchFinder'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -114,6 +117,9 @@ export default function ImportPage() {
   // new root paired with folder names that were only ever scanned from the old one.
   const [scannedRootFolderId, setScannedRootFolderId] = useState<string | null>(null)
   const [selection, setSelection] = useState<Record<string, string>>({}) // folderName -> providerId ('' = skip)
+  // Matches picked by hand (search or pasted id), shown ahead of the scan's own candidates.
+  const [pickedMatches, setPickedMatches] = useState<Record<string, MetadataSearchResult[]>>({})
+  const [finderFor, setFinderFor] = useState<ScanCandidate | null>(null)
   const [results, setResults] = useState<ImportResultDto[] | null>(null)
   const [progress, setProgress] = useState<Record<string, ImportProgressEvent>>({})
   // Keyed by series id. Recorded whatever import they belong to: a quick series can finish linking
@@ -141,8 +147,23 @@ export default function ImportPage() {
     setScannedRootFolderId(null)
     setResults(null)
     setSelection({})
+    setPickedMatches({})
     setProgress({})
     setLinkedSeries({})
+  }
+
+  const matchesOf = (c: ScanCandidate) => {
+    const picked = pickedMatches[c.folderName] ?? []
+    return [...picked, ...c.matches.filter((m) => !picked.some((p) => p.providerId === m.providerId))]
+  }
+
+  const pickMatch = (folderName: string, match: MetadataSearchResult) => {
+    setPickedMatches((p) => ({
+      ...p,
+      [folderName]: [match, ...(p[folderName] ?? []).filter((m) => m.providerId !== match.providerId)],
+    }))
+    setSelection((s) => ({ ...s, [folderName]: match.providerId }))
+    setFinderFor(null)
   }
 
   const scan = useMutation({
@@ -516,7 +537,8 @@ export default function ImportPage() {
               <Table.Tbody>
                 {visibleCandidates.map((c) => {
                   const selected = selection[c.folderName] ?? ''
-                  const match = c.matches.find((m) => m.providerId === selected)
+                  const matches = matchesOf(c)
+                  const match = matches.find((m) => m.providerId === selected)
                   const rowProgress = progress[c.folderName]
                   const { cleanedTitle, comicCount, recognizedCount, folderName } = c
                   const unrecognizedCount = comicCount - recognizedCount
@@ -526,13 +548,13 @@ export default function ImportPage() {
                         <Checkbox
                           aria-label={t`Import ${folderName}`}
                           checked={selected !== ''}
-                          disabled={c.matches.length === 0 || doImport.isPending}
+                          disabled={matches.length === 0 || doImport.isPending}
                           onChange={(e) => {
                             // Capture before setState: React nulls currentTarget after the handler.
                             const checked = e.currentTarget.checked
                             setSelection((s) => ({
                               ...s,
-                              [c.folderName]: checked ? c.matches[0]?.providerId ?? '' : '',
+                              [c.folderName]: checked ? matches[0]?.providerId ?? '' : '',
                             }))
                           }}
                         />
@@ -601,27 +623,52 @@ export default function ImportPage() {
                                 {rowProgress.error ? ` - ${rowProgress.error}` : ''}
                               </Text>
                             </Stack>
-                          ) : c.matches.length === 0 ? (
-                            <Text size="sm" c="var(--danger)">
-                              <Trans>No metadata match, rename the folder closer to the title and rescan.</Trans>
-                            </Text>
+                          ) : matches.length === 0 ? (
+                            <Group gap="xs" wrap="nowrap" style={{ flex: 1 }}>
+                              <Text size="sm" c="var(--danger)" style={{ flex: 1 }}>
+                                <Trans>No metadata match found.</Trans>
+                              </Text>
+                              <Button
+                                size="xs"
+                                variant="light"
+                                leftSection={<IconSearch size={14} />}
+                                onClick={() => setFinderFor(c)}
+                                disabled={doImport.isPending}
+                              >
+                                <Trans>Find match</Trans>
+                              </Button>
+                            </Group>
                           ) : (
-                            <Select
-                              aria-label={t`Metadata match for ${folderName}`}
-                              data={[
-                                { value: '', label: t`- skip -` },
-                                ...c.matches.map((m) => ({
-                                  value: m.providerId,
-                                  label: `${m.title}${m.year ? ` (${m.year})` : ''}`,
-                                })),
-                              ]}
-                              value={selected}
-                              onChange={(v) =>
-                                setSelection((s) => ({ ...s, [c.folderName]: v ?? '' }))
-                              }
-                              disabled={doImport.isPending}
-                              style={{ flex: 1 }}
-                            />
+                            <Group gap="xs" wrap="nowrap" style={{ flex: 1 }}>
+                              <Select
+                                aria-label={t`Metadata match for ${folderName}`}
+                                data={[
+                                  { value: '', label: t`- skip -` },
+                                  ...matches.map((m) => ({
+                                    value: m.providerId,
+                                    label: `${m.title}${m.year ? ` (${m.year})` : ''}`,
+                                  })),
+                                ]}
+                                value={selected}
+                                onChange={(v) =>
+                                  setSelection((s) => ({ ...s, [c.folderName]: v ?? '' }))
+                                }
+                                disabled={doImport.isPending}
+                                style={{ flex: 1 }}
+                              />
+                              {c.existingSeriesId === null && (
+                                <Tooltip label={t`Search or paste an id`}>
+                                  <ActionIcon
+                                    variant="subtle"
+                                    aria-label={t`Find another match for ${folderName}`}
+                                    onClick={() => setFinderFor(c)}
+                                    disabled={doImport.isPending}
+                                  >
+                                    <IconSearch size={16} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
+                            </Group>
                           )}
                         </Group>
                       </Table.Td>
@@ -632,6 +679,14 @@ export default function ImportPage() {
             </Table>
           </Table.ScrollContainer>
         </Panel>
+      )}
+      {finderFor && (
+        <ImportMatchFinder
+          folderName={finderFor.folderName}
+          initialQuery={finderFor.cleanedTitle}
+          onPick={(m) => pickMatch(finderFor.folderName, m)}
+          onClose={() => setFinderFor(null)}
+        />
       )}
     </SurfaceFrame>
   )
