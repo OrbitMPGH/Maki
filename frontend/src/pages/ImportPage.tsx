@@ -15,7 +15,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { IconEyeOff, IconFolderSearch, IconPackageImport, IconSearch } from '@tabler/icons-react'
+import { IconEye, IconEyeOff, IconFolderSearch, IconPackageImport, IconSearch } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -23,21 +23,25 @@ import type { MessageDescriptor } from '@lingui/core'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLibrarySettings, useRootFolders } from '../api/hooks'
-import { useIgnoreImportFolder, useIgnoredImportFolders } from '../api/libraryImport'
+import {
+  IMPORT_BATCH_SIZE,
+  IMPORT_SKIP_REASONS,
+  useIgnoreImportFolder,
+  useIgnoredImportFolders,
+  type ImportRequestItem,
+} from '../api/libraryImport'
 import { useHubEvent } from '../api/signalr'
 import { useLabel } from '../i18n-context'
 import { randomUUID } from '../lib/uuid'
 import type { MetadataSearchResult } from '../api/types'
 import { IgnoredFoldersModal } from '../components/import/IgnoredFoldersModal'
 import { ImportMatchFinder } from '../components/import/ImportMatchFinder'
+import { ImportPlanModal } from '../components/import/ImportPlanModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { okButtonVars } from '../components/ui/status'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
-
-/** Must not exceed LibraryImportController.MaxItemsPerRequest. */
-const IMPORT_BATCH_SIZE = 50
 
 /**
  * Words the import stage keys the server sends (`Maki.Api.Services.ImportStage`). The broadcast
@@ -55,13 +59,6 @@ const STAGE_LABELS: Record<string, MessageDescriptor> = {
   linkingFiles: msg`Linking files`,
   imported: msg`Imported`,
   failed: msg`Failed`,
-}
-
-/** Why a file stayed out of the series (`Maki.Api.Services.ImportSkipReason`). */
-const SKIP_REASONS: Record<string, MessageDescriptor> = {
-  unreadable: msg`could not be read, the archive is corrupt or truncated`,
-  noMatchingChapter: msg`no chapter with this number in the series`,
-  unrecognized: msg`no chapter or volume number in the name`,
 }
 
 interface ScanCandidate {
@@ -123,6 +120,7 @@ export default function ImportPage() {
   const [pickedMatches, setPickedMatches] = useState<Record<string, MetadataSearchResult[]>>({})
   const [finderFor, setFinderFor] = useState<ScanCandidate | null>(null)
   const [ignoredOpen, setIgnoredOpen] = useState(false)
+  const [previewItems, setPreviewItems] = useState<ImportRequestItem[] | null>(null)
   const scannedRoot = scannedRootFolderId === null ? null : Number(scannedRootFolderId)
   const { data: ignoredFolders } = useIgnoredImportFolders(scannedRoot)
   const ignoreFolder = useIgnoreImportFolder()
@@ -337,6 +335,16 @@ export default function ImportPage() {
           </Button>
           {candidates && candidates.length > 0 && (
             <Button
+              variant="default"
+              leftSection={<IconEye size={16} />}
+              disabled={selectedCount === 0 || doImport.isPending}
+              onClick={() => setPreviewItems(selectedItems)}
+            >
+              <Plural value={selectedCount} one="Preview # selected" other="Preview # selected" />
+            </Button>
+          )}
+          {candidates && candidates.length > 0 && (
+            <Button
               color="var(--ok)"
               vars={okButtonVars}
               leftSection={<IconPackageImport size={16} />}
@@ -481,7 +489,7 @@ export default function ImportPage() {
                 </Text>
                 {skipped.map((f) => {
                   const { name } = f
-                  const reason = label(SKIP_REASONS[f.reason] ?? f.reason)
+                  const reason = label(IMPORT_SKIP_REASONS[f.reason] ?? f.reason)
                   return (
                     <Text key={name} size="xs" c="dimmed" pl="md">
                       <Trans>
@@ -593,20 +601,38 @@ export default function ImportPage() {
                           <Text size="sm" fw={600}>
                             {c.folderName}
                           </Text>
-                          {c.existingSeriesId === null && (
-                            <Tooltip label={t`Ignore this folder`}>
-                              <ActionIcon
-                                variant="subtle"
-                                size="sm"
-                                color="var(--ink-3)"
-                                aria-label={t`Ignore ${folderName}`}
-                                onClick={() => ignore(c.folderName)}
-                                disabled={doImport.isPending || !!rowProgress}
-                              >
-                                <IconEyeOff size={14} />
-                              </ActionIcon>
-                            </Tooltip>
-                          )}
+                          <Group gap={2} wrap="nowrap">
+                            {selected !== '' && (
+                              <Tooltip label={t`Preview the import`}>
+                                <ActionIcon
+                                  variant="subtle"
+                                  size="sm"
+                                  color="var(--ink-3)"
+                                  aria-label={t`Preview the import of ${folderName}`}
+                                  onClick={() =>
+                                    setPreviewItems([{ folderName: c.folderName, metadataProviderId: selected }])
+                                  }
+                                  disabled={doImport.isPending}
+                                >
+                                  <IconEye size={14} />
+                                </ActionIcon>
+                              </Tooltip>
+                            )}
+                            {c.existingSeriesId === null && (
+                              <Tooltip label={t`Ignore this folder`}>
+                                <ActionIcon
+                                  variant="subtle"
+                                  size="sm"
+                                  color="var(--ink-3)"
+                                  aria-label={t`Ignore ${folderName}`}
+                                  onClick={() => ignore(c.folderName)}
+                                  disabled={doImport.isPending || !!rowProgress}
+                                >
+                                  <IconEyeOff size={14} />
+                                </ActionIcon>
+                              </Tooltip>
+                            )}
+                          </Group>
                         </Group>
                         {c.existingSeriesId !== null ? (
                           <Badge size="xs" variant="light">
@@ -724,6 +750,9 @@ export default function ImportPage() {
             </Table>
           </Table.ScrollContainer>
         </Panel>
+      )}
+      {previewItems && scannedRoot !== null && (
+        <ImportPlanModal rootFolderId={scannedRoot} items={previewItems} onClose={() => setPreviewItems(null)} />
       )}
       {ignoredOpen && scannedRoot !== null && (
         <IgnoredFoldersModal rootFolderId={scannedRoot} onClose={() => setIgnoredOpen(false)} />

@@ -664,6 +664,11 @@ msgstr "No hay elementos que importar"
 msgid "error.libraryImport.partial"
 msgstr "\"{title}\" solo se importó en parte. Abre la serie y ejecuta Volver a analizar para recoger el resto."
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+#. English: Could not read the folder to preview it. Details are in the server log.
+msgid "error.libraryImport.previewFailed"
+msgstr ""
+
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Cannot rename: "{name}" already exists in the root folder

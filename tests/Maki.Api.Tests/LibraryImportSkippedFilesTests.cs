@@ -63,7 +63,7 @@ public class LibraryImportSkippedFilesTests : IDisposable
         await db.SaveChangesAsync();
 
         var service = Service(db);
-        var (files, unreadable) = service.MaterializeComics(_dir);
+        var (files, unreadable, _) = service.MaterializeComics(_dir);
         var skipped = await service.SkippedFilesAsync(series.Id, _dir, files, unreadable, CancellationToken.None);
 
         Assert.Contains(linkedFile, files);
@@ -83,7 +83,7 @@ public class LibraryImportSkippedFilesTests : IDisposable
         File.WriteAllText(Path.Combine(_dir, "Series Ch.1.cbr"), "not really a rar");
 
         using var db = _db.NewContext();
-        var (_, unreadable) = Service(db).MaterializeComics(_dir);
+        var (_, unreadable, _) = Service(db).MaterializeComics(_dir);
 
         Assert.Empty(unreadable);
     }

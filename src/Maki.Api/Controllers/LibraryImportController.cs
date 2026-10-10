@@ -118,6 +118,44 @@ public class LibraryImportController(
         return resolution.Match is { } match ? Ok(match) : this.Fail(localizer, resolution.ErrorKey!);
     }
 
+    public record PlanRequest(int RootFolderId, List<ImportRequestItem> Items);
+
+    /// <summary>
+    /// What importing these folders would do, without writing anything. One folder at a time in this
+    /// request's scope: a preview reads archive listings, not page data, so it does not need the
+    /// import's fan-out.
+    /// </summary>
+    [HttpPost("plan")]
+    public async Task<IActionResult> Plan([FromBody] PlanRequest request, CancellationToken ct)
+    {
+        if (request.Items.Count == 0)
+        {
+            return this.Fail(localizer, "error.libraryImport.noItemsToImport");
+        }
+
+        if (request.Items.Count > MaxItemsPerRequest)
+        {
+            return this.Fail(localizer, "error.libraryImport.tooManyItems",
+                new { count = request.Items.Count, max = MaxItemsPerRequest });
+        }
+
+        var plans = new List<LibraryImportPlan>(request.Items.Count);
+        foreach (var item in request.Items)
+        {
+            try
+            {
+                plans.Add(await importService.PlanAsync(request.RootFolderId, item, ct));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or HttpRequestException)
+            {
+                logger.LogWarning(ex, "Could not preview the import of '{Folder}'", item.FolderName);
+                plans.Add(new LibraryImportPlan(item.FolderName, localizer.Get("error.libraryImport.previewFailed")));
+            }
+        }
+
+        return Ok(plans);
+    }
+
     [HttpPost("import")]
     public async Task<IActionResult> Import([FromBody] ImportRequest request, CancellationToken ct)
     {

@@ -664,6 +664,11 @@ msgstr "가져올 항목이 없습니다"
 msgid "error.libraryImport.partial"
 msgstr "\"{title}\"은(는) 일부만 가져왔습니다. 시리즈를 열고 다시 스캔을 실행해 나머지를 가져오세요."
 
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+#. English: Could not read the folder to preview it. Details are in the server log.
+msgid "error.libraryImport.previewFailed"
+msgstr ""
+
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Cannot rename: "{name}" already exists in the root folder
