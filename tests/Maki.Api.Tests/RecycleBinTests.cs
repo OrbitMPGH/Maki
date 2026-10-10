@@ -576,6 +576,52 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
+    public async Task A_file_with_a_name_at_the_length_limit_still_bins_and_restores_under_its_name()
+    {
+        var s = Seed();
+        var name = new string('x', 247) + ".cbz";
+        var relative = Path.Combine("Berserk", name);
+        var absolute = Path.Combine(_root, relative);
+        File.WriteAllText(absolute, "long");
+        using (var seed = _db.NewContext())
+        {
+            var file = new ChapterFile { SeriesId = s.SeriesId, RelativePath = relative, SourceName = "Manual", DateAdded = DateTime.UtcNow };
+            seed.ChapterFiles.Add(file);
+            seed.SaveChanges();
+            seed.Chapters.Single(c => c.Id == s.SecondChapterId).ChapterFileId = file.Id;
+            seed.Chapters.Single(c => c.Id == s.ChapterId).ChapterFileId = null;
+            seed.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var result = Assert.IsType<OkObjectResult>(await Chapters(db).DeleteFiles([s.SecondChapterId], Deletion(db), default));
+            Assert.Equal(1, Assert.IsType<ChapterFileDeletion.Result>(result.Value).Deleted);
+        }
+
+        Assert.False(File.Exists(absolute));
+        using (var db = _db.NewContext())
+        {
+            var entry = db.RecycleBin.Single();
+            var binName = Path.GetFileName(entry.BinPath);
+            Assert.True(System.Text.Encoding.UTF8.GetByteCount(binName) <= 255);
+            Assert.EndsWith(".cbz", binName);
+            Assert.Equal(relative, entry.RelativePath);
+            Assert.Equal("long", File.ReadAllText(BinFile(entry)));
+            await Bin(db).RestoreAsync(entry.Id, default);
+        }
+
+        Assert.Equal("long", File.ReadAllText(absolute));
+    }
+
+    [Theory]
+    [InlineData("short.cbz", 20, "short.cbz")]
+    [InlineData("abcdefghij.cbz", 10, "abcdef.cbz")]
+    [InlineData("éééé.cbz", 9, "éé.cbz")]
+    public void Fit_shortens_the_stem_by_utf8_bytes_and_keeps_the_extension(string name, int max, string expected) =>
+        Assert.Equal(expected, RecycleBin.Fit(name, max));
+
+    [Fact]
     public async Task A_bin_on_another_volume_refuses_the_delete_and_touches_nothing()
     {
         var s = Seed();

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Configuration;
@@ -26,9 +27,50 @@ public static class RecycleBin
 
     public static string Folder(string rootPath) => Path.Combine(rootPath, UpgradeTrash.FolderName, FolderName);
 
-    /// <summary><c>.maki-trash/bin/&lt;seriesId&gt;/&lt;tag&gt;-&lt;name&gt;</c>. The tag keeps two deletions of one name apart.</summary>
-    public static string NewRelativePath(int seriesId, string name) =>
-        $"{UpgradeTrash.FolderName}/{FolderName}/{seriesId.ToString(CultureInfo.InvariantCulture)}/{Guid.NewGuid().ToString("N")[..12]}-{name}";
+    /// <summary>The longest file name most filesystems take, in UTF-8 bytes (and so in UTF-16 units too).</summary>
+    private const int MaxNameBytes = 255;
+
+    /// <summary>
+    /// <c>.maki-trash/bin/&lt;seriesId&gt;/&lt;tag&gt;-&lt;name&gt;</c>. The tag keeps two deletions of one name
+    /// apart; the name is shortened to fit beside it, since the entry keeps the real one for restore.
+    /// </summary>
+    public static string NewRelativePath(int seriesId, string name)
+    {
+        var tag = Guid.NewGuid().ToString("N")[..12];
+        return $"{UpgradeTrash.FolderName}/{FolderName}/{seriesId.ToString(CultureInfo.InvariantCulture)}/{tag}-{Fit(name, MaxNameBytes - tag.Length - 1)}";
+    }
+
+    /// <summary>Shortens the stem of <paramref name="name"/> by whole characters until it fits <paramref name="maxBytes"/> of UTF-8. The extension stays.</summary>
+    public static string Fit(string name, int maxBytes)
+    {
+        if (Encoding.UTF8.GetByteCount(name) <= maxBytes)
+        {
+            return name;
+        }
+
+        var extension = Path.GetExtension(name);
+        if (Encoding.UTF8.GetByteCount(extension) > maxBytes / 2)
+        {
+            extension = string.Empty;
+        }
+
+        var budget = maxBytes - Encoding.UTF8.GetByteCount(extension);
+        var stem = new StringBuilder();
+        var elements = StringInfo.GetTextElementEnumerator(name[..^extension.Length]);
+        while (elements.MoveNext())
+        {
+            var element = elements.GetTextElement();
+            budget -= Encoding.UTF8.GetByteCount(element);
+            if (budget < 0)
+            {
+                break;
+            }
+
+            stem.Append(element);
+        }
+
+        return stem + extension;
+    }
 
     private static readonly Regex Tag = new("^([0-9a-f]{12})-", RegexOptions.CultureInvariant);
 
