@@ -2784,6 +2784,10 @@ msgid "An account with that username already exists"
 msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin approved your request."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "Nereye ekleneceğine ve nelerin indirileceğine yönetici karar verir."
@@ -2996,6 +3000,7 @@ msgstr "Onayla ve kuyruğa al"
 msgid "Approve request"
 msgstr "İsteği onayla"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approved"
@@ -17648,6 +17653,14 @@ msgstr "En yoğun ayınız"
 #, fuzzy
 msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "Klasörünüz olduğu gibi kalır. Yeni bölümler Maki'nin adlandırdığı bir klasöre gider."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Your last request was rejected: {resolutionNote}"
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Your last request was rejected."
+msgstr ""
 
 #: src/api/customRails.ts
 #, fuzzy

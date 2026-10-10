@@ -12,7 +12,7 @@ import {
 } from '../../api/hooks'
 import { ApiError } from '../../api/client'
 import { useUpgradeProfiles } from '../../api/upgrades'
-import { useCreateSeriesRequest } from '../../api/requests'
+import { useCreateSeriesRequest, useSeriesRequests, type SeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
 import { useAuth } from '../../auth/AuthProvider'
 import type { RootFolder } from '../../api/types'
@@ -62,6 +62,7 @@ export function DiscoverLibraryRail({
   // Without AddSeries the same panel asks an admin for the title instead of adding it. The server
   // enforces both halves independently; this only decides which form to draw.
   const canAdd = can('AddSeries')
+  const { data: myRequests } = useSeriesRequests('all', !canAdd)
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [upgradeProfileId, setUpgradeProfileId] = useState<string | null>(null)
@@ -82,7 +83,6 @@ export function DiscoverLibraryRail({
   const [chapterStart, setChapterStart] = useState<number | ''>('')
   const [chapterEnd, setChapterEnd] = useState<number | ''>('')
   const [note, setNote] = useState('')
-  const [requested, setRequested] = useState(false)
   /**
    * Series id from an add made here, so the button can flip to "Go to series" without navigating.
    * The ['series'] invalidation eventually feeds the same id back via inLibrarySeriesId; this
@@ -109,6 +109,11 @@ export function DiscoverLibraryRail({
 
   const seriesId = inLibrarySeriesId ?? addedSeriesId
   const shownMonitorMode = monitorMode ?? librarySettings?.newSeriesMonitorMode ?? 'All'
+  const myRequest = latestRequestFor(
+    [...(myRequests ?? []), ...(createRequest.data ? [createRequest.data] : [])],
+    item.providerId,
+  )
+  const resolutionNote = myRequest?.resolutionNote
   const title = detail?.title ?? item.title
   const animeResume = detail?.animeResume ?? null
 
@@ -176,7 +181,6 @@ export function DiscoverLibraryRail({
       },
       {
         onSuccess: () => {
-          setRequested(true)
           notifications.show({
             title: t`Requested ${title}`,
             message: t`An admin will see it on the Requests page.`,
@@ -312,13 +316,17 @@ export function DiscoverLibraryRail({
             <Trans>Add</Trans>
           </Button>
         </Stack>
-      ) : requested ? (
+      ) : myRequest && myRequest.status !== 'Rejected' ? (
         <>
           <Title order={3} fz="var(--type-subhead)">
-            <Trans>Requested</Trans>
+            {myRequest.status === 'Approved' ? <Trans>Approved</Trans> : <Trans>Requested</Trans>}
           </Title>
           <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
-            <Trans>An admin decides where it lands and what gets downloaded.</Trans>
+            {myRequest.status === 'Approved' ? (
+              <Trans>An admin approved your request.</Trans>
+            ) : (
+              <Trans>An admin decides where it lands and what gets downloaded.</Trans>
+            )}
           </Alert>
         </>
       ) : (
@@ -332,6 +340,15 @@ export function DiscoverLibraryRail({
               downloaded.
             </Trans>
           </Text>
+          {myRequest && (
+            <Alert color="var(--warn)" variant="light" mt="sm">
+              {resolutionNote ? (
+                <Trans>Your last request was rejected: {resolutionNote}</Trans>
+              ) : (
+                <Trans>Your last request was rejected.</Trans>
+              )}
+            </Alert>
+          )}
           <RequestForm
             dense
             chapterStart={chapterStart}
@@ -348,6 +365,17 @@ export function DiscoverLibraryRail({
 
     </Paper>
   )
+}
+
+/**
+ * The caller's newest new-series request for a title. One still awaiting an answer outranks a newer
+ * rejected one, since that is the row that blocks filing another.
+ */
+function latestRequestFor(requests: SeriesRequest[], providerId: string): SeriesRequest | undefined {
+  const mine = requests.filter((r) => r.kind === 'NewSeries' && r.metadataProviderId === providerId)
+  const newest = (rows: SeriesRequest[]) =>
+    rows.reduce<SeriesRequest | undefined>((best, r) => (best && best.id > r.id ? best : r), undefined)
+  return newest(mine.filter((r) => r.status === 'Pending' || r.status === 'Processing')) ?? newest(mine)
 }
 
 function AnimeWatchedSwitch({

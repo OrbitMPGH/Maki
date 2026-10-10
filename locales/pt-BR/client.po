@@ -2784,6 +2784,10 @@ msgid "An account with that username already exists"
 msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin approved your request."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "Um administrador escolhe onde ela será salva e o que será baixado."
@@ -2996,6 +3000,7 @@ msgstr "Aprovar e enfileirar"
 msgid "Approve request"
 msgstr "Aprovar solicitação"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approved"
@@ -17648,6 +17653,14 @@ msgstr "Seu mês mais movimentado"
 #, fuzzy
 msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "Sua pasta não será alterada. Os novos capítulos vão para uma pasta nomeada pelo Maki."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Your last request was rejected: {resolutionNote}"
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Your last request was rejected."
+msgstr ""
 
 #: src/api/customRails.ts
 #, fuzzy

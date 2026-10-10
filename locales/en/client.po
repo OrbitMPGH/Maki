@@ -2322,6 +2322,10 @@ msgid "An account with that username already exists"
 msgstr "An account with that username already exists"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin approved your request."
+msgstr "An admin approved your request."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "An admin decides where it lands and what gets downloaded."
 
@@ -2499,6 +2503,7 @@ msgstr "Approve and queue"
 msgid "Approve request"
 msgstr "Approve request"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Approved"
 msgstr "Approved"
@@ -14645,6 +14650,14 @@ msgstr "Your busiest month"
 #: src/components/SetupWizard.tsx
 msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "Your folder is left alone. New chapters go into a folder Maki names."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Your last request was rejected: {resolutionNote}"
+msgstr "Your last request was rejected: {resolutionNote}"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Your last request was rejected."
+msgstr "Your last request was rejected."
 
 #: src/api/customRails.ts
 msgid "Your library"

@@ -45,10 +45,11 @@ export interface CreateSeriesRequestBody {
 export type RequestFilter = 'pending' | 'resolved' | 'all'
 
 /** Admins get every request; everyone else gets their own. The server decides which, not this. */
-export function useSeriesRequests(status: RequestFilter = 'all') {
+export function useSeriesRequests(status: RequestFilter = 'all', enabled = true) {
   return useQuery({
     queryKey: ['requests', status],
     queryFn: () => api<SeriesRequest[]>(`/requests?status=${status}`),
+    enabled,
   })
 }
 

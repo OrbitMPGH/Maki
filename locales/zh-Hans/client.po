@@ -2784,6 +2784,10 @@ msgid "An account with that username already exists"
 msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin approved your request."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "管理员会决定它存放的位置以及要下载的内容。"
@@ -2996,6 +3000,7 @@ msgstr "批准并加入队列"
 msgid "Approve request"
 msgstr "批准请求"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approved"
@@ -17648,6 +17653,14 @@ msgstr "你最忙的月份"
 #, fuzzy
 msgid "Your folder is left alone. New chapters go into a folder Maki names."
 msgstr "保留现有文件夹。新章节会存入由 Maki 命名的文件夹。"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Your last request was rejected: {resolutionNote}"
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Your last request was rejected."
+msgstr ""
 
 #: src/api/customRails.ts
 #, fuzzy
