@@ -24,9 +24,9 @@ public sealed record CatalogueIndexes(CreditIndex Credits, FuzzyTermIndex Terms)
 ///
 /// <para>
 /// A cold build is about 3.5 s of the two scans combined, which is why
-/// <c>DiscoverCacheWarmJob</c> builds it on its first run after startup and again after a new dump
-/// installs, rather than letting it land on whichever keystroke happens to arrive first. Its later
-/// scheduled runs only refresh it while it is loaded.
+/// <c>DiscoverCacheWarmJob</c> builds it after a new dump installs (and on the first run after a
+/// startup that found new source files), rather than letting it land on whichever keystroke
+/// happens to arrive first. Its other scheduled runs only refresh it while it is loaded.
 /// </para>
 /// </summary>
 public sealed class CatalogueIndexCache(

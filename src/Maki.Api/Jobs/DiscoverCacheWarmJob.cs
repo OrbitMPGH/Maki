@@ -1,8 +1,10 @@
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Data;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.Taste;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -27,6 +29,10 @@ public class DiscoverCacheWarmJob(
     DiscoverService discover,
     VectorIndexCache searchIndex,
     CatalogueIndexCache catalogueIndex,
+    MangaBakaDumpOptions dumpOptions,
+    EmbeddingOptions embeddingOptions,
+    TasteVectorOptions tasteOptions,
+    IAppSettings settings,
     IServiceScopeFactory scopeFactory,
     ArtifactBuildGate gate,
     ILogger<DiscoverCacheWarmJob> logger) : IJob
@@ -34,6 +40,9 @@ public class DiscoverCacheWarmJob(
     public static readonly JobKey Key = new("discover-cache-warm");
 
     public const string ScheduledTriggerName = "discover-cache-warm-trigger";
+
+    /// <summary>The source files the indexes were last warmed from, so a restart can skip the warm.</summary>
+    public const string WarmedStampKey = "discover.warmedstamp";
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -48,11 +57,17 @@ public class DiscoverCacheWarmJob(
                 await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
             }
 
-            // A run triggered after a dump install, and the first scheduled run after startup, build
-            // both indexes so the cost never lands on the first keystroke. Later scheduled runs only
-            // refresh an index somebody already has loaded: building one for an instance nobody is
-            // browsing costs ~9s of CPU and an RSS spike, only for the idle unload to drop it again.
-            var everything = context.Trigger.Key.Name != ScheduledTriggerName || context.PreviousFireTimeUtc is null;
+            // A run triggered after a dump install builds both indexes so the cost never lands on the
+            // first keystroke. Scheduled runs only refresh an index somebody already has loaded:
+            // building one for an instance nobody is browsing costs ~9s of CPU and ~145 MB, only for
+            // the idle unload to drop it again. The first scheduled run after startup also builds
+            // them, but only when their source files changed since the last warm (a dump, vector
+            // database or taste file installed while the process was down); otherwise a restart
+            // would hold both for an hour whether or not anyone searches.
+            var stamp = SourceStamp();
+            var everything = context.Trigger.Key.Name != ScheduledTriggerName
+                || (context.PreviousFireTimeUtc is null
+                    && stamp != await settings.GetAsync(WarmedStampKey, context.CancellationToken));
 
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
@@ -77,6 +92,11 @@ public class DiscoverCacheWarmJob(
 
                 await catalogueIndex.GetAsync(context.CancellationToken);
             }
+
+            if (everything)
+            {
+                await settings.SetAsync(WarmedStampKey, stamp, context.CancellationToken);
+            }
         }
         catch (LocalCatalogueUnavailableException)
         {
@@ -93,6 +113,11 @@ public class DiscoverCacheWarmJob(
             context.ReportFailure(ex);
         }
     }
+
+    private string SourceStamp() =>
+        string.Join('|', new[] { dumpOptions.DatabasePath, embeddingOptions.VectorDbPath, tasteOptions.DatabasePath }
+            .Select(path => new FileInfo(path))
+            .Select(info => info.Exists ? $"{info.LastWriteTimeUtc.Ticks}:{info.Length}" : "-"));
 
     /// <summary>
     /// The distinct content-rating ceilings held by accounts that can sign in. Disabled and
