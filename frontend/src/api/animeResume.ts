@@ -151,3 +151,13 @@ export function useHomeFromAnime(enabled = true) {
     staleTime: 60_000,
   })
 }
+
+/** The whole list behind the rail's "Show more", up to the server's own ceiling of 500. */
+export function useHomeFromAnimeAll(enabled: boolean) {
+  return useQuery({
+    queryKey: ['home', 'from-anime', 'all'],
+    queryFn: () => api<HomeAnimeResumePage>('/home/from-anime?limit=500'),
+    enabled,
+    staleTime: 60_000,
+  })
+}

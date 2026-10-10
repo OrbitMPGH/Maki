@@ -443,7 +443,7 @@ public class HomeControllerTests : IDisposable
         (await FromAnimePage(userId, allRootFolders)).Items;
 
     private async Task<(IReadOnlyList<HomeAnimeResumeItem> Items, string? Total)> FromAnimePage(
-        int userId = 1, bool allRootFolders = true)
+        int userId = 1, bool allRootFolders = true, int limit = AnimeResumeService.RailLimit)
     {
         var context = _db.NewContext(userId, allRootFolders);
         var controller = new HomeController(context, new ContinueReadingService(context))
@@ -451,7 +451,7 @@ public class HomeControllerTests : IDisposable
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
         };
         var result = await controller.FromAnime(
-            AnimeResumeFixture.Service(_db, context, _gate), ct: CancellationToken.None);
+            AnimeResumeFixture.Service(_db, context, _gate), limit, CancellationToken.None);
         var page = Assert.IsType<AnimeResumeService.RailPage>(Assert.IsType<OkObjectResult>(result).Value);
         return (page.Items, page.Total.ToString());
     }
@@ -493,6 +493,21 @@ public class HomeControllerTests : IDisposable
         var (items, total) = await FromAnimePage();
 
         Assert.Equal(AnimeResumeService.RailLimit, items.Count);
+        Assert.Equal((AnimeResumeService.RailLimit + 3).ToString(), total);
+    }
+
+    [Fact]
+    public async Task From_anime_returns_past_the_rail_cap_when_asked()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        for (var i = 1; i <= AnimeResumeService.RailLimit + 3; i++)
+        {
+            SeedFromAnime($"Series {i:000}", i, 8);
+        }
+
+        var (items, total) = await FromAnimePage(limit: AnimeResumeService.MaxRailLimit);
+
+        Assert.Equal(AnimeResumeService.RailLimit + 3, items.Count);
         Assert.Equal((AnimeResumeService.RailLimit + 3).ToString(), total);
     }
 

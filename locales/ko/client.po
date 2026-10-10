@@ -195,6 +195,7 @@ msgstr ""
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
+#: src/components/home/AnimeResumeRail.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "{0, plural, one {# title} other {# titles}}"
@@ -4586,6 +4587,7 @@ msgid "Continue"
 msgstr "계속"
 
 #: src/api/hooks.ts
+#: src/components/home/AnimeResumeRail.tsx
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Continue from the anime"
@@ -4822,6 +4824,7 @@ msgstr ""
 msgid "Couldn't load the details for this title."
 msgstr ""
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Couldn't load this rail"
@@ -12846,6 +12849,7 @@ msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
@@ -14083,6 +14087,7 @@ msgstr "덜 보기"
 #: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/pages/DiscoverPage.tsx
+#: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Show more"
 msgstr "더 보기"

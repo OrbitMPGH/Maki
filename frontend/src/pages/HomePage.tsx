@@ -53,7 +53,7 @@ import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
-import { AnimeResumeRail } from '../components/home/AnimeResumeRail'
+import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
@@ -140,6 +140,7 @@ export default function HomePage() {
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const [fromAnimeExpanded, setFromAnimeExpanded] = useState(false)
   const navigate = useNavigate()
 
   const continueReading = reading?.continueReading ?? []
@@ -354,8 +355,23 @@ export default function HomePage() {
     ) : (
       fromAnime && fromAnime.items.length > 0 && (
         <>
-          <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.total} />
+          <SectionHeader
+            icon={IconDeviceTv}
+            title={t`Continue from the anime`}
+            count={fromAnime.total}
+            action={
+              <Button variant="subtle" size="xs" onClick={() => setFromAnimeExpanded(true)}>
+                <Trans>Show more</Trans>
+              </Button>
+            }
+            chevron
+          />
           <AnimeResumeRail items={fromAnime.items} onOpen={setDetailItem} />
+          <AnimeResumeExpandModal
+            opened={fromAnimeExpanded}
+            onClose={() => setFromAnimeExpanded(false)}
+            onOpen={setDetailItem}
+          />
         </>
       )
     ),

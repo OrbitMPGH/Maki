@@ -1,10 +1,14 @@
 import { memo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { IconPlus } from '@tabler/icons-react'
-import type { HomeAnimeResumeItem } from '../../api/animeResume'
+import { Group, Modal, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core'
+import { IconDeviceTv, IconPlus } from '@tabler/icons-react'
+import { useHomeFromAnimeAll, type HomeAnimeResumeItem } from '../../api/animeResume'
 import type { RecommendationItem } from '../../api/hooks'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { PosterSkeletons } from '../CatalogueBrowser'
+import { EmptyState } from '../ui/EmptyState'
 import { Rail } from '../ui/Rail'
+import { DensityControl, useDensityPref } from '../ui/viewPrefs'
 
 /**
  * Horizontal rail of series whose anime the reader finished but the manga hasn't caught up to.
@@ -30,6 +34,61 @@ export function AnimeResumeRail({
         </div>
       ))}
     </Rail>
+  )
+}
+
+/** The rail's "Show more": every series it matches, as a grid, with the rail's own cards. */
+export function AnimeResumeExpandModal({
+  opened,
+  onClose,
+  onOpen,
+}: {
+  opened: boolean
+  onClose: () => void
+  onOpen: (item: RecommendationItem) => void
+}) {
+  const { t } = useLingui()
+  const { data, isLoading, isError, refetch } = useHomeFromAnimeAll(opened)
+  const { density, setDensity, cols } = useDensityPref('fromanime-expand')
+  const items = data?.items
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      fullScreen
+      title={
+        <Group gap="xs">
+          <ThemeIcon variant="light" color="brand" size="md" radius="md">
+            <IconDeviceTv size={16} />
+          </ThemeIcon>
+          <Title order={4}>
+            <Trans>Continue from the anime</Trans>
+          </Title>
+        </Group>
+      }
+      styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
+    >
+      {isError ? (
+        <EmptyState title={t`Couldn't load this rail`} actionLabel={t`Retry`} onAction={() => void refetch()} />
+      ) : isLoading || !items ? (
+        <PosterSkeletons density={density} />
+      ) : (
+        <>
+          <Group justify="space-between" mb="sm">
+            <Text c="var(--ink-3)" size="sm">
+              <Plural value={items.length} one="# title" other="# titles" />
+            </Text>
+            <DensityControl value={density} onChange={setDensity} />
+          </Group>
+          <SimpleGrid cols={cols} spacing="md">
+            {items.map((item) => (
+              <AnimeResumeCard key={item.seriesId ?? `mb-${item.catalogue?.providerId}`} item={item} onOpen={onOpen} />
+            ))}
+          </SimpleGrid>
+        </>
+      )}
+    </Modal>
   )
 }
 

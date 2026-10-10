@@ -379,9 +379,10 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     [HttpGet("from-anime")]
     public async Task<IActionResult> FromAnime(
         [FromServices] AnimeResumeService animeResume,
+        [FromQuery] int limit = AnimeResumeService.RailLimit,
         CancellationToken ct = default)
     {
-        return Ok(await animeResume.RailAsync(ct));
+        return Ok(await animeResume.RailAsync(ct, Math.Clamp(limit, 1, AnimeResumeService.MaxRailLimit)));
     }
 
     /// <summary>Labels for a set of chapter ids, in one query.</summary>
