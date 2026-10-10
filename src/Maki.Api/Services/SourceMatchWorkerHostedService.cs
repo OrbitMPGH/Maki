@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Maki.Api.Hubs;
+using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -7,6 +8,7 @@ using Maki.Core.Notifications;
 using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 namespace Maki.Api.Services;
 
@@ -346,11 +348,17 @@ public class SourceMatchWorkerHostedService(
                         .OfType<string>()
                         .Where(File.Exists)
                         .ToList();
-                    total += files.Count;
-                    var (folderLinked, _) = await cbz.LinkFilesAsync(
-                        series, dir, files, "import", updateComicInfo: updateComicInfo, ct: ct);
-                    linked += folderLinked;
+                    await cbz.LinkFilesAsync(series, dir, files, "import", updateComicInfo: updateComicInfo, ct: ct);
                 }
+
+                // Read back rather than summed from the link: its count includes chapters the volume
+                // fill and the lone-file rule link, which can exceed the files.
+                total = await db.ChapterFiles.CountAsync(f => f.SeriesId == seriesId, ct);
+                linked = await db.Chapters
+                    .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+                    .Select(c => c.ChapterFileId!.Value)
+                    .Distinct()
+                    .CountAsync(ct);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -373,6 +381,13 @@ public class SourceMatchWorkerHostedService(
 
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
         await events.SeriesFilesLinked(seriesId, rootFolderId, linked, total);
+
+        // Measured after the rewrite rather than at the end of the import request: on Windows the
+        // ComicInfo rewrite cannot replace an archive the measure job has open.
+        if (scope.ServiceProvider.GetService<ISchedulerFactory>() is { } scheduler)
+        {
+            await ChapterFileMeasureJob.TriggerAsync(scheduler, logger);
+        }
     }
 
     /// <summary>

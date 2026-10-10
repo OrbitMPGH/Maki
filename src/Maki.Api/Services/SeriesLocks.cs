@@ -4,7 +4,8 @@ namespace Maki.Api.Services;
 
 /// <summary>
 /// In-process locks for work that reads a series' files on disk and rewrites its ChapterFile rows
-/// from what it saw: rescan, import linking, download placement, rename, move and delete. Each is
+/// from what it saw: rescan, import linking (in the request and in the source match worker's link
+/// stage), download placement, rename, move and delete. Each is
 /// check-then-act over the folder and the rows, and two of them interleaving on one series
 /// duplicated rows or lost them. Not reentrant: never call into another locked entry point while
 /// holding the same series.

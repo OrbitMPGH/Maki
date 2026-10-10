@@ -136,7 +136,9 @@ public class LibraryImportController(
                 Url: "/import"),
             InboxAudience.Admins);
 
-        if (imported > 0)
+        // Folders whose link waits on the background match are measured by the link stage, after
+        // their ComicInfo rewrite.
+        if (results.Any(r => r.Success && !r.LinkPending))
         {
             await ChapterFileMeasureJob.TriggerAsync(schedulerFactory, logger);
         }
