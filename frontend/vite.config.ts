@@ -77,6 +77,13 @@ export default defineConfig(({ mode }) => {
     build: {
       rolldownOptions: {
         output: {
+          // Every catalog is a file called client.po, so by default its chunk is client-<hash>.js and
+          // indistinguishable from any other module named client. The Dockerfiles count these chunks
+          // to prove the catalogs reached the bundle, so they get a name nothing else can have.
+          chunkFileNames: (chunk) => {
+            const locale = chunk.facadeModuleId?.match(/[\\/]locales[\\/]([^\\/]+)[\\/]client\.po$/)?.[1]
+            return locale ? `assets/catalog-${locale}-[hash].js` : 'assets/[name]-[hash].js'
+          },
           advancedChunks: {
             groups: [
               // One chunk for the icon set instead of dozens of one-icon modules, each of which was

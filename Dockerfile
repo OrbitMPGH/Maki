@@ -17,13 +17,14 @@ COPY frontend/ ./
 # directory above the package, and WORKDIR here is /src/frontend.
 COPY locales/ /src/locales/
 RUN npm run build
-# Vite emits one lazily-imported client-*.js chunk per locale from those imports, so whether the
+# Vite emits one lazily-imported catalog-<locale>-*.js chunk per locale from those imports (named in
+# vite.config.ts, since client-*.js would also match any other module called client), so whether the
 # catalogs actually made it into the bundle is countable. Worth counting because the failure is
 # silent in the direction that matters: a bundle missing them still builds, still serves, and
 # still answers every string in English. Counted against the locale directories rather than a
 # hardcoded number so adding a language cannot leave this checking the old count.
 RUN expected="$(ls -1d /src/locales/*/ | wc -l)" \
-    && actual="$(ls -1 dist/assets/client-*.js 2>/dev/null | wc -l)" \
+    && actual="$(ls -1 dist/assets/catalog-*.js 2>/dev/null | wc -l)" \
     && if [ "$actual" -ne "$expected" ]; then \
          echo "Expected $expected compiled client catalogs in the bundle, found $actual." >&2; \
          exit 1; \
