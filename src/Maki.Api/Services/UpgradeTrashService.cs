@@ -66,19 +66,17 @@ public static class UpgradeTrash
             try
             {
                 File.Move(from, to);
-                try
-                {
-                    File.SetLastWriteTimeUtc(to, DateTime.UtcNow);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    logger.LogWarning(ex, "Could not stamp {Path} with its trash time", to);
-                }
-
-                return true;
+                break;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
+                // A share can report a failure for a rename that happened (an NFS retransmit). The
+                // file is then in the trash, and saying otherwise would leave it there with no row.
+                if (SameVolumeMove.Landed(from, to))
+                {
+                    break;
+                }
+
                 if (attempt >= MoveBackoff.Length)
                 {
                     logger.LogWarning(ex, "Could not move {From} to {To}", from, to);
@@ -88,6 +86,17 @@ public static class UpgradeTrash
                 await Task.Delay(MoveBackoff[attempt], ct);
             }
         }
+
+        try
+        {
+            File.SetLastWriteTimeUtc(to, DateTime.UtcNow);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not stamp {Path} with its trash time", to);
+        }
+
+        return true;
     }
 }
 
@@ -243,9 +252,9 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
 
                     // A binned file keeps its own old write time, and a delete may have recorded and
                     // moved it after the keep set was read. Its entry is saved before the move, so
-                    // asking again now cannot miss it.
-                    var relative = Path.GetRelativePath(rootPath, full).Replace('\\', '/');
-                    if (!inBin || !await db.RecycleBin.IgnoreQueryFilters().AnyAsync(e => e.BinPath == relative, ct))
+                    // asking again now cannot miss it. Asked by the name's random tag rather than
+                    // the whole path, which a filesystem may hand back in another Unicode form.
+                    if (!inBin || !await RecycleBin.TaggedAsync(db, Path.GetFileName(full), ct))
                     {
                         File.Delete(file);
                         purged++;

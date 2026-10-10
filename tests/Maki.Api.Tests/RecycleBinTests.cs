@@ -466,6 +466,60 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
+    public async Task A_move_reported_as_failed_that_happened_counts_as_binned()
+    {
+        var s = Seed();
+        var mover = new ScriptedMover((source, target) =>
+        {
+            if (Path.GetFileName(source).StartsWith(".maki-bin-probe", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            File.Move(source, target);
+            return new MoveOutcome(MoveResult.Failed, new IOException("retransmitted"));
+        });
+
+        using (var db = _db.NewContext())
+        {
+            var result = Assert.IsType<OkObjectResult>(await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db, mover), default));
+            Assert.Equal(1, Assert.IsType<ChapterFileDeletion.Result>(result.Value).Deleted);
+        }
+
+        using var check = _db.NewContext();
+        Assert.True(File.Exists(BinFile(Assert.Single(check.RecycleBin))));
+        Assert.Empty(check.ChapterFiles);
+    }
+
+    [Fact]
+    public async Task The_orphan_sweep_keeps_a_bin_file_whose_entry_spells_its_path_differently()
+    {
+        var s = Seed();
+        using (var db = _db.NewContext())
+        {
+            await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db), default);
+        }
+
+        string binFile;
+        using (var db = _db.NewContext())
+        {
+            var entry = db.RecycleBin.Single();
+            binFile = BinFile(entry);
+            // Same tag, the name in another Unicode form: the exact path no longer matches.
+            entry.BinPath = entry.BinPath[..(entry.BinPath.LastIndexOf('-') + 1)] + "Berserk v01́.cbz";
+            db.SaveChanges();
+        }
+
+        File.SetLastWriteTimeUtc(binFile, DateTime.UtcNow.AddYears(-2));
+        using (var db = _db.NewContext())
+        {
+            await new UpgradeTrashService(db, _settings, NullLogger<UpgradeTrashService>.Instance).PurgeAsync(default);
+        }
+
+        Assert.True(File.Exists(binFile));
+    }
+
+    [Fact]
     public async Task A_bin_on_another_volume_refuses_the_delete_and_touches_nothing()
     {
         var s = Seed();

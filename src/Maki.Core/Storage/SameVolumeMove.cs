@@ -70,6 +70,9 @@ public static class SameVolumeMove
         }
     }
 
+    /// <summary>The source is gone and the target is there: the move happened whatever was reported.</summary>
+    public static bool Landed(string source, string target) => !Occupied(source) && Occupied(target);
+
     public static bool Occupied(string path) =>
         File.Exists(path) || Directory.Exists(path) || new FileInfo(path).LinkTarget is not null;
 

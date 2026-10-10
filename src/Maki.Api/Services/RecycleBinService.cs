@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Paths;
@@ -25,6 +26,20 @@ public static class RecycleBin
     /// <summary><c>.maki-trash/bin/&lt;seriesId&gt;/&lt;tag&gt;-&lt;name&gt;</c>. The tag keeps two deletions of one name apart.</summary>
     public static string NewRelativePath(int seriesId, string name) =>
         $"{UpgradeTrash.FolderName}/{FolderName}/{seriesId.ToString(CultureInfo.InvariantCulture)}/{Guid.NewGuid().ToString("N")[..12]}-{name}";
+
+    private static readonly Regex Tag = new("^([0-9a-f]{12})-", RegexOptions.CultureInvariant);
+
+    /// <summary>True when <paramref name="fileName"/> carries the tag of a bin entry that still exists.</summary>
+    public static async Task<bool> TaggedAsync(MakiDbContext db, string fileName, CancellationToken ct)
+    {
+        if (Tag.Match(fileName) is not { Success: true } match)
+        {
+            return false;
+        }
+
+        var needle = $"/{match.Groups[1].Value}-";
+        return await db.RecycleBin.IgnoreQueryFilters().AnyAsync(e => e.BinPath.Contains(needle), ct);
+    }
 
     public static async Task<int> RetentionDaysAsync(IAppSettings settings, CancellationToken ct) =>
         int.TryParse(await settings.GetAsync(SettingKeys.RecycleBinRetentionDays, ct), NumberStyles.Integer,
@@ -213,7 +228,13 @@ public class RecycleBinService(
         for (var attempt = 0; ; attempt++)
         {
             var outcome = mover.Move(from, to);
-            if (outcome.Result != MoveResult.Failed || attempt >= UpgradeTrash.MoveBackoff.Length || !File.Exists(from))
+            // A share can report a failure for a rename that happened (an NFS retransmit).
+            if (outcome.Result != MoveResult.Moved && SameVolumeMove.Landed(from, to))
+            {
+                return new MoveOutcome(MoveResult.Moved);
+            }
+
+            if (outcome.Result != MoveResult.Failed || attempt >= UpgradeTrash.MoveBackoff.Length || !SameVolumeMove.Occupied(from))
             {
                 return outcome;
             }
