@@ -60,6 +60,11 @@ msgstr "{0, plural, one {# adaptação} many {# adaptações}other {# adaptaçõ
 msgid "{0, plural, one {# becomes readable} other {# become readable}}"
 msgstr "{0, plural, one {# fica disponível para leitura} many {# ficam disponíveis para leitura} other {# ficam disponíveis para leitura}}"
 
+#. placeholder {0}: folder.builtCount
+#: src/components/import/RecentImports.tsx
+msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
+msgstr ""
+
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -111,16 +116,28 @@ msgstr "{0, plural, one {# arquivo não pôde ser excluído (bloqueado ou sem pe
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, one {# arquivo excluído} many {# arquivos excluídos} other {# arquivos excluídos}}"
 
+#. placeholder {0}: skipped.length
+#: src/components/import/ImportPlanModal.tsx
+msgid "{0, plural, one {# file is left out} other {# files are left out}}"
+msgstr ""
+
 #. placeholder {0}: r.kept
 #: src/components/RelinkFilesModal.tsx
 msgid "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
 msgstr ""
 
+#. placeholder {0}: folder.fileCount
 #. placeholder {0}: upgradesSummary.trashFiles
+#: src/components/import/RecentImports.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# arquivo} many {# arquivos} other {# arquivos}}"
+
+#. placeholder {0}: ignoredFolders?.length ?? 0
+#: src/pages/ImportPage.tsx
+msgid "{0, plural, one {# ignored folder} other {# ignored folders}}"
+msgstr ""
 
 #. placeholder {0}: result.unavailable
 #: src/components/SourceCompareModal.tsx
@@ -319,6 +336,11 @@ msgstr "{0, plural, one {# capítulo faltante enfileirado} many {# capítulos fa
 msgid "{0, plural, one {Refreshed, # new chapter} other {Refreshed, # new chapters}}"
 msgstr "{0, plural, one {Atualizado, # novo capítulo} many {Atualizado, # novos capítulos}other {Atualizado, # novos capítulos}}"
 
+#. placeholder {0}: files.length
+#: src/components/import/ImportPlanModal.tsx
+msgid "{0, plural, one {Registers # file} other {Registers # files}}"
+msgstr ""
+
 #. placeholder {0}: r.deleted
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {Removed # chapter} other {Removed # chapters}}"
@@ -439,6 +461,10 @@ msgstr "{biggestDayCount, plural, one {# capítulo} many {# capítulos}other {# 
 #, fuzzy
 msgid "{bpp} bits per pixel, JPG equivalent."
 msgstr "{bpp} bits por pixel, equivalente em JPG."
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "{built, plural, one {# of them a CBZ Maki builds} other {# of them CBZs Maki builds}}"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -576,6 +602,10 @@ msgstr "{count, plural, one {Mediana de # capítulo medido: {width}px de largura
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Mostrar # série afetada} many {Mostrar # séries afetadas} other {Mostrar # séries afetadas}}"
+
+#: src/components/import/RecentImports.tsx
+msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
@@ -1031,6 +1061,7 @@ msgstr "{name}: {ok}/{total} concluídos com sucesso"
 msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: {ok}/{total} concluídos, primeiro erro: {firstError}"
 
+#: src/components/import/ImportPlanModal.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{name}: {reason}"
@@ -1290,6 +1321,10 @@ msgstr "{selectedCount, plural, one {Importar # selecionado} many {Importar # se
 
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {Move # series} other {Move # series}}"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "{selectedCount, plural, one {Preview # selected} other {Preview # selected}}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -1618,6 +1653,10 @@ msgstr "{turnedOn, plural, one {# ativada} many {# ativadas} other {# ativadas}}
 #, fuzzy
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (outro perfil)"
+
+#: src/components/import/RecentImports.tsx
+msgid "{undone, plural, one {Undid the import of # folder} other {Undid the import of # folders}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2046,6 +2085,10 @@ msgstr "Algumas escolhas em destaque no topo, com base no que você leu recentem
 msgid "A field you save is locked, so metadata refreshes leave it alone. It applies to everyone who can see this series."
 msgstr ""
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "a file already has this name, so that file is registered"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "A file could not be moved back, nothing was changed"
@@ -2137,6 +2180,10 @@ msgstr "Já há uma proposta aguardando para esta série"
 msgid "A proposal nobody answers is dropped after this long."
 msgstr "Uma proposta que ninguém responde é descartada depois deste tempo."
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "a RAR, 7z or tar archive"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A refresh found new chapters for a series."
@@ -2168,6 +2215,14 @@ msgstr "Um resumo de números: o que há na biblioteca, seu progresso de leitura
 #, fuzzy
 msgid "A scan is already running"
 msgstr "Uma verificação já está em andamento"
+
+#: src/api/libraryImport.ts
+msgid "a second copy of another comic in the folder, which is used instead"
+msgstr ""
+
+#: src/components/import/RecentImports.tsx
+msgid "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -2236,6 +2291,10 @@ msgstr "Um lançamento de volume substituiu vários arquivos de capítulos de um
 #, fuzzy
 msgid "A watched anime counts for as much as a manga you rated yourself."
 msgstr "Um anime assistido conta tanto quanto um mangá que você mesmo avaliou."
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "a zip"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 msgid "A zip of the database and <0>config.json</0>: every series record, reading history and setting, but not the manga files, the MangaBaka copy or covers. One is taken automatically before an upgrade migration. Scheduled backups are off unless you turn them on below, so take one yourself before big changes."
@@ -3597,6 +3656,7 @@ msgstr "Não é possível ler este download"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/FailedQueueActions.tsx
+#: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
@@ -3710,6 +3770,10 @@ msgstr "Categoria"
 #, fuzzy
 msgid "Caught up"
 msgstr "Em dia"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "CBZ built from {kind} ({source}), the original stays"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -3878,6 +3942,10 @@ msgstr "Cap.{from}–{to}"
 #, fuzzy
 msgid "Ch.{from}+"
 msgstr "Cap.{from}+"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Ch.{number}"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -4775,7 +4843,7 @@ msgstr "Núcleo"
 msgid "Corrupt"
 msgstr "Corrompido"
 
-#: src/pages/ImportPage.tsx
+#: src/api/libraryImport.ts
 #, fuzzy
 msgid "could not be read, the archive is corrupt or truncated"
 msgstr "não pôde ser lido, o arquivo compactado está corrompido ou truncado"
@@ -6222,8 +6290,12 @@ msgstr "Todos os arquivos atendem ao seu corte"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
-msgid "Every folder in this root is already claimed by a series in the library."
-msgstr "Todas as pastas nesta raiz já estão atribuídas a uma série da biblioteca."
+#~ msgid "Every folder in this root is already claimed by a series in the library."
+#~ msgstr "Todas as pastas nesta raiz já estão atribuídas a uma série da biblioteca."
+
+#: src/pages/ImportPage.tsx
+msgid "Every folder in this root is already in the library, ignored, or holds no comics."
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/pages/DiscoverPage.tsx
@@ -6375,6 +6447,10 @@ msgstr "Excluído do gosto"
 msgid "Existing folders on import"
 msgstr "Pastas existentes ao importar"
 
+#: src/components/import/RecentImports.tsx
+msgid "Existing series"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "Exit editing"
@@ -6394,6 +6470,10 @@ msgstr "Expandir"
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "Expandir {spanLabel}"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "expected to link as <0/>"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Extra files Maki writes next to the chapters so Kavita and Komga name and group them the way Maki does."
@@ -6664,6 +6744,10 @@ msgstr "Filtros"
 #, fuzzy
 msgid "Filters ({appliedCount})"
 msgstr "Filtros ({appliedCount})"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Final linking happens after sources are found. Until then the chapters below are read off the file names, and a file whose chapter the sources do not list stays unlinked."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -7610,10 +7694,18 @@ msgstr ""
 msgid "Ignore"
 msgstr "Ignorar"
 
+#: src/pages/ImportPage.tsx
+msgid "Ignore {folderName}"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Ignore this download"
 msgstr "Ignorar este download"
+
+#: src/pages/ImportPage.tsx
+msgid "Ignore this folder"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7626,6 +7718,14 @@ msgstr "Ignorar esta versão"
 #, fuzzy
 msgid "Ignored"
 msgstr "Ignorado"
+
+#: src/components/import/IgnoredFoldersModal.tsx
+msgid "Ignored folders"
+msgstr ""
+
+#: src/components/import/IgnoredFoldersModal.tsx
+msgid "Ignored on {since}"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 msgid "Ignoring"
@@ -7731,6 +7831,10 @@ msgstr "Importar apenas o que falta, manter os arquivos existentes"
 msgid "Import page"
 msgstr "Página de importação"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "Import preview"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Import progress"
@@ -7788,6 +7892,23 @@ msgstr "Importar o que você já tem"
 msgid "Imported"
 msgstr "Importado"
 
+#. placeholder {0}: batch.folders.length
+#: src/components/import/RecentImports.tsx
+msgid "Imported {when}, {0, plural, one {# folder} other {# folders}}"
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Imported as {seriesTitle}. The folder is renamed."
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Imported as {seriesTitle}. The folder keeps its name."
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Imported into {seriesTitle}. The files move into its existing folder."
+msgstr ""
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Importing"
@@ -7797,6 +7918,11 @@ msgstr "Importando"
 msgid "Importing what is missing"
 msgstr ""
 
+#: src/components/import/RecentImports.tsx
+msgid "Imports can be undone for 30 days."
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -8707,6 +8833,14 @@ msgstr "Vinculado, mas nada ativado"
 msgid "Linking files"
 msgstr "Vinculando arquivos"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "links Ch. {chapters}"
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "links Ch. {chapters} +{extra} more"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8799,6 +8933,10 @@ msgstr ""
 #, fuzzy
 msgid "loose"
 msgstr "solto"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "loose page images"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9792,6 +9930,10 @@ msgstr "Novos capítulos, downloads concluídos e conquistas desbloqueadas apare
 msgid "New default"
 msgstr "Novo padrão"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "New downloads go to {seriesFolderName}."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "New format"
@@ -9949,12 +10091,12 @@ msgstr "Ainda não há alterações"
 msgid "No chapter here carries a reading time, so there is no pace to report."
 msgstr "Nenhum capítulo aqui tem tempo de leitura, então não há ritmo a informar."
 
-#: src/pages/ImportPage.tsx
+#: src/api/libraryImport.ts
 #, fuzzy
 msgid "no chapter or volume number in the name"
 msgstr "sem número de capítulo ou volume no nome"
 
-#: src/pages/ImportPage.tsx
+#: src/api/libraryImport.ts
 #, fuzzy
 msgid "no chapter with this number in the series"
 msgstr "nenhum capítulo com este número na série"
@@ -10036,6 +10178,10 @@ msgstr "Nenhum arquivo corresponde a estes filtros. Execute uma verificação pa
 #, fuzzy
 msgid "No folder yet"
 msgstr "Nenhuma pasta ainda"
+
+#: src/components/import/IgnoredFoldersModal.tsx
+msgid "No folders are ignored in this root folder."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10129,6 +10275,10 @@ msgstr "Ainda não há conexões de notificação."
 #, fuzzy
 msgid "No notifications yet"
 msgstr "Ainda não há notificações"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "no number in the name, links if the series has exactly one chapter"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10512,6 +10662,10 @@ msgstr "Não monitorado"
 msgid "Not rated"
 msgstr "Não avaliado"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "not really a CBZ: the original is renamed to {aside} and a CBZ is built under this name"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Not recommended again"
@@ -10621,6 +10775,10 @@ msgstr ""
 #, fuzzy
 msgid "Nothing from this series. Admins still get download failures."
 msgstr "Nada desta série. Administradores ainda recebem falhas de download."
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Nothing has been changed. This is what importing would do."
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/RequestsPage.tsx
@@ -11741,6 +11899,14 @@ msgstr "Prévia · {chapterName} · via {source}"
 msgid "Preview first chapter"
 msgstr "Prévia do primeiro capítulo"
 
+#: src/pages/ImportPage.tsx
+msgid "Preview the import"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "Preview the import of {folderName}"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Previous chapter"
@@ -12386,6 +12552,10 @@ msgstr "Recebe uma requisição JSON POST para cada evento."
 msgid "Recent feedback"
 msgstr "Feedback recente"
 
+#: src/components/import/RecentImports.tsx
+msgid "Recent imports"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Recent syncs"
@@ -12544,6 +12714,10 @@ msgstr "Regex"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Register this as the client's redirect URI. If Maki is reached at another host too, register that host's variant as well."
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "registered as it is"
 msgstr ""
 
 #: src/pages/RequestsPage.tsx
@@ -13212,6 +13386,7 @@ msgstr ""
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
+#: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/NotificationsSection.tsx
@@ -13621,6 +13796,10 @@ msgstr "Escala ({scale}%)"
 #, fuzzy
 msgid "Scan"
 msgstr "Verificação"
+
+#: src/components/import/IgnoredFoldersModal.tsx
+msgid "Scan again to list the folders you brought back."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15146,6 +15325,14 @@ msgstr "continuar ausente"
 msgid "stay where they are"
 msgstr "permanecer onde estão"
 
+#: src/api/libraryImport.ts
+msgid "stays in the folder, the series folder already has a file with this name"
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "stays unlinked: {reason}"
+msgstr ""
+
 #: src/components/discover/DiscoverTasteStrip.tsx
 #, fuzzy
 msgid "Steering these picks"
@@ -15166,6 +15353,10 @@ msgstr ""
 msgid "Still early access on {source}, Maki will check again later"
 msgstr "Ainda em acesso antecipado em {source}, o Maki verificará novamente mais tarde"
 
+#: src/components/import/RecentImports.tsx
+msgid "Still finding sources. Undoing cancels that."
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Still going"
@@ -15173,6 +15364,10 @@ msgstr "Em andamento"
 
 #: src/pages/LibraryPage.tsx
 msgid "Stop"
+msgstr ""
+
+#: src/components/import/IgnoredFoldersModal.tsx
+msgid "Stop ignoring"
 msgstr ""
 
 #: src/pages/CreatorPage.tsx
@@ -15703,6 +15898,10 @@ msgstr "As mesmas contagens exibidas na página Estatísticas, mantidas aqui par
 msgid "The sample download failed"
 msgstr "O download da amostra falhou"
 
+#: src/components/import/IgnoredFoldersModal.tsx
+msgid "The scan skips these folders without searching for them."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "The selected series will be removed from Maki and stop being monitored."
@@ -15714,6 +15913,10 @@ msgstr ""
 
 #: src/api/queue.ts
 msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
+msgstr ""
+
+#: src/components/import/RecentImports.tsx
+msgid "The series was removed since, nothing to undo."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -16614,6 +16817,7 @@ msgstr "Sublinhado (_)"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/DiscoverPresets.tsx
 #: src/components/home/ReadingCardMenu.tsx
+#: src/components/import/RecentImports.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16621,14 +16825,42 @@ msgstr "Sublinhado (_)"
 msgid "Undo"
 msgstr "Desfazer"
 
+#: src/components/import/RecentImports.tsx
+msgid "Undo all"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Undo failed: {reason}"
+msgstr ""
+
+#: src/components/import/RecentImports.tsx
+msgid "Undo import"
+msgstr ""
+
+#: src/components/import/RecentImports.tsx
+msgid "Undo removes the series the import added and the files it registered, deletes the CBZs Maki built from other formats, and moves each folder back to its old name. Every file you had before the import stays where it was."
+msgstr ""
+
+#: src/components/import/RecentImports.tsx
+msgid "Undo the import of {name}?"
+msgstr ""
+
+#: src/components/import/RecentImports.tsx
+msgid "Undo this import"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "Undone"
 msgstr "Desfeito"
+
+#: src/components/import/RecentImports.tsx
+msgid "Undone {undoneOn}"
+msgstr ""
+
+#: src/components/import/RecentImports.tsx
+msgid "Undone {undoneOn}, but not every file could be put back. Retry once the folder is free."
+msgstr ""
 
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
@@ -17261,10 +17493,18 @@ msgstr "Vol.{0} Cap.{1}"
 msgid "Vol.{volNum} Ch.{chapterNumber}"
 msgstr "Vol.{volNum} Cap.{chapterNumber}"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "Vol.{volume}"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Vol.{volume} Ch.{chapter}"
 msgstr "Vol.{volume} Cap.{chapter}"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Vol.{volume}-{volumeEnd}"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -17724,6 +17964,14 @@ msgstr "Este anime não será sugerido novamente como ponto de retomada."
 #, fuzzy
 msgid "Write ComicInfo.xml into imported files"
 msgstr "Gravar ComicInfo.xml nos arquivos importados"
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Writes the series cover into the folder as cover.jpg."
+msgstr ""
+
+#: src/components/import/ImportPlanModal.tsx
+msgid "Writes the series cover over the cover.jpg already in the folder."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
