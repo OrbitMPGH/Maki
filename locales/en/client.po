@@ -41,6 +41,10 @@ msgstr "(cannot be undone)"
 msgid "(inaccessible)"
 msgstr "(inaccessible)"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "(no longer in the library)"
+msgstr "(no longer in the library)"
+
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
@@ -86,8 +90,13 @@ msgstr "{0, plural, one {# chapter} other {# chapters}}"
 
 #. placeholder {0}: r.failed
 #: src/components/SeriesFilesSection.tsx
-msgid "{0, plural, one {# could not be deleted (locked or permission denied)} other {# could not be deleted (locked or permission denied)}}"
-msgstr "{0, plural, one {# could not be deleted (locked or permission denied)} other {# could not be deleted (locked or permission denied)}}"
+#~ msgid "{0, plural, one {# could not be deleted (locked or permission denied)} other {# could not be deleted (locked or permission denied)}}"
+#~ msgstr "{0, plural, one {# could not be deleted (locked or permission denied)} other {# could not be deleted (locked or permission denied)}}"
+
+#. placeholder {0}: r.failed
+#: src/components/SeriesFilesSection.tsx
+msgid "{0, plural, one {# could not be moved (locked or permission denied)} other {# could not be moved (locked or permission denied)}}"
+msgstr "{0, plural, one {# could not be moved (locked or permission denied)} other {# could not be moved (locked or permission denied)}}"
 
 #. placeholder {0}: r.failed
 #: src/components/RelinkFilesModal.tsx
@@ -108,6 +117,11 @@ msgstr "{0, plural, one {# file is left out} other {# files are left out}}"
 #: src/components/RelinkFilesModal.tsx
 msgid "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
 msgstr "{0, plural, one {# file kept on disk because another series still uses it} other {# files kept on disk because another series still uses them}}"
+
+#. placeholder {0}: entries.length
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
+msgstr "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
 
 #. placeholder {0}: folder.fileCount
 #. placeholder {0}: upgradesSummary.trashFiles
@@ -213,6 +227,7 @@ msgstr "{0, plural, one {Clear # queued download?} other {Clear # queued downloa
 
 #. placeholder {0}: r.failed
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 msgid "{0, plural, one {Couldn't delete # file, check the log} other {Couldn't delete # files, check the log}}"
 msgstr "{0, plural, one {Couldn't delete # file, check the log} other {Couldn't delete # files, check the log}}"
 
@@ -221,10 +236,15 @@ msgstr "{0, plural, one {Couldn't delete # file, check the log} other {Couldn't 
 msgid "{0, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{0, plural, one {Deleted # file} other {Deleted # files}}"
 
+#. placeholder {0}: entries.length
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0, plural, one {Deletes # file for good.} other {Deletes # files for good.}}"
+msgstr "{0, plural, one {Deletes # file for good.} other {Deletes # files for good.}}"
+
 #. placeholder {0}: deleteFilesPlan?.files ?? 0
 #: src/pages/SeriesDetailPage.tsx
-msgid "{0, plural, one {Deletes # file from disk.} other {Deletes # files from disk.}}"
-msgstr "{0, plural, one {Deletes # file from disk.} other {Deletes # files from disk.}}"
+#~ msgid "{0, plural, one {Deletes # file from disk.} other {Deletes # files from disk.}}"
+#~ msgstr "{0, plural, one {Deletes # file from disk.} other {Deletes # files from disk.}}"
 
 #. placeholder {0}: r.rowCount
 #: src/components/RecommendationModelSwitch.tsx
@@ -255,6 +275,16 @@ msgstr "{0, plural, one {Marked unread: # chapter} other {Marked unread: # chapt
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {Marked watched: # chapter} other {Marked watched: # chapters}}"
 msgstr "{0, plural, one {Marked watched: # chapter} other {Marked watched: # chapters}}"
+
+#. placeholder {0}: r.deleted
+#: src/components/SeriesFilesSection.tsx
+msgid "{0, plural, one {Moved # file to the recycle bin} other {Moved # files to the recycle bin}}"
+msgstr "{0, plural, one {Moved # file to the recycle bin} other {Moved # files to the recycle bin}}"
+
+#. placeholder {0}: deleteFilesPlan?.files ?? 0
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Moves # file to the recycle bin.} other {Moves # files to the recycle bin.}}"
+msgstr "{0, plural, one {Moves # file to the recycle bin.} other {Moves # files to the recycle bin.}}"
 
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
@@ -306,6 +336,11 @@ msgstr "{0, plural, one {Removed # chapter} other {Removed # chapters}}"
 msgid "{0, plural, one {Removed # unsupported chapter} other {Removed # unsupported chapters}}"
 msgstr "{0, plural, one {Removed # unsupported chapter} other {Removed # unsupported chapters}}"
 
+#. placeholder {0}: r.chapters
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0, plural, one {Restored and linked to # chapter} other {Restored and linked to # chapters}}"
+msgstr "{0, plural, one {Restored and linked to # chapter} other {Restored and linked to # chapters}}"
+
 #. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{0, plural, one {Show all #} other {Show all #}}"
@@ -313,8 +348,13 @@ msgstr "{0, plural, one {Show all #} other {Show all #}}"
 
 #. placeholder {0}: selected.size
 #: src/components/SeriesFilesSection.tsx
-msgid "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
-msgstr "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
+msgid "{0, plural, one {This moves # file to the recycle bin.} other {This moves # files to the recycle bin.}}"
+msgstr "{0, plural, one {This moves # file to the recycle bin.} other {This moves # files to the recycle bin.}}"
+
+#. placeholder {0}: selected.size
+#: src/components/SeriesFilesSection.tsx
+#~ msgid "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
+#~ msgstr "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
 
 #. placeholder {0}: r.unlinked
 #: src/pages/SeriesDetailPage.tsx
@@ -393,6 +433,22 @@ msgstr "{bestName} is already tried first, so nothing needs to change."
 #: src/pages/discover/TasteTab.tsx
 msgid "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{binDays, plural, one {Backing files go to the recycle bin for # day.} other {Backing files go to the recycle bin for # days.}}"
+msgstr "{binDays, plural, one {Backing files go to the recycle bin for # day.} other {Backing files go to the recycle bin for # days.}}"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{binDays, plural, one {Files can be restored from Settings for # day, then they are deleted for good.} other {Files can be restored from Settings for # days, then they are deleted for good.}}"
+msgstr "{binDays, plural, one {Files can be restored from Settings for # day, then they are deleted for good.} other {Files can be restored from Settings for # days, then they are deleted for good.}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{binDays, plural, one {It can be restored from Settings for # day.} other {It can be restored from Settings for # days.}}"
+msgstr "{binDays, plural, one {It can be restored from Settings for # day.} other {It can be restored from Settings for # days.}}"
+
+#: src/components/series/RemoveSeriesDialog.tsx
+msgid "{binDays, plural, one {The files go to the recycle bin for # day and can be restored from Settings until then.} other {The files go to the recycle bin for # days and can be restored from Settings until then.}}"
+msgstr "{binDays, plural, one {The files go to the recycle bin for # day and can be restored from Settings until then.} other {The files go to the recycle bin for # days and can be restored from Settings until then.}}"
 
 #: src/components/SourceCompareModal.tsx
 msgid "{bpp} bits per pixel, JPG equivalent."
@@ -527,6 +583,10 @@ msgstr "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other 
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
+msgstr "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
 msgstr "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
@@ -652,6 +712,10 @@ msgstr "{from} to {to}"
 msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{gone, plural, one {Deleted # file} other {Deleted # files}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{gone, plural, one {Moved # file to the recycle bin} other {Moved # files to the recycle bin}}"
+msgstr "{gone, plural, one {Moved # file to the recycle bin} other {Moved # files to the recycle bin}}"
+
 #: src/components/settings/UsersSection.tsx
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# granted} other {# granted}}"
@@ -744,6 +808,10 @@ msgstr "{languageCount, plural, one {Covers # language} other {Covers # language
 #: src/components/layout/SidebarFooter.tsx
 msgid "{latestVersion} available, skipped"
 msgstr "{latestVersion} available, skipped"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "{left, plural, one {# day} other {# days}}"
+msgstr "{left, plural, one {# day} other {# days}}"
 
 #: src/pages/stats/MidwayList.tsx
 msgid "{left, plural, one {# left} other {# left}}"
@@ -1145,8 +1213,12 @@ msgid "{selectedCount, plural, one {Tag # series} other {Tag # series}}"
 msgstr "{selectedCount, plural, one {Tag # series} other {Tag # series}}"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
-msgstr "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+#~ msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+#~ msgstr "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them.}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with everyone's read history for them.}}"
+msgstr "{selectedCount, plural, one {This permanently removes # chapter row, not just its file link, along with everyone's read history for it.} other {This permanently removes # chapter rows, not just their file link, along with everyone's read history for them.}}"
 
 #: src/components/RatingImportModal.tsx
 msgid "{selectedCount} of {totalCount} selected"
@@ -1663,6 +1735,10 @@ msgstr "👍 Liked"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "👎 Disliked"
 msgstr "👎 Disliked"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "0 deletes them for good on the next housekeeping pass."
+msgstr "0 deletes them for good on the next housekeeping pass."
 
 #: src/components/NotificationsSection.tsx
 msgid "1 (lowest) to 5 (highest)."
@@ -3014,6 +3090,10 @@ msgstr "Busiest day"
 msgid "Button label"
 msgstr "Button label"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "by {deletedBy}"
+msgstr "by {deletedBy}"
+
 #: src/components/ui/DiscoverRail.tsx
 msgid "By an author you read"
 msgstr "By an author you read"
@@ -3197,10 +3277,12 @@ msgid "Ch. {chapters}"
 msgstr "Ch. {chapters}"
 
 #: src/components/RelinkFilesModal.tsx
+#: src/pages/settings/LibraryCards.tsx
 msgid "Ch. {first}"
 msgstr "Ch. {first}"
 
 #: src/components/RelinkFilesModal.tsx
+#: src/pages/settings/LibraryCards.tsx
 msgid "Ch. {first} to {last}"
 msgstr "Ch. {first} to {last}"
 
@@ -4463,6 +4545,10 @@ msgstr "Days active"
 msgid "Days after reading"
 msgstr "Days after reading"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Days left"
+msgstr "Days left"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "Decides when your reading day ends, which is what streaks and daily goals count against."
@@ -4553,9 +4639,10 @@ msgid "Delete files"
 msgstr "Delete files"
 
 #: src/components/SeriesFilesSection.tsx
-msgid "Delete files from disk?"
-msgstr "Delete files from disk?"
+#~ msgid "Delete files from disk?"
+#~ msgstr "Delete files from disk?"
 
+#: src/components/SeriesFilesSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Delete files?"
 msgstr "Delete files?"
@@ -4568,7 +4655,9 @@ msgstr "Delete format"
 msgid "Delete from disk"
 msgstr "Delete from disk"
 
+#: src/components/PermanentDeleteFallback.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 msgid "Delete permanently"
 msgstr "Delete permanently"
 
@@ -4620,6 +4709,10 @@ msgstr "Delete the rail \"{railName}\"? Its filters go with it."
 msgid "Delete them, free {emptiedSize}"
 msgstr "Delete them, free {emptiedSize}"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Delete this file permanently?"
+msgstr "Delete this file permanently?"
+
 #: src/pages/RequestsPage.tsx
 msgid "Delete this request?"
 msgstr "Delete this request?"
@@ -4632,10 +4725,18 @@ msgstr "Delete this tag?"
 msgid "Delete user"
 msgstr "Delete user"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Deleted"
+msgstr "Deleted"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Deleted \"{name}\""
 msgstr "Deleted \"{name}\""
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Deleted file"
+msgstr "Deleted file"
 
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
@@ -5132,6 +5233,14 @@ msgstr "Emerald"
 msgid "Empty"
 msgstr "Empty"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Empty bin"
+msgstr "Empty bin"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Empty the recycle bin?"
+msgstr "Empty the recycle bin?"
+
 #: src/pages/settings/ReadingCards.tsx
 msgid "Enable"
 msgstr "Enable"
@@ -5550,6 +5659,7 @@ msgid "Fetching pages…"
 msgstr "Fetching pages…"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/pages/settings/LibraryCards.tsx
 msgid "File"
 msgstr "File"
 
@@ -6878,6 +6988,10 @@ msgstr "Keep a local copy of MangaBaka"
 #: src/components/SourceMeasurePanel.tsx
 msgid "Keep as is"
 msgstr "Keep as is"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Keep deleted files (days)"
+msgstr "Keep deleted files (days)"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Keep each reader's last read chapter"
@@ -10543,6 +10657,16 @@ msgstr "Recovery code"
 msgid "Recurrent"
 msgstr "Recurrent"
 
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Recycle bin"
+msgstr "Recycle bin"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "recycle bin, trash, deleted files, restore, undelete, empty bin, retention"
+msgstr "recycle bin, trash, deleted files, restore, undelete, empty bin, retention"
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS; over plain HTTP, sign-in is refused with a message saying so."
 msgstr "Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS; over plain HTTP, sign-in is refused with a message saying so."
@@ -10860,6 +10984,14 @@ msgstr "Removed"
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "Removed {seriesTitle}. It comes back when you read it again."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Removed chapter"
+msgstr "Removed chapter"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Removed chapter rows and their read history cannot be restored."
+msgstr "Removed chapter rows and their read history cannot be restored."
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Removed from every profile that scores it. This can't be undone."
 msgstr "Removed from every profile that scores it. This can't be undone."
@@ -10867,6 +10999,14 @@ msgstr "Removed from every profile that scores it. This can't be undone."
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Removed from recommendations. Only this title: its genres and author are unaffected."
 msgstr "Removed from recommendations. Only this title: its genres and author are unaffected."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Removed series"
+msgstr "Removed series"
+
+#: src/components/series/RemoveSeriesDialog.tsx
+msgid "Removing the series from Maki cannot be undone."
+msgstr "Removing the series from Maki cannot be undone."
 
 #: src/components/RenameSeriesModal.tsx
 msgid "Rename"
@@ -11102,6 +11242,7 @@ msgid "Resolved using ID. High accuracy"
 msgstr "Resolved using ID. High accuracy"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Restore"
 msgstr "Restore"
@@ -11141,6 +11282,10 @@ msgstr "Restore this title"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Restored"
 msgstr "Restored"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Restored as an unlinked file. Health can import it."
+msgstr "Restored as an unlinked file. Health can import it."
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Restored from the provider"
@@ -12448,6 +12593,7 @@ msgstr "Sittings per week"
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #: src/pages/stats/SourceReliability.tsx
 msgid "Size"
@@ -13143,6 +13289,10 @@ msgstr "The download queue, Smart Download, sources and languages, the torrent c
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
 msgstr "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "The file is missing from the bin folder."
+msgstr "The file is missing from the bin folder."
+
 #: src/components/RelinkFilesModal.tsx
 msgid "The file is named for its chapter."
 msgstr "The file is named for its chapter."
@@ -13259,6 +13409,10 @@ msgstr "The provider assigns these chapters to this volume. Usually right, compi
 #: src/components/settings/SecuritySection.tsx
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "The recycle bin is empty."
+msgstr "The recycle bin is empty."
 
 #: src/api/queue.ts
 msgid "The repair is no longer accepting candidates"
@@ -13429,6 +13583,10 @@ msgstr "These are long-strip pages and the two releases cut them at different po
 msgid "These are shown once. They are stored hashed, so nobody (including you) can read them back. Keep them somewhere you can reach without your authenticator."
 msgstr "These are shown once. They are stored hashed, so nobody (including you) can read them back. Keep them somewhere you can reach without your authenticator."
 
+#: src/components/PermanentDeleteFallback.tsx
+msgid "These files cannot go to the recycle bin. You can delete them permanently instead, and they cannot be restored afterwards."
+msgstr "These files cannot go to the recycle bin. You can delete them permanently instead, and they cannot be restored afterwards."
+
 #: src/components/CatalogueRules.tsx
 msgid "These rules need the rules view. Remove some to switch back."
 msgstr "These rules need the rules view. Remove some to switch back."
@@ -13453,10 +13611,8 @@ msgstr "This account already has a single sign-on login. Remove it before linkin
 msgid "This account has no password login for two-factor to protect."
 msgstr "This account has no password login for two-factor to protect."
 
-#: src/components/series/RemoveSeriesDialog.tsx
-#: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/LibraryCards.tsx
 msgid "This action cannot be undone."
 msgstr "This action cannot be undone."
 
