@@ -109,11 +109,13 @@ public static class PdfReader
 
     private static MemoryStream Encode(RawPage raw)
     {
-        using var image = Image.LoadPixelData<Bgra32>(raw.Bgra, raw.Width, raw.Height);
+        // Wrapped, not loaded: LoadPixelData copied PDFium's buffer into a second full page of
+        // pixels (~11 MB at the default edge). The buffer is this method's alone to overwrite.
+        using var image = Image.WrapMemory<Bgra32>(raw.Bgra.AsMemory(), raw.Width, raw.Height);
         // PDFium leaves anything the page did not paint transparent, and JPEG has no alpha to
         // carry it, so an unflattened page encodes as black.
         image.Mutate(x => x.BackgroundColor(Color.White));
-        var stream = new MemoryStream();
+        var stream = new MemoryStream(raw.Width * raw.Height / 4);
         image.Save(stream, new JpegEncoder { Quality = 90 });
         stream.Position = 0;
         return stream;

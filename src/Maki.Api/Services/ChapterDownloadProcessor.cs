@@ -164,18 +164,22 @@ public class ChapterDownloadProcessor(
                 mapping.SourceName, mapping.SourceSeriesId, sourceChapterId,
                 chapter.NumberRaw, chapter.Number, chapter.Volume, chapter.Title,
                 chapter.Language, chapter.ReleaseDate);
-            var pages = await source.GetPagesAsync(sourceChapter, ct);
+            // Nullable so it can be dropped after the download: some sources (scrambled pages,
+            // TopManhua) carry every page's bytes in it, and as a local hoisted across these awaits
+            // it would otherwise stay reachable through validation and packaging.
+            ChapterPages? pages = await source.GetPagesAsync(sourceChapter, ct);
+            var pageCount = pages.Pages.Count;
 
-            if (pages.Pages.Count == 0)
+            if (pageCount == 0)
             {
                 await FailAsync(item, "error.download.noPages", ct);
                 return DownloadOutcome.Settled;
             }
 
-            item.PagesTotal = pages.Pages.Count;
+            item.PagesTotal = pageCount;
             await SetStatusAsync(item, QueueStatus.Downloading, ct);
 
-            if (PageCacheManifest.Prepare(workingDir, PageCacheManifest.Key(mapping.Id, sourceChapterId, pages.Pages.Count)))
+            if (PageCacheManifest.Prepare(workingDir, PageCacheManifest.Key(mapping.Id, sourceChapterId, pageCount)))
             {
                 logger.LogInformation("Discarded cached pages of queue item {Id}: they came from another source chapter",
                     item.Id);
@@ -211,7 +215,8 @@ public class ChapterDownloadProcessor(
                 }
             }, ct);
 
-            item.PagesDone = pages.Pages.Count;
+            pages = null;
+            item.PagesDone = pageCount;
 
             // 3. Validate images.
             await SetStatusAsync(item, QueueStatus.Validating, ct);

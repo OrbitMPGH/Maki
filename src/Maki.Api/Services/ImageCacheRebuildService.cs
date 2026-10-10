@@ -74,6 +74,9 @@ public class ImageCacheRebuildService(
         {
             status.End(error);
             status.InvalidateUsage();
+            // Every poster in the library was identified or decoded, so the pool is as full as it
+            // gets, and nothing else needs it until the next decode. Same reason as HealthScanService.
+            SixLabors.ImageSharp.Configuration.Default.MemoryAllocator.ReleaseRetainedResources();
         }
 
         return true;
