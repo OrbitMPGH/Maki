@@ -1,6 +1,7 @@
 using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Paths;
+using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -288,7 +289,7 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
             {
                 try
                 {
-                    if (File.Exists(path))
+                    if (SameVolumeMove.Occupied(path))
                     {
                         File.Delete(path);
                         purged++;

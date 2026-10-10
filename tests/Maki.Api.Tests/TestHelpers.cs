@@ -223,3 +223,10 @@ internal static class TestRecycleBin
         new(db, settings ?? new FakeAppSettings(), user ?? new TestCurrentUser(1), mover ?? new RecycleBinMover(),
             TimeProvider.System, NullLogger<RecycleBinService>.Instance);
 }
+
+internal static class TestDeletion
+{
+    public static ChapterFileDeletion For(Maki.Data.MakiDbContext db, RecycleBinService? bin = null) =>
+        new(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
+            bin ?? TestRecycleBin.For(db), NullLogger<ChapterFileDeletion>.Instance);
+}

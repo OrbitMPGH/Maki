@@ -188,6 +188,26 @@ public class RecycleBinService(
         return outcome.Result == MoveResult.Moved;
     }
 
+    /// <summary>
+    /// Drops the entries of files that never reached the bin, as their own statement so an entry a
+    /// purge already removed is no error and the caller's pending row changes are not lost with it.
+    /// </summary>
+    public async Task ForgetAsync(IReadOnlyCollection<RecycleBinEntry> entries)
+    {
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        var ids = entries.Select(e => e.Id).ToList();
+        foreach (var entry in entries)
+        {
+            db.Entry(entry).State = EntityState.Detached;
+        }
+
+        await db.RecycleBin.IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(CancellationToken.None);
+    }
+
     private async Task<MoveOutcome> MoveAsync(string from, string to, CancellationToken ct)
     {
         for (var attempt = 0; ; attempt++)
@@ -221,7 +241,8 @@ public class RecycleBinService(
             return new RestoreResult(RestoreStatus.NotFound);
         }
 
-        if (BinFile(entry) is not { } source || !File.Exists(source))
+        // Occupied rather than File.Exists: a binned symlink whose target is gone is still a file to put back.
+        if (BinFile(entry) is not { } source || !SameVolumeMove.Occupied(source))
         {
             return new RestoreResult(RestoreStatus.FileMissing);
         }

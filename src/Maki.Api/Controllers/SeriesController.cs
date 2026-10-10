@@ -1072,8 +1072,9 @@ public class SeriesController(
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(
-        int id, [FromQuery] bool deleteFiles, [FromServices] RecycleBinService bin, CancellationToken ct)
+        int id, [FromQuery] bool deleteFiles, [FromServices] ChapterFileDeletion deletion, CancellationToken ct)
     {
+        var bin = deletion.Bin;
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
@@ -1098,7 +1099,7 @@ public class SeriesController(
         var binned = new List<RecycleBinEntry>();
         if (diskPlan is not null && deleteFiles)
         {
-            var targets = await SeriesBinTargetsAsync(series, diskPlan, ct);
+            var targets = await SeriesBinTargetsAsync(series, diskPlan, deletion, ct);
             if (!bin.SameVolume(series.RootFolder!.Path, targets.Select(t => t.Absolute)))
             {
                 return this.Fail(localizer, "error.recycleBin.crossVolume");
@@ -1151,7 +1152,7 @@ public class SeriesController(
     }
 
     /// <param name="Folder">The series' own folder, when it resolves without passing a link.</param>
-    /// <param name="RemoveFolderWhole">Delete <paramref name="Folder"/> recursively.</param>
+    /// <param name="RemoveFolderWhole">Bin everything in <paramref name="Folder"/>, then prune it.</param>
     /// <param name="Files">Single files to bin, for folders the series does not own outright.</param>
     /// <param name="PruneIfEmpty">Folders removed only if nothing is left in them.</param>
     private sealed record SeriesDiskPlan(
@@ -1227,16 +1228,29 @@ public class SeriesController(
         return new SeriesDiskPlan(folder, removeWhole, files, prune, deleteFiles ? trash : null);
     }
 
+    /// <summary>Written into a series folder by Maki itself, so a delete may remove them rather than bin them.</summary>
+    private static readonly string[] FolderSidecars = ["cover.jpg", "ComicInfo.xml"];
+
+    private static bool IsSidecar(string folder, string path) =>
+        LibraryPaths.FolderComparer.Equals(Path.GetDirectoryName(path), folder) &&
+        FolderSidecars.Contains(Path.GetFileName(path), StringComparer.OrdinalIgnoreCase);
+
+    private static bool Present(string path) =>
+        System.IO.File.Exists(path) || new FileInfo(path).LinkTarget is not null;
+
     /// <summary>
-    /// Every comic the delete would take: all of them in a folder removed whole, otherwise the files
-    /// the series tracks. Other files in a removed folder (covers, ComicInfo) are not kept.
+    /// Every file the delete would take: in a folder the series owns outright, every regular file
+    /// in the tree whatever its extension, plus the files the series tracks there (a tracked link
+    /// included); elsewhere only the tracked files. Maki's own sidecars are left for the prune, and a
+    /// file another series or a nested root still claims stays where it is.
     /// </summary>
     private async Task<List<(string Absolute, string Relative, ChapterFile? File)>> SeriesBinTargetsAsync(
-        Series series, SeriesDiskPlan plan, CancellationToken ct)
+        Series series, SeriesDiskPlan plan, ChapterFileDeletion deletion, CancellationToken ct)
     {
         var rootPath = series.RootFolder!.Path;
+        var rows = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).OrderBy(f => f.Id).ToListAsync(ct);
         var tracked = new Dictionary<string, ChapterFile>(LibraryPaths.FolderComparer);
-        foreach (var file in await db.ChapterFiles.Where(f => f.SeriesId == series.Id).OrderBy(f => f.Id).ToListAsync(ct))
+        foreach (var file in rows)
         {
             if (LibraryPaths.ResolveForDelete(rootPath, LibraryPaths.ComparisonKey(file.RelativePath)) is { } absolute)
             {
@@ -1247,12 +1261,20 @@ public class SeriesController(
         var paths = new List<string>(plan.Files);
         if (plan is { RemoveFolderWhole: true, Folder: { } folder } && Directory.Exists(folder))
         {
-            paths.AddRange(LibraryPaths.EnumerateFilesNoLinks(folder).Where(ComicFile.IsComic));
+            var prefix = folder.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            paths.AddRange(tracked.Keys.Where(p => p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)));
+            paths.AddRange(LibraryPaths.EnumerateFilesNoLinks(folder).Where(p => !IsSidecar(folder, p)));
         }
 
-        return paths
-            .Distinct(LibraryPaths.FolderComparer)
-            .Where(System.IO.File.Exists)
+        var candidates = paths.Distinct(LibraryPaths.FolderComparer).Where(Present).ToList();
+        var claimed = await deletion.ClaimedAsync(candidates, rows.Select(f => f.Id).ToHashSet(), ct);
+        foreach (var kept in candidates.Where(claimed.Contains))
+        {
+            logger.LogInformation("Leaving {File} on disk: another series' record still points at it", kept);
+        }
+
+        return candidates
+            .Where(p => !claimed.Contains(p))
             .Select(p => tracked.TryGetValue(p, out var file)
                 ? (p, file.RelativePath, (ChapterFile?)file)
                 : (p, Path.GetRelativePath(rootPath, p), null))
@@ -1261,8 +1283,9 @@ public class SeriesController(
 
     /// <summary>
     /// Best effort: the row is already gone, so a file that is locked or a folder that cannot be
-    /// read is logged and left for Health's unlinked scan rather than failing the request. A file
-    /// that did not make it into the bin keeps its folder, which is then only pruned if empty.
+    /// read is logged and left for Health's unlinked scan rather than failing the request. Folders
+    /// are pruned bottom-up and never deleted recursively: whatever did not reach the bin, a claimed
+    /// file, a link or a file that arrived mid-delete keeps its folder.
     /// </summary>
     private async Task DeleteSeriesFromDiskAsync(
         SeriesDiskPlan plan, List<RecycleBinEntry> binned, RecycleBinService bin, int seriesId)
@@ -1288,26 +1311,14 @@ public class SeriesController(
             }
         }
 
-        if (stuck.Count > 0)
-        {
-            db.RecycleBin.RemoveRange(stuck);
-            await db.SaveChangesAsync(CancellationToken.None);
-        }
+        await bin.ForgetAsync(stuck);
 
-        var prune = plan.PruneIfEmpty;
         if (plan is { RemoveFolderWhole: true, Folder: { } folder } && Directory.Exists(folder))
         {
-            if (stuck.Count == 0)
-            {
-                Attempt(folder, () => Directory.Delete(folder, recursive: true));
-            }
-            else
-            {
-                prune = [.. prune, folder];
-            }
+            Attempt(folder, () => PruneSeriesFolder(folder, seriesId));
         }
 
-        foreach (var dir in prune)
+        foreach (var dir in plan.PruneIfEmpty)
         {
             Attempt(dir, () =>
             {
@@ -1322,6 +1333,36 @@ public class SeriesController(
         {
             Attempt(trash, () => Directory.Delete(trash, recursive: true));
         }
+    }
+
+    /// <summary>
+    /// Removes the empty folders under <paramref name="folder"/>, deepest first, then the folder
+    /// itself once nothing but Maki's sidecars is left in it. Anything else keeps it.
+    /// </summary>
+    private void PruneSeriesFolder(string folder, int seriesId)
+    {
+        foreach (var dir in LibraryPaths.EnumerateDirectoriesNoLinks(folder).OrderByDescending(d => d.Length).ToList())
+        {
+            if (!Directory.EnumerateFileSystemEntries(dir).Any())
+            {
+                Directory.Delete(dir, recursive: false);
+            }
+        }
+
+        var left = Directory.EnumerateFileSystemEntries(folder).ToList();
+        if (left.Any(p => !IsSidecar(folder, p) || Directory.Exists(p)))
+        {
+            logger.LogWarning("Kept {Folder} for removed series {SeriesId}: {Count} entries are still in it",
+                folder, seriesId, left.Count);
+            return;
+        }
+
+        foreach (var sidecar in left)
+        {
+            System.IO.File.Delete(sidecar);
+        }
+
+        Directory.Delete(folder, recursive: false);
     }
 
     /// <param name="MoveFiles">

@@ -194,31 +194,102 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
-    public async Task Series_delete_with_files_moves_every_comic_into_the_bin()
+    public async Task Series_delete_with_files_bins_every_file_whatever_its_extension()
     {
         var s = Seed();
-        var stray = Path.Combine(_root, "Berserk", "Extra c999.cbz");
-        File.WriteAllText(stray, "stray");
-        File.WriteAllText(Path.Combine(_root, "Berserk", "cover.jpg"), "jpg");
+        var folder = Path.Combine(_root, "Berserk");
+        // A linked chapter Maki did not name, the original a repack keeps, a plain zip, a note and a
+        // subfolder: none of them is a .cbz, and every one is the user's.
+        var others = new[]
+        {
+            Path.Combine(folder, "Extra c999.cbz"),
+            Path.Combine(folder, "Berserk v02.cbr"),
+            Path.Combine(folder, "scans.zip"),
+            Path.Combine(folder, "notes.txt"),
+            Path.Combine(folder, "Extras", "Art", "poster.png"),
+        };
+        foreach (var path in others)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, Path.GetFileName(path));
+        }
+
+        File.WriteAllText(Path.Combine(folder, "cover.jpg"), "jpg");
+        File.WriteAllText(Path.Combine(folder, "ComicInfo.xml"), "<x/>");
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<NoContentResult>(await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Bin(db), default));
+            Assert.IsType<NoContentResult>(await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db), default));
         }
 
-        Assert.False(Directory.Exists(Path.Combine(_root, "Berserk")));
+        Assert.False(Directory.Exists(folder));
         using var check = _db.NewContext();
         Assert.Empty(check.Series);
         var entries = check.RecycleBin.OrderBy(e => e.Id).ToList();
-        Assert.Equal(2, entries.Count);
+        Assert.Equal(others.Length + 1, entries.Count);
         Assert.All(entries, e =>
         {
             Assert.Equal(RecycleReason.SeriesDelete, e.Reason);
             Assert.True(File.Exists(BinFile(e)));
         });
-        var tracked = Assert.Single(entries, e => e.ChapterFileId == s.FileId);
-        Assert.NotNull(tracked.FileJson);
-        Assert.Null(Assert.Single(entries, e => e.ChapterFileId is null).FileJson);
+        Assert.Equal(
+            others.Select(p => Path.GetRelativePath(_root, p)).Append(s.RelativePath).Order(),
+            entries.Select(e => e.RelativePath).Order());
+        Assert.NotNull(Assert.Single(entries, e => e.ChapterFileId == s.FileId).FileJson);
+    }
+
+    [Fact]
+    public async Task Series_delete_keeps_the_folder_when_a_file_arrives_mid_delete()
+    {
+        var s = Seed();
+        var late = Path.Combine(_root, "Berserk", "Berserk v03.cbz");
+        var mover = new ScriptedMover((source, _) =>
+        {
+            if (source == s.Absolute)
+            {
+                File.WriteAllText(late, "late");
+            }
+
+            return null;
+        });
+
+        using (var db = _db.NewContext())
+        {
+            Assert.IsType<NoContentResult>(await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db, mover), default));
+        }
+
+        Assert.Equal("late", File.ReadAllText(late));
+        using var check = _db.NewContext();
+        Assert.True(File.Exists(BinFile(Assert.Single(check.RecycleBin))));
+    }
+
+    [Fact]
+    public async Task Series_delete_leaves_a_file_another_series_claims()
+    {
+        var s = Seed();
+        using (var seed = _db.NewContext())
+        {
+            var other = new Series
+            {
+                Title = "Other", SortTitle = "other", FolderName = "Other", RootFolderId = seed.RootFolders.Single().Id
+            };
+            seed.Series.Add(other);
+            seed.SaveChanges();
+            seed.ChapterFiles.Add(new ChapterFile
+            {
+                SeriesId = other.Id, RelativePath = s.RelativePath, SourceName = "Manual", DateAdded = DateTime.UtcNow
+            });
+            seed.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            Assert.IsType<NoContentResult>(await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db), default));
+        }
+
+        Assert.Equal("volume one", File.ReadAllText(s.Absolute));
+        using var check = _db.NewContext();
+        Assert.Empty(check.RecycleBin);
     }
 
     [Fact]
@@ -254,6 +325,33 @@ public class RecycleBinTests : IDisposable
         });
         var scan = Assert.Single(check.HealthScans);
         Assert.Equal(s.SeriesId, scan.SeriesId);
+    }
+
+    [Fact]
+    public async Task A_binned_link_whose_target_is_gone_can_still_be_restored()
+    {
+        var s = Seed();
+        var target = Path.Combine(_configDir, "elsewhere.cbz");
+        File.WriteAllText(target, "elsewhere");
+        File.Delete(s.Absolute);
+        if (!Maki.Core.Tests.TestLinks.TryLinkFile(s.Absolute, target))
+        {
+            return;
+        }
+
+        using (var db = _db.NewContext())
+        {
+            await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db), default);
+        }
+
+        File.Delete(target);
+        using (var db = _db.NewContext())
+        {
+            var result = await Bin(db).RestoreAsync(db.RecycleBin.Single().Id, default);
+            Assert.NotEqual(RecycleBinService.RestoreStatus.FileMissing, result.Status);
+        }
+
+        Assert.NotNull(new FileInfo(s.Absolute).LinkTarget);
     }
 
     [Fact]
@@ -309,7 +407,7 @@ public class RecycleBinTests : IDisposable
         var s = Seed();
         using (var db = _db.NewContext())
         {
-            await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Bin(db), default);
+            await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db), default);
         }
 
         Assert.False(File.Exists(s.Absolute));
@@ -380,7 +478,7 @@ public class RecycleBinTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            var result = await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Bin(db, CrossVolume()), default);
+            var result = await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db, CrossVolume()), default);
             Assert.Equal("error.recycleBin.crossVolume", Code(result));
         }
 
@@ -418,7 +516,7 @@ public class RecycleBinTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<NoContentResult>(await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Bin(db, FailingMoves()), default));
+            Assert.IsType<NoContentResult>(await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db, FailingMoves()), default));
         }
 
         Assert.True(File.Exists(s.Absolute));
