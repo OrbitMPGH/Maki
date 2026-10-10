@@ -23,6 +23,9 @@ import {
   IconMaximize,
   IconMinimize,
   IconSettings,
+  IconZoomIn,
+  IconZoomOut,
+  IconZoomReset,
 } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -30,6 +33,7 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
+import { wakeLockSupported } from '../../lib/wakeLock'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
 
 /**
@@ -55,6 +59,11 @@ export default function ReaderToolbar({
   profiles,
   fullscreen,
   onToggleFullscreen,
+  zoom,
+  zoomMax,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
   incognito,
   onIncognito,
   readingCounted,
@@ -83,6 +92,11 @@ export default function ReaderToolbar({
   profiles: ReadingProfile[]
   fullscreen: boolean
   onToggleFullscreen: () => void
+  zoom: number
+  zoomMax: number
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onZoomReset: () => void
   incognito: boolean
   onIncognito: (value: boolean) => void
   /** Whether this chapter is being counted as read on screen; ReaderPage owns the rule. */
@@ -451,6 +465,39 @@ export default function ReaderToolbar({
                     ]}
                   />
                 </div>
+                <div>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
+                    <Trans>Dim ({prefs.dim}%)</Trans>
+                  </Text>
+                  <Slider
+                    thumbLabel={t`Dim`}
+                    size="xs"
+                    min={0}
+                    max={80}
+                    step={5}
+                    label={null}
+                    value={prefs.dim}
+                    onChange={(value) => onPrefs({ dim: value })}
+                  />
+                </div>
+                <div>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
+                    <Trans>Colour filter</Trans>
+                  </Text>
+                  <SegmentedControl
+                    aria-label={t`Colour filter`}
+                    fullWidth
+                    size="xs"
+                    value={prefs.filter}
+                    onChange={(value) => onPrefs({ filter: value as ReaderPrefs['filter'] })}
+                    data={[
+                      { label: t`None`, value: 'none' },
+                      { label: t`Gray`, value: 'grayscale' },
+                      { label: t`Sepia`, value: 'sepia' },
+                      { label: t`Invert`, value: 'invert' },
+                    ]}
+                  />
+                </div>
                 <Switch
                   size="xs"
                   label={t`Tap zones`}
@@ -475,6 +522,14 @@ export default function ReaderToolbar({
                   checked={prefs.autoNextChapter}
                   onChange={(event) => onPrefs({ autoNextChapter: event.currentTarget.checked })}
                 />
+                {wakeLockSupported() && (
+                  <Switch
+                    size="xs"
+                    label={t`Keep the screen awake`}
+                    checked={prefs.keepAwake}
+                    onChange={(event) => onPrefs({ keepAwake: event.currentTarget.checked })}
+                  />
+                )}
                 <Switch
                   size="xs"
                   label={t`Incognito (don't record this session)`}
@@ -522,6 +577,40 @@ export default function ReaderToolbar({
               <IconKeyboard size={18} />
             </ActionIcon>
           </Tooltip>
+
+          {prefs.mode !== 'vertical' && (
+            <>
+              <Tooltip label={t`Zoom out`} withArrow zIndex={OVERLAY_Z}>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  onClick={onZoomOut}
+                  disabled={zoom <= 1}
+                  aria-label={t`Zoom out`}
+                >
+                  <IconZoomOut size={18} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label={t`Zoom in`} withArrow zIndex={OVERLAY_Z}>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  onClick={onZoomIn}
+                  disabled={zoom >= zoomMax}
+                  aria-label={t`Zoom in`}
+                >
+                  <IconZoomIn size={18} />
+                </ActionIcon>
+              </Tooltip>
+              {zoom !== 1 && (
+                <Tooltip label={t`Reset zoom`} withArrow zIndex={OVERLAY_Z}>
+                  <ActionIcon variant="light" color="gray" onClick={onZoomReset} aria-label={t`Reset zoom`}>
+                    <IconZoomReset size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+            </>
+          )}
 
           {document.fullscreenEnabled && (
             <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>

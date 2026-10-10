@@ -4359,6 +4359,11 @@ msgstr "{lineLabel} 접기"
 msgid "Collection"
 msgstr "컬렉션"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Colour filter"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Comedy"
@@ -5168,6 +5173,10 @@ msgstr "손상된 이미지"
 msgid "Dark"
 msgstr "어두운"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Darkens the pages, in percent."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Dash (-)"
@@ -5475,6 +5484,16 @@ msgstr "정주행 완료"
 #, fuzzy
 msgid "Didn't score higher than the current file"
 msgstr "현재 파일보다 점수가 높지 않았습니다"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Dim"
+msgstr ""
+
+#. placeholder {0}: prefs.dim
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Dim ({0}%)"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -7056,6 +7075,14 @@ msgstr "{indexer}에서 가져옴"
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "{indexer}에서 가져옴: {releaseName}"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Gray"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Grayscale"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7824,6 +7851,11 @@ msgstr "Integrations"
 msgid "Interface language"
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Invert"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Invite people"
@@ -7985,6 +8017,14 @@ msgstr "이름을 유지하고 새 표준 폴더에 다운로드"
 #, fuzzy
 msgid "Keep the name, download into it too"
 msgstr "이름을 유지하고 해당 폴더에 다운로드"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Keep the screen awake"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Keep the screen awake while reading"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Keeps chapters read in Maki and in Kavita in step. Kavita's reading belongs to one Maki account, chosen by an admin under Integrations."
@@ -10159,7 +10199,9 @@ msgstr "없음"
 
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "None"
@@ -10888,6 +10930,10 @@ msgstr "이 소스만 시도합니다. 다른 소스로 대체하지 않으므�
 #, fuzzy
 msgid "Only where it is central"
 msgstr "주요 소재인 경우만"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Only where the browser allows it, which needs HTTPS or localhost."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -12824,6 +12870,7 @@ msgstr "2단계 인증 초기화"
 msgid "Reset two-factor for {editName}?"
 msgstr ""
 
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Reset zoom"
@@ -13916,6 +13963,11 @@ msgstr "소리 없이 보내기"
 #, fuzzy
 msgid "Sent to qBittorrent: {title}"
 msgstr "qBittorrent로 전송됨: {title}"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Sepia"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -17686,7 +17738,15 @@ msgstr "나만 볼 수 있음 - 내 알림 벨에 표시되는 내용만 변경�
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (선택 사항)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Zoom in"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Zoom in and out"
 msgstr "확대 및 축소"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Zoom out"
+msgstr ""

@@ -393,6 +393,28 @@ function ProfileEditor({
           ]}
         />
         <SettingsNumberInput
+          label={t`Dim`}
+          description={t`Darkens the pages, in percent.`}
+          suffix="%"
+          min={0}
+          max={80}
+          step={5}
+          value={prefs.dim}
+          onChange={(value) => set({ dim: value })}
+        />
+        <Select
+          label={t`Colour filter`}
+          allowDeselect={false}
+          value={prefs.filter}
+          onChange={(value) => value && set({ filter: value as ReaderPrefs['filter'] })}
+          data={[
+            { value: 'none', label: t`None` },
+            { value: 'grayscale', label: t`Grayscale` },
+            { value: 'sepia', label: t`Sepia` },
+            { value: 'invert', label: t`Invert` },
+          ]}
+        />
+        <SettingsNumberInput
           label={t`Page gap`}
           description={t`Continuous layout only, in pixels.`}
           min={0}
@@ -427,6 +449,13 @@ function ProfileEditor({
         label={t`Show page number`}
         checked={prefs.showPageNumber}
         onChange={(e) => set({ showPageNumber: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
+        label={t`Keep the screen awake while reading`}
+        description={t`Only where the browser allows it, which needs HTTPS or localhost.`}
+        checked={prefs.keepAwake}
+        onChange={(e) => set({ keepAwake: e.currentTarget.checked })}
       />
       <Switch
         size="sm"

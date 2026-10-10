@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { ReaderDirection, ReaderFit } from './prefs'
@@ -23,12 +23,14 @@ function PagedPage({
   alt,
   className,
   style,
+  tone,
   onLoaded,
 }: {
   src: string
   alt: string
   className: string
   style: React.CSSProperties | undefined
+  tone: string | undefined
   onLoaded: (image: HTMLImageElement) => void
 }) {
   const [state, setState] = useState<PageState>('loading')
@@ -74,7 +76,7 @@ function PagedPage({
         src={url}
         alt={alt}
         className={className}
-        style={state === 'ready' ? style : { ...style, display: 'none' }}
+        style={{ ...style, filter: tone, ...(state === 'ready' ? undefined : { display: 'none' }) }}
         decoding="async"
         draggable={false}
         onLoad={(event) => markReady(event.currentTarget)}
@@ -95,6 +97,7 @@ export default function PagedView({
   direction,
   zoom,
   scale,
+  tone,
   label,
   onMeasure,
 }: {
@@ -105,6 +108,8 @@ export default function PagedView({
   zoom: number
   /** Percent scale on top of the '1:1' fit; ignored for the other fits. */
   scale: number
+  /** CSS filter for the page images (dim and colour), from `toneFilter`. */
+  tone?: string
   label: string
   onMeasure: (index: number, image: HTMLImageElement) => void
 }) {
@@ -114,12 +119,43 @@ export default function PagedView({
   const root = useRef<HTMLDivElement>(null)
 
   // The scroller outlives the page, so a page read to its bottom would otherwise hand the next one
-  // the same offset.
+  // the same offset. A page wider than the viewport (zoomed, or 1:1) starts at the edge reading
+  // begins from: the right in right-to-left. Its width is not known until the image has loaded, so
+  // the right edge is held until the reader touches the scroller or the zoom changes.
+  const rtl = direction === 'rtl'
+  const rtlRef = useRef(rtl)
+  rtlRef.current = rtl
+  const pinRight = useRef(false)
+  const toStart = useCallback(() => {
+    const scroller = root.current?.parentElement
+    if (scroller) scroller.scrollLeft = rtlRef.current ? scroller.scrollWidth : 0
+  }, [])
   const leadSrc = urls[spread[0]]
   useLayoutEffect(() => {
     const scroller = root.current?.parentElement
     if (scroller) scroller.scrollTop = 0
-  }, [leadSrc])
+    pinRight.current = rtlRef.current
+    toStart()
+  }, [leadSrc, toStart])
+
+  useEffect(() => {
+    const scroller = root.current?.parentElement
+    const content = root.current
+    if (!scroller || !content) return
+    const release = () => {
+      pinRight.current = false
+    }
+    const observer = new ResizeObserver(() => {
+      if (pinRight.current) toStart()
+    })
+    observer.observe(content)
+    const events = ['wheel', 'touchstart', 'pointerdown']
+    for (const name of events) scroller.addEventListener(name, release, { passive: true })
+    return () => {
+      observer.disconnect()
+      for (const name of events) scroller.removeEventListener(name, release)
+    }
+  }, [toStart])
 
   // Scrolling can only reach the right and bottom of a transformed box, so the zoom grows from the
   // top-left corner and the scroll position is moved to keep the viewport centre where it was.
@@ -129,6 +165,7 @@ export default function PagedView({
     const previous = lastZoom.current
     lastZoom.current = zoom
     if (!scroller || previous === zoom) return
+    pinRight.current = false
     const centre = scroller.clientWidth / 2
     scroller.scrollLeft = (scroller.scrollLeft + centre) * (zoom / previous) - centre
   }, [zoom])
@@ -151,6 +188,7 @@ export default function PagedView({
             alt={t`${label} - page ${pageNumber}`}
             className={`reader-page ${FIT_CLASS[fit]}`}
             style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
+            tone={tone}
             onLoaded={(image) => onMeasure(page, image)}
           />
         )

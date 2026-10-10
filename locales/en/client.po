@@ -3624,6 +3624,11 @@ msgstr "Collapse {lineLabel}"
 msgid "Collection"
 msgstr "Collection"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Colour filter"
+msgstr "Colour filter"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Comedy"
 msgstr "Comedy"
@@ -4301,6 +4306,10 @@ msgstr "Damaged image"
 msgid "Dark"
 msgstr "Dark"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Darkens the pages, in percent."
+msgstr "Darkens the pages, in percent."
+
 #: src/components/NamingTokenModal.tsx
 msgid "Dash (-)"
 msgstr "Dash (-)"
@@ -4560,6 +4569,16 @@ msgstr "Devoured"
 #: src/api/upgrades.ts
 msgid "Didn't score higher than the current file"
 msgstr "Didn't score higher than the current file"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Dim"
+msgstr "Dim"
+
+#. placeholder {0}: prefs.dim
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Dim ({0}%)"
+msgstr "Dim ({0}%)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -5864,6 +5883,14 @@ msgstr "Grabbed from {indexer}"
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "Grabbed from {indexer}: {releaseName}"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Gray"
+msgstr "Gray"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Grayscale"
+msgstr "Grayscale"
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Grid view"
@@ -6497,6 +6524,11 @@ msgstr "Integrations"
 msgid "Interface language"
 msgstr "Interface language"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Invert"
+msgstr "Invert"
+
 #: src/components/SetupWizard.tsx
 msgid "Invite people"
 msgstr "Invite people"
@@ -6633,6 +6665,14 @@ msgstr "Keep the name, download into a new standard folder"
 #: src/components/SetupWizard.tsx
 msgid "Keep the name, download into it too"
 msgstr "Keep the name, download into it too"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Keep the screen awake"
+msgstr "Keep the screen awake"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Keep the screen awake while reading"
+msgstr "Keep the screen awake while reading"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Keeps chapters read in Maki and in Kavita in step. Kavita's reading belongs to one Maki account, chosen by an admin under Integrations."
@@ -8423,7 +8463,9 @@ msgstr "none"
 
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/settings/DownloadCards.tsx
 msgid "None"
 msgstr "None"
@@ -9029,6 +9071,10 @@ msgstr "Only this source is tried. Nothing falls back to another one, so the req
 #: src/components/CatalogueRules.tsx
 msgid "Only where it is central"
 msgstr "Only where it is central"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Only where the browser allows it, which needs HTTPS or localhost."
+msgstr "Only where the browser allows it, which needs HTTPS or localhost."
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Only while you're partway through the series and haven't marked it finished."
@@ -10635,6 +10681,7 @@ msgstr "Reset two-factor"
 msgid "Reset two-factor for {editName}?"
 msgstr "Reset two-factor for {editName}?"
 
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Reset zoom"
 msgstr "Reset zoom"
@@ -11539,6 +11586,11 @@ msgstr "Send silently"
 #: src/components/upgrades/TorrentProposalCard.tsx
 msgid "Sent to qBittorrent: {title}"
 msgstr "Sent to qBittorrent: {title}"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Sepia"
+msgstr "Sepia"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Sequel to {relatedTo}"
@@ -14660,6 +14712,14 @@ msgstr "Yours alone - this changes what lands in your bell, not anybody else's."
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (optional)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Zoom in"
+msgstr "Zoom in"
+
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Zoom in and out"
 msgstr "Zoom in and out"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Zoom out"
+msgstr "Zoom out"

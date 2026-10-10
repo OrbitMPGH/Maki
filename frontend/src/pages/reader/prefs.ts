@@ -8,6 +8,7 @@ import { useReadingProfiles, type ReadingProfile } from '../../api/readingProfil
 export type ReaderMode = 'paged' | 'double' | 'vertical'
 export type ReaderDirection = 'ltr' | 'rtl'
 export type ReaderFit = 'width' | 'height' | 'screen' | 'original'
+export type ReaderFilter = 'none' | 'grayscale' | 'sepia' | 'invert'
 
 export interface ReaderPrefs {
   mode: ReaderMode
@@ -25,6 +26,11 @@ export interface ReaderPrefs {
   background: string
   /** Percent scale on top of the '1:1' fit; meaningless for the other fits, which already size to the viewport. */
   scale: number
+  /** Percent the page images are dimmed by; 0 leaves them untouched. */
+  dim: number
+  filter: ReaderFilter
+  /** Hold a screen wake lock while reading, where the browser offers one. */
+  keepAwake: boolean
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -50,6 +56,19 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   chapterBanner: true,
   background: BACKGROUNDS.dark,
   scale: 100,
+  dim: 0,
+  filter: 'none',
+  keepAwake: true,
+}
+
+/** The CSS filter for the page images, or undefined when the prefs ask for none. */
+export function toneFilter(prefs: Pick<ReaderPrefs, 'dim' | 'filter'>): string | undefined {
+  const parts: string[] = []
+  if (prefs.dim > 0) parts.push(`brightness(${(100 - prefs.dim) / 100})`)
+  if (prefs.filter === 'grayscale') parts.push('grayscale(1)')
+  else if (prefs.filter === 'sepia') parts.push('sepia(1)')
+  else if (prefs.filter === 'invert') parts.push('invert(1) hue-rotate(180deg)')
+  return parts.length > 0 ? parts.join(' ') : undefined
 }
 
 /**

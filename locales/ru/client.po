@@ -4359,6 +4359,11 @@ msgstr "Свернуть {lineLabel}"
 msgid "Collection"
 msgstr "Коллекция"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Colour filter"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Comedy"
@@ -5168,6 +5173,10 @@ msgstr "Повреждённое изображение"
 msgid "Dark"
 msgstr "Тёмная"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Darkens the pages, in percent."
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Dash (-)"
@@ -5475,6 +5484,16 @@ msgstr "Прочитано взахлёб"
 #, fuzzy
 msgid "Didn't score higher than the current file"
 msgstr "Оценка не выше, чем у текущего файла"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Dim"
+msgstr ""
+
+#. placeholder {0}: prefs.dim
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Dim ({0}%)"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -7056,6 +7075,14 @@ msgstr "Получено из {indexer}"
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "Получено из {indexer}: {releaseName}"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Gray"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Grayscale"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7824,6 +7851,11 @@ msgstr "Интеграции"
 msgid "Interface language"
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Invert"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Invite people"
@@ -7985,6 +8017,14 @@ msgstr "Сохранить название и скачать в новую па
 #, fuzzy
 msgid "Keep the name, download into it too"
 msgstr "Сохранить название и скачать в эту папку тоже"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Keep the screen awake"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Keep the screen awake while reading"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Keeps chapters read in Maki and in Kavita in step. Kavita's reading belongs to one Maki account, chosen by an admin under Integrations."
@@ -10159,7 +10199,9 @@ msgstr "нет"
 
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "None"
@@ -10888,6 +10930,10 @@ msgstr "Проверяется только этот источник. Запа�
 #, fuzzy
 msgid "Only where it is central"
 msgstr "Только если это основная тема"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Only where the browser allows it, which needs HTTPS or localhost."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -12824,6 +12870,7 @@ msgstr "Сбросить двухфакторную аутентификацию
 msgid "Reset two-factor for {editName}?"
 msgstr ""
 
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Reset zoom"
@@ -13916,6 +13963,11 @@ msgstr "Отправлять без звука"
 #, fuzzy
 msgid "Sent to qBittorrent: {title}"
 msgstr "Отправлено в qBittorrent: {title}"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Sepia"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -17686,7 +17738,15 @@ msgstr "Только вы - это меняет содержимое вашег�
 msgid "Z:\\downloads (optional)"
 msgstr "Z:/downloads (необязательно)"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Zoom in"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Zoom in and out"
 msgstr "Увеличить и уменьшить"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Zoom out"
+msgstr ""

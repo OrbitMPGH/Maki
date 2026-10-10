@@ -17,14 +17,22 @@ import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
-import { useReaderPrefs } from './prefs'
-import { usePageUrls, usePreload } from './usePageUrls'
+import { toneFilter, useReaderPrefs } from './prefs'
+import { usePageUrls, usePreload, useWarmChapter } from './usePageUrls'
 import { useReaderProgress } from './useReaderProgress'
 import { useReadingClock } from './useReadingClock'
+import { useWakeLock } from './useWakeLock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
+const DOUBLE_TAP_ZOOM = 2
+// Two taps closer together than this, and within this many pixels, are a double tap. A single tap's
+// action waits this long on touch screens so it can tell the two apart.
+const DOUBLE_TAP_MS = 250
+const DOUBLE_TAP_SLOP = 40
+// How many pages from the end of a chapter the next chapter's first pages start loading.
+const WARM_NEXT_WITHIN = 3
 const CHROME_HIDE_MS = 4000
 const FLUSH_WAIT_MS = 2000
 
@@ -118,6 +126,9 @@ export default function ReaderPage() {
   )
   usePreload(urls, preloadPages, measure)
 
+  const tone = useMemo(() => toneFilter(prefs), [prefs])
+  useWakeLock(prefs.keepAwake)
+
   const invalidateProgress = useCallback(
     (seriesId: number) => {
       void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
@@ -136,6 +147,19 @@ export default function ReaderPage() {
   // writing that would overwrite the saved position with page 1, the very thing being resumed to.
   const tracking = resumedFor === manifest?.chapterId && !incognito
   const finished = finishedFor != null && finishedFor === manifest?.chapterId
+  // Held back until this chapter's own resume has landed, so the warm-up never competes with the
+  // pages being opened. A preload of 0 switches off warming the next chapter too.
+  const nearEnd =
+    atEnd ||
+    (pageCount > 0 &&
+      (prefs.mode === 'vertical'
+        ? page >= pageCount - WARM_NEXT_WITHIN
+        : spreadIndex >= spreads.length - WARM_NEXT_WITHIN))
+  useWarmChapter(
+    manifest?.nextChapterId ?? null,
+    resumedFor === manifest?.chapterId && nearEnd && prefs.preload > 0,
+    Math.max(2, prefs.preload),
+  )
   // Lives here rather than inside the progress hook so a chapter change can hand its banked
   // seconds to the same flush that writes the position out.
   const clock = useReadingClock(tracking)
@@ -252,6 +276,10 @@ export default function ReaderPage() {
       settleProgress,
     ],
   )
+
+  const zoomIn = useCallback(() => setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP)), [])
+  const zoomOut = useCallback(() => setZoom((z) => Math.max(1, z - ZOOM_STEP)), [])
+  const zoomReset = useCallback(() => setZoom(1), [])
 
   const reachEnd = useCallback(() => {
     setAtEnd(true)
@@ -387,13 +415,13 @@ export default function ReaderPage() {
         break
       case '+':
       case '=':
-        setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))
+        zoomIn()
         break
       case '-':
-        setZoom((z) => Math.max(1, z - ZOOM_STEP))
+        zoomOut()
         break
       case '0':
-        setZoom(1)
+        zoomReset()
         break
       case '?':
         setShortcutsOpen(true)
@@ -411,14 +439,13 @@ export default function ReaderPage() {
   }, [])
 
   /** Tap zones: outer thirds page, the middle toggles the chrome. */
-  const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleTap = (clientX: number, bounds: DOMRect) => {
     if (!prefs.tapZones || prefs.mode === 'vertical' || zoom !== 1) {
       setChrome((visible) => !visible)
       return
     }
 
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const ratio = (event.clientX - bounds.left) / bounds.width
+    const ratio = (clientX - bounds.left) / bounds.width
     // Right-to-left reading puts "next" on the left edge.
     const leftAdvances = prefs.direction === 'rtl'
     if (ratio < 0.33) {
@@ -430,6 +457,47 @@ export default function ReaderPage() {
     } else {
       setChrome((visible) => !visible)
     }
+  }
+
+  // Read through a ref so the delayed single tap acts on the state at the time it fires.
+  const tapRef = useRef(handleTap)
+  tapRef.current = handleTap
+  const pointerKind = useRef('mouse')
+  const pendingTap = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
+  useEffect(
+    () => () => {
+      if (pendingTap.current) clearTimeout(pendingTap.current.timer)
+    },
+    [],
+  )
+
+  /**
+   * A mouse click acts at once. A touch tap in a paged layout waits a moment for a second one, which
+   * toggles zoom instead of turning the page; only touch pays that delay, so clicking through pages
+   * with a mouse stays instant.
+   */
+  const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    if (pointerKind.current !== 'touch' || prefs.mode === 'vertical') {
+      handleTap(event.clientX, bounds)
+      return
+    }
+
+    const { clientX, clientY } = event
+    const first = pendingTap.current
+    if (first) {
+      clearTimeout(first.timer)
+      pendingTap.current = null
+      if (Math.hypot(clientX - first.x, clientY - first.y) <= DOUBLE_TAP_SLOP) {
+        setZoom((z) => (z === 1 ? DOUBLE_TAP_ZOOM : 1))
+        return
+      }
+    }
+    const timer = setTimeout(() => {
+      pendingTap.current = null
+      tapRef.current(clientX, bounds)
+    }, DOUBLE_TAP_MS)
+    pendingTap.current = { timer, x: clientX, y: clientY }
   }
 
   // A cached manifest is shown only once the fresh one has landed and the resume is applied;
@@ -498,6 +566,11 @@ export default function ReaderPage() {
         profiles={profiles}
         fullscreen={fullscreen}
         onToggleFullscreen={toggleFullscreen}
+        zoom={zoom}
+        zoomMax={ZOOM_MAX}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onZoomReset={zoomReset}
         incognito={incognito}
         onIncognito={setIncognito}
         readingCounted={readingCounted}
@@ -529,6 +602,9 @@ export default function ReaderPage() {
               ? 'vertical'
               : undefined
           }
+          onPointerDown={(event) => {
+            pointerKind.current = event.pointerType
+          }}
           onClick={onSurfaceClick}
         >
           {prefs.mode === 'vertical' ? (
@@ -541,6 +617,7 @@ export default function ReaderPage() {
               hasNext={manifest.nextChapterId != null}
               fit={prefs.fit}
               scale={prefs.scale}
+              tone={tone}
               gap={prefs.pageGap}
               label={manifest.label}
             />
@@ -552,6 +629,7 @@ export default function ReaderPage() {
               direction={prefs.direction}
               zoom={zoom}
               scale={prefs.scale}
+              tone={tone}
               label={manifest.label}
               onMeasure={measure}
             />

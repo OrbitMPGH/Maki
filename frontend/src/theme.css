@@ -5609,6 +5609,8 @@ body.reader-open {
   overflow: auto;
   /* Momentum scrolling in continuous mode without rubber-banding the page behind. */
   overscroll-behavior: contain;
+  /* Keeps the browser's own double-tap zoom and its tap delay out of the way of the reader's. */
+  touch-action: manipulation;
 }
 /* An unzoomed continuous strip has one axis and only one. Belt and braces on top of the width
    clamp below: `overflow-x` kills the scrollbar a sub-pixel-wide image would otherwise summon,

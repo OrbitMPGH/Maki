@@ -9,7 +9,14 @@ const TICK_MS = 5000
  * away from the browser, and this only has to catch walking away from a focused window, so the
  * cost of a slow reader on a dense page being cut off is worse than five idle minutes counted.
  */
-const IDLE_MS = 300_000
+export const IDLE_MS = 300_000
+
+/**
+ * Capture phase: the reader stops some of these from bubbling (tap zones, the page strip), and a
+ * page turn is exactly the signal that says somebody is still there. `keydown` matters most,
+ * since plenty of people read a whole volume on the arrow keys without touching the mouse.
+ */
+export const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'wheel', 'scroll', 'touchstart']
 
 export interface ReadingClock {
   /** Whole seconds accumulated since the last take, consumed. Sub-second remainder is kept. */
@@ -62,10 +69,7 @@ export function useReadingClock(enabled: boolean): ReadingClock {
       lastActivity.current = Date.now()
     }
 
-    // Capture phase: the reader stops some of these from bubbling (tap zones, the page strip),
-    // and a page turn is exactly the signal that says somebody is still there. `keydown` matters
-    // most — plenty of people read a whole volume on the arrow keys without touching the mouse.
-    const events = ['pointerdown', 'pointermove', 'keydown', 'wheel', 'scroll', 'touchstart']
+    const events = ACTIVITY_EVENTS
     for (const name of events) {
       window.addEventListener(name, poke, { capture: true, passive: true })
     }

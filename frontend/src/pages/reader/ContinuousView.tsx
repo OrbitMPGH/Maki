@@ -26,6 +26,7 @@ interface StripPageProps {
   label: string
   fit: ReaderFit
   scale: number
+  tone: string | undefined
   eager: boolean
   register: (index: number, element: HTMLImageElement | null) => void
   onSettled: (index: number, element: HTMLImageElement) => void
@@ -41,6 +42,7 @@ const StripPage = memo(function StripPage({
   label,
   fit,
   scale,
+  tone,
   eager,
   register,
   onSettled,
@@ -76,6 +78,7 @@ const StripPage = memo(function StripPage({
         className={`reader-page ${FIT_CLASS[fit]}`}
         style={{
           ...(fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined),
+          ...(tone ? { filter: tone } : undefined),
           ...(failed ? { display: 'none' } : undefined),
         }}
         // A window around the current page rather than the whole prefix: resuming at page 300
@@ -119,6 +122,7 @@ export default function ContinuousView({
   hasNext,
   fit,
   scale,
+  tone,
   gap,
   label,
   pastEndLabel,
@@ -141,6 +145,8 @@ export default function ContinuousView({
   fit: ReaderFit
   /** Percent scale on top of the '1:1' fit; ignored for the other fits. */
   scale: number
+  /** CSS filter for the page images (dim and colour), from `toneFilter`. */
+  tone?: string
   gap: number
   label: string
 }) {
@@ -365,6 +371,7 @@ export default function ContinuousView({
             label={label}
             fit={fit}
             scale={scale}
+            tone={tone}
             eager={index < 3 || Math.abs(index - page) <= 2}
             register={registerPage}
             onSettled={onPageSettled}
