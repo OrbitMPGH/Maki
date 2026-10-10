@@ -85,6 +85,16 @@ RUN case "$TARGETARCH" in \
       *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
     esac \
     && find /app/runtimes -mindepth 1 -maxdepth 1 -type d $(for k in $keep; do echo "! -name $k"; done) -exec rm -rf {} +
+# PlaywrightPlatform=all above also copied a Node driver for every OS (~440 MB), of which this arch
+# runs one. types/ and lib/vite/ only serve codegen, the trace viewer and the HTML report. The chmod
+# belongs here too: done in the runtime stage, it would copy the whole node binary into a new layer.
+RUN case "$TARGETARCH" in \
+      amd64) node=linux-x64 ;; \
+      arm64) node=linux-arm64 ;; \
+    esac \
+    && find /app/.playwright/node -mindepth 1 -maxdepth 1 -type d ! -name "$node" -exec rm -rf {} + \
+    && chmod a+rx /app/.playwright/node/"$node"/node \
+    && rm -rf /app/.playwright/package/types /app/.playwright/package/lib/vite
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
@@ -113,11 +123,13 @@ RUN chmod +x /entrypoint.sh
 # are architecture-specific) via the Node driver shipped in the publish output — the aspnet image has
 # no SDK for `dotnet tool` and no pwsh for playwright.ps1. --with-deps apt-installs the shared
 # libraries it needs. PLAYWRIGHT_BROWSERS_PATH is a shared, world-readable path so the app (run via
-# gosu as PUID) finds it.
+# gosu as PUID) finds it. ffmpeg is only for video recording, and LANG is unset so Chromium only
+# ever loads its en-US locale pack; both go in this same RUN so the bytes never reach a layer.
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN NODE_ARCH="$([ "$(uname -m)" = "aarch64" ] && echo linux-arm64 || echo linux-x64)" \
     && /app/.playwright/node/"$NODE_ARCH"/node /app/.playwright/package/cli.js install --with-deps chromium-headless-shell \
-    && chmod a+rx /app/.playwright/node/"$NODE_ARCH"/node \
+    && rm -rf /ms-playwright/ffmpeg-* \
+    && find /ms-playwright -path '*/locales/*.pak' ! -name 'en-US.pak' -delete \
     && chmod -R a+rX /ms-playwright \
     && rm -rf /var/lib/apt/lists/*
 
