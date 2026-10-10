@@ -5045,6 +5045,7 @@ msgstr "Utworzono"
 msgid "Created under Apps in Gotify."
 msgstr "Utworzony w sekcji Apps w Gotify."
 
+#: src/lib/documentTitle.tsx
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Creator"
@@ -12060,6 +12061,7 @@ msgstr "Czytane powoli przez dłuższy czas"
 msgid "Read to"
 msgstr ""
 
+#: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy

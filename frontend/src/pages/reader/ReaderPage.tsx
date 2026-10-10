@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { Trans } from '@lingui/react/macro'
+import { useDocumentTitle } from '../../lib/documentTitle'
 import {
   flushProgress,
   useBookmarks,
@@ -54,6 +55,7 @@ export default function ReaderPage() {
     isFetching,
     refetch,
   } = useReaderManifest(chapterId)
+  useDocumentTitle(manifest ? `${manifest.seriesTitle} - ${manifest.label}` : null)
   const { prefs, update, selection, setSelection, source, autoProfileId, profiles } =
     useReaderPrefs(manifest, !isFetching && !isError)
 

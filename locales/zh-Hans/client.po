@@ -5045,6 +5045,7 @@ msgstr "已创建"
 msgid "Created under Apps in Gotify."
 msgstr "在 Gotify 的 Apps 下创建。"
 
+#: src/lib/documentTitle.tsx
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Creator"
@@ -12060,6 +12061,7 @@ msgstr "长期慢慢阅读"
 msgid "Read to"
 msgstr ""
 
+#: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy

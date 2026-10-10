@@ -127,6 +127,7 @@ import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { queueErrorMessage } from '../api/queue'
 import { useLabel } from '../i18n-context'
+import { useDocumentTitle } from '../lib/documentTitle'
 import { usePageLabel } from '../lib/navHistory'
 import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
@@ -348,6 +349,7 @@ function SeriesDetailBody() {
   // So that a series reached from another one (Similar, Related) offers a back link that names it
   // rather than the generic "Series".
   usePageLabel(series?.title)
+  useDocumentTitle(series?.displayTitle)
   const { data: chapters } = useChapters(seriesId)
 
   /**

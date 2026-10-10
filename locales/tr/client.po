@@ -5045,6 +5045,7 @@ msgstr "Oluşturuldu"
 msgid "Created under Apps in Gotify."
 msgstr "Gotify'deki Apps bölümünden oluşturulur."
 
+#: src/lib/documentTitle.tsx
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Creator"
@@ -12060,6 +12061,7 @@ msgstr "Uzun zamana yayarak yavaş oku"
 msgid "Read to"
 msgstr ""
 
+#: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy

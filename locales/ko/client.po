@@ -5045,6 +5045,7 @@ msgstr "생성됨"
 msgid "Created under Apps in Gotify."
 msgstr "Gotify의 Apps에서 만듭니다."
 
+#: src/lib/documentTitle.tsx
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Creator"
@@ -12060,6 +12061,7 @@ msgstr "오랜 기간 천천히 읽음"
 msgid "Read to"
 msgstr ""
 
+#: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy

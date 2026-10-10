@@ -39,6 +39,7 @@ import { Panel } from '../components/ui/Panel'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip } from '../components/ui/TagChip'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
+import { useDocumentTitle } from '../lib/documentTitle'
 import { usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import { useLabel } from '../i18n-context'
@@ -74,6 +75,7 @@ export default function CreatorPage() {
 
   // Named for the back link on any series opened from this page.
   usePageLabel(decoded)
+  useDocumentTitle(decoded)
 
   const prefs = useViewPrefs('discover')
   // Scoped per creator, so coming back to Junji Ito restores his filters and not the ones left on

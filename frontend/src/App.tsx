@@ -52,6 +52,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
 import { ShellTitleProvider, useShellTitleValue } from './lib/shellTitle'
+import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
@@ -308,8 +309,9 @@ function AuthGate() {
   // Mounted above the reader/shell split so entering the reader neither drops the live
   // subscriptions nor leaves it without inbox toasts and cache updates.
   return (
-    <>
+    <DocumentTitleProvider>
       <LiveEvents />
+      <DocumentTitle />
       {inReader ? (
         <RouteErrorBoundary>
           <Suspense fallback={<RouteFallback />}>
@@ -321,7 +323,7 @@ function AuthGate() {
       ) : (
         <AppShellRoutes />
       )}
-    </>
+    </DocumentTitleProvider>
   )
 }
 
