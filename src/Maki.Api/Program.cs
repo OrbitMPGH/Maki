@@ -819,6 +819,8 @@ try
     builder.Services.AddScoped<HealthMatchService>();
     builder.Services.AddScoped<HealthOperationService>();
     builder.Services.AddScoped<ChapterFileDeletion>();
+    builder.Services.AddScoped<RecycleBinService>();
+    builder.Services.AddSingleton<RecycleBinMover>();
     builder.Services.AddScoped<ReadFileCleanupService>();
     builder.Services.AddHostedService<HealthWorker>();
 

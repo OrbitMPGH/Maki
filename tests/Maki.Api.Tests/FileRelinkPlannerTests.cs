@@ -76,7 +76,7 @@ public class FileRelinkPlannerTests : IDisposable
         var planner = new FileRelinkPlanner(
             context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), scans,
             new ChapterFileDeletion(context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
-                TimeProvider.System, NullLogger<ChapterFileDeletion>.Instance),
+                TimeProvider.System, TestRecycleBin.For(context), NullLogger<ChapterFileDeletion>.Instance),
             NullLogger<FileRelinkPlanner>.Instance);
 
         var plan = await planner.PlanAsync(loaded, RelinkOptions.None);
@@ -563,7 +563,7 @@ public class FileRelinkPlannerTests : IDisposable
         return new FileRelinkPlanner(
             context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), scans,
             new ChapterFileDeletion(context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
-                TimeProvider.System, NullLogger<ChapterFileDeletion>.Instance),
+                TimeProvider.System, TestRecycleBin.For(context), NullLogger<ChapterFileDeletion>.Instance),
             NullLogger<FileRelinkPlanner>.Instance);
     }
 

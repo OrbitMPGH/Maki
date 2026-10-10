@@ -28,6 +28,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     private static readonly SemaphoreSlim Gate = new(1);
     private const string UnmeasuredFilesId = "unmeasured-files";
     private const string UpgradeTrashId = "upgrade-trash";
+    private const string RecycleBinId = "recycle-bin";
     private const string NotificationCheckPrefix = "notification:";
     /// <summary>
     /// With the schedule off nothing keeps a backup fresh, so a stale or missing one is reported as
@@ -176,6 +177,17 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                         days = upgradeOptions.TrashRetentionDays,
                     }, "/activity?tab=upgrades");
                 }
+
+                var (binBytes, binFiles) = await RecycleBinService.SizeAsync(db, ct);
+                if (binFiles > 0)
+                {
+                    Add(RecycleBinId, "storage", rootDiskLow ? "warning" : "healthy", "health.check.recycleBin", new
+                    {
+                        gib = Math.Round(binBytes / Math.Pow(1024, 3), 2),
+                        files = binFiles,
+                        days = await RecycleBin.RetentionDaysAsync(settings, ct),
+                    }, "/settings?tab=library&s=recycle-bin");
+                }
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch { }
@@ -253,6 +265,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 db.HealthChecks.Remove(measuredRow);
             if (!checks.Any(c => c.Id == UpgradeTrashId) && old.FirstOrDefault(r => r.Id == UpgradeTrashId) is { } trashRow)
                 db.HealthChecks.Remove(trashRow);
+            if (!checks.Any(c => c.Id == RecycleBinId) && old.FirstOrDefault(r => r.Id == RecycleBinId) is { } binRow)
+                db.HealthChecks.Remove(binRow);
             if (!checks.Any(c => c.Id == "library-check"))
                 foreach (var row in old.Where(r => r.Id.StartsWith("legacy:") && !checks.Any(c => c.Id == r.Id) && r.Status != "healthy"))
                 {

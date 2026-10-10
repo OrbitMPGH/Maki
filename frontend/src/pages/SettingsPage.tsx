@@ -36,6 +36,7 @@ import {
   NamingSection,
   NewSeriesDefaultsSection,
   RecommendationIndexSection,
+  RecycleBinSection,
   RootFoldersSection,
 } from './settings/LibraryCards'
 import {
@@ -85,6 +86,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'root-folders': <RootFoldersSection />,
       naming: <NamingSection />,
       'library-files': <LibraryFilesSection />,
+      'recycle-bin': <RecycleBinSection />,
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
       recommendations: <RecommendationIndexSection />,

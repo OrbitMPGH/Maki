@@ -14,16 +14,19 @@ public static class UpgradeTrash
 {
     public const string FolderName = ".maki-trash";
 
-    private static readonly TimeSpan[] MoveBackoff =
+    internal static readonly TimeSpan[] MoveBackoff =
         [TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1)];
 
     public static string SeriesFolder(string rootPath, int seriesId) =>
         Path.Combine(rootPath, FolderName, seriesId.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>Creates the series' trash folder, and hides the trash root on Windows.</summary>
-    public static void EnsureFolder(string rootPath, int seriesId)
+    public static void EnsureFolder(string rootPath, int seriesId) => EnsureDirectory(rootPath, SeriesFolder(rootPath, seriesId));
+
+    /// <summary>Creates <paramref name="directory"/>, somewhere under the trash root, and hides the trash root on Windows.</summary>
+    public static void EnsureDirectory(string rootPath, string directory)
     {
-        Directory.CreateDirectory(SeriesFolder(rootPath, seriesId));
+        Directory.CreateDirectory(directory);
         if (OperatingSystem.IsWindows())
         {
             var root = new DirectoryInfo(Path.Combine(rootPath, FolderName));
@@ -140,7 +143,7 @@ public static class UpgradeHistoryStates
     }
 }
 
-/// <summary>Reports and purges what <see cref="UpgradeTrash"/> holds.</summary>
+/// <summary>Reports and purges what <see cref="UpgradeTrash"/> holds, the recycle bin included.</summary>
 public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogger<UpgradeTrashService> logger)
 {
     public Task<(long Bytes, int Files)> SizeAsync(CancellationToken ct) => SizeAsync(db, ct);
@@ -156,12 +159,16 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
         return (files.Sum(), files.Count);
     }
 
-    /// <summary>Deletes trash older than <c>upgrades.trashRetentionDays</c>, referenced or not, and returns the count.</summary>
+    /// <summary>
+    /// Deletes trash older than <c>upgrades.trashRetentionDays</c>, referenced or not, and recycle bin
+    /// entries older than <c>library.recyclebindays</c>, and returns the count.
+    /// </summary>
     public async Task<int> PurgeAsync(CancellationToken ct)
     {
         var options = await UpgradeOptions.LoadAsync(settings, ct);
         var cutoff = DateTime.UtcNow.AddDays(-options.TrashRetentionDays);
-        var purged = 0;
+        var binCutoff = DateTime.UtcNow.AddDays(-await RecycleBin.RetentionDaysAsync(settings, ct));
+        var purged = await PurgeBinAsync(binCutoff, ct);
 
         var roots = await db.Series.IgnoreQueryFilters()
             .Select(s => new { s.Id, s.RootFolder!.Path })
@@ -199,9 +206,13 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
             .Where(h => h.TrashPath != null)
             .Select(h => new { h.SeriesId, h.TrashPath })
             .ToListAsync(ct);
+        var binned = await db.RecycleBin.IgnoreQueryFilters().AsNoTracking()
+            .Select(e => new { e.RootPath, e.BinPath })
+            .ToListAsync(ct);
         var keep = referenced
             .Where(r => roots.ContainsKey(r.SeriesId))
             .Select(r => LibraryPaths.Resolve(roots[r.SeriesId], r.TrashPath!))
+            .Concat(binned.Select(e => LibraryPaths.Resolve(e.RootPath, e.BinPath)))
             .OfType<string>()
             .Select(Path.GetFullPath)
             .ToHashSet(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -214,12 +225,26 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
                 continue;
             }
 
+            var bin = Path.GetFullPath(RecycleBin.Folder(rootPath)) + Path.DirectorySeparatorChar;
             foreach (var file in Directory.EnumerateFiles(trash, "*", SearchOption.AllDirectories).ToList())
             {
                 ct.ThrowIfCancellationRequested();
                 try
                 {
-                    if (!keep.Contains(Path.GetFullPath(file)) && File.GetLastWriteTimeUtc(file) < cutoff)
+                    var full = Path.GetFullPath(file);
+                    var inBin = full.StartsWith(bin, OperatingSystem.IsWindows()
+                        ? StringComparison.OrdinalIgnoreCase
+                        : StringComparison.Ordinal);
+                    if (keep.Contains(full) || File.GetLastWriteTimeUtc(file) >= (inBin ? binCutoff : cutoff))
+                    {
+                        continue;
+                    }
+
+                    // A binned file keeps its own old write time, and a delete may have recorded and
+                    // moved it after the keep set was read. Its entry is saved before the move, so
+                    // asking again now cannot miss it.
+                    var relative = Path.GetRelativePath(rootPath, full).Replace('\\', '/');
+                    if (!inBin || !await db.RecycleBin.IgnoreQueryFilters().AnyAsync(e => e.BinPath == relative, ct))
                     {
                         File.Delete(file);
                         purged++;
@@ -231,7 +256,10 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
                 }
             }
 
-            foreach (var dir in Directory.EnumerateDirectories(trash))
+            var binFolders = Directory.Exists(RecycleBin.Folder(rootPath))
+                ? Directory.EnumerateDirectories(RecycleBin.Folder(rootPath)).ToList()
+                : [];
+            foreach (var dir in binFolders.Concat(Directory.EnumerateDirectories(trash)))
             {
                 try
                 {
@@ -247,6 +275,36 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
             }
         }
 
+        return purged;
+    }
+
+    /// <summary>Deletes bin entries older than <paramref name="cutoff"/>: the file first, the entry only once it is gone.</summary>
+    private async Task<int> PurgeBinAsync(DateTime cutoff, CancellationToken ct)
+    {
+        var purged = 0;
+        foreach (var entry in await db.RecycleBin.IgnoreQueryFilters().Where(e => e.DeletedAtUtc < cutoff).ToListAsync(ct))
+        {
+            if (RecycleBinService.BinFile(entry) is { } path)
+            {
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                        purged++;
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogDebug(ex, "Could not purge {Path} from the recycle bin", path);
+                    continue;
+                }
+            }
+
+            db.RecycleBin.Remove(entry);
+        }
+
+        await db.SaveChangesAsync(ct);
         return purged;
     }
 }

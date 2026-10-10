@@ -214,3 +214,12 @@ internal sealed class StubHttpClientFactory(string body, HttpStatusCode status =
         }
     }
 }
+
+/// <summary>A <see cref="RecycleBinService"/> over <paramref name="db"/> for services under test that bin files.</summary>
+internal static class TestRecycleBin
+{
+    public static RecycleBinService For(
+        Maki.Data.MakiDbContext db, IAppSettings? settings = null, RecycleBinMover? mover = null, ICurrentUser? user = null) =>
+        new(db, settings ?? new FakeAppSettings(), user ?? new TestCurrentUser(1), mover ?? new RecycleBinMover(),
+            TimeProvider.System, NullLogger<RecycleBinService>.Instance);
+}

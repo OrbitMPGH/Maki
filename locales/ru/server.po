@@ -1145,6 +1145,51 @@ msgstr "Требуется локальная база MangaBaka (Настрой
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr "Профилю вкусов нужна локальная база MangaBaka (Настройки → Метаданные → локальная БД)"
 
+#. Binning is a rename within one volume. A file on another volume than its root folder (a mount
+#. inside the library) would have to be copied, so the delete is refused and nothing changes.
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: These files are on a different drive than the recycle bin, so they cannot be moved there. Nothing was deleted.
+msgid "error.recycleBin.crossVolume"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: Could not delete the file. Details are in the server log.
+msgid "error.recycleBin.deleteFailed"
+msgstr ""
+
+#. The bin entry exists but its file is gone from the bin folder, removed outside Maki.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: The file is no longer in the recycle bin folder. Delete the entry to clear it.
+msgid "error.recycleBin.fileMissing"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: That file is no longer in the recycle bin
+msgid "error.recycleBin.notFound"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: Could not move the file back. Details are in the server log.
+msgid "error.recycleBin.restoreFailed"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: Recycle bin retention must be between {min} and {max} days
+msgid "error.recycleBin.retentionRange"
+msgstr ""
+
+#. Restore never overwrites. Something, usually a new download of the same chapter, now sits where
+#. the deleted file used to be.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: Another file is already where this one was. Move or delete it, then restore again.
+msgid "error.recycleBin.targetExists"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: The original location is outside the root folder or behind a link, so the file cannot go back there.
+msgid "error.recycleBin.targetInvalid"
+msgstr ""
+
 #. The Prowlarr or qBittorrent call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: Could not send the release to qBittorrent. Details are in the server log.
@@ -4460,6 +4505,13 @@ msgstr "{count, plural, one {# файл главы ожидает измерен
 #, fuzzy
 msgid "health.check.upgradeTrash"
 msgstr "Корзина улучшений: {files, plural, one {# заменённый файл} few {# заменённых файла} many {# заменённых файлов} other {# заменённого файла}}, {gib} ГиБ, хранится {days, plural, one {# день} few {# дня} many {# дней} other {# дня}}"
+
+#. Files users deleted, kept for {days} days so they can be restored from Settings. A warning only
+#. when a library drive is already low on space.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Recycle bin: {files, plural, one {# deleted file} other {# deleted files}}, {gib} GiB, kept {days, plural, one {# day} other {# days}}
+msgid "health.check.recycleBin"
+msgstr ""
 
 #. {source} is a site name (MangaDex, Weeb Central) and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs

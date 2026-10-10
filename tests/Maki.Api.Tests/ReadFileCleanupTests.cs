@@ -43,7 +43,7 @@ public sealed class ReadFileCleanupTests : IDisposable
         return new ReadFileCleanupService(
             db, new SettingsService(_db.ScopeFactory()),
             new ChapterFileDeletion(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), clock,
-                NullLogger<ChapterFileDeletion>.Instance),
+                TestRecycleBin.For(db), NullLogger<ChapterFileDeletion>.Instance),
             clock, NullLogger<ReadFileCleanupService>.Instance);
     }
 

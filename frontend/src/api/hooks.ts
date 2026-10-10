@@ -1581,6 +1581,7 @@ export function useDeleteSeries() {
       api<void>(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
       for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
@@ -1980,6 +1981,7 @@ export function useDeleteChapters() {
         body: JSON.stringify(chapterIds),
       }),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['series-files'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
@@ -2001,6 +2003,7 @@ export function useDeleteChapterFiles() {
         body: JSON.stringify(chapterIds),
       }),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['series-files'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
@@ -2017,6 +2020,7 @@ export function useDeleteSeriesFiles(seriesId: number) {
         body: JSON.stringify(relativePaths),
       }),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] })
       void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })

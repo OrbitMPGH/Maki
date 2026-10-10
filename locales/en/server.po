@@ -821,6 +821,43 @@ msgstr "Needs the local MangaBaka database (Settings → Library → Metadata da
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr "Your taste profile needs the local MangaBaka database (Settings → Library → Metadata database)"
 
+#. Binning is a rename within one volume. A file on another volume than its root folder (a mount
+#. inside the library) would have to be copied, so the delete is refused and nothing changes.
+#: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.recycleBin.crossVolume"
+msgstr "These files are on a different drive than the recycle bin, so they cannot be moved there. Nothing was deleted."
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+msgid "error.recycleBin.deleteFailed"
+msgstr "Could not delete the file. Details are in the server log."
+
+#. The bin entry exists but its file is gone from the bin folder, removed outside Maki.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+msgid "error.recycleBin.fileMissing"
+msgstr "The file is no longer in the recycle bin folder. Delete the entry to clear it."
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+msgid "error.recycleBin.notFound"
+msgstr "That file is no longer in the recycle bin"
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+msgid "error.recycleBin.restoreFailed"
+msgstr "Could not move the file back. Details are in the server log."
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+msgid "error.recycleBin.retentionRange"
+msgstr "Recycle bin retention must be between {min} and {max} days"
+
+#. Restore never overwrites. Something, usually a new download of the same chapter, now sits where
+#. the deleted file used to be.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+msgid "error.recycleBin.targetExists"
+msgstr "Another file is already where this one was. Move or delete it, then restore again."
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+msgid "error.recycleBin.targetInvalid"
+msgstr "The original location is outside the root folder or behind a link, so the file cannot go back there."
+
 #. The Prowlarr or qBittorrent call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.grabFailed"
@@ -3250,6 +3287,14 @@ msgstr "{count, plural, one {# chapter file waiting to be measured} other {# cha
 msgid "health.check.upgradeTrash"
 msgstr ""
 "Upgrade trash: {files, plural, one {# replaced file} other {# replaced files}}, {gib} GiB, kept "
+"{days, plural, one {# day} other {# days}}"
+
+#. Files users deleted, kept for {days} days so they can be restored from Settings. A warning only
+#. when a library drive is already low on space.
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.recycleBin"
+msgstr ""
+"Recycle bin: {files, plural, one {# deleted file} other {# deleted files}}, {gib} GiB, kept "
 "{days, plural, one {# day} other {# days}}"
 
 #. {source} is a site name (MangaDex, Weeb Central) and is never translated.

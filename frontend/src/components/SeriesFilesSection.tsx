@@ -13,6 +13,7 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
+import { useRecycleBinDays } from '../api/recycleBin'
 import { useSetFileTrusted } from '../api/upgrades'
 import type { SeriesFileDto } from '../api/types'
 import { formatBytes } from '../format'
@@ -50,6 +51,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const { data: files, isLoading, isFetching, refetch } = useSeriesFiles(seriesId)
   const deleteFiles = useDeleteSeriesFiles(seriesId)
+  const binDays = useRecycleBinDays(confirmOpen)
   const setFileTrusted = useSetFileTrusted()
 
   const problems = files?.filter((f) => f.status !== 'linked').length ?? 0
@@ -372,7 +374,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           <Modal
             opened={confirmOpen}
             onClose={() => setConfirmOpen(false)}
-            title={t`Delete files from disk?`}
+            title={t`Delete files?`}
             centered
             attributes={{ content: { 'data-edge': 'danger' } }}
           >
@@ -380,13 +382,17 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               <Text size="sm" c="var(--ink-3)">
                 <Plural
                   value={selected.size}
-                  one="This will permanently delete # file from disk."
-                  other="This will permanently delete # files from disk."
+                  one="This moves # file to the recycle bin."
+                  other="This moves # files to the recycle bin."
                 />{' '}
                 <Trans>Chapters that share a volume archive will also lose their file.</Trans>
               </Text>
-              <Text size="sm" c="var(--danger)">
-                <Trans>This action cannot be undone.</Trans>
+              <Text size="sm" c="var(--ink-3)">
+                <Plural
+                  value={binDays}
+                  one="Files can be restored from Settings for # day, then they are deleted for good."
+                  other="Files can be restored from Settings for # days, then they are deleted for good."
+                />
               </Text>
               <Group justify="flex-end">
                 <Button variant="default" onClick={() => setConfirmOpen(false)}>
@@ -403,14 +409,17 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           color: r.failed > 0 ? 'var(--warn)' : 'var(--ok)',
                           message:
                             r.failed > 0
-                              ? `${plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' })}, ${plural(
+                              ? `${plural(r.deleted, { one: 'Moved # file to the recycle bin', other: 'Moved # files to the recycle bin' })}, ${plural(
                                   r.failed,
                                   {
-                                    one: '# could not be deleted (locked or permission denied)',
-                                    other: '# could not be deleted (locked or permission denied)',
+                                    one: '# could not be moved (locked or permission denied)',
+                                    other: '# could not be moved (locked or permission denied)',
                                   },
                                 )}`
-                              : plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' }),
+                              : plural(r.deleted, {
+                                  one: 'Moved # file to the recycle bin',
+                                  other: 'Moved # files to the recycle bin',
+                                }),
                         })
                         setConfirmOpen(false)
                         exitSelectMode()

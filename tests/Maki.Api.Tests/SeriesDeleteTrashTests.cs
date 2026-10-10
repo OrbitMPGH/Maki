@@ -100,7 +100,7 @@ public class SeriesDeleteTrashTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<NoContentResult>(await Controller(db).Delete(seriesId, deleteFiles: false, default));
+            Assert.IsType<NoContentResult>(await Controller(db).Delete(seriesId, deleteFiles: false, TestRecycleBin.For(db), default));
         }
 
         Assert.True(File.Exists(trashed));
@@ -114,7 +114,7 @@ public class SeriesDeleteTrashTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<NoContentResult>(await Controller(db).Delete(seriesId, deleteFiles: true, default));
+            Assert.IsType<NoContentResult>(await Controller(db).Delete(seriesId, deleteFiles: true, TestRecycleBin.For(db), default));
         }
 
         Assert.False(File.Exists(trashed));

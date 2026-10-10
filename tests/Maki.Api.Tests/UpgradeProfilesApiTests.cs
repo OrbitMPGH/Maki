@@ -29,7 +29,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
     private ReadFileCleanupService Cleanup(MakiDbContext db) => new(
         db, new SettingsService(_db.ScopeFactory()),
         new ChapterFileDeletion(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
-            NullLogger<ChapterFileDeletion>.Instance),
+            TestRecycleBin.For(db), NullLogger<ChapterFileDeletion>.Instance),
         TimeProvider.System, NullLogger<ReadFileCleanupService>.Instance);
 
     [Fact]

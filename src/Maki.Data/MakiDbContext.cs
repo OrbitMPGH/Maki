@@ -92,6 +92,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
     public DbSet<SourceQualitySample> SourceQualitySamples => Set<SourceQualitySample>();
     public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
+    public DbSet<RecycleBinEntry> RecycleBin => Set<RecycleBinEntry>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
     public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();
 
@@ -597,6 +598,18 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<Series>().WithMany().HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             // The history outlives the account that made an edit; it then reads as an unknown user.
             e.HasOne<MakiUser>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<RecycleBinEntry>(e =>
+        {
+            e.ToTable("RecycleBin");
+            // By root folder rather than series: the series is often the thing that was deleted.
+            e.HasQueryFilter(r =>
+                _scope.Unrestricted ||
+                _scope.AllRootFolders ||
+                UserRootFolders.Any(g => g.UserId == _scope.UserId && g.RootFolderId == r.RootFolderId));
+            e.HasIndex(r => r.DeletedAtUtc);
+            e.HasIndex(r => r.SeriesId);
         });
 
         modelBuilder.Entity<TorrentProposal>(e =>

@@ -56,7 +56,7 @@ public class ChapterControllerTests : IDisposable
 
     private static ChapterFileDeletion Deletion(MakiDbContext db) => new(
         db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), TimeProvider.System,
-        NullLogger<ChapterFileDeletion>.Instance);
+        TestRecycleBin.For(db), NullLogger<ChapterFileDeletion>.Instance);
 
     /// <summary>
     /// A series rooted at the temp directory, plus one chapter, returning both ids. Passing

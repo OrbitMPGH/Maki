@@ -176,6 +176,7 @@ import { onPressKey, pressable } from '../lib/pressable'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
 import { scrollBehavior } from '../lib/scrollBehavior'
+import { useRecycleBinDays } from '../api/recycleBin'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
@@ -592,6 +593,7 @@ function SeriesDetailBody() {
   const [deleteFileIds, setDeleteFileIds] = useState<number[] | null>(null)
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
+  const binDays = useRecycleBinDays(deleteChaptersModalOpen || deleteFileIds !== null)
 
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
@@ -2598,14 +2600,19 @@ function SeriesDetailBody() {
                 <Text size="sm" c="var(--ink-3)">
                   <Plural
                     value={selectedCount}
-                    one="This permanently removes # chapter row, not just its file link, along with any backing file on disk and everyone's read history for it."
-                    other="This permanently removes # chapter rows, not just their file link, along with any backing file on disk and everyone's read history for them."
+                    one="This permanently removes # chapter row, not just its file link, along with everyone's read history for it."
+                    other="This permanently removes # chapter rows, not just their file link, along with everyone's read history for them."
+                  />{' '}
+                  <Plural
+                    value={binDays}
+                    one="Backing files go to the recycle bin for # day."
+                    other="Backing files go to the recycle bin for # days."
                   />{' '}
                   <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
                   <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>
                 <Text size="sm" c="var(--danger)">
-                  <Trans>This action cannot be undone.</Trans>
+                  <Trans>Removed chapter rows and their read history cannot be restored.</Trans>
                 </Text>
                 <Group justify="flex-end">
                   <Button variant="default" onClick={() => setDeleteChaptersModalOpen(false)}>
@@ -2648,8 +2655,13 @@ function SeriesDetailBody() {
                     <Text size="sm" c="var(--ink-3)">
                       <Plural
                           value={deleteFilesPlan?.files ?? 0}
-                          one="Deletes # file from disk."
-                          other="Deletes # files from disk."
+                          one="Moves # file to the recycle bin."
+                          other="Moves # files to the recycle bin."
+                      />{' '}
+                      <Plural
+                          value={binDays}
+                          one="It can be restored from Settings for # day."
+                          other="It can be restored from Settings for # days."
                       />{' '}
                       <Trans>The chapters stay in the list with their read history, and Maki won't download
                         them again unless you ask.</Trans>
@@ -2678,7 +2690,12 @@ function SeriesDetailBody() {
                             onSuccess: (r) => {
                               const gone = r.deleted + r.kept
                               if (gone > 0) {
-                                notify.ok(plural(gone, { one: 'Deleted # file', other: 'Deleted # files' }))
+                                notify.ok(
+                                    plural(gone, {
+                                      one: 'Moved # file to the recycle bin',
+                                      other: 'Moved # files to the recycle bin',
+                                    }),
+                                )
                               }
                               if (r.failed > 0) {
                                 notify.err(

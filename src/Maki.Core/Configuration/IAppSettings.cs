@@ -398,6 +398,9 @@ public static class SettingKeys
     /// <summary>Days a replaced file stays in <c>.maki-trash</c>. Default 14; 0 purges on the next housekeeping run.</summary>
     public const string UpgradesTrashRetentionDays = "upgrades.trashRetentionDays";
 
+    /// <summary>Days a file the user deleted stays in the recycle bin (<c>.maki-trash/bin</c>). Default 14; 0 purges on the next housekeeping run.</summary>
+    public const string RecycleBinRetentionDays = "library.recyclebindays";
+
     /// <summary>"false" leaves incognito series out of the upgrade scan. Default on.</summary>
     public const string UpgradesScanIncognito = "upgrades.scanIncognito";
 

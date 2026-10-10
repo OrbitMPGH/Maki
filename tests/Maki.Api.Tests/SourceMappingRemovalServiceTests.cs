@@ -25,7 +25,7 @@ public class SourceMappingRemovalServiceTests : IDisposable
                 NullLogger<DownloadQueueService>.Instance),
             batches!,
             archives,
-            new ChapterFileDeletion(context, archives, TimeProvider.System, NullLogger<ChapterFileDeletion>.Instance),
+            new ChapterFileDeletion(context, archives, TimeProvider.System, TestRecycleBin.For(context), NullLogger<ChapterFileDeletion>.Instance),
             NullLogger<SourceMappingRemovalService>.Instance);
     }
 

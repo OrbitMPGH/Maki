@@ -361,8 +361,8 @@ public class ChapterController(
     /// <summary>
     /// "Remove chapters": permanently removes chapter rows, not just their file, for cases like a
     /// broken auto-match that pulled in the wrong show: chapter data is otherwise
-    /// additive-only, so bad rows would sit in the library forever. Also deletes the
-    /// backing CBZ from disk when this batch drops the last chapter referencing it
+    /// additive-only, so bad rows would sit in the library forever. Also moves the
+    /// backing CBZ to the recycle bin when this batch drops the last chapter referencing it
     /// (a volume CBZ can back several chapters).
     /// </summary>
     [Authorize(Policy = Policies.DeleteSeries)]
@@ -444,9 +444,11 @@ public class ChapterController(
             fileIds.Where(id => !stillReferenced.Contains(id)).ToHashSet(),
             ct);
 
-        // Collected here instead of deleted in place: rows are saved first, and only a successful
-        // save unlocks touching the filesystem.
-        var toDeleteFromDisk = new List<(string AbsPath, string RelativePath)>();
+        // Collected here instead of binned in place: the bin entries are saved with the row removal,
+        // and only a successful save unlocks touching the filesystem.
+        var toBin = new List<(ChapterFile File, string AbsPath, List<Chapter> Chapters)>();
+        // Before any row is removed: EF nulls the chapters' file ids as soon as their file is.
+        var onFile = chapters.Where(c => c.ChapterFileId != null).ToLookup(c => c.ChapterFileId!.Value);
         foreach (var file in batchFiles)
         {
             if (stillReferenced.Contains(file.Id))
@@ -454,8 +456,8 @@ public class ChapterController(
                 continue;
             }
 
-            // Never File.Delete a bare Combine: a row written before the check in Link, or by any
-            // future path that skips it, would delete whatever it points at outside the library.
+            // Never move a bare Combine: a row written before the check in Link, or by any future
+            // path that skips it, would move whatever it points at outside the library.
             var absPath = resolved[file.Id];
             if (absPath is null || !claimedPaths.Contains(absPath))
             {
@@ -465,9 +467,9 @@ public class ChapterController(
                         file.RelativePath, series.RootFolder.Path);
                 }
 
-                if (absPath is not null)
+                if (absPath is not null && (System.IO.File.Exists(absPath) || new FileInfo(absPath).LinkTarget is not null))
                 {
-                    toDeleteFromDisk.Add((absPath, file.RelativePath));
+                    toBin.Add((file, absPath, onFile[file.Id].ToList()));
                 }
             }
 
@@ -475,32 +477,41 @@ public class ChapterController(
             db.ChapterFiles.Remove(file);
         }
 
+        if (toBin.Count > 0 && !deletion.Bin.SameVolume(series!.RootFolder!.Path, toBin.Select(f => f.AbsPath)))
+        {
+            return this.Fail(localizer, "error.recycleBin.crossVolume");
+        }
+
+        var entries = toBin
+            .Select(f => deletion.Bin.Record(series!, series!.RootFolder!.Path, f.File.RelativePath, f.AbsPath, f.File,
+                f.Chapters, RecycleReason.RemoveChapter))
+            .ToList();
         db.Chapters.RemoveRange(chapters);
         await db.SaveChangesAsync(ct);
 
-        // Rows are already committed, so a failure here just orphans a file for Health's "unlinked"
-        // detection to pick up. Runs without the request's own cancellation token for that reason.
-        foreach (var (absPath, relativePath) in toDeleteFromDisk)
+        // Rows are already committed, so a file that will not move stays where it is, an orphan for
+        // Health's "unlinked" detection to pick up, and its entry goes. Runs without the request's
+        // own cancellation token for that reason.
+        var stuck = new List<RecycleBinEntry>();
+        foreach (var entry in entries)
         {
-            try
+            if (!await deletion.Bin.MoveInAsync(entry, CancellationToken.None))
             {
-                System.IO.File.Delete(absPath);
+                stuck.Add(entry);
             }
-            catch (DirectoryNotFoundException)
-            {
-                // Containing directory is already gone, so the file is effectively deleted.
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                logger.LogWarning(ex, "Could not delete {File}, removing records anyway", relativePath);
-            }
+        }
+
+        if (stuck.Count > 0)
+        {
+            db.RecycleBin.RemoveRange(stuck);
+            await db.SaveChangesAsync(CancellationToken.None);
         }
 
         return Ok(new { deleted = chapters.Count });
     }
 
     /// <summary>
-    /// "Delete file": deletes the files behind these chapters and keeps the chapters, with everyone's
+    /// "Delete file": moves the files behind these chapters to the recycle bin and keeps the chapters, with everyone's
     /// reads, marked removed so nothing downloads them again. A volume file backs several chapters,
     /// so every chapter on it loses it, not only the ones named; the dialog says so before sending.
     /// </summary>
@@ -558,7 +569,13 @@ public class ChapterController(
         }
 
         var files = await db.ChapterFiles.Where(f => fileIds.Contains(f.Id)).ToListAsync(ct);
-        return Ok(await deletion.DeleteAsync(series, files, ct));
+        var paths = files.Select(f => LibraryPaths.ResolveForDelete(series.RootFolder.Path, f.RelativePath)).OfType<string>();
+        if (!deletion.Bin.SameVolume(series.RootFolder.Path, paths))
+        {
+            return this.Fail(localizer, "error.recycleBin.crossVolume");
+        }
+
+        return Ok(await deletion.DeleteAsync(series, files, ct, RecycleReason.DeleteFile));
     }
 
     [Authorize(Policy = Policies.DownloadChapters)]

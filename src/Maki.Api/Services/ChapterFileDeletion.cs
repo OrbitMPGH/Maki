@@ -15,8 +15,11 @@ public class ChapterFileDeletion(
     MakiDbContext db,
     ReaderArchiveCache archives,
     TimeProvider time,
+    RecycleBinService bin,
     ILogger<ChapterFileDeletion> logger)
 {
+    public RecycleBinService Bin => bin;
+
     public sealed record Result(int Deleted, int Kept, int Failed, int ChaptersRemoved);
 
     /// <summary>
@@ -113,8 +116,14 @@ public class ChapterFileDeletion(
     /// (<see cref="ClaimedAsync"/>) stays on disk: this series lets go of it and the other keeps it.
     /// A file that can't be deleted keeps its row and links, so the table never says a file is gone
     /// that is still there.
+    /// <para>
+    /// With <paramref name="binReason"/> the files go to the recycle bin instead of being deleted. The
+    /// caller checks <see cref="RecycleBinService.SameVolume"/> first. Entries are saved before any
+    /// file moves, and a row is removed only once its file is in the bin.
+    /// </para>
     /// </summary>
-    public async Task<Result> DeleteAsync(Series series, IReadOnlyList<ChapterFile> files, CancellationToken ct)
+    public async Task<Result> DeleteAsync(
+        Series series, IReadOnlyList<ChapterFile> files, CancellationToken ct, RecycleReason? binReason = null)
     {
         if (files.Count == 0)
         {
@@ -138,6 +147,21 @@ public class ChapterFileDeletion(
 
         var now = time.GetUtcNow().UtcDateTime;
         int deleted = 0, kept = 0, failed = 0, chaptersRemoved = 0;
+
+        void Let(ChapterFile file)
+        {
+            foreach (var chapter in linked[file.Id])
+            {
+                chapter.ChapterFileId = null;
+                chapter.FileRemovedAt = now;
+                chaptersRemoved++;
+            }
+
+            archives.Invalidate(file.Id);
+            db.ChapterFiles.Remove(file);
+        }
+
+        var binning = new List<(ChapterFile File, RecycleBinEntry Entry)>();
         foreach (var file in files)
         {
             // Resolve, never a bare Combine: RelativePath is stored data, and a row that escapes the
@@ -155,6 +179,18 @@ public class ChapterFileDeletion(
                 logger.LogInformation("Kept {File} on disk: another series' record still points at it", absolute);
                 kept++;
             }
+            else if (binReason is { } reason)
+            {
+                if (File.Exists(absolute) || new FileInfo(absolute).LinkTarget is not null)
+                {
+                    binning.Add((file, bin.Record(series, series.RootFolder.Path, file.RelativePath, absolute, file,
+                        linked[file.Id], reason)));
+                    continue;
+                }
+
+                // Already gone from disk: nothing to keep, so the row just goes.
+                deleted++;
+            }
             else if (DeleteFromDisk(absolute))
             {
                 deleted++;
@@ -165,15 +201,25 @@ public class ChapterFileDeletion(
                 continue;
             }
 
-            foreach (var chapter in linked[file.Id])
-            {
-                chapter.ChapterFileId = null;
-                chapter.FileRemovedAt = now;
-                chaptersRemoved++;
-            }
+            Let(file);
+        }
 
-            archives.Invalidate(file.Id);
-            db.ChapterFiles.Remove(file);
+        if (binning.Count > 0)
+        {
+            await db.SaveChangesAsync(ct);
+            foreach (var (file, entry) in binning)
+            {
+                if (await bin.MoveInAsync(entry, CancellationToken.None))
+                {
+                    deleted++;
+                    Let(file);
+                }
+                else
+                {
+                    failed++;
+                    db.RecycleBin.Remove(entry);
+                }
+            }
         }
 
         // The disk has already changed, so an aborted request or a shutdown must not leave rows pointing at deleted files.
