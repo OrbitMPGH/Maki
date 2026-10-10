@@ -768,6 +768,7 @@ msgstr ""
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: The series was removed from the library since the import, so there is nothing to undo
 msgid "error.libraryImport.undoSeriesGone"
+msgstr ""
 
 #: src/Maki.Api/Controllers/MediaCoverController.cs
 #. English: That file is not an image Maki can use. Upload a JPEG, PNG, GIF or WebP no larger than {pixels} pixels on either side.
