@@ -5566,6 +5566,10 @@ msgstr "다운로드 폐기"
 msgid "Discard unsaved changes?"
 msgstr "저장하지 않은 변경 사항을 버릴까요?"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Discarding"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Disconnect"
@@ -7551,6 +7555,10 @@ msgstr "이 버전 무시"
 msgid "Ignored"
 msgstr "무시됨"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Ignoring"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -7712,6 +7720,10 @@ msgstr "가져옴"
 #, fuzzy
 msgid "Importing"
 msgstr "가져오는 중"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Importing what is missing"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/ImportPage.tsx
@@ -12787,6 +12799,10 @@ msgstr "{replacedFileName}을(를) 교체함"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Replaces downloaded files with better releases, judged against each series' quality profile. The daily scan runs after the chosen hour. Scan now and scans started from a series page run regardless of the switch."
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
 msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx

@@ -4642,6 +4642,10 @@ msgstr "Discard download"
 msgid "Discard unsaved changes?"
 msgstr "Discard unsaved changes?"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Discarding"
+msgstr "Discarding"
+
 #: src/pages/ScrobblePage.tsx
 msgid "Disconnect"
 msgstr "Disconnect"
@@ -6286,6 +6290,10 @@ msgstr "Ignore this version"
 msgid "Ignored"
 msgstr "Ignored"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Ignoring"
+msgstr "Ignoring"
+
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
 msgid "Image cache"
@@ -6417,6 +6425,10 @@ msgstr "Imported"
 #: src/components/ui/status.tsx
 msgid "Importing"
 msgstr "Importing"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Importing what is missing"
+msgstr "Importing what is missing"
 
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/ImportPage.tsx
@@ -10623,6 +10635,10 @@ msgstr "replaces {replacedFileName}"
 #: src/pages/settings/DownloadCards.tsx
 msgid "Replaces downloaded files with better releases, judged against each series' quality profile. The daily scan runs after the chosen hour. Scan now and scans started from a series page run regardless of the switch."
 msgstr "Replaces downloaded files with better releases, judged against each series' quality profile. The daily scan runs after the chosen hour. Scan now and scans started from a series page run regardless of the switch."
+
+#: src/components/ImportReviewModal.tsx
+msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
+msgstr "Replacing {replacedFiles, plural, one {# file} other {# files}}"
 
 #: src/components/layout/SidebarFooter.tsx
 msgid "Report a bug"

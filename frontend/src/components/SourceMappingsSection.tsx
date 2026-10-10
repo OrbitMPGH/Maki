@@ -402,7 +402,7 @@ export function SourceMappingsSection({
             const name = mappings?.find((m) => m.id === id)?.sourceName
             return sources?.find((s) => s.name === name)?.needsFlareSolverr ?? false
           }}
-          busy={setOrderMode.isPending || reorderMappings.isPending}
+          busy={setOrderMode.isPending ? 'quality' : reorderMappings.isPending ? 'reorder' : null}
           onUseQuality={() => setOrderMode.mutate('quality', { onSuccess: dismissScout })}
           onReorder={() => {
             const rest = sourceOrder.order.filter((id) => !sourceOrder.qualityOrder.includes(id))

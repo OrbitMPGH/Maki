@@ -5566,6 +5566,10 @@ msgstr "Descartar descarga"
 msgid "Discard unsaved changes?"
 msgstr "¿Descartar los cambios sin guardar?"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Discarding"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Disconnect"
@@ -7551,6 +7555,10 @@ msgstr "Ignorar esta versión"
 msgid "Ignored"
 msgstr "Ignorado"
 
+#: src/components/ImportReviewModal.tsx
+msgid "Ignoring"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -7712,6 +7720,10 @@ msgstr "Importado"
 #, fuzzy
 msgid "Importing"
 msgstr "Importando"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Importing what is missing"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/ImportPage.tsx
@@ -12787,6 +12799,10 @@ msgstr "reemplaza a {replacedFileName}"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Replaces downloaded files with better releases, judged against each series' quality profile. The daily scan runs after the chosen hour. Scan now and scans started from a series page run regardless of the switch."
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "Replacing {replacedFiles, plural, one {# file} other {# files}}"
 msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx

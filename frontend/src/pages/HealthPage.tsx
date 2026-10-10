@@ -230,6 +230,18 @@ export default function HealthPage() {
   }
   const bulk = (path: string, body: object) =>
     action.mutate({ path, body }, { onSuccess: () => setSelected(new Map()) })
+  // The bulk buttons share one mutation; only the one that started it shows pending.
+  const bulkKey = (v: typeof action.variables) => {
+    if (!v) return null
+    const body = v.body as { verify?: boolean; state?: string }
+    if (v.path === '/scans') return body.verify ? 'verify' : 'rescan'
+    if (v.path === '/findings/review') return body.state ?? null
+    return v.path
+  }
+  const bulkPending = (key: string) => {
+    const mine = action.isPending && bulkKey(action.variables) === key
+    return { loading: mine, disabled: action.isPending && !mine }
+  }
   const ids = [...selected.keys()]
   const pageIds = files.data?.items.map((f) => f.id) ?? []
   const queryError = overview.error ?? files.error ?? operations.error ?? history.error
@@ -428,7 +440,7 @@ export default function HealthPage() {
                   <Button
                     size="xs"
                     variant="default"
-                    loading={action.isPending}
+                    {...bulkPending('rescan')}
                     onClick={() => bulk('/scans', { fileIds: ids, force: true })}
                   >
                     <Trans>Rescan</Trans>
@@ -436,7 +448,7 @@ export default function HealthPage() {
                   <Button
                     size="xs"
                     variant="default"
-                    loading={action.isPending}
+                    {...bulkPending('verify')}
                     onClick={() => bulk('/scans', { fileIds: ids, force: true, verify: true })}
                   >
                     <Trans>Verify</Trans>
@@ -444,7 +456,7 @@ export default function HealthPage() {
                   <Button
                     size="xs"
                     variant="default"
-                    loading={action.isPending}
+                    {...bulkPending('/imports')}
                     onClick={() => bulk('/imports', { fileIds: ids })}
                   >
                     <Trans>Import unlinked</Trans>
@@ -454,7 +466,7 @@ export default function HealthPage() {
                       key={next}
                       size="xs"
                       variant="default"
-                      loading={action.isPending}
+                      {...bulkPending(next)}
                       onClick={() => bulk('/findings/review', { fileIds: ids, state: next })}
                     >
                       {next === 'open' ? (
@@ -697,7 +709,7 @@ export default function HealthPage() {
         // Only the current page's rows are loaded, so a selection carried across pages can name
         // fewer paths than it deletes. Say so rather than showing a list that looks complete.
         named={files.data?.items.filter((f) => selected.has(f.id)).map((f) => f.relativePath) ?? []}
-        pending={action.isPending}
+        pending={action.isPending && action.variables?.path === '/deletions/bulk'}
         onConfirm={() =>
           action.mutate(
             {
@@ -1184,7 +1196,7 @@ function FileReview({
                   mt="sm"
                   fullWidth
                   disabled={data.chapters.length === 0 || data.mappings.length === 0}
-                  loading={action.isPending}
+                  loading={action.isPending && action.variables?.path === '/repairs'}
                   onClick={() =>
                     action.mutate(
                       {
@@ -1377,7 +1389,7 @@ function UnlinkedPanel({
           <Group gap="xs">
             <Button
               leftSection={<IconFileImport size={16} />}
-              loading={action.isPending}
+              loading={action.isPending && action.variables?.path === '/imports'}
               onClick={() => action.mutate({ path: '/imports', body: { fileIds: [file.id] } })}
             >
               <Trans>Import this archive</Trans>
@@ -1707,7 +1719,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                       />
                       <Button
                         color={data.operation.kind === 'delete' ? 'var(--danger)' : 'brand'}
-                        loading={action.isPending}
+                        loading={action.isPending && action.variables?.path.endsWith('/apply')}
                         disabled={!confirm || (data.operation.kind === 'repair' && data.requiresReset && !reset)}
                         onClick={() =>
                           action.mutate(

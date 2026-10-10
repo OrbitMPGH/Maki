@@ -1834,7 +1834,15 @@ function SeriesDetailBody() {
                 <AnimeResumeCallout
                     resume={animeResume}
                     variant="library"
-                    pending={applyAnimeResume.isPending || dismissAnimeResumeMutation.isPending}
+                    pending={
+                      applyAnimeResume.isPending
+                        ? applyAnimeResume.variables?.markWatched
+                          ? 'mark'
+                          : 'read'
+                        : dismissAnimeResumeMutation.isPending
+                          ? 'dismiss'
+                          : null
+                    }
                     onMarkWatched={markAnimeWatched}
                     onRead={readFromAnime}
                     onDismiss={() => void dismissAnimeResume()}

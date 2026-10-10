@@ -20,6 +20,7 @@ import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { formatBytes } from '../format'
 import { errorText } from '../api/errorText'
+import { PendingLabel } from './ui/PendingLabel'
 
 /** "Ch. 1, 2, 3" with a tail when the list runs long, so a 40-chapter volume stays one line. */
 function ChapterList({ chapters }: { chapters: string[] }) {
@@ -151,6 +152,11 @@ export function ImportReviewModal({
     const skipFiles = plan?.isUpgrade && mode !== 'Reject' ? [...skipped] : undefined
     settle.mutate({ id: queueItemId, mode, skipFiles }, { onSuccess: onClose })
   }
+  /** Only the button that was pressed shows pending; the others just go disabled. */
+  const pendingProps = (mode: ImportDecision) => {
+    const mine = settle.isPending && settle.variables?.mode === mode
+    return { loading: mine, disabled: settle.isPending && !mine }
+  }
 
   const toggleSkip = (fileName: string, checked: boolean) =>
     setSkipped((prev) => {
@@ -205,7 +211,9 @@ export function ImportReviewModal({
               <Trans>Close</Trans>
             </Button>
             <Button color="var(--danger)" variant="light" onClick={() => decide('Reject')} loading={settle.isPending}>
-              <Trans>Discard download</Trans>
+              <PendingLabel pending={<Trans>Discarding</Trans>}>
+                <Trans>Discard download</Trans>
+              </PendingLabel>
             </Button>
           </Group>
         </Stack>
@@ -258,25 +266,37 @@ export function ImportReviewModal({
             <Button
               color="var(--danger-fill)"
               onClick={() => decide('Replace')}
-              loading={settle.isPending}
+              {...pendingProps('Replace')}
               leftSection={<IconAlertTriangle size={16} />}
             >
-              <Trans>
-                Import everything, replace the{' '}
-                <Plural value={replacedFiles} one="# file" other="# files" /> it covers
-              </Trans>
+              <PendingLabel
+                pending={
+                  <Trans>
+                    Replacing <Plural value={replacedFiles} one="# file" other="# files" />
+                  </Trans>
+                }
+              >
+                <Trans>
+                  Import everything, replace the{' '}
+                  <Plural value={replacedFiles} one="# file" other="# files" /> it covers
+                </Trans>
+              </PendingLabel>
             </Button>
-            <Button variant="light" onClick={() => decide('SkipExisting')} loading={settle.isPending}>
-              <Trans>Import only what is missing, keep existing files</Trans>
+            <Button variant="light" onClick={() => decide('SkipExisting')} {...pendingProps('SkipExisting')}>
+              <PendingLabel pending={<Trans>Importing what is missing</Trans>}>
+                <Trans>Import only what is missing, keep existing files</Trans>
+              </PendingLabel>
             </Button>
             <Button
               variant="subtle"
               color="var(--neutral)"
               onClick={() => decide('Reject')}
-              loading={settle.isPending}
+              {...pendingProps('Reject')}
               leftSection={<IconBan size={16} />}
             >
-              <Trans>Ignore this download</Trans>
+              <PendingLabel pending={<Trans>Ignoring</Trans>}>
+                <Trans>Ignore this download</Trans>
+              </PendingLabel>
             </Button>
           </Stack>
 

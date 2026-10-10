@@ -450,6 +450,85 @@ body::before {
   font-feature-settings: 'tnum';
 }
 
+/* --- Pending buttons ----------------------------------------------------- */
+/* A loading Button keeps its label and gets three hopping dots after it, instead of Mantine's
+   spinner over a hidden label. A filled button drops to a tint of its own colour so the running job
+   stays the most readable thing nearby. <PendingLabel> swaps the label for a verb while it runs. */
+.mantine-Button-root[data-loading] {
+  cursor: progress;
+}
+.mantine-Button-root[data-loading]::before,
+.mantine-Button-root[data-loading] .mantine-Button-loader {
+  display: none;
+}
+.mantine-Button-root[data-loading] .mantine-Button-inner {
+  opacity: 1;
+  transform: none;
+}
+.mantine-Button-root[data-loading]:is(:not([data-variant]), [data-variant='filled']) {
+  background: color-mix(in srgb, var(--button-bg, var(--mantine-primary-color-filled)) 18%, transparent);
+  color: color-mix(in srgb, var(--button-bg, var(--mantine-primary-color-filled)) 65%, var(--ink-hi));
+}
+/* Without a PendingLabel the dots hang off the label's right edge, and the content shifts left by
+   half their width so the button keeps its size and the whole thing stays centred. */
+.mantine-Button-root[data-loading]:not([data-with-right-section]):not(:has(.pending-label)) .mantine-Button-inner {
+  transform: translateX(-0.55em);
+}
+.mantine-Button-root[data-loading] .mantine-Button-section[data-position='right'] {
+  visibility: hidden;
+}
+.mantine-Button-root[data-loading] .mantine-Button-label:not(:has(.pending-label)) {
+  position: relative;
+  overflow: visible;
+}
+.mantine-Button-root[data-loading] .mantine-Button-label:not(:has(.pending-label))::after {
+  position: absolute;
+  left: calc(100% + 0.25em);
+  bottom: calc(50% - 0.36em);
+}
+.mantine-Button-root[data-loading] .mantine-Button-label:not(:has(.pending-label))::after,
+.mantine-Button-root[data-loading] .pending-label-busy::after {
+  content: '';
+  width: 1em;
+  height: 0.6em;
+  background:
+    radial-gradient(circle closest-side, currentColor 90%, transparent) 0 100% / 0.28em 0.28em no-repeat,
+    radial-gradient(circle closest-side, currentColor 90%, transparent) 0.36em 100% / 0.28em 0.28em no-repeat,
+    radial-gradient(circle closest-side, currentColor 90%, transparent) 0.72em 100% / 0.28em 0.28em no-repeat;
+  animation: pending-dots 1.05s ease-in-out infinite;
+}
+.pending-label {
+  display: inline-grid;
+}
+.pending-label > span {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--dur-medium) var(--ease),
+    visibility var(--dur-medium);
+}
+.pending-label-busy {
+  opacity: 0;
+  visibility: hidden;
+}
+.pending-label-busy::after {
+  display: inline-block;
+  margin-left: 0.25em;
+}
+.mantine-Button-root[data-loading] .pending-label-idle {
+  opacity: 0;
+  visibility: hidden;
+}
+.mantine-Button-root[data-loading] .pending-label-busy {
+  opacity: 1;
+  visibility: visible;
+}
+@keyframes pending-dots {
+  0%, 56%, 100% { background-position: 0 100%, 0.36em 100%, 0.72em 100%; }
+  14% { background-position: 0 0, 0.36em 100%, 0.72em 100%; }
+  28% { background-position: 0 100%, 0.36em 0, 0.72em 100%; }
+  42% { background-position: 0 100%, 0.36em 100%, 0.72em 0; }
+}
+
 /* --- Scrollbars ---------------------------------------------------------- */
 * {
   scrollbar-width: thin;

@@ -88,7 +88,8 @@ export function MeasureResult({
   order: SourceOrderDto
   label: (mappingId: number) => string
   needsFlareSolverr: (mappingId: number) => boolean
-  busy: boolean
+  /** Which of the two adopt actions is running, so only its button shows pending. */
+  busy: 'quality' | 'reorder' | null
   onUseQuality: () => void
   onReorder: () => void
   onDismiss: () => void
@@ -144,7 +145,7 @@ export function MeasureResult({
       ))}
       {measured > 0 && differs && (
         <Group gap="xs" mt="sm">
-          <Button size="xs" onClick={onUseQuality} loading={busy}>
+          <Button size="xs" onClick={onUseQuality} loading={busy === 'quality'} disabled={busy === 'reorder'}>
             <Trans>Use best quality first</Trans>
           </Button>
           <Tooltip
@@ -153,7 +154,13 @@ export function MeasureResult({
             multiline
             w={240}
           >
-            <Button size="xs" variant="default" onClick={onReorder} loading={busy}>
+            <Button
+              size="xs"
+              variant="default"
+              onClick={onReorder}
+              loading={busy === 'reorder'}
+              disabled={busy === 'quality'}
+            >
               <Trans>Reorder priority to match</Trans>
             </Button>
           </Tooltip>
