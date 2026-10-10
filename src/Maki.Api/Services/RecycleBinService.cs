@@ -228,6 +228,11 @@ public class RecycleBinService(
         for (var attempt = 0; ; attempt++)
         {
             var outcome = mover.Move(from, to);
+            if (outcome.Racy)
+            {
+                logger.LogWarning("Moved {From} with a check then a rename: the filesystem has no hard links or no-replace rename", from);
+            }
+
             // A share can report a failure for a rename that happened (an NFS retransmit).
             if (outcome.Result != MoveResult.Moved && SameVolumeMove.Landed(from, to))
             {

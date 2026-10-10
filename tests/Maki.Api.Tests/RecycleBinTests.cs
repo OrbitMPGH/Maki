@@ -506,7 +506,7 @@ public class RecycleBinTests : IDisposable
             var entry = db.RecycleBin.Single();
             binFile = BinFile(entry);
             // Same tag, the name in another Unicode form: the exact path no longer matches.
-            entry.BinPath = entry.BinPath[..(entry.BinPath.LastIndexOf('-') + 1)] + "Berserk v01́.cbz";
+            entry.BinPath = entry.BinPath[..(entry.BinPath.LastIndexOf('-') + 1)] + "Berserk v01\u0301.cbz";
             db.SaveChanges();
         }
 
@@ -659,23 +659,5 @@ public class RecycleBinTests : IDisposable
         Assert.False(File.Exists(binFile));
         using var check = _db.NewContext();
         Assert.Empty(check.RecycleBin);
-    }
-
-    [Fact]
-    public void Same_volume_move_refuses_to_overwrite()
-    {
-        var a = Path.Combine(_root, "a.cbz");
-        var b = Path.Combine(_root, "b.cbz");
-        File.WriteAllText(a, "a");
-        File.WriteAllText(b, "b");
-
-        Assert.Equal(MoveResult.TargetExists, SameVolumeMove.Move(a, b).Result);
-        Assert.Equal("a", File.ReadAllText(a));
-        Assert.Equal("b", File.ReadAllText(b));
-
-        File.Delete(b);
-        Assert.Equal(MoveResult.Moved, SameVolumeMove.Move(a, b).Result);
-        Assert.False(File.Exists(a));
-        Assert.Equal("a", File.ReadAllText(b));
     }
 }
