@@ -3775,6 +3775,10 @@ msgstr "Auf dem neuesten Stand"
 msgid "CBZ built from {kind} ({source}), the original stays"
 msgstr ""
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "CBZ built from {kind}, the original stays"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Central only"
@@ -18280,6 +18284,10 @@ msgstr "Deine Quellenänderungen wurden nicht gespeichert. Beim Schließen werde
 #, fuzzy
 msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 msgstr "Deine Quellen reichen nur bis Kapitel <0>{highest}</0>, MangaBaka führt aber <1>{listed}</1> auf. Rund {missing, plural, one {# Kapitel} other {# Kapitel}} lassen sich nicht von den hier verknüpften Quellen herunterladen. Verknüpfe eine weitere Quelle, um die Lücke zu schließen."
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr ""
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

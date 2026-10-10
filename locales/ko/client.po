@@ -3775,6 +3775,10 @@ msgstr "따라잡음"
 msgid "CBZ built from {kind} ({source}), the original stays"
 msgstr ""
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "CBZ built from {kind}, the original stays"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Central only"
@@ -18280,6 +18284,10 @@ msgstr "소스 변경 사항을 저장하지 않았습니다. 지금 닫으면 �
 #, fuzzy
 msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 msgstr "연결된 소스는 <0>{highest}</0>화까지만 제공하지만 MangaBaka는 <1>{listed}</1>화를 등록해 두었습니다. 약 {missing, plural, other {# 챕터}}는 여기에 연결된 소스에서 내려받을 수 없습니다. 격차를 메우려면 다른 소스를 연결하세요."
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr ""
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

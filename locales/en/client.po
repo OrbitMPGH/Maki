@@ -3160,6 +3160,10 @@ msgstr "Caught up"
 msgid "CBZ built from {kind} ({source}), the original stays"
 msgstr "CBZ built from {kind} ({source}), the original stays"
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "CBZ built from {kind}, the original stays"
+msgstr "CBZ built from {kind}, the original stays"
+
 #: src/components/CatalogueRules.tsx
 msgid "Central only"
 msgstr "Central only"
@@ -15262,6 +15266,10 @@ msgstr "Your source changes have not been saved. Closing now discards them."
 #: src/components/series/SeriesHero.tsx
 msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 msgstr "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

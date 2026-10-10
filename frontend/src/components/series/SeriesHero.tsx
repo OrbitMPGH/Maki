@@ -380,20 +380,37 @@ export function SeriesHero({
                                 icon={<IconAlertTriangle size={16} />}
                             >
                                 <Text size="xs" c="var(--ink-3)" style={{ lineHeight: 1.55 }}>
-                                    <Trans>
-                                        Your sources only reach chapter{' '}
-                                        <Text span fw={600} c="var(--ink)" className="tnum">
-                                            {highest}
-                                        </Text>
-                                        , but MangaBaka lists{' '}
-                                        <Text span fw={600} c="var(--ink)" className="tnum">
-                                            {listed}
-                                        </Text>
-                                        . Roughly{' '}
-                                        <Plural value={missing} one="# chapter" other="# chapters" /> can't be
-                                        downloaded from the sources linked here. Link another source to close
-                                        the gap.
-                                    </Trans>
+                                    {series.lockedFields.includes('totalChapters') ? (
+                                        <Trans>
+                                            Your sources only reach chapter{' '}
+                                            <Text span fw={600} c="var(--ink)" className="tnum">
+                                                {highest}
+                                            </Text>
+                                            , but the total you set is{' '}
+                                            <Text span fw={600} c="var(--ink)" className="tnum">
+                                                {listed}
+                                            </Text>
+                                            . Roughly{' '}
+                                            <Plural value={missing} one="# chapter" other="# chapters" /> can't be
+                                            downloaded from the sources linked here. Link another source to close
+                                            the gap.
+                                        </Trans>
+                                    ) : (
+                                        <Trans>
+                                            Your sources only reach chapter{' '}
+                                            <Text span fw={600} c="var(--ink)" className="tnum">
+                                                {highest}
+                                            </Text>
+                                            , but MangaBaka lists{' '}
+                                            <Text span fw={600} c="var(--ink)" className="tnum">
+                                                {listed}
+                                            </Text>
+                                            . Roughly{' '}
+                                            <Plural value={missing} one="# chapter" other="# chapters" /> can't be
+                                            downloaded from the sources linked here. Link another source to close
+                                            the gap.
+                                        </Trans>
+                                    )}
                                 </Text>
                             </Alert>
                         )}

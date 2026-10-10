@@ -3775,6 +3775,10 @@ msgstr "已追上进度"
 msgid "CBZ built from {kind} ({source}), the original stays"
 msgstr ""
 
+#: src/components/import/ImportPlanModal.tsx
+msgid "CBZ built from {kind}, the original stays"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Central only"
@@ -18280,6 +18284,10 @@ msgstr "来源更改尚未保存。现在关闭将丢弃这些更改。"
 #, fuzzy
 msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 msgstr "你的来源只到第 <0>{highest}</0> 章，但 MangaBaka 列出了 <1>{listed}</1> 章。大约 {missing, plural, other {# 个章节}} 无法从这里链接的来源下载。再链接一个来源来补齐缺口。"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr ""
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

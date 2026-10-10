@@ -69,7 +69,11 @@ function FileAction({ file }: { file: ImportPlanFile }) {
   switch (file.action) {
     case 'build': {
       const kind = label(KIND_LABELS[file.kind] ?? file.kind)
-      return <Trans>CBZ built from {kind} ({source}), the original stays</Trans>
+      return source && source !== '.' ? (
+        <Trans>CBZ built from {kind} ({source}), the original stays</Trans>
+      ) : (
+        <Trans>CBZ built from {kind}, the original stays</Trans>
+      )
     }
     case 'rebuildInPlace':
       return <Trans>not really a CBZ: the original is renamed to {aside} and a CBZ is built under this name</Trans>
