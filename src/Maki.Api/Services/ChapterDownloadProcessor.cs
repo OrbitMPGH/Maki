@@ -417,42 +417,29 @@ public class ChapterDownloadProcessor(
             }
             logger.LogError(hre, "Download failed for queue item {Id}. Page not found, retrying.", item.Id);
 
-            // The mapping actually in use, which after a previous fallback is not necessarily the one
-            // still on the (unrefreshed) navigation property.
-            if ((usedMapping?.Id ?? item.SourceMappingId) is { } failedMappingId)
-            {
-                triedMappingIds.Add(failedMappingId);
-            }
-
-            var disabledSources = await sourceAvailability.DisabledAsync(ct);
-            var mappings = await sourceResolver.OrderAsync(db, chapter.SeriesId, await db.SourceMappings
-                .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !triedMappingIds.Contains(m.Id) &&
-                            !disabledSources.Contains(m.SourceName))
-                .ToListAsync(ct), ct);
-            if (mappings.Count == 0)
+            if (await FailOverAsync(item, chapter, usedMapping, triedMappingIds, workingDir, ct) is null)
             {
                 await FailAsync(item, "error.download.noMoreSources", ct, detail: hre.Message);
                 return DownloadOutcome.Settled;
             }
 
-            // Clear the stale resolution so the recursive call re-verifies the new mapping via
-            // ResolveAsync instead of short-circuiting back onto the sourceChapterId that just
-            // 404'd (SourceChapterId is null already forces that path regardless of the now-stale
-            // SourceMapping navigation, which EF won't refresh just from the FK write below).
-            // The row stays in flight: this worker carries on with it, and a Queued row here could be
-            // claimed by a second worker onto the same working dir and temp archive.
-            item.SourceMappingId = mappings[0].Id;
-            item.SourceChapterId = null;
-            item.Status = QueueStatus.FetchingPages;
-            item.PagesDone = 0;
-            await db.SaveChangesAsync(ct);
-            TryDeleteDirectory(workingDir);
             return await ProcessAsync(item.Id, triedMappingIds, ct);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Download failed for queue item {Id}", item.Id);
             var (key, detail) = DownloadFailureReason.Classify(ex);
+            if (SourceFailover.ShouldFailOver(key, item.RetryCount + 1, item.PreferredMappingId != null,
+                    item.HealthOperationId != null, item.UpgradeInfoJson != null) &&
+                await FailOverAsync(item, chapter, usedMapping, triedMappingIds, workingDir, ct) is { } failedOverTo)
+            {
+                logger.LogWarning("Queue item {Id} failed {Count} times on one source, trying {Source} instead",
+                    item.Id, item.RetryCount + 1, failedOverTo.SourceName);
+                item.RetryCount++;
+                await db.SaveChangesAsync(ct);
+                return await ProcessAsync(item.Id, triedMappingIds, ct);
+            }
+
             await FailAsync(item, key, ct, detail: detail);
             return DownloadOutcome.Settled;
         }
@@ -463,6 +450,48 @@ public class ChapterDownloadProcessor(
                 TryDeleteFile(tmpCbz);
             }
         }
+    }
+
+    /// <summary>
+    /// Moves the item onto the next enabled mapping that has not been tried in this dispatch, leaving
+    /// it in flight for the caller to carry on with. Null when no other mapping is left.
+    /// </summary>
+    private async Task<SourceMapping?> FailOverAsync(
+        DownloadQueueItem item, Chapter chapter, SourceMapping? usedMapping, List<int> triedMappingIds,
+        string workingDir, CancellationToken ct)
+    {
+        // The mapping actually in use, which after a previous fallback is not necessarily the one
+        // still on the (unrefreshed) navigation property.
+        if ((usedMapping?.Id ?? item.SourceMappingId) is not { } failedMappingId)
+        {
+            return null;
+        }
+
+        triedMappingIds.Add(failedMappingId);
+
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
+        var mappings = await sourceResolver.OrderAsync(db, chapter.SeriesId, await db.SourceMappings
+            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !triedMappingIds.Contains(m.Id) &&
+                        !disabledSources.Contains(m.SourceName))
+            .ToListAsync(ct), ct);
+        if (mappings.Count == 0)
+        {
+            return null;
+        }
+
+        // Clear the stale resolution so the recursive call re-verifies the new mapping via
+        // ResolveAsync instead of short-circuiting back onto the sourceChapterId that just
+        // failed (SourceChapterId is null already forces that path regardless of the now-stale
+        // SourceMapping navigation, which EF won't refresh just from the FK write below).
+        // The row stays in flight: this worker carries on with it, and a Queued row here could be
+        // claimed by a second worker onto the same working dir and temp archive.
+        item.SourceMappingId = mappings[0].Id;
+        item.SourceChapterId = null;
+        item.Status = QueueStatus.FetchingPages;
+        item.PagesDone = 0;
+        await db.SaveChangesAsync(ct);
+        TryDeleteDirectory(workingDir);
+        return mappings[0];
     }
 
     /// <summary>
