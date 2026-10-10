@@ -688,6 +688,10 @@ msgid "{folderCount, plural, one {# library folder} other {# library folders}}"
 msgstr "{folderCount, plural, one {# kitaplık klasörü} other {# kitaplık klasörü}}"
 
 #: src/pages/ImportPage.tsx
+msgid "{folderLabel}: added {filesAdded, plural, one {# file} other {# files}}, linking once sources are found"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}"
 msgstr "{folderLabel}: {filesLinked, plural, one {# dosya} other {# dosya}} bağlandı"
@@ -701,6 +705,10 @@ msgstr "{folderLabel}: {filesLinked, plural, one {# dosya} other {# dosya}} bağ
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
 msgstr "{folderLabel}: {filesLinked, plural, one {# dosya bağlandı} other {# dosya bağlandı}}, {skippedCount, plural, one {# bağlanmadı} other {# bağlanmadı}}"
+
+#: src/pages/ImportPage.tsx
+msgid "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -845,6 +853,10 @@ msgstr "{left, plural, one {# kaldı} other {# kaldı}} · ~{eta}"
 #, fuzzy
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · daraltmak için tıklayın"
+
+#: src/pages/ImportPage.tsx
+msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2447,6 +2459,10 @@ msgstr "{windowLabel} içinde eklendi"
 #, fuzzy
 msgid "Added manually"
 msgstr "Elle eklendi"
+
+#: src/pages/ImportPage.tsx
+msgid "Adding files"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -6529,9 +6545,8 @@ msgid "Finding source"
 msgstr "Kaynak bulunuyor"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Finding sources"
-msgstr "Kaynaklar bulunuyor"
+msgid "Finding sources and linking files in the background: {linkingDone} of {linkingTotal} series done"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6696,9 +6711,8 @@ msgid "Folder path"
 msgstr "Klasör yolu"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Folders are renamed to the English title and their comic files are linked to chapters."
-msgstr "Klasörler İngilizce başlıkla yeniden adlandırılır ve çizgi roman dosyaları bölümlere bağlanır."
+msgid "Folders are renamed to the English title. Sources are then found in the background, and each series' comic files are linked to chapters as soon as its sources are in."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Folders where series are stored. Point Kavita at the same folders. Which users can see each folder is set per user under Users & security."
@@ -14876,11 +14890,6 @@ msgstr "Eşitleme başladı. Tamamlandığında bildirim alacaksın."
 #, fuzzy
 msgid "Synced"
 msgstr "Senkronize edildi"
-
-#: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Syncing chapters"
-msgstr "Bölümler eşitleniyor"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

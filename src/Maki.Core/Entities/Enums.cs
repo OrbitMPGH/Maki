@@ -108,6 +108,21 @@ public enum SeriesNotificationMode
     Muted = 3
 }
 
+/// <summary>
+/// What a library import still owes a series once its sources are found
+/// (<see cref="Series.PendingImportLink"/>). Persisted as an int, so append only.
+/// </summary>
+public enum PendingImportLink
+{
+    None = 0,
+
+    /// <summary>Link the registered files to chapters and leave their ComicInfo.xml alone.</summary>
+    Link = 1,
+
+    /// <summary>Link the registered files and standardize their ComicInfo.xml in the same pass.</summary>
+    LinkAndComicInfo = 2
+}
+
 public enum AcquisitionProtocol
 {
     Scraper = 0,

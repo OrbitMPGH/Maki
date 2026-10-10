@@ -36,7 +36,7 @@ public class SourceMappingControllerTests : IDisposable
     private List<int> Queued()
     {
         var ids = new List<int>();
-        while (_queue.Reader.TryRead(out var id))
+        while (_queue.TryReadMatch(out var id))
         {
             ids.Add(id);
         }

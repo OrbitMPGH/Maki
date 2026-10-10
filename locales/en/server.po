@@ -456,11 +456,6 @@ msgstr "Metadata lookup failed"
 msgid "error.libraryImport.noItemsToImport"
 msgstr "No items to import"
 
-#. A warning on a finished import.
-#: src/Maki.Api/Services/LibraryImportService.cs
-msgid "error.libraryImport.noSourceMatch"
-msgstr "No source matched this series. Link one from the series page so the imported files can be matched to chapters."
-
 #. {title} is the series title, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.partial"

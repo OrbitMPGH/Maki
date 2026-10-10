@@ -27,8 +27,7 @@ public static class ImportStage
     public const string RenamingFolder = "renamingFolder";
     public const string MergingFolder = "mergingFolder";
     public const string DownloadingCover = "downloadingCover";
-    public const string FindingSources = "findingSources";
-    public const string SyncingChapters = "syncingChapters";
+    public const string AddingFiles = "addingFiles";
     public const string UpdatingComicInfo = "updatingComicInfo";
     public const string LinkingFiles = "linkingFiles";
     public const string Imported = "imported";
@@ -62,7 +61,9 @@ public record ImportResult(
     int FilesLinked = 0,
     int FilesUnrecognized = 0,
     IReadOnlyList<string>? Warnings = null,
-    IReadOnlyList<ImportSkippedFile>? Skipped = null);
+    IReadOnlyList<ImportSkippedFile>? Skipped = null,
+    int FilesAdded = 0,
+    bool LinkPending = false);
 
 /// <summary>
 /// A comic in the imported folder that ended up backing no chapter. <paramref name="Reason"/> is
@@ -94,9 +95,8 @@ public class LibraryImportService(
     MakiDbContext db,
     IEnumerable<IMetadataProvider> metadataProviders,
     CoverService coverService,
-    SourceMatchService sourceMatchService,
-    ChapterSyncService chapterSyncService,
     CbzLinkService cbzLinkService,
+    SourceMatchQueue sourceMatchQueue,
     EventBroadcaster events,
     IAppSettings appSettings,
     NamingService naming,
@@ -104,24 +104,8 @@ public class LibraryImportService(
     SeriesIdentityService identity,
     ILocalizer localizer,
     ICurrentUser currentUser,
-    NotificationService notifications,
-    IUserLocaleResolver locales,
-    IMessageCatalog catalog,
     ILogger<LibraryImportService> logger)
 {
-    /// <summary>The series lock, let go while sources are matched over the network and taken back after.</summary>
-    private sealed class SeriesLockHandle(int seriesId) : IDisposable
-    {
-        private IDisposable? _held;
-
-        public async Task AcquireAsync(CancellationToken ct) => _held = await SeriesLocks.SeriesAsync(seriesId, ct);
-
-        public void Dispose()
-        {
-            _held?.Dispose();
-            _held = null;
-        }
-    }
 
     /// <summary>
     /// Splits a request into groups the import can run side by side. Items naming the same series
@@ -338,10 +322,10 @@ public class LibraryImportService(
                 localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
         }
 
+        var owedLink = updateComicInfo ? PendingImportLink.LinkAndComicInfo : PendingImportLink.Link;
         if (existingSeries is not null)
         {
-            using var seriesLock = new SeriesLockHandle(existingSeries.Id);
-            await seriesLock.AcquireAsync(ct);
+            using var seriesLock = await SeriesLocks.SeriesAsync(existingSeries.Id, ct);
             if (await db.ChapterFiles.AnyAsync(f => f.SeriesId == existingSeries.Id, ct))
             {
                 return new ImportResult(item.FolderName, false,
@@ -351,11 +335,12 @@ public class LibraryImportService(
             try
             {
                 return await ReimportIntoExistingAsync(
-                    existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, seriesLock, ct);
+                    existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, ct);
             }
             catch (Exception ex)
             {
-                return await RecoverFailedImportAsync(existingSeries, item, existingSeries.FolderName, created: false, ex);
+                return await RecoverFailedImportAsync(
+                    existingSeries, item, existingSeries.FolderName, created: false, ex, owedLink);
             }
         }
 
@@ -443,37 +428,52 @@ public class LibraryImportService(
                 }
             }
 
-            var warnings = new List<string>();
-            if (!await MatchSourcesAsync(series, item, operationId, ct))
-            {
-                warnings.Add(localizer.Get("error.libraryImport.noSourceMatch"));
-            }
+            var (added, skipped) = await RegisterAndDeferLinkAsync(series, item, targetDir, owedLink, operationId, ct);
 
-            int linked, unrecognized;
-            List<ImportSkippedFile> skipped;
-            using (await SeriesLocks.SeriesAsync(series.Id, ct))
-            {
-                var (cbzFiles, unreadable) = MaterializeComics(targetDir);
-                var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
-                (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
-                    series, targetDir, cbzFiles, "import",
-                    (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total, operationId: operationId),
-                    updateComicInfo, ct: ct);
-                skipped = await SkippedFilesAsync(series.Id, targetDir, cbzFiles, unreadable, ct);
-            }
-
-            // After linking rather than at the insert, so an import rolled back below leaves no
+            // After registering rather than at the insert, so an import rolled back below leaves no
             // "added" behind it. Still after the orphan adoption, so a series removed and put back
             // reads as one continuous history.
             await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
-            return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized,
-                warnings.Count > 0 ? warnings : null, skipped.Count > 0 ? skipped : null);
+            return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName,
+                Skipped: skipped.Count > 0 ? skipped : null, FilesAdded: added, LinkPending: true);
         }
         catch (Exception ex)
         {
             return await RecoverFailedImportAsync(
-                series, item, seriesFolderName, created: true, ex, renamedFrom is null ? null : (renamedFrom, targetDir));
+                series, item, seriesFolderName, created: true, ex, owedLink,
+                renamedFrom is null ? null : (renamedFrom, targetDir));
         }
+    }
+
+    /// <summary>
+    /// Builds the folder's CBZs and registers them without linking, then hands the series to the
+    /// background source match. Linking needs chapter rows and those only come from a source sync,
+    /// which is the slow, rate-limited part of an import; <see cref="SourceMatchWorkerHostedService"/>
+    /// links the files, and rewrites their ComicInfo.xml if asked, once the match is done.
+    /// <para>
+    /// The flag and the marker are set in the same locked section that registers the files, and the
+    /// link stage clears the marker in the locked section that links them, so a match already queued
+    /// for this series (an add, then an import of its folder) can never clear the flag before these
+    /// files are on record and leave them unlinked.
+    /// </para>
+    /// </summary>
+    private async Task<(int Added, List<ImportSkippedFile> Unreadable)> RegisterAndDeferLinkAsync(
+        Series series, ImportRequestItem item, string targetDir, PendingImportLink owedLink, string? operationId,
+        CancellationToken ct, bool locked = false)
+    {
+        using var seriesLock = locked ? null : await SeriesLocks.SeriesAsync(series.Id, ct);
+        await events.ImportProgress(item.FolderName, ImportStage.AddingFiles, operationId: operationId);
+        var (cbzFiles, unreadable) = MaterializeComics(targetDir);
+        var added = await cbzLinkService.RegisterFilesAsync(series, targetDir, cbzFiles, "import", ct);
+        series.SourceMatchPending = true;
+        series.PendingImportLink = owedLink;
+        await db.SaveChangesAsync(ct);
+        sourceMatchQueue.Enqueue(series.Id, SourceMatchLane.Background);
+
+        var skipped = unreadable
+            .Select(f => new ImportSkippedFile(Path.GetRelativePath(targetDir, f), ImportSkipReason.Unreadable))
+            .ToList();
+        return (added, skipped);
     }
 
     /// <summary>
@@ -484,7 +484,7 @@ public class LibraryImportService(
     /// </summary>
     private async Task<ImportResult> RecoverFailedImportAsync(
         Series series, ImportRequestItem item, string folderName, bool created, Exception ex,
-        (string From, string To)? renamed = null)
+        PendingImportLink owedLink, (string From, string To)? renamed = null)
     {
         logger.LogError(ex, "Import of '{Folder}' into series {SeriesId} failed part way", item.FolderName, series.Id);
         var none = CancellationToken.None;
@@ -514,6 +514,17 @@ public class LibraryImportService(
             if (created)
             {
                 await stats.RecordAsync(StatsEventType.SeriesAdded, seriesId, title, ct: none);
+            }
+
+            // Files went on record but the import stopped before handing the series to the match,
+            // or the hand-off itself failed. Without this the files would wait for a restart.
+            if (linkedAny && !await db.Chapters.AnyAsync(c => c.SeriesId == seriesId, none) &&
+                await db.Series.FindAsync([seriesId], none) is { } kept)
+            {
+                kept.SourceMatchPending = true;
+                kept.PendingImportLink = owedLink;
+                await db.SaveChangesAsync(none);
+                sourceMatchQueue.Enqueue(seriesId, SourceMatchLane.Background);
             }
         }
         catch (Exception cleanupEx)
@@ -551,43 +562,6 @@ public class LibraryImportService(
     }
 
     /// <summary>
-    /// Links scraper sources and pulls the chapter list. False when no source matched, after sending
-    /// the same manual-match notification the add path sends: the import still links what it can,
-    /// but nothing it adopts can back a chapter until somebody links a source by hand.
-    /// </summary>
-    private async Task<bool> MatchSourcesAsync(
-        Series series, ImportRequestItem item, string? operationId, CancellationToken ct)
-    {
-        try
-        {
-            await events.ImportProgress(item.FolderName, ImportStage.FindingSources, operationId: operationId);
-            var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
-            if (mapped.Count > 0)
-            {
-                await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters, operationId: operationId);
-                try
-                {
-                    await chapterSyncService.SyncSeriesAsync(series.Id, ct);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    logger.LogWarning(ex, "Chapter sync failed during import of {Title}", series.Title);
-                }
-
-                return true;
-            }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.LogWarning(ex, "Source matching failed during import of {Title}", series.Title);
-        }
-
-        await SourceMatchWorkerHostedService.NotifyManualMatchNeededAsync(
-            notifications, locales, catalog, series, logger, ct);
-        return false;
-    }
-
-    /// <summary>
     /// Re-links the on-disk CBZ files in <paramref name="sourceDir"/> to a series that is
     /// already in the library but has no downloaded files yet — without re-adding the series
     /// or re-fetching its metadata. Reconciles the folder to the standardized name and ensures
@@ -595,7 +569,7 @@ public class LibraryImportService(
     /// </summary>
     private async Task<ImportResult> ReimportIntoExistingAsync(
         Series series, RootFolder rootFolder, ImportRequestItem item, string sourceDir,
-        bool updateComicInfo, string? operationId, SeriesLockHandle seriesLock, CancellationToken ct)
+        bool updateComicInfo, string? operationId, CancellationToken ct)
     {
         var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
@@ -675,19 +649,17 @@ public class LibraryImportService(
 
         folderNameLock.Dispose();
 
-        // Make sure there are chapters to match the files against. A series added but never
-        // refreshed may have no sources/chapters yet. Matching goes out to the network, so the series
-        // lock is let go meanwhile; the provider-id lock stays, so no other import of this work can
-        // claim the series before these files are linked.
+        // A series added but never matched has no chapters to link against yet, so its files wait
+        // for the background match like a new series' do. The caller holds the series lock.
         if (!await db.Chapters.AnyAsync(c => c.SeriesId == series.Id, ct))
         {
-            seriesLock.Dispose();
-            var matched = await MatchSourcesAsync(series, item, operationId, ct);
-            await seriesLock.AcquireAsync(ct);
-            if (!matched)
-            {
-                warnings.Add(localizer.Get("error.libraryImport.noSourceMatch"));
-            }
+            var owedLink = updateComicInfo ? PendingImportLink.LinkAndComicInfo : PendingImportLink.Link;
+            var (added, unreadableSkipped) = await RegisterAndDeferLinkAsync(
+                series, item, targetDir, owedLink, operationId, ct, locked: true);
+            return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName,
+                Warnings: warnings.Count > 0 ? warnings : null,
+                Skipped: unreadableSkipped.Count > 0 ? unreadableSkipped : null,
+                FilesAdded: added, LinkPending: true);
         }
 
         var (cbzFiles, unreadable) = MaterializeComics(targetDir);

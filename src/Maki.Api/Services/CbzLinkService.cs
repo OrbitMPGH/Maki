@@ -55,55 +55,15 @@ public class CbzLinkService(
         var volumeFileIds = await VolumeFileIdsAsync(series.Id, ct);
         var linked = 0;
         var unrecognized = 0;
-        var created = 0;
-
-        // Every row the series already has, keyed the way two paths count as one file. A torrent
-        // whose import is re-run (a poll cut off before the queue row was saved, a parked item the
-        // user settles after the job already placed its files) hands over paths that are already
-        // in the folder and already have a row; inserting again gave one file two rows.
-        var existing = (await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct))
-            .GroupBy(f => LibraryPaths.ComparisonKey(f.RelativePath), StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.OrderBy(f => f.Id).First(), StringComparer.OrdinalIgnoreCase);
 
         // The folder the files are actually in. Not always Series.FolderName: a keep-new-standard
         // import links the original folder while FolderName already names the standard one.
         var folderName = Path.GetFileName(Path.TrimEndingDirectorySeparator(seriesDir));
         var ordered = files.OrderBy(f => f).ToList();
+        var (existing, created) = await AddMissingRowsAsync(series, seriesDir, ordered, sourceName, releaseName, ct);
         var index = 0;
         var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record, string Path)>();
         var volumeFiles = new List<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)>();
-
-        // New rows go in together so one save assigns every id the linking pass needs.
-        var added = false;
-        foreach (var file in ordered)
-        {
-            var key = LibraryPaths.ComparisonKey(Path.Combine(folderName, Path.GetRelativePath(seriesDir, file)));
-            if (existing.ContainsKey(key))
-            {
-                continue;
-            }
-
-            var adopted = new ChapterFile
-            {
-                SeriesId = series.Id,
-                RelativePath = Path.Combine(folderName, Path.GetRelativePath(seriesDir, file)),
-                Size = new FileInfo(file).Length,
-                SourceName = sourceName,
-                ReleaseName = releaseName,
-                DateAdded = DateTime.UtcNow
-            };
-            var (kind, group) = quality.ResolveProvenance(adopted, null);
-            ChapterFileQualityService.StampTierOnly(adopted, kind, group);
-            db.ChapterFiles.Add(adopted);
-            existing[key] = adopted;
-            created++;
-            added = true;
-        }
-
-        if (added)
-        {
-            await db.SaveChangesAsync(ct);
-        }
 
         foreach (var file in ordered)
         {
@@ -206,6 +166,69 @@ public class CbzLinkService(
         }
 
         return (linked, unrecognized);
+    }
+
+    /// <summary>
+    /// Records <paramref name="files"/> as the series' files without linking any of them. A library
+    /// import does this before its series has chapters to link against: the rows are what claim the
+    /// folder, keep a failed import's series, and quiet the health sweep while the source match
+    /// runs. <see cref="SourceMatchWorkerHostedService"/> links them with <see cref="LinkFilesAsync"/>
+    /// afterwards, which reuses these rows. Returns how many files were registered.
+    /// </summary>
+    public async Task<int> RegisterFilesAsync(
+        Series series, string seriesDir, IEnumerable<string> files, string sourceName, CancellationToken ct = default)
+    {
+        var ordered = files.OrderBy(f => f).ToList();
+        await AddMissingRowsAsync(series, seriesDir, ordered, sourceName, null, ct);
+        return ordered.Count;
+    }
+
+    private async Task<(Dictionary<string, ChapterFile> Existing, int Created)> AddMissingRowsAsync(
+        Series series, string seriesDir, IReadOnlyList<string> ordered, string sourceName, string? releaseName,
+        CancellationToken ct)
+    {
+        // Every row the series already has, keyed the way two paths count as one file. A torrent
+        // whose import is re-run (a poll cut off before the queue row was saved, a parked item the
+        // user settles after the job already placed its files) hands over paths that are already
+        // in the folder and already have a row; inserting again gave one file two rows.
+        var existing = (await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct))
+            .GroupBy(f => LibraryPaths.ComparisonKey(f.RelativePath), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.OrderBy(f => f.Id).First(), StringComparer.OrdinalIgnoreCase);
+
+        var folderName = Path.GetFileName(Path.TrimEndingDirectorySeparator(seriesDir));
+        var created = 0;
+        foreach (var file in ordered)
+        {
+            var relativePath = Path.Combine(folderName, Path.GetRelativePath(seriesDir, file));
+            var key = LibraryPaths.ComparisonKey(relativePath);
+            if (existing.ContainsKey(key))
+            {
+                continue;
+            }
+
+            var adopted = new ChapterFile
+            {
+                SeriesId = series.Id,
+                RelativePath = relativePath,
+                Size = new FileInfo(file).Length,
+                SourceName = sourceName,
+                ReleaseName = releaseName,
+                DateAdded = DateTime.UtcNow
+            };
+            var (kind, group) = quality.ResolveProvenance(adopted, null);
+            ChapterFileQualityService.StampTierOnly(adopted, kind, group);
+            db.ChapterFiles.Add(adopted);
+            existing[key] = adopted;
+            created++;
+        }
+
+        // New rows go in together so one save assigns every id the linking pass needs.
+        if (created > 0)
+        {
+            await db.SaveChangesAsync(ct);
+        }
+
+        return (existing, created);
     }
 
     /// <summary>

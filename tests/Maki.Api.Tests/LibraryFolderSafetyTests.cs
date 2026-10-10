@@ -129,11 +129,10 @@ public class LibraryFolderSafetyTests : IDisposable
         await using (var db = _db.NewContext())
         {
             var service = new LibraryImportService(
-                db, [new FixedProvider(42)], null!, null!, null!, LinkService(db),
+                db, [new FixedProvider(42)], null!, LinkService(db), new SourceMatchQueue(),
                 new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
                 _settings, new NamingService(_settings), null!, null!, new TestLocalizer(),
-                new TestCurrentUser(1), new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
-                NullLogger<LibraryImportService>.Instance);
+                new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
             result = await service.ImportAsync(rootId, new ImportRequestItem("chainsaw man", "42"));
         }
 
@@ -273,12 +272,11 @@ public class LibraryFolderSafetyTests : IDisposable
             var service = new LibraryImportService(
                 db, [new FixedProvider(42, contentRating: "pornographic")],
                 new CoverService(null!, new AppPaths(), _settings, NullLogger<CoverService>.Instance),
-                null!, null!, LinkService(db),
+                LinkService(db), new SourceMatchQueue(),
                 new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
                 _settings, new NamingService(_settings), new StatsEventService(db),
                 new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance), new TestLocalizer(),
-                new TestCurrentUser(1), new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
-                NullLogger<LibraryImportService>.Instance);
+                new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
             result = await service.ImportAsync(rootId, new ImportRequestItem("Chainsaw Man", "42"));
         }
 

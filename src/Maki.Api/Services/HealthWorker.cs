@@ -117,6 +117,9 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     var series = await unanalysed
                         .Where(f => db.Series.Any(s => s.Id == f.SeriesId && onlineRoots.Contains(s.RootFolderId)))
                         .Where(f => !db.DownloadQueue.Any(q => q.SeriesId == f.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled))
+                        // An import still waiting on its match rewrites every file's ComicInfo when it
+                        // links, so verifying the bytes before that reads them twice for nothing.
+                        .Where(f => !db.Series.Any(s => s.Id == f.SeriesId && (s.SourceMatchPending || s.PendingImportLink != PendingImportLink.None)))
                         .Select(f => f.SeriesId).Distinct().Order().Take(100).ToListAsync(stoppingToken);
                     // Verified, unlike the scheduled sweep. These are the chapters that just
                     // arrived, so reading them costs a read of what was just written rather than of

@@ -688,6 +688,10 @@ msgid "{folderCount, plural, one {# library folder} other {# library folders}}"
 msgstr "{folderCount, plural, other {# 个资料库文件夹}}"
 
 #: src/pages/ImportPage.tsx
+msgid "{folderLabel}: added {filesAdded, plural, one {# file} other {# files}}, linking once sources are found"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}"
 msgstr "{folderLabel}：已关联 {filesLinked, plural, other {# 个文件}}"
@@ -701,6 +705,10 @@ msgstr "{folderLabel}：已关联 {filesLinked, plural, other {# 个文件}}，{
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
 msgstr "{folderLabel}：已关联 {filesLinked, plural, other {# 个文件}}，{skippedCount, plural, other {# 个未关联}}"
+
+#: src/pages/ImportPage.tsx
+msgid "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -845,6 +853,10 @@ msgstr "{left, plural, other {还剩 # 个}} · 约 {eta}"
 #, fuzzy
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · 点击收起"
+
+#: src/pages/ImportPage.tsx
+msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2447,6 +2459,10 @@ msgstr "{windowLabel}新增"
 #, fuzzy
 msgid "Added manually"
 msgstr "手动添加"
+
+#: src/pages/ImportPage.tsx
+msgid "Adding files"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -6529,9 +6545,8 @@ msgid "Finding source"
 msgstr "正在查找来源"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Finding sources"
-msgstr "正在查找来源"
+msgid "Finding sources and linking files in the background: {linkingDone} of {linkingTotal} series done"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6696,9 +6711,8 @@ msgid "Folder path"
 msgstr "文件夹路径"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Folders are renamed to the English title and their comic files are linked to chapters."
-msgstr "文件夹会重命名为英文标题，漫画文件会关联到对应章节。"
+msgid "Folders are renamed to the English title. Sources are then found in the background, and each series' comic files are linked to chapters as soon as its sources are in."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Folders where series are stored. Point Kavita at the same folders. Which users can see each folder is set per user under Users & security."
@@ -14876,11 +14890,6 @@ msgstr "同步已开始，完成后会通知你。"
 #, fuzzy
 msgid "Synced"
 msgstr "已同步"
-
-#: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Syncing chapters"
-msgstr "正在同步章节"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

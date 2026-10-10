@@ -102,6 +102,8 @@ export interface SeriesDto {
    * card shows a spinner off this rather than claiming the series has no sources.
    */
   sourceMatchPending: boolean
+  /** A library import's files are registered but wait for the background match to be linked. */
+  importLinkPending: boolean
   /**
    * "Off" | "ScrobbleOnly" | "Full". ScrobbleOnly withholds tracker pushes only; Full also
    * withholds it from Rewind/reading-history stats.

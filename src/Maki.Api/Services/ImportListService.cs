@@ -507,6 +507,7 @@ public class ImportListService(
             candidate.MangaBakaId.ToString(CultureInfo.InvariantCulture), rootFolderId, prefs.Monitored,
             prefs.MonitorNewItems, ct,
             deferSourceMatching: true,
+            matchLane: SourceMatchLane.Background,
             attributedUserId: user.Id,
             addedFrom: AddedFrom,
             clientMutationId: MutationId(user.Id, tracker.Name, candidate.Entry.RemoteId));

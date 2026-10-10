@@ -688,6 +688,10 @@ msgid "{folderCount, plural, one {# library folder} other {# library folders}}"
 msgstr "{folderCount, plural, one {# dossier de bibliothèque} many {# dossiers de bibliothèque} other {# dossiers de bibliothèque}}"
 
 #: src/pages/ImportPage.tsx
+msgid "{folderLabel}: added {filesAdded, plural, one {# file} other {# files}}, linking once sources are found"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}"
 msgstr "{folderLabel} : linked {filesLinked, plural, one {# fichier} many {# fichiers} other {# fichiers}}"
@@ -701,6 +705,10 @@ msgstr "{folderLabel} : linked {filesLinked, plural, one {# fichier} many {# fic
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
 msgstr "{folderLabel} : {filesLinked, plural, one {# fichier lié} many {# fichiers liés} other {# fichiers liés}}, {skippedCount, plural, one {# non lié} many {# non liés} other {# non liés}}"
+
+#: src/pages/ImportPage.tsx
+msgid "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -845,6 +853,10 @@ msgstr "{left, plural, one {# restant} many {# restants} other {# restants}} · 
 #, fuzzy
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · cliquer pour réduire"
+
+#: src/pages/ImportPage.tsx
+msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2447,6 +2459,10 @@ msgstr "Séries ajoutées pendant {windowLabel}"
 #, fuzzy
 msgid "Added manually"
 msgstr "Ajouté manuellement"
+
+#: src/pages/ImportPage.tsx
+msgid "Adding files"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -6529,9 +6545,8 @@ msgid "Finding source"
 msgstr "Recherche d'une source"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Finding sources"
-msgstr "Recherche de sources"
+msgid "Finding sources and linking files in the background: {linkingDone} of {linkingTotal} series done"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6696,9 +6711,8 @@ msgid "Folder path"
 msgstr "Chemin du dossier"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Folders are renamed to the English title and their comic files are linked to chapters."
-msgstr "Les dossiers sont renommés avec le titre anglais et leurs fichiers de bande dessinée sont associés aux chapitres."
+msgid "Folders are renamed to the English title. Sources are then found in the background, and each series' comic files are linked to chapters as soon as its sources are in."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Folders where series are stored. Point Kavita at the same folders. Which users can see each folder is set per user under Users & security."
@@ -14876,11 +14890,6 @@ msgstr "Synchronisation lancée, vous recevrez une notification à la fin"
 #, fuzzy
 msgid "Synced"
 msgstr "Synchronisé"
-
-#: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Syncing chapters"
-msgstr "Synchronisation des chapitres"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

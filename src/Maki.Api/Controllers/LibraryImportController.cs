@@ -40,19 +40,20 @@ public class LibraryImportController(
         int RootFolderId, List<ImportRequestItem> Items, bool UpdateComicInfo = true, string? OperationId = null);
 
     /// <summary>
-    /// Ceiling on one request's batch. Each item can involve a metadata lookup, a source search
-    /// and rewriting every CBZ in the folder, so an unbounded list means an HTTP call that runs for
-    /// many minutes and dies to a proxy timeout with no usable response. The client sends batches
+    /// Ceiling on one request's batch. Each item can involve a metadata lookup, a cover download
+    /// and converting every archive in the folder, so an unbounded list means an HTTP call that runs
+    /// for many minutes and dies to a proxy timeout with no usable response. The client sends batches
     /// of this size; live progress still arrives over SignalR either way.
     /// </summary>
     public const int MaxItemsPerRequest = 50;
 
     /// <summary>
-    /// Folders imported at once. Most of an import is waiting on source sites, and each site's rate
-    /// limiter caps request starts rather than requests in flight, so a few folders overlap well.
-    /// Kept low because the ComicInfo rewrite is disk-bound and many libraries live on a NAS.
+    /// Folders imported at once. Source matching, linking and the ComicInfo rewrite run afterwards
+    /// in <see cref="SourceMatchWorkerHostedService"/>, so what is left here is a metadata lookup,
+    /// a cover and building CBZs. Not higher, because building CBZs is disk-bound and many
+    /// libraries live on a NAS.
     /// </summary>
-    public const int MaxConcurrentImports = 4;
+    public const int MaxConcurrentImports = 8;
 
     [HttpGet("scan")]
     public async Task<IActionResult> Scan([FromQuery] int rootFolderId, CancellationToken ct)
@@ -129,7 +130,7 @@ public class LibraryImportController(
         inbox.Raise(InboxEventType.ImportFinished, new InboxMessage(
                 Key: failed == 0 ? "inbox.libraryImport.finished" : "inbox.libraryImport.finishedWithErrors",
                 Params: InboxMessage.Args(new { imported, failed }),
-                // An import that matched no source still succeeded, but nothing it adopted is linked yet.
+                // A merge that left files behind still succeeded, but somebody should look at it.
                 Level: failed == 0 ? results.Any(r => r.Warnings is { Count: > 0 }) ? NotificationLevel.Warning : NotificationLevel.Info :
                     imported > 0 ? NotificationLevel.Warning : NotificationLevel.Error,
                 Url: "/import"),

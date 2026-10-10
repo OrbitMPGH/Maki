@@ -158,6 +158,22 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     }
 
     /// <summary>
+    /// The files a library import registered for a series are linked to its chapters, after its
+    /// background source match. Same audience as <see cref="SourceMatchFinished"/>; the import page
+    /// counts these to show how far the background linking has got.
+    /// </summary>
+    public async Task SeriesFilesLinked(int seriesId, int rootFolderId, int linked, int total)
+    {
+        var groups = await AudienceForAsync(rootFolderId);
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        await hubContext.Clients.Groups(groups).SendAsync("seriesFilesLinked", new { seriesId, linked, total });
+    }
+
+    /// <summary>
     /// One source's progress inside a match that is still running, so the Sources card can show the
     /// sources resolving instead of one spinner for the whole run. Same audience as
     /// <see cref="SourceMatchFinished"/>.

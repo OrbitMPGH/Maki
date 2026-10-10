@@ -240,6 +240,15 @@ export function useLiveEvents() {
         queryClient.setQueryData(['sourcematch-progress', seriesId], {})
       })
 
+      // An imported series' files were linked after its match. The chapter table, the Files tab and
+      // the series row (which carries the pending flag the detail page polls on) all change.
+      listen(conn, 'seriesFilesLinked', ({ seriesId }: { seriesId: number }) => {
+        void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        scheduleSeriesRefresh()
+      })
+
       // One source's progress inside a match that's still running. Decoration on top of
       // `sourceMatchFinished`, which is still what makes the real rows appear. A client that
       // misses these just sees the finished table, as it did before.

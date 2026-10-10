@@ -399,6 +399,16 @@ function SeriesDetailBody() {
     }
     wasMatching.current = matching
   }, [series?.sourceMatchPending, seriesId, queryClient])
+  // An imported series links its files a little after the match, in a stage of its own.
+  const wasLinking = useRef(false)
+  useEffect(() => {
+    const linking = series?.importLinkPending ?? false
+    if (wasLinking.current && !linking) {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
+    }
+    wasLinking.current = linking
+  }, [series?.importLinkPending, seriesId, queryClient])
   const readTracking = useReadTracking()
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)

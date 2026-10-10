@@ -642,13 +642,6 @@ msgstr "元数据查询失败"
 msgid "error.libraryImport.noItemsToImport"
 msgstr "没有要导入的项目"
 
-#. A warning on a finished import.
-#: src/Maki.Api/Services/LibraryImportService.cs
-#. English: No source matched this series. Link one from the series page so the imported files can be matched to chapters.
-#, fuzzy
-msgid "error.libraryImport.noSourceMatch"
-msgstr "没有来源匹配此系列。请在系列页面关联一个来源，以便将导入的文件与章节对应。"
-
 #. {title} is the series title, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: "{title}" was only partly imported. Open the series and run Rescan to pick up the rest.

@@ -29,9 +29,8 @@ public class LibraryImportSkippedFilesTests : IDisposable
     }
 
     private LibraryImportService Service(Maki.Data.MakiDbContext db) => new(
-        db, [], null!, null!, null!, null!, null!, null!, null!, null!, null!, new TestLocalizer(),
-        new TestCurrentUser(1), new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
-        NullLogger<LibraryImportService>.Instance);
+        db, [], null!, null!, new SourceMatchQueue(), null!, null!, null!, null!, null!, new TestLocalizer(),
+        new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
 
     private string WriteZip(string name)
     {

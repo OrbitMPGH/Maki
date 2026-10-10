@@ -642,13 +642,6 @@ msgstr "Falha ao buscar metadados"
 msgid "error.libraryImport.noItemsToImport"
 msgstr "Nenhum item para importar"
 
-#. A warning on a finished import.
-#: src/Maki.Api/Services/LibraryImportService.cs
-#. English: No source matched this series. Link one from the series page so the imported files can be matched to chapters.
-#, fuzzy
-msgid "error.libraryImport.noSourceMatch"
-msgstr "Nenhuma fonte correspondeu a esta série. Vincule uma pela página da série para que os arquivos importados possam ser associados aos capítulos."
-
 #. {title} is the series title, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: "{title}" was only partly imported. Open the series and run Rescan to pick up the rest.

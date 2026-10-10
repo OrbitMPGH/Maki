@@ -72,11 +72,11 @@ public sealed class LibraryImportDuplicateScopeTests : IDisposable
 
         using var scoped = _db.NewContext(user, allRootFolders: false);
         var service = new LibraryImportService(
-            scoped, [new Provider()], null!, null!, null!, null!, new SilentBroadcaster(), new FakeAppSettings(),
+            scoped, [new Provider()], null!, null!, new SourceMatchQueue(), new SilentBroadcaster(), new FakeAppSettings(),
             new NamingService(new FakeAppSettings()), null!, null!, new TestLocalizer(),
             new TestCurrentUser(user, permissions: MakiPermission.ImportLibrary, allRootFolders: false,
                 rootFolderIds: new HashSet<int> { grantedRoot }),
-            null!, new TestUserLocaleResolver(), new TestLocalizer(), NullLogger<LibraryImportService>.Instance);
+            NullLogger<LibraryImportService>.Instance);
 
         var result = await service.ImportAsync(grantedRoot, new ImportRequestItem("Berserk", "42"));
 

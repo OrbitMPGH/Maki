@@ -137,9 +137,11 @@ public class SourceMappingController(
         // enqueueing first can race the save and silently do nothing.
         await db.SaveChangesAsync(ct);
 
+        // One series is somebody waiting on its Sources card; a bulk re-match waits its turn.
+        var lane = pending.Count == 1 ? SourceMatchLane.Interactive : SourceMatchLane.Background;
         foreach (var series in pending)
         {
-            sourceMatchQueue.Enqueue(series.Id);
+            sourceMatchQueue.Enqueue(series.Id, lane);
         }
 
         return Ok(new { queued = pending.Count });

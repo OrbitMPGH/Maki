@@ -131,7 +131,8 @@ export function useSeriesDetail(id: number) {
     // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
     // would otherwise leave the Sources card spinning with nothing to end it, so poll while, and
     // only while, there is something to wait for.
-    refetchInterval: (query) => (query.state.data?.sourceMatchPending ? 3000 : false),
+    refetchInterval: (query) =>
+      query.state.data?.sourceMatchPending || query.state.data?.importLinkPending ? 3000 : false,
   })
 }
 

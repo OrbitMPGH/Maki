@@ -579,6 +579,10 @@ msgid "{folderCount, plural, one {# library folder} other {# library folders}}"
 msgstr "{folderCount, plural, one {# library folder} other {# library folders}}"
 
 #: src/pages/ImportPage.tsx
+msgid "{folderLabel}: added {filesAdded, plural, one {# file} other {# files}}, linking once sources are found"
+msgstr "{folderLabel}: added {filesAdded, plural, one {# file} other {# files}}, linking once sources are found"
+
+#: src/pages/ImportPage.tsx
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}"
 msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}"
 
@@ -589,6 +593,10 @@ msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}
 #: src/pages/ImportPage.tsx
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
 msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
+
+#: src/pages/ImportPage.tsx
+msgid "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
+msgstr "{folderLabel}: linked {linkedCount} of {linkTotal, plural, one {# file} other {# files}}"
 
 #: src/pages/reader/ChapterEnd.tsx
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -706,6 +714,10 @@ msgstr "{left, plural, one {# left} other {# left}} · ~{eta}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · click to collapse"
+
+#: src/pages/ImportPage.tsx
+msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
+msgstr "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{markerLabel} Anime adaptation ends here"
@@ -2039,6 +2051,10 @@ msgstr "Added in {windowLabel}"
 #: src/components/SourceMappingsSection.tsx
 msgid "Added manually"
 msgstr "Added manually"
+
+#: src/pages/ImportPage.tsx
+msgid "Adding files"
+msgstr "Adding files"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Adds a button to the login page. Local passwords keep working unless you restrict them below."
@@ -5420,8 +5436,8 @@ msgid "Finding source"
 msgstr "Finding source"
 
 #: src/pages/ImportPage.tsx
-msgid "Finding sources"
-msgstr "Finding sources"
+msgid "Finding sources and linking files in the background: {linkingDone} of {linkingTotal} series done"
+msgstr "Finding sources and linking files in the background: {linkingDone} of {linkingTotal} series done"
 
 #: src/pages/HealthPage.tsx
 msgid "Findings"
@@ -5557,8 +5573,8 @@ msgid "Folder path"
 msgstr "Folder path"
 
 #: src/pages/ImportPage.tsx
-msgid "Folders are renamed to the English title and their comic files are linked to chapters."
-msgstr "Folders are renamed to the English title and their comic files are linked to chapters."
+msgid "Folders are renamed to the English title. Sources are then found in the background, and each series' comic files are linked to chapters as soon as its sources are in."
+msgstr "Folders are renamed to the English title. Sources are then found in the background, and each series' comic files are linked to chapters as soon as its sources are in."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Folders where series are stored. Point Kavita at the same folders. Which users can see each folder is set per user under Users & security."
@@ -12315,10 +12331,6 @@ msgstr "Sync started, you will get a notification when it finishes"
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Synced"
 msgstr "Synced"
-
-#: src/pages/ImportPage.tsx
-msgid "Syncing chapters"
-msgstr "Syncing chapters"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Syncing…"

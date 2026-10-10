@@ -128,6 +128,11 @@ public record SeriesDto(
     /// </summary>
     bool SourceMatchPending = false,
     /// <summary>
+    /// A library import's files are registered but not linked yet (<see cref="Series.PendingImportLink"/>).
+    /// The detail page keeps polling while this is set and refreshes the Files tab when it clears.
+    /// </summary>
+    bool ImportLinkPending = false,
+    /// <summary>
     /// <see cref="IncognitoMode"/> as a string: "Off", "ScrobbleOnly" (excluded from tracker
     /// pushes only), or "Full" (also excluded from Rewind/reading-history stats).
     /// </summary>
@@ -284,6 +289,7 @@ public record SeriesDto(
         s.AnimeEnd,
         readChapterCount,
         s.SourceMatchPending,
+        s.PendingImportLink != PendingImportLink.None,
         s.Incognito.ToString(),
         notificationMode.ToString())
     {

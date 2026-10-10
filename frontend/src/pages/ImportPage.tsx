@@ -45,8 +45,7 @@ const STAGE_LABELS: Record<string, MessageDescriptor> = {
   renamingFolder: msg`Renaming folder`,
   mergingFolder: msg`Merging folder`,
   downloadingCover: msg`Downloading cover`,
-  findingSources: msg`Finding sources`,
-  syncingChapters: msg`Syncing chapters`,
+  addingFiles: msg`Adding files`,
   updatingComicInfo: msg`Updating ComicInfo`,
   linkingFiles: msg`Linking files`,
   imported: msg`Imported`,
@@ -80,6 +79,16 @@ interface ImportResultDto {
   filesUnrecognized: number
   warnings?: string[] | null
   skipped?: { name: string; reason: string }[] | null
+  /** Files registered but not linked yet; the background source match links them. */
+  filesAdded: number
+  linkPending: boolean
+}
+
+/** `seriesFilesLinked` hub event: the background link stage finished one imported series. */
+interface FilesLinkedEvent {
+  seriesId: number
+  linked: number
+  total: number
 }
 
 interface ImportProgressEvent {
@@ -107,6 +116,9 @@ export default function ImportPage() {
   const [selection, setSelection] = useState<Record<string, string>>({}) // folderName -> providerId ('' = skip)
   const [results, setResults] = useState<ImportResultDto[] | null>(null)
   const [progress, setProgress] = useState<Record<string, ImportProgressEvent>>({})
+  // Keyed by series id. Recorded whatever import they belong to: a quick series can finish linking
+  // before the batch that imported it has returned its results.
+  const [linkedSeries, setLinkedSeries] = useState<Record<number, FilesLinkedEvent>>({})
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [updateComicInfo, setUpdateComicInfo] = useState(true)
   const [showInLibrary, setShowInLibrary] = useState(false)
@@ -120,12 +132,17 @@ export default function ImportPage() {
     setProgress((p) => ({ ...p, [evt.folderName]: evt }))
   })
 
+  useHubEvent<FilesLinkedEvent>('seriesFilesLinked', (evt) => {
+    setLinkedSeries((l) => ({ ...l, [evt.seriesId]: evt }))
+  })
+
   const clearScan = () => {
     setCandidates(null)
     setScannedRootFolderId(null)
     setResults(null)
     setSelection({})
     setProgress({})
+    setLinkedSeries({})
   }
 
   const scan = useMutation({
@@ -172,6 +189,7 @@ export default function ImportPage() {
     onMutate: (payload) => {
       operationIdRef.current = payload.operationId
       setResults(null)
+      setLinkedSeries({})
       // Every selected row starts out queued; SignalR events overwrite per row.
       const queued: Record<string, ImportProgressEvent> = {}
       for (const item of payload.items) {
@@ -207,6 +225,10 @@ export default function ImportPage() {
     // error toast comes from the global handler in main.tsx.
     onError: () => setProgress({}),
   })
+
+  const linkingIds = (results ?? []).filter((r) => r.linkPending && r.seriesId !== null).map((r) => r.seriesId!)
+  const linkingTotal = linkingIds.length
+  const linkingDone = linkingIds.filter((id) => linkedSeries[id] !== undefined).length
 
   const inLibraryCount = candidates?.filter((c) => c.existingSeriesId !== null).length ?? 0
   const visibleCandidates = candidates?.filter((c) => showInLibrary || c.existingSeriesId === null) ?? null
@@ -299,7 +321,10 @@ export default function ImportPage() {
         size="lg"
       >
         <Text size="sm" mb="xs">
-          <Trans>Folders are renamed to the English title and their comic files are linked to chapters.</Trans>
+          <Trans>
+            Folders are renamed to the English title. Sources are then found in the background, and
+            each series' comic files are linked to chapters as soon as its sources are in.
+          </Trans>
         </Text>
         <Checkbox
           label={t`Standardize ComicInfo.xml inside the imported files (recommended)`}
@@ -345,15 +370,54 @@ export default function ImportPage() {
 
       {results && results.length > 0 && (
         <Stack className="import-results" gap={4} mb="md">
+          {linkingTotal > 0 && (
+            <Text size="sm" c="var(--ink-2)" mb={4}>
+              {linkingDone < linkingTotal ? (
+                <Trans>
+                  Finding sources and linking files in the background: {linkingDone} of {linkingTotal}{' '}
+                  series done
+                </Trans>
+              ) : (
+                <Plural
+                  value={linkingTotal}
+                  one="Sources found and files linked for # series"
+                  other="Sources found and files linked for # series"
+                />
+              )}
+            </Text>
+          )}
           {results.map((r) => {
             const folderLabel = r.newFolderName ?? r.folderName
-            const { filesLinked, filesUnrecognized } = r
+            const { filesLinked, filesUnrecognized, filesAdded } = r
             const skipped = r.skipped ?? []
             const skippedCount = skipped.length
+            const linkedEvent = r.linkPending && r.seriesId !== null ? linkedSeries[r.seriesId] : undefined
+            const linkedCount = linkedEvent?.linked ?? 0
+            const linkTotal = linkedEvent?.total ?? 0
+            const notLinked = linkTotal - linkedCount
+            const tone = !r.success
+              ? 'var(--danger)'
+              : skippedCount > 0 || notLinked > 0
+                ? 'var(--warn)'
+                : r.linkPending && !linkedEvent
+                  ? 'var(--ink-2)'
+                  : 'var(--ok)'
             return (
               <Stack key={r.folderName} gap={0}>
-                <Text c={!r.success ? 'var(--danger)' : skippedCount > 0 ? 'var(--warn)' : 'var(--ok)'} size="sm">
-                  {r.success ? (
+                <Text c={tone} size="sm">
+                  {r.success && r.linkPending ? (
+                    linkedEvent ? (
+                      <Trans>
+                        {folderLabel}: linked {linkedCount} of{' '}
+                        <Plural value={linkTotal} one="# file" other="# files" />
+                      </Trans>
+                    ) : (
+                      <Trans>
+                        {folderLabel}: added <Plural value={filesAdded} one="# file" other="# files" />, linking
+                        once sources are found
+                      </Trans>
+                    )
+                  ) : r.success ? (
                     skippedCount > 0 ? (
                       <Trans>
                         {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />,{' '}

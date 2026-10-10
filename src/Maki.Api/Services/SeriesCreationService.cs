@@ -103,6 +103,10 @@ public class SeriesCreationService(
     /// Callers that need the chapter list to exist by the time this returns — approving a series
     /// request queues a chapter range straight afterwards — must leave it false.
     /// </param>
+    /// <param name="matchLane">
+    /// Which lane a deferred match waits in. Bulk callers (import lists) take the background lane
+    /// so a series somebody adds by hand meanwhile is matched first.
+    /// </param>
     /// <param name="incognito">
     /// An explicit <see cref="IncognitoMode"/> name from the caller, which always wins. Null means
     /// "decide from the content rating" — see <see cref="IncognitoRatingRules"/>, which is also what
@@ -115,6 +119,7 @@ public class SeriesCreationService(
         string? monitorNewItems,
         CancellationToken ct,
         bool deferSourceMatching = false,
+        SourceMatchLane matchLane = SourceMatchLane.Interactive,
         string? incognito = null,
         int? attributedUserId = null,
         string? addedFrom = null,
@@ -320,7 +325,7 @@ public class SeriesCreationService(
         // only starts running after a restart.
         if (deferSourceMatching)
         {
-            try { sourceMatchQueue.Enqueue(series.Id); }
+            try { sourceMatchQueue.Enqueue(series.Id, matchLane); }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Could not schedule source matching for {Title}", series.Title);
