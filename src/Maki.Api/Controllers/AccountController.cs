@@ -38,9 +38,13 @@ public class AccountController(
     OidcRuntimeOptions oidc,
     TimeProvider clock,
     IUserSnapshotCache snapshots,
-    IHubContext<EventsHub>? hub = null) : ControllerBase
+    IHubContext<EventsHub>? hub = null,
+    AccountSecurityAlerts? alerts = null) : ControllerBase
 {
     private const int RecoveryCodeCount = 8;
+
+    private Task AlertAsync(int userId, string key, CancellationToken ct, string? name = null) =>
+        alerts?.RaiseAsync(userId, key, name, ct) ?? Task.CompletedTask;
 
     private async Task<MakiUser?> LoadAsync() =>
         await userManager.FindByIdAsync(currentUser.UserId.ToString());
@@ -145,6 +149,7 @@ public class AccountController(
         await signInManager.RefreshSignInAsync(user);
         await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.PasswordChanged, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
+        await AlertAsync(user.Id, AccountSecurityAlerts.PasswordChanged, ct);
         return NoContent();
     }
 
@@ -255,6 +260,7 @@ public class AccountController(
         var codes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount);
         await signInManager.RefreshSignInAsync(user);
         await auditLog.LogAsync(AuthEventType.TwoFactorEnabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
+        await AlertAsync(user.Id, AccountSecurityAlerts.TwoFactorEnabled, ct);
 
         // Shown once. Identity stores them hashed, so there is no second chance to read them.
         return Ok(new { recoveryCodes = codes ?? [] });
@@ -325,6 +331,7 @@ public class AccountController(
         await signInManager.RefreshSignInAsync(user);
         await DropLiveConnectionsAsync(user.Id);
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
+        await AlertAsync(user.Id, AccountSecurityAlerts.TwoFactorDisabled, ct);
         return NoContent();
     }
 
@@ -396,6 +403,7 @@ public class AccountController(
         await db.SaveChangesAsync(ct);
         await auditLog.LogAsync(AuthEventType.ApiKeyCreated, currentUser.UserName, currentUser.UserId,
             HttpContext, detail: $"{request.Scope} key \"{name}\"", ct: ct);
+        await AlertAsync(currentUser.UserId, AccountSecurityAlerts.ApiKeyCreated, ct, name);
 
         return Ok(new CreatedApiKeyDto(
             new ApiKeyDto(key.Id, key.Name, key.Prefix, key.Scope, key.CreatedAt, null, null),

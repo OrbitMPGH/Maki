@@ -44,7 +44,8 @@ public class UsersController(
     OidcRuntimeOptions oidc,
     IHubContext<EventsHub> hub,
     IUserSnapshotCache snapshots,
-    SignInManager<MakiUser> signInManager) : ControllerBase
+    SignInManager<MakiUser> signInManager,
+    AccountSecurityAlerts? alerts = null) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -141,6 +142,10 @@ public class UsersController(
         var before = user.Permissions;
         var wasDisabled = user.Disabled;
         var stampBefore = user.SecurityStamp;
+        var allFoldersBefore = user.AllRootFolders;
+        var grantsBefore = request.RootFolderIds is null
+            ? null
+            : (await RootFolderIdsAsync(user, ct)).ToHashSet();
 
         if (DefinedBitsOnly(request.Permissions) is { } permissions)
         {
@@ -255,7 +260,28 @@ public class UsersController(
                 HttpContext, detail: $"updated \"{user.UserName}\"", ct: ct);
         }
 
-        return Ok(UserDtoMapper.ToSummary(user, await RootFolderIdsAsync(user, ct)));
+        var rootFolderIds = await RootFolderIdsAsync(user, ct);
+        if (alerts is not null && user.Id != currentUser.UserId)
+        {
+            if (!string.IsNullOrEmpty(request.Password))
+            {
+                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.PasswordReset, ct: ct);
+            }
+
+            if (user.Permissions != before)
+            {
+                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.PermissionsChanged, ct: ct);
+            }
+
+            var foldersChanged = allFoldersBefore != user.AllRootFolders
+                || (!user.AllRootFolders && grantsBefore is not null && !grantsBefore.SetEquals(rootFolderIds));
+            if (foldersChanged)
+            {
+                await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.FolderAccessChanged, ct: ct);
+            }
+        }
+
+        return Ok(UserDtoMapper.ToSummary(user, rootFolderIds));
     }
 
     [HttpDelete("{id:int}")]
@@ -318,6 +344,11 @@ public class UsersController(
 
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, currentUser.UserName, currentUser.UserId,
             HttpContext, detail: $"reset two-factor for \"{user.UserName}\"", ct: ct);
+        if (alerts is not null)
+        {
+            await alerts.RaiseAsync(user.Id, AccountSecurityAlerts.TwoFactorReset, ct: ct);
+        }
+
         logger.LogInformation("Two-factor reset for {UserName} by {Admin}", user.UserName, currentUser.UserName);
 
         return NoContent();

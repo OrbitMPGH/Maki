@@ -75,7 +75,8 @@ public class SettingsController(
     KavitaLiveReadSync kavitaLive,
     ISchedulerFactory schedulerFactory,
     IServiceScopeFactory scopeFactory,
-    ILogger<SettingsController> logger) : ControllerBase
+    ILogger<SettingsController> logger,
+    AccountSecurityAlerts? alerts = null) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record ProwlarrSettings(string? Url, string? ApiKey);
@@ -502,7 +503,7 @@ public class SettingsController(
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
-        await db.UserApiKeys
+        var replaced = await db.UserApiKeys
             .Where(k => k.UserId == currentUser.UserId
                         && k.Scope == UserApiKeyScope.Opds
                         && k.RevokedAt == null)
@@ -519,6 +520,12 @@ public class SettingsController(
         });
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+
+        if (alerts is not null)
+        {
+            await alerts.RaiseAsync(currentUser.UserId,
+                replaced > 0 ? AccountSecurityAlerts.OpdsTokenRotated : AccountSecurityAlerts.OpdsTokenCreated, ct: ct);
+        }
 
         // Root-relative on purpose. Building an absolute URL from Request.Scheme/Host hands out an
         // http:// link through any TLS-terminating proxy that doesn't rewrite it.

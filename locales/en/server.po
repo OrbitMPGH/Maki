@@ -1851,6 +1851,113 @@ msgstr ""
 "{account} can now sign in to your account. If that was not you, remove it in account settings and "
 "change your password."
 
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.passwordChanged.title"
+msgstr "Password changed"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.passwordChanged.body"
+msgstr ""
+"Your password was changed on {when}. Every other session was signed out. If that was not you, "
+"change your password again and tell an administrator."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.passwordReset.title"
+msgstr "Password reset by an administrator"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.passwordReset.body"
+msgstr ""
+"An administrator reset your password on {when}. Every session was signed out. If you were not "
+"expecting this, ask an administrator why."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.twoFactorEnabled.title"
+msgstr "Two-factor authentication turned on"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.twoFactorEnabled.body"
+msgstr ""
+"Two-factor authentication was turned on for your account on {when}. If that was not you, change"
+" your password now."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.twoFactorDisabled.title"
+msgstr "Two-factor authentication turned off"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.twoFactorDisabled.body"
+msgstr ""
+"Two-factor authentication was turned off for your account on {when}. If that was not you, "
+"change your password now and turn it back on."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.twoFactorReset.title"
+msgstr "Two-factor authentication reset by an administrator"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.twoFactorReset.body"
+msgstr ""
+"An administrator turned off two-factor authentication on your account on {when}. Set it up "
+"again in account settings."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.apiKeyCreated.title"
+msgstr "API key created"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#. {name} is the label the account owner gave the key, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.apiKeyCreated.body"
+msgstr ""
+"An API key named {name} was created on {when}. If that was not you, revoke it in account "
+"settings and change your password."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.opdsTokenCreated.title"
+msgstr "OPDS feed token created"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.opdsTokenCreated.body"
+msgstr ""
+"An OPDS feed token was created on {when}. If that was not you, rotate it in account settings "
+"and change your password."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.opdsTokenRotated.title"
+msgstr "OPDS feed token replaced"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.opdsTokenRotated.body"
+msgstr ""
+"Your OPDS feed token was replaced on {when}. Feed URLs that used the old token stopped working."
+" If that was not you, change your password."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.permissionsChanged.title"
+msgstr "Your permissions changed"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.permissionsChanged.body"
+msgstr "An administrator changed your permissions on {when}."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.folderAccessChanged.title"
+msgstr "Your library folder access changed"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+msgid "inbox.account.folderAccessChanged.body"
+msgstr "An administrator changed which library folders you can see on {when}."
+
 #. Seen by admins. {user} is a username and is never translated.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "inbox.request.submitted.title"
