@@ -45,6 +45,9 @@ public enum InboxEventType
 
     /// <summary>Something changed how the account signs in, such as a single sign-on login being linked.</summary>
     AccountSecurity = 22,
+
+    /// <summary>A series' publication status changed, for example from ongoing to completed.</summary>
+    SeriesStatusChanged = 23,
 }
 
 /// <summary>

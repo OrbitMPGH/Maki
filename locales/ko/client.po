@@ -728,6 +728,10 @@ msgstr "{forwardKey} 또는 스페이스로 열고, Esc를 눌러 시리즈로 �
 msgid "{free} free"
 msgstr "{free} 여유 공간"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "{from} to {to}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr ""
@@ -2171,9 +2175,17 @@ msgid "A series was added to the library, by hand or from an approved request."
 msgstr "시리즈가 직접 추가되었거나 승인된 요청을 통해 라이브러리에 추가되었습니다."
 
 #: src/components/NotificationsSection.tsx
+msgid "A series was completed, cancelled, put on hiatus or resumed."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A series was removed from the library."
 msgstr "시리즈가 라이브러리에서 삭제되었습니다."
+
+#: src/api/inbox.ts
+msgid "A series you read was completed, cancelled, put on hiatus or resumed."
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -3901,6 +3913,10 @@ msgstr ""
 #, fuzzy
 msgid "Change this title only"
 msgstr "이 작품만 변경"
+
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Changed"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7036,6 +7052,7 @@ msgstr "보석"
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
@@ -7425,6 +7442,7 @@ msgstr "과거"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "History"
 msgstr "기록"
@@ -9252,8 +9270,16 @@ msgstr "메타데이터 데이터베이스 다운로드 실패:"
 msgid "Metadata database ready."
 msgstr "메타데이터 데이터베이스 준비 완료."
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Metadata history"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 msgid "Metadata match for {folderName}"
+msgstr ""
+
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Metadata refresh"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
@@ -9909,6 +9935,10 @@ msgstr "변경 없음: 프랜차이즈 전체가 이미 숨겨져 있습니다."
 msgid "No change: this title was already in that state."
 msgstr "변경 없음: 이 작품은 이미 해당 상태였습니다."
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "No changes recorded yet."
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "No changes yet"
@@ -10324,6 +10354,7 @@ msgstr "제목에 권이나 챕터 범위가 없습니다"
 msgid "Nobody by that name is credited in the local MangaBaka database."
 msgstr "로컬 MangaBaka 데이터베이스에 그 이름으로 등록된 사람이 없습니다."
 
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "none"
@@ -11636,6 +11667,7 @@ msgid "Positive"
 msgstr "긍정적"
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Poster"
 msgstr ""
 
@@ -14260,6 +14292,11 @@ msgstr "시리즈 페이지"
 msgid "Series removed"
 msgstr "시리즈 제거됨"
 
+#: src/api/inbox.ts
+#: src/components/NotificationsSection.tsx
+msgid "Series status changed"
+msgstr ""
+
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
 msgid "Series whose anime you finished, starting after the last adapted chapter."
@@ -14318,7 +14355,12 @@ msgstr "세션 수명(일)"
 msgid "Sessions"
 msgstr "세션"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by {user}"
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Set by hand"
 msgstr ""
 
@@ -15072,6 +15114,7 @@ msgstr "통계 섹션"
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
@@ -15258,6 +15301,7 @@ msgstr "동기화 중…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Synopsis"
@@ -16172,6 +16216,7 @@ msgstr "틴티드 블랙"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16332,10 +16377,12 @@ msgid "Total bytes across the pages shown. Over the same pages it tracks how har
 msgstr "표시된 페이지 전체의 바이트 수입니다. 같은 페이지에서 소스가 얼마나 압축했는지도 추적하므로 열이 이 순서로 시작하지만, 스캔을 업스케일하는 소스는 더 크다고 더 좋은 것은 아닙니다."
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Total chapters"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Total volumes"
 msgstr ""
 

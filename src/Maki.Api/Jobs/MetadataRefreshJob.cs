@@ -88,6 +88,7 @@ public class MetadataRefreshJob(
         }
 
         await db.SaveChangesAsync(ct);
+        await metadataRefresh.PublishChangesAsync(ct);
         return true;
     }
 }

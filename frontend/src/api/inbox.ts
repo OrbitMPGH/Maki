@@ -31,6 +31,7 @@ export type InboxEventType =
   | 'torrentProposalPending'
   | 'volumeUpgraded'
   | 'accountSecurity'
+  | 'seriesStatusChanged'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -99,7 +100,13 @@ export const INBOX_CATEGORIES: {
   {
     id: 'library',
     label: msg`Library`,
-    types: ['newChapterAvailable', 'smartDownloadQueued', 'sourceMatchFinished', 'importListFinished'],
+    types: [
+      'newChapterAvailable',
+      'smartDownloadQueued',
+      'seriesStatusChanged',
+      'sourceMatchFinished',
+      'importListFinished',
+    ],
   },
   { id: 'discover', label: msg`Discover`, types: ['followedCreatorRelease'] },
   {
@@ -155,6 +162,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   torrentProposalPending: msg`Volume release proposed`,
   volumeUpgraded: msg`Volume upgraded`,
   accountSecurity: msg`Account security`,
+  seriesStatusChanged: msg`Series status changed`,
 }
 
 /**
@@ -170,6 +178,7 @@ export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDesc
   upgradeRestoreFailed: msg`A file could not be put back after a failed upgrade and is waiting in the trash folder.`,
   torrentProposalPending: msg`A torrent volume release could replace files in a series and is waiting for your decision.`,
   volumeUpgraded: msg`A volume release replaced several chapter files in a series.`,
+  seriesStatusChanged: msg`A series you read was completed, cancelled, put on hiatus or resumed.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */

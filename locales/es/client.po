@@ -728,6 +728,10 @@ msgstr "Pulsa {forwardKey} o Espacio para abrirlo. Pulsa Esc para volver a la se
 msgid "{free} free"
 msgstr "{free} libres"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "{from} to {to}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr ""
@@ -2171,9 +2175,17 @@ msgid "A series was added to the library, by hand or from an approved request."
 msgstr "Se añadió una serie a la biblioteca, manualmente o tras aprobar una solicitud."
 
 #: src/components/NotificationsSection.tsx
+msgid "A series was completed, cancelled, put on hiatus or resumed."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A series was removed from the library."
 msgstr "Se quitó una serie de la biblioteca."
+
+#: src/api/inbox.ts
+msgid "A series you read was completed, cancelled, put on hiatus or resumed."
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -3901,6 +3913,10 @@ msgstr ""
 #, fuzzy
 msgid "Change this title only"
 msgstr "Cambiar solo este título"
+
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Changed"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7036,6 +7052,7 @@ msgstr "joyas"
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
@@ -7425,6 +7442,7 @@ msgstr "Histórico"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "History"
 msgstr "Historial"
@@ -9252,8 +9270,16 @@ msgstr "Descarga de la base de datos de metadatos fallida:"
 msgid "Metadata database ready."
 msgstr "Base de datos de metadatos lista."
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Metadata history"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 msgid "Metadata match for {folderName}"
+msgstr ""
+
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Metadata refresh"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
@@ -9909,6 +9935,10 @@ msgstr "Sin cambios: toda la franquicia ya estaba oculta."
 msgid "No change: this title was already in that state."
 msgstr "Sin cambios: este título ya estaba en ese estado."
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "No changes recorded yet."
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "No changes yet"
@@ -10324,6 +10354,7 @@ msgstr "El título no indica ningún rango de volúmenes ni de capítulos"
 msgid "Nobody by that name is credited in the local MangaBaka database."
 msgstr "Nadie con ese nombre está acreditado en la base de datos local de MangaBaka."
 
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "none"
@@ -11636,6 +11667,7 @@ msgid "Positive"
 msgstr "Positivo"
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Poster"
 msgstr ""
 
@@ -14260,6 +14292,11 @@ msgstr "Página de la serie"
 msgid "Series removed"
 msgstr "Serie eliminada"
 
+#: src/api/inbox.ts
+#: src/components/NotificationsSection.tsx
+msgid "Series status changed"
+msgstr ""
+
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
 msgid "Series whose anime you finished, starting after the last adapted chapter."
@@ -14318,7 +14355,12 @@ msgstr "Duración de la sesión (días)"
 msgid "Sessions"
 msgstr "Sesiones"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by {user}"
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Set by hand"
 msgstr ""
 
@@ -15072,6 +15114,7 @@ msgstr "Secciones de estadísticas"
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
@@ -15258,6 +15301,7 @@ msgstr "Sincronizando…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Synopsis"
@@ -16172,6 +16216,7 @@ msgstr "Negro teñido"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16332,10 +16377,12 @@ msgid "Total bytes across the pages shown. Over the same pages it tracks how har
 msgstr "Total de bytes de las páginas mostradas. En esas mismas páginas también indica cuánto las comprimió la fuente, por eso las columnas empiezan en este orden, pero una fuente que amplía sus escaneos ocupa más sin ser mejor."
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Total chapters"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Total volumes"
 msgstr ""
 

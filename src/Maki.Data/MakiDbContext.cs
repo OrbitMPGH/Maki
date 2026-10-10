@@ -93,6 +93,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<SourceQualitySample> SourceQualitySamples => Set<SourceQualitySample>();
     public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
+    public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();
 
     public override int SaveChanges()
     {
@@ -587,6 +588,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<Chapter>().WithMany().HasForeignKey(h => h.ChapterId).OnDelete(DeleteBehavior.Cascade);
             // No FK to ChapterFile: a torrent replacement removes the superseded file's row and its
             // history has to outlive it so the group can be reverted.
+        });
+
+        modelBuilder.Entity<SeriesMetadataChange>(e =>
+        {
+            e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
+            e.HasIndex(c => new { c.SeriesId, c.ChangedAtUtc });
+            e.HasOne<Series>().WithMany().HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            // The history outlives the account that made an edit; it then reads as an unknown user.
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<TorrentProposal>(e =>

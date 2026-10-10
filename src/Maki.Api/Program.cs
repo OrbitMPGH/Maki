@@ -866,6 +866,7 @@ try
     builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddScoped<TorrentImportService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
+    builder.Services.AddScoped<SeriesMetadataChangeLog>();
     builder.Services.AddScoped<ImageCacheRebuildService>();
     // Singleton: it is the single-flight claim and the live progress a rebuild reports through,
     // so it has to outlive both the request that starts one and the job scope that runs it.

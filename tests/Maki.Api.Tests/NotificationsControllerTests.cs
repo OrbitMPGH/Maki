@@ -441,7 +441,8 @@ public class NotificationsControllerTests : IDisposable
         var c = SeedTag("c");
         var events = new NotificationsController.EventsDto(
             false, false, false, false, false, false,
-            SeriesAdded: true, SeriesRemoved: false, RequestSubmitted: true, RequestResolved: false, ManualMatchNeeded: true);
+            SeriesAdded: true, SeriesRemoved: false, RequestSubmitted: true, RequestResolved: false, ManualMatchNeeded: true,
+            SeriesStatusChanged: true);
 
         var created = (NotificationsController.NotificationDto)((OkObjectResult)await Controller().Create(
             DiscordRequest() with { Events = events, TagIds = [b, a, a] }, CancellationToken.None)).Value!;

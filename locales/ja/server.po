@@ -3006,6 +3006,18 @@ msgstr "新しい章を保留しました"
 msgid "inbox.chapters.held.body"
 msgstr "{series}：一度に{count, plural, other {#件の新しい章}}が見つかったため、自動的にダウンロードされませんでした。本当に新しい章であれば、シリーズページからダウンロードしてください。"
 
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+msgid "inbox.series.statusChanged.title"
+msgstr ""
+
+#. {series} is filled with the reader's own preferred title for the series. {from} and {to} are
+#. ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+msgid "inbox.series.statusChanged.body"
+msgstr ""
+
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
 #, fuzzy
@@ -3930,6 +3942,17 @@ msgstr "シリーズが削除されました"
 #, fuzzy
 msgid "notify.series.removed.body"
 msgstr "{series} はライブラリから削除されました{filesDeleted, select, yes {、ファイルも削除されました} other {、ファイルはディスクに残っています}}"
+
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+msgid "notify.series.statusChanged.title"
+msgstr ""
+
+#. {from} and {to} are ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+msgid "notify.series.statusChanged.body"
+msgstr ""
 
 #. Stored as the Note of a series request an import list files for a user who cannot add series.
 #. Rendered once in the instance default language, since admins read it on the Requests page.

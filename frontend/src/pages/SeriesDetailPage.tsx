@@ -145,6 +145,7 @@ import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
+import { MetadataHistoryModal } from '../components/series/MetadataHistoryModal'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesReviews } from '../components/series/SeriesReviews'
@@ -460,6 +461,7 @@ function SeriesDetailBody() {
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [renameModalOpen, setRenameModalOpen] = useState(false)
   const [editMetadataOpen, setEditMetadataOpen] = useState(false)
+  const [metadataHistoryOpen, setMetadataHistoryOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
   const search = useSearchChapter()
@@ -2018,9 +2020,14 @@ function SeriesDetailBody() {
                   </Text>
                 </Panel>
                 <Panel className="series-detail-metadata-panel" edge="strong" edgeSide="left">
-                  <Title order={2} size="h3" fz="var(--type-section)" mb="sm">
-                    <Trans>Metadata</Trans>
-                  </Title>
+                  <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
+                    <Title order={2} size="h3" fz="var(--type-section)">
+                      <Trans>Metadata</Trans>
+                    </Title>
+                    <Anchor component="button" type="button" size="xs" c="var(--ink-3)" onClick={() => setMetadataHistoryOpen(true)}>
+                      <Trans>History</Trans>
+                    </Anchor>
+                  </Group>
                   <div className="series-records">
                     {series.originalTitle && (
                         <RecordRow label={t`Original title`}>{series.originalTitle}</RecordRow>
@@ -2165,6 +2172,12 @@ function SeriesDetailBody() {
             seriesId={seriesId}
             opened={renameModalOpen}
             onClose={() => setRenameModalOpen(false)}
+        />
+
+        <MetadataHistoryModal
+            seriesId={seriesId}
+            opened={metadataHistoryOpen}
+            onClose={() => setMetadataHistoryOpen(false)}
         />
 
         {canEditMetadata && (

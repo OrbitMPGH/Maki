@@ -98,6 +98,7 @@ public class SeriesController(
         }
 
         await db.SaveChangesAsync(ct);
+        await metadataRefresh.PublishChangesAsync(ct);
         if (series.RootFolder is { } rootFolder)
         {
             kavitaScans.QueuePush(Path.Combine(rootFolder.Path, series.FolderName), series.Id);

@@ -3006,6 +3006,18 @@ msgstr "Nowe rozdziały wstrzymane"
 msgid "inbox.chapters.held.body"
 msgstr "{series}: znaleziono jednocześnie {count, plural, one {# nowy rozdział} few {# nowe rozdziały} many {# nowych rozdziałów} other {# nowego rozdziału}} i nie pobrano automatycznie. Pobierz je ze strony serii, jeśli są prawdziwe."
 
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+msgid "inbox.series.statusChanged.title"
+msgstr ""
+
+#. {series} is filled with the reader's own preferred title for the series. {from} and {to} are
+#. ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+msgid "inbox.series.statusChanged.body"
+msgstr ""
+
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
 #, fuzzy
@@ -3930,6 +3942,17 @@ msgstr "Usunięto serię"
 #, fuzzy
 msgid "notify.series.removed.body"
 msgstr "Seria {series} została usunięta z biblioteki{filesDeleted, select, yes {, pliki usunięto} other {, pliki pozostawiono na dysku}}"
+
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+msgid "notify.series.statusChanged.title"
+msgstr ""
+
+#. {from} and {to} are ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+msgid "notify.series.statusChanged.body"
+msgstr ""
 
 #. Stored as the Note of a series request an import list files for a user who cannot add series.
 #. Rendered once in the instance default language, since admins read it on the Requests page.

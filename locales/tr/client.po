@@ -728,6 +728,10 @@ msgstr "{forwardKey} veya Boşluk ile açılır, Esc ile seriye dönülür."
 msgid "{free} free"
 msgstr "{free} boş"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "{from} to {to}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr ""
@@ -2171,9 +2175,17 @@ msgid "A series was added to the library, by hand or from an approved request."
 msgstr "Bir seri elle veya onaylanan bir istekle kitaplığa eklendi."
 
 #: src/components/NotificationsSection.tsx
+msgid "A series was completed, cancelled, put on hiatus or resumed."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A series was removed from the library."
 msgstr "Bir seri kitaplıktan kaldırıldı."
+
+#: src/api/inbox.ts
+msgid "A series you read was completed, cancelled, put on hiatus or resumed."
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -3901,6 +3913,10 @@ msgstr ""
 #, fuzzy
 msgid "Change this title only"
 msgstr "Yalnızca bu başlığı değiştir"
+
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Changed"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7036,6 +7052,7 @@ msgstr "cevherler"
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
@@ -7425,6 +7442,7 @@ msgstr "Tarihi"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "History"
 msgstr "Geçmiş"
@@ -9252,8 +9270,16 @@ msgstr "Meta veri veritabanı indirmesi başarısız oldu:"
 msgid "Metadata database ready."
 msgstr "Meta veri veritabanı hazır."
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Metadata history"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 msgid "Metadata match for {folderName}"
+msgstr ""
+
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Metadata refresh"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
@@ -9909,6 +9935,10 @@ msgstr "Değişiklik yok: serinin tamamı zaten gizlenmiş."
 msgid "No change: this title was already in that state."
 msgstr "Değişiklik yok: bu başlık zaten bu durumdaydı."
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "No changes recorded yet."
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "No changes yet"
@@ -10324,6 +10354,7 @@ msgstr "Başlıkta cilt veya bölüm aralığı yok"
 msgid "Nobody by that name is credited in the local MangaBaka database."
 msgstr "Yerel MangaBaka veritabanında bu adla kayıtlı kimse yok."
 
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "none"
@@ -11636,6 +11667,7 @@ msgid "Positive"
 msgstr "Olumlu"
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Poster"
 msgstr ""
 
@@ -14260,6 +14292,11 @@ msgstr "Seri sayfası"
 msgid "Series removed"
 msgstr "Seri kaldırıldı"
 
+#: src/api/inbox.ts
+#: src/components/NotificationsSection.tsx
+msgid "Series status changed"
+msgstr ""
+
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
 msgid "Series whose anime you finished, starting after the last adapted chapter."
@@ -14318,7 +14355,12 @@ msgstr "Oturum ömrü (gün)"
 msgid "Sessions"
 msgstr "Oturumlar"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by {user}"
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Set by hand"
 msgstr ""
 
@@ -15072,6 +15114,7 @@ msgstr "İstatistik bölümleri"
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
@@ -15258,6 +15301,7 @@ msgstr "Senkronize ediliyor…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Synopsis"
@@ -16172,6 +16216,7 @@ msgstr "Tonlanmış siyah"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16332,10 +16377,12 @@ msgid "Total bytes across the pages shown. Over the same pages it tracks how har
 msgstr "Gösterilen sayfalar genelindeki toplam bayt. Aynı sayfalar üzerinde kaynağın onları ne kadar sıkıştırdığını gösterir, sütunların bu sırayla başlamasının nedeni de budur, ama taramalarını büyüten bir kaynak daha iyi olmadan daha büyük olur."
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Total chapters"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Total volumes"
 msgstr ""
 

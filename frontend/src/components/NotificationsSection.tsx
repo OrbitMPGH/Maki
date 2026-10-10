@@ -79,6 +79,7 @@ const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[] }[] = [
       { key: 'seriesAdded', label: msg`Series added`, description: msg`A series was added to the library, by hand or from an approved request.` },
       { key: 'seriesRemoved', label: msg`Series removed`, description: msg`A series was removed from the library.` },
       { key: 'manualMatchNeeded', label: msg`Manual match needed`, description: msg`Automatic source matching found nothing for a new series.` },
+      { key: 'seriesStatusChanged', label: msg`Series status changed`, description: msg`A series was completed, cancelled, put on hiatus or resumed.` },
     ],
   },
   {
@@ -202,6 +203,7 @@ const EMPTY_EVENTS: NotificationRequest['events'] = {
   requestSubmitted: false,
   requestResolved: false,
   manualMatchNeeded: false,
+  seriesStatusChanged: false,
 }
 
 function toRequest(n: NotificationDto): NotificationRequest {

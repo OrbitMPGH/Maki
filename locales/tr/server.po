@@ -3006,6 +3006,18 @@ msgstr "Yeni bölümler bekletildi"
 msgid "inbox.chapters.held.body"
 msgstr "{series}: Bir kerede {count, plural, one {# yeni bölüm} other {# yeni bölüm}} bulundu ve otomatik olarak indirilmedi. Gerçekse seri sayfasından indirebilirsiniz."
 
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+msgid "inbox.series.statusChanged.title"
+msgstr ""
+
+#. {series} is filled with the reader's own preferred title for the series. {from} and {to} are
+#. ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+msgid "inbox.series.statusChanged.body"
+msgstr ""
+
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
 #, fuzzy
@@ -3930,6 +3942,17 @@ msgstr "Seri kaldırıldı"
 #, fuzzy
 msgid "notify.series.removed.body"
 msgstr "{series} kitaplıktan kaldırıldı{filesDeleted, select, yes {, dosyalar silindi} other {, dosyalar diskte bırakıldı}}"
+
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+msgid "notify.series.statusChanged.title"
+msgstr ""
+
+#. {from} and {to} are ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+msgid "notify.series.statusChanged.body"
+msgstr ""
 
 #. Stored as the Note of a series request an import list files for a user who cannot add series.
 #. Rendered once in the instance default language, since admins read it on the Requests page.

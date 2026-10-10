@@ -60,6 +60,8 @@ public class InboxRendererTests
         { "inbox.upgrade.torrentProposal", new { replaced = 10, missing = 47, sizeBytes = 480L * 1024 * 1024 } },
         { "inbox.upgrade.volume", new { fileName = "Berserk v03.cbz", replaced = 9 } },
         { "inbox.account.ssoLinked", new { account = "alice@idp" } },
+        { "inbox.series.statusChanged", new { from = "ongoing", to = "completed" } },
+        { "inbox.series.statusChanged", new { from = "ongoing", to = "completed" } },
     };
 
     [Fact]

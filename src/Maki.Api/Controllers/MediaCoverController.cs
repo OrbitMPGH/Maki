@@ -5,6 +5,7 @@ using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Entities;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,8 @@ public class MediaCoverController(
     AppPaths paths,
     MakiDbContext db,
     CoverService covers,
+    SeriesMetadataChangeLog changeLog,
+    ICurrentUser currentUser,
     ILocalizer localizer,
     KavitaScanService kavitaScans,
     ILogger<MediaCoverController> logger) : ControllerBase
@@ -120,6 +123,7 @@ public class MediaCoverController(
         }
 
         series.LockedFields |= SeriesMetadataField.Cover;
+        changeLog.RecordReplaced(series, SeriesMetadataField.Cover, currentUser.UserId);
         await db.SaveChangesAsync(ct);
         await covers.WriteLibraryCoverAsync(series, ct);
         if (series.RootFolder is { } rootFolder)

@@ -2180,6 +2180,19 @@ msgstr ""
 "{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
 "downloaded automatically. Download them from the series page if they are real."
 
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+msgid "inbox.series.statusChanged.title"
+msgstr "Series status changed"
+
+#. {series} is filled with the reader's own preferred title for the series. {from} and {to} are
+#. ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+msgid "inbox.series.statusChanged.body"
+msgstr ""
+"{series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} "
+"cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} "
+"hiatus {on hiatus} cancelled {cancelled} other {unknown}}"
+
 #: src/Maki.Api/Program.cs
 msgid "inbox.backup.preUpgrade.title"
 msgstr "Pre-upgrade backup taken"
@@ -2854,6 +2867,18 @@ msgstr "Series removed"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "notify.series.removed.body"
 msgstr "{series} was removed from the library{filesDeleted, select, yes {, files deleted} other {, files kept on disk}}"
+
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+msgid "notify.series.statusChanged.title"
+msgstr "Series status changed"
+
+#. {from} and {to} are ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+msgid "notify.series.statusChanged.body"
+msgstr ""
+"{series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} "
+"cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} "
+"hiatus {on hiatus} cancelled {cancelled} other {unknown}}"
 
 #. Stored as the Note of a series request an import list files for a user who cannot add series.
 #. Rendered once in the instance default language, since admins read it on the Requests page.

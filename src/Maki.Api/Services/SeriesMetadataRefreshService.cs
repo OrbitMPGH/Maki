@@ -7,11 +7,21 @@ namespace Maki.Api.Services;
 /// Re-pulls a series' metadata from the provider and applies it to the entity.
 /// Shared by the daily MetadataRefreshJob (no cover) and the on-demand
 /// refresh endpoint (with cover). Does not save changes.
+/// <para>
+/// With a <see cref="SeriesMetadataChangeLog"/>, changes to the title, status and totals are added
+/// to the change history on the same context; the caller saves, then calls
+/// <see cref="PublishChangesAsync"/> to announce them.
+/// </para>
 /// </summary>
 public class SeriesMetadataRefreshService(
     IEnumerable<IMetadataProvider> metadataProviders,
-    CoverService coverService)
+    CoverService coverService,
+    SeriesMetadataChangeLog? changeLog = null)
 {
+    /// <summary>Announces the status changes the last refreshes recorded. Call after saving them.</summary>
+    public Task PublishChangesAsync(CancellationToken ct = default) =>
+        changeLog?.PublishAsync(ct) ?? Task.CompletedTask;
+
     /// <summary>
     /// Re-downloads only the poster, leaving every metadata field alone. The image-cache rebuild
     /// uses this rather than <see cref="RefreshAsync"/> with <c>includeCover: true</c>: rebuilding
@@ -67,6 +77,7 @@ public class SeriesMetadataRefreshService(
             return false;
         }
 
+        var before = SeriesMetadataChangeLog.Snapshot.Of(series);
         bool Open(SeriesMetadataField field) => !series.IsLocked(field);
         bool Restoring(SeriesMetadataField field) => (restore & field) == field;
 
@@ -140,6 +151,7 @@ public class SeriesMetadataRefreshService(
         }
 
         series.OriginalTitle = metadata.OriginalTitle ?? series.OriginalTitle;
+        changeLog?.RecordRefresh(series, before);
 
         if (includeCover && Open(SeriesMetadataField.Cover) && metadata.CoverUrl != null)
         {

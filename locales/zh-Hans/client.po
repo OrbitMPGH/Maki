@@ -728,6 +728,10 @@ msgstr "按 {forwardKey} 或空格键打开，按 Esc 返回系列。"
 msgid "{free} free"
 msgstr "{free} 可用"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "{from} to {to}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr ""
@@ -2171,9 +2175,17 @@ msgid "A series was added to the library, by hand or from an approved request."
 msgstr "系列由手动添加或通过已批准的申请加入资料库。"
 
 #: src/components/NotificationsSection.tsx
+msgid "A series was completed, cancelled, put on hiatus or resumed."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A series was removed from the library."
 msgstr "系列已从资料库中移除。"
+
+#: src/api/inbox.ts
+msgid "A series you read was completed, cancelled, put on hiatus or resumed."
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -3901,6 +3913,10 @@ msgstr ""
 #, fuzzy
 msgid "Change this title only"
 msgstr "仅更改此标题"
+
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Changed"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7036,6 +7052,7 @@ msgstr "宝藏"
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
@@ -7425,6 +7442,7 @@ msgstr "历史"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "History"
 msgstr "历史记录"
@@ -9252,8 +9270,16 @@ msgstr "元数据数据库下载失败："
 msgid "Metadata database ready."
 msgstr "元数据数据库已就绪。"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Metadata history"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 msgid "Metadata match for {folderName}"
+msgstr ""
+
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Metadata refresh"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
@@ -9909,6 +9935,10 @@ msgstr "没有变化：整个系列已经隐藏。"
 msgid "No change: this title was already in that state."
 msgstr "没有变化：此标题已经处于该状态。"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "No changes recorded yet."
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "No changes yet"
@@ -10324,6 +10354,7 @@ msgstr "标题中没有卷或章节范围"
 msgid "Nobody by that name is credited in the local MangaBaka database."
 msgstr "本地 MangaBaka 数据库中没有以该名字署名的人。"
 
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "none"
@@ -11636,6 +11667,7 @@ msgid "Positive"
 msgstr "正向"
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Poster"
 msgstr ""
 
@@ -14260,6 +14292,11 @@ msgstr "系列页面"
 msgid "Series removed"
 msgstr "系列已移除"
 
+#: src/api/inbox.ts
+#: src/components/NotificationsSection.tsx
+msgid "Series status changed"
+msgstr ""
+
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
 msgid "Series whose anime you finished, starting after the last adapted chapter."
@@ -14318,7 +14355,12 @@ msgstr "会话有效期（天）"
 msgid "Sessions"
 msgstr "会话"
 
+#: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by {user}"
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Set by hand"
 msgstr ""
 
@@ -15072,6 +15114,7 @@ msgstr "统计内容"
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
@@ -15258,6 +15301,7 @@ msgstr "正在同步…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Synopsis"
@@ -16172,6 +16216,7 @@ msgstr "带色调的黑色"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16332,10 +16377,12 @@ msgid "Total bytes across the pages shown. Over the same pages it tracks how har
 msgstr "所显示页面的总字节数。它还会根据相同页面记录来源的压缩程度，这就是列按此顺序开始的原因，但放大扫描图的来源可能更大，却不代表更好。"
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Total chapters"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/series/MetadataHistoryModal.tsx
 msgid "Total volumes"
 msgstr ""
 

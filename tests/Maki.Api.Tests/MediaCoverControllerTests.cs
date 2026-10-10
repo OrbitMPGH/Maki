@@ -90,7 +90,7 @@ public class MediaCoverControllerTests : IDisposable
     }
 
     private MediaCoverController Controller(int userId, bool allRootFolders = false) =>
-        new(_paths, _db.NewContext(userId, allRootFolders), null!, new TestLocalizer(), null!,
+        new(_paths, _db.NewContext(userId, allRootFolders), null!, null!, new TestCurrentUser(userId), new TestLocalizer(), null!,
             NullLogger<MediaCoverController>.Instance)
         {
             // The action sets a response header, which needs a real HttpContext behind it.

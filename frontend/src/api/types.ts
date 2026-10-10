@@ -656,6 +656,7 @@ export interface NotificationEvents {
   requestSubmitted: boolean
   requestResolved: boolean
   manualMatchNeeded: boolean
+  seriesStatusChanged: boolean
 }
 
 export interface UpdateStatusDto {

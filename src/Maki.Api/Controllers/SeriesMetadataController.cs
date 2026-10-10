@@ -4,6 +4,7 @@ using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,10 @@ namespace Maki.Api.Controllers;
 /// resetting unlocks it and refreshes the series so the provider's value comes back. Locks live on
 /// the series, so they apply to everyone who can see it. The poster upload is on
 /// <see cref="MediaCoverController"/>, beside the route that serves it.
+/// <para>
+/// Every change, by hand or by refresh, lands in the series' change history, readable by anyone who
+/// can see the series.
+/// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/series/{id:int}/metadata")]
@@ -23,8 +28,12 @@ public class SeriesMetadataController(
     ILocalizer localizer,
     MakiDbContext db,
     SeriesMetadataRefreshService metadataRefresh,
+    SeriesMetadataChangeLog changeLog,
+    ICurrentUser currentUser,
     KavitaScanService kavitaScans) : ControllerBase
 {
+    private const int HistoryLimit = 200;
+
     internal const int MaxTitleLength = 500;
     internal const int MaxOverviewLength = 20_000;
     internal const int MaxGenres = 50;
@@ -53,6 +62,45 @@ public class SeriesMetadataController(
     /// <param name="Refreshed">Whether the provider answered after a reset. False leaves the unlocked value as it was until the next refresh.</param>
     public record MetadataStateDto(IReadOnlyList<string> LockedFields, bool Refreshed = false);
 
+    /// <param name="Field">camelCase, as in <see cref="SeriesDto.LockedFields"/>.</param>
+    /// <param name="OldValue">Invariant text: a status by its enum name, counts as digits, genres comma separated. Null for the synopsis and the cover.</param>
+    /// <param name="Source">"refresh" or "user".</param>
+    /// <param name="UserName">Who made a user change; null for a refresh or a deleted account.</param>
+    public record MetadataChangeDto(
+        int Id, string Field, string? OldValue, string? NewValue, string Source, string? UserName, DateTime ChangedAt);
+
+    /// <summary>The series' metadata changes, newest first, capped at the latest <see cref="HistoryLimit"/>.</summary>
+    [HttpGet("history")]
+    public async Task<IActionResult> History(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var rows = await db.SeriesMetadataChanges
+            .AsNoTracking()
+            .Where(c => c.SeriesId == id)
+            .OrderByDescending(c => c.ChangedAtUtc)
+            .ThenByDescending(c => c.Id)
+            .Take(HistoryLimit)
+            .Select(c => new
+            {
+                Change = c,
+                UserName = db.Users.Where(u => u.Id == c.UserId).Select(u => u.DisplayName ?? u.UserName).FirstOrDefault(),
+            })
+            .ToListAsync(ct);
+
+        return Ok(rows.Select(r => new MetadataChangeDto(
+            r.Change.Id,
+            SeriesDto.MetadataFieldName(r.Change.Field),
+            r.Change.OldValue,
+            r.Change.NewValue,
+            r.Change.Source == MetadataChangeSource.User ? "user" : "refresh",
+            r.UserName,
+            DateTime.SpecifyKind(r.Change.ChangedAtUtc, DateTimeKind.Utc))));
+    }
+
     [Authorize(Policy = Policies.EditMetadata)]
     [HttpPut]
     public async Task<IActionResult> Edit(int id, [FromBody] EditMetadataRequest request, CancellationToken ct)
@@ -78,9 +126,28 @@ public class SeriesMetadataController(
             return this.Fail(localizer, error, new { max = MaxCount });
         }
 
+        var before = SeriesMetadataChangeLog.Snapshot.Of(series);
+        var overview = series.Overview;
+        var genres = string.Join(", ", series.Genres);
         Apply(series, request, fields);
         series.LockedFields |= fields;
+
+        var userId = currentUser.UserId;
+        const MetadataChangeSource user = MetadataChangeSource.User;
+        changeLog.Record(series, SeriesMetadataField.Title, before.Title, series.Title, user, userId);
+        changeLog.RecordStatus(series, before.Status, series.Status, user, userId);
+        changeLog.Record(series, SeriesMetadataField.TotalChapters,
+            SeriesMetadataChangeLog.Text(before.TotalChapters), SeriesMetadataChangeLog.Text(series.TotalChapters), user, userId);
+        changeLog.Record(series, SeriesMetadataField.TotalVolumes,
+            SeriesMetadataChangeLog.Text(before.TotalVolumes), SeriesMetadataChangeLog.Text(series.TotalVolumes), user, userId);
+        changeLog.Record(series, SeriesMetadataField.Genres, genres, string.Join(", ", series.Genres), user, userId);
+        if (!string.Equals(overview, series.Overview, StringComparison.Ordinal))
+        {
+            changeLog.RecordReplaced(series, SeriesMetadataField.Overview, userId);
+        }
+
         await db.SaveChangesAsync(ct);
+        await changeLog.PublishAsync(ct);
         return Ok(new MetadataStateDto(SeriesDto.LockedFieldNames(series.LockedFields)));
     }
 
@@ -108,6 +175,7 @@ public class SeriesMetadataController(
         var refreshed = await metadataRefresh.RefreshAsync(
             series, includeCover: (fields & SeriesMetadataField.Cover) != 0, restore: fields, ct);
         await db.SaveChangesAsync(ct);
+        await changeLog.PublishAsync(ct);
 
         if (refreshed && series.RootFolder is { } rootFolder)
         {

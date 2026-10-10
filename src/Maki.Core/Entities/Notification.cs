@@ -46,6 +46,7 @@ public class Notification
     public bool OnRequestSubmitted { get; set; }
     public bool OnRequestResolved { get; set; }
     public bool OnManualMatchNeeded { get; set; }
+    public bool OnSeriesStatusChanged { get; set; }
 
     public DateTime? LastAttemptAt { get; set; }
 

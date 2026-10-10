@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, apiUpload } from './client'
 import type { MetadataField } from './types'
 
@@ -19,6 +19,28 @@ export interface EditMetadataRequest {
   genres?: string[]
 }
 
+/** One row of a series' metadata history. Values are invariant text: a status by its server name, counts as digits. */
+export interface MetadataChange {
+  id: number
+  field: MetadataField
+  /** Null when the field was empty, and always null for the synopsis and the poster. */
+  oldValue: string | null
+  newValue: string | null
+  source: 'refresh' | 'user'
+  /** Who made a user change; null for a refresh or a deleted account. */
+  userName: string | null
+  changedAt: string
+}
+
+export function useSeriesMetadataHistory(seriesId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['series', seriesId, 'metadata-history'],
+    queryFn: () => api<MetadataChange[]>(`/series/${seriesId}/metadata/history`),
+    enabled,
+  })
+}
+
+/** Also refreshes the history, which sits under the series key. */
 function useInvalidateSeries() {
   const queryClient = useQueryClient()
   return (seriesId: number) => {

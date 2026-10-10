@@ -282,6 +282,10 @@ public class SeriesMetadataLockTests : IDisposable
         var stored = Image.Identify(series.CoverPath!);
         Assert.Equal(400, stored.Width);
         Assert.Equal("JPEG", stored.Metadata.DecodedImageFormat?.Name);
+
+        await using var read = _db.NewContext();
+        var change = Assert.Single(read.SeriesMetadataChanges.Where(c => c.SeriesId == id));
+        Assert.Equal((SeriesMetadataField.Cover, MetadataChangeSource.User, 1), (change.Field, change.Source, change.UserId));
     }
 
     public static TheoryData<string, byte[]> NotImages => new()
@@ -349,11 +353,17 @@ public class SeriesMetadataLockTests : IDisposable
     {
         var covers = Covers();
         return new SeriesMetadataController(
-            new TestLocalizer(), db, new SeriesMetadataRefreshService([new Provider(metadata)], covers), Kavita());
+            new TestLocalizer(), db, new SeriesMetadataRefreshService([new Provider(metadata)], covers),
+            ChangeLog(db), new TestCurrentUser(1), Kavita());
     }
 
     private MediaCoverController CoverController(MakiDbContext db) =>
-        new(_paths, db, Covers(), new TestLocalizer(), Kavita(), NullLogger<MediaCoverController>.Instance);
+        new(_paths, db, Covers(), ChangeLog(db), new TestCurrentUser(1), new TestLocalizer(), Kavita(),
+            NullLogger<MediaCoverController>.Instance);
+
+    private static SeriesMetadataChangeLog ChangeLog(MakiDbContext db) =>
+        new(db, new RecordingInbox(), new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
+            TimeProvider.System, NullLogger<SeriesMetadataChangeLog>.Instance);
 
     private KavitaScanService Kavita() =>
         new(new KavitaClient(new StubHttpClientFactory("{}")), new FakeAppSettings(), _db.ScopeFactory(),

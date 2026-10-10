@@ -3006,6 +3006,18 @@ msgstr "새 챕터 보류됨"
 msgid "inbox.chapters.held.body"
 msgstr "{series}: 한 번에 새 챕터 {count, plural, other {#개}}가 발견되어 자동으로 다운로드되지 않았습니다. 실제 새 챕터라면 시리즈 페이지에서 다운로드하세요."
 
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+msgid "inbox.series.statusChanged.title"
+msgstr ""
+
+#. {series} is filled with the reader's own preferred title for the series. {from} and {to} are
+#. ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+msgid "inbox.series.statusChanged.body"
+msgstr ""
+
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
 #, fuzzy
@@ -3930,6 +3942,17 @@ msgstr "시리즈 삭제됨"
 #, fuzzy
 msgid "notify.series.removed.body"
 msgstr "{series}을(를) 라이브러리에서 삭제했습니다{filesDeleted, select, yes {, 파일 삭제됨} other {, 디스크에 파일 유지}}"
+
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+msgid "notify.series.statusChanged.title"
+msgstr ""
+
+#. {from} and {to} are ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+msgid "notify.series.statusChanged.body"
+msgstr ""
 
 #. Stored as the Note of a series request an import list files for a user who cannot add series.
 #. Rendered once in the instance default language, since admins read it on the Requests page.
