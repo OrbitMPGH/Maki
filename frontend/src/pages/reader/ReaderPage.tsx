@@ -27,8 +27,8 @@ import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
 const DOUBLE_TAP_ZOOM = 2
-// Two taps closer together than this, and within this many pixels, are a double tap. A single tap's
-// action waits this long on touch screens so it can tell the two apart.
+// Two taps closer together than this, and within this many pixels, are a double tap. A toolbar-toggling
+// tap waits this long on touch screens so it can tell the two apart; page-turning taps never wait.
 const DOUBLE_TAP_MS = 250
 const DOUBLE_TAP_SLOP = 40
 // How many pages from the end of a chapter the next chapter's first pages start loading.
@@ -463,7 +463,12 @@ export default function ReaderPage() {
   const tapRef = useRef(handleTap)
   tapRef.current = handleTap
   const pointerKind = useRef('mouse')
-  const pendingTap = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
+  const pendingTap = useRef<{
+    timer: ReturnType<typeof setTimeout>
+    x: number
+    y: number
+    bounds: DOMRect
+  } | null>(null)
   useEffect(
     () => () => {
       if (pendingTap.current) clearTimeout(pendingTap.current.timer)
@@ -472,9 +477,9 @@ export default function ReaderPage() {
   )
 
   /**
-   * A mouse click acts at once. A touch tap in a paged layout waits a moment for a second one, which
-   * toggles zoom instead of turning the page; only touch pays that delay, so clicking through pages
-   * with a mouse stays instant.
+   * A mouse click acts at once, and so does a touch tap in a page-turning side zone. Only a touch
+   * tap that toggles the toolbar (the centre zone, or anywhere while zoomed or without tap zones)
+   * waits a moment for a second tap, which toggles zoom instead.
    */
   const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect()
@@ -484,6 +489,12 @@ export default function ReaderPage() {
     }
 
     const { clientX, clientY } = event
+    const ratio = (clientX - bounds.left) / bounds.width
+    if (zoom === 1 && prefs.tapZones && (ratio < 0.33 || ratio > 0.67)) {
+      handleTap(clientX, bounds)
+      return
+    }
+
     const first = pendingTap.current
     if (first) {
       clearTimeout(first.timer)
@@ -492,12 +503,13 @@ export default function ReaderPage() {
         setZoom((z) => (z === 1 ? DOUBLE_TAP_ZOOM : 1))
         return
       }
+      tapRef.current(first.x, first.bounds)
     }
     const timer = setTimeout(() => {
       pendingTap.current = null
       tapRef.current(clientX, bounds)
     }, DOUBLE_TAP_MS)
-    pendingTap.current = { timer, x: clientX, y: clientY }
+    pendingTap.current = { timer, x: clientX, y: clientY, bounds }
   }
 
   // A cached manifest is shown only once the fresh one has landed and the resume is applied;
