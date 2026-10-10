@@ -33,6 +33,8 @@ public class DiscoverCacheWarmJob(
 {
     public static readonly JobKey Key = new("discover-cache-warm");
 
+    public const string ScheduledTriggerName = "discover-cache-warm-trigger";
+
     public async Task Execute(IJobExecutionContext context)
     {
         try
@@ -46,16 +48,39 @@ public class DiscoverCacheWarmJob(
                 await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
             }
 
+            // A run triggered after a dump install, and the first scheduled run after startup, build
+            // both indexes so the cost never lands on the first keystroke. Later scheduled runs only
+            // refresh an index somebody already has loaded: building one for an instance nobody is
+            // browsing costs ~9s of CPU and an RSS spike, only for the idle unload to drop it again.
+            var everything = context.Trigger.Key.Name != ScheduledTriggerName || context.PreviousFireTimeUtc is null;
+
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
-            await searchIndex.GetAsync(context.CancellationToken);
+            if (everything || searchIndex.IsLoaded)
+            {
+                if (!searchIndex.IsCurrent)
+                {
+                    build.MarkBuilt();
+                }
+
+                await searchIndex.GetAsync(context.CancellationToken);
+            }
+
             // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
             // dump, which would otherwise land on whichever keystroke arrived first.
-            await catalogueIndex.GetAsync(context.CancellationToken);
+            if (everything || catalogueIndex.IsLoaded)
+            {
+                if (!catalogueIndex.IsCurrent)
+                {
+                    build.MarkBuilt();
+                }
+
+                await catalogueIndex.GetAsync(context.CancellationToken);
+            }
         }
-        catch (InvalidOperationException)
+        catch (LocalCatalogueUnavailableException)
         {
-            // No local MangaBaka database — nothing to warm.
+            // No local MangaBaka database - nothing to warm.
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {
@@ -65,6 +90,7 @@ public class DiscoverCacheWarmJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Discover cache warm-up failed");
+            context.ReportFailure(ex);
         }
     }
 

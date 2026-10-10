@@ -13,7 +13,7 @@ import {
 } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { BADGE_COLOR, seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual } from './status'
+import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual, statusColor, statusOnColor } from './status'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -73,6 +73,9 @@ export const CoverCard = memo(function CoverCard({
   const { readChapterCount } = series
   const totalLabel = total || '?'
   const downloadTip = download ? renderLabel(download.label) : null
+  const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
+  const monitoredTip = series.monitored ? t`Monitored` : t`Not monitored`
+  const mutedTip = t`Notifications muted`
 
   return (
     <Link
@@ -88,9 +91,9 @@ export const CoverCard = memo(function CoverCard({
     >
       <div className="cover-poster">
         {series.coverUrl ? (
-          <img src={series.coverUrl} alt={series.displayTitle} loading="lazy" decoding="async" />
+          <img src={series.coverUrl} alt="" loading="lazy" decoding="async" />
         ) : (
-          <div className="cover-placeholder">{series.displayTitle}</div>
+          <div className="cover-placeholder" aria-hidden>{series.displayTitle}</div>
         )}
         <div className="cover-scrim" />
 
@@ -102,11 +105,9 @@ export const CoverCard = memo(function CoverCard({
               <span
                 className="cover-ring"
                 data-complete={unread === 0 || undefined}
-                data-tip={
-                  unread === 0
-                    ? t`All downloaded chapters read`
-                    : t`${readChapterCount} of ${have} downloaded read`
-                }
+                data-tip={readTip}
+                role="img"
+                aria-label={readTip}
                 style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
               >
                 {unread === 0 && <IconCheck size={14} stroke={2.2} className="cover-ring-check" />}
@@ -134,7 +135,9 @@ export const CoverCard = memo(function CoverCard({
             <span
               className="cover-badge cover-badge-circle"
               data-dim={series.monitored || undefined}
-              data-tip={series.monitored ? t`Monitored` : t`Not monitored`}
+              data-tip={monitoredTip}
+              role="img"
+              aria-label={monitoredTip}
             >
               {series.monitored ? <IconEye size={15} /> : <IconEyeOff size={15} />}
             </span>
@@ -143,7 +146,9 @@ export const CoverCard = memo(function CoverCard({
               <span
                 className="cover-badge cover-badge-circle"
                 data-dim
-                data-tip={t`Notifications muted`}
+                data-tip={mutedTip}
+                role="img"
+                aria-label={mutedTip}
               >
                 <IconBellOff size={15} />
               </span>
@@ -155,7 +160,7 @@ export const CoverCard = memo(function CoverCard({
               data-tip={statusLabel}
               role="img"
               aria-label={statusLabel}
-              style={{ '--tone': BADGE_COLOR[status.color] } as React.CSSProperties}
+              style={{ '--tone': statusColor(status.color), '--tone-on': statusOnColor(status.color) } as React.CSSProperties}
             >
               <StatusGlyph size={13} stroke={2} />
             </span>

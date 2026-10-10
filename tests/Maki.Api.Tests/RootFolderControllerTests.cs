@@ -169,6 +169,25 @@ public class RootFolderControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Delete_rejects_a_folder_whose_series_are_outside_the_callers_scope()
+    {
+        var folderId = SeedFolder();
+        int adminId;
+        using (var db = _db.NewContext())
+        {
+            db.Series.Add(new Series { Title = "X", RootFolderId = folderId });
+            db.SaveChanges();
+            adminId = _db.SeedUser("restricted-admin", MakiPermission.Admin);
+        }
+
+        var controller = new RootFolderController(
+            new TestLocalizer(), _db.NewContext(adminId, allRootFolders: false), _snapshots,
+            new TestCurrentUser(adminId, permissions: MakiPermission.Admin, allRootFolders: false));
+
+        Assert.IsType<ConflictObjectResult>(await controller.Delete(folderId, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Delete_removes_an_unused_folder()
     {
         var dir = TempDir();

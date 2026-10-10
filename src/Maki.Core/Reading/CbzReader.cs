@@ -26,13 +26,26 @@ public static class CbzReader
         ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp"
     };
 
+    /// <summary>An image page, by extension, unless <see cref="IsMacMetadata"/> says it is a stub.</summary>
     public static bool IsImage(string entryName) =>
-        ImageExtensions.Contains(Path.GetExtension(entryName));
+        ImageExtensions.Contains(Path.GetExtension(entryName)) && !IsMacMetadata(entryName);
+
+    /// <summary>
+    /// macOS clutter that only looks like a page: Finder zips carry a <c>__MACOSX/</c> folder with
+    /// a <c>._name.jpg</c> resource-fork stub per page, and copying to a network share leaves the
+    /// same stubs beside the real files. Any dot file is treated the same way.
+    /// </summary>
+    public static bool IsMacMetadata(string entryName)
+    {
+        var segments = entryName.Split('/', '\\');
+        return segments[^1].StartsWith('.') ||
+               segments.Any(s => s.Equals("__MACOSX", StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>Image entries of an open archive, in reading order.</summary>
     public static List<string> PageNames(ZipArchive archive) =>
         archive.Entries
-            .Where(e => IsImage(e.Name))
+            .Where(e => IsImage(e.FullName))
             .Select(e => e.FullName)
             .OrderBy(n => n, NaturalFileNameComparer.Instance)
             .ToList();

@@ -91,6 +91,28 @@ public class ComicSourceScannerTests : IDisposable
         Assert.Equal(2, source.Pages.Count);
     }
 
+    [Fact]
+    public void A_finder_zip_does_not_count_its_resource_fork_stubs_as_pages()
+    {
+        WriteZip("My Series v02.cbz", "001.jpg", "002.jpg", "__MACOSX/._001.jpg", "__MACOSX/._002.jpg");
+
+        var source = Assert.Single(ComicSourceScanner.Scan(_root));
+
+        Assert.Equal(["001.jpg", "002.jpg"], source.Pages);
+    }
+
+    [Fact]
+    public void A_macosx_folder_beside_loose_pages_is_not_a_comic()
+    {
+        WriteLooseFiles("Akira v01", "001.jpg", "002.jpg", "._001.jpg", "._002.jpg");
+        WriteLooseFiles("Akira v01/__MACOSX", "._001.jpg", "._002.jpg");
+
+        var source = Assert.Single(ComicSourceScanner.Scan(_root));
+
+        Assert.Equal("Akira v01.cbz", source.Name);
+        Assert.Equal(["001.jpg", "002.jpg"], source.Pages);
+    }
+
     // A CBZ already is a zip, so this one only ever needed the extension check to accept it.
     [Fact]
     public void A_zip_of_pages_is_a_comic_under_a_cbz_name()
@@ -293,7 +315,7 @@ public class ComicSourceScannerTests : IDisposable
     {
         WriteLooseFiles("scans", "a.txt", "b.txt", "c.pdf");
 
-        Assert.Equal("found 2 .txt, 1 .pdf", ComicSourceScanner.Describe(_root));
-        Assert.Equal("it is empty", ComicSourceScanner.Describe(At("nothing")));
+        Assert.Equal([(".txt", 2), (".pdf", 1)], ComicSourceScanner.Census(_root));
+        Assert.Empty(ComicSourceScanner.Census(At("nothing")));
     }
 }

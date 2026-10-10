@@ -3,8 +3,9 @@ using System.Text.Json;
 namespace Maki.Core.Reading;
 
 /// <summary>
-/// How the built-in reader displays a series. Stored as opaque JSON in two places: one global
-/// default in AppConfig, and an optional per-series override on <c>Series.ReaderPrefsJson</c>.
+/// How the built-in reader displays a series. Stored as opaque JSON in two places: the user's
+/// default in the <c>reader.prefs</c> user setting, and an optional per-series override on
+/// <c>UserSeriesState.ReaderPrefsJson</c>.
 /// <para>
 /// Same discipline as <c>SavedFilter.Spec</c>: serialize only through <see cref="Json"/>, and
 /// never rename or reorder a property. A name mismatch does not throw — it silently yields the
@@ -44,9 +45,10 @@ public record ReaderPrefsSpec(
     public const string DirectionLtr = "ltr";
 
     /// <summary>
-    /// Right-to-left is the default: everything Maki packages is tagged
-    /// <c>Manga = "YesAndRightToLeft"</c> in its ComicInfo. Manhwa and manhua want vertical +
-    /// left-to-right, which is exactly what the per-series override is for.
+    /// Right-to-left is the default: manga, and a series with no type, is tagged
+    /// <c>Manga = "YesAndRightToLeft"</c> in its ComicInfo. Manhwa and manhua are tagged
+    /// <c>Yes</c> and want vertical + left-to-right, which is what the per-series override and the
+    /// type-matched reading profiles are for.
     /// </summary>
     public const string DirectionRtl = "rtl";
 

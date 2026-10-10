@@ -209,6 +209,7 @@ public class KitsuTracker(
             throw new TrackerException($"Kitsu {what} request failed: {e.Message}", e);
         }
 
+        using var _ = response;
         var responseBody = await response.Content.ReadAsStringAsync(ct);
         if (IsCloudflareChallenge(response, responseBody))
         {
@@ -359,7 +360,13 @@ public class KitsuTracker(
                     throw new TrackerException($"Kitsu API {method} {path} failed ({(int)response.StatusCode}): {Truncate(responseBody)}");
                 }
 
-                return responseBody.Length == 0 ? default : JsonDocument.Parse(responseBody).RootElement.Clone();
+                if (responseBody.Length == 0)
+                {
+                    return default;
+                }
+
+                using var doc = JsonDocument.Parse(responseBody);
+                return doc.RootElement.Clone();
             }
             finally
             {
@@ -429,7 +436,7 @@ public class KitsuTracker(
 
     public async Task UpdateAsync(
         int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-        CancellationToken ct = default)
+        CancellationToken ct = default, bool keepStatus = false)
     {
         var attributes = new JsonObject
         {

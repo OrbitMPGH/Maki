@@ -109,7 +109,7 @@ export function UsersSection() {
           <Trans>Add user</Trans>
         </Button>
       }
-      panelProps={{ id: 'users', p: 'md' }}
+      panelProps={{ p: 'md' }}
     >
 
       <Table.ScrollContainer minWidth={576}>
@@ -200,7 +200,6 @@ export function UsersSection() {
           deleting &&
           remove.mutate(deleting.id, {
             onSuccess: () => setDeleting(null),
-            onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
           })
         }
       >
@@ -215,13 +214,16 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
   const renderLabel = useLabel()
   const grantable = useGrantablePermissions()
   const isNew = target === 'new'
-  const existing = isNew ? null : target
+  const { data: users } = useUsers()
+  // Read from the list rather than the row that opened the modal, so a reset shows up here.
+  const existing = target === 'new' ? null : (users?.find((u) => u.id === target.id) ?? target)
   const { me } = useAuth()
   const { data: rootFolders } = useRootFolders()
   const create = useCreateUser()
   const update = useUpdateUser()
   const resetTwoFactor = useResetUserTwoFactor()
   const unlinkOidc = useUnlinkUserOidc()
+  const [confirming, setConfirming] = useState<'twoFactor' | 'sso' | null>(null)
 
   const [username, setUsername] = useState(existing?.userName ?? '')
   const [displayName, setDisplayName] = useState(existing?.displayName ?? '')
@@ -250,25 +252,26 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
   function submit() {
     const body: SaveUserBody = {
       username: username.trim(),
-      displayName: displayName.trim() || undefined,
+      // An empty string clears the name on edit; leaving it out would keep the old one.
+      displayName: isNew ? displayName.trim() || undefined : displayName.trim(),
       permissions: permissionsValue(),
       maxContentRating: rating,
       allRootFolders,
-      rootFolderIds: allRootFolders ? [] : folderIds.map(Number),
+      // Left out while every folder is granted so unticking later restores the earlier selection.
+      rootFolderIds: allRootFolders ? undefined : folderIds.map(Number),
       disabled,
     }
     if (password) body.password = password
 
-    const onError = (e: Error) => notifications.show({ message: e.message, color: 'var(--danger)' })
     const onSuccess = () => {
       notifications.show({ message: isNew ? now`User created` : now`User updated`, color: 'var(--ok)' })
       onClose()
     }
 
     if (isNew) {
-      create.mutate(body, { onSuccess, onError })
+      create.mutate(body, { onSuccess })
     } else {
-      update.mutate({ id: existing!.id, ...body }, { onSuccess, onError })
+      update.mutate({ id: existing!.id, ...body }, { onSuccess })
     }
   }
 
@@ -278,6 +281,8 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
     <Modal
       opened
       onClose={onClose}
+      closeOnEscape={!confirming}
+      closeOnClickOutside={!confirming}
       title={isNew ? t`Add user` : t`Edit ${editName}`}
       centered
       size="lg"
@@ -292,6 +297,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
       >
         <TextInput
           label={t`Username`}
+          autoComplete="off"
           required
           value={username}
           onChange={(e) => setUsername(e.currentTarget.value)}
@@ -304,6 +310,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
         <PasswordInput
           label={isNew ? t`Password` : t`New password`}
           description={isNew ? t`At least 10 characters` : t`Leave blank to keep the current one`}
+          autoComplete="new-password"
           required={isNew}
           value={password}
           onChange={(e) => setPassword(e.currentTarget.value)}
@@ -391,16 +398,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
                 size="xs"
                 variant="light"
                 color="var(--warn)"
-                loading={resetTwoFactor.isPending}
-                onClick={() =>
-                  resetTwoFactor.mutate(existing.id, {
-                    onSuccess: () => {
-                      notifications.show({ message: now`Two-factor turned off for this account`, color: 'var(--ok)' })
-                      onClose()
-                    },
-                    onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-                  })
-                }
+                onClick={() => setConfirming('twoFactor')}
               >
                 <Trans>Reset two-factor</Trans>
               </Button>
@@ -410,16 +408,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
                 size="xs"
                 variant="light"
                 color="var(--warn)"
-                loading={unlinkOidc.isPending}
-                onClick={() =>
-                  unlinkOidc.mutate(existing.id, {
-                    onSuccess: () => {
-                      notifications.show({ message: now`Single sign-on removed from this account`, color: 'var(--ok)' })
-                      onClose()
-                    },
-                    onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-                  })
-                }
+                onClick={() => setConfirming('sso')}
               >
                 <Trans>Remove single sign-on</Trans>
               </Button>
@@ -440,6 +429,47 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           </Button>
         </Group>
       </Stack>
+
+      <ConfirmDialog
+        opened={confirming === 'twoFactor'}
+        onClose={() => setConfirming(null)}
+        title={<Trans>Reset two-factor for {editName}?</Trans>}
+        confirmLabel={<Trans>Reset two-factor</Trans>}
+        loading={resetTwoFactor.isPending}
+        onConfirm={() =>
+          existing &&
+          resetTwoFactor.mutate(existing.id, {
+            onSuccess: () => {
+              setConfirming(null)
+              notifications.show({ message: now`Two-factor turned off for this account`, color: 'var(--ok)' })
+            },
+          })
+        }
+      >
+        <Trans>
+          Their second factor is turned off and the authenticator reset, so a password is all that
+          protects the account until they set it up again.
+        </Trans>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        opened={confirming === 'sso'}
+        onClose={() => setConfirming(null)}
+        title={<Trans>Remove single sign-on for {editName}?</Trans>}
+        confirmLabel={<Trans>Remove single sign-on</Trans>}
+        loading={unlinkOidc.isPending}
+        onConfirm={() =>
+          existing &&
+          unlinkOidc.mutate(existing.id, {
+            onSuccess: () => {
+              setConfirming(null)
+              notifications.show({ message: now`Single sign-on removed from this account`, color: 'var(--ok)' })
+            },
+          })
+        }
+      >
+        <Trans>They will have to link single sign-on again, or use a password, to sign in.</Trans>
+      </ConfirmDialog>
     </Modal>
   )
 }

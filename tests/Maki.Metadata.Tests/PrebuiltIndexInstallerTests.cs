@@ -132,6 +132,23 @@ public class PrebuiltIndexInstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task Replaces_A_local_index_built_with_another_model_version()
+    {
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
+        var installer = Installer();
+        Assert.True((await installer.InstallAsync(ct: CancellationToken.None)).Installed);
+        // What a release that bumps the model version finds: as many rows as the artifact, all of
+        // them from the previous model.
+        Store().SetModelVersion("previous-model");
+        SqliteConnection.ClearAllPools();
+
+        var second = await installer.InstallAsync(ct: CancellationToken.None);
+
+        Assert.True(second.Installed, second.Reason);
+        Assert.Equal(EmbeddingModelProfile.Base.Version, Store().GetModelVersion());
+    }
+
+    [Fact]
     public async Task Force_ReinstallsEvenWhenCurrent()
     {
         Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version);
@@ -141,6 +158,20 @@ public class PrebuiltIndexInstallerTests : IDisposable
         var forced = await installer.InstallAsync(force: true, ct: CancellationToken.None);
 
         Assert.True(forced.Installed, forced.Reason);
+    }
+
+    [Fact]
+    public async Task Refuses_AFileWhoseOwnStampNamesAnotherModel()
+    {
+        // The manifest says the right model; the file says otherwise. The file is the evidence.
+        Publish(rows: 2000, dimensions: Dimensions, modelVersion: EmbeddingModelProfile.Base.Version,
+            stampedModel: "some-other-model-v9");
+
+        var result = await Installer().InstallAsync(ct: CancellationToken.None);
+
+        Assert.False(result.Installed);
+        Assert.Contains("some-other-model-v9", result.Reason);
+        Assert.False(File.Exists(_vectorPath));
     }
 
     [Fact]
@@ -216,7 +247,8 @@ public class PrebuiltIndexInstallerTests : IDisposable
 
     /// <summary>Builds a compressed artifact + manifest and puts them behind the stub HTTP handler.</summary>
     private void Publish(
-        int rows, int dimensions, string modelVersion, string? sha256Override = null, bool withBom = false)
+        int rows, int dimensions, string modelVersion, string? sha256Override = null, bool withBom = false,
+        string? stampedModel = null)
     {
         var sourcePath = Path.Combine(_dir, $"artifact-{Guid.NewGuid():N}.db");
         var source = new EmbeddingStore(new EmbeddingOptions(_dir, sourcePath, _dir, EmbeddingModelProfile.Base with { Dimensions = dimensions }));
@@ -230,6 +262,11 @@ public class PrebuiltIndexInstallerTests : IDisposable
         }
 
         source.UpsertBatch(batch);
+        if (stampedModel is not null)
+        {
+            source.SetModelVersion(stampedModel);
+        }
+
         SqliteConnection.ClearAllPools();
 
         var raw = File.ReadAllBytes(sourcePath);

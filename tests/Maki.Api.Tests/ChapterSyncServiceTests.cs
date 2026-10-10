@@ -156,6 +156,59 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Existing_chapter_is_matched_across_spellings_of_its_language()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 1m, Language = "pt-br" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 2m, Language = "zh" });
+            db.SaveChanges();
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ => [fake.Chapter(1, language: "pt-BR"), fake.Chapter(2, language: "zh-Hans")]
+        };
+
+        var newIds = await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        Assert.Empty(newIds);
+        Assert.Equal(2, ChaptersOf(seriesId).Count);
+        Assert.Equal(2, LinksOf(seriesId).Count);
+    }
+
+    [Fact]
+    public async Task A_row_stored_under_an_older_spelling_is_rewritten_on_the_next_sync()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 1m, Language = "pt-br" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 2m, Language = "zh" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 3m, Language = "en" });
+            db.SaveChanges();
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ =>
+            [
+                fake.Chapter(1, language: "pt-BR"), fake.Chapter(2, language: "zh-Hans"), fake.Chapter(3)
+            ]
+        };
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        var languages = ChaptersOf(seriesId).OrderBy(c => c.Number).Select(c => c.Language).ToList();
+        Assert.Equal(["pt-BR", "zh-Hans", "en"], languages);
+    }
+
+    [Fact]
     public async Task Volume_wildcard_matches_a_volumeless_existing_chapter()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
@@ -192,6 +245,48 @@ public class ChapterSyncServiceTests : IDisposable
         var chapter = Assert.Single(ChaptersOf(seriesId));
         Assert.Equal(2, chapter.Volume);
         Assert.Equal("Vol copy", chapter.Title);
+    }
+
+    [Fact]
+    public async Task Rows_differing_only_by_language_spelling_are_merged()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5m, Language = "pt-BR" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5m, Volume = 2, Language = "pt-br" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 6m, Language = "zh" });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 6m, Language = "zh-Hans" });
+            db.SaveChanges();
+        }
+
+        await BuildService(null, new FakeSource { Name = "fake", OnListChapters = _ => [] }).SyncSeriesAsync(seriesId);
+
+        var chapters = ChaptersOf(seriesId);
+        Assert.Equal(2, chapters.Count);
+        Assert.Equal(2, chapters.Single(c => c.Number == 5m).Volume);
+        Assert.Equal("pt-BR", chapters.Single(c => c.Number == 5m).Language);
+        Assert.Equal("zh-Hans", chapters.Single(c => c.Number == 6m).Language);
+    }
+
+    [Fact]
+    public async Task Rows_differing_by_language_spelling_are_both_kept_when_each_holds_a_file()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        using (var db = _db.NewContext())
+        {
+            var first = new ChapterFile { SeriesId = seriesId, RelativePath = "a.cbz", DateAdded = DateTime.UtcNow };
+            var second = new ChapterFile { SeriesId = seriesId, RelativePath = "b.cbz", DateAdded = DateTime.UtcNow };
+            db.ChapterFiles.AddRange(first, second);
+            db.SaveChanges();
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5m, Language = "pt-BR", ChapterFileId = first.Id });
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 5m, Language = "pt-br", ChapterFileId = second.Id });
+            db.SaveChanges();
+        }
+
+        await BuildService(null, new FakeSource { Name = "fake", OnListChapters = _ => [] }).SyncSeriesAsync(seriesId);
+
+        Assert.Equal(2, ChaptersOf(seriesId).Count);
     }
 
     [Fact]

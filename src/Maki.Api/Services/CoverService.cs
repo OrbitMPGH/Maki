@@ -27,9 +27,17 @@ public class CoverService(
     public void DeleteCover(int seriesId)
     {
         var dir = Path.GetDirectoryName(CoverPathFor(seriesId))!;
-        if (Directory.Exists(dir))
+        CoverVersionCache.Remove(seriesId);
+        try
         {
-            Directory.Delete(dir, recursive: true);
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not remove the cover folder {Folder} for series {SeriesId}", dir, seriesId);
         }
     }
 
@@ -41,6 +49,13 @@ public class CoverService(
     {
         var path = CoverPathFor(seriesId);
         return File.Exists(path) ? path : null;
+    }
+
+    private static bool SameBytes(string a, string b)
+    {
+        var first = new FileInfo(a);
+        var second = new FileInfo(b);
+        return second.Exists && first.Length == second.Length && File.ReadAllBytes(a).AsSpan().SequenceEqual(File.ReadAllBytes(b));
     }
 
     public async Task<string?> DownloadCoverAsync(int seriesId, string coverUrl, CancellationToken ct = default)
@@ -58,7 +73,34 @@ public class CoverService(
 
             var target = CoverPathFor(seriesId);
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            await image.SaveAsync(target, new JpegEncoder { Quality = 90 }, ct);
+            var temp = target + ".tmp";
+            try
+            {
+                await image.SaveAsync(temp, new JpegEncoder { Quality = 90 }, CancellationToken.None);
+                if (SameBytes(temp, target))
+                {
+                    // Keeps the write time, which is what the cover URL's cache-buster follows.
+                    File.Delete(temp);
+                }
+                else
+                {
+                    File.Move(temp, target, overwrite: true);
+                    CoverVersionCache.Set(seriesId, File.GetLastWriteTimeUtc(target).Ticks);
+                }
+            }
+            catch
+            {
+                try
+                {
+                    File.Delete(temp);
+                }
+                catch (IOException)
+                {
+                }
+
+                throw;
+            }
+
             return target;
         }
         catch (Exception ex)

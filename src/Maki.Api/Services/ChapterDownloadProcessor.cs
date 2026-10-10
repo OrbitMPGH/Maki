@@ -107,6 +107,10 @@ public class ChapterDownloadProcessor(
         // won't have refreshed if the mapping just changed).
         SourceMapping? usedMapping = null;
 
+        // The packaged archive inside the library share. Moved on success; anything else that ends the
+        // attempt (a failure, a Clear, the item timeout) must not leave a full chapter behind.
+        string? tmpCbz = null;
+
         try
         {
             // 1. The mapping and source chapter id were already resolved at enqueue time — no
@@ -137,7 +141,11 @@ public class ChapterDownloadProcessor(
             else
             {
                 if (item.HealthOperationId != null)
-                    throw new InvalidOperationException("Approved repair source is no longer available; request a new replacement");
+                {
+                    await FailAsync(item, "error.download.repairSourceGone", ct);
+                    return DownloadOutcome.Settled;
+                }
+
                 var resolved = await sourceResolver.ResolveAsync(
                     db, chapter, item.PreferredMappingId ?? item.SourceMappingId, ct, triedMappingIds,
                     onlyPreferred: item.PreferredMappingId != null);
@@ -174,13 +182,31 @@ public class ChapterDownloadProcessor(
             }
 
             // 2. Download pages (resumable — existing files are kept).
+            // Pages finish on up to four threads at once, so the count only moves forward and the
+            // throttle is decided under a lock; the broadcast itself runs outside it.
+            var progressLock = new Lock();
+            var furthest = 0;
             var lastBroadcast = DateTime.MinValue;
             var pageFiles = await pageDownloader.DownloadAsync(pages, mapping.SourceName, workingDir, async (done, _) =>
             {
-                item.PagesDone = done;
-                if (DateTime.UtcNow - lastBroadcast > TimeSpan.FromSeconds(1))
+                bool broadcast;
+                lock (progressLock)
                 {
-                    lastBroadcast = DateTime.UtcNow;
+                    if (done > furthest)
+                    {
+                        furthest = done;
+                        item.PagesDone = done;
+                    }
+
+                    broadcast = DateTime.UtcNow - lastBroadcast > TimeSpan.FromSeconds(1);
+                    if (broadcast)
+                    {
+                        lastBroadcast = DateTime.UtcNow;
+                    }
+                }
+
+                if (broadcast)
+                {
                     await BroadcastAsync(item, chapter, series, mapping.SourceName);
                 }
             }, ct);
@@ -215,7 +241,7 @@ public class ChapterDownloadProcessor(
 
             var comicInfo = ComicInfoBuilder.Serialize(ComicInfoBuilder.Build(series, chapter, pageFiles.Count));
             var tmpDir = Path.Combine(rootFolder.Path, ".maki", "tmp");
-            var tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
+            tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
             CbzPackager.Package(pageFiles, comicInfo, tmpCbz);
 
             if (item.HealthOperationId is { } repairId)
@@ -225,7 +251,11 @@ public class ChapterDownloadProcessor(
                 {
                 var operation = await db.HealthOperations.FindAsync([repairId], ct);
                 if (operation != null) await db.Entry(operation).ReloadAsync(ct);
-                if (operation?.Status != "downloading") throw new InvalidOperationException("Repair is no longer accepting candidates");
+                if (operation?.Status != "downloading")
+                {
+                    await FailAsync(item, "error.download.repairNotAccepting", ct);
+                    return DownloadOutcome.Settled;
+                }
                 var staged = HealthPaths.Resolve(rootFolder.Path, $".maki/health/{repairId}/chapter-{chapter.Id}.cbz");
                 Directory.CreateDirectory(Path.GetDirectoryName(staged)!);
                 File.Move(tmpCbz, staged, overwrite: true);
@@ -241,15 +271,25 @@ public class ChapterDownloadProcessor(
 
             // 6. Atomic move into the library.
             await SetStatusAsync(item, QueueStatus.Importing, ct);
-            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
-
-            // Released right after the save below; the using covers every other way out.
-            using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
             if (item.UpgradeInfoJson is not null)
             {
+                // Takes the series lock itself, after the archive is measured.
                 return await ApplyUpgradeAsync(item, chapter, series, rootFolder, mapping, source, sourceChapterId,
                     tmpCbz, workingDir, ct);
             }
+
+            // Released right after the save below; the using covers every other way out.
+            using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+            // The series was loaded when the item was claimed. A rename or move that held the lock
+            // meanwhile changed where the folder is, so the path is built from what it is now.
+            await db.Entry(series).ReloadAsync(ct);
+            if (series.RootFolderId != rootFolder.Id)
+            {
+                rootFolder = await db.RootFolders.FindAsync([series.RootFolderId], ct) ?? rootFolder;
+            }
+
+            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
 
             var seriesFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
             var heldByOthers = (await db.Chapters
@@ -322,7 +362,7 @@ public class ChapterDownloadProcessor(
             // a 200-chapter series to a better source would post 200 phantom downloads.
             if (isNewFile)
             {
-                stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
+                await stats.StageAsync(StatsEventType.ChapterDownloaded, series.Id, series.Title, ct: CancellationToken.None);
             }
 
             // One save for the file row, the chapter's link and Completed, so none lands without the others.
@@ -334,47 +374,7 @@ public class ChapterDownloadProcessor(
             await db.SaveChangesAsync(CancellationToken.None);
             seriesLock.Dispose();
 
-            // Downloads from this source are flowing again — reset its escalating rate-limit backoff.
-            queue.ClearRateLimitBackoff(mapping.SourceName);
-
-            await BroadcastAsync(item, chapter, series, mapping.SourceName);
-            await events.ChapterImported(series.Id, chapter.Id, series.RootFolderId);
-
-            // Part of a batch (series add, search-missing, refresh)? The batch sends one summary
-            // when every chapter in it has settled, instead of a ping per chapter.
-            if (!await batches.CompletedAsync(series.Id, item.Id))
-            {
-                var label = chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
-                            ?? chapter.Title;
-
-                var locale = await locales.DefaultAsync(ct);
-                notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
-                    NotificationEventType.ChapterDownloaded,
-                    Title: localizer.GetFor(locale, "notify.chapter.downloaded.title"),
-                    Body: localizer.GetFor(locale, "notify.chapter.downloaded.body", new
-                    {
-                        series = series.Title,
-                        hasChapter = label is null ? "no" : "yes",
-                        chapter = label ?? string.Empty,
-                    }),
-                    SeriesTitle: series.Title,
-                    SeriesId: series.Id,
-                    ChapterNumber: label));
-
-                // Only what nobody asked for. A chapter somebody clicked Download on needs no
-                // notification — they watched it happen and the queue already showed them.
-                if (item.IsAutomatic)
-                {
-                    inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
-                        Key: "inbox.chapter.downloaded",
-                        Params: InboxMessage.Args(new { chapter = label }),
-                        SeriesId: series.Id,
-                        ChapterId: chapter.Id,
-                        Url: $"/series/{series.Id}"), series.Id);
-                }
-            }
-
-            kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
+            await AnnounceImportAsync(item, chapter, series, rootFolder, mapping, ct);
 
             TryDeleteDirectory(workingDir);
             logger.LogInformation("Imported {Series} {Chapter} from {Source}",
@@ -451,6 +451,73 @@ public class ChapterDownloadProcessor(
             await FailAsync(item, key, ct, detail: detail);
             return DownloadOutcome.Settled;
         }
+        finally
+        {
+            if (tmpCbz is not null)
+            {
+                TryDeleteFile(tmpCbz);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Everything that follows a saved import. The chapter is already in the library and the row is
+    /// Completed, so a failure here (the hub's audience query, the locale read) is logged and left
+    /// there: letting it reach <c>ProcessAsync</c>'s catch-all would overwrite Completed with Failed
+    /// and have the retry job download the chapter again.
+    /// </summary>
+    private async Task AnnounceImportAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, RootFolder rootFolder, SourceMapping mapping,
+        CancellationToken ct)
+    {
+        try
+        {
+            // Downloads from this source are flowing again, so reset its escalating rate-limit backoff.
+            queue.ClearRateLimitBackoff(mapping.SourceName);
+
+            await BroadcastAsync(item, chapter, series, mapping.SourceName);
+            await events.ChapterImported(series.Id, chapter.Id, series.RootFolderId);
+
+            // Part of a batch (series add, search-missing, refresh)? The batch sends one summary
+            // when every chapter in it has settled, instead of a ping per chapter.
+            if (!await batches.CompletedAsync(series.Id, item.Id))
+            {
+                var label = chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
+                            ?? chapter.Title;
+
+                var locale = await locales.DefaultAsync(ct);
+                notifications.Dispatch(NotificationEventType.ChapterDownloaded, new NotificationMessage(
+                    NotificationEventType.ChapterDownloaded,
+                    Title: localizer.GetFor(locale, "notify.chapter.downloaded.title"),
+                    Body: localizer.GetFor(locale, "notify.chapter.downloaded.body", new
+                    {
+                        series = series.Title,
+                        hasChapter = label is null ? "no" : "yes",
+                        chapter = label ?? string.Empty,
+                    }),
+                    SeriesTitle: series.Title,
+                    SeriesId: series.Id,
+                    ChapterNumber: label));
+
+                // Only what nobody asked for. A chapter somebody clicked Download on needs no
+                // notification: they watched it happen and the queue already showed them.
+                if (item.IsAutomatic)
+                {
+                    inbox.RaiseForSeries(InboxEventType.ChapterDownloaded, new InboxMessage(
+                        Key: "inbox.chapter.downloaded",
+                        Params: InboxMessage.Args(new { chapter = label }),
+                        SeriesId: series.Id,
+                        ChapterId: chapter.Id,
+                        Url: $"/series/{series.Id}"), series.Id);
+                }
+            }
+
+            kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
+        }
+        catch (Exception ex) when (!(ex is OperationCanceledException && ct.IsCancellationRequested))
+        {
+            logger.LogWarning(ex, "Queue item {Id} was imported but announcing it failed", item.Id);
+        }
     }
 
     /// <summary>
@@ -466,11 +533,28 @@ public class ChapterDownloadProcessor(
         ISource source, string sourceChapterId, string tmpCbz, string workingDir, CancellationToken ct)
     {
         var info = UpgradeInfo.Parse(item.UpgradeInfoJson);
-        var current = info is null || chapter.ChapterFileId != info.ChapterFileId
+        if (info is null)
+        {
+            TryDeleteFile(tmpCbz);
+            await FailAsync(item, "error.download.upgradeTargetGone", ct, permanent: true);
+            return DownloadOutcome.Settled;
+        }
+
+        // Reading every page of the packaged archive is the slow part and touches nothing the lock
+        // protects, so it happens before the lock is taken. The target is judged again under it.
+        var measurement = ChapterFileMeasurer.MeasureArchive(tmpCbz, 0, ct);
+        var size = new FileInfo(tmpCbz).Length;
+
+        using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+        // The chapter was read when the item started, long before the lock: a link made since is
+        // only visible after a reload.
+        await db.Entry(chapter).ReloadAsync(ct);
+        var current = chapter.ChapterFileId != info.ChapterFileId
             ? null
             : await db.ChapterFiles.FirstOrDefaultAsync(f => f.Id == info.ChapterFileId && f.SeriesId == series.Id, ct);
         var finalPath = current is null ? null : LibraryPaths.Resolve(rootFolder.Path, current.RelativePath);
-        if (info is null || current is null || finalPath is null || !File.Exists(finalPath))
+        if (current is null || finalPath is null || !File.Exists(finalPath))
         {
             TryDeleteFile(tmpCbz);
             await FailAsync(item, "error.download.upgradeTargetGone", ct, permanent: true);
@@ -484,8 +568,6 @@ public class ChapterDownloadProcessor(
                 UpgradeReasons.UnsupportedFile, after: null, info.ProfileId, info.ProfileVersion, null, null, null, ct);
         }
 
-        var measurement = ChapterFileMeasurer.MeasureArchive(tmpCbz, 0, ct);
-        var size = new FileInfo(tmpCbz).Length;
         await SourceQualitySamples.RecordAsync(db, mapping, chapter.Id, SourceQualityOrigin.Download,
             measurement.PageCount, measurement.MedianWidth, measurement.MedianHeight, size, measurement.ImageFormat,
             DateTime.UtcNow, ct);
@@ -497,6 +579,7 @@ public class ChapterDownloadProcessor(
         var tier = QualityTierResolver.Resolve(source.Kind, null, fileName, isVolume: false);
 
         var evaluator = await new UpgradeEvaluationService(db, quality).ForSeriesAsync(series.Id, ct);
+        var shared = UpgradeCandidateRules.SharedFile(await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct));
         QualityScore? before = null;
         QualityScore? candidate = null;
         var reason = UpgradeReasons.UpgradeRejected;
@@ -507,7 +590,6 @@ public class ChapterDownloadProcessor(
                 measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language,
                 measurement.MedianHeight));
             tier = candidate?.Tier ?? tier;
-            var shared = UpgradeCandidateRules.SharedFile(await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct));
             reason = ForcedGuard(info, current, shared, measurement, evaluator?.Profile.PageTolerancePercent ?? 10);
         }
         else if (evaluator?.Evaluate(current, chapter.Language) is { } evaluated)
@@ -522,6 +604,12 @@ public class ChapterDownloadProcessor(
                 ? null
                 : UpgradeReasons.Explain(evaluator.Profile, current.PageCount, candidate, measurement.MedianWidth,
                     measurement.PageCount);
+
+            // A chapter linked to this file since the scan would read this one chapter's pages.
+            if (reason is null && shared)
+            {
+                reason = UpgradeReasons.SharedFile;
+            }
         }
 
         var after = new QualitySnapshot
@@ -702,7 +790,7 @@ public class ChapterDownloadProcessor(
         if (!info.Force)
         {
             await UpgradeAttempts.UpsertAsync(db, chapter.Id, series.Id, mapping.Id, sourceChapterId, profileId,
-                profileVersion, UpgradeReasons.UpgradeRejected, probed: true, pageCount, width, score, ct);
+                profileVersion, reason ?? UpgradeReasons.UpgradeRejected, probed: true, pageCount, width, score, ct);
         }
 
         info.Outcome = UpgradeOutcomes.Rejected;
@@ -869,6 +957,10 @@ public class ChapterDownloadProcessor(
         item.SetError("error.download.earlyAccess", new { source = sourceName });
         await db.SaveChangesAsync(ct);
         await BroadcastAsync(item, chapter, series, sourceName);
+
+        // Parked until the unlock, which can be days away. The batch would otherwise wait on an item
+        // that reports nothing until the stale sweep closes it with a "went quiet" warning.
+        await batches.DiscardAsync(series.Id, item.Id);
     }
 
     private async Task SetStatusAsync(DownloadQueueItem item, QueueStatus status, CancellationToken ct)

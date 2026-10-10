@@ -74,13 +74,13 @@ public record EmbeddingOptions(
     /// Named for the precision, so int8 and fp32 copies of the same model coexist in one folder
     /// rather than the store finding a stale file at a shared path and skipping the download.
     /// Int8 keeps the bare <c>model.onnx</c>, so no existing install re-downloads anything.
-    /// </summary>
-    /// <summary>
+    /// <para>
     /// An external-data graph cannot be renamed. The .onnx records its weights file by literal name
     /// ("model.onnx_data") and ONNX Runtime resolves that relative to the .onnx, so saving the graph
     /// under a precision-suffixed name would leave it hunting for a companion that isn't there. Such
     /// models therefore keep their upstream file name, and get one folder per model anyway, so two
     /// precisions of the same one simply cannot coexist - which is fine, since nothing ships them.
+    /// </para>
     /// </summary>
     public string ModelFileName =>
         Model.ModelDataUrl is null

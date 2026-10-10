@@ -1,4 +1,4 @@
-﻿import {type ReactNode, useMemo} from 'react'
+import {type ReactNode, useMemo} from 'react'
 import {
     ActionIcon,
     Alert,
@@ -25,8 +25,8 @@ import {
     seriesStatusVisual,
     statusToken,
 } from '../ui/status'
-import {useReadTracking} from "../../api/reader.ts";
-import {useChapters} from "../../api/hooks.ts";
+import { useReadTracking } from '../../api/reader'
+import { useChapters } from '../../api/hooks'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
@@ -102,8 +102,7 @@ export function SeriesHero({
         return { highest, total, missing }
     }, [series, chapters])
 
-    // What "Download all wanted" would actually queue, so the button can say so rather than making
-    // the user open the Chapters tab to find out.
+    // Wanted chapters with no file yet, queued or not; the page's download button excludes the queued ones.
     const missingWanted = useMemo(
         () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt).length,
         [chapters],
@@ -260,7 +259,7 @@ export function SeriesHero({
                                                 <ActionIcon
                                                     size="sm"
                                                     variant="subtle"
-                                                    color="gray"
+                                                    color="var(--neutral)"
                                                     onClick={() => onRate(null)}
                                                     aria-label={t`Clear rating`}
                                                 >
@@ -290,7 +289,7 @@ export function SeriesHero({
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
-                        <Title order={3} fz={17}>
+                        <Title order={2} size="h3" fz="var(--type-section)">
                             <Trans>Progress</Trans>
                         </Title>
 

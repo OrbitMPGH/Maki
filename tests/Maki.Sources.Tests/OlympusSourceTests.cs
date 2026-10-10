@@ -112,6 +112,18 @@ public class OlympusSourceTests
     }
 
     [Fact]
+    public async Task GetPages_throws_on_a_page_entry_that_is_not_a_string()
+    {
+        var source = new OlympusSource(new FakeHtmlFetcher(new()
+        {
+            ["api/capitulo/"] = """{"chapter":{"pages":["https://img.test/1.jpg",7]}}"""
+        }));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(
+            new SourceChapter("olympus", "10", "1", "1", 1m, null, null, "es", null)));
+    }
+
+    [Fact]
     public async Task GetPages_maps_a_404_status_to_not_found()
     {
         var fetcher = new StatusFetcher(new(), "api/capitulo/", HttpStatusCode.NotFound);

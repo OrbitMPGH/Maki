@@ -48,8 +48,7 @@ public record ProgressSummaryDto(
     int Earned,
     int Total,
     IReadOnlyList<AchievementDto> Recent,
-    IReadOnlyList<ReadingGoalDto> Goals,
-    IReadOnlyList<AchievementDto> Unseen);
+    IReadOnlyList<ReadingGoalDto> Goals);
 
 public record HeatmapDayDto(DateOnly Date, int Chapters, int Seconds);
 

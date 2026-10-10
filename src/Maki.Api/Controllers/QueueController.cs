@@ -29,18 +29,21 @@ public class QueueController(
 {
     /// <summary>
     /// The active queue, paginated like <see cref="History"/>. <c>Total</c> is the full count, so a
-    /// caller can tell a full page from a truncated one — the old fixed <c>.Take(200)</c> dropped
-    /// the rest silently and a big queue simply looked like exactly 200 items.
+    /// caller can tell a full page from a truncated one; the old fixed <c>.Take(200)</c> dropped
+    /// the rest silently and a big queue simply looked like exactly 200 items. <c>seriesId</c>
+    /// narrows it to one series, which is what a series page needs to see its own queued chapters.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> List(
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 200, CancellationToken ct = default)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 200, [FromQuery] int? seriesId = null,
+        CancellationToken ct = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 200);
 
         var query = db.DownloadQueue
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled);
+        if (seriesId is { } onlySeries) query = query.Where(q => q.SeriesId == onlySeries);
 
         var total = await query.CountAsync(ct);
         var rows = await Rows(query
@@ -375,9 +378,9 @@ public class QueueController(
         {
             item.Status = QueueStatus.Failed;
             var rendered = outcome.ErrorKey is not null
-                ? localizer.Get(outcome.ErrorKey, outcome.ErrorArgs)
+                ? localizer.Get(outcome.ErrorKey, outcome.ErrorArgs) + (outcome.Error is null ? "" : $": {outcome.Error}")
                 : outcome.Error;
-            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs);
+            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs, outcome.Error);
             else item.SetRawError(outcome.Error);
             await db.SaveChangesAsync(ct);
             await Broadcast(item);
@@ -410,29 +413,58 @@ public class QueueController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Remove(int id, CancellationToken ct)
     {
-        var item = await db.DownloadQueue.FindAsync([id], ct);
-        if (item is null)
+        var seriesId = await db.DownloadQueue.AsNoTracking()
+            .Where(q => q.Id == id)
+            .Select(q => (int?)q.SeriesId)
+            .FirstOrDefaultAsync(ct);
+        if (seriesId is null)
         {
             return NotFound();
         }
 
-        queue.CancelWork(item.Id);
-
-        if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
+        if (await RemoveOrCancelAsync(id, ct))
         {
-            db.DownloadQueue.Remove(item);
-        }
-        else
-        {
-            item.Status = QueueStatus.Cancelled;
+            // The item will never report an outcome now, so let go of it, otherwise it holds its
+            // series' download batch open and the batch's summary never fires.
+            await batches.DiscardAsync(seriesId.Value, id);
         }
 
-        await db.SaveChangesAsync(ct);
-
-        // The item will never report an outcome now, so let go of it — otherwise it holds its
-        // series' download batch open and the batch's summary never fires.
-        await batches.DiscardAsync(item.SeriesId, item.Id);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Removes a pending row or cancels an in-flight one, but only while it is still in the status it
+    /// was read in. A worker finishing the row in between must keep its Completed (the file is
+    /// already in the library), and a worker that claimed a Queued row must not find it deleted under
+    /// it. A lost race re-reads and tries again; a row that has settled by itself is left as it is.
+    /// </summary>
+    /// <returns>True when this call removed or cancelled the row.</returns>
+    private async Task<bool> RemoveOrCancelAsync(int id, CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var status = await db.DownloadQueue.AsNoTracking()
+                .Where(q => q.Id == id)
+                .Select(q => (QueueStatus?)q.Status)
+                .FirstOrDefaultAsync(ct);
+            if (status is null or QueueStatus.Completed or QueueStatus.Cancelled)
+            {
+                return false;
+            }
+
+            queue.CancelWork(id);
+
+            var row = db.DownloadQueue.Where(q => q.Id == id && q.Status == status);
+            var affected = status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving
+                ? await row.ExecuteDeleteAsync(ct)
+                : await row.ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Cancelled), ct);
+            if (affected > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -443,31 +475,64 @@ public class QueueController(
     [HttpDelete]
     public async Task<IActionResult> Clear(CancellationToken ct)
     {
-        var items = await db.DownloadQueue
+        var items = await db.DownloadQueue.AsNoTracking()
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
+            .Select(q => new { q.Id, q.SeriesId })
             .ToListAsync(ct);
 
-        foreach (var item in items)
+        // Two statements per chunk instead of three queries per row. Each is conditional on the status,
+        // so a worker that completed or claimed a row meanwhile is not overwritten; a row that moved
+        // from pending to in-flight between the statements is picked up by the next pass.
+        var pending = new[] { QueueStatus.Queued, QueueStatus.Failed, QueueStatus.RateLimited, QueueStatus.Resolving };
+        var terminal = new[] { QueueStatus.Completed, QueueStatus.Cancelled };
+        var ids = items.Select(i => i.Id).ToList();
+        for (var pass = 0; pass < 3; pass++)
         {
-            queue.CancelWork(item.Id);
+            var changed = 0;
+            foreach (var chunk in ids.Chunk(500))
+            {
+                foreach (var id in chunk)
+                {
+                    queue.CancelWork(id);
+                }
 
-            if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
-            {
-                db.DownloadQueue.Remove(item);
+                var rows = db.DownloadQueue.Where(q => chunk.Contains(q.Id));
+                changed += await rows.Where(q => pending.Contains(q.Status)).ExecuteDeleteAsync(ct);
+                changed += await rows
+                    .Where(q => !pending.Contains(q.Status) && !terminal.Contains(q.Status))
+                    .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Cancelled), ct);
             }
-            else
+
+            if (changed == 0)
             {
-                item.Status = QueueStatus.Cancelled;
+                break;
             }
         }
 
-        await db.SaveChangesAsync(ct);
+        var statuses = new Dictionary<int, QueueStatus>();
+        foreach (var chunk in ids.Chunk(500))
+        {
+            foreach (var row in await db.DownloadQueue.AsNoTracking()
+                         .Where(q => chunk.Contains(q.Id))
+                         .Select(q => new { q.Id, q.Status })
+                         .ToListAsync(ct))
+            {
+                statuses[row.Id] = row.Status;
+            }
+        }
 
+        var cleared = 0;
         foreach (var item in items)
         {
+            if (statuses.TryGetValue(item.Id, out var status) && status != QueueStatus.Cancelled)
+            {
+                continue;
+            }
+
+            cleared++;
             await batches.DiscardAsync(item.SeriesId, item.Id);
         }
 
-        return Ok(new QueueClearDto(items.Count));
+        return Ok(new QueueClearDto(cleared));
     }
 }

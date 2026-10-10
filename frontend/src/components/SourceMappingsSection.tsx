@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { errorText } from '../api/errorText'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -69,10 +70,12 @@ import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { EmptyState } from './ui/EmptyState'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
+import { pressable } from '../lib/pressable'
 import { SOURCE_ICONS } from '../sourceIcons'
 import { useSourceLabel } from '../sourceLabels'
 
@@ -414,9 +417,7 @@ export function SourceMappingsSection({
 
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
-          <Text c="var(--ink-3)" size="sm">
-            <Trans>No sources linked. Chapters cannot be synced or downloaded.</Trans>
-          </Text>
+          <EmptyState compact mood="asleep" title={t`No sources linked. Chapters cannot be synced or downloaded.`} />
         )
       ) : (
         // A persistent scrollbar, since a hover-to-reveal one gave no hint that Enabled/Refreshed were off the visible edge.
@@ -500,18 +501,10 @@ export function SourceMappingsSection({
                     }
                     withArrow
                   >
-                    <NumberInput
-                      size="xs"
-                      w={70}
-                      min={1}
-                      max={99}
+                    <PriorityInput
                       value={m.priority}
-                      onChange={(v) => {
-                        const priority = typeof v === 'number' ? v : Number(v)
-                        if (Number.isFinite(priority) && priority !== m.priority) {
-                          updateMapping.mutate({ ...m, priority })
-                        }
-                      }}
+                      label={t`Priority for ${sourceName}`}
+                      onCommit={(priority, onError) => updateMapping.mutate({ ...m, priority }, { onError })}
                     />
                   </Tooltip>
                 </Table.Td>
@@ -853,7 +846,7 @@ export function SourceMappingsSection({
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                onClick={() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url)}
+                {...pressable(() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url), { role: false })}
               >
                 <Group wrap="nowrap">
                   {resolved.coverUrl && (
@@ -877,7 +870,7 @@ export function SourceMappingsSection({
             )}
             {pastedUrl && resolveError && (
               <Text c="var(--danger)" size="sm">
-                {String(resolveError)}
+                {errorText(resolveError)}
               </Text>
             )}
             {!pastedUrl && results?.map((r) => (
@@ -886,7 +879,7 @@ export function SourceMappingsSection({
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                onClick={() => sourceName && link(sourceName, r.sourceSeriesId, r.url)}
+                {...pressable(() => sourceName && link(sourceName, r.sourceSeriesId, r.url), { role: false })}
               >
                 <Group wrap="nowrap">
                   {r.coverUrl && (
@@ -1007,6 +1000,52 @@ function signedNumber(i18n: { number: (n: number) => string }, n: number) {
   return n > 0 ? `+${i18n.number(n)}` : i18n.number(n)
 }
 
+/** Holds a draft while typing and saves once, on blur or Enter, so a two-digit value is one write. */
+function PriorityInput({
+  value,
+  label,
+  onCommit,
+}: {
+  value: number
+  label: string
+  onCommit: (priority: number, onError: () => void) => void
+}) {
+  const [draft, setDraft] = useState<number | string>(value)
+  const lastSent = useRef(value)
+  useEffect(() => {
+    setDraft(value)
+    lastSent.current = value
+  }, [value])
+
+  const commit = () => {
+    const parsed = typeof draft === 'number' ? draft : draft === '' ? NaN : Number(draft)
+    const priority = Number.isFinite(parsed) ? Math.min(99, Math.max(1, Math.round(parsed))) : lastSent.current
+    setDraft(priority)
+    if (priority === lastSent.current) return
+    lastSent.current = priority
+    onCommit(priority, () => {
+      lastSent.current = value
+      setDraft(value)
+    })
+  }
+
+  return (
+    <NumberInput
+      size="xs"
+      w={70}
+      min={1}
+      max={99}
+      aria-label={label}
+      value={draft}
+      onChange={setDraft}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+      }}
+    />
+  )
+}
+
 /**
  * The languages one mapping lists chapters in.
  *
@@ -1053,6 +1092,7 @@ function MappingLanguages({
 
   return (
     <MultiSelect
+      aria-label={t`Chapter languages`}
       size="xs"
       w={150}
       data={languageOptions}

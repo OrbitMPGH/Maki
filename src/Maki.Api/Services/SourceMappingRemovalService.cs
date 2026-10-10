@@ -1,5 +1,4 @@
 using Maki.Core.Entities;
-using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,11 +31,22 @@ public class SourceMappingRemovalService(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     ReaderArchiveCache archives,
+    ChapterFileDeletion deletion,
     ILogger<SourceMappingRemovalService> logger)
 {
     public async Task<SourceMappingRemovalResult?> RemoveAsync(
         int mappingId, bool deleteFiles, CancellationToken ct = default)
     {
+        var seriesId = await db.SourceMappings
+            .Where(m => m.Id == mappingId)
+            .Select(m => (int?)m.SeriesId)
+            .FirstOrDefaultAsync(ct);
+        if (seriesId is null)
+        {
+            return null;
+        }
+
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId.Value, ct);
         var mapping = await db.SourceMappings
             .Include(m => m.Series!)
             .ThenInclude(s => s.RootFolder)
@@ -77,11 +87,6 @@ public class SourceMappingRemovalService(
             .Where(c => c.SeriesId == mapping.SeriesId)
             .Include(c => c.ChapterFile)
             .ToListAsync(ct);
-        var removed = chapters.Where(c => !supportedIds.Contains(c.Id)).ToList();
-        var retained = chapters.Where(c => supportedIds.Contains(c.Id)).ToList();
-
-        await RebuildMetadataAsync(retained, remainingIds, ct);
-
         // A chapter number can be valid on both the wrong and correct series. Its row survives,
         // but a CBZ acquired through the mapping being removed must not remain readable as if it
         // were the correct content.
@@ -91,6 +96,13 @@ public class SourceMappingRemovalService(
                             StringComparison.OrdinalIgnoreCase))
             .Select(c => c.ChapterFileId!.Value)
             .ToHashSet();
+        var keptIds = await KeptWithoutSupportAsync(
+            mapping.SeriesId, mappingId, chapters, supportedIds, wrongSourceFileIds, ct);
+        var removed = chapters.Where(c => !supportedIds.Contains(c.Id) && !keptIds.Contains(c.Id)).ToList();
+        var retained = chapters.Where(c => supportedIds.Contains(c.Id) || keptIds.Contains(c.Id)).ToList();
+
+        await RebuildMetadataAsync(retained.Where(c => supportedIds.Contains(c.Id)).ToList(), remainingIds, ct);
+
         foreach (var chapter in retained.Where(c => c.ChapterFileId is { } fileId && wrongSourceFileIds.Contains(fileId)))
         {
             chapter.ChapterFileId = null;
@@ -110,44 +122,58 @@ public class SourceMappingRemovalService(
         await CancelAffectedQueueItemsAsync(mapping, removed, ct);
 
         var failedFileDeletions = new List<string>();
-        var deletedFiles = 0;
+        var toDelete = new List<ChapterFileDeletion.DiskTarget>();
         if (deleteFiles && detachedFileIds.Count > 0)
         {
             var files = await db.ChapterFiles
                 .Where(f => detachedFileIds.Contains(f.Id))
                 .ToListAsync(ct);
-            foreach (var file in files)
+            var targets = mapping.Series.RootFolder is null
+                ? files.Select(f => new ChapterFileDeletion.DiskTarget(f.RelativePath, null, false)).ToList()
+                : await deletion.TargetsAsync(
+                    mapping.Series.RootFolder.Path, files.Select(f => f.RelativePath), detachedFileIds.ToHashSet(), ct);
+            foreach (var (file, target) in files.Zip(targets))
             {
-                var path = mapping.Series.RootFolder is null
-                    ? null
-                    : LibraryPaths.Resolve(mapping.Series.RootFolder.Path, file.RelativePath);
-                if (path is null)
+                if (target.AbsolutePath is null)
                 {
-                    logger.LogWarning("Refusing to delete {File}: path is outside the series root", file.RelativePath);
+                    logger.LogWarning("Refusing to delete {File}: resolves outside the root or through a linked folder",
+                        file.RelativePath);
                     failedFileDeletions.Add(file.RelativePath);
                     continue;
                 }
 
-                try
+                if (target.Deletable)
                 {
-                    File.Delete(path);
+                    toDelete.Add(target);
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                else
                 {
-                    logger.LogWarning(ex, "Could not delete detached file {File}", file.RelativePath);
-                    failedFileDeletions.Add(file.RelativePath);
-                    continue;
+                    logger.LogInformation("Kept {File} on disk: another record still points at it", target.AbsolutePath);
                 }
 
                 archives.Invalidate(file.Id);
                 db.ChapterFiles.Remove(file);
-                deletedFiles++;
             }
         }
 
         db.Chapters.RemoveRange(removed);
         db.SourceMappings.Remove(mapping);
         await db.SaveChangesAsync(ct);
+
+        // Rows are committed first, so a failure here orphans a file for Health to find rather than
+        // leaving a row behind for a file that is gone.
+        var deletedFiles = 0;
+        foreach (var target in toDelete)
+        {
+            if (deletion.DeleteFromDisk(target.AbsolutePath!))
+            {
+                deletedFiles++;
+            }
+            else
+            {
+                failedFileDeletions.Add(target.RelativePath);
+            }
+        }
 
         return new SourceMappingRemovalResult(
             removed.Count,
@@ -156,6 +182,43 @@ public class SourceMappingRemovalService(
             deletedFiles,
             failedFileDeletions.Count,
             failedFileDeletions);
+    }
+
+    /// <summary>
+    /// Chapters no remaining mapping supports that this removal still has no business deleting: ones
+    /// the removed mapping never listed (a source delisted them, they were adopted from disk, or only
+    /// a disabled mapping lists them) that hold a file from a source other than the removed one, or
+    /// somebody's reading state. The row going takes every user's progress and bookmarks with it.
+    /// A chapter the removed mapping did list is its own to remove, as before.
+    /// </summary>
+    private async Task<HashSet<int>> KeptWithoutSupportAsync(
+        int seriesId, int mappingId, IReadOnlyCollection<Chapter> chapters,
+        IReadOnlySet<int> supportedIds, IReadOnlySet<int> wrongSourceFileIds, CancellationToken ct)
+    {
+        var listedByRemoved = (await db.ChapterSourceLinks
+                .Where(l => l.SourceMappingId == mappingId)
+                .Select(l => l.ChapterId)
+                .Distinct()
+                .ToListAsync(ct))
+            .ToHashSet();
+        var read = (await db.ChapterProgress.IgnoreQueryFilters()
+                .Where(p => p.SeriesId == seriesId)
+                .Select(p => p.ChapterId)
+                .Distinct()
+                .ToListAsync(ct))
+            .Concat(await db.ReaderBookmarks.IgnoreQueryFilters()
+                .Where(b => b.SeriesId == seriesId)
+                .Select(b => b.ChapterId)
+                .Distinct()
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        return chapters
+            .Where(c => !supportedIds.Contains(c.Id) && !listedByRemoved.Contains(c.Id) &&
+                        (read.Contains(c.Id) ||
+                         (c.ChapterFileId is { } fileId && !wrongSourceFileIds.Contains(fileId))))
+            .Select(c => c.Id)
+            .ToHashSet();
     }
 
     private async Task RebuildMetadataAsync(

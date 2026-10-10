@@ -16,6 +16,7 @@ import { IconAlertTriangle, IconBell, IconBellOff, IconCircleCheck } from '@tabl
 import { useNavigate } from 'react-router-dom'
 import {
   useInbox,
+  useInboxPrefs,
   useInboxUnread,
   useMarkAllInboxRead,
   useMarkInboxRead,
@@ -37,7 +38,8 @@ export function NotificationBell() {
   const navigate = useNavigate()
 
   const { data: unread } = useInboxUnread()
-  const { data, isLoading } = useInbox()
+  useInboxPrefs()
+  const { data, isPending } = useInbox(undefined, opened)
   const markRead = useMarkInboxRead()
   const markAll = useMarkAllInboxRead()
 
@@ -76,7 +78,7 @@ export function NotificationBell() {
           >
             <ActionIcon
               variant="subtle"
-              color="gray"
+              color="var(--neutral)"
               aria-label={t`Notifications`}
               onClick={toggle}
             >
@@ -98,7 +100,7 @@ export function NotificationBell() {
           )}
         </Group>
 
-        {isLoading ? (
+        {isPending ? (
           <Text size="xs" c="var(--ink-3)" px="sm" pb="sm">
             <Trans>Loading…</Trans>
           </Text>
@@ -165,7 +167,7 @@ function NotificationRow({
           </Text>
           {/* fz, not size: `size` takes a token ("xs"), and a raw number there resolves against
               --mantine-line-height-{n}, which does not exist and lands as line-height: 100px. */}
-          <Text fz={10} lh={1.5} c="var(--ink-3)">
+          <Text fz="var(--type-badge)" lh={1.5} c="var(--ink-3)">
             {relativeTime(item.createdAt)}
           </Text>
         </Stack>

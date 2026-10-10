@@ -169,6 +169,37 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task A_taste_artifact_holding_a_null_vector_does_not_break_the_build()
+    {
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (2L, "h", [0f, 1f, 0f, 0f])]);
+        var tastePath = Path.Combine(_dir, "taste-vectors.db");
+        using (var conn = new SqliteConnection($"Data Source={tastePath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE item_vectors (id INTEGER PRIMARY KEY, scale REAL, vec BLOB);
+                INSERT INTO meta VALUES ('dimensions', '4');
+                INSERT INTO item_vectors VALUES (1, 0.1, NULL);
+                INSERT INTO item_vectors VALUES (2, 0.1, x'01020304');
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        var cache = new VectorIndexCache(
+            new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base with { Dimensions = 4 }),
+            new MangaBakaDumpOptions(_dumpPath, _dir),
+            NullLogger<VectorIndexCache>.Instance,
+            new Maki.Metadata.Taste.TasteVectorOptions(tastePath, _dir));
+
+        var index = await cache.GetAsync();
+
+        Assert.NotNull(index);
+        Assert.Equal(1, index!.Taste?.Covered);
+    }
+
+    [Fact]
     public async Task Invalidate_ForcesARebuild()
     {
         var store = Store();
@@ -183,6 +214,74 @@ public class VectorIndexCacheTests : IDisposable
         Assert.Equal(1, (await cache.GetAsync())!.Count); // still the stale index
         cache.Invalidate();
         Assert.Equal(2, (await cache.GetAsync())!.Count);
+    }
+
+    [Fact]
+    public async Task An_invalidate_landing_during_a_build_is_not_lost()
+    {
+        var store = Store();
+        store.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        cache.AfterBuildForTest = () =>
+        {
+            cache.AfterBuildForTest = null;
+            store.UpsertBatch([(2L, "h", [0f, 1f, 0f, 0f])]);
+            cache.Invalidate();
+        };
+
+        Assert.Equal(1, (await cache.GetAsync())!.Count);
+        Assert.False(cache.IsLoaded);
+        Assert.Equal(2, (await cache.GetAsync())!.Count);
+    }
+
+    [Fact]
+    public async Task A_caller_arriving_after_an_invalidate_does_not_take_the_build_it_outdated()
+    {
+        var store = Store();
+        store.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        Task<VectorIndex?>? late = null;
+        cache.AfterBuildForTest = () =>
+        {
+            cache.AfterBuildForTest = null;
+            store.UpsertBatch([(2L, "h", [0f, 1f, 0f, 0f])]);
+            cache.Invalidate();
+            // Joins the build that is still running, which read the file before the invalidate.
+            late = cache.GetAsync();
+        };
+
+        Assert.Equal(1, (await cache.GetAsync())!.Count);
+        Assert.NotNull(late);
+        Assert.Equal(2, (await late!)!.Count);
+    }
+
+    [Fact]
+    public async Task A_cancelled_caller_does_not_abort_the_shared_build()
+    {
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        var built = new ManualResetEventSlim();
+        var release = new ManualResetEventSlim();
+        var builds = 0;
+        cache.AfterBuildForTest = () =>
+        {
+            Interlocked.Increment(ref builds);
+            built.Set();
+            release.Wait(TimeSpan.FromSeconds(10));
+        };
+
+        using var cts = new CancellationTokenSource();
+        var first = cache.GetAsync(cts.Token);
+        Assert.True(built.Wait(TimeSpan.FromSeconds(10)));
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+
+        var second = cache.GetAsync();
+        release.Set();
+
+        Assert.Equal(1, (await second)!.Count);
+        Assert.True(cache.IsLoaded);
+        Assert.Equal(1, builds);
     }
 
     [Fact]

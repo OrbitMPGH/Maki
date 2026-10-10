@@ -625,6 +625,7 @@ export function useSeriesUpgradeScanStatus(seriesId: number) {
     queryKey: ['upgrade-scan-status', seriesId],
     queryFn: async () =>
       (await api<SeriesScanStatus | undefined>(`/upgrades/scan/status?seriesId=${seriesId}`)) ?? null,
+    meta: { inlineNotFound: true },
     refetchInterval: (query) => {
       const state = query.state.data?.state
       return state === 'queued' || state === 'running' ? 2000 : false
@@ -752,9 +753,10 @@ export function useDeleteQualityFormat() {
 export function useCutoffUnmet(page: number, pageSize = 50, seriesId?: number, enabled = true) {
   return useQuery({
     queryKey: ['upgrades', 'cutoff-unmet', { page, pageSize, seriesId }],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<CutoffUnmetPageDto>(
         `/upgrades/cutoff-unmet?page=${page}&pageSize=${pageSize}${seriesId != null ? `&seriesId=${seriesId}` : ''}`,
+        { signal },
       ),
     placeholderData: keepPreviousData,
     enabled,
@@ -796,9 +798,10 @@ export function useSaveUpgradeSettings() {
 export function useUpgradeHistory(page: number, pageSize = 25, seriesId?: number, enabled = true) {
   return useQuery({
     queryKey: ['upgrades', 'history', { page, pageSize, seriesId }],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<UpgradeHistoryPageDto>(
         `/upgrades/history?page=${page}&pageSize=${pageSize}${seriesId != null ? `&seriesId=${seriesId}` : ''}`,
+        { signal },
       ),
     placeholderData: keepPreviousData,
     enabled,
@@ -810,10 +813,11 @@ export function useUpgradeHistory(page: number, pageSize = 25, seriesId?: number
  * are cutoff-unmet (`upgrades`), the chapter and Files-tab quality columns (`chapters`,
  * `series-files`), and a revert also re-touches the live queue row and its history entry.
  */
-function useUpgradeMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) {
+function useUpgradeMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>, silent = false) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: fn,
+    meta: { silent },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
@@ -828,12 +832,14 @@ function useUpgradeMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult
 export function useRevertUpgrade() {
   return useUpgradeMutation((historyId: number) =>
     api<UpgradeHistoryRowDto>(`/upgrades/history/${historyId}/revert`, { method: 'POST' }),
+    true,
   )
 }
 
 export function useRevertUpgradeGroup() {
   return useUpgradeMutation((groupId: string) =>
     api<unknown>(`/upgrades/history/group/${groupId}/revert`, { method: 'POST' }),
+    true,
   )
 }
 
@@ -885,6 +891,7 @@ export function useVolumeSearch() {
       void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
+    meta: { silent: true },
   })
 }
 
@@ -926,6 +933,7 @@ export function useRunUpgradeScan() {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['upgrade-scan-status'] })
     },
+    meta: { silent: true },
   })
 }
 
@@ -950,5 +958,6 @@ export function useUpgradeChapterNow() {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
+    meta: { silent: true },
   })
 }

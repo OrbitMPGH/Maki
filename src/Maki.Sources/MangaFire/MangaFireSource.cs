@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.MangaFire;
 
@@ -17,7 +18,7 @@ namespace Maki.Sources.MangaFire;
 ///   (title page, walking pager)  → chapters: {items:[{id, number, name, language, type, createdAt}]}
 ///   /title/{key}/chapter/{id}    → pages:    {data:{pages:[{url, width, height}]}}
 /// Series id is "{hid}-{slug}" (the tail of /title/ URLs); the hid is the part before the first '-'.
-/// Pages are served plain (no tile scrambling), so ScrambleOffset stays 0.
+/// Pages are served plain, with no tile scrambling.
 /// </summary>
 public class MangaFireSource(MangaFireBrowser browser) : ISource
 {
@@ -88,7 +89,7 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var languages = SourceLanguages.Parse(languageFilter);
+        var languages = SiteLanguageCodes.Parse(languageFilter);
         // One language drives the "Lang" dropdown to it; several drive it to "All", the mixed view
         // where each item carries its own code — there is no way to ask the site for a subset.
         var requested = languages.Count == 1 ? languages[0] : MangaFireBrowser.AllLanguages;
@@ -193,6 +194,12 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
             .Where(url => !string.IsNullOrEmpty(url))
             .Select(url => new PageRequest(url!, headers))
             .ToList();
+
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"No page images found for MangaFire chapter {chapter.SourceChapterId}");
+        }
 
         return new ChapterPages(pages);
     }

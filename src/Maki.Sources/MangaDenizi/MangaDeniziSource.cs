@@ -8,6 +8,7 @@ using Maki.Core.Sources;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.MangaDenizi;
 
@@ -20,6 +21,7 @@ namespace Maki.Sources.MangaDenizi;
 public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
 {
     public const string HttpClientName = "source-mangadenizi";
+    public const string ImageHttpClientName = "source-mangadenizi-img";
 
     private static readonly Uri ApiReferer = new("https://mangadenizi.net/manga");
     private const int MaxSearchPages = 3;
@@ -34,6 +36,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
     public IReadOnlyList<string> CoverHosts => [];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
+    private HttpClient ImageClient => httpClientFactory.CreateClient(ImageHttpClientName);
 
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
@@ -176,6 +179,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         }
 
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
+        var cleanHeaders = new Dictionary<string, string>(headers) { ["User-Agent"] = BrowserUserAgent.Value };
         var pages = new List<PageRequest>();
         foreach (var pageEl in pagesEl.EnumerateArray())
         {
@@ -184,6 +188,16 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
             {
                 throw new InvalidOperationException(
                     $"MangaDenizi page for chapter {chapterSlug} of {mangaSlug} has no usable image_url");
+            }
+
+            // Only a scrambled page has to be fetched here; a clean one goes to the downloader
+            // as a plain URL so it streams with progress and uses the page cache. The downloader's
+            // client does not carry the browser User-Agent, so the page asks for it.
+            if (!pageEl.TryGetProperty("scramble", out var scrambleEl) || scrambleEl.ValueKind == JsonValueKind.Null)
+            {
+                PublicAddressGuard.EnsureAllowed(imageUrl);
+                pages.Add(new PageRequest(imageUrl, cleanHeaders));
+                continue;
             }
 
             var raw = await FetchImageBytesAsync(imageUrl, ct);
@@ -222,7 +236,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         if (!scrambleEl.TryGetProperty("grid", out var gridEl) || !scrambleEl.TryGetProperty("seed", out var seedEl))
         {
             throw new InvalidOperationException(
-                $"Unexpected scramble payload for page {url}: {Truncate(scrambleEl.GetRawText())}");
+                $"Unexpected scramble payload for page {url}: {BodyText.Snippet(scrambleEl.GetRawText())}");
         }
 
         var grid = gridEl.GetInt32();
@@ -254,7 +268,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         PublicAddressGuard.EnsureAllowed(url);
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Referrer = new Uri($"{BaseUrl}/");
-        using var response = await Client.SendAsync(request, ct);
+        using var response = await ImageClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsByteArrayAsync(ct);
     }
@@ -282,7 +296,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
     }
 
@@ -307,9 +321,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
     }
 
     private static InvalidOperationException Unexpected(JsonResponse response) =>
-        new($"Unexpected response from {response.Url}: {Truncate(response.Body)}");
-
-    private static string Truncate(string body) => body.Length <= 100 ? body : body[..100];
+        new($"Unexpected response from {response.Url}: {BodyText.Snippet(response.Body)}");
 
     private static string? GetString(JsonElement element, string property) =>
         element.ValueKind == JsonValueKind.Object &&

@@ -63,8 +63,7 @@ public class ReaderController(
     ContinueReadingService continueReading,
     ReadingProfileService profiles,
     KavitaReadImportService readImport,
-    UserMetricsService metrics,
-    AchievementService achievements,
+    AchievementEvaluationQueue achievementQueue,
     AppPaths paths,
     ILogger<ReaderController> logger,
     ICurrentUser currentUser,
@@ -174,21 +173,31 @@ public class ReaderController(
         // read next), and ReadCounts for the numerator. Both are counted at manifest time and go
         // stale within the chapter, which is exactly right: they only move when a chapter is
         // finished, and finishing one refetches this.
-        var seriesChapterCount = await db.Chapters
-            .CountAsync(c => c.SeriesId == slice.Series.Id && (c.ChapterFileId != null || c.FileRemovedAt != null), ct);
         var seriesReadCount = await ReadCounts.Read(db)
             .CountAsync(p => p.SeriesId == slice.Series.Id, ct);
 
-        // How long the series actually is, which the two counts above deliberately can't say. Same
-        // rule the series page's denominator uses. The toolbar shows it as a trailing hint so
+        // seriesWantedCount is how long the series actually is, which the downloaded count can't say.
+        // Same rule the series page's denominator uses. The toolbar shows it as a trailing hint so
         // someone reading a series that downloads in batches can tell there is more coming.
-        var seriesWantedCount = await db.Chapters
-            .CountAsync(c => c.SeriesId == slice.Series.Id && (c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null), ct);
+        var counts = await db.Chapters
+            .Where(c => c.SeriesId == slice.Series.Id)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Downloaded = g.Count(c => c.ChapterFileId != null || c.FileRemovedAt != null),
+                Wanted = g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
+            })
+            .FirstOrDefaultAsync(ct);
+        var seriesChapterCount = counts?.Downloaded ?? 0;
+        var seriesWantedCount = counts?.Wanted ?? 0;
 
         // Named on the end-of-chapter screen, and its number is how that screen tells a straight
         // continuation from a jump over chapters that were never downloaded.
         var nextChapter = next is int nextId
-            ? await db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == nextId, ct)
+            ? await db.Chapters.AsNoTracking()
+                .Where(c => c.Id == nextId)
+                .Select(c => new { c.Number, c.Volume, c.Title, c.IsOneShot })
+                .FirstOrDefaultAsync(ct)
             : null;
 
         return Ok(new
@@ -198,27 +207,25 @@ public class ReaderController(
             seriesTitle = slice.Series.Title,
             label = ChapterLabel.For(slice.Chapter),
             number = slice.Chapter.Number,
-            volume = slice.Chapter.Volume,
-            language = slice.Chapter.Language,
             pageCount = slice.PageCount,
             seriesChapterCount,
             seriesReadCount,
             seriesWantedCount,
-            resumePage = saved?.Completed == true ? 0 : saved?.PageIndex ?? 0,
+            resumePage = ReaderService.ResumePageFor(saved, slice.PageCount),
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
-            nextChapterLabel = nextChapter is null ? null : ChapterLabel.For(nextChapter),
+            nextChapterLabel = nextChapter is null
+                ? null
+                : ChapterLabel.For(nextChapter.Number, nextChapter.Volume, nextChapter.Title, nextChapter.IsOneShot),
             nextChapterNumber = nextChapter?.Number,
             seriesCoverUrl = SeriesDto.CoverUrlFor(slice.Series.Id, slice.Series.CoverPath, slice.Series.LastMetadataRefresh),
             prefs = resolved.Prefs,
             prefsSource = resolved.Source.ToString(),
             profileId = resolved.ProfileId,
-            profileName = resolved.ProfileName,
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
-            seriesType = slice.Series.Type,
-            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveSize)
+            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion)
         });
     }
 
@@ -233,7 +240,7 @@ public class ReaderController(
 
         var entry = slice.Pages[slice.StartPage + page];
 
-        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveSize}-{slice.StartPage + page}\"");
+        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
@@ -241,7 +248,7 @@ public class ReaderController(
 
         if (ComicFile.IsPdf(slice.ArchivePath))
         {
-            var cached = await GetOrRenderFullPageAsync(slice, slice.StartPage + page, entry, ct);
+            var cached = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, slice.StartPage + page, entry, ct);
             if (cached is null)
             {
                 return NotFound();
@@ -261,7 +268,7 @@ public class ReaderController(
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }
 
-    private static string PageVersion(int chapterFileId, long archiveSize) => $"{chapterFileId}-{archiveSize}";
+    private static string PageVersion(int chapterFileId, string archiveVersion) => $"{chapterFileId}-{archiveVersion}";
 
     /// <summary>
     /// Page URLs are the same before and after a re-download, so a year-long immutable response is
@@ -269,62 +276,9 @@ public class ReaderController(
     /// file on disk. Anything else revalidates against the ETag.
     /// </summary>
     private void SetPageCacheControl(ReaderService.PageSlice slice) =>
-        Response.Headers.CacheControl = Request.Query["v"] == PageVersion(slice.ChapterFileId, slice.ArchiveSize)
+        Response.Headers.CacheControl = Request.Query["v"] == PageVersion(slice.ChapterFileId, slice.ArchiveVersion)
             ? "private, max-age=31536000, immutable"
             : "private, no-cache";
-
-    /// <summary>
-    /// Full-size PDF page render, disk-cached alongside the thumbnail cache for the same chapter
-    /// file so a page opened twice (once by the reader, once to build its thumbnail) is only ever
-    /// rendered once. Named <c>{ArchiveSize}-{index}.full.jpg</c> so it shares the thumbnail
-    /// cache's per-directory eviction (missing ChapterFile row, stale archive size) without
-    /// colliding with the thumbnail's own <c>{ArchiveSize}-{index}.jpg</c> name.
-    /// </summary>
-    private async Task<string?> GetOrRenderFullPageAsync(ReaderService.PageSlice slice, int absoluteIndex, string entry, CancellationToken ct)
-    {
-        var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
-        var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.full.jpg");
-        if (System.IO.File.Exists(cached))
-        {
-            return cached;
-        }
-
-        await using var source = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
-        if (source is null)
-        {
-            return null;
-        }
-
-        Directory.CreateDirectory(dir);
-        var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
-        try
-        {
-            await using (var file = System.IO.File.Create(tmp))
-            {
-                await source.CopyToAsync(file, ct);
-            }
-
-            try
-            {
-                System.IO.File.Move(tmp, cached, overwrite: true);
-            }
-            catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException &&
-                                              System.IO.File.Exists(cached))
-            {
-                // Another request already finished rendering the same page and has it open for
-                // reading (Windows refuses to replace an open file); the bytes are deterministic,
-                // so the loser can just use what is there.
-                System.IO.File.Delete(tmp);
-            }
-        }
-        catch
-        {
-            if (System.IO.File.Exists(tmp)) System.IO.File.Delete(tmp);
-            throw;
-        }
-
-        return cached;
-    }
 
     [HttpGet("chapter/{id:int}/thumb/{page:int}")]
     public async Task<IActionResult> Thumbnail(int id, int page, CancellationToken ct)
@@ -337,7 +291,7 @@ public class ReaderController(
 
         var absoluteIndex = slice.StartPage + page;
         var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
-        var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.jpg");
+        var cached = Path.Combine(dir, $"{slice.ArchiveVersion}-{absoluteIndex}.jpg");
 
         if (!System.IO.File.Exists(cached))
         {
@@ -352,7 +306,7 @@ public class ReaderController(
                 string? fullCached = null;
                 if (ComicFile.IsPdf(slice.ArchivePath))
                 {
-                    fullCached = await GetOrRenderFullPageAsync(slice, absoluteIndex, entry, ct);
+                    fullCached = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, absoluteIndex, entry, ct);
                     if (fullCached is null)
                     {
                         return NotFound();
@@ -439,82 +393,41 @@ public class ReaderController(
             return NotFound();
         }
 
+        // A completing write from a reader holding a stale manifest is clamped by the service rather than
+        // refused, so the completion is not lost; only a plain position past the end is rejected.
+        if (request.Completed != true && !ReaderService.IsPageInRange(request.PageIndex, slice.PageCount))
+        {
+            return this.Fail(localizer, "error.reader.pageOutOfRange");
+        }
+
         var finished = await reader.SaveProgressAsync(
             slice, request.PageIndex, request.Completed,
             new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct);
 
+        // After the save, so the evaluation sees the finished chapter. Whatever it unlocks reaches
+        // the reader through the inbox push rather than this response.
+        if (finished && db.Scope.UserId is var userId and not 0)
+        {
+            achievementQueue.Enqueue(userId);
+        }
+
         return Ok(new
         {
             chapterId = id,
-            pageIndex = request.PageIndex,
+            pageIndex = ReaderService.ClampPage(request.PageIndex, slice.PageCount),
             completed = finished || request.Completed == true,
-            unlocked = finished ? await UnlockedAsync(ct) : [],
         });
-    }
-
-    /// <summary>
-    /// Evaluates achievements after a chapter completes and hands back whatever it earned, so the
-    /// reader can show a toast on the same round trip.
-    /// <para>
-    /// Carried on the response rather than pushed over SignalR: the hub addresses admins and
-    /// root-folder audiences and has no per-user method, and adding the first one to deliver a toast
-    /// the client is already waiting on would be pure ceremony. Reads that arrive any other way (the
-    /// Kavita pass, OPDS) are caught by the lazy evaluation on the progress endpoints instead.
-    /// </para>
-    /// <para>
-    /// Never fails the write. The progress is already committed by the time this runs, and a badge
-    /// that shows up on the next page load is not worth turning a successful read into a 500.
-    /// </para>
-    /// </summary>
-    private async Task<object[]> UnlockedAsync(CancellationToken ct)
-    {
-        var userId = db.Scope.UserId;
-        if (userId == 0)
-        {
-            return [];
-        }
-
-        try
-        {
-            metrics.Invalidate(userId);
-            var unlocked = await achievements.EvaluateAsync(userId, ct);
-
-            // One toast per achievement, not per tier. Crossing several rungs in one go is normal
-            // and the reader experiences it as a single thing happening; acknowledging the top tier
-            // marks the rest seen too (see AchievementService.MarkSeenAsync).
-            return [.. unlocked
-                .GroupBy(u => u.Key, StringComparer.Ordinal)
-                .Select(g => g.OrderByDescending(u => u.Tier).First())
-                .Select(u => new
-            {
-                id = u.Id,
-                key = u.Key,
-                tier = u.Tier,
-                name = localizer.Get($"achievement.{u.Key}.name"),
-                tierName = AchievementCatalog.Find(u.Key) is { } d
-                    ? AchievementCatalog.TierName(d, u.Tier)
-                    : null,
-            })];
-        }
-        catch (Exception e)
-        {
-            logger.LogWarning(e, "Achievement evaluation failed for user {UserId}", userId);
-            return [];
-        }
     }
 
     [HttpPost("chapter/{id:int}/read")]
     public async Task<IActionResult> MarkRead(int id, CancellationToken ct)
     {
-        var slice = await reader.SliceAsync(id, ct);
-        if (slice is null)
+        // The same silent tick as the chapter table's select mode: no event, no reading time.
+        if (await reader.MarkReadAsync([id], ct) == 0)
         {
             return NotFound();
         }
 
-        // No time: ticking a chapter off from the chapter table is not a sitting with it.
-        await reader.SaveProgressAsync(
-            slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct);
         return Ok(new { chapterId = id, completed = true });
     }
 
@@ -655,7 +568,7 @@ public class ReaderController(
     [HttpPut("chapter/{id:int}/bookmark/{page:int}")]
     public async Task<IActionResult> ToggleBookmark(int id, int page, CancellationToken ct)
     {
-        var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == id, ct);
+        var chapter = await db.Chapters.AsNoTracking().Select(c => new { c.Id, c.SeriesId }).FirstOrDefaultAsync(c => c.Id == id, ct);
         if (chapter is null)
         {
             return NotFound();
@@ -718,6 +631,7 @@ public class ReaderController(
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
         // so the ordered fallback below picks it up in its proper place.
         var inProgress = await db.ChapterProgress
+            .AsNoTracking()
             .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null && p.PageIndex > 0 &&
                         db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
             .OrderByDescending(p => p.UpdatedAt)

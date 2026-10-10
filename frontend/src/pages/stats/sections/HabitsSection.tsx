@@ -5,11 +5,11 @@ import { IconArchive, IconBooks, IconChartHistogram, IconFlame } from '@tabler/i
 import { useActivityStats, useLibraryComposition } from '../../../api/hooks'
 import type { BehaviourSeries } from '../../../api/hooks'
 import { useStatsStanding } from '../../../api/stats'
-import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { formatNumber, formatPercent, formatReadingTime } from '../../../format'
 import { BacklogBars } from '../charts/BacklogBars'
 import { StopHistogram } from '../charts/StopHistogram'
+import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
 import { ChartSkeleton } from '../ChartSkeleton'
 import { SeriesLink, SeriesThumb } from '../SeriesLink'
 import { StatsInsight } from '../StatsSection'
@@ -70,11 +70,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
 
   if (!activity.readTrackingAvailable) {
     return (
-      <EmptyState
-        compact
-        title={t`Reading stats need Kavita`}
-        description={t`Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way.`}
-      />
+      <ReadTrackingEmpty />
     )
   }
 

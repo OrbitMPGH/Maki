@@ -16,11 +16,14 @@ namespace Maki.Core.Sources;
 /// plain <c>readonly</c> field initializer — a C# field initializer cannot reference an instance
 /// method, and every source's fetch is one.
 /// </remarks>
-public sealed class SourceCatalog(TimeSpan ttl)
+public sealed class SourceCatalog(TimeSpan ttl, TimeProvider? time = null)
 {
+    private static readonly TimeSpan EmptyTtl = TimeSpan.FromMinutes(1);
+
     private readonly SemaphoreSlim _lock = new(1, 1);
     private List<SourceSeriesResult> _entries = [];
-    private DateTime _fetchedAt = DateTime.MinValue;
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
+    private DateTimeOffset _fetchedAt = DateTimeOffset.MinValue;
 
     /// <summary>
     /// Catalog entries whose normalized title relates to <paramref name="title"/>, best first:
@@ -68,7 +71,7 @@ public sealed class SourceCatalog(TimeSpan ttl)
             }
 
             _entries = await fetch(ct);
-            _fetchedAt = DateTime.UtcNow;
+            _fetchedAt = _time.GetUtcNow();
             return _entries;
         }
         finally
@@ -77,7 +80,7 @@ public sealed class SourceCatalog(TimeSpan ttl)
         }
     }
 
-    private bool IsFresh => _entries.Count > 0 && DateTime.UtcNow - _fetchedAt < ttl;
+    private bool IsFresh => _time.GetUtcNow() - _fetchedAt < (_entries.Count > 0 ? ttl : EmptyTtl);
 
     internal static int ScoreOf(string query, string candidate) =>
         candidate.Length == 0 ? 0

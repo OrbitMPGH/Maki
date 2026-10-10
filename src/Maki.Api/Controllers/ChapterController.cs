@@ -35,6 +35,7 @@ public class ChapterController(
     StatsEventService stats,
     ReaderArchiveCache archives,
     SourceRegistry sourceRegistry,
+    SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
     DownloadBatchNotifier downloadBatches,
     ICurrentUser currentUser,
@@ -47,7 +48,6 @@ public class ChapterController(
     {
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
-            .Include(c => c.ChapterFile)
             .Select(c => new
             {
                 c.Id,
@@ -176,17 +176,10 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
-        var chapters = await db.Chapters
+        var updated = await db.Chapters
             .Where(c => request.ChapterIds.Contains(c.Id))
-            .ToListAsync(ct);
-
-        foreach (var chapter in chapters)
-        {
-            chapter.Wanted = request.Wanted;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { updated = chapters.Count });
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.Wanted, request.Wanted), ct);
+        return Ok(new { updated });
     }
 
     /// <summary>
@@ -255,6 +248,9 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.differentSeries");
         }
 
+        // Held so a rescan cannot insert the same file's row between the lookup below and the save.
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId, ct);
+
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series?.RootFolder is null)
         {
@@ -321,7 +317,6 @@ public class ChapterController(
             };
             ChapterFileQualityService.StampTierOnly(file, sourceRegistry.Find(file.SourceName)?.Kind, null);
             db.ChapterFiles.Add(file);
-            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             await db.SaveChangesAsync(ct);
         }
 
@@ -340,12 +335,26 @@ public class ChapterController(
     public async Task<IActionResult> Unlink([FromBody] int[] chapterIds, CancellationToken ct)
     {
         var chapters = await db.Chapters.Where(c => chapterIds.Contains(c.Id)).ToListAsync(ct);
-        foreach (var chapter in chapters)
+        var locks = new List<IDisposable>();
+        try
         {
-            chapter.ChapterFileId = null;
+            foreach (var seriesId in chapters.Select(c => c.SeriesId).Distinct().Order())
+            {
+                locks.Add(await SeriesLocks.SeriesAsync(seriesId, ct));
+            }
+
+            foreach (var chapter in chapters)
+            {
+                chapter.ChapterFileId = null;
+            }
+
+            await db.SaveChangesAsync(ct);
+        }
+        finally
+        {
+            locks.ForEach(l => l.Dispose());
         }
 
-        await db.SaveChangesAsync(ct);
         return Ok(new { unlinked = chapters.Count });
     }
 
@@ -567,9 +576,14 @@ public class ChapterController(
         {
             return this.Fail(localizer, ex.Key);
         }
+        catch (ChapterUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            logger.LogWarning(ex, "Could not queue chapter {ChapterId}", id);
+            return this.Fail(localizer, "error.chapter.enqueueFailed");
         }
     }
 
@@ -609,6 +623,11 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.mappingDisabled");
         }
 
+        if (!await sourceAvailability.IsEnabledAsync(mapping.SourceName, ct))
+        {
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = mapping.SourceName });
+        }
+
         try
         {
             var replaceInfo = await ReplaceInfoAsync(id, mapping.SourceName,
@@ -629,9 +648,14 @@ public class ChapterController(
         {
             return this.Fail(localizer, ex.Key);
         }
+        catch (ChapterUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            logger.LogWarning(ex, "Could not queue chapter {ChapterId}", id);
+            return this.Fail(localizer, "error.chapter.enqueueFailed");
         }
     }
 
@@ -669,6 +693,16 @@ public class ChapterController(
             return NotFound();
         }
 
+        if (!mapping.Enabled)
+        {
+            return this.Fail(localizer, "error.chapter.mappingDisabled");
+        }
+
+        if (!await sourceAvailability.IsEnabledAsync(source.Name, ct))
+        {
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = source.Name });
+        }
+
         var candidates = (await db.Chapters
                 .Where(c => c.SeriesId == request.SeriesId &&
                             c.ChapterFile != null &&
@@ -694,6 +728,7 @@ public class ChapterController(
         var evaluator = await upgrades.ForSeriesAsync(request.SeriesId, ct);
         var queued = 0;
         var unavailable = 0;
+        var queuedItemIds = new List<int>();
         foreach (var chapter in candidates)
         {
             if (chapter.Number is null || !listed.Contains(chapter.Number.Value))
@@ -706,9 +741,10 @@ public class ChapterController(
             {
                 var replaceInfo = await ReplaceInfoAsync(chapter.Id, request.SourceName, evaluator, ct);
                 if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId,
-                        replaceInfo: replaceInfo) is not null)
+                        replaceInfo: replaceInfo) is { } item)
                 {
                     queued++;
+                    queuedItemIds.Add(item.Id);
                 }
             }
             catch (InvalidOperationException ex)
@@ -716,6 +752,11 @@ public class ChapterController(
                 logger.LogWarning(ex, "Could not queue chapter {ChapterId} for re-download", chapter.Id);
             }
         }
+
+        // One summary for the run instead of a "chapter downloaded" message for each file that does
+        // not go through the upgrade gate (shared or PDF files).
+        var seriesTitle = await db.Series.Where(s => s.Id == request.SeriesId).Select(s => s.Title).FirstOrDefaultAsync(ct);
+        await downloadBatches.QueuedAsync(request.SeriesId, seriesTitle ?? string.Empty, queuedItemIds, DownloadOrigin.Manual);
 
         return Ok(new { queued, unavailable });
     }

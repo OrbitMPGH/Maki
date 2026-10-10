@@ -8,6 +8,7 @@ import {
   clearStoredLocale,
   i18n,
   loadLocale,
+  matchLocale,
   storeLocale,
   type LocaleCode,
 } from './i18n'
@@ -100,9 +101,9 @@ export function useLanguageSync(serverLanguage: string | undefined): void {
 
   useEffect(() => {
     if (!serverLanguage) return
-    const wanted = serverLanguage as LocaleCode
-    if (wanted === locale) return
-    void setLocale(wanted)
+    const wanted = matchLocale(serverLanguage)
+    if (!wanted || wanted === locale) return
+    setLocale(wanted).catch((err) => console.error('Failed to switch language', err))
   }, [serverLanguage, locale, setLocale])
 }
 

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json.Serialization;
 using Maki.Core.Metadata;
@@ -32,18 +33,29 @@ namespace Maki.Api.Services;
 /// not part of.
 /// </param>
 /// <param name="Filters">Constraints that must remain attached when a personalised rail expands.</param>
-/// <param name="Seed">
-/// Set only on a per-seed rail from <see cref="RecentActivityRailService.GetGroupedAsync"/>: the
-/// one library series this rail's picks were attributed to, and how far through it the caller is.
-/// Lives here rather than in a parallel DTO because the client already renders rails from this
-/// shape, and a per-seed rail is a rail with one extra fact about its origin.
+/// <param name="SubtitleTitles">
+/// Series titles the subtitle names, for the client to join with <c>Intl.ListFormat</c> in place of the
+/// <c>{list}</c> or <c>{titles}</c> marker the rendered <see cref="Subtitle"/> carries. The server has
+/// no list-format primitive, so it never joins them itself.
+/// </param>
+/// <param name="SubtitleMore">
+/// How many further seeds were not named. The controller turns it into a localized "N more" entry
+/// at the end of <see cref="SubtitleTitles"/>. Not sent to the client.
 /// </param>
 public record DiscoverRail(
     string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items,
-    string? Subtitle = null, IReadOnlyList<long>? SeedIds = null, SeedState? Seed = null,
+    string? Subtitle = null, IReadOnlyList<long>? SeedIds = null,
     RecommendationFilters? Filters = null,
     [property: JsonIgnore] object? TitleArgs = null,
-    [property: JsonIgnore] object? SubtitleArgs = null);
+    [property: JsonIgnore] object? SubtitleArgs = null,
+    IReadOnlyList<string>? SubtitleTitles = null,
+    [property: JsonIgnore] int SubtitleMore = 0);
+
+/// <summary>A Discover feed name that is not a <see cref="BrowseFeed"/>; the controller renders it.</summary>
+public sealed class UnknownFeedException(string feed) : InvalidOperationException(feed)
+{
+    public string Feed { get; } = feed;
+}
 
 /// <summary>
 /// A Discover/recommendation request that cannot be served because the local MangaBaka database is
@@ -55,19 +67,6 @@ public sealed class LocalCatalogueUnavailableException(string key) : InvalidOper
 {
     public string Key { get; } = key;
 }
-
-/// <summary>
-/// A seed series as the Discover page draws it: the title, how far the caller has read, and which
-/// of three states that puts it in.
-/// </summary>
-/// <param name="ChaptersRead">Completed chapters that exist on disk, counted the <c>ReadCounts</c> way.</param>
-/// <param name="ChaptersAvailable">Chapters on disk, i.e. the denominator the reader can actually reach.</param>
-/// <param name="State">
-/// <c>reading</c>, <c>caught-up</c> (nothing left to read but the series continues upstream), or
-/// <c>finished</c>. Distinguished because a series nobody ever finishes — a long weekly — carries
-/// as much taste signal as one somebody did, and the page says which it is.
-/// </param>
-public record SeedState(string Title, int ChaptersRead, int ChaptersAvailable, string State);
 
 /// <summary>How a browse page is ordered when it is resolved in memory.</summary>
 public static class BrowseSort
@@ -155,8 +154,8 @@ public record DiscoverSearchResponse(
 /// once and cached for <see cref="CacheFor"/>. The rails don't depend on the user's library, so
 /// the caches are shared across users, keyed only by the viewer's content-rating ceiling (see
 /// <see cref="Ceiling"/>) since that is the one thing about the viewer the rails do depend on. The
-/// UI's refresh button busts the caller's ceiling only. Mirrors the caching shape of
-/// <see cref="RecommendationService"/>.
+/// dump only changes on install, which re-warms them, so only an admin's refresh rebuilds a set, and
+/// other readers keep the previous one while it runs.
 /// </summary>
 public class DiscoverService(
     MangaBakaLocalStore store,
@@ -168,13 +167,13 @@ public class DiscoverService(
     public const int RailSize = 40;
 
     /// <summary>
-    /// What a rail is built to when the caller has recommendation feedback to filter out of it.
+    /// What every shared rail is built to, so a reader who hid a few titles still gets a full rail
+    /// back rather than a short one.
     /// <para>
-    /// Headroom so a reader who hid a few titles still gets a full rail back rather than a short
-    /// one. Asked for per call rather than always, and folded into the cache key, because these
-    /// rails are shared instance-wide: building every rail to twice its length would make every
-    /// reader pay a doubled scan and a doubled cache so that the ones with feedback have something
-    /// to spare. Two depths at most, and the deep one only exists once somebody needs it.
+    /// Always, and cut down per caller. Each rail is a full scan of the dump whatever its limit, so
+    /// the deeper build costs about the same as the shallow one, while keeping both depths as
+    /// separate entries meant the warm-up only ever filled one and every reader with feedback paid
+    /// a cold build after each restart and expiry.
     /// </para>
     /// </summary>
     public const int RefillRailSize = RailSize * 2;
@@ -234,18 +233,21 @@ public class DiscoverService(
 
     private sealed record CachedRails(IReadOnlyList<DiscoverRail> Rails, DateTime GeneratedAt);
 
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<string, CachedRails> _cached = new(StringComparer.Ordinal);
+    private sealed class RailSet
+    {
+        public SemaphoreSlim Build { get; } = new(1, 1);
+        public ConcurrentDictionary<string, CachedRails> Entries { get; } = new(StringComparer.Ordinal);
+    }
 
-    private readonly SemaphoreSlim _genreLock = new(1, 1);
-    private readonly Dictionary<string, CachedRails> _cachedGenres = new(StringComparer.Ordinal);
+    private readonly RailSet _feeds = new();
+    private readonly RailSet _genreFeeds = new();
 
     /// <param name="maxContentRating">
     /// The viewer's ceiling (<c>ICurrentUser.MaxContentRating</c>). Absent or unrecognised resolves
     /// to Safe, not to the default: see <see cref="Ceiling"/>.
     /// </param>
     /// <param name="depth">
-    /// How long to build each rail. <see cref="RefillRailSize"/> when the caller will filter the
+    /// How long a rail comes back. <see cref="RefillRailSize"/> when the caller will filter the
     /// result and wants something left over; <see cref="RailSize"/> otherwise.
     /// </param>
     public async Task<IReadOnlyList<DiscoverRail>> GetFeedsAsync(
@@ -253,15 +255,8 @@ public class DiscoverService(
     {
         await EnsureAvailableAsync(ct);
         var (ceiling, filters) = Ceiling(maxContentRating);
-        var key = $"{ceiling}:{depth}";
-        await _lock.WaitAsync(ct);
-        try
+        return await CachedAsync(_feeds, ceiling, refresh, depth, async () =>
         {
-            if (!refresh && _cached.TryGetValue(key, out var hit) && DateTime.UtcNow - hit.GeneratedAt < CacheFor)
-            {
-                return hit.Rails;
-            }
-
             var started = DateTime.UtcNow;
             // Bounded-concurrent, same as the genre set below: each rail is an independent query on
             // its own connection. These ran serially until the browse indexes landed, which made a
@@ -274,7 +269,7 @@ public class DiscoverService(
                 try
                 {
                     var items = await store.GetBrowseAsync(
-                        feed, depth, filters: filters, ct: ct);
+                        feed, RefillRailSize, filters: filters, ct: ct);
                     return items.Count > 0
                         ? new DiscoverRail(key, title, feed.ToString(), null, items)
                         : null;
@@ -289,18 +284,55 @@ public class DiscoverService(
             var rails = (await Task.WhenAll(tasks)).Where(r => r is not null).Cast<DiscoverRail>().ToList();
 
             logger.LogInformation(
-                "Computed {Count} Discover rail(s) for ceiling {Ceiling} at depth {Depth} in {Elapsed:F1}s",
-                rails.Count, ceiling, depth, (DateTime.UtcNow - started).TotalSeconds);
-
-            _cached[key] = new CachedRails(rails, DateTime.UtcNow);
-            ScheduleScanCacheDrop();
+                "Computed {Count} Discover rail(s) for ceiling {Ceiling} in {Elapsed:F1}s",
+                rails.Count, ceiling, (DateTime.UtcNow - started).TotalSeconds);
             return rails;
+        }, ct);
+    }
+
+    /// <summary>
+    /// One rail set per ceiling, always built to <see cref="RefillRailSize"/> and cut to the depth
+    /// asked for. A fresh entry is served without waiting; so is an expired one while another build
+    /// of the same set is running, because a rebuild must not stall every reader of a shared page. A
+    /// refresh always waits its turn and rebuilds, or a warm-up after a dump install could keep the
+    /// old rails for another twelve hours.
+    /// </summary>
+    private async Task<IReadOnlyList<DiscoverRail>> CachedAsync(
+        RailSet set, string ceiling, bool refresh, int depth,
+        Func<Task<IReadOnlyList<DiscoverRail>>> build, CancellationToken ct)
+    {
+        set.Entries.TryGetValue(ceiling, out var hit);
+        if (hit is not null && !refresh && (Fresh(hit) || set.Build.CurrentCount == 0))
+        {
+            return Slice(hit.Rails, depth);
+        }
+
+        await set.Build.WaitAsync(ct);
+        try
+        {
+            if (set.Entries.TryGetValue(ceiling, out var raced) && Fresh(raced)
+                && (!refresh || !ReferenceEquals(raced, hit)))
+            {
+                return Slice(raced.Rails, depth);
+            }
+
+            var rails = await build();
+            set.Entries[ceiling] = new CachedRails(rails, DateTime.UtcNow);
+            ScheduleScanCacheDrop();
+            return Slice(rails, depth);
         }
         finally
         {
-            _lock.Release();
+            set.Build.Release();
         }
     }
+
+    private static bool Fresh(CachedRails entry) => DateTime.UtcNow - entry.GeneratedAt < CacheFor;
+
+    private static IReadOnlyList<DiscoverRail> Slice(IReadOnlyList<DiscoverRail> rails, int depth) =>
+        depth >= RefillRailSize
+            ? rails
+            : rails.Select(r => r with { Items = r.Items.Take(depth).ToList() }).ToList();
 
     /// <summary>
     /// How long the dump stays cached after the last rail batch. Long enough to cover a whole visit
@@ -384,17 +416,10 @@ public class DiscoverService(
     {
         await EnsureAvailableAsync(ct);
         var (ceiling, filters) = Ceiling(maxContentRating);
-        var key = $"{ceiling}:{depth}";
-        await _genreLock.WaitAsync(ct);
-        try
+        return await CachedAsync(_genreFeeds, ceiling, refresh, depth, async () =>
         {
-            if (!refresh && _cachedGenres.TryGetValue(key, out var hit) && DateTime.UtcNow - hit.GeneratedAt < CacheFor)
-            {
-                return hit.Rails;
-            }
-
             var started = DateTime.UtcNow;
-            // Scan genres concurrently (bounded) — each is an independent full-table scan.
+            // Scan genres concurrently (bounded): each is an independent full-table scan.
             using var gate = new SemaphoreSlim(GenreScanConcurrency);
             var tasks = Genres.Select(async genre =>
             {
@@ -402,7 +427,7 @@ public class DiscoverService(
                 try
                 {
                     var items = await store.GetBrowseAsync(
-                        BrowseFeed.GenreSpotlight, depth, genre, filters, ct);
+                        BrowseFeed.GenreSpotlight, RefillRailSize, genre, filters, ct);
                     return items.Count > 0
                         ? new DiscoverRail(
                             $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", "discover.rail.popularInGenre",
@@ -420,17 +445,10 @@ public class DiscoverService(
             var rails = (await Task.WhenAll(tasks)).Where(r => r is not null).Cast<DiscoverRail>().ToList();
 
             logger.LogInformation(
-                "Computed {Count} Discover genre rail(s) for ceiling {Ceiling} at depth {Depth} in {Elapsed:F1}s",
-                rails.Count, ceiling, depth, (DateTime.UtcNow - started).TotalSeconds);
-
-            _cachedGenres[key] = new CachedRails(rails, DateTime.UtcNow);
-            ScheduleScanCacheDrop();
+                "Computed {Count} Discover genre rail(s) for ceiling {Ceiling} in {Elapsed:F1}s",
+                rails.Count, ceiling, (DateTime.UtcNow - started).TotalSeconds);
             return rails;
-        }
-        finally
-        {
-            _genreLock.Release();
-        }
+        }, ct);
     }
 
     /// <summary>
@@ -462,7 +480,7 @@ public class DiscoverService(
 
         if (!Enum.TryParse<BrowseFeed>(request.Feed, ignoreCase: true, out var feed))
         {
-            throw new InvalidOperationException($"Unknown feed '{request.Feed}'.");
+            throw new UnknownFeedException(request.Feed);
         }
 
         // 600 rather than 300: the in-memory path already scans and sorts the whole index whatever
@@ -511,7 +529,8 @@ public class DiscoverService(
     }
 
     /// <summary>One creator or publisher and their works, for the creator page.</summary>
-    public async Task<CreatorProfile?> GetCreatorAsync(CreatorRequest request, CancellationToken ct = default)
+    public async Task<CreatorProfile?> GetCreatorAsync(
+        CreatorRequest request, CancellationToken ct = default, string? maxContentRating = null)
     {
         await EnsureAvailableAsync(ct);
 
@@ -527,6 +546,18 @@ public class DiscoverService(
         }
 
         var works = catalogue.Credits.WorksOf(nameId, role);
+        var vector = await vectorIndex.GetAsync(ct);
+        var visibleWorks = works.Length;
+        var allowed = ContentRating.Allowed(maxContentRating);
+        if (allowed.Count < ContentRating.All.Length)
+        {
+            visibleWorks = await VisibleWorkCountAsync(vector, works, allowed, ct);
+            if (visibleWorks == 0)
+            {
+                return null;
+            }
+        }
+
         // 600 rather than 300: the in-memory path already scans and sorts the whole index whatever
         // the page size is, so the only cost of a deeper page is the hydration query, and browsing a
         // filtered catalogue is exactly the case where people keep pressing Load more.
@@ -538,7 +569,7 @@ public class DiscoverService(
         // filter that must not degrade with it — it is what the caller is allowed to see, not how
         // they asked to narrow it — so it is applied during hydration on both paths instead.
         IReadOnlyList<long> page;
-        if (await vectorIndex.GetAsync(ct) is { } index)
+        if (vector is { } index)
         {
             var plan = index.Plan(request.Filters).RestrictTo(index.BuildRowMask(works));
             page = OrderRows(index, plan, request.Sort, offset, limit);
@@ -551,13 +582,18 @@ public class DiscoverService(
         return new CreatorProfile(
             catalogue.Credits.NameAt(nameId),
             catalogue.Credits.RoleLabelsAt(nameId),
-            works.Length,
+            visibleWorks,
             await store.GetByIdsAsync(page, request.Filters?.ContentRatings, ct));
     }
 
-    /// <summary>Name suggestions for a partly typed creator or publisher.</summary>
+    /// <summary>
+    /// Name suggestions for a partly typed creator or publisher. With a restricted
+    /// <paramref name="maxContentRating"/> a name only counts its works inside the ceiling and is
+    /// dropped when it has none, so the autocomplete does not reveal circles whose catalogue the
+    /// caller cannot open.
+    /// </summary>
     public async Task<IReadOnlyList<ResolvedCredit>> SuggestCreditsAsync(
-        string query, string? role, int limit, CancellationToken ct = default)
+        string query, string? role, int limit, CancellationToken ct = default, string? maxContentRating = null)
     {
         if (await catalogueIndex.GetAsync(ct) is not { } catalogue)
         {
@@ -565,13 +601,65 @@ public class DiscoverService(
         }
 
         var wanted = CreditIndex.ParseRole(role);
-        return catalogue.Credits
-            .Suggest(query, wanted, Math.Clamp(limit, 1, 50))
-            .Select(m => new ResolvedCredit(
-                catalogue.Credits.NameAt(m.NameId),
-                catalogue.Credits.RoleLabelsAt(m.NameId),
-                m.WorkCount))
-            .ToList();
+        var take = Math.Clamp(limit, 1, 50);
+        var allowed = ContentRating.Allowed(maxContentRating);
+        if (allowed.Count == ContentRating.All.Length)
+        {
+            return catalogue.Credits
+                .Suggest(query, wanted, take)
+                .Select(m => new ResolvedCredit(
+                    catalogue.Credits.NameAt(m.NameId),
+                    catalogue.Credits.RoleLabelsAt(m.NameId),
+                    m.WorkCount))
+                .ToList();
+        }
+
+        var index = await vectorIndex.GetAsync(ct);
+        var suggestions = new List<ResolvedCredit>();
+        foreach (var match in catalogue.Credits.Suggest(query, wanted, 50))
+        {
+            var visible = await VisibleWorkCountAsync(index, catalogue.Credits.WorksOf(match.NameId, wanted), allowed, ct);
+            if (visible > 0)
+            {
+                suggestions.Add(new ResolvedCredit(
+                    catalogue.Credits.NameAt(match.NameId), catalogue.Credits.RoleLabelsAt(match.NameId), visible));
+                if (suggestions.Count == take)
+                {
+                    break;
+                }
+            }
+        }
+
+        return suggestions;
+    }
+
+    /// <summary>
+    /// How many of <paramref name="works"/> sit inside <paramref name="ratings"/>. The vector index
+    /// answers for the titles it holds; the rest (unscored works, novels, or everything when the
+    /// index is not built) are counted from the dump's own content rating.
+    /// </summary>
+    internal async Task<int> VisibleWorkCountAsync(
+        VectorIndex? index, IReadOnlyList<long> works, IReadOnlyList<string> ratings, CancellationToken ct)
+    {
+        var count = 0;
+        var missing = new List<long>();
+        var plan = index?.Plan(new RecommendationFilters(ContentRatings: ratings));
+        foreach (var id in works)
+        {
+            if (index is not null && index.TryGetRow(id, out var row))
+            {
+                if (!plan!.Impossible && index.Matches(row, plan))
+                {
+                    count++;
+                }
+            }
+            else
+            {
+                missing.Add(id);
+            }
+        }
+
+        return missing.Count == 0 ? count : count + await store.CountWithinRatingsAsync(missing, ratings, ct);
     }
 
     /// <summary>Feeds whose ordering the vector index can reproduce exactly.</summary>

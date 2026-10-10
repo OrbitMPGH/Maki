@@ -57,6 +57,42 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Related_keeps_unrated_series_only_when_the_ceiling_allows_every_rating()
+    {
+        _db.AddSeries(1, "Seed", sequels: "[2,3,4]")
+            .AddSeries(2, "Rated", rating: 70, contentRating: "safe")
+            .AddSeries(3, "Unrated", rating: 70, contentRating: null)
+            .AddSeries(4, "Explicit", rating: 70, contentRating: "pornographic");
+
+        var everything = await Store.GetRelatedAsync([1], [], [.. ContentRating.All]);
+        var capped = await Store.GetRelatedAsync([1], [], ContentRating.Allowed(ContentRating.Erotica));
+
+        Assert.Equal(["2", "3", "4"], everything.Select(r => r.ProviderId).Order());
+        Assert.Equal(["2"], capped.Select(r => r.ProviderId));
+    }
+
+    [Fact]
+    public async Task Similar_does_not_treat_a_placeholder_credit_as_a_shared_author()
+    {
+        _db.AddSeries(1, "Seed", genresJson: """["Action"]""", authorsJson: """["Anthology"]""")
+            .AddSeries(2, "Other anthology", rating: 80, genresJson: """["Action"]""", authorsJson: """["Anthology"]""");
+
+        Assert.Empty(await Store.GetSimilarAsync([1], [], 5));
+    }
+
+    [Fact]
+    public async Task Similar_scales_the_profile_by_the_seeds_the_dump_has()
+    {
+        _db.AddSeries(1, "Seed", genresJson: """["Action","Comedy"]""", authorsJson: """["Seed Author"]""")
+            .AddSeries(2, "Genre match", rating: 50, genresJson: """["Action","Comedy"]""")
+            .AddSeries(3, "Author match", rating: 50, genresJson: """["Action"]""", authorsJson: """["Seed Author"]""");
+
+        var picks = await Store.GetSimilarAsync([1, 999_999], [], 5);
+
+        Assert.Equal(["2", "3"], picks.Select(p => p.ProviderId));
+    }
+
+    [Fact]
     public async Task Search_finds_by_primary_title_case_insensitive()
     {
         _db.AddSeries(377, "ONE PIECE", status: "releasing", year: 1997, totalChapters: "1187")
@@ -172,6 +208,38 @@ public class MangaBakaLocalStoreTests : IDisposable
             .BuildSearchIndex();
 
         Assert.Empty(await Catalogued().GetNearTitleIdsAsync(query));
+    }
+
+    [Theory]
+    [InlineData("love", 1L)]
+    [InlineData("LOVE!", 1L)]
+    [InlineData("cafe latte", 4L)]
+    [InlineData("나 혼자만 레벨업", 5L)]
+    public async Task Exact_title_lookup_finds_the_equal_title_among_ones_that_share_its_words(string query, long id)
+    {
+        _db.AddSeries(1, "Love")
+            .AddSeries(2, "Lovely Love")
+            .AddSeries(3, "Love, Again")
+            .AddSeries(4, "Café Latte")
+            .AddSeries(5, "나 혼자만 레벨업")
+            .AddSeries(6, "나 혼자만 레벨업 외전")
+            .BuildSearchIndex();
+
+        Assert.Equal(id, Assert.Single(await Store.GetExactTitleIdsAsync(query)));
+    }
+
+    [Fact]
+    public async Task Near_title_lookup_still_reaches_a_title_through_the_last_tokens_prefix()
+    {
+        _db.AddSeries(1, "One Piece")
+            .AddSeries(2, "One Piece Party Special")
+            .AddSeries(3, "Lovely Pieces")
+            .BuildSearchIndex();
+
+        var match = Assert.Single(await Catalogued().GetNearTitleIdsAsync("one piec"));
+
+        Assert.Equal(1L, match.Key);
+        Assert.Equal(1, match.Value);
     }
 
     [Fact]

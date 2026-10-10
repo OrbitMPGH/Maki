@@ -16,7 +16,7 @@ export interface LocalizedTitle {
 export interface SeriesDto {
   id: number
   /**
-   * The canonical title — what the folder on disk, the file names and `sortTitle` are built from.
+   * The canonical title, what the folder on disk, the file names and `sortTitle` are built from.
    * Always the provider's English title when there is one. Render `displayTitle` instead.
    */
   title: string
@@ -92,9 +92,9 @@ export interface SeriesDto {
   animeStart: string | null
   animeEnd: string | null
   /**
-   * Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
-   * when nothing has reported reading progress for this series yet, distinct from 0 (tracked,
-   * but nothing read).
+   * Downloaded chapters the caller has finished, counted from their completed progress rows
+   * (built-in reader and Kavita sync alike). Null when no progress exists for this series yet,
+   * distinct from 0 (tracked, but nothing read).
    */
   readChapterCount: number | null
   /**
@@ -108,7 +108,7 @@ export interface SeriesDto {
    */
   incognito: string
   /**
-   * "Default" | "All" | "Reading" | "Muted" — how loudly *you* want to hear about this series.
+   * "Default" | "All" | "Reading" | "Muted", how loudly *you* want to hear about this series.
    * Per-user like `rating`, so two readers see different values for the same series, and "Default"
    * defers to the `seriesDefault` on your inbox prefs.
    */
@@ -123,7 +123,7 @@ export interface SeriesDto {
   } | null
   /**
    * Source keys linked to this series, enabled or not. Only the library list endpoint fills these
-   * three in — elsewhere they come back empty, which means "not loaded", not "none linked".
+   * three in, elsewhere they come back empty, which means "not loaded", not "none linked".
    */
   sources?: string[]
   /** The subset of `sources` that actually runs: mapping enabled and source not globally off. */
@@ -137,8 +137,10 @@ export interface SeriesDto {
   warnings?: string[] | null
   /** Upgrade profile pinned to this series, or null to fall back to the instance default. */
   upgradeProfileId: number | null
-  /** Null when this series has never been scanned for upgrades, by any of the three entry points. */
-  /** `checked` is null for scans recorded before it was kept; `skipped` maps a reason code to a count. */
+  /**
+   * Null when this series has never been scanned for upgrades, by any of the three entry points.
+   * `checked` is null for scans recorded before it was kept; `skipped` maps a reason code to a count.
+   */
   lastUpgradeScan: {
     at: string
     probed: number
@@ -192,7 +194,7 @@ export interface LibraryFilterSpec {
   chapterMode: string
   /**
    * `ContentRating` vocabulary values to include, gated by the signed-in user's ceiling. Empty/null
-   * means "don't filter" — including series that haven't been refreshed yet (`contentRating: null`).
+   * means "don't filter", including series that haven't been refreshed yet (`contentRating: null`).
    */
   contentRatings?: string[] | null
   /** Source keys the series must be linked to (`SeriesDto.sources`). */
@@ -689,18 +691,8 @@ export interface ImportListsStatusDto {
   skipped: ImportListSkipDto[]
 }
 
-export interface ImportListRunResult {
-  added: number
-  requested: number
-  skipped: number
-  alreadyPresent: number
-  errors: number
-  dumpUnavailable: boolean
-}
-
 /**
- * `POST /importlists/run` reply. A `full` run kicks off in the background and answers 202 with
+ * `POST /importlists/run` reply. Every manual run kicks off in the background and answers 202 with
  * `started: true`; the outcome arrives later via the inbox and `ImportListTrackerDto.lastRun`.
- * A partial run still answers inline with the counts.
  */
-export type ImportListRunResponse = ImportListRunResult | { started: true }
+export type ImportListRunResponse = { started: true }

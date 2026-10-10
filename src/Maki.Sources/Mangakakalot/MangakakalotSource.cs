@@ -1,10 +1,10 @@
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Mangakakalot;
 
@@ -45,23 +45,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
     /// Search is a path, not a query string: /search/story/{keyword}, where the keyword is the title
     /// lowercased with every run of non-alphanumerics collapsed to a single underscore.
     /// </summary>
-    internal static string SearchKeyword(string title)
-    {
-        var keyword = new StringBuilder(title.Length);
-        foreach (var c in title.ToLowerInvariant())
-        {
-            if (char.IsAsciiLetterOrDigit(c))
-            {
-                keyword.Append(c);
-            }
-            else if (keyword.Length > 0 && keyword[^1] != '_')
-            {
-                keyword.Append('_');
-            }
-        }
-
-        return keyword.ToString().Trim('_');
-    }
+    internal static string SearchKeyword(string title) => UrlText.Slugify(title, '_');
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
@@ -175,12 +159,13 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
     {
         var seriesId = NormalizeSeriesId(sourceSeriesId);
         var chapters = new List<SourceChapter>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
 
         for (var page = 0; page < MaxChapterPages; page++)
         {
             var offset = page * ChapterPageSize;
-            var body = await fetcher.GetHtmlAsync(
-                $"{BaseUrl}/api/manga/{seriesId}/chapters?offset={offset}&limit={ChapterPageSize}", ct);
+            var url = $"{BaseUrl}/api/manga/{seriesId}/chapters?offset={offset}&limit={ChapterPageSize}";
+            var body = await PreUnwrap.UnwrapAsync(await fetcher.GetHtmlAsync(url, ct), url, ct);
 
             using var json = JsonDocument.Parse(body);
             if (!json.RootElement.TryGetProperty("data", out var data))
@@ -188,6 +173,8 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
                 break;
             }
 
+            var parsedOnPage = 0;
+            var newOnPage = 0;
             if (data.TryGetProperty("chapters", out var list) && list.ValueKind == JsonValueKind.Array)
             {
                 foreach (var entry in list.EnumerateArray())
@@ -196,8 +183,18 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
                     if (chapter is not null)
                     {
                         chapters.Add(chapter);
+                        parsedOnPage++;
+                        if (seen.Add(chapter.SourceChapterId))
+                        {
+                            newOnPage++;
+                        }
                     }
                 }
+            }
+
+            if (parsedOnPage > 0 && newOnPage == 0)
+            {
+                break;
             }
 
             var hasMore = data.TryGetProperty("pagination", out var pagination)
@@ -273,6 +270,11 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
             .Where(src => !string.IsNullOrEmpty(src))
             .Select(src => new PageRequest(src!, headers))
             .ToList();
+
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for Mangakakalot chapter {chapter.SourceChapterId}");
+        }
 
         return new ChapterPages(pages);
     }

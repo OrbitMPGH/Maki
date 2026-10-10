@@ -1,7 +1,7 @@
-import { Group, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
-import { useDisclosure, useHotkeys } from '@mantine/hooks'
+import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
+import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
 import { IconAdjustments, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
@@ -32,13 +32,20 @@ export default function CommandPalette({ navItems }: Props) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
   const navigate = useNavigate()
-  const { data: series } = useSeries()
+  // The full library list is only needed once the palette is open; the cache still serves it
+  // from other pages while closed.
+  const { data: series, isFetching: seriesLoading } = useSeries(opened)
   const { can } = useAuth()
   const { _, i18n } = useLingui()
   const { t } = useLinguiMacro()
   const renderLabel = useLabel()
   const canAdd = can('AddSeries')
   const listRef = useRef<HTMLDivElement>(null)
+  const keyboardMoved = useRef(false)
+  const listId = useId()
+  const optionId = (i: number) => `${listId}-option-${i}`
+  const isMac = useOs() === 'macos'
+  const shortcut = isMac ? '⌘K' : 'Ctrl+K'
   const visibleSettings = useVisibleSettingsEntries()
 
   useHotkeys([['mod+K', open]])
@@ -136,6 +143,16 @@ export default function CommandPalette({ navItems }: Props) {
     setSelected(0)
   }, [results.length])
 
+  // Only a keyboard move scrolls: a mouse hover is already on a visible row, and scrolling under
+  // the pointer would make the list chase it.
+  useEffect(() => {
+    if (!keyboardMoved.current) return
+    keyboardMoved.current = false
+    listRef.current
+      ?.querySelector('[data-active="true"]')
+      ?.scrollIntoView({ block: 'nearest' })
+  }, [selected])
+
   function go(result: Result) {
     navigate(result.path)
     close()
@@ -144,9 +161,11 @@ export default function CommandPalette({ navItems }: Props) {
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
+      keyboardMoved.current = true
       setSelected((i) => (results.length ? (i + 1) % results.length : 0))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
+      keyboardMoved.current = true
       setSelected((i) => (results.length ? (i - 1 + results.length) % results.length : 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
@@ -161,14 +180,14 @@ export default function CommandPalette({ navItems }: Props) {
         type="button"
         className="command-palette-trigger"
         onClick={open}
-        aria-label={t`Search (Ctrl+K)`}
+        aria-label={t`Search (${shortcut})`}
       >
         <IconSearch size={16} stroke={1.8} />
         <span className="command-palette-trigger-label">
           <Trans>Search</Trans>
         </span>
         {/* The key names themselves, not words: the same two keys whatever the reader speaks. */}
-        <span className="command-palette-trigger-kbd">Ctrl K</span>
+        <span className="command-palette-trigger-kbd">{isMac ? '⌘ K' : 'Ctrl K'}</span>
       </button>
 
       {/* Explicit zIndex: opened globally via the mod+K hotkey, which stays live even while
@@ -187,11 +206,17 @@ export default function CommandPalette({ navItems }: Props) {
       >
         <Stack gap={0}>
           <TextInput
+            aria-label={t`Jump to a series, page or setting…`}
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.currentTarget.value)}
             onKeyDown={onKeyDown}
             placeholder={t`Jump to a series, page or setting…`}
+            role="combobox"
+            aria-expanded
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={results.length > 0 ? optionId(selected) : undefined}
             leftSection={<IconSearch size={16} />}
             variant="unstyled"
             size="lg"
@@ -200,15 +225,25 @@ export default function CommandPalette({ navItems }: Props) {
             style={{ borderBottom: '1px solid var(--border)' }}
           />
           <ScrollArea.Autosize mah="min(360px, 60dvh)" type="auto" viewportRef={listRef}>
-            <Stack gap={2} p="xs">
+            <Stack gap={2} p="xs" id={listId} role={results.length > 0 ? 'listbox' : undefined}>
               {results.length === 0 && (
-                <Text c="var(--ink-3)" size="sm" ta="center" py="lg">
-                  <Trans>No matches.</Trans>
-                </Text>
+                // On a cold cache the library is still loading, so an empty list is not an answer yet.
+                seriesLoading && !series ? (
+                  <Center py="lg">
+                    <Loader size="sm" />
+                  </Center>
+                ) : (
+                  <Text c="var(--ink-3)" size="sm" ta="center" py="lg">
+                    <Trans>No matches.</Trans>
+                  </Text>
+                )
               )}
               {results.map((r, i) => (
                 <Group
                   key={r.key}
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={i === selected}
                   gap="sm"
                   wrap="nowrap"
                   px="sm"

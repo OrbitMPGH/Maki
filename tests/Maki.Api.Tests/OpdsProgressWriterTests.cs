@@ -54,13 +54,13 @@ public sealed class OpdsProgressWriterTests : IDisposable
             NullLogger<OpdsProgressWriter>.Instance);
     }
 
-    private int SeedChapter(string title = "Fetched")
+    private int SeedChapter(string title = "Fetched", int pages = Pages)
     {
         var seriesId = _db.SeedSeries(title);
         var path = Path.Combine(_root, $"{title}.cbz");
         using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
         {
-            for (var i = 1; i <= Pages; i++)
+            for (var i = 1; i <= pages; i++)
             {
                 using var stream = archive.CreateEntry($"{i:000}.jpg").Open();
                 stream.WriteByte(0xFF);
@@ -113,7 +113,7 @@ public sealed class OpdsProgressWriterTests : IDisposable
     }
 
     [Fact]
-    public async Task A_lone_last_page_prefetch_does_not_complete_the_chapter()
+    public async Task A_lone_last_page_prefetch_writes_no_progress()
     {
         var userId = _db.SeedUser("reader");
         var chapterId = SeedChapter();
@@ -122,7 +122,85 @@ public sealed class OpdsProgressWriterTests : IDisposable
         writer.Enqueue(userId, true, chapterId, page: Pages - 1, pageCount: Pages);
         await writer.FlushAsync(default);
 
+        Assert.Null(Progress(chapterId));
+    }
+
+    [Fact]
+    public async Task Repeated_last_page_prefetches_never_complete_the_chapter()
+    {
+        var userId = _db.SeedUser("reader");
+        var chapterId = SeedChapter();
+        var writer = Writer();
+
+        for (var i = 0; i < 3; i++)
+        {
+            writer.Enqueue(userId, true, chapterId, page: Pages - 1, pageCount: Pages);
+            await writer.FlushAsync(default);
+        }
+
+        Assert.Null(Progress(chapterId));
+    }
+
+    [Fact]
+    public async Task Reading_page_zero_over_opds_then_the_last_page_completes_a_chapter()
+    {
+        var userId = _db.SeedUser("reader");
+        var chapterId = SeedChapter();
+        var writer = Writer();
+
+        writer.Enqueue(userId, true, chapterId, page: 0, pageCount: Pages);
+        await writer.FlushAsync(default);
+        writer.Enqueue(userId, true, chapterId, page: Pages - 1, pageCount: Pages);
+        await writer.FlushAsync(default);
+
+        Assert.True(Progress(chapterId)!.Completed);
+    }
+
+    [Fact]
+    public async Task A_one_page_chapter_can_still_be_completed_over_opds()
+    {
+        var userId = _db.SeedUser("reader");
+        var chapterId = SeedChapter("Single", pages: 1);
+        var writer = Writer();
+
+        writer.Enqueue(userId, true, chapterId, page: 0, pageCount: 1);
+        await writer.FlushAsync(default);
         Assert.False(Progress(chapterId)!.Completed);
+
+        writer.Enqueue(userId, true, chapterId, page: 0, pageCount: 1);
+        await writer.FlushAsync(default);
+        Assert.True(Progress(chapterId)!.Completed);
+    }
+
+    [Fact]
+    public async Task A_lone_last_page_prefetch_does_not_turn_a_watched_chapter_into_a_read()
+    {
+        var userId = _db.SeedUser("reader");
+        var chapterId = SeedChapter();
+        var seriesId = SeriesOf(chapterId);
+        using (var db = _db.NewContext(userId))
+        {
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                UserId = userId, SeriesId = seriesId, ChapterId = chapterId,
+                Completed = true, Watched = true, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        var writer = Writer();
+        writer.Enqueue(userId, true, chapterId, page: Pages - 1, pageCount: Pages);
+        await writer.FlushAsync(default);
+
+        var row = Progress(chapterId)!;
+        Assert.True(row.Completed);
+        Assert.True(row.Watched);
+    }
+
+    private int SeriesOf(int chapterId)
+    {
+        using var db = _db.NewContext();
+        return db.Chapters.Single(c => c.Id == chapterId).SeriesId;
     }
 
     [Fact]

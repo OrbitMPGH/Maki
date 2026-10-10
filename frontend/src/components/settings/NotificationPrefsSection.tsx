@@ -39,8 +39,7 @@ export function NotificationPrefsSection() {
   const categories = INBOX_CATEGORIES.filter((c) => !c.adminOnly || isAdmin)
 
   function setType(type: InboxEventType, enabled: boolean) {
-    if (!prefs) return
-    save.mutate({ ...prefs, types: { ...prefs.types, [type]: enabled } })
+    save.mutate({ types: { [type]: enabled } })
   }
 
   return (
@@ -58,7 +57,7 @@ export function NotificationPrefsSection() {
         label={t`Show a popup when a notification arrives`}
         description={t`Turn this off to only see them in the bell.`}
         checked={prefs.toasts}
-        onChange={(e) => save.mutate({ ...prefs, toasts: e.currentTarget.checked })}
+        onChange={(e) => save.mutate({ toasts: e.currentTarget.checked })}
       />
 
       <Divider my="md" />
@@ -73,11 +72,12 @@ export function NotificationPrefsSection() {
         </Trans>
       </Text>
       <SegmentedControl
+        aria-label={t`Which series notify me`}
         fullWidth
         value={seriesDefaultOptions.some((o) => o.value === prefs.seriesDefault)
           ? prefs.seriesDefault
           : 'All'}
-        onChange={(seriesDefault) => save.mutate({ ...prefs, seriesDefault })}
+        onChange={(seriesDefault) => save.mutate({ seriesDefault })}
         data={seriesDefaultOptions}
       />
 
@@ -105,6 +105,7 @@ export function NotificationPrefsSection() {
                       )}
                     </div>
                     <Switch
+                      aria-label={renderLabel(INBOX_TYPE_LABELS[type])}
                       checked={prefs.types[type] ?? true}
                       onChange={(e) => setType(type, e.currentTarget.checked)}
                     />

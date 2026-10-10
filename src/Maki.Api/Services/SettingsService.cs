@@ -75,7 +75,20 @@ public class SettingsService(IServiceScopeFactory scopeFactory) : IAppSettings
 
         try
         {
-            await db.SaveChangesAsync(ct);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException) when (entry is null && !string.IsNullOrWhiteSpace(value))
+            {
+                // A concurrent first write of the same key inserted the row between our read and
+                // our insert; the value still has to land, so write it over theirs.
+                db.ChangeTracker.Clear();
+                var raced = await db.AppConfig.FirstOrDefaultAsync(c => c.Key == key, ct);
+                if (raced is null) throw;
+                raced.Value = value;
+                await db.SaveChangesAsync(ct);
+            }
         }
         finally
         {

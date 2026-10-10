@@ -351,6 +351,29 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Assert.Equal(409, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
     }
 
+    [Fact]
+    public async Task Relink_waits_for_the_series_lock()
+    {
+        var seriesId = _db.SeedSeries();
+        using (var seed = _db.NewContext())
+        {
+            seed.DownloadQueue.Add(new DownloadQueueItem { SeriesId = seriesId, Status = QueueStatus.Downloading });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(userId: 1);
+        Task<IActionResult> relink;
+        using (await SeriesLocks.SeriesAsync(seriesId, CancellationToken.None))
+        {
+            relink = Controller(db).Relink(
+                seriesId, new SeriesController.RelinkRequest(null, null, DeleteSuperseded: false), CancellationToken.None);
+            await Task.Delay(200);
+            Assert.False(relink.IsCompleted);
+        }
+
+        Assert.Equal(409, Assert.IsAssignableFrom<ObjectResult>(await relink).StatusCode);
+    }
+
     private static SeriesFilesSummaryDto Summary(IActionResult result) =>
         Assert.IsType<SeriesFilesSummaryDto>(Assert.IsType<OkObjectResult>(result).Value);
 
@@ -411,5 +434,116 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Assert.Equal(files.Count, summary.Count);
         Assert.Equal(files.Count(f => f.OnDisk && f.Status != "linked"), summary.UnlinkedOnDisk);
         Assert.Equal(4, summary.Count);
+    }
+
+    [Fact]
+    public async Task A_file_backing_an_unnumbered_chapter_counts_as_linked()
+    {
+        var (seriesId, _, _, _, _) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        using (var seed = _db.NewContext())
+        {
+            var file = seed.ChapterFiles.Single(f => f.SeriesId == seriesId && f.RelativePath.StartsWith("Berserk"));
+            seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = null, IsOneShot = true, ChapterFileId = file.Id });
+            seed.SaveChanges();
+        }
+
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        using var db = _db.NewContext(userId: 1);
+        Assert.Equal(new SeriesFilesSummaryDto(3, 2),
+            Summary(await Controller(db).FilesSummary(seriesId, cache, CancellationToken.None)));
+
+        var listing = await Controller(db).Files(
+            seriesId, new UpgradeEvaluationService(db, TestQuality.Create()), cache, CancellationToken.None);
+        var files = Assert.IsAssignableFrom<IEnumerable<Maki.Api.Dtos.SeriesFileDto>>(
+            Assert.IsType<OkObjectResult>(listing).Value).ToList();
+        var linked = Assert.Single(files, f => f.RelativePath.StartsWith("Berserk"));
+        Assert.Equal("linked", linked.Status);
+        Assert.Empty(linked.MappedChapters);
+    }
+
+    [Fact]
+    public async Task Move_refuses_a_root_where_another_series_already_owns_the_folder_name()
+    {
+        var (seriesId, _, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+        using (var seed = _db.NewContext())
+        {
+            seed.Series.Add(new Series
+            {
+                Title = "Berserk (other)", SortTitle = "berserk", FolderName = "berserk", RootFolderId = toId,
+            });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(userId: 1);
+        var result = await Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.True(Directory.Exists(Path.Combine(from, "Berserk")));
+        Assert.False(Directory.Exists(Path.Combine(to, "Berserk")));
+        using var verify = _db.NewContext();
+        Assert.NotEqual(toId, verify.Series.Single(s => s.Id == seriesId).RootFolderId);
+    }
+
+    [Fact]
+    public async Task Move_without_files_refuses_a_root_where_another_series_owns_the_folder_name()
+    {
+        var (seriesId, _, toId, _, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(Path.Combine(to, "Berserk"));
+        using (var seed = _db.NewContext())
+        {
+            seed.Series.Add(new Series
+            {
+                Title = "Berserk (other)", SortTitle = "berserk", FolderName = "Berserk", RootFolderId = toId,
+            });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(userId: 1);
+        var result = await Controller(db).Move(
+            seriesId, new SeriesController.MoveSeriesRequest(toId, MoveFiles: false), CancellationToken.None);
+
+        Assert.IsType<ConflictObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Move_rolls_the_files_back_when_a_series_takes_the_folder_name_mid_move()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+
+        Task<IActionResult> move;
+        var held = await SeriesLocks.FolderNamesAsync(CancellationToken.None);
+        try
+        {
+            var db = _db.NewContext(userId: 1);
+            move = Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+            // The folder moves before the move asks for the lock to save, so the up-front check has passed.
+            var moved = Path.Combine(to, "Berserk");
+            for (var i = 0; i < 200 && !Directory.Exists(moved); i++)
+            {
+                await Task.Delay(25);
+            }
+
+            Assert.True(Directory.Exists(moved));
+            using var seed = _db.NewContext();
+            seed.Series.Add(new Series
+            {
+                Title = "Berserk (other)", SortTitle = "berserk", FolderName = "Berserk", RootFolderId = toId,
+            });
+            seed.SaveChanges();
+        }
+        finally
+        {
+            held.Dispose();
+        }
+
+        Assert.IsType<ConflictObjectResult>(await move);
+        Assert.True(File.Exists(Path.Combine(from, "Berserk", "Berserk Ch.1.cbz")));
+        Assert.True(File.Exists(Path.Combine(from, "Old Berserk", "Berserk Ch.2.cbz")));
+        Assert.False(Directory.Exists(Path.Combine(to, "Berserk")));
+        using var verify = _db.NewContext();
+        Assert.Equal(fromId, verify.Series.Single(s => s.Id == seriesId).RootFolderId);
     }
 }

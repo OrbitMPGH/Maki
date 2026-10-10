@@ -39,6 +39,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 import { Fragment, useMemo, useState } from 'react'
+import { useDebouncedValue } from '@mantine/hooks'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useImageCache, useRebuildImageCache } from '../api/hooks'
 import {
@@ -61,7 +62,7 @@ import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
-import { formatDateTime, formatNumber } from '../format'
+import { formatBytes, formatDateTime, formatNumber } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -125,8 +126,12 @@ const STATUS_LABEL: Record<string, MessageDescriptor> = {
   cancelled: msg`Cancelled`,
 }
 
-const bytes = (size: number, missing: string) =>
-  size < 0 ? missing : `${(size / 1024 / 1024).toFixed(1)} MiB`
+const bytes = (size: number, missing: string) => (size < 0 ? missing : formatBytes(size))
+
+/** Rows per page of every paged list, as HealthController returns them. */
+const PAGE_SIZE = 30
+
+const RUNNING_STATES = ['pending', 'running', 'applying', 'deleting', 'downloading']
 
 /** HealthScanService's finding kinds, in the order the filter lists them. */
 const FINDING_LABEL: Record<string, MessageDescriptor> = {
@@ -139,6 +144,7 @@ const FINDING_LABEL: Record<string, MessageDescriptor> = {
   unlinked: msg`Not linked`,
   sizeMismatch: msg`Size mismatch`,
   ambiguousNames: msg`Ambiguous names`,
+  unreadable: msg`Unreadable`,
 }
 
 const FINDING_STATES = ['open', 'acknowledged', 'ignored', 'resolved']
@@ -166,7 +172,12 @@ export default function HealthPage() {
   const renderLabel = useLabel()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') ?? 'overview'
-  const overview = useHealthData<HealthOverview>()
+  // Quick while a scan is in flight so its progress moves; otherwise only a slow check for scans
+  // that started elsewhere.
+  const overview = useHealthData<HealthOverview>('', true, (data) =>
+    data?.scans.some((s) => RUNNING_STATES.includes(s.status)) ? 5000 : 30_000,
+  )
+  const scanning = overview.data?.scans.some((s) => RUNNING_STATES.includes(s.status)) ?? false
   const [fileId, setFileId] = useState<number | null>(null)
   const [operationId, setOperationId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
@@ -182,23 +193,34 @@ export default function HealthPage() {
   const [historyPage, setHistoryPage] = useState(1)
   const [repairPage, setRepairPage] = useState(1)
 
-  const query = new URLSearchParams({ page: String(page), search })
+  const [debouncedSearch] = useDebouncedValue(search, 300)
+  const query = new URLSearchParams({ page: String(page), search: debouncedSearch })
   if (root) query.set('rootId', root)
   if (kind) query.set('kind', kind)
   if (state) query.set('state', state)
 
-  const files = useHealthData<{ items: HealthFile[]; total: number }>(`/files?${query}`, tab === 'files')
+  const files = useHealthData<{ items: HealthFile[]; total: number }>(
+    `/files?${query}`,
+    tab === 'files',
+    scanning ? 5000 : false,
+  )
   const operations = useHealthData<{ items: HealthOperation[]; total: number }>(
     `/operations?page=${repairPage}`,
     tab === 'repairs',
+    (data) => (data?.items.some((o) => RUNNING_STATES.includes(o.status)) ? 5000 : false),
   )
   const history = useHealthData<{
     items: { id: number; createdAt: string; kind: string; message: string }[]
     total: number
   }>(`/history?page=${historyPage}`, tab === 'history')
 
+  // Separate instances so one control's pending state does not spin the others.
   const action = useHealthAction()
-  const run = (path: string, body = {}) => action.mutate({ path, body })
+  const refresh = useHealthAction()
+  const quick = useHealthAction()
+  const run = (path: string, body = {}) => quick.mutate({ path, body })
+  const scanRoot = tab === 'files' && root ? Number(root) : null
+  const scanRootPath = scanRoot ? overview.data?.roots.find((r) => r.id === scanRoot)?.path : undefined
   // Every filter change re-queries a different set of rows, so a selection made against the old
   // one would silently act on files the user can no longer see.
   const refilter = (apply: () => void) => {
@@ -210,7 +232,8 @@ export default function HealthPage() {
     action.mutate({ path, body }, { onSuccess: () => setSelected(new Map()) })
   const ids = [...selected.keys()]
   const pageIds = files.data?.items.map((f) => f.id) ?? []
-  const error = overview.error ?? files.error ?? operations.error ?? history.error ?? action.error
+  const queryError = overview.error ?? files.error ?? operations.error ?? history.error
+  const error = queryError ?? action.error ?? quick.error ?? refresh.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
   // so they do not belong in a number whose job is to say "something needs you".
   const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
@@ -230,8 +253,8 @@ export default function HealthPage() {
             <Button
               variant="default"
               leftSection={<IconRefresh size={16} />}
-              loading={action.isPending}
-              onClick={() => run('/refresh')}
+              loading={refresh.isPending}
+              onClick={() => refresh.mutate({ path: '/refresh', body: {} })}
             >
               <Trans>Check now</Trans>
             </Button>
@@ -242,7 +265,12 @@ export default function HealthPage() {
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null })}>
+                {scanRootPath && (
+                  <Menu.Label>
+                    <Trans>Only {scanRootPath}, the root chosen on the Files tab</Trans>
+                  </Menu.Label>
+                )}
+                <Menu.Item onClick={() => run('/scans', { rootFolderId: scanRoot })}>
                   <Text size="sm" fw={600}>
                     <Trans>Index</Trans>
                   </Text>
@@ -254,7 +282,7 @@ export default function HealthPage() {
                     </Trans>
                   </Text>
                 </Menu.Item>
-                <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null, verify: true })}>
+                <Menu.Item onClick={() => run('/scans', { rootFolderId: scanRoot, verify: true })}>
                   <Text size="sm" fw={600}>
                     <Trans>Verify</Trans>
                   </Text>
@@ -274,7 +302,16 @@ export default function HealthPage() {
       />
 
       {error && (
-        <Alert color="var(--danger)" mb="lg">
+        <Alert
+          color="var(--danger)"
+          mb="lg"
+          withCloseButton={!queryError}
+          onClose={() => {
+            action.reset()
+            quick.reset()
+            refresh.reset()
+          }}
+        >
           {error.message}
         </Alert>
       )}
@@ -298,9 +335,10 @@ export default function HealthPage() {
             <Alert key={scan.id} title={scanTitle} mb="lg">
               <Group justify="space-between">
                 <Text>
-                  <Trans>
-                    {completed} / {total} files inspected
-                  </Trans>
+                  {plural(total, {
+                    one: `${completed} / # file inspected`,
+                    other: `${completed} / # files inspected`,
+                  })}
                 </Text>
                 <Button size="xs" variant="default" onClick={() => run(`/scans/${scan.id}/cancel`)}>
                   <Trans>Cancel scan</Trans>
@@ -354,6 +392,7 @@ export default function HealthPage() {
                 onChange={(e) => refilter(() => setSearch(e.currentTarget.value))}
               />
               <Select
+                aria-label={t`Filter by root folder`}
                 placeholder={t`All roots`}
                 clearable
                 value={root}
@@ -361,6 +400,7 @@ export default function HealthPage() {
                 data={overview.data?.roots.map((r) => ({ value: String(r.id), label: r.path })) ?? []}
               />
               <Select
+                aria-label={t`Filter by finding`}
                 placeholder={t`All findings`}
                 clearable
                 value={kind}
@@ -370,6 +410,7 @@ export default function HealthPage() {
                   .map(([value, label]) => ({ value, label: renderLabel(label) }))}
               />
               <Select
+                aria-label={t`Filter by state`}
                 placeholder={t`All states`}
                 clearable
                 value={state}
@@ -557,7 +598,7 @@ export default function HealthPage() {
                 <Pagination
                   value={page}
                   onChange={setPage}
-                  total={Math.max(1, Math.ceil((files.data?.total ?? 0) / 30))}
+                  total={Math.max(1, Math.ceil((files.data?.total ?? 0) / PAGE_SIZE))}
                 />
               </>
             )}
@@ -601,7 +642,7 @@ export default function HealthPage() {
             <Pagination
               value={repairPage}
               onChange={setRepairPage}
-              total={Math.max(1, Math.ceil((operations.data?.total ?? 0) / 30))}
+              total={Math.max(1, Math.ceil((operations.data?.total ?? 0) / PAGE_SIZE))}
             />
           </Stack>
         </Tabs.Panel>
@@ -619,10 +660,15 @@ export default function HealthPage() {
                 </div>
               </Group>
             ))}
+            {history.data?.items.length === 0 && (
+              <Text c="var(--ink-3)">
+                <Trans>Nothing in the history yet.</Trans>
+              </Text>
+            )}
             <Pagination
               value={historyPage}
               onChange={setHistoryPage}
-              total={Math.max(1, Math.ceil((history.data?.total ?? 0) / 30))}
+              total={Math.max(1, Math.ceil((history.data?.total ?? 0) / PAGE_SIZE))}
             />
           </Stack>
         </Tabs.Panel>
@@ -774,8 +820,8 @@ function BulkDeleteModal({
  * Every check the monitor produced, grouped by the area it came from.
  *
  * Passing checks are hidden by default and not because they are uninteresting: there is one per
- * source cooldown and one per root folder, so a healthy instance shows around thirty green rows
- * and the two that matter are lost in them.
+ * root folder, per probed service and per scheduled job, so a healthy instance shows a screenful of
+ * green rows and the ones that matter are lost in them.
  */
 function ChecksPanel({
   checks,
@@ -802,7 +848,7 @@ function ChecksPanel({
   return (
     <Panel edge={edge} className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>System checks</Trans>
         </Title>
         <Switch
@@ -874,7 +920,9 @@ function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body
   const [open, setOpen] = useState(false)
   const source =
     check.id.startsWith(SOURCE_CHECK) && ISSUE.includes(check.status) ? check.id.slice(SOURCE_CHECK.length) : null
-  const failures = useHealthData<SourceFailures>(`/sources/${source}`, source !== null)
+  const failures = useHealthData<SourceFailures>(`/sources/${source}`, source !== null, (data) =>
+    data?.refreshing ? 3000 : false,
+  )
   const affected = failures.data?.series ?? []
   const count = affected.length
   const done = failures.data?.done ?? 0
@@ -1116,10 +1164,11 @@ function FileReview({
 
             <div className="health-review-column">
               <Panel p="md">
-                <Title order={4} fz={15} mb="sm">
+                <Title order={4} fz="var(--type-subhead)" mb="sm">
                   <Trans>Request replacement</Trans>
                 </Title>
                 <Select
+                  aria-label={t`Request replacement`}
                   allowDeselect={false}
                   value={mapping}
                   onChange={(value) => setMapping(value ?? AUTOMATIC)}
@@ -1175,7 +1224,7 @@ function FileReview({
               </Panel>
 
               <Panel p="md">
-                <Title order={4} fz={15} mb="sm">
+                <Title order={4} fz="var(--type-subhead)" mb="sm">
                   {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
                 </Title>
                 <Text size="xs" c="var(--ink-4)" mb="sm">
@@ -1260,7 +1309,7 @@ function UnlinkedPanel({
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={4} fz={15}>
+        <Title order={4} fz="var(--type-subhead)">
           <Trans>Not linked to any chapter</Trans>
         </Title>
         <Badge variant="light" color="var(--neutral)">
@@ -1539,7 +1588,9 @@ function CompareArchives({
 
 function OperationReview({ id, close }: { id: number; close: () => void }) {
   const { t } = useLingui()
-  const { data, error } = useHealthData<OperationDetail>(`/operations/${id}`)
+  const { data, error } = useHealthData<OperationDetail>(`/operations/${id}`, true, (detail) =>
+    detail && RUNNING_STATES.includes(detail.operation.status) ? 3000 : false,
+  )
   const action = useHealthAction()
   const [confirm, setConfirm] = useState(false)
   const [reset, setReset] = useState(false)
@@ -1714,7 +1765,7 @@ function OptionsPanel() {
   return (
     <Panel edge="strong" className="health-area-options" p="lg">
       <Stack>
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>Health settings</Trans>
         </Title>
         {action.error && <Alert color="var(--danger)">{action.error.message}</Alert>}
@@ -1784,7 +1835,7 @@ function CachePanel() {
   return (
     <Panel className="health-area-cache" p="lg">
       <Stack>
-        <Title order={3} fz={17}>
+        <Title order={3} fz="var(--type-section)">
           <Trans>Image cache and backups</Trans>
         </Title>
         {cache.data && (

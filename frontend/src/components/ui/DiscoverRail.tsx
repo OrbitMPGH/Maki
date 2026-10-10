@@ -13,6 +13,7 @@ import {
 } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
 import type { RecommendationItem } from '../../api/hooks'
+import { formatFixedDecimal } from '../../format'
 import { Rail } from './Rail'
 import { t as now } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -45,7 +46,8 @@ export function relationPhrase(kind: string, relatedTo: string): string {
     case 'Main story':
       return now`Main story of ${relatedTo}`
     default:
-      return now`${kind} to ${relatedTo}`
+      // An unknown wire value is not interpolated: it is English and would stay English.
+      return now`Related to ${relatedTo}`
   }
 }
 
@@ -78,7 +80,7 @@ function RatingChip({ rating }: { rating: number }) {
   return (
     <span className="cover-badge discover-rating">
       <IconStarFilled size={12} style={{ color: 'var(--rating)' }} />
-      {(rating / 10).toFixed(1)}
+      {formatFixedDecimal(rating / 10)}
     </span>
   )
 }
@@ -92,7 +94,7 @@ function DiscoverSub({ item }: { item: RecommendationItem }) {
       <span className="discover-sub-status">{year ? t`${year}, ${status}` : status}</span>
       {totalChapters ? (
         <span className="discover-sub-chapters">
-          <Trans>{totalChapters} ch</Trans>
+          <Trans>{totalChapters} ch.</Trans>
         </span>
       ) : null}
     </div>
@@ -146,12 +148,12 @@ export const RecommendationCard = memo(function RecommendationCard({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="cover-placeholder">{item.title}</div>
+          <div className="cover-placeholder" aria-hidden>{item.title}</div>
         )}
         <div className="cover-scrim" />
 
@@ -165,7 +167,7 @@ export const RecommendationCard = memo(function RecommendationCard({
           <span
             className="discover-corner"
             data-add="true"
-            data-tip={t`View & add`}
+            data-tip={t`View and add`}
             aria-hidden="true"
           >
             <IconPlus size={16} stroke={2} />
@@ -229,12 +231,12 @@ export const RecommendationRow = memo(function RecommendationRow({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="row-cover-placeholder">{item.title}</div>
+          <div className="row-cover-placeholder" aria-hidden>{item.title}</div>
         )}
       </div>
 
@@ -260,12 +262,12 @@ export const RecommendationRow = memo(function RecommendationRow({
           {item.rating != null && (
             <span className="cover-badge" style={{ flexShrink: 0 }}>
               <IconStar size={11} style={{ color: 'var(--rating)' }} />
-              {(item.rating / 10).toFixed(1)}
+              {formatFixedDecimal(item.rating / 10, 1)}
             </span>
           )}
           {totalChapters != null && (
             <span className="cover-count tnum">
-              <Trans>{totalChapters} ch</Trans>
+              <Trans>{totalChapters} ch.</Trans>
             </span>
           )}
         </div>
@@ -339,12 +341,12 @@ export const EngineCard = memo(function EngineCard({
         {posterUrl(item) ? (
           <img
             src={posterUrl(item) ?? undefined}
-            alt={item.title}
+            alt=""
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="cover-placeholder">{item.title}</div>
+          <div className="cover-placeholder" aria-hidden>{item.title}</div>
         )}
         <div className="cover-scrim" />
 
@@ -355,7 +357,7 @@ export const EngineCard = memo(function EngineCard({
             <IconCheck size={14} stroke={2.2} />
           </span>
         ) : (
-          <span className="discover-corner" data-add="true" data-tip={t`View & add`} aria-hidden="true">
+          <span className="discover-corner" data-add="true" data-tip={t`View and add`} aria-hidden="true">
             <IconPlus size={16} stroke={2} />
           </span>
         )}
@@ -392,7 +394,7 @@ export const EngineCard = memo(function EngineCard({
  *
  * Use it for rows the *recommender* produced: Discover's "based on your recent activity", the
  * series page's "more like this", Home's "you might like". Catalogue rows (Trending, Popular, a
- * genre) stay on {@link DiscoverRailRow} — they are rankings, not claims about the reader — and so
+ * genre) stay on {@link DiscoverRailRow}, they are rankings, not claims about the reader, and so
  * does the reader-cohort rail, whose items hydrate from the dump and carry none of the per-item
  * grounds this card is built to show.
  */
@@ -429,8 +431,8 @@ export function DiscoverRailRow({
   /**
    * Rails hide the reason line by default: a catalogue rail is a row of covers you skim, and every
    * card carrying "Because: Action, Drama" is noise where the rail's own heading already said why
-   * these are here. A rail whose picks need defending individually — "More like this", where the
-   * whole point is which parts of the seed a candidate picked up — opts in.
+   * these are here. A rail whose picks need defending individually, "More like this", where the
+   * whole point is which parts of the seed a candidate picked up, opts in.
    */
   showReason?: boolean
 }) {

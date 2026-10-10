@@ -57,7 +57,7 @@ public class ReadFileCleanupService(
 
         var progress = await db.ChapterProgress.IgnoreQueryFilters().AsNoTracking()
             .Where(p => p.SeriesId == seriesId)
-            .Select(p => new { p.UserId, p.ChapterId, p.Completed, p.CompletedAt })
+            .Select(p => new { p.UserId, p.ChapterId, p.Completed, p.Watched, p.CompletedAt, p.UpdatedAt, p.PageIndex, p.PageCount })
             .ToListAsync(ct);
         var readers = progress.Select(p => p.UserId).Distinct().ToList();
         if (readers.Count == 0)
@@ -65,18 +65,39 @@ public class ReadFileCleanupService(
             return [];
         }
 
-        var finished = progress
-            .Where(p => p.Completed && p.CompletedAt != null)
-            .ToLookup(p => p.ChapterId);
+        // A watched tick is "seen elsewhere", not read here, so it never makes a file due.
+        // A re-read to the end keeps the first completion stamp but moves UpdatedAt, so for a row
+        // sitting at its end the later of the two is when the chapter was last read. Any other save
+        // on a completed row (a chapter merely opened, an OPDS prefetch) says nothing about that.
+        var read = progress
+            .Where(p => p.Completed && !p.Watched && p.CompletedAt != null)
+            .Select(p => new
+            {
+                p.UserId,
+                p.ChapterId,
+                LastRead = p.PageCount > 0 && p.PageIndex >= p.PageCount - 1 && p.UpdatedAt > p.CompletedAt!.Value
+                    ? p.UpdatedAt
+                    : p.CompletedAt!.Value,
+            })
+            .ToList();
+        var finished = read.ToLookup(p => p.ChapterId);
 
-        // Each reader's most recent finish, so they can look back at where they stopped.
-        var kept = options.KeepLast
-            ? progress
-                .Where(p => p.Completed && p.CompletedAt != null)
+        // Each reader's most recent finish, so they can look back at where they stopped. A bulk write
+        // stamps its rows a few ticks apart in no useful order, so finishes inside the same second
+        // are told apart by chapter number.
+        HashSet<int> kept = [];
+        if (options.KeepLast)
+        {
+            var numbers = await db.Chapters.IgnoreQueryFilters().AsNoTracking()
+                .Where(c => c.SeriesId == seriesId)
+                .Select(c => new { c.Id, c.Number })
+                .ToDictionaryAsync(c => c.Id, c => c.Number ?? decimal.MinValue, ct);
+            kept = read
                 .GroupBy(p => p.UserId)
-                .Select(g => g.MaxBy(p => p.CompletedAt)!.ChapterId)
-                .ToHashSet()
-            : [];
+                .Select(g => g.MaxBy(p => (p.LastRead.Ticks / TimeSpan.TicksPerSecond,
+                    numbers.GetValueOrDefault(p.ChapterId, decimal.MinValue)))!.ChapterId)
+                .ToHashSet();
+        }
 
         var due = new Dictionary<int, DateTime>();
         foreach (var file in chapters.GroupBy(c => c.FileId))
@@ -91,7 +112,7 @@ public class ReadFileCleanupService(
                     break;
                 }
 
-                var at = finishes.Max(p => p.CompletedAt!.Value).AddDays(options.Days);
+                var at = finishes.Max(p => p.LastRead).AddDays(options.Days);
                 fileDue = fileDue is { } sofar && sofar > at ? sofar : at;
             }
 
@@ -107,7 +128,7 @@ public class ReadFileCleanupService(
         return due;
     }
 
-    /// <summary>Deletes every file that is due, series by series. Returns how many files went.</summary>
+    /// <summary>Deletes every file that is due, series by series. Returns how many files were deleted from disk.</summary>
     public async Task<int> RunAsync(CancellationToken ct)
     {
         var options = await OptionsAsync(ct);
@@ -166,6 +187,6 @@ public class ReadFileCleanupService(
         logger.LogInformation(
             "Read file cleanup for {Title}: deleted {Deleted} files, kept {Kept} another series still uses, {Failed} failed, {Chapters} chapters marked removed",
             series.Title, result.Deleted, result.Kept, result.Failed, result.ChaptersRemoved);
-        return result.Deleted + result.Kept;
+        return result.Deleted;
     }
 }

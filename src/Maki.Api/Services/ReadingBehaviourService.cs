@@ -8,13 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>A series named as an example of how the reader reads, not of what they read.</summary>
-/// <param name="Value">Server-formatted English, kept for the Taste tab. New callers format <paramref name="Measure"/>.</param>
 /// <param name="Measure">
-/// The number behind <paramref name="Value"/>: median seconds per chapter in
+/// Median seconds per chapter in
 /// <see cref="ReadingBehaviour.Savoured"/> and <see cref="ReadingBehaviour.Devoured"/>, the completion
 /// fraction (0 to 1) in <see cref="ReadingBehaviour.Abandoned"/>.
 /// </param>
-public record BehaviourSeries(int SeriesId, string Title, string? CoverUrl, string Value, double Measure);
+public record BehaviourSeries(int SeriesId, string Title, string? CoverUrl, double Measure);
 
 /// <summary>
 /// How somebody reads, as opposed to what. Every field is null when there is not enough to say,
@@ -166,7 +165,7 @@ public class ReadingBehaviourService(
         }
     }
 
-    private sealed record ProgressRow(int SeriesId, int ReadSeconds, int PageCount, DateTime UpdatedAt);
+    private sealed record ProgressRow(int SeriesId, int ReadSeconds, int PageCount, DateTime FinishedAt, bool BulkMarked);
 
     private async Task<ReadingBehaviour> BuildAsync(int userId, bool allRootFolders, CancellationToken ct)
     {
@@ -196,7 +195,7 @@ public class ReadingBehaviourService(
             // anime season is not reading, and it carries no time and no page count to measure.
             var rows = await db.ChapterProgress.IgnoreQueryFilters()
                 .Where(p => p.UserId == userId && p.Completed && !p.Watched)
-                .Select(p => new ProgressRow(p.SeriesId, p.ReadSeconds, p.PageCount, p.UpdatedAt))
+                .Select(p => new ProgressRow(p.SeriesId, p.ReadSeconds, p.PageCount, p.CompletedAt ?? p.UpdatedAt, p.BulkMarked))
                 .ToListAsync(ct);
             progress = [.. rows.Where(r => visibleIds.Contains(r.SeriesId))];
 
@@ -249,11 +248,13 @@ public class ReadingBehaviourService(
             .ToList();
 
         // ---- days ----
-        // Imports are dropped here rather than everywhere: they say what was read but not when, so a
-        // single import would otherwise become the reader's "biggest day" for ever.
+        // Imports and bulk "mark read" ticks are dropped here rather than everywhere: they say what
+        // was read but not when, so a single tick would otherwise become the reader's "biggest day"
+        // for ever. Days are dated by first completion, which a re-read leaves alone. OPDS reads
+        // carry no time but are real, so they count.
         var days = progress
-            .Where(p => p.PageCount > 0)
-            .GroupBy(p => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(p.UpdatedAt, timeZone)))
+            .Where(p => p.PageCount > 0 && !p.BulkMarked)
+            .GroupBy(p => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(p.FinishedAt, timeZone)))
             .Select(g => (Day: g.Key, Count: g.Count()))
             .ToList();
         var biggest = days.Count == 0 ? default : days.MaxBy(d => d.Count);
@@ -274,14 +275,13 @@ public class ReadingBehaviourService(
             MedianChaptersPerReadingDay: Median([.. days.Select(d => (double)d.Count)]),
             BiggestDayCount: days.Count == 0 ? null : biggest.Count,
             BiggestDay: days.Count == 0 ? null : biggest.Day,
-            Savoured: Name(paceBySeries.OrderByDescending(p => p.Median), titles, Minutes),
-            Devoured: Name(paceBySeries.OrderBy(p => p.Median), titles, Minutes),
+            Savoured: Name(paceBySeries.OrderByDescending(p => p.Median), titles),
+            Devoured: Name(paceBySeries.OrderBy(p => p.Median), titles),
             Abandoned: Name(
                 unfinished.Where(u => u.Fraction >= MinProgressToAbandon)
                     .OrderByDescending(u => u.Read)
                     .Select(u => (u.SeriesId, Median: u.Fraction)),
-                titles,
-                f => $"{Math.Round(f * 100)}% in"),
+                titles),
             GeneratedAt: DateTime.UtcNow,
             StopPointHistogram: histogram);
 
@@ -292,20 +292,14 @@ public class ReadingBehaviourService(
         return behaviour;
     }
 
-    private static string Minutes(double seconds) =>
-        seconds >= 90
-            ? $"{Math.Round(seconds / 60)} min"
-            : $"{Math.Round(seconds)} s";
-
     private static IReadOnlyList<BehaviourSeries> Name(
         IEnumerable<(int SeriesId, double Median)> ranked,
-        Dictionary<int, (string Title, string? CoverUrl)> titles,
-        Func<double, string> format) =>
+        Dictionary<int, (string Title, string? CoverUrl)> titles) =>
         [.. ranked
             .Where(r => titles.ContainsKey(r.SeriesId))
             .Take(Named)
             .Select(r => new BehaviourSeries(
-                r.SeriesId, titles[r.SeriesId].Title, titles[r.SeriesId].CoverUrl, format(r.Median), r.Median))];
+                r.SeriesId, titles[r.SeriesId].Title, titles[r.SeriesId].CoverUrl, r.Median))];
 
     /// <summary>Median, or null for an empty set. Even counts take the mean of the middle pair.</summary>
     private static double? Median(List<double> values)

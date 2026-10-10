@@ -64,6 +64,7 @@ import { DumpProgressBar } from './MetadataDumpProgress'
 import { PriorityList } from './PriorityList'
 import { RecommendationModelSwitch } from './RecommendationModelSwitch'
 import { UnsavedSettingsContext } from './settings/SaveButton'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 import { useApplyLanguage, useLanguageOptions } from './ui/language'
 
 const STEP_IDS = ['welcome', 'library', 'discovery', 'downloads', 'connections', 'finish'] as const
@@ -162,6 +163,7 @@ function LibraryStep() {
   const { data: rootFolders } = useRootFolders()
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
+  const [deleting, setDeleting] = useState<{ id: number; path: string } | null>(null)
   const { settings, patch } = useLibraryPatch()
 
   const add = () => {
@@ -200,8 +202,8 @@ function LibraryStep() {
                 <ActionIcon
                   variant="subtle"
                   color="var(--danger)"
-                  onClick={() => deleteFolder.mutate(f.id)}
-                  aria-label={t`Delete root folder`}
+                  onClick={() => setDeleting({ id: f.id, path: f.path })}
+                  aria-label={t`Remove root folder`}
                 >
                   <IconTrash size={16} />
                 </ActionIcon>
@@ -225,11 +227,36 @@ function LibraryStep() {
         </Stack>
       </SettingRow>
 
+      <ConfirmDialog
+        opened={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title={<Trans>Remove this root folder?</Trans>}
+        confirmLabel={<Trans>Remove folder</Trans>}
+        loading={deleteFolder.isPending}
+        onConfirm={() =>
+          deleting &&
+          deleteFolder.mutate(deleting.id, {
+            onSuccess: () => setDeleting(null),
+          })
+        }
+      >
+        <Stack gap="xs">
+          <Text size="sm" ff="monospace">{deleting?.path}</Text>
+          <Text size="sm">
+            <Trans>
+              Files on disk are not touched. Every user's access to this folder is removed, and
+              adding it back later starts with no grants.
+            </Trans>
+          </Text>
+        </Stack>
+      </ConfirmDialog>
+
       <SettingRow
         label={<Trans>Existing folders on import</Trans>}
         description={<Trans>What happens to a series folder you already have when you import it into Maki.</Trans>}
       >
         <Radio.Group
+          aria-label={t`Existing folders on import`}
           value={settings?.folderNamingMode ?? 'rename'}
           onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
         >

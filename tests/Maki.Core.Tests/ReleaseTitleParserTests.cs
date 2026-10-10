@@ -45,6 +45,17 @@ public class ReleaseTitleParserTests
     }
 
     [Theory]
+    [InlineData("Berserk Vol. 1 - 41 (Digital)", 1, 41)]
+    [InlineData("[Group] Berserk Vol. 1 - 41 (Digital)", 1, 41)]
+    [InlineData("Berserk Vol. 3 - 10 Years After (Digital)", 3, 3)]
+    public void A_spaced_volume_range_reads_as_a_span_unless_the_end_starts_a_title(string title, int start, int end)
+    {
+        var parsed = ReleaseTitleParser.Parse(title);
+
+        Assert.Equal(new NumberRange(start, end), parsed.Span.Volumes);
+    }
+
+    [Theory]
     [InlineData("Title Vol. 1-3 [Group]", 1, 3)]
     [InlineData("Title Vol 1 [Group]", 1, 1)]
     [InlineData("Title Volume 2 [Group]", 2, 2)]
@@ -275,5 +286,14 @@ public class ReleaseTitleParserTests
 
         Assert.NotEmpty(parsed.TitleCandidates);
         Assert.Equal(new NumberRange(1, 1), parsed.Span.Volumes);
+    }
+
+    [Fact]
+    public void Non_ascii_and_overflowing_digits_do_not_throw()
+    {
+        var parsed = ReleaseTitleParser.Parse("Title v\uFF11 + 99999999999999999999999999999999 (\uFF12\uFF10\uFF12\uFF14) (Digital)");
+
+        Assert.NotEmpty(parsed.TitleCandidates);
+        Assert.Null(parsed.Year);
     }
 }

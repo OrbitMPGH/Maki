@@ -1,4 +1,5 @@
 ﻿using Maki.Api.Services;
+using Maki.Api.Controllers;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -115,13 +116,99 @@ public sealed class ProgressTests : IDisposable
         var incognito = _db.SeedSeries("Hidden", configure: s => s.Incognito = IncognitoMode.Full);
         using var db = _db.NewContext();
         var stats = new StatsEventService(db);
-        stats.Record(StatsEventType.ChaptersRead, incognito, "Hidden", 500);
+        await stats.StageAsync(StatsEventType.ChaptersRead, incognito, "Hidden", 500);
         await db.SaveChangesAsync();
 
         var metrics = await Metrics().GetAsync(UserId);
 
         Assert.Equal(0, metrics.ChaptersRead);
         Assert.Equal(0, metrics.DaysRead);
+    }
+
+    private void SeedChapters(int seriesId, int onDisk, int removedRead, int removedUnread = 0)
+    {
+        using var db = _db.NewContext();
+        var n = 0;
+        for (var i = 0; i < onDisk; i++)
+        {
+            var file = new ChapterFile { SeriesId = seriesId, RelativePath = $"{seriesId}-{++n}.cbz", DateAdded = Now };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = n, ChapterFileId = file.Id });
+            db.SaveChanges();
+        }
+
+        for (var i = 0; i < removedRead + removedUnread; i++)
+        {
+            var chapter = new Chapter { SeriesId = seriesId, Number = ++n, FileRemovedAt = Now };
+            db.Chapters.Add(chapter);
+            db.SaveChanges();
+            if (i < removedRead)
+            {
+                db.ChapterProgress.Add(new ChapterProgress
+                {
+                    UserId = UserId, SeriesId = seriesId, ChapterId = chapter.Id,
+                    PageCount = 20, Completed = true, StartedAt = Now, UpdatedAt = Now
+                });
+                db.SaveChanges();
+            }
+        }
+    }
+
+    private void ReadOnDisk(int seriesId)
+    {
+        using var db = _db.NewContext();
+        foreach (var chapter in db.Chapters.Where(c => c.SeriesId == seriesId && c.ChapterFileId != null).ToList())
+        {
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                UserId = UserId, SeriesId = seriesId, ChapterId = chapter.Id,
+                PageCount = 20, Completed = true, StartedAt = Now, UpdatedAt = Now
+            });
+        }
+
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task ReadChaptersWhoseFilesWereRemovedDoNotMakeAHalfReadSeriesFullyRead()
+    {
+        var series = _db.SeedSeries("Cleaned");
+        SeedChapters(series, onDisk: 50, removedRead: 50);
+
+        var metrics = await Metrics().GetAsync(UserId);
+
+        Assert.Equal(0, metrics.SeriesFullyRead);
+    }
+
+    [Fact]
+    public async Task ASeriesIsFullyReadOnceEveryRemainingChapterIsReadToo()
+    {
+        var series = _db.SeedSeries("Done");
+        SeedChapters(series, onDisk: 3, removedRead: 5);
+        ReadOnDisk(series);
+
+        var metrics = await Metrics().GetAsync(UserId);
+
+        Assert.Equal(1, metrics.SeriesFullyRead);
+    }
+
+    [Fact]
+    public async Task AChapterNeverDownloadedStaysOutOfTheFullyReadCount()
+    {
+        var series = _db.SeedSeries("Partly wanted");
+        SeedChapters(series, onDisk: 2, removedRead: 0);
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = series, Number = 3, Wanted = true });
+            db.SaveChanges();
+        }
+
+        ReadOnDisk(series);
+
+        var metrics = await Metrics().GetAsync(UserId);
+
+        Assert.Equal(1, metrics.SeriesFullyRead);
     }
 
     // ---- Evaluation -----------------------------------------------------------------------
@@ -288,39 +375,6 @@ public sealed class ProgressTests : IDisposable
         Assert.Empty(_db.NewContext().UserAchievements.ToList());
     }
 
-    [Fact]
-    public async Task AcknowledgingOneTierSilencesTheWholeAchievement()
-    {
-        // Crossing several rungs at once is the normal case, and the UI collapses them into one
-        // toast. If only the acknowledged row were stamped, the next page load would announce the
-        // same achievement again one tier down, and again the load after that.
-        SeedRead(null, 3000, Now);
-
-        using (var db = _db.NewContext())
-        {
-            await Achievements(db).EvaluateAsync(UserId);
-        }
-
-        var top = _db.NewContext().UserAchievements
-            .Where(a => a.Key == "reader")
-            .OrderByDescending(a => a.Tier)
-            .First();
-
-        using (var db = _db.NewContext())
-        {
-            await Achievements(db).MarkSeenAsync(UserId, [top.Id]);
-        }
-
-        Assert.Empty(_db.NewContext().UserAchievements
-            .Where(a => a.Key == "reader" && a.SeenAt == null)
-            .ToList());
-
-        // Only that achievement, though — an unrelated one must still be waiting to be shown.
-        Assert.NotEmpty(_db.NewContext().UserAchievements
-            .Where(a => a.Key != "reader" && a.SeenAt == null)
-            .ToList());
-    }
-
     // ---- Per-user isolation ----------------------------------------------------------------
 
     [Fact]
@@ -427,6 +481,10 @@ public sealed class ProgressTests : IDisposable
     [InlineData(new[] { -4, -3, -1, 0 }, 5, 5)]
     // Ended a week ago: longest survives, current is zero.
     [InlineData(new[] { -9, -8, -7 }, 0, 3)]
+    // Skipped yesterday: reading today would still be forgiven, so the run is not shown as lost.
+    [InlineData(new[] { -4, -3, -2 }, 3, 3)]
+    // The week's grace is already spent, so a second hole cannot be forgiven.
+    [InlineData(new[] { -5, -3, -2 }, 0, 4)]
     public void StreaksForgiveOneDayAWeekAndNeverPunishToday(int[] offsets, long current, long longest)
     {
         var today = new DateOnly(2026, 6, 15);
@@ -519,5 +577,109 @@ public sealed class ProgressTests : IDisposable
 
         Assert.Equal(2, metrics.DistinctGenres);
         Assert.Equal([SeriesTypes.Manhwa], metrics.TypesRead);
+    }
+
+    // ---- Wave 3 edges --------------------------------------------------------------------
+
+    private sealed class SlowStore(string lastLevel) : IUserSettingsStore
+    {
+        private readonly Dictionary<string, string> _values = new()
+        {
+            [SettingKeys.ProgressLastNotifiedLevel] = lastLevel
+        };
+
+        public async Task<string?> GetAsync(int userId, string key, CancellationToken ct = default)
+        {
+            string? value;
+            lock (_values)
+            {
+                value = _values.GetValueOrDefault(key);
+            }
+
+            // Long enough that an unserialised second evaluation reads the same stale level.
+            await Task.Delay(150, ct);
+            return value;
+        }
+
+        public Task SetAsync(int userId, string key, string? value, CancellationToken ct = default)
+        {
+            lock (_values)
+            {
+                _values[key] = value ?? string.Empty;
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task TwoRacingEvaluationsAnnounceALevelOnce()
+    {
+        var store = new SlowStore("1");
+        using var db = _db.NewContext();
+        var service = new AchievementService(db, Metrics(db), store, _inbox, _clock,
+            NullLogger<AchievementService>.Instance);
+        var snapshot = new UserMetrics { ChaptersRead = 5000 };
+
+        await Task.WhenAll(
+            service.NotifyLevelAsync(UserId, snapshot, [], default),
+            service.NotifyLevelAsync(UserId, snapshot, [], default));
+
+        Assert.Single(_inbox.Raised, r => r.Type == InboxEventType.LevelUp);
+    }
+
+    [Fact]
+    public void TheGridKeepsAHeldTierWhenTheMetricFallsBack()
+    {
+        var librarian = AchievementCatalog.Find("librarian")!;
+        var unlockedAt = Now.AddDays(-3);
+        var held = new List<UserAchievement>
+        {
+            new() { UserId = UserId, Key = "librarian", Tier = 1, UnlockedAt = Now.AddDays(-9) },
+            new() { UserId = UserId, Key = "librarian", Tier = 2, UnlockedAt = unlockedAt },
+        };
+
+        var (tier, at) = ProgressController.DisplayedTier(librarian, new UserMetrics { LibrarySeries = 3 }, held);
+
+        Assert.Equal(2, tier);
+        Assert.Equal(unlockedAt, at);
+    }
+
+    [Fact]
+    public void TheGridShowsTheCurrentTierWhenItIsAheadOfWhatWasHeld()
+    {
+        var librarian = AchievementCatalog.Find("librarian")!;
+
+        var (tier, at) = ProgressController.DisplayedTier(librarian, new UserMetrics { LibrarySeries = 50 }, []);
+
+        Assert.Equal(2, tier);
+        Assert.Null(at);
+    }
+
+    [Fact]
+    public async Task ASeriesFinishedGoalSurvivesADstJumpOverMidnight()
+    {
+        TimeZoneInfo zone;
+        try
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("America/Santiago");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            Assert.Fail("America/Santiago is not available on this host, so the DST case cannot be exercised");
+            return;
+        }
+
+        // Chile springs forward at local midnight on the first Sunday of September.
+        var transition = new DateTime(2026, 9, 6, 0, 0, 0, DateTimeKind.Unspecified);
+        Assert.True(zone.IsInvalidTime(transition), "Local midnight on the Santiago transition day should not exist");
+
+        _db.SetUserConfig(UserId, (SettingKeys.UserTimeZone, "America/Santiago"));
+        var metrics = new UserMetricsService(_db.NewContext(), new TestUserSettingsStore(_db), _cache,
+            new StoppedClock(new DateTimeOffset(2026, 9, 6, 15, 0, 0, TimeSpan.Zero)));
+
+        var progress = await metrics.GoalProgressAsync(UserId, GoalPeriod.Day, GoalMetric.SeriesFinished);
+
+        Assert.Equal(0, progress);
     }
 }

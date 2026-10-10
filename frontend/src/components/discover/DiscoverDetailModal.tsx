@@ -4,6 +4,7 @@ import {
   ActionIcon,
   Badge,
   Box,
+  Button,
   CloseButton, Divider,
   Group,
   Modal,
@@ -21,13 +22,14 @@ import {
   IconTrendingUp,
 } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import {
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
 import { altTitleLabel, readableTitles } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
-import { formatNumber } from '../../format'
+import { formatFixedDecimal } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
@@ -72,7 +74,7 @@ export function DiscoverDetailModal({
   /** Shows a dice beside the close button that swaps in another random pick. */
   onReroll?: () => void
 }) {
-  const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
+  const { data: detail, isLoading, isError, refetch } = useRecommendationDetail(item?.providerId ?? null, true)
   const { scope: diceScope, tumble } = useDiceTumble()
   const rerolling = useRef(false)
   const rerollTimer = useRef<number | undefined>(undefined)
@@ -134,12 +136,12 @@ export function DiscoverDetailModal({
   ].filter(Boolean)
 
   // Named locals for the tooltip sentence below: Lingui only names a placeholder after the
-  // expression when it is a plain identifier, so a member access or a `.toFixed()` call would
+  // expression when it is a plain identifier, so a member access or a formatter call would
   // otherwise extract as an unlabelled {0}.
   const readerHint = detail?.readerHint ?? null
-  const readerHintScoreDisplay = readerHint ? (readerHint.score / 10).toFixed(1) : null
-  const readerHintReadersDisplay = readerHint ? formatNumber(readerHint.readers) : null
-  const readerHintBaselineDisplay = readerHint ? (readerHint.baseline / 10).toFixed(1) : null
+  const readerHintReaders = readerHint?.readers ?? 0
+  const readerHintScoreDisplay = readerHint ? formatFixedDecimal(readerHint.score / 10, 1) : null
+  const readerHintBaselineDisplay = readerHint ? formatFixedDecimal(readerHint.baseline / 10, 1) : null
   const readerHintHigher = readerHint ? readerHint.score > readerHint.baseline : false
 
   return (
@@ -216,6 +218,7 @@ export function DiscoverDetailModal({
                     // come down to stylesheet order. The class only carries the phone rule that
                     // takes the poster slot out entirely.
                     <Skeleton
+                      animate={!isError}
                       className="discover-poster-skeleton"
                       w={176}
                       h={264}
@@ -226,7 +229,7 @@ export function DiscoverDetailModal({
 
                   <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                     <Title order={1} className="series-hero-title">
-                      {title}
+                      {title || (isError ? t`Couldn't load this title` : '')}
                     </Title>
 
                     {(detail?.nativeTitle || detail?.romanizedTitle) && (
@@ -285,7 +288,7 @@ export function DiscoverDetailModal({
                             style={{ '--band': `var(--${band.token})` } as CSSProperties}
                           >
                             <IconStar size={18} />
-                            <span className="hero-score-n figure">{(score / 10).toFixed(1)}</span>
+                            <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
                           </span>
                         </Tooltip>
                       )}
@@ -319,7 +322,10 @@ export function DiscoverDetailModal({
                             multiline
                             w={260}
                             zIndex={1001}
-                            label={t`${readerHintScoreDisplay} from ${readerHintReadersDisplay} readers with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`}
+                            label={plural(readerHintReaders, {
+                              one: `${readerHintScoreDisplay} from # reader with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
+                              other: `${readerHintScoreDisplay} from # readers with reading habits like yours, against ${readerHintBaselineDisplay} from readers overall.`,
+                            })}
                           >
                             <Badge
                               size="sm"
@@ -346,7 +352,7 @@ export function DiscoverDetailModal({
                             <Badge
                               size="sm"
                               variant="outline"
-                              color="gray"
+                              color="var(--neutral)"
                               leftSection={
                                 <MetadataSiteIcon
                                   site={r.source.toLowerCase()}
@@ -355,7 +361,7 @@ export function DiscoverDetailModal({
                                 />
                               }
                             >
-                              {(r.rating / 10).toFixed(1)}
+                              {formatFixedDecimal(r.rating / 10, 1)}
                             </Badge>
                           </Tooltip>
                         ))}
@@ -402,10 +408,7 @@ export function DiscoverDetailModal({
                     />
                   )}
                   {feedbackContext && (
-                    <RecommendationFeedbackMenu
-                      providerId={item.providerId}
-                      surface={feedbackContext.surface}
-                    />
+                    <RecommendationFeedbackMenu providerId={item.providerId} />
                   )}
                 </Stack>
               </div>
@@ -425,8 +428,18 @@ export function DiscoverDetailModal({
                         <Skeleton h={12} w="70%" />
                       </Stack>
                     )}
+                    {isError && !detail && (
+                      <Group gap="sm">
+                        <Text size="sm" c="var(--ink-3)">
+                          <Trans>Couldn't load the details for this title.</Trans>
+                        </Text>
+                        <Button size="xs" variant="default" onClick={() => void refetch()}>
+                          <Trans>Retry</Trans>
+                        </Button>
+                      </Group>
+                    )}
 
-                    <Title order={3} fz={17}>
+                    <Title order={3} fz="var(--type-section)">
                       <Trans>Synopsis</Trans>
                     </Title>
 
@@ -457,7 +470,7 @@ export function DiscoverDetailModal({
                     {(detail?.animeStart || detail?.animeEnd) && (
                         <>
                           <Divider color="var(--hairline)"/>
-                          <Title order={4} fz={14}>
+                          <Title order={4} fz="var(--type-body)">
                             <Trans>Anime coverage</Trans>
                           </Title>
                           <AnimeCoverageBar

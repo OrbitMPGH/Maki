@@ -180,6 +180,31 @@ public class AnimeSignalSyncTests : IDisposable
         Assert.Equal(AnimeWatchStatus.Completed, row.Status);
     }
 
+    /// <summary>With no dump to ask, a sync keeps the catalogue ids an earlier pass resolved.</summary>
+    [Fact]
+    public async Task An_unavailable_dump_does_not_wipe_stored_catalogue_ids()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+        SeedRow(userId, 1, 8, AnimeWatchStatus.Completed);
+        using (var seed = _fixture.NewContext())
+        {
+            var row = seed.AnimeSignals.Single(x => x.UserId == userId);
+            row.AniListMangaId = 5;
+            row.MangaBakaId = 99L;
+            seed.SaveChanges();
+        }
+
+        var source = new FakeAnimeListSource(
+            [new AnimeListEntry(1, "Anime 1", 8, AnimeWatchStatus.Completed)], failing: 0);
+
+        var summary = await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        Assert.Equal(1, summary.Matched);
+        using var db = _fixture.NewContext();
+        Assert.Equal(99L, Assert.Single(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync()).MangaBakaId);
+    }
+
     private void SeedRow(int userId, long animeId, int? score, AnimeWatchStatus status)
     {
         using var seed = _fixture.NewContext();
@@ -286,6 +311,25 @@ public class AnimeSignalSyncTests : IDisposable
         Assert.Equal([1L, 2L], ids);
     }
 
+    /// <summary>
+    /// The seed snapshot is cached per signal revision, so a sync that changed the stored rows has
+    /// to move it or the next recommendation reads the old list for the rest of the cache window.
+    /// </summary>
+    [Fact]
+    public async Task A_sync_that_reads_a_list_moves_the_signal_revision()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+        var source = new FakeAnimeListSource([new AnimeListEntry(1, "Anime 1", 8, AnimeWatchStatus.Completed)], failing: 0);
+
+        await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        using var db = _fixture.NewContext();
+        var versions = await RecommendationFeedbackService.VersionsAsync(db, userId);
+        Assert.Equal(1, versions.SignalRevision);
+        Assert.Equal(0, versions.FeedbackRevision);
+    }
+
     /// <summary>A real cancellation must still propagate rather than being swallowed as a lookup failure.</summary>
     [Fact]
     public async Task A_real_cancellation_still_propagates()
@@ -365,7 +409,7 @@ public class AnimeSignalSyncTests : IDisposable
             throw new NotSupportedException();
         public Task UpdateAsync(
             int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-            CancellationToken ct = default) => throw new NotSupportedException();
+            CancellationToken ct = default, bool keepStatus = false) => throw new NotSupportedException();
         public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
             throw new NotSupportedException();
         public Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(

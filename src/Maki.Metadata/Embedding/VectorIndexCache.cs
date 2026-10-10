@@ -42,17 +42,38 @@ public sealed class VectorIndexCache(
     /// popularity, genres and content rating from the dump, so a nightly swap has to rebuild it,
     /// the same way <see cref="Catalogue.CatalogueIndexCache"/> is stamped.
     /// </summary>
-    private sealed record Loaded(VectorIndex Index, long DumpTicks, long DumpLength);
+    private sealed record Loaded(VectorIndex Index, long DumpTicks, long DumpLength, long Generation);
 
     private volatile Loaded? _loaded;
     private readonly IdleStamp _idle = new();
+
+    // Bumped by every invalidation, so a build that was already reading when one landed cannot
+    // publish what it read.
+    private readonly object _publish = new();
+    private long _generation;
+
+    /// <summary>Test hook: runs after a build finishes reading and before it is published.</summary>
+    internal Action? AfterBuildForTest { get; set; }
+    private readonly SharedBuild<Loaded> _builds = new();
     private int _warming;
 
     /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _loaded is not null;
 
+    /// <summary>
+    /// Identifies the loaded index: it changes when the dump it was built from is replaced or the
+    /// index is invalidated. Null while nothing is loaded.
+    /// </summary>
+    public string? Stamp => _loaded is { } loaded ? $"{loaded.DumpTicks}:{loaded.DumpLength}:{loaded.Generation}" : null;
+
     /// <summary>Whether an index is loaded and was built from the dump on disk now.</summary>
     public bool IsCurrent => _loaded is { } loaded && MatchesDump(loaded);
+
+    /// <summary>
+    /// The loaded index when it is current, without building one or counting as a read. For a
+    /// caller that only needs to know which index is live.
+    /// </summary>
+    public VectorIndex? TryGetLoaded() => _loaded is { } loaded && MatchesDump(loaded) ? loaded.Index : null;
 
     /// <summary>
     /// Starts building the index on the thread pool unless it is current or a build is already
@@ -61,7 +82,7 @@ public sealed class VectorIndexCache(
     /// </summary>
     public void WarmInBackground()
     {
-        if (IsCurrent || _lock.CurrentCount == 0 || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
+        if (IsCurrent || _builds.IsRunning || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
         {
             return;
         }
@@ -139,14 +160,19 @@ public sealed class VectorIndexCache(
     /// <summary>Drops the cached index so the next search rebuilds it. Cheap; safe any time.</summary>
     public void Invalidate()
     {
-        _loaded = null;
+        lock (_publish)
+        {
+            _generation++;
+            _loaded = null;
+        }
+
         logger.LogDebug("Search vector index invalidated");
     }
 
     /// <summary>
     /// Replaces the vector database with <paramref name="stagedPath"/> and drops the cached index.
-    /// Runs under the build lock so a swap can never race a build that is midway through reading
-    /// the old file. The WAL sidecars belong to the file being replaced, so they go with it —
+    /// Waits out any running build under the build lock, so a swap can never race a build that is
+    /// midway through reading the old file. The WAL sidecars belong to the file being replaced, so they go with it:
     /// leaving them would let SQLite reconstruct pages of the *previous* database over the new one.
     /// </summary>
     public async Task SwapDatabaseAsync(string stagedPath, CancellationToken ct = default)
@@ -154,7 +180,13 @@ public sealed class VectorIndexCache(
         await _lock.WaitAsync(ct);
         try
         {
-            _loaded = null;
+            await _builds.DrainAsync();
+            lock (_publish)
+            {
+                _generation++;
+                _loaded = null;
+            }
+
             SqliteConnection.ClearAllPools();
 
             foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
@@ -176,7 +208,9 @@ public sealed class VectorIndexCache(
 
     /// <summary>
     /// The index, building it if needed. Null when there's nothing to search — no vector DB, no
-    /// dump, or an index that hasn't been built yet.
+    /// dump, or an index that hasn't been built yet. Embeddings being switched off does not stop it:
+    /// the vectors stay on disk, and the never-show list, tag filters and franchise lookups all read
+    /// the index whether or not the query model is loaded.
     /// </summary>
     public async Task<VectorIndex?> GetAsync(CancellationToken ct = default)
     {
@@ -186,40 +220,105 @@ public sealed class VectorIndexCache(
             return cached.Index;
         }
 
-        await _lock.WaitAsync(ct);
+        while (true)
+        {
+            Task<Loaded?> build;
+            bool started;
+            await _lock.WaitAsync(ct);
+            try
+            {
+                if (_loaded is { } raced && MatchesDump(raced))
+                {
+                    _idle.Touch();
+                    return raced.Index;
+                }
+
+                if (!File.Exists(options.VectorDbPath) || DumpInfo() is null)
+                {
+                    return null;
+                }
+
+                if (_loaded is not null && !_builds.IsRunning)
+                {
+                    logger.LogInformation("Rebuilding the search vectors because the dump file changed");
+                    _loaded = null;
+                }
+
+                build = _builds.Join(BuildAndPublish, out started);
+            }
+            finally
+            {
+                _lock.Release();
+            }
+
+            var loaded = await build.WaitAsync(ct);
+            // A build this caller joined part way through may have read an older dump than the one
+            // on disk now, or started before an invalidation; go round again rather than hand that out.
+            if (loaded is null || started || DumpInfo() is null
+                || MatchesDump(loaded) && loaded.Generation == Interlocked.Read(ref _generation))
+            {
+                return loaded?.Index;
+            }
+        }
+    }
+
+    private Loaded? BuildAndPublish()
+    {
+        if (DumpInfo() is not { } dump)
+        {
+            return null;
+        }
+
+        // Stamped before the build, so a dump swapped in while it runs reads as stale next time.
+        var ticks = dump.LastWriteTimeUtc.Ticks;
+        var length = dump.Length;
+        long generation;
+        lock (_publish)
+        {
+            generation = _generation;
+        }
+
         try
         {
-            if (_loaded is { } raced && MatchesDump(raced))
+            var built = Build(CancellationToken.None);
+            AfterBuildForTest?.Invoke();
+            var loaded = built is null ? null : new Loaded(built, ticks, length, generation);
+            lock (_publish)
             {
-                _idle.Touch();
-                return raced.Index;
+                if (generation == _generation)
+                {
+                    _loaded = loaded;
+                }
             }
 
-            if (!File.Exists(options.VectorDbPath) || DumpInfo() is not { } dump)
-            {
-                return null;
-            }
-
-            if (_loaded is not null)
-            {
-                logger.LogInformation("Rebuilding the search vectors because the dump file changed");
-                _loaded = null;
-            }
-
-            // Stamped before the build, so a dump swapped in while it runs reads as stale next time.
-            var ticks = dump.LastWriteTimeUtc.Ticks;
-            var length = dump.Length;
-            var built = await Task.Run(() => Build(ct), ct);
-            _loaded = built is null ? null : new Loaded(built, ticks, length);
             _idle.Touch();
-            return built;
+            return loaded;
+        }
+        catch (Exception ex)
+        {
+            // Logged here because every caller may have stopped waiting by now.
+            logger.LogWarning(ex, "Building the search vectors failed");
+            throw;
         }
         finally
         {
             // The build reads every vector BLOB in the file end to end; none of those pages is
             // wanted again until the next rebuild.
             PageCache.DropAfterScan(options.VectorDbPath);
-            _lock.Release();
+        }
+    }
+
+    private static string? StoredModelVersion(SqliteConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT value FROM main.meta WHERE key = 'model_version'";
+        try
+        {
+            return cmd.ExecuteScalar() as string;
+        }
+        catch (SqliteException)
+        {
+            return null;
         }
     }
 
@@ -250,6 +349,17 @@ public sealed class VectorIndexCache(
         {
             logger.LogInformation("Search vector index empty — nothing embedded yet");
             return null;
+        }
+
+        // Served anyway: refusing would turn search off for the hours a local re-embed takes, and
+        // the nightly install replaces such a file. The log is what explains poor ranking until then.
+        if (StoredModelVersion(conn) is { } stored
+            && !string.Equals(stored, options.ModelVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogWarning(
+                "The vector database holds {Stored} vectors but this install embeds queries with {Current}; "
+                + "search ranks poorly until the prebuilt index is installed or the index is rebuilt",
+                stored, options.ModelVersion);
         }
 
         var ids = new long[total];
@@ -537,8 +647,7 @@ public sealed class VectorIndexCache(
                     continue;
                 }
 
-                var blob = (byte[])reader["vec"];
-                if (blob.Length != dimensions)
+                if (reader.GetValue(2) is not byte[] blob || blob.Length != dimensions)
                 {
                     continue;
                 }
@@ -561,8 +670,9 @@ public sealed class VectorIndexCache(
 
             return covered == 0 ? null : new TasteLayer(data, scales, dimensions, covered);
         }
-        catch (SqliteException ex)
+        catch (Exception ex)
         {
+            // Any failure here costs only the behavioural channel; it must never take the whole index with it.
             logger.LogWarning(ex, "Could not read taste vectors at {Path}; the channel stays off", path);
             return null;
         }

@@ -143,13 +143,6 @@ public class ProgressController(
             .Select(d => d!)
             .ToList();
 
-        var unseen = TopTierPerKey(held.Where(h => h.SeenAt is null))
-            .OrderBy(h => h.UnlockedAt)
-            .Select(h => Describe(h, snapshot, held))
-            .Where(d => d is not null)
-            .Select(d => d!)
-            .ToList();
-
         return Ok(new ProgressSummaryDto(
             true,
             spec.ShowStreaks,
@@ -163,8 +156,7 @@ public class ProgressController(
             held.Count,
             AchievementCatalog.All.Sum(a => a.Tiers.Count),
             recent,
-            await GoalsForAsync(target, ct),
-            unseen));
+            await GoalsForAsync(target, ct, snapshot)));
     }
 
     /// <summary>
@@ -215,16 +207,6 @@ public class ProgressController(
             .OrderBy(d => d.Date)
             .Select(d => new HeatmapDayDto(d.Date, d.Chapters, d.Seconds))
             .ToList());
-    }
-
-    public record SeenRequest(IReadOnlyList<int> Ids);
-
-    /// <summary>Stamps unlocks as shown. Always about the caller: a toast is not something an admin dismisses for somebody else.</summary>
-    [HttpPost("achievements/seen")]
-    public async Task<IActionResult> Seen([FromBody] SeenRequest request, CancellationToken ct)
-    {
-        await achievements.MarkSeenAsync(currentUser.UserId, request.Ids ?? [], ct);
-        return NoContent();
     }
 
     [HttpGet("goals")]
@@ -371,12 +353,17 @@ public class ProgressController(
             .Where(a => a.UserId == userId)
             .ToListAsync(ct);
 
-    private async Task<List<ReadingGoalDto>> GoalsForAsync(int userId, CancellationToken ct)
+    private async Task<List<ReadingGoalDto>> GoalsForAsync(int userId, CancellationToken ct, UserMetrics? snapshot = null)
     {
         var goals = await db.ReadingGoals.IgnoreQueryFilters()
             .Where(g => g.UserId == userId)
             .OrderBy(g => g.Period).ThenBy(g => g.Metric)
             .ToListAsync(ct);
+
+        if (goals.Any(g => g.Metric != GoalMetric.SeriesFinished))
+        {
+            snapshot ??= await metrics.GetAsync(userId, ct);
+        }
 
         var rows = new List<ReadingGoalDto>(goals.Count);
         foreach (var goal in goals)
@@ -386,31 +373,47 @@ public class ProgressController(
                 goal.Period.ToString(),
                 goal.Metric.ToString(),
                 goal.Target,
-                await metrics.GoalProgressAsync(userId, goal.Period, goal.Metric, ct)));
+                await metrics.GoalProgressAsync(userId, goal.Period, goal.Metric, ct, snapshot)));
         }
 
         return rows;
     }
 
-    private static AchievementDto Describe(
-        AchievementDefinition definition, UserMetrics snapshot, List<UserAchievement> held)
+    /// <summary>
+    /// The tier the grid shows: the higher of what the metrics say now and what was earned, because
+    /// unlocks are never revoked and a metric that can fall must not make a badge regress.
+    /// </summary>
+    internal static (int Tier, DateTime? UnlockedAt) DisplayedTier(
+        AchievementDefinition definition, UserMetrics snapshot, IReadOnlyList<UserAchievement> held)
     {
-        var tier = definition.TierFor(snapshot);
+        var heldTier = held
+            .Where(h => h.Key == definition.Key)
+            .Select(h => h.Tier)
+            .DefaultIfEmpty(0)
+            .Max();
+        var tier = Math.Min(Math.Max(definition.TierFor(snapshot), heldTier), definition.Tiers.Count);
         var unlockedAt = held
             .Where(h => h.Key == definition.Key && h.Tier == tier)
             .Select(h => (DateTime?)h.UnlockedAt)
             .FirstOrDefault();
+        return (tier, unlockedAt);
+    }
+
+    private AchievementDto Describe(
+        AchievementDefinition definition, UserMetrics snapshot, List<UserAchievement> held)
+    {
+        var (tier, unlockedAt) = DisplayedTier(definition, snapshot, held);
 
         return new AchievementDto(
             definition.Key,
-            definition.Name,
-            definition.Description,
+            localizer.AchievementName(definition.Key),
+            localizer.AchievementDescription(definition.Key),
             definition.Track.ToString(),
             definition.Icon,
             definition.Graded,
             definition.Hidden,
             tier,
-            AchievementCatalog.TierName(definition, tier),
+            localizer.AchievementTier(definition, tier),
             definition.Value(snapshot),
             tier < definition.Tiers.Count ? definition.Tiers[tier] : null,
             definition.Tiers,
@@ -418,10 +421,10 @@ public class ProgressController(
     }
 
     /// <summary>
-    /// The stored-row form, for the recent and unseen lists. Null when this build no longer knows the
+    /// The stored-row form, for the recent list. Null when this build no longer knows the
     /// key — a retired achievement stops rendering rather than breaking the page.
     /// </summary>
-    private static AchievementDto? Describe(
+    private AchievementDto? Describe(
         UserAchievement row, UserMetrics snapshot, List<UserAchievement> held)
     {
         var definition = AchievementCatalog.Find(row.Key);
@@ -433,7 +436,7 @@ public class ProgressController(
         return Describe(definition, snapshot, held) with
         {
             Tier = row.Tier,
-            TierName = AchievementCatalog.TierName(definition, row.Tier),
+            TierName = localizer.AchievementTier(definition, row.Tier),
             UnlockedAt = row.UnlockedAt,
             UnlockId = row.Id,
         };
@@ -443,5 +446,5 @@ public class ProgressController(
         new(p.Level, p.Xp, p.IntoLevel, p.LevelSpan, p.NextLevelXp, p.Progress);
 
     private static ProgressSummaryDto Disabled() =>
-        new(false, false, new LevelDto(1, 0, 0, 1, 0, 0), 0, 0, 0, 0, 0, 0, 0, 0, [], [], []);
+        new(false, false, new LevelDto(1, 0, 0, 1, 0, 0), 0, 0, 0, 0, 0, 0, 0, 0, [], []);
 }

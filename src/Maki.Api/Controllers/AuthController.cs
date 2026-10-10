@@ -92,6 +92,8 @@ public class AuthController(
             user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName));
     }
 
+    private const string UnknownName = "?";
+
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
@@ -117,7 +119,10 @@ public class AuthController(
         if (user is null || user.Disabled || user.PendingSetup)
         {
             BurnPasswordTime(request.Password);
-            await auditLog.LogAsync(AuthEventType.LoginFailed, username, user?.Id, HttpContext,
+            // An unknown name is whatever was typed into the box, possibly a password, so nothing of
+            // it is kept, not even its length.
+            await auditLog.LogAsync(AuthEventType.LoginFailed, user is null ? UnknownName : username,
+                user?.Id, HttpContext,
                 detail: user is null ? "no such user" : user.Disabled ? "account disabled" : "account unclaimed", ct: ct);
             return AuthUnauthorized("error.auth.signInFailed");
         }
@@ -135,6 +140,25 @@ public class AuthController(
             BurnPasswordTime(request.Password);
             await auditLog.LogAsync(AuthEventType.LoginFailed, username, user.Id, HttpContext,
                 detail: "password login disabled by auth.oidconly", ct: ct);
+            return AuthUnauthorized("error.auth.signInFailed");
+        }
+
+        // Identity answers a locked-out account, or one with no password hash, without hashing
+        // anything. Spending the same PBKDF2 time here keeps both indistinguishable from an unknown name.
+        var lockedOut = await userManager.IsLockedOutAsync(user);
+        if (lockedOut || !await userManager.HasPasswordAsync(user))
+        {
+            BurnPasswordTime(request.Password);
+            if (lockedOut)
+            {
+                await auditLog.LogAsync(AuthEventType.LockedOut, username, user.Id, HttpContext, ct: ct);
+            }
+            else
+            {
+                await auditLog.LogAsync(AuthEventType.LoginFailed, username, user.Id, HttpContext,
+                    detail: "no local password", ct: ct);
+            }
+
             return AuthUnauthorized("error.auth.signInFailed");
         }
 
@@ -191,12 +215,33 @@ public class AuthController(
         var isAuthenticatorCode = code.Length == 6 && code.All(char.IsAsciiDigit);
         // Identity neither checks lockout nor counts a miss on the recovery-code path, so both happen
         // here, and a redeemed code is re-issued as the same persistent session the authenticator gives.
-        var result = isAuthenticatorCode
-            ? await signInManager.TwoFactorAuthenticatorSignInAsync(
-                code, isPersistent: true, rememberClient: request.RememberMachine)
-            : await userManager.IsLockedOutAsync(user)
+        var replayed = false;
+        Microsoft.AspNetCore.Identity.SignInResult result;
+        if (isAuthenticatorCode)
+        {
+            // Identity's own verify decides first; the step is only worked out for a code it accepts,
+            // and only to refuse one that was already used.
+            replayed = !await userManager.IsLockedOutAsync(user)
+                && await userManager.VerifyTwoFactorTokenAsync(
+                    user, userManager.Options.Tokens.AuthenticatorTokenProvider, code)
+                && await TotpReplayGuard.IsReplayAsync(userManager, user, code);
+            if (replayed)
+            {
+                await userManager.AccessFailedAsync(user);
+                result = Microsoft.AspNetCore.Identity.SignInResult.Failed;
+            }
+            else
+            {
+                result = await signInManager.TwoFactorAuthenticatorSignInAsync(
+                    code, isPersistent: true, rememberClient: request.RememberMachine);
+            }
+        }
+        else
+        {
+            result = await userManager.IsLockedOutAsync(user)
                 ? Microsoft.AspNetCore.Identity.SignInResult.LockedOut
                 : await signInManager.TwoFactorRecoveryCodeSignInAsync(RecoveryCodeForm(code));
+        }
 
         if (!isAuthenticatorCode && !result.Succeeded && !result.IsLockedOut)
         {
@@ -207,8 +252,14 @@ public class AuthController(
         {
             await auditLog.LogAsync(AuthEventType.LoginFailed, user.UserName ?? string.Empty, user.Id,
                 HttpContext, detail: result.IsLockedOut ? "locked out at 2fa"
+                    : replayed ? "reused 2fa code"
                     : isAuthenticatorCode ? "wrong 2fa code" : "wrong recovery code", ct: ct);
-            return AuthUnauthorized("error.auth.invalidCode");
+            return AuthUnauthorized(replayed ? "error.account.totpReplayed" : "error.auth.invalidCode");
+        }
+
+        if (isAuthenticatorCode)
+        {
+            await TotpReplayGuard.RecordAsync(userManager, user, code);
         }
 
         if (!isAuthenticatorCode)
@@ -280,9 +331,9 @@ public class AuthController(
             return this.Fail(localizer, "error.auth.passwordRequired");
         }
 
-        // Rename before setting the password so a rejected password leaves the account untouched
-        // rather than half-renamed. SetUserNameAsync also refreshes NormalizedUserName, which the
-        // unique index and every lookup depend on.
+        // SetUserNameAsync also refreshes NormalizedUserName, which the unique index and every lookup
+        // depend on. A rejected password leaves the rename in place, which is harmless: the account
+        // stays PendingSetup and the retry renames it again.
         if (!string.Equals(user.UserName, username, StringComparison.Ordinal))
         {
             var rename = await userManager.SetUserNameAsync(user, username);
@@ -420,7 +471,12 @@ public class AuthController(
             await auditLog.LogAsync(AuthEventType.LoginFailed,
                 OidcClaimMapper.UserName(oidc, claims, subject), null, HttpContext,
                 detail: $"single sign-on refused: {resolved.ErrorKey ?? resolved.RawError}", ct: ct);
-            return SsoFailureRaw(ResolveError(resolved));
+            if (resolved.RawError is not null)
+            {
+                logger.LogWarning("Single sign-on refused: {Error}", resolved.RawError);
+            }
+
+            return SsoFailure(resolved.ErrorKey);
         }
 
         var user = resolved.User;
@@ -639,27 +695,16 @@ public class AuthController(
     /// <summary>
     /// Back to the login page with the reason in the query string. A redirect rather than a JSON
     /// error because the browser got here by a top-level navigation from the provider — there is no
-    /// fetch waiting for a response body. The message is rendered here, in the request's own
-    /// language, because the page it lands on is a plain query string with no locale of its own.
+    /// fetch waiting for a response body. Only a short <see cref="SsoErrorCodes"/> code travels, never
+    /// a sentence: the login page words it in its own language, and a crafted link cannot put text
+    /// of its own on the page.
     /// </summary>
-    private IActionResult SsoFailure(string key, object? args = null) =>
-        SsoFailureRaw(localizer.Get(key, args));
+    private IActionResult SsoFailure(string? key) =>
+        Redirect("/login?ssoError=" + SsoErrorCodes.FromKey(key));
 
-    private IActionResult SsoFailureRaw(string message) =>
-        Redirect("/login?ssoError=" + Uri.EscapeDataString(message));
-
-    /// <summary>Same idea as <see cref="SsoFailure(string,object?)"/>, back to the settings page instead.</summary>
-    private IActionResult LinkFailure(string key, object? args = null) =>
-        Redirect("/settings?oidcLinkError=" + Uri.EscapeDataString(localizer.Get(key, args)));
-
-    /// <summary>
-    /// Words an <see cref="OidcSignInService"/> failure: its own catalogue key when it has one, the
-    /// raw text Identity worded itself when it does not, and the generic fallback when neither is set.
-    /// </summary>
-    private string ResolveError(OidcSignInResult result) =>
-        result.ErrorKey is { } key
-            ? localizer.Get(key, result.ErrorArgs)
-            : result.RawError ?? localizer.Get("error.auth.ssoSignInFailed");
+    /// <summary>Same idea as <see cref="SsoFailure(string)"/>, back to the settings page instead.</summary>
+    private IActionResult LinkFailure(string key) =>
+        Redirect("/settings?oidcLinkError=" + SsoErrorCodes.FromKey(key));
 
     /// <summary>
     /// Refuses anything that is not a path on this instance. Without it the return URL is an open

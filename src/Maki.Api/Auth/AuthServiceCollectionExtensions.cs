@@ -218,18 +218,40 @@ public static class AuthServiceCollectionExtensions
                     // or a bare 500 — on a URL they arrived at from another site, with no way back.
                     //
                     // ctx.Failure is an exception the OpenID Connect handler itself threw (a protocol
-                    // error, a correlation failure) and its Message is that library's own wording, not
-                    // Maki's; left as-is like every other raw ex.Message here. Only the fallback for
-                    // when there is no message at all is Maki's own text, so only that goes through
-                    // the catalogue.
+                    // error, a correlation failure); its message is that library's own wording, so it
+                    // goes to the log and the login page gets only the generic code.
                     ctx.HandleResponse();
-                    var localizer = ctx.HttpContext.RequestServices
-                        .GetRequiredService<Maki.Api.Localization.ILocalizer>();
-                    ctx.Response.Redirect("/login?ssoError=" + Uri.EscapeDataString(
-                        ctx.Failure?.Message ?? localizer.Get("error.auth.ssoSignInFailed")));
+                    ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("Maki.Api.Auth.Oidc")
+                        .LogWarning(ctx.Failure, "Single sign-on remote failure");
+                    ctx.Response.Redirect("/login?ssoError=" + SsoErrorCodes.Fallback);
                     return Task.CompletedTask;
                 };
             });
+        }
+
+        // The session cookie is not the only one worth keeping off plain HTTP: the remember-me cookie
+        // skips the second factor for 30 days. Behind a TLS proxy outside auth.trustedproxies
+        // SameAsRequest sees plain HTTP and would send them on any http:// request to the host.
+        foreach (var scheme in new[]
+                 {
+                     IdentityConstants.TwoFactorUserIdScheme,
+                     IdentityConstants.TwoFactorRememberMeScheme,
+                     IdentityConstants.ExternalScheme
+                 })
+        {
+            services.AddOptions<CookieAuthenticationOptions>(scheme)
+                .Configure<AuthRuntimeOptions>((o, auth) => o.Cookie.SecurePolicy = SecurePolicy(auth));
+        }
+
+        if (oidc.Enabled)
+        {
+            services.AddOptions<OpenIdConnectOptions>(AuthSchemes.Oidc)
+                .Configure<AuthRuntimeOptions>((o, auth) =>
+                {
+                    o.CorrelationCookie.SecurePolicy = SecurePolicy(auth);
+                    o.NonceCookie.SecurePolicy = SecurePolicy(auth);
+                });
         }
 
         services.AddOptions<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme)
@@ -245,9 +267,7 @@ public static class AuthServiceCollectionExtensions
                 // half, and AntiforgeryCookieFilter covers the rest.
                 o.Cookie.SameSite = SameSiteMode.Lax;
 
-                o.Cookie.SecurePolicy = auth.RequireHttps
-                    ? CookieSecurePolicy.Always
-                    : CookieSecurePolicy.SameAsRequest;
+                o.Cookie.SecurePolicy = SecurePolicy(auth);
 
                 o.SlidingExpiration = true;
                 o.ExpireTimeSpan = auth.SessionLifetime;
@@ -313,6 +333,9 @@ public static class AuthServiceCollectionExtensions
 
         return services;
     }
+
+    private static CookieSecurePolicy SecurePolicy(AuthRuntimeOptions auth) =>
+        auth.RequireHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
 
     /// <summary>
     /// Zero attempts means "never lock out", expressed by an unreachable threshold alone. Every

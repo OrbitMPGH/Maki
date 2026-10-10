@@ -1,4 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { i18n } from '@lingui/core'
+import { ssoLinkErrorLabel } from '../../api/ssoErrors'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Badge,
@@ -17,7 +20,7 @@ import { notifications } from '@mantine/notifications'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
 import QRCode from 'qrcode'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import {
   useApiKeys,
   useChangePassword,
@@ -25,6 +28,7 @@ import {
   useCreateApiKey,
   useDisableTwoFactor,
   useEnableTwoFactor,
+  useRegenerateRecoveryCodes,
   useRevokeApiKey,
   useRevokeSessions,
   useStartTwoFactorSetup,
@@ -53,7 +57,6 @@ export function SignInSection() {
     <SettingsSection
       id="sign-in"
       title={<Trans>Sign-in</Trans>}
-      panelProps={{ id: 'account' }}
       description={
         <Trans>
           Your password, two-factor code and single sign-on link. Changing your password signs out
@@ -121,19 +124,36 @@ function SsoCard() {
 
   // The redirect back from oidc/link-complete lands here as a top-level navigation, so the result
   // travels in the query string rather than a fetch response, read once, same pattern as
-  // LoginPage's ssoError.
-  const [linkResult] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    return { linked: params.get('oidcLinked') === '1', error: params.get('oidcLinkError') }
-  })
+  // LoginPage's ssoError. It is a short code, mapped to a message here.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [linkResult] = useState(() => ({
+    linked: searchParams.get('oidcLinked') === '1',
+    error: searchParams.get('oidcLinkError'),
+  }))
 
+  // setSearchParams changes identity once the params are dropped, and StrictMode runs effects twice,
+  // so the effect re-runs; the toast must still only show once.
+  const linkResultShown = useRef(false)
   useEffect(() => {
+    if (linkResultShown.current) return
+    linkResultShown.current = true
     if (linkResult.linked) {
       notifications.show({ message: now`Single sign-on linked to your account`, color: 'var(--ok)' })
     } else if (linkResult.error) {
-      notifications.show({ message: linkResult.error, color: 'var(--danger)' })
+      notifications.show({ message: i18n._(ssoLinkErrorLabel(linkResult.error)), color: 'var(--danger)' })
     }
-  }, [linkResult])
+    // Dropped once shown so a reload does not repeat it.
+    if (!linkResult.linked && linkResult.error === null) return
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('oidcLinked')
+        next.delete('oidcLinkError')
+        return next
+      },
+      { replace: true },
+    )
+  }, [linkResult, setSearchParams])
 
   if (!sso?.enabled) {
     return null
@@ -168,7 +188,6 @@ function SsoCard() {
               unlink.mutate(undefined, {
                 onSuccess: () =>
                   notifications.show({ message: now`Single sign-on removed from your account`, color: 'var(--ok)' }),
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
           >
@@ -192,7 +211,6 @@ function SsoCard() {
                 // The link is a top-level navigation to the provider; the confirmation it needs
                 // was just set as a cookie.
                 onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }}
           >
@@ -244,7 +262,6 @@ function PasswordCard() {
                   color: 'var(--ok)',
                 })
               },
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             },
           )
         }}
@@ -278,12 +295,15 @@ function TwoFactorCard() {
   const start = useStartTwoFactorSetup()
   const enable = useEnableTwoFactor()
   const disable = useDisableTwoFactor()
+  const regenerate = useRegenerateRecoveryCodes()
 
   const [enrolling, setEnrolling] = useState<{ sharedKey: string; authenticatorUri: string } | null>(null)
   const [code, setCode] = useState('')
   const [enablePassword, setEnablePassword] = useState('')
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
   const [disablePassword, setDisablePassword] = useState('')
+  const [regenPassword, setRegenPassword] = useState('')
+  const [regenCode, setRegenCode] = useState('')
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const keyCopy = useCopyText()
   const codesCopy = useCopyText()
@@ -339,7 +359,6 @@ function TwoFactorCard() {
               onClick={() =>
                 start.mutate(undefined, {
                   onSuccess: setEnrolling,
-                  onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
                 })
               }
             >
@@ -348,6 +367,55 @@ function TwoFactorCard() {
           )
         )}
       </Group>
+
+      {status?.enabled && (
+        <Stack gap={4}>
+          <Text size="xs" c="var(--ink-3)">
+            {plural(status.recoveryCodesLeft, {
+              one: '# recovery code left. A new set replaces the old codes.',
+              other: '# recovery codes left. A new set replaces the old codes.',
+            })}
+          </Text>
+          <Group
+            component="form"
+            align="flex-end"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault()
+              if (!regenPassword || regenCode.length < 6) return
+              regenerate.mutate({ code: regenCode, password: regenPassword }, {
+                onSuccess: (result) => {
+                  setRegenPassword('')
+                  setRegenCode('')
+                  setRecoveryCodes(result.recoveryCodes)
+                },
+              })
+            }}
+          >
+            <PasswordInput
+              label={t`Your password`}
+              autoComplete="current-password"
+              value={regenPassword}
+              onChange={(e) => setRegenPassword(e.currentTarget.value)}
+              w={200}
+            />
+            <TextInput
+              label={t`Code from your app`}
+              inputMode="numeric"
+              value={regenCode}
+              onChange={(e) => setRegenCode(e.currentTarget.value)}
+              w={160}
+            />
+            <Button
+              type="submit"
+              variant="default"
+              loading={regenerate.isPending}
+              disabled={!regenPassword || regenCode.length < 6}
+            >
+              <Trans>New recovery codes</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      )}
 
       {status?.enabled && (
         <Group
@@ -361,12 +429,12 @@ function TwoFactorCard() {
                 setDisablePassword('')
                 notifications.show({ message: now`Two-factor authentication disabled`, color: 'var(--warn)' })
               },
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             })
           }}
         >
           <PasswordInput
             label={t`Confirm your password to turn it off`}
+            autoComplete="current-password"
             value={disablePassword}
             onChange={(e) => setDisablePassword(e.currentTarget.value)}
             w={260}
@@ -405,7 +473,6 @@ function TwoFactorCard() {
                 setEnablePassword('')
                 setRecoveryCodes(result.recoveryCodes)
               },
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             })
           }}
         >
@@ -455,6 +522,8 @@ function TwoFactorCard() {
         onClose={() => setRecoveryCodes(null)}
         title={t`Save your recovery codes`}
         centered
+        closeOnClickOutside={false}
+        closeOnEscape={false}
       >
         <Stack>
           <Alert color="var(--warn)" variant="light">
@@ -466,6 +535,9 @@ function TwoFactorCard() {
           <Code block>{recoveryCodes?.join('\n')}</Code>
           <Button variant="default" onClick={() => void codesCopy.copy(recoveryCodes?.join('\n') ?? '')}>
             {codesCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy codes</Trans>}
+          </Button>
+          <Button onClick={() => setRecoveryCodes(null)}>
+            <Trans>I have saved them</Trans>
           </Button>
         </Stack>
       </Modal>
@@ -508,7 +580,6 @@ function ApiKeysCard() {
                 setName('')
                 setKeyPassword('')
               },
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             },
           )
         }}
@@ -582,6 +653,8 @@ function ApiKeysCard() {
         title={t`Your new API key`}
         centered
         size="lg"
+        closeOnClickOutside={false}
+        closeOnEscape={false}
       >
         <Stack>
           <Alert color="var(--warn)" variant="light">
@@ -595,6 +668,9 @@ function ApiKeysCard() {
           </Code>
           <Button variant="default" onClick={() => void secretCopy.copy(created?.secret ?? '')}>
             {secretCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
+          </Button>
+          <Button onClick={() => setCreated(null)}>
+            <Trans>I have copied it</Trans>
           </Button>
         </Stack>
       </Modal>
@@ -635,7 +711,6 @@ function SessionsCard() {
           revoke.mutate(undefined, {
             onSuccess: () =>
               notifications.show({ message: now`Other sessions signed out`, color: 'var(--ok)' }),
-            onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
           })
         }
       >

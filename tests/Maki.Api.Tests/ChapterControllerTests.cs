@@ -45,6 +45,7 @@ public class ChapterControllerTests : IDisposable
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         // Only the re-download action reaches these; nothing here exercises it.
         new SourceRegistry([]),
+        new SourceAvailability(new FakeAppSettings(), new SourceRegistry([])),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         new DownloadBatchNotifier(
             new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),
@@ -121,6 +122,33 @@ public class ChapterControllerTests : IDisposable
         {
             File.Delete(outside);
         }
+    }
+
+    [Fact]
+    public async Task SetWantedBulk_flips_only_the_named_chapters_and_reports_the_count()
+    {
+        var (seriesId, first) = SeedSeriesWithChapter();
+        int second;
+        int untouched;
+        using (var seed = _db.NewContext())
+        {
+            var two = seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 2, Wanted = true }).Entity;
+            var three = seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 3, Wanted = true }).Entity;
+            seed.SaveChanges();
+            (second, untouched) = (two.Id, three.Id);
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var result = Assert.IsType<OkObjectResult>(
+                await Controller(db).SetWantedBulk(new SetChaptersWantedRequest([first, second, 999_999], false), default));
+            Assert.Equal(2, result.Value!.GetType().GetProperty("updated")!.GetValue(result.Value));
+        }
+
+        using var check = _db.NewContext();
+        Assert.False(check.Chapters.Single(c => c.Id == first).Wanted);
+        Assert.False(check.Chapters.Single(c => c.Id == second).Wanted);
+        Assert.True(check.Chapters.Single(c => c.Id == untouched).Wanted);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -161,7 +162,7 @@ export function CustomRailForm({
         notifications.show({ color: 'var(--ok)', message: rail ? now`Rail saved` : now`Rail added` })
         onSaved?.(saved)
       },
-      onError: (err: unknown) => setError(String(err)),
+      onError: (err: unknown) => setError(errorText(err)),
     }
     if (rail) update.mutate({ id: rail.id, ...body }, options)
     else create.mutate(body, options)
@@ -188,11 +189,12 @@ export function CustomRailForm({
               <Trans>Show on</Trans>
             </Text>
             <SegmentedControl
+              aria-label={t`Show on`}
               value={placement}
               onChange={(v) => changePlacement(v as CustomRailPlacement)}
               data={[
                 { value: 'home', label: t`Home` },
-                { value: 'discover', label: t`Discover` },
+                { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
               ]}
             />
           </Stack>
@@ -202,6 +204,7 @@ export function CustomRailForm({
               <Trans>Titles from</Trans>
             </Text>
             <SegmentedControl
+              aria-label={t`Titles from`}
               value={source}
               onChange={(v) => changeSource(v as CustomRailSource)}
               data={sourceOptions}

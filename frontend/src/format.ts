@@ -33,9 +33,12 @@ function cached<T>(build: (locale: string) => T): () => T {
 
 const decimal = cached((l) => new Intl.NumberFormat(l, { maximumFractionDigits: 1 }))
 const integer = cached((l) => new Intl.NumberFormat(l))
+const dayAndMonth = cached((l) => new Intl.DateTimeFormat(l, { day: 'numeric', month: 'short' }))
 const shortMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'short' }))
+const monthYear = cached((l) => new Intl.DateTimeFormat(l, { month: 'short', year: '2-digit' }))
 const longMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'long' }))
 const dateOnly = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium' }))
+const calendarDate = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium', timeZone: 'UTC' }))
 const dateAndTime = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium', timeStyle: 'short' }))
 const timeOnly = cached((l) => new Intl.DateTimeFormat(l, { timeStyle: 'short' }))
 const shortWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'short' }))
@@ -43,10 +46,17 @@ const longWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'long' }
 const hourOnly = cached((l) => new Intl.DateTimeFormat(l, { hour: 'numeric', minute: '2-digit' }))
 const percents = cached(() => new Map<number, Intl.NumberFormat>())
 const signedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
+const signedPercent = cached((l) => new Intl.NumberFormat(l, { style: 'percent', signDisplay: 'exceptZero' }))
+const fixedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
 
 /** "1 234" / "1,234", whichever the language groups with. */
 export function formatNumber(value: number): string {
   return integer().format(value)
+}
+
+/** Up to one decimal in the active language: "2.5" or "2,5", and "3" rather than "3.0". */
+export function formatDecimal(value: number): string {
+  return decimal().format(value)
 }
 
 /**
@@ -62,7 +72,7 @@ export function formatBytes(bytes: number | null | undefined): string {
   if (bytes <= 0) return '0 B'
 
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  // Clamped at both ends. A value under 1 — a transfer rate of 0.4 B/s on a stalled download, say —
+  // Clamped at both ends. A value under 1 (a transfer rate of 0.4 B/s on a stalled download, say)
   // gives a negative exponent, and units[-1] is undefined rather than out of range, so it renders
   // as "410 undefined" instead of failing.
   const unit = Math.min(units.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(1024))))
@@ -75,6 +85,16 @@ export function formatBytes(bytes: number | null | undefined): string {
 export function formatDate(value: string | number | Date): string {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '' : dateOnly().format(date)
+}
+
+/**
+ * "15 Sep 2026" for a day with no time of day, such as a chapter's release date. The server stamps
+ * those as midnight UTC, so the viewer's zone would show the previous day anywhere west of Greenwich.
+ * Sources that store a real timestamp for it now show the UTC day instead of the viewer's.
+ */
+export function formatCalendarDate(value: string | number | Date): string {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : calendarDate().format(date)
 }
 
 /** "15 Sep 2026, 16:45". */
@@ -132,6 +152,11 @@ export function formatPercent(fraction: number, digits = 0): string {
   return format.format(fraction)
 }
 
+/** A 0..1 change as a whole percentage with a sign: "+12%", "-3%", and "0%" once it rounds to nothing. */
+export function formatSignedPercent(fraction: number): string {
+  return signedPercent().format(fraction)
+}
+
 /** A signed one-decimal number: "+4.2", "-1.0", "0.0". The sign is whatever `Intl` produces. */
 export function formatSignedDecimal(value: number, digits = 1): string {
   const formats = signedDecimals()
@@ -147,11 +172,30 @@ export function formatSignedDecimal(value: number, digits = 1): string {
   return format.format(value)
 }
 
-/** "2026-03" as the stats buckets carry it, rendered "Mar 26". */
+/** A number with exactly `digits` decimals in the language's own separator: "7.0", "7,0". */
+export function formatFixedDecimal(value: number, digits = 1): string {
+  const formats = fixedDecimals()
+  let format = formats.get(digits)
+  if (!format) {
+    format = new Intl.NumberFormat(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits })
+    formats.set(digits, format)
+  }
+  return format.format(value)
+}
+
+/** "2026-03" as the stats buckets carry it, rendered "Mar 26" or in the language's own order. */
 export function formatMonthBucket(bucket: string): string {
-  const [year, month] = bucket.split('-')
-  const name = monthName(Number(month), 'short')
-  return name ? `${name} ${year.slice(2)}` : bucket
+  const [year, month] = bucket.split('-').map(Number)
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return bucket
+  // Local time for the same reason as monthName.
+  return monthYear().format(new Date(year, month - 1, 1))
+}
+
+/** "2026-03-14" as the stats buckets carry it, rendered "14 Mar" or "Mar 14" by language. */
+export function formatDayBucket(bucket: string): string {
+  const [year, month, day] = bucket.split('-').map(Number)
+  if (!year || !month || !day) return bucket
+  return dayAndMonth().format(new Date(year, month - 1, day))
 }
 
 /**
@@ -170,8 +214,8 @@ export function formatReadingTime(seconds: number): string {
 
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.round((seconds % 3600) / 60)
-  if (hours === 0) return m(minutes)
-  // 59m30s rounds to 60 minutes; carry it rather than printing "3h 60m".
+  // 59m30s rounds to 60 minutes; carry it rather than printing "60m" or "3h 60m".
   if (minutes === 60) return h(hours + 1)
+  if (hours === 0) return m(minutes)
   return minutes === 0 ? h(hours) : `${h(hours)} ${m(minutes)}`
 }

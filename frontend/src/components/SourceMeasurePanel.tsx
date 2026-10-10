@@ -115,9 +115,7 @@ export function MeasureResult({
       mb="sm"
     >
       <Text size="sm" fw={500}>
-        <Trans>
-          Measured {measured} of {total} sources
-        </Trans>
+        {plural(total, { one: `Measured ${measured} of # source`, other: `Measured ${measured} of # sources` })}
       </Text>
       {measured === 0 ? (
         <Text size="sm" mt={4}>
@@ -159,7 +157,7 @@ export function MeasureResult({
               <Trans>Reorder priority to match</Trans>
             </Button>
           </Tooltip>
-          <Button size="xs" variant="subtle" color="gray" onClick={onDismiss}>
+          <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onDismiss}>
             <Trans>Keep as is</Trans>
           </Button>
         </Group>

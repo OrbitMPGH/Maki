@@ -41,10 +41,10 @@ public static partial class ReleaseTitleParser
 
     // A number or range with no marker. Only a span when it follows "+" or a volume span; the
     // lookarounds keep it off the digits of a resolution ("1920x1080") or a longer word.
-    [GeneratedRegex(@"(?<![\w.])(\d+(?:\.\d+)?)(?:-(\d+(?:\.\d+)?))?(?![\w.])")]
+    [GeneratedRegex(@"(?<![\w.])([0-9]+(?:\.[0-9]+)?)(?:-([0-9]+(?:\.[0-9]+)?))?(?![\w.])")]
     private static partial Regex BareNumber();
 
-    [GeneratedRegex(@"^(?:19|20)\d{2}$")]
+    [GeneratedRegex(@"^(?:19|20)[0-9]{2}$")]
     private static partial Regex YearLike();
 
     [GeneratedRegex(@"\s+")]
@@ -157,8 +157,8 @@ public static partial class ReleaseTitleParser
         var last = bare.Groups[2].Value;
         if (YearLike().IsMatch(first) || YearLike().IsMatch(last)) return null;
 
-        var start = decimal.Parse(first, CultureInfo.InvariantCulture);
-        var end = decimal.Parse(last, CultureInfo.InvariantCulture);
+        if (ReleaseNameParser.TryDecimal(first) is not { } start ||
+            ReleaseNameParser.TryDecimal(last) is not { } end) return null;
         return end >= start ? new NumberRange(start, end) : null;
     }
 
@@ -168,17 +168,15 @@ public static partial class ReleaseTitleParser
     private static List<Token> SpanTokens(string half)
     {
         var marked = ReleaseNameParser.VolumePattern().Matches(half)
-            .Select(m =>
-            {
-                var (start, end) = ReleaseNameParser.VolumeRange(m);
-                return new Token(m.Index, m.Index + m.Length, TokenKind.Volume,
-                    new NumberRange(start, end is { } e && e > start ? e : start));
-            })
+            .Select(m => ReleaseNameParser.VolumeRange(m) is var (start, end)
+                ? new Token(m.Index, m.Index + m.Length, TokenKind.Volume,
+                    new NumberRange(start, end is { } e && e > start ? e : start))
+                : null)
             .Concat(ReleaseNameParser.ChapterPattern().Matches(half).Select(m =>
-            {
-                var (start, end) = ReleaseNameParser.ChapterRange(m);
-                return new Token(m.Index, m.Index + m.Length, TokenKind.Chapter, new NumberRange(start, end ?? start));
-            }))
+                ReleaseNameParser.ChapterRange(m) is var (start, end)
+                    ? new Token(m.Index, m.Index + m.Length, TokenKind.Chapter, new NumberRange(start, end ?? start))
+                    : null))
+            .OfType<Token>()
             .OrderBy(t => t.Start);
 
         var tokens = new List<Token>();
@@ -199,9 +197,9 @@ public static partial class ReleaseTitleParser
             var gap = half[previous.End..start].Trim();
             if (gap != "+" && !(gap.Length == 0 && previous.Kind == TokenKind.Volume)) continue;
 
-            var first = decimal.Parse(bare.Groups[1].Value, CultureInfo.InvariantCulture);
+            if (ReleaseNameParser.TryDecimal(bare.Groups[1].Value) is not { } first) continue;
             var last = bare.Groups[2].Success
-                ? decimal.Parse(bare.Groups[2].Value, CultureInfo.InvariantCulture)
+                ? ReleaseNameParser.TryDecimal(bare.Groups[2].Value) ?? first
                 : first;
             tokens.Add(new Token(start, end, TokenKind.Chapter, new NumberRange(first, last > first ? last : first)));
             tokens.Sort((a, b) => a.Start.CompareTo(b.Start));

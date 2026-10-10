@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO.Compression;
 using System.Text.Json;
 using Maki.Api.Configuration;
@@ -69,11 +70,27 @@ public class BackupService(
         var zipPath = Path.Combine(paths.BackupDir, name);
         var snapshotPath = Path.Combine(paths.BackupDir, $".{Guid.NewGuid():N}.db.tmp");
 
+        var zipCreated = false;
+        var completed = false;
         try
         {
             SnapshotDatabase(snapshotPath);
 
-            using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            ZipArchive zip;
+            try
+            {
+                zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+                zipCreated = true;
+            }
+            catch (IOException ex) when (File.Exists(zipPath) || ex.HResult == unchecked((int)0x80070050))
+            {
+                // Open(Create) is FileMode.CreateNew: only a target that already exists means a
+                // backup for this exact name is in flight. Every later failure is a real one.
+                logger.LogError(ex, "Backup {Path} is already being written", zipPath);
+                throw new BackupCreateException("error.system.backupInProgress");
+            }
+
+            using (zip)
             {
                 zip.CreateEntryFromFile(snapshotPath, DbEntry);
                 if (File.Exists(paths.ConfigFile))
@@ -83,20 +100,22 @@ public class BackupService(
                 await using var writer = new StreamWriter(manifestEntry.Open());
                 await writer.WriteAsync(JsonSerializer.Serialize(manifest, JsonOptions));
             }
+
+            completed = true;
         }
-        catch (IOException ex)
+        catch (BackupCreateException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SqliteException)
         {
             logger.LogError(ex, "Failed to create {Kind} backup at {Path}", kind, zipPath);
-
-            // ZipFile.Open(..., Create) opens the target with FileMode.CreateNew, so an IOException
-            // whose target already exists (or whose HResult says so - ERROR_FILE_EXISTS) means a
-            // backup for this exact name is already in flight. Anything else - disk full, permission
-            // denied, a locked volume - is a real failure and must not be reported as a race.
-            var inProgress = File.Exists(zipPath) || ex.HResult == unchecked((int)0x80070050);
-            throw new BackupCreateException(inProgress ? "error.system.backupInProgress" : "error.system.backupFailed");
+            throw new BackupCreateException("error.system.backupFailed");
         }
         finally
         {
+            if (zipCreated && !completed)
+                TryDelete(zipPath);
             TryDelete(snapshotPath);
         }
 
@@ -120,6 +139,11 @@ public class BackupService(
             src.BackupDatabase(dst);
         }
     }
+
+    /// <summary>Write time of the newest backup zip of any kind, or <see cref="DateTime.MinValue"/> when there is none.</summary>
+    public static DateTime NewestBackupUtc(AppPaths paths) =>
+        Directory.EnumerateFiles(paths.BackupDir, "*.zip").Select(File.GetLastWriteTimeUtc)
+            .DefaultIfEmpty(DateTime.MinValue).Max();
 
     public IReadOnlyList<BackupInfo> List()
     {
@@ -185,7 +209,8 @@ public class BackupService(
     public Task StagePendingRestoreFromFileAsync(string name, CancellationToken ct)
     {
         using var stream = File.OpenRead(PathFor(name));
-        return StageAsync(stream, ct);
+        Stage(stream);
+        return Task.CompletedTask;
     }
 
     public async Task StagePendingRestoreFromUploadAsync(Stream zip, CancellationToken ct)
@@ -198,7 +223,7 @@ public class BackupService(
                 await zip.CopyToAsync(fs, ct);
 
             await using var reread = File.OpenRead(temp);
-            await StageAsync(reread, ct);
+            Stage(reread);
         }
         finally
         {
@@ -206,13 +231,14 @@ public class BackupService(
         }
     }
 
-    private async Task StageAsync(Stream zipStream, CancellationToken ct)
+    private void Stage(Stream zipStream)
     {
         var parent = Path.GetDirectoryName(paths.RestorePendingDir)!;
         var tempDir = Path.Combine(parent, $".restore-staging-{Guid.NewGuid():N}");
         try
         {
-            ExtractAndValidate(zipStream, tempDir);
+            var createdUtc = ExtractAndValidate(zipStream, tempDir);
+            CarryRevocationsForward(Path.Combine(tempDir, DbEntry), createdUtc);
             SwapIntoPending(tempDir, parent);
         }
         finally
@@ -221,13 +247,13 @@ public class BackupService(
         }
 
         logger.LogWarning("Staged restore, will apply on next startup and then exit");
-        await Task.CompletedTask;
     }
 
-    private void ExtractAndValidate(Stream zipStream, string tempDir)
+    private DateTime? ExtractAndValidate(Stream zipStream, string tempDir)
     {
         var known = db.Database.GetMigrations().ToList();
         var stagedDb = Path.Combine(tempDir, DbEntry);
+        DateTime? createdUtc;
 
         try
         {
@@ -239,7 +265,12 @@ public class BackupService(
             // are forward-only, so restoring a newer DB into an older build would leave it unmigratable.
             var manifest = ReadManifestFromArchive(archive);
             if (manifest?.LastMigration is { } last && !known.Contains(last))
-                throw Reject("error.system.backupTooNew", new { migration = last });
+                throw RejectUnknownMigration(known, last);
+
+            createdUtc = manifest?.CreatedUtc;
+
+            if (dbEntry.Length > MaxExtractedDatabaseBytes)
+                throw Reject("error.system.backupTooLarge");
 
             Directory.CreateDirectory(tempDir);
             dbEntry.ExtractToFile(stagedDb, overwrite: true);
@@ -252,6 +283,71 @@ public class BackupService(
         }
 
         ValidateDatabase(stagedDb, known);
+        return createdUtc;
+    }
+
+    /// <summary>
+    /// A restore swaps in the old accounts wholesale, which would bring back an API key revoked since
+    /// the backup was taken. Every key the live database has revoked after <paramref name="backupCreatedUtc"/>
+    /// (or any, when the backup has no manifest) is revoked in the staged copy too, matched by key hash.
+    /// </summary>
+    private void CarryRevocationsForward(string stagedDb, DateTime? backupCreatedUtc)
+    {
+        try
+        {
+            var revoked = new List<(string Hash, string RevokedAt)>();
+            using (var live = new SqliteConnection($"Data Source={paths.DatabasePath};Mode=ReadOnly;Pooling=False"))
+            {
+                live.Open();
+                using var query = live.CreateCommand();
+                query.CommandText = "SELECT KeyHash, RevokedAt FROM UserApiKeys WHERE RevokedAt IS NOT NULL";
+                using var reader = query.ExecuteReader();
+                while (reader.Read())
+                {
+                    var at = reader.GetString(1);
+                    if (backupCreatedUtc is { } created
+                        && DateTime.TryParse(at, CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
+                        && parsed <= created.ToUniversalTime())
+                    {
+                        continue;
+                    }
+
+                    revoked.Add((reader.GetString(0), at));
+                }
+            }
+
+            if (revoked.Count == 0)
+                return;
+
+            using var staged = new SqliteConnection($"Data Source={stagedDb};Pooling=False");
+            staged.Open();
+            using (var exists = staged.CreateCommand())
+            {
+                exists.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'UserApiKeys'";
+                if (Convert.ToInt64(exists.ExecuteScalar()) == 0)
+                    return;
+            }
+
+            using var transaction = staged.BeginTransaction();
+            foreach (var (hash, at) in revoked)
+            {
+                using var update = staged.CreateCommand();
+                update.Transaction = transaction;
+                update.CommandText = "UPDATE UserApiKeys SET RevokedAt = $at WHERE KeyHash = $hash AND RevokedAt IS NULL";
+                update.Parameters.AddWithValue("$at", at);
+                update.Parameters.AddWithValue("$hash", hash);
+                update.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+        catch (SqliteException ex)
+        {
+            // Restoring without the revocations would revive a key the admin killed, so refuse.
+            logger.LogWarning("Rejected restore: could not carry API key revocations forward: {Error}", ex.Message);
+            throw Reject("error.system.restoreFailed");
+        }
     }
 
     private void ValidateDatabase(string dbPath, IReadOnlyList<string> known)
@@ -308,11 +404,16 @@ public class BackupService(
         // starting from Initial onto tables that already exist and crash-loop the restored instance.
         // The manifest check above already refuses any unknown id as too new; match that here too.
         if (string.CompareOrdinal(lastApplied, known[0]) < 0 || string.CompareOrdinal(lastApplied, known[^1]) > 0)
-            throw Reject("error.system.backupTooNew", new { migration = lastApplied });
+            throw RejectUnknownMigration(known, lastApplied);
 
         logger.LogWarning("Rejected restore: unknown migration {Migration} in history", lastApplied);
         throw Reject("error.system.backupInvalidDb");
     }
+
+    private BackupRestoreException RejectUnknownMigration(IReadOnlyList<string> known, string migration) =>
+        known.Count > 0 && string.CompareOrdinal(migration, known[0]) < 0
+            ? Reject("error.system.backupTooOld", new { migration })
+            : Reject("error.system.backupTooNew", new { migration });
 
     /// <summary>Moves a validated staging dir into <see cref="AppPaths.RestorePendingDir"/>. An
     /// existing pending restore is only removed once the new one is in place.</summary>
@@ -339,6 +440,8 @@ public class BackupService(
         if (previous is not null)
             TryDeleteDirectory(previous);
     }
+
+    private const long MaxExtractedDatabaseBytes = 8L * 1024 * 1024 * 1024;
 
     private BackupRestoreException Reject(string key, object? args = null) =>
         new(key, args, localizer.Get(key, args));

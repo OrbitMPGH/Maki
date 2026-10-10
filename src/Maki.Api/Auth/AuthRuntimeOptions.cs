@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Net;
 using Maki.Core.Configuration;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -95,11 +97,62 @@ public class AuthRuntimeOptions
     public bool SessionCookieWouldBeDropped(string? origin) =>
         RequireHttps && IsInsecureOrigin(origin);
 
+    /// <summary>
+    /// Whether a cookie the app builds by hand should be marked <c>Secure</c>: the request is HTTPS,
+    /// or <c>auth.requirehttps</c> is on, which stays true behind a TLS proxy that is not trusted.
+    /// </summary>
+    public static bool UseSecureCookie(HttpContext context) =>
+        context.Request.IsHttps || context.RequestServices.GetService<AuthRuntimeOptions>()?.RequireHttps == true;
+
     public static bool IsInsecureOrigin(string? origin) =>
         Uri.TryCreate(origin, UriKind.Absolute, out var uri)
         && uri.Scheme == Uri.UriSchemeHttp
         && !uri.IsLoopback
         && !uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// One <see cref="TrustedProxies"/> entry: a bare address, or a CIDR network whose prefix is a
+    /// plain integer that fits the address family. Host bits below the prefix are cleared, since
+    /// <see cref="IPNetwork"/> rejects them. Shared by the settings save and startup so an entry
+    /// that saves is one that applies.
+    /// </summary>
+    public static bool TryParseTrustedProxy(string entry, out IPAddress? proxy, out IPNetwork? network)
+    {
+        proxy = null;
+        network = null;
+
+        var slash = entry.IndexOf('/');
+        if (slash < 0)
+        {
+            return TryParseAddress(entry, out proxy);
+        }
+
+        if (!TryParseAddress(entry[..slash], out var address) ||
+            !int.TryParse(entry[(slash + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var prefix))
+        {
+            return false;
+        }
+
+        var bytes = address.GetAddressBytes();
+        if (prefix > bytes.Length * 8)
+        {
+            return false;
+        }
+
+        for (var bit = prefix; bit < bytes.Length * 8; bit++)
+        {
+            bytes[bit / 8] &= (byte)~(0x80 >> (bit % 8));
+        }
+
+        network = new IPNetwork(new IPAddress(bytes), prefix);
+        return true;
+    }
+
+    // IPAddress.TryParse takes legacy IPv4 shorthand ("10" is 0.0.0.10, "172.16" is 172.0.0.16), so
+    // an IPv4 entry must read back exactly as written or "172.16/12" would quietly mean 172.0.0.0/12.
+    private static bool TryParseAddress(string text, out IPAddress? address) =>
+        IPAddress.TryParse(text, out address) &&
+        (address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork || address.ToString() == text);
 
     public static int LockoutMaxAttemptsFrom(string? stored) =>
         ReadInt(stored, DefaultLockoutMaxAttempts, min: 0, max: MaxLockoutMaxAttempts);

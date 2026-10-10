@@ -15,6 +15,22 @@ public class HousekeepingJob(
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
 
+    /// <summary>
+    /// Failed rows that are not waiting on a retry. A failure stamps neither <c>CompletedAt</c> nor
+    /// resets <c>QueuedAt</c>, so a chapter that failed once and is parked behind a backoff or an
+    /// early-access date is still live work however old the row is.
+    /// </summary>
+    internal static IQueryable<DownloadQueueItem> SettledFailures(IQueryable<DownloadQueueItem> queue, DateTime now) =>
+        queue.Where(q => q.Status == QueueStatus.Failed && (q.NextAttempt == null || q.NextAttempt <= now));
+
+    /// <summary>Settled failures whose last activity (the retry date, else completion, else queueing) is before <paramref name="cutoff"/>.</summary>
+    internal static IQueryable<DownloadQueueItem> StaleFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
+        SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) < cutoff);
+
+    /// <summary>Settled failures from the last 30 days, which is what the downloads health check reports.</summary>
+    internal static IQueryable<DownloadQueueItem> RecentFailures(IQueryable<DownloadQueueItem> queue, DateTime now, DateTime cutoff) =>
+        SettledFailures(queue, now).Where(q => (q.NextAttempt ?? q.CompletedAt ?? q.QueuedAt) >= cutoff);
+
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
@@ -61,12 +77,53 @@ public class HousekeepingJob(
             }
         }
 
+        // Packaged chapters, and their .partial files from a kill mid-write, left in a library share's
+        // .maki/tmp by an item that was cleared or whose process died mid-import. Named after the queue row, so one still active is left alone.
+        var tmpCutoff = DateTime.UtcNow.AddDays(-1);
+        var liveTmp = (await db.DownloadQueue
+                .Where(q => q.Status != QueueStatus.Completed &&
+                            q.Status != QueueStatus.Failed &&
+                            q.Status != QueueStatus.Cancelled)
+                .Select(q => q.Id)
+                .ToListAsync(ct))
+            .Select(id => id.ToString())
+            .ToHashSet();
+        foreach (var rootPath in await db.RootFolders.IgnoreQueryFilters().Select(r => r.Path).ToListAsync(ct))
+        {
+            var tmpDir = Path.Combine(rootPath, ".maki", "tmp");
+            if (!Directory.Exists(tmpDir))
+            {
+                continue;
+            }
+
+            try
+            {
+                foreach (var file in Directory.GetFiles(tmpDir, "*.cbz").Concat(Directory.GetFiles(tmpDir, "*.cbz.partial")))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    if (File.GetLastWriteTimeUtc(file) < tmpCutoff &&
+                        !liveTmp.Contains(Path.GetFileName(file).Split('.')[0]))
+                    {
+                        File.Delete(file);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogDebug(ex, "Could not clean {Dir}", tmpDir);
+            }
+        }
+
         // Reader thumbnails. Regenerable on demand, so anything doubtful is safe to delete.
         // Two kinds of garbage, and only the first used to be collected:
         //   1. whole directories for ChapterFile rows that no longer exist;
         //   2. files inside a *live* directory left by an earlier version of the same archive —
-        //      the name is "{ArchiveSize}-{page}.jpg", so a re-download at a different size
-        //      orphans every thumbnail it had without the directory ever going away.
+        //      the name is "{ArchiveSize}-{stamp}-{page}[.full].jpg", so a re-download at a different
+        //      size or write time orphans every render it had without the directory ever going away.
         if (Directory.Exists(paths.ReaderCacheDir))
         {
             var sizeByFileId = await db.ChapterFiles
@@ -90,14 +147,7 @@ public class HousekeepingJob(
                         continue;
                     }
 
-                    var prefix = currentSize + "-";
-                    foreach (var thumb in Directory.GetFiles(dir, "*.jpg"))
-                    {
-                        if (!Path.GetFileName(thumb).StartsWith(prefix, StringComparison.Ordinal))
-                        {
-                            File.Delete(thumb);
-                        }
-                    }
+                    PruneReaderCacheDir(dir, currentSize);
                 }
                 catch (Exception ex)
                 {
@@ -147,14 +197,25 @@ public class HousekeepingJob(
             logger.LogWarning(ex, "Upgrade trash purge failed");
         }
 
-        // Completed/cancelled queue rows older than 30 days.
-        var cutoff = DateTime.UtcNow.AddDays(-30);
+        RestoreBootstrap.PurgeStalePreRestoreCopies(paths, TimeSpan.FromDays(7), logger);
+
+        // Settled queue rows whose last activity is older than 30 days.
+        var now = DateTime.UtcNow;
+        var cutoff = now.AddDays(-30);
         await db.DownloadQueue
             .Where(q => (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled) &&
-                        q.QueuedAt < cutoff)
+                        (q.CompletedAt ?? q.QueuedAt) < cutoff)
             .ExecuteDeleteAsync(ct);
 
+        // Failed rows go too, or the downloads health check would stay yellow over a failure from months ago.
+        await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);
+
         await PruneInboxAsync(ct);
+        var prunedScans = await PruneHealthScansAsync(db, cutoff, ct);
+        if (prunedScans > 0)
+        {
+            logger.LogDebug("Housekeeping removed {Count} old health scans", prunedScans);
+        }
 
         // 0x10002: consider every table, not only the ones this pooled connection happened to query.
         await db.Database.ExecuteSqlRawAsync("PRAGMA optimize=0x10002;", ct);
@@ -169,6 +230,24 @@ public class HousekeepingJob(
         // consumer here opens with Pooling=False so the nightly artifact swaps can replace a file.
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         logger.LogDebug("Housekeeping complete");
+    }
+
+    /// <summary>Health scans that finished before <paramref name="cutoff"/>, except the ten newest, which is what the health page lists.</summary>
+    internal static async Task<int> PruneHealthScansAsync(MakiDbContext db, DateTime cutoff, CancellationToken ct)
+    {
+        var oldestKept = await db.HealthScans
+            .OrderByDescending(s => s.Id)
+            .Skip(9)
+            .Select(s => (int?)s.Id)
+            .FirstOrDefaultAsync(ct);
+        if (oldestKept is null)
+        {
+            return 0;
+        }
+
+        return await db.HealthScans
+            .Where(s => s.Id < oldestKept && s.Status != "pending" && s.Status != "running" && (s.FinishedAt ?? s.CreatedAt) < cutoff)
+            .ExecuteDeleteAsync(ct);
     }
 
     /// <summary>
@@ -210,6 +289,34 @@ public class HousekeepingJob(
         if (aged + capped > 0)
         {
             logger.LogDebug("Pruned {Aged} aged and {Capped} over-cap inbox notification(s)", aged, capped);
+        }
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex ReaderCacheName =
+        new(@"^(\d+)-(\d+)-\d+(\.full)?\.jpg$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Keeps the renders of the file's current version: its size and the newest write-time stamp
+    /// present. Anything else, including names from before the stamp existed, is regenerable.
+    /// </summary>
+    internal static void PruneReaderCacheDir(string dir, string currentSize)
+    {
+        var files = new List<(string Path, bool Sized, long Stamp)>();
+        foreach (var file in Directory.GetFiles(dir, "*.jpg"))
+        {
+            var match = ReaderCacheName.Match(System.IO.Path.GetFileName(file));
+            files.Add(match.Success
+                ? (file, match.Groups[1].Value == currentSize, long.TryParse(match.Groups[2].Value, out var stamp) ? stamp : -1)
+                : (file, false, -1));
+        }
+
+        var newest = files.Where(f => f.Sized).Select(f => f.Stamp).DefaultIfEmpty(-1).Max();
+        foreach (var (path, sized, stamp) in files)
+        {
+            if (!sized || stamp != newest)
+            {
+                File.Delete(path);
+            }
         }
     }
 }

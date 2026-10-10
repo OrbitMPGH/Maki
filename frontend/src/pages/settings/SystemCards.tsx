@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Alert,
@@ -11,7 +11,6 @@ import {
   FileButton,
   Group,
   Modal,
-  NumberInput,
   Progress,
   Stack,
   Switch,
@@ -40,6 +39,7 @@ import {
   useUpdateStatus,
 } from '../../api/hooks'
 import { formatBytes, formatDateTime, formatNumber } from '../../format'
+import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 
 type RestoreTarget = { kind: 'existing'; name: string } | { kind: 'upload'; file: File }
 
@@ -53,9 +53,10 @@ export function BackupSection() {
   const upload = useUploadRestore()
   const saveRetention = useSaveBackupSettings()
 
-  const kindLabel = (kind: string) => (kind === 'auto' ? t`Automatic` : kind === 'manual' ? t`Manual` : kind)
+  const kindLabel = (kind: string) => (kind === 'auto' ? t`Automatic` : kind === 'manual' ? t`Manual` : kind === 'scheduled' ? t`Scheduled` : kind)
 
-  const [retention, setRetention] = useState<number | string>(5)
+  const [retention, setRetention] = useState<number>(5)
+  const [scheduled, setScheduled] = useState(false)
   const [target, setTarget] = useState<RestoreTarget | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -64,11 +65,15 @@ export function BackupSection() {
     target?.kind === 'upload' ? target.file.name : target?.kind === 'existing' ? target.name : ''
 
   useEffect(() => {
-    if (retentionSettings) setRetention(retentionSettings.retention)
+    if (retentionSettings) {
+      setRetention(retentionSettings.retention)
+      setScheduled(retentionSettings.scheduled)
+    }
   }, [retentionSettings])
 
   const retentionDirty =
-    retentionSettings !== undefined && Number(retention) !== retentionSettings.retention
+    retentionSettings !== undefined &&
+    (Number(retention) !== retentionSettings.retention || scheduled !== retentionSettings.scheduled)
 
   const restarting = () =>
     notifications.show({
@@ -99,16 +104,20 @@ export function BackupSection() {
         <Trans>
           A zip of the database and <Code>config.json</Code>: every series record, reading history
           and setting, but not the manga files, the MangaBaka copy or covers. One is taken
-          automatically before an upgrade migration. There is no schedule, so take one yourself
-          before big changes.
+          automatically before an upgrade migration. Scheduled backups are off unless you turn
+          them on below, so take one yourself before big changes.
         </Trans>
       }
       dirty={retentionDirty}
       saving={saveRetention.isPending}
-      onDiscard={() => retentionSettings && setRetention(retentionSettings.retention)}
+      onDiscard={() => {
+        if (!retentionSettings) return
+        setRetention(retentionSettings.retention)
+        setScheduled(retentionSettings.scheduled)
+      }}
       onSave={() =>
         saveRetention.mutate(
-          { retention: Number(retention) },
+          { retention: Number(retention), scheduled },
           { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
         )
       }
@@ -201,12 +210,18 @@ export function BackupSection() {
           </FileButton>
         </Group>
 
-        <NumberInput
+        <Switch
+          label={t`Back up on a schedule`}
+          description={t`Checks every hour and takes a backup when the newest one is older than the backup freshness set on the Health page (7 days by default).`}
+          checked={scheduled}
+          onChange={(e) => setScheduled(e.currentTarget.checked)}
+        />
+
+        <SettingsNumberInput
           label={t`Backups to keep`}
-          description={t`Per kind: the newest N automatic and the newest N manual backups stay. Older ones are removed when a new backup is taken.`}
+          description={t`Per kind: the newest N automatic, manual and scheduled backups stay. Older ones are removed when a new backup is taken.`}
           min={1}
           max={50}
-          clampBehavior="strict"
           value={retention}
           onChange={setRetention}
           w={220}
@@ -220,6 +235,13 @@ export function BackupSection() {
               This replaces your current library and settings with <b>{backupName}</b>, then restarts
               Maki. The current data is not kept, so take a backup first if you want a way back.
               Docker and systemd bring Maki back up on their own; otherwise start it again yourself.
+            </Trans>
+          </Text>
+          <Text size="sm">
+            <Trans>
+              Accounts are restored too, exactly as they were in that backup. A password you changed or a
+              single sign-on link you removed since then comes back, so redo those afterwards. API keys you
+              revoked since the backup stay revoked.
             </Trans>
           </Text>
           <Group justify="flex-end">
@@ -360,11 +382,11 @@ export function ImageCacheSection() {
       ? Math.min(100, Math.round((status.processed / status.total) * 100))
       : null
 
-  const coverFilesLabel = usage ? formatNumber(usage.coverFiles) : undefined
+  const coverFileCount = usage?.coverFiles ?? 0
+  const thumbnailFileCount = usage?.thumbnailFiles ?? 0
+  const seriesTotalCount = usage?.seriesTotal ?? 0
   const coverBytesLabel = usage ? formatBytes(usage.coverBytes) : undefined
   const coversMissingLabel = usage ? formatNumber(usage.coversMissing) : undefined
-  const seriesTotalLabel = usage ? formatNumber(usage.seriesTotal) : undefined
-  const thumbnailFilesLabel = usage ? formatNumber(usage.thumbnailFiles) : undefined
   const thumbnailBytesLabel = usage ? formatBytes(usage.thumbnailBytes) : undefined
 
   const lastError = status?.lastError
@@ -396,7 +418,6 @@ export function ImageCacheSection() {
           color: r.started ? 'var(--ok)' : 'var(--warn)',
         })
       },
-      onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
     })
 
   return (
@@ -414,21 +435,26 @@ export function ImageCacheSection() {
       {usage && (
         <Stack gap={4} mb="md">
           <Text size="sm" c="var(--ink-3)">
+            {plural(coverFileCount, {
+              one: `Posters: # file, ${coverBytesLabel}`,
+              other: `Posters: # files, ${coverBytesLabel}`,
+            })}
+          </Text>
+          <Text size="sm" c="var(--ink-3)">
             {usage.coversMissing > 0 ? (
-              <Trans>
-                Posters: {coverFilesLabel} files, {coverBytesLabel} - {coversMissingLabel} of{' '}
-                {seriesTotalLabel} series have no usable poster
-              </Trans>
+              plural(seriesTotalCount, {
+                one: `${coversMissingLabel} of # series has no usable poster`,
+                other: `${coversMissingLabel} of # series have no usable poster`,
+              })
             ) : (
-              <Trans>
-                Posters: {coverFilesLabel} files, {coverBytesLabel} - every series has one
-              </Trans>
+              <Trans>Every series has a poster.</Trans>
             )}
           </Text>
           <Text size="sm" c="var(--ink-3)">
-            <Trans>
-              Reader thumbnails: {thumbnailFilesLabel} files, {thumbnailBytesLabel}
-            </Trans>
+            {plural(thumbnailFileCount, {
+              one: `Reader thumbnails: # file, ${thumbnailBytesLabel}`,
+              other: `Reader thumbnails: # files, ${thumbnailBytesLabel}`,
+            })}
           </Text>
         </Stack>
       )}
@@ -493,11 +519,10 @@ export function ImageCacheSection() {
       >
         <Stack>
           <Text size="sm">
-            <Trans>
-              This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup
-              and one image each. On a large library it runs for several minutes. Use &quot;Rebuild
-              missing&quot; instead if you are only fixing covers that fail to load.
-            </Trans>
+            {plural(seriesTotalCount, {
+              one: 'This re-downloads the poster for the # series, one metadata lookup and one image each. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
+              other: 'This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
+            })}
           </Text>
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setConfirmForce(false)}>

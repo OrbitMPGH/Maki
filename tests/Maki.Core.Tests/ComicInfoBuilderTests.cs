@@ -103,6 +103,19 @@ public class ComicInfoBuilderTests
         Assert.Equal("2020", info.Year);
     }
 
+    [Theory]
+    [InlineData("manga", "YesAndRightToLeft")]
+    [InlineData("manhwa", "Yes")]
+    [InlineData("manhua", "Yes")]
+    [InlineData("oel", "No")]
+    [InlineData(null, "YesAndRightToLeft")]
+    public void Manga_reading_direction_follows_the_series_type(string? type, string expected)
+    {
+        var series = TestSeries();
+        series.Type = type;
+        Assert.Equal(expected, ComicInfoBuilder.Build(series, new Chapter { Number = 1 }, 10).Manga);
+    }
+
     [Fact]
     public void Count_set_when_completed()
     {
@@ -125,5 +138,22 @@ public class ComicInfoBuilderTests
         var doc = new System.Xml.XmlDocument();
         doc.LoadXml(xml);
         Assert.Equal("ComicInfo", doc.DocumentElement!.Name);
+    }
+
+    [Fact]
+    public void Characters_xml_cannot_carry_are_stripped_instead_of_failing_the_write()
+    {
+        var series = TestSeries();
+        series.Overview = "Dark\u0008 fantasy\u001F with \U0001F5E1 and a lone \uD800 surrogate.";
+        series.AuthorStory = "MIURA\u0001 Kentaro";
+        var info = ComicInfoBuilder.Build(series, new Chapter { Number = 1, Language = "en", Title = "Bad\uFFFE" }, 10);
+
+        var xml = ComicInfoBuilder.Serialize(info);
+
+        var doc = new System.Xml.XmlDocument();
+        doc.LoadXml(xml);
+        Assert.Equal("Dark fantasy with \U0001F5E1 and a lone  surrogate.", doc.SelectSingleNode("/ComicInfo/Summary")!.InnerText);
+        Assert.Equal("MIURA Kentaro", doc.SelectSingleNode("/ComicInfo/Writer")!.InnerText);
+        Assert.Equal("Bad", doc.SelectSingleNode("/ComicInfo/Title")!.InnerText);
     }
 }

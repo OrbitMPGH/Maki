@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Metadata.Taste;
@@ -41,6 +42,7 @@ public class TasteVectorJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
+                build.MarkBuilt();
                 logger.LogInformation("Behavioural vectors: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else
@@ -55,6 +57,7 @@ public class TasteVectorJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Behavioural vector check failed");
+            context.ReportFailure(ex);
         }
     }
 

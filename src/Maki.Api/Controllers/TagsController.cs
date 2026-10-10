@@ -20,6 +20,7 @@ public class TagsController(ILocalizer localizer, MakiDbContext db) : Controller
     public async Task<IActionResult> List(CancellationToken ct)
     {
         // Read the join table directly — the skip navigation would need SQL APPLY (unsupported).
+        // The SeriesTag query filter keeps a restricted caller's counts to the grid they can see.
         var counts = await db.SeriesTags
             .GroupBy(x => x.TagId)
             .Select(g => new { TagId = g.Key, Count = g.Count() })
@@ -94,13 +95,12 @@ public class TagsController(ILocalizer localizer, MakiDbContext db) : Controller
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var tag = await db.Tags.Include(t => t.Series).FirstOrDefaultAsync(t => t.Id == id, ct);
+        var tag = await db.Tags.FirstOrDefaultAsync(t => t.Id == id, ct);
         if (tag is null)
         {
             return NotFound();
         }
 
-        tag.Series.Clear();
         db.Tags.Remove(tag);
         await db.SaveChangesAsync(ct);
         return NoContent();

@@ -129,6 +129,8 @@ export default function NotificationsPage() {
   const items = wanted ? all.filter((i) => wanted.has(i.type)) : all
   const groups = groupNotifications(items, i18n)
   const unread = data?.pages[0]?.unread ?? 0
+  // A category only narrows the pages loaded so far, so an empty result may still have older matches.
+  const olderMayMatch = category !== null && hasNextPage
 
   function open(item: InboxItem) {
     if (!item.read) markRead.mutate(item.id)
@@ -166,7 +168,7 @@ export default function NotificationsPage() {
               variant="subtle"
               color="var(--danger)"
               size="xs"
-              disabled={all.length === 0}
+              disabled={all.length === 0 && !unreadOnly}
               onClick={() => setClearing(true)}
             >
               <Trans>Clear all</Trans>
@@ -215,11 +217,19 @@ export default function NotificationsPage() {
       ) : items.length === 0 ? (
         <EmptyState
           mood={unreadOnly || category ? undefined : 'pleased'}
-          title={unreadOnly || category ? t`Nothing matches` : t`No notifications yet`}
+          title={
+            olderMayMatch
+              ? t`None in the latest notifications`
+              : unreadOnly || category
+                ? t`Nothing matches`
+                : t`No notifications yet`
+          }
           description={
-            unreadOnly || category
-              ? t`Try clearing the filters.`
-              : t`New chapters, finished downloads and unlocked achievements land here.`
+            olderMayMatch
+              ? t`Older ones may match. Load more to look further back.`
+              : unreadOnly || category
+                ? t`Try clearing the filters.`
+                : t`New chapters, finished downloads and unlocked achievements land here.`
           }
         />
       ) : (
@@ -319,7 +329,7 @@ function Row({
             <Text size="xs" c="var(--ink-3)">
               {item.body}
             </Text>
-            <Text fz={10} lh={1.5} c="var(--ink-3)">
+            <Text fz="var(--type-badge)" lh={1.5} c="var(--ink-3)">
               {/* Under an older day's heading the day is already said, and a relative time can
                   disagree with it ("yesterday" under Monday, 34 hours on), so those rows give the
                   clock time instead. */}

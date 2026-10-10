@@ -52,10 +52,6 @@ public class RecommendationController(
         {
             return this.Fail(localizer, ex.Key);
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 
     /// <summary>
@@ -112,7 +108,7 @@ public class RecommendationController(
         var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
             ? TasteView.Shelf
             : TasteView.Read;
-        var insights = await tasteInsights.GetAsync(currentUser, parsed, refresh, ct);
+        var insights = await tasteInsights.GetAsync(currentUser, parsed, refresh, await hidden.TermsAsync(ct), ct);
 
         // Groups/DriftUnavailable/Unavailable are catalogue keys, not display text; see the
         // TasteInsights doc. TasteInsightsService is a singleton whose result is cached per user,
@@ -139,7 +135,8 @@ public class RecommendationController(
     /// <summary>
     /// Catalogue-browse rails (Popular / New / Trending / Top rated / per-type) for the Discover
     /// tab — independent of the library, but bounded by the caller's own content-rating ceiling.
-    /// Cached per ceiling; <paramref name="refresh"/> recomputes the caller's.
+    /// Cached per ceiling and shared by every reader at it, so <paramref name="refresh"/> rebuilds
+    /// only for an admin.
     /// </summary>
     [HttpGet("discover")]
     public async Task<IActionResult> Discover([FromQuery] bool refresh, CancellationToken ct)
@@ -149,16 +146,12 @@ public class RecommendationController(
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+                SharedRefresh(refresh), currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
             return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
         }
         catch (LocalCatalogueUnavailableException ex)
         {
             return this.Fail(localizer, ex.Key);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -173,9 +166,9 @@ public class RecommendationController(
             return Ok(LocalizeRails(
                 rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
         }
-        catch (InvalidOperationException ex)
+        catch (LocalCatalogueUnavailableException)
         {
-            return BadRequest(new { error = ex.Message });
+            return Ok(new List<DiscoverRail>());
         }
     }
 
@@ -201,34 +194,9 @@ public class RecommendationController(
                 ? null
                 : LocalizeRail(rail with { Items = HiddenContentService.Without(rail.Items, isHidden) }));
         }
-        catch (InvalidOperationException ex)
+        catch (LocalCatalogueUnavailableException)
         {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// The same picks as <see cref="DiscoverRecent"/>, split into one rail per seed series so the
-    /// Discover page can head each group with the thing that produced it.
-    /// <para>
-    /// Answers an empty list, not null, when the caller has nothing to seed with: the flat route
-    /// returns a single nullable rail and the client leaves the row out, whereas this one returns a
-    /// collection and an empty collection already says the same thing.
-    /// </para>
-    /// </summary>
-    [HttpGet("discover/recent/grouped")]
-    public async Task<IActionResult> DiscoverRecentGrouped([FromQuery] bool refresh, CancellationToken ct)
-    {
-        try
-        {
-            var isHidden = await hidden.PredicateAsync(ct);
-            var rails = await recentActivity.GetGroupedAsync(currentUser, refresh, ct);
-            return Ok(LocalizeRails(
-                rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
+            return Ok(null);
         }
     }
 
@@ -241,16 +209,12 @@ public class RecommendationController(
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetGenreFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+                SharedRefresh(refresh), currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
             return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
         }
         catch (LocalCatalogueUnavailableException ex)
         {
             return this.Fail(localizer, ex.Key);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -271,9 +235,9 @@ public class RecommendationController(
         {
             return this.Fail(localizer, ex.Key);
         }
-        catch (InvalidOperationException ex)
+        catch (UnknownFeedException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return this.Fail(localizer, "error.recommendation.unknownFeed", new { feed = ex.Feed });
         }
     }
 
@@ -294,10 +258,6 @@ public class RecommendationController(
         {
             return this.Fail(localizer, ex.Key);
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 
     /// <summary>
@@ -317,16 +277,12 @@ public class RecommendationController(
         {
             var clamped = await ScopeAsync(request.Filters, ct);
 
-            var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct);
+            var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct, currentUser.MaxContentRating);
             return profile is null ? this.NotFoundMessage(localizer, "error.recommendation.creatorNotFound") : Ok(profile);
         }
         catch (LocalCatalogueUnavailableException ex)
         {
             return this.Fail(localizer, ex.Key);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -342,7 +298,7 @@ public class RecommendationController(
             return Ok(Array.Empty<ResolvedCredit>());
         }
 
-        return Ok(await discover.SuggestCreditsAsync(q, role, limit <= 0 ? 10 : limit, ct));
+        return Ok(await discover.SuggestCreditsAsync(q, role, limit <= 0 ? 10 : limit, ct, currentUser.MaxContentRating));
     }
 
     /// <summary>
@@ -534,12 +490,17 @@ public class RecommendationController(
     public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
 
     /// <summary>
-    /// Deeper rails only for a caller who has something to filter out of them. The Discover caches
-    /// are shared instance-wide, so a reader with no feedback asking for refill headroom would make
-    /// every reader pay a doubled catalogue scan for slack none of them use.
+    /// Refill headroom only for a caller who has something to filter out of the rails. The cached
+    /// set is built that deep either way; this only decides how much of it comes back.
     /// </summary>
     private static int RailDepth(HashSet<long> suppressed, Func<long, bool>? isHidden) =>
         suppressed.Count > 0 || isHidden is not null ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+
+    /// <summary>
+    /// The shared Discover rails are one cache for every reader at a ceiling, so a reader's refresh
+    /// button must not rebuild them for everybody.
+    /// </summary>
+    private bool SharedRefresh(bool refresh) => refresh && currentUser.Has(MakiPermission.Admin);
 
     private Task<RecommendationFilters> ScopeAsync(RecommendationFilters? filters, CancellationToken ct) =>
         hidden.ScopeAsync(filters, currentUser.MaxContentRating, ct);
@@ -558,7 +519,19 @@ public class RecommendationController(
     {
         Title = localizer.Get(rail.Title, rail.TitleArgs),
         Subtitle = rail.Subtitle is null ? null : localizer.Get(rail.Subtitle, rail.SubtitleArgs),
+        SubtitleTitles = SubtitleTitlesFor(rail, localizer),
     };
+
+    /// <summary>
+    /// The titles the client joins into the subtitle, with a localized "N more" entry last when
+    /// seeds were left unnamed.
+    /// </summary>
+    internal static IReadOnlyList<string>? SubtitleTitlesFor(DiscoverRail rail, ILocalizer localizer) =>
+        rail.SubtitleTitles is null
+            ? null
+            : rail.SubtitleMore > 0
+                ? [.. rail.SubtitleTitles, localizer.Get("discover.rail.moreSeeds", new { count = rail.SubtitleMore })]
+                : rail.SubtitleTitles;
 
     private IReadOnlyList<DiscoverRail> LocalizeRails(IReadOnlyList<DiscoverRail> rails) =>
         rails.Select(LocalizeRail).ToList();

@@ -380,21 +380,29 @@ public class MangaBakaLocalStore(
             return ids;
         }
 
+        var letters = Letters(normalized);
         using var conn = Open();
         using var cmd = conn.CreateCommand();
-        // FTS narrows the candidates without scanning the catalogue. Equality then rejects
-        // subtitles and longer titles that contain the phrase, even if they rank highly in FTS.
+        // FTS narrows the candidates without scanning the catalogue, anchored to the start of the
+        // title because an equal title starts with the phrase; a common word otherwise pulls in
+        // every title containing it. Equality then rejects subtitles and longer titles.
         cmd.CommandText = $"""
             SELECT series_id, title FROM {MangaBakaDumpService.SearchTableName}
             WHERE {MangaBakaDumpService.SearchTableName} MATCH $query
             """;
         // Let unicode61 tokenize the original text. Our normalization also folds Japanese
         // voicing marks, which FTS preserves, so feeding that folded text back would miss names.
-        cmd.Parameters.AddWithValue("$query", $"\"{query.Replace("\"", "\"\"")}\"");
+        cmd.Parameters.AddWithValue("$query", $"^\"{query.Replace("\"", "\"\"")}\"");
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
         {
-            if (CatalogueText.Normalize(reader.GetString(1)) == normalized)
+            var title = reader.GetString(1);
+            if (CatalogueText.NormalizedLetterCount(title) is { } count && count != letters)
+            {
+                continue;
+            }
+
+            if (CatalogueText.Normalize(title) == normalized)
             {
                 ids.Add(reader.GetInt64(0));
             }
@@ -402,6 +410,8 @@ public class MangaBakaLocalStore(
 
         return ids;
     }
+
+    private static int Letters(string normalized) => normalized.Count(c => c != ' ');
 
     /// <summary>Typo candidates verified against a complete title, never just matching words.</summary>
     internal async Task<IReadOnlyDictionary<long, int>> GetNearTitleIdsAsync(
@@ -468,6 +478,7 @@ public class MangaBakaLocalStore(
 
         // One edit for short titles, two for longer ones. Adjacent swapped letters count as one.
         var budget = normalized.Length < 12 ? 1 : 2;
+        var letters = Letters(normalized);
         var scratch = new int[(normalized.Length + 1) * 3];
         using var conn = Open();
         using var cmd = conn.CreateCommand();
@@ -479,7 +490,15 @@ public class MangaBakaLocalStore(
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (await reader.ReadAsync(ct))
         {
-            var title = CatalogueText.Normalize(reader.GetString(1));
+            // Every edit moves the letter count by at most one, so most rows a common word or the
+            // last token's prefix pulls in are rejected here without being folded.
+            var raw = reader.GetString(1);
+            if (CatalogueText.NormalizedLetterCount(raw) is { } count && Math.Abs(count - letters) > budget)
+            {
+                continue;
+            }
+
+            var title = CatalogueText.Normalize(raw);
             var distance = CatalogueText.BoundedDistance<char>(title.AsSpan(), normalized.AsSpan(), budget, scratch);
             if (distance <= budget)
             {
@@ -726,7 +745,8 @@ public class MangaBakaLocalStore(
 
                 var rowContentRating = GetString(reader, 10);
                 var ratingAllowed = contentRatings is { Count: > 0 }
-                    ? contentRatings.Contains(rowContentRating, StringComparer.OrdinalIgnoreCase)
+                    ? ContentRating.CoversAll(contentRatings)
+                        || contentRatings.Contains(rowContentRating, StringComparer.OrdinalIgnoreCase)
                     : rowContentRating != "pornographic";
                 if (GetString(reader, 1) != "active" || !ratingAllowed || GetString(reader, 11) == "novel")
                 {
@@ -775,23 +795,25 @@ public class MangaBakaLocalStore(
         var genreWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var tagWeight = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var authors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seedRows = 0;
         using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = $"SELECT genres, tags, authors FROM series WHERE id IN ({string.Join(",", seedIds)})";
             using var reader = await cmd.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {
+                seedRows++;
                 foreach (var g in ParseStringArray(GetString(reader, 0)))
                 {
-                    genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0 / seedIds.Count;
+                    genreWeight[g] = genreWeight.GetValueOrDefault(g) + 1.0;
                 }
 
                 foreach (var t in ParseStringArray(GetString(reader, 1)))
                 {
-                    tagWeight[t] = tagWeight.GetValueOrDefault(t) + 1.0 / seedIds.Count;
+                    tagWeight[t] = tagWeight.GetValueOrDefault(t) + 1.0;
                 }
 
-                foreach (var a in ParseStringArray(GetString(reader, 2)))
+                foreach (var a in ParseStringArray(GetString(reader, 2)).Where(CreditNames.IsPerson))
                 {
                     authors.Add(a);
                 }
@@ -801,6 +823,18 @@ public class MangaBakaLocalStore(
         if (genreWeight.Count == 0 && tagWeight.Count == 0 && authors.Count == 0)
         {
             return [];
+        }
+
+        // The share is taken over the seeds the dump actually returned, so a library with series
+        // missing from the dump does not scale every genre and tag down.
+        foreach (var key in genreWeight.Keys.ToList())
+        {
+            genreWeight[key] /= seedRows;
+        }
+
+        foreach (var key in tagWeight.Keys.ToList())
+        {
+            tagWeight[key] /= seedRows;
         }
 
         var exclude = new HashSet<long>(seedIds.Concat(excludeIds));
@@ -983,6 +1017,42 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// How many of <paramref name="ids"/> carry one of <paramref name="ratings"/> in the dump, by the
+    /// same <c>content_rating IN</c> test <see cref="GetByIdsAsync"/> hydrates with, so a count and the
+    /// page it describes agree. Reads the dump directly, so it also covers series the vector index
+    /// does not hold (unscored titles, novels).
+    /// </summary>
+    public async Task<int> CountWithinRatingsAsync(
+        IReadOnlyList<long> ids, IReadOnlyList<string> ratings, CancellationToken ct = default)
+    {
+        if (ids.Count == 0 || ratings.Count == 0)
+        {
+            return 0;
+        }
+
+        using var conn = Open();
+        var total = 0;
+        foreach (var chunk in ids.Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT COUNT(*) FROM series
+                WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                  AND content_rating IN ({string.Join(",", ratings.Select((_, i) => $"$r{i}"))})
+                """;
+            cmd.CommandTimeout = 600;
+            for (var i = 0; i < ratings.Count; i++)
+            {
+                cmd.Parameters.AddWithValue($"$r{i}", ratings[i]);
+            }
+
+            total += Convert.ToInt32(await cmd.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture);
+        }
+
+        return total;
+    }
+
+    /// <summary>
     /// The anime range and chapter count for each id that has one, for resolving where an anime
     /// ends on titles that are not in the library. Novels are left out, as in <see cref="GetDetailAsync"/>.
     /// </summary>
@@ -1024,7 +1094,7 @@ public class MangaBakaLocalStore(
     /// ordering. Reuses <see cref="MangaBakaRecommendation"/> so the same card/detail/add flow
     /// works — the relation and matched-genre/tag fields are left empty.
     /// </summary>
-    public async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
+    public virtual async Task<IReadOnlyList<MangaBakaRecommendation>> GetBrowseAsync(
         BrowseFeed feed, int limit, string? genre = null,
         RecommendationFilters? filters = null, CancellationToken ct = default)
     {

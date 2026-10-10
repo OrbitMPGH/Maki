@@ -67,11 +67,25 @@ public class SemanticRecommender(
     /// <summary>Optional for the same reason <see cref="_tuning"/> is.</summary>
     private readonly TasteVectorTuning _tasteTuning = tasteTuning ?? TasteVectorTuning.Default;
 
-    /// <summary>Standard RRF damping, same constant the search fusion uses.</summary>
-    private const double RrfK = 60;
 
     private long _maxPopularity; // cached global popularity rank ceiling (0 = not computed)
     private long _activeCount; // cached count of active dump series, the N in idf = log(N/df)
+    private (long Ticks, long Length) _dumpStamp; // the dump the two figures above were read from
+
+    /// <summary>Forgets the dump-derived figures when the dump file has been replaced since they were read.</summary>
+    private void DropStatsIfDumpChanged()
+    {
+        var info = new FileInfo(dumpOptions.DatabasePath);
+        var stamp = info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (0L, 0L);
+        if (stamp == _dumpStamp)
+        {
+            return;
+        }
+
+        _maxPopularity = 0;
+        _activeCount = 0;
+        _dumpStamp = stamp;
+    }
 
     /// <summary>
     /// True once embeddings are on and enough vectors exist to recommend from.
@@ -82,6 +96,12 @@ public class SemanticRecommender(
     /// </para>
     /// </summary>
     public virtual bool IsReady() => options.Enabled && store.Count() >= 1000;
+
+    /// <summary>
+    /// Identifies the vector index currently loaded, so a caller holding results computed from one
+    /// can tell the index has since been rebuilt. Null while nothing is loaded.
+    /// </summary>
+    public virtual string? IndexStamp => cache.Stamp;
 
     /// <summary>
     /// Which same-work component each of <paramref name="ids"/> sits in
@@ -175,7 +195,6 @@ public class SemanticRecommender(
         return members;
     }
 
-    /// <summary>One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the centroid.</summary>
     /// <summary>
     /// One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the
     /// centroid, and also for a seed the dump has no title for, which is why
@@ -293,6 +312,7 @@ public class SemanticRecommender(
         obscurity = Math.Clamp(obscurity, -1, 1);
         diversity = Math.Clamp(diversity, 0, 1);
         store.EnsureSchema(); // older DBs predate the tag tables the index build joins
+        DropStatsIfDumpChanged();
 
         var index = await cache.GetAsync(ct);
         if (index is null || index.Count == 0)
@@ -339,7 +359,7 @@ public class SemanticRecommender(
             w = w with { CoRead = coReadTuning.Weight };
         }
 
-        using var conn = new SqliteConnection($"Data Source={store.DbPath};Pooling=False");
+        using var conn = new SqliteConnection($"Data Source={store.DbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
         using (var attach = conn.CreateCommand())
         {
@@ -402,24 +422,6 @@ public class SemanticRecommender(
             CategoryWeight,
             _tuning.TagConsensusPower,
             tagTree);
-
-        // Tag filter: each selected name maps to its vocab id(s) (case-insensitive — casing
-        // variants map to distinct ids); a candidate must carry every selected tag. An unknown
-        // name can never match, so bail out early.
-        List<int[]>? requiredTagIds = null;
-        if (filters.Tags is { Count: > 0 } wantedTags)
-        {
-            requiredTagIds = wantedTags
-                .Select(name => vocab
-                    .Where(kv => string.Equals(kv.Value.Name, name, StringComparison.OrdinalIgnoreCase))
-                    .Select(kv => kv.Key)
-                    .ToArray())
-                .ToList();
-            if (requiredTagIds.Any(ids => ids.Length == 0))
-            {
-                return [];
-            }
-        }
 
         var seedTitles = await GetTitlesAsync(conn, seedVectors.Keys, ct);
         var queries = BuildQueries(seedVectors, seedWeights, seedTitles, _tuning);
@@ -485,7 +487,7 @@ public class SemanticRecommender(
 
         var started = DateTime.UtcNow;
         using var scan = Scan(
-            index, plan, queries, tasteQueries, avoidQueries, exclude, requiredTagIds, ct);
+            index, plan, queries, tasteQueries, avoidQueries, exclude, ct);
         var cosines = scan.Text;
         // Collapsed to one number per row before anything reads it: the behavioural channel has no
         // attribution to do, so unlike the text channels there is nothing to gain from keeping the
@@ -1141,13 +1143,6 @@ public class SemanticRecommender(
     }
 
     /// <summary>
-    /// One pass over the index, cosining every surviving row against every query. Structured this
-    /// way (row outer, query inner) so a row's packed bytes are read once and reused across the
-    /// queries — nine queries cost far less than nine scans. A rejected row is
-    /// <see cref="float.NegativeInfinity"/> in every channel, which also keeps it out of the
-    /// rankings below without a second membership test.
-    /// </summary>
-    /// <summary>
     /// One pass over every row, answering both spaces. The filter predicate is the expensive part
     /// and it is identical for both, so scanning twice would pay for it twice; the behavioural
     /// vectors are also a fraction of the text vectors&apos; width, which is what makes the second
@@ -1155,8 +1150,7 @@ public class SemanticRecommender(
     /// </summary>
     private static ScanBuffers Scan(
         VectorIndex index, FilterPlan plan, List<SeedQuery> queries, List<SeedQuery> tasteQueries,
-        List<SeedQuery> avoidQueries, HashSet<long> exclude, List<int[]>? requiredTagIds,
-        CancellationToken ct)
+        List<SeedQuery> avoidQueries, HashSet<long> exclude, CancellationToken ct)
     {
         var buffers = ScanBuffers.Rent(
             queries.Count, tasteQueries.Count, avoidQueries.Count, index.Count);
@@ -1172,9 +1166,7 @@ public class SemanticRecommender(
                 new ParallelOptions { CancellationToken = ct },
                 row =>
                 {
-                    var keep = index.Matches(row, plan) &&
-                               !exclude.Contains(index.IdAt(row)) &&
-                               (requiredTagIds is null || TagMath.ContainsAll(index.TagsAt(row), requiredTagIds));
+                    var keep = index.Matches(row, plan) && !exclude.Contains(index.IdAt(row));
                     // Expanded once for the whole query loop. Stored rows are 4-bit levels packed
                     // two to a byte, so asking the index for a cosine per query would expand the
                     // same row once per query: measured at 48 seed queries, that doubled the time a
@@ -1295,15 +1287,15 @@ public class SemanticRecommender(
         return kept;
     }
 
-    /// <summary>Best score per row across a set of channels, with no evidence reading as 0.</summary>
+    /// <summary>Best score per row across a set of channels, with no evidence reading as 0. No channels gives an empty array, which every reader treats as 0.</summary>
     private static float[] BestPerRow(float[][] channels, int rows)
     {
-        var best = new float[rows];
         if (channels.Length == 0)
         {
-            return best;
+            return [];
         }
 
+        var best = new float[rows];
         for (var row = 0; row < rows; row++)
         {
             var top = float.NegativeInfinity;
@@ -1752,21 +1744,19 @@ public class SemanticRecommender(
     }
 
     /// <summary>
-    /// Reciprocal rank fusion across the per-query rankings, returning the rows that make the
-    /// pool. Only membership comes out of this — the caller scores the survivors on cosines, for
-    /// the reason in the class summary.
+    /// The union of each query's top <paramref name="poolPerQuery"/> rows, the pool's membership.
+    /// Only membership comes out of this; the caller scores the survivors on cosines, for the reason
+    /// in the class summary. Rows come out channel by channel, best first within each.
+    /// <para>
+    /// A bounded selection per channel rather than a sort of every survivor: a whole-library request
+    /// has dozens of channels over the whole catalogue and reads at most a couple of thousand rows
+    /// of each. Ties break on the lower row so the pool does not depend on sort stability.
+    /// </para>
     /// </summary>
-    private static List<int> FuseByRank(float[][] cosines, int rowCount, int poolPerQuery)
+    internal static List<int> FuseByRank(float[][] cosines, int rowCount, int poolPerQuery)
     {
-        var fused = new Dictionary<int, double>();
         var channel0 = cosines[0];
-
-        // Three catalogue-sized arrays, rented once and refilled per channel rather than allocated
-        // per channel. The sort is over [0, survivors) explicitly, since a rented array is longer
-        // than the data in it and sorting the tail would drag pool garbage into the ranking.
         var survivors = ArrayPool<int>.Shared.Rent(rowCount);
-        var ranked = ArrayPool<int>.Shared.Rent(rowCount);
-        var keys = ArrayPool<float>.Shared.Rent(rowCount);
         try
         {
             var count = 0;
@@ -1778,30 +1768,73 @@ public class SemanticRecommender(
                 }
             }
 
-            foreach (var channel in cosines)
-            {
-                Array.Copy(survivors, ranked, count);
-                for (var i = 0; i < count; i++)
-                {
-                    keys[i] = -channel[ranked[i]]; // ascending on the negation = descending by cosine
-                }
+            var take = Math.Min(poolPerQuery, count);
+            var tops = new int[cosines.Length][];
+            Parallel.For(0, cosines.Length, c => tops[c] = TopRows(cosines[c], survivors, count, take));
 
-                Array.Sort(keys, ranked, 0, count);
-                var take = Math.Min(poolPerQuery, count);
-                for (var rank = 0; rank < take; rank++)
+            var seen = new HashSet<int>();
+            var pooled = new List<int>();
+            foreach (var top in tops)
+            {
+                foreach (var row in top)
                 {
-                    fused[ranked[rank]] = fused.GetValueOrDefault(ranked[rank]) + (1.0 / (RrfK + rank + 1));
+                    if (seen.Add(row))
+                    {
+                        pooled.Add(row);
+                    }
                 }
             }
+
+            return pooled;
         }
         finally
         {
             ArrayPool<int>.Shared.Return(survivors);
-            ArrayPool<int>.Shared.Return(ranked);
-            ArrayPool<float>.Shared.Return(keys);
+        }
+    }
+
+    /// <summary>The <paramref name="take"/> best of the first <paramref name="count"/> survivors, best first.</summary>
+    private static int[] TopRows(float[] channel, int[] survivors, int count, int take)
+    {
+        if (take <= 0)
+        {
+            return [];
         }
 
-        return [.. fused.Keys];
+        // Min-heap on the ranking, so the root is the weakest row kept so far.
+        var heap = new PriorityQueue<int, (float Cosine, int Row)>(take + 1, WeakestFirst.Instance);
+        for (var i = 0; i < count; i++)
+        {
+            var row = survivors[i];
+            var key = (channel[row], row);
+            if (heap.Count < take)
+            {
+                heap.Enqueue(row, key);
+            }
+            else if (heap.TryPeek(out _, out var weakest) && WeakestFirst.Instance.Compare(key, weakest) > 0)
+            {
+                heap.DequeueEnqueue(row, key);
+            }
+        }
+
+        var top = new int[heap.Count];
+        for (var i = top.Length - 1; i >= 0; i--)
+        {
+            top[i] = heap.Dequeue();
+        }
+
+        return top;
+    }
+
+    private sealed class WeakestFirst : IComparer<(float Cosine, int Row)>
+    {
+        public static readonly WeakestFirst Instance = new();
+
+        public int Compare((float Cosine, int Row) x, (float Cosine, int Row) y)
+        {
+            var byCosine = x.Cosine.CompareTo(y.Cosine);
+            return byCosine != 0 ? byCosine : y.Row.CompareTo(x.Row);
+        }
     }
 
     /// <summary>

@@ -11,6 +11,7 @@ import {
 } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import {
   useCreator,
   useRootFolders,
@@ -86,22 +87,16 @@ export default function CreatorPage() {
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
 
   // Clicking a credit on this page navigates to the same route with a different name, so React
-  // Router re-renders rather than unmounting and every one of these would otherwise survive,
-  // leaving the previous creator's modal open over the new page.
+  // Router re-renders rather than unmounting and the previous creator's modal would otherwise
+  // survive over the new page. The filters, sort and paging are keyed on `scope`, so
+  // usePageState swaps them for the new creator's remembered ones (or the defaults) by itself.
   //
-  // Only on an actual change of creator: on mount these hold whatever the last visit left, and
-  // clearing that is exactly what the restore is here to prevent.
+  // Only on an actual change of creator: on mount this holds whatever the last visit left.
   const sameCreator = useUnchangedSinceMount([decoded, role])
   useEffect(() => {
     if (sameCreator) return
     setDetailItem(null)
-    setApplied({})
-    setSort('popular')
-    setPages(1)
-    setFiltersOpen(false)
-    catalogue.reset()
-    // catalogue.reset is stable by design; see useCatalogueFilters.
-  }, [sameCreator, decoded, role, catalogue.reset, setApplied, setSort, setPages, setFiltersOpen])
+  }, [sameCreator, decoded, role])
 
   const appliedCount = Object.keys(applied).length
 
@@ -116,7 +111,7 @@ export default function CreatorPage() {
     [decoded, role, applied, appliedCount, sort, pages],
   )
 
-  const { data, isFetching, error, refetch } = useCreator(decoded.length > 0 ? request : null)
+  const { data, isFetching, isPlaceholderData, error, refetch } = useCreator(decoded.length > 0 ? request : null)
   // Followed under the catalogue's own spelling, and the role the page was opened for: following
   // Shueisha from its studio page must not also follow a person who happens to share the name.
   const followRole = role === 'author' || role === 'artist' || role === 'studio' ? role : null
@@ -140,7 +135,8 @@ export default function CreatorPage() {
   }
 
   const items = data?.items ?? []
-  const canLoadMore = items.length >= PAGE_SIZE * pages && items.length < MAX_WORKS
+  const canLoadMore =
+    items.length >= PAGE_SIZE * (isPlaceholderData ? pages - 1 : pages) && items.length < MAX_WORKS
 
   if (decoded.length === 0) {
     return (
@@ -307,10 +303,10 @@ export default function CreatorPage() {
       {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && !canLoadMore && (
         <Alert variant="light" color="var(--neutral)" mt="md">
           <Text size="sm">
-            <Trans>
-              Showing {shownCount} of {workCount} titles. Filters and the catalogue's own coverage
-              both narrow this: only rated, non-novel entries are searchable.
-            </Trans>
+            {plural(workCount, {
+              one: `Showing ${shownCount} of # title. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.`,
+              other: `Showing ${shownCount} of # titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.`,
+            })}
           </Text>
         </Alert>
       )}

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { ReaderFit } from './prefs'
 
@@ -15,6 +16,94 @@ const PAST_END_THRESHOLD = 1000
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
 // fractional in some browsers, so an exact `=== ` check misses by sub-pixel amounts.
 const BOTTOM_EPSILON = 2
+// Scroll banked towards the next chapter is dropped after this long without more of it, so a
+// half-filled meter left behind does not turn the next wheel notch into a chapter jump.
+const PAST_END_IDLE_MS = 1200
+
+interface StripPageProps {
+  index: number
+  src: string
+  label: string
+  fit: ReaderFit
+  scale: number
+  eager: boolean
+  register: (index: number, element: HTMLImageElement | null) => void
+  onSettled: (index: number, element: HTMLImageElement) => void
+}
+
+/**
+ * One page of the strip. Memoised with stable callbacks so a page change, which re-renders the
+ * view on every scroll step, only touches the few pages whose eager window moved.
+ */
+const StripPage = memo(function StripPage({
+  index,
+  src,
+  label,
+  fit,
+  scale,
+  eager,
+  register,
+  onSettled,
+}: StripPageProps) {
+  const { t } = useLingui()
+  const image = useRef<HTMLImageElement | null>(null)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const pageNumber = index + 1
+  const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
+
+  const setRef = useCallback(
+    (element: HTMLImageElement | null) => {
+      image.current = element
+      register(index, element)
+    },
+    [index, register],
+  )
+
+  const retry = () => {
+    image.current?.removeAttribute('data-loaded')
+    setFailed(false)
+    setAttempt((n) => n + 1)
+  }
+
+  return (
+    <>
+      <img
+        ref={setRef}
+        data-page={index}
+        src={url}
+        alt={t`${label} - page ${pageNumber}`}
+        className={`reader-page ${FIT_CLASS[fit]}`}
+        style={{
+          ...(fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined),
+          ...(failed ? { display: 'none' } : undefined),
+        }}
+        // A window around the current page rather than the whole prefix: resuming at page 300
+        // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
+        // pages close enough to shift the target's offset need forcing. Unloaded pages hold a
+        // min-height placeholder (theme.css), which is what gives lazy loading real positions.
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+        draggable={false}
+        onLoad={(event) => onSettled(index, event.currentTarget)}
+        onError={(event) => {
+          setFailed(true)
+          onSettled(index, event.currentTarget)
+        }}
+      />
+      {failed && (
+        <Stack align="center" gap="xs" py="xl">
+          <Text c="var(--ink-3)" size="sm">
+            <Trans>This page failed to load.</Trans>
+          </Text>
+          <Button variant="light" size="xs" onClick={retry}>
+            <Trans>Try again</Trans>
+          </Button>
+        </Stack>
+      )}
+    </>
+  )
+})
 
 /**
  * The webtoon strip: every page stacked, scrolled continuously. The current page is whichever
@@ -55,7 +144,6 @@ export default function ContinuousView({
   gap: number
   label: string
 }) {
-  const { t } = useLingui()
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
   const sentinel = useRef<HTMLDivElement>(null)
@@ -71,6 +159,9 @@ export default function ContinuousView({
   // one of those would re-scroll to wherever the user just scrolled from.
   const pageRef = useRef(page)
   pageRef.current = page
+
+  // Set by the sentinel effect below; image load handlers re-run it once a page settles.
+  const reportEnd = useRef<() => void>(() => {})
 
   useEffect(() => {
     progress.current = 0
@@ -103,10 +194,16 @@ export default function ContinuousView({
     )
   }, [seekVersion, urls])
 
-  const onPageLoad = (index: number) => {
+  const onPageSettled = useCallback((index: number, element: HTMLImageElement) => {
+    element.dataset.loaded = 'true'
+    reportEnd.current()
     if (!settling.current.delete(index)) return
     pages.current[seekTarget.current]?.scrollIntoView({ block: 'start' })
-  }
+  }, [])
+
+  const registerPage = useCallback((index: number, element: HTMLImageElement | null) => {
+    pages.current[index] = element
+  }, [])
 
   useEffect(() => {
     if (urls.length === 0) return
@@ -143,18 +240,30 @@ export default function ContinuousView({
   // center band, so the count sticks on the previous, taller page even once the strip is fully
   // scrolled. A 1px sentinel right after the last page catches that: it enters the viewport only
   // once the strip is scrolled essentially to its end, at which point the last page is current
-  // regardless of the band.
+  // regardless of the band. Until the images around the viewport have settled the strip is
+  // collapsed and the sentinel sits in view at the top, so it only counts once nothing that could
+  // still move it is waiting for its size. Lazy pages that were skipped over stay unrequested, so
+  // only images at or below the viewport top are waited on.
   useEffect(() => {
     if (urls.length === 0 || !sentinel.current) return
     const target = sentinel.current
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) onPageChange(urls.length - 1)
-      },
-      { threshold: 0 },
-    )
+    reportEnd.current = () => {
+      const scroller = container.current?.parentElement
+      if (!scroller) return
+      const view = scroller.getBoundingClientRect()
+      const end = target.getBoundingClientRect()
+      if (end.bottom <= view.top || end.top >= view.bottom) return
+      const pending = pages.current
+        .slice(0, urls.length)
+        .some((element) => element && !element.complete && element.getBoundingClientRect().bottom >= view.top)
+      if (!pending) onPageChange(urls.length - 1)
+    }
+    const observer = new IntersectionObserver(() => reportEnd.current(), { threshold: 0 })
     observer.observe(target)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      reportEnd.current = () => {}
+    }
   }, [urls, onPageChange])
 
   // The bottom-of-strip "scroll for next chapter" meter. `.reader-surface` clamps scrollTop at
@@ -169,7 +278,14 @@ export default function ContinuousView({
     const atBottom = () =>
       scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < BOTTOM_EPSILON
 
+    let idle: ReturnType<typeof setTimeout> | undefined
+    const decay = () => {
+      progress.current = 0
+      setPastEndProgress(0)
+    }
+
     const advance = (delta: number) => {
+      clearTimeout(idle)
       if (delta <= 0 || !atBottom()) {
         setAtLibraryEnd(false)
         if (progress.current !== 0) {
@@ -187,10 +303,11 @@ export default function ContinuousView({
       progress.current = Math.min(PAST_END_THRESHOLD, progress.current + delta)
       setPastEndProgress(progress.current / PAST_END_THRESHOLD)
       if (progress.current >= PAST_END_THRESHOLD) {
-        progress.current = 0
-        setPastEndProgress(0)
+        decay()
         onPastEnd()
+        return
       }
+      idle = setTimeout(decay, PAST_END_IDLE_MS)
     }
 
     // Once the reader has scrolled by hand, the pending seek is history: a later image load must
@@ -222,6 +339,7 @@ export default function ContinuousView({
     scroller.addEventListener('touchmove', onTouchMove, { passive: true })
     scroller.addEventListener('touchend', onTouchEnd, { passive: true })
     return () => {
+      clearTimeout(idle)
       scroller.removeEventListener('wheel', onWheel)
       scroller.removeEventListener('touchstart', onTouchStart)
       scroller.removeEventListener('touchmove', onTouchMove)
@@ -239,29 +357,19 @@ export default function ContinuousView({
         data-zoomed={fit === 'original' && scale > 100}
         style={{ gap: `${gap}px` }}
       >
-        {urls.map((src, index) => {
-          const pageNumber = index + 1
-          return (
-            <img
-              key={src}
-              ref={(element) => {
-                pages.current[index] = element
-              }}
-              data-page={index}
-              src={src}
-              alt={t`${label} - page ${pageNumber}`}
-              className={`reader-page ${FIT_CLASS[fit]}`}
-              style={fit === 'original' && scale !== 100 ? { zoom: scale / 100 } : undefined}
-              // A window around the current page rather than the whole prefix: resuming at page 300
-              // of a webtoon strip would otherwise fetch and decode 300 pages at once. Only the
-              // pages close enough to shift the target's offset need forcing.
-              loading={index < 3 || Math.abs(index - pageRef.current) <= 2 ? 'eager' : 'lazy'}
-              decoding="async"
-              draggable={false}
-              onLoad={() => onPageLoad(index)}
-            />
-          )
-        })}
+        {urls.map((src, index) => (
+          <StripPage
+            key={src}
+            index={index}
+            src={src}
+            label={label}
+            fit={fit}
+            scale={scale}
+            eager={index < 3 || Math.abs(index - page) <= 2}
+            register={registerPage}
+            onSettled={onPageSettled}
+          />
+        ))}
         <div ref={sentinel} style={{ height: 1 }} />
       </div>
       {(pastEndProgress > 0 || atLibraryEnd) && (

@@ -10,6 +10,7 @@ import {
   type MangaBakaDetail,
   type RecommendationItem,
 } from '../../api/hooks'
+import { ApiError } from '../../api/client'
 import { useUpgradeProfiles } from '../../api/upgrades'
 import { useCreateSeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
@@ -151,7 +152,7 @@ export function DiscoverLibraryRail({
           // 410 means this mutation id belongs to an add that committed and was then deleted. The
           // id is sticky so a retry cannot double-add; keeping it after a 410 would make every
           // later press fail the same way, so adding again becomes a genuinely new operation.
-          if (error.message.startsWith('API 410')) addMutationId.current = null
+          if (error instanceof ApiError && error.status === 410) addMutationId.current = null
         },
       },
     )
@@ -188,7 +189,7 @@ export function DiscoverLibraryRail({
     >
       {seriesId != null ? (
         <>
-          <Title order={3} fz={16}>
+          <Title order={3} fz="var(--type-subhead)">
             <Trans>In your library</Trans>
           </Title>
           <Button
@@ -207,7 +208,7 @@ export function DiscoverLibraryRail({
         // under Settings, Users. With no grant there is nothing to point the add at. Say so rather
         // than leaving a dead Select and a disabled button.
         <>
-          <Title order={3} fz={16}>
+          <Title order={3} fz="var(--type-subhead)">
             <Trans>Add to library</Trans>
           </Title>
           <Alert color="var(--warn)" variant="light" mt="md">
@@ -301,7 +302,7 @@ export function DiscoverLibraryRail({
         </Stack>
       ) : requested ? (
         <>
-          <Title order={3} fz={16}>
+          <Title order={3} fz="var(--type-subhead)">
             <Trans>Requested</Trans>
           </Title>
           <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
@@ -310,7 +311,7 @@ export function DiscoverLibraryRail({
         </>
       ) : (
         <>
-          <Title order={3} fz={16}>
+          <Title order={3} fz="var(--type-subhead)">
             <Trans>Ask for this</Trans>
           </Title>
           <Text size="xs" c="var(--ink-4)" mt={6} style={{ lineHeight: 1.55 }}>
@@ -333,21 +334,6 @@ export function DiscoverLibraryRail({
         </>
       )}
 
-      {addSeries.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(addSeries.error)}
-        </Alert>
-      )}
-      {applyAnimeResume.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(applyAnimeResume.error)}
-        </Alert>
-      )}
-      {createRequest.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(createRequest.error)}
-        </Alert>
-      )}
     </Paper>
   )
 }

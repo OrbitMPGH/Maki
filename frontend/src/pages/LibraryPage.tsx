@@ -1,10 +1,10 @@
+import { errorText } from '../api/errorText'
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
   Badge,
   Button,
-  Checkbox,
   Drawer,
   Group,
   Indicator,
@@ -80,7 +80,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import type { LibraryFilterSpec, SeriesDto } from '../api/types'
+import type { LibraryFilterSpec, SavedFilterDto, SeriesDto } from '../api/types'
 import { PosterSkeletons } from '../components/CatalogueBrowser'
 import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard } from '../components/ui/CoverCard'
@@ -95,7 +95,9 @@ import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
-import { POSTER_COLS_BY_DENSITY, useDensityOptions } from '../components/ui/viewPrefs'
+import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
+import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } from '../components/ui/viewPrefs'
+import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
 
 const SORT_VALUES = ['added', 'title', 'incomplete', 'status'] as const
@@ -116,21 +118,16 @@ const MEM = 'library'
 const LS_VIEW = 'library-view'
 const LS_DENSITY = 'library-density'
 
-function readStored<T extends string>(key: string, valid: readonly T[], fallback: T): T {
-  try {
-    const v = localStorage.getItem(key)
-    return valid.includes(v as T) ? (v as T) : fallback
-  } catch { return fallback }
-}
-
-function writeStored(key: string, value: string) {
-  try { localStorage.setItem(key, value) } catch { /* noop */ }
+function titleSortKey(s: SeriesDto): string {
+  if (s.displayTitle === s.title) return s.sortTitle
+  const lowered = s.displayTitle.toLowerCase()
+  const article = ['the ', 'a ', 'an '].find((a) => lowered.startsWith(a))
+  return article ? lowered.slice(article.length) : lowered
 }
 
 /**
- * How much of the series has been read, 0–100. Kavita is the only source of read progress, so a
- * series it has never reported (`readChapterCount === null`) counts as 0% rather than being
- * dropped: the whole library would otherwise vanish the moment the slider left 0.
+ * How much of the series has been read, 0–100. A series with no read count
+ * (`readChapterCount === null`) counts as 0% rather than being dropped: the whole library would otherwise vanish the moment the slider left 0.
  */
 function readPercent(s: SeriesDto): number {
   const total = s.wantedChapterCount || s.knownChapterCount || 0
@@ -256,7 +253,7 @@ const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
   Refresh: msg`Refresh`,
   Metadata: msg`Metadata`,
   // ComicInfo is the file format's name and is deliberately absent: the fallback shows the key.
-  Delete: msg`Delete`,
+  Remove: msg`Remove`,
   'Set monitoring': msg`Set monitoring`,
   'Quality profile': msg`Quality profile`,
   Move: msg`Move`,
@@ -365,7 +362,9 @@ export default function LibraryPage() {
       list = list.filter(
         (s) =>
           s.title.toLowerCase().includes(q) ||
-          (s.originalTitle?.toLowerCase().includes(q) ?? false),
+          s.displayTitle.toLowerCase().includes(q) ||
+          (s.originalTitle?.toLowerCase().includes(q) ?? false) ||
+          s.altTitles.some((alt) => alt.title.toLowerCase().includes(q)),
       )
     }
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
@@ -420,7 +419,7 @@ export default function LibraryPage() {
     list.sort((a, b) => {
       switch (sort) {
         case 'title':
-          return a.sortTitle.localeCompare(b.sortTitle)
+          return titleSortKey(a).localeCompare(titleSortKey(b))
         case 'incomplete':
           return missingCount(b) - missingCount(a)
         case 'status':
@@ -601,6 +600,45 @@ export default function LibraryPage() {
     setSelected(new Set())
   }
 
+  const removeSavedFilter = (f: SavedFilterDto) => {
+    deleteSavedFilter.mutate(f.id, {
+      onSuccess: () => {
+        const name = f.name
+        const toastId = notifications.show({
+          autoClose: 8000,
+          message: (
+            <Group gap="xs" wrap="nowrap" justify="space-between">
+              <Text size="sm">
+                <Trans>Deleted saved filter {name}.</Trans>
+              </Text>
+              <Button
+                size="xs"
+                variant="subtle"
+                style={{ flexShrink: 0 }}
+                onClick={() => {
+                  notifications.hide(toastId)
+                  saveFilter.mutate(
+                    { name: f.name, spec: f.spec },
+                    {
+                      onError: (err) =>
+                        notifications.show({
+                          color: 'var(--danger)',
+                          message: now`Failed to restore filter: ${errorText(err)}`,
+                        }),
+                    },
+                  )
+                }}
+              >
+                <Trans>Undo</Trans>
+              </Button>
+            </Group>
+          ),
+        })
+      },
+    })
+    if (activeFilterId === f.id) setActiveFilterId(null)
+  }
+
   /** Runs an action against every selected series sequentially with a live progress notification. */
   const runBulk = async (action: string, fn: (id: number) => Promise<unknown>) => {
     const ids = [...selected]
@@ -610,40 +648,69 @@ export default function LibraryPage() {
     // to nothing.
     const name = BULK_ACTION_LABELS[action] ? _(BULK_ACTION_LABELS[action]) : action
     setBusy(action)
+    let stopped = false
+    let ok = 0
+    const errors: string[] = []
+    const progress = () => (
+      <Group gap="xs" wrap="nowrap" justify="space-between">
+        <Text size="sm">{`${name}: ${ok + errors.length}/${total}`}</Text>
+        <Button
+          size="xs"
+          variant="subtle"
+          style={{ flexShrink: 0 }}
+          disabled={stopped}
+          onClick={() => {
+            stopped = true
+            notifications.update({
+              id: 'bulk-action',
+              loading: true,
+              message: progress(),
+              autoClose: false,
+              withCloseButton: false,
+            })
+          }}
+        >
+          {stopped ? <Trans>Stopping</Trans> : <Trans>Stop</Trans>}
+        </Button>
+      </Group>
+    )
     notifications.show({
       id: 'bulk-action',
       loading: true,
-      message: `${name}: 0/${total}`,
+      message: progress(),
       autoClose: false,
       withCloseButton: false,
     })
-    let ok = 0
-    const errors: string[] = []
     for (const id of ids) {
+      if (stopped) break
       try {
         await fn(id)
         ok++
       } catch (err) {
-        errors.push(String(err))
+        errors.push(errorText(err))
       }
-      const done = ok + errors.length
       notifications.update({
         id: 'bulk-action',
         loading: true,
-        message: `${name}: ${done}/${total}`,
+        message: progress(),
         autoClose: false,
         withCloseButton: false,
       })
     }
     const firstError = errors[0]
+    const stoppedEarly = stopped && ok + errors.length < total
     notifications.update({
       id: 'bulk-action',
       loading: false,
       color: errors.length ? 'var(--warn)' : 'var(--ok)',
       // The fixed wording is translated; `firstError` carries a raw exception message untouched.
       message: errors.length
-        ? now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`
-        : now`${name}: ${ok}/${total} succeeded`,
+        ? stoppedEarly
+          ? now`${name}: stopped, ${ok}/${total} succeeded, first error: ${firstError}`
+          : now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`
+        : stoppedEarly
+          ? now`${name}: stopped after ${ok}/${total}`
+          : now`${name}: ${ok}/${total} succeeded`,
       autoClose: 8000,
       withCloseButton: true,
     })
@@ -679,7 +746,7 @@ export default function LibraryPage() {
           {label}
         </Text>
         {value.length > 1 && (
-          <SegmentedControl size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
+          <SegmentedControl aria-label={t`Match mode for ${label}`} size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
         )}
       </Group>
       {description && (
@@ -688,6 +755,7 @@ export default function LibraryPage() {
         </Text>
       )}
       <MultiSelect
+        aria-label={label}
         data={data}
         value={value}
         onChange={onChange}
@@ -838,7 +906,7 @@ export default function LibraryPage() {
                 <Trans>Select</Trans>
               </Button>
               <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
-                <Trans>Add series</Trans>
+                {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
               </Button>
             </>
           ) : undefined
@@ -893,58 +961,62 @@ export default function LibraryPage() {
                 </Button>
                 <Text size="xs" c="var(--ink-3)" className="tnum">
                   {filtersActive ? (
-                    <Trans>
-                      {visibleCount} of {totalCount} series match
-                    </Trans>
+                    plural(totalCount, {
+                      one: `${visibleCount} of # series match`,
+                      other: `${visibleCount} of # series match`,
+                    })
                   ) : (
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
                 </Text>
               </Group>
               <Group gap="xs">
-                {bulkBtn('Search missing', <Trans>Search missing</Trans>, <IconSearch size={15} />, () =>
+                {can('DownloadChapters') && bulkBtn('Search missing', <Trans>Search missing</Trans>, <IconSearch size={15} />, () =>
                   runBulk('Search missing', (id) =>
                     api(`/series/${id}/searchmissing`, { method: 'POST' }),
                   ),
                 )}
-                {bulkBtn('Refresh', <Trans>Refresh</Trans>, <IconRefresh size={15} />, () =>
+                {can('EditMetadata') && bulkBtn('Refresh', <Trans>Refresh</Trans>, <IconRefresh size={15} />, () =>
                   runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
                 )}
-                {bulkBtn('Auto-match', <Trans>Auto-match</Trans>, <IconWand size={15} />, () =>
+                {can('ManageSources') && bulkBtn('Auto-match', <Trans>Auto-match</Trans>, <IconWand size={15} />, () =>
                   setAutoMatchModalOpen(true),
                 )}
-                {bulkBtn('Metadata', <Trans>Metadata</Trans>, <IconPhoto size={15} />, () =>
+                {can('EditMetadata') && bulkBtn('Metadata', <Trans>Metadata</Trans>, <IconPhoto size={15} />, () =>
                   runBulk('Metadata', (id) =>
                     api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
                   ),
                 )}
                 {/* "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5). */}
-                {bulkBtn('ComicInfo', 'ComicInfo', <IconFileText size={15} />, () =>
+                {can('EditMetadata') && bulkBtn('ComicInfo', 'ComicInfo', <IconFileText size={15} />, () =>
                   runBulk('ComicInfo', (id) =>
                     api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
                   ),
                 )}
-                {bulkBtn('Tags', <Trans>Tags</Trans>, <IconTag size={15} />, () => {
+                {can('ManageTags') && bulkBtn('Tags', <Trans>Tags</Trans>, <IconTag size={15} />, () => {
                   setTagsToAdd([])
                   setTagsToRemove([])
                   setTagModalOpen(true)
                 })}
-                {bulkBtn('Monitoring', <Trans>Monitoring</Trans>, <IconEye size={15} />, () =>
+                {can('EditMetadata') && bulkBtn('Monitoring', <Trans>Monitoring</Trans>, <IconEye size={15} />, () =>
                   setMonitorModalOpen(true),
                 )}
                 {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
                   setNotifyModalOpen(true),
                 )}
-                {bulkBtn('Quality profile', <Trans>Quality profile</Trans>, <IconStars size={15} />, () => {
+                {can('EditMetadata') && bulkBtn('Quality profile', <Trans>Quality profile</Trans>, <IconStars size={15} />, () => {
                   setBulkProfile(DEFAULT_PROFILE_FILTER)
                   setProfileModalOpen(true)
                 })}
-                {can('Admin') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
+                {can('EditMetadata') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
                   setMoveModalOpen(true)
                 })}
-                {bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
+                {can('DeleteSeries') && bulkBtn('Remove', <Trans>Remove</Trans>, <IconTrash size={15} />, () => {
+                  setDeleteFiles(false)
+                  setDeleteModalOpen(true)
+                }, 'var(--danger)')}
                 <Button
                   visibleFrom="sm"
                   size="xs"
@@ -961,6 +1033,7 @@ export default function LibraryPage() {
             <Stack className="library-toolbar" gap="sm">
               <Group className="library-toolbar-row" gap="sm" wrap="wrap">
                 <TextInput
+                  aria-label={t`Filter library…`}
                   className="library-search"
                   placeholder={t`Filter library…`}
                   leftSection={<IconSearch size={16} />}
@@ -1011,6 +1084,7 @@ export default function LibraryPage() {
                   </ActionIcon>
                 </Tooltip>
                 <Select
+                  aria-label={t`Sort by`}
                   className="library-sort"
                   data={sortOptions}
                   value={sort}
@@ -1023,9 +1097,10 @@ export default function LibraryPage() {
                 />
                 <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm" hidden={isLoading}>
                   {filtersActive ? (
-                    <Trans>
-                      {visibleCount} of {totalCount} series match
-                    </Trans>
+                    plural(totalCount, {
+                      one: `${visibleCount} of # series match`,
+                      other: `${visibleCount} of # series match`,
+                    })
                   ) : (
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
@@ -1060,14 +1135,11 @@ export default function LibraryPage() {
                 {f.name}
               </TagChip>
               <ActionIcon
-                size="xs"
+                size={24}
                 variant="subtle"
                 color="var(--ink-4)"
                 aria-label={t`Delete saved filter`}
-                onClick={() => {
-                  deleteSavedFilter.mutate(f.id)
-                  if (activeFilterId === f.id) setActiveFilterId(null)
-                }}
+                onClick={() => removeSavedFilter(f)}
               >
                 <IconX size={11} />
               </ActionIcon>
@@ -1110,16 +1182,17 @@ export default function LibraryPage() {
       >
         <Stack gap="sm" pb="xl">
           <Text size="sm" c="var(--ink-3)">
-            <Trans>
-              {shownCount} of {totalSeriesShown} series shown.
-            </Trans>{' '}
+            {plural(totalSeriesShown, {
+              one: `${shownCount} of # series shown.`,
+              other: `${shownCount} of # series shown.`,
+            })}{' '}
             <Trans>Changes apply straight to the grid behind this panel.</Trans>
           </Text>
           <Select
             label={t`Status`}
             data={statusOptions.map((s) => ({
               value: s,
-              label: s === 'all' ? t`All statuses` : s,
+              label: s === 'all' ? t`All statuses` : renderLabel(seriesStatusVisual(s).label),
             }))}
             value={statusFilter}
             onChange={(v) => setStatusFilter(v ?? 'all')}
@@ -1223,6 +1296,7 @@ export default function LibraryPage() {
               <Trans>Leave both boxes empty to ignore.</Trans>
             </Text>
             <SegmentedControl
+              aria-label={t`Chapters`}
               size="xs"
               fullWidth
               value={chapterMode}
@@ -1284,6 +1358,7 @@ export default function LibraryPage() {
                 <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
               </Text>
               <RangeSlider
+                thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
                 min={0}
                 max={100}
                 step={5}
@@ -1362,7 +1437,7 @@ export default function LibraryPage() {
       <Modal
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
-        title={t`Tag ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
       >
         <Stack gap="md">
           <Text size="sm" c="var(--ink-3)">
@@ -1426,7 +1501,7 @@ export default function LibraryPage() {
       <Modal
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
-        title={t`Auto-match sources for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>
@@ -1473,43 +1548,26 @@ export default function LibraryPage() {
         </Group>
       </Modal>
 
-      <Modal
+      <RemoveSeriesDialog
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        title={t`Delete ${selectedCount} series?`}
+        title={plural(selectedCount, { one: 'Remove # series?', other: 'Remove # series?' })}
+        deleteFiles={deleteFiles}
+        onDeleteFilesChange={setDeleteFiles}
+        onConfirm={() => {
+          setDeleteModalOpen(false)
+          void runBulk('Remove', (id) =>
+            api(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
+          ).then(exitSelectMode)
+        }}
       >
-        <Text size="sm" mb="md">
-          <Trans>The selected series will be removed from Maki and stop being monitored.</Trans>
-        </Text>
-        <Checkbox
-          label={t`Also delete the folders and files on disk`}
-          checked={deleteFiles}
-          onChange={(e) => setDeleteFiles(e.currentTarget.checked)}
-          mb="lg"
-        />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={() => setDeleteModalOpen(false)}>
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button
-            color="var(--danger-fill)"
-            leftSection={<IconTrash size={16} />}
-            onClick={() => {
-              setDeleteModalOpen(false)
-              void runBulk('Delete', (id) =>
-                api(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
-              ).then(exitSelectMode)
-            }}
-          >
-            <Trans>Delete</Trans>
-          </Button>
-        </Group>
-      </Modal>
+        <Trans>The selected series will be removed from Maki and stop being monitored.</Trans>
+      </RemoveSeriesDialog>
 
       <Modal
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
-        title={t`Set monitoring for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>Applies to chapters released later.</Trans>{' '}
@@ -1520,6 +1578,7 @@ export default function LibraryPage() {
           </Trans>
         </Text>
         <SegmentedControl
+          aria-label={t`Monitoring`}
           fullWidth
           value={monitorMode}
           onChange={setMonitorMode}
@@ -1554,7 +1613,7 @@ export default function LibraryPage() {
       <Modal
         opened={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
-        title={t`Set quality profile for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>
@@ -1563,6 +1622,7 @@ export default function LibraryPage() {
           </Trans>
         </Text>
         <Select
+          aria-label={t`Quality profile`}
           data={[
             { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
             ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
@@ -1625,12 +1685,13 @@ export default function LibraryPage() {
       <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
-        title={t`Set notifications for ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
       >
         <Text size="sm" mb="md">
           <Trans>Yours alone - this changes what lands in your bell, not anybody else's.</Trans>
         </Text>
         <SegmentedControl
+          aria-label={t`Notifications`}
           fullWidth
           value={notifyMode}
           onChange={(v) => setNotifyMode(v as SeriesNotificationMode)}
@@ -1679,7 +1740,7 @@ export default function LibraryPage() {
       <Modal
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        title={t`Move ${selectedCount} series`}
+        title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
       >
         <Stack gap="md">
           <Text size="sm" c="var(--ink-3)">

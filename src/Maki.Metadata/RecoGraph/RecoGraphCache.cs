@@ -25,6 +25,8 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
     private readonly SemaphoreSlim _lock = new(1, 1);
     private volatile PairGraphIndex? _graph;
     private readonly IdleStamp _idle = new();
+    private readonly LoadFailureMemo _failed = new();
+    private readonly SharedBuild<PairGraphIndex> _loads = new();
 
     /// <summary>Whether the artifact is currently in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _graph is not null;
@@ -36,6 +38,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
     public void Invalidate()
     {
         _graph = null;
+        _failed.Clear();
         logger.LogDebug("Co-recommendation graph invalidated");
     }
 
@@ -50,6 +53,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
         await _lock.WaitAsync(ct);
         try
         {
+            await _loads.DrainAsync();
             _graph = null;
             SqliteConnection.ClearAllPools();
 
@@ -62,6 +66,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
             }
 
             File.Move(stagedPath, options.DatabasePath, overwrite: true);
+            _failed.Clear();
             logger.LogInformation("Swapped in a new co-recommendation graph at {Path}", options.DatabasePath);
         }
         finally
@@ -109,6 +114,7 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
             return cached;
         }
 
+        Task<PairGraphIndex?> load;
         await _lock.WaitAsync(ct);
         try
         {
@@ -118,19 +124,45 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
                 return raced;
             }
 
-            if (!File.Exists(options.DatabasePath))
+            if (!File.Exists(options.DatabasePath) || _failed.ShouldSkip(options.DatabasePath))
             {
                 return null;
             }
 
-            _graph = await Task.Run(() => Load(ct), ct);
-            _idle.Touch();
-            return _graph;
+            load = _loads.Join(() =>
+            {
+                var observed = _failed.Observe(options.DatabasePath);
+                try
+                {
+                    var loaded = Load(CancellationToken.None);
+                    _graph = loaded;
+                    _idle.Touch();
+                    if (loaded is null)
+                    {
+                        _failed.Record(observed);
+                    }
+                    else
+                    {
+                        _failed.Clear();
+                    }
+
+                    return loaded;
+                }
+                catch (Exception ex)
+                {
+                    _failed.Record(observed);
+                    // Logged here because every caller may have stopped waiting by now.
+                    logger.LogWarning(ex, "Loading the co-recommendation graph failed");
+                    throw;
+                }
+            });
         }
         finally
         {
             _lock.Release();
         }
+
+        return await load.WaitAsync(ct);
     }
 
     private PairGraphIndex? Load(CancellationToken ct)
@@ -221,9 +253,10 @@ public sealed class RecoGraphCache(RecoGraphOptions options, ILogger<RecoGraphCa
         var malScale = Percentile90([.. raw.Where(r => r.Mal > 0).Select(r => r.Mal)]);
 
         // Votes stay integers on AniList's scale rather than becoming floats, so RecoGraphTuning's
-        // MinVotes floor keeps meaning what it says. An artifact from only one provider leaves the
-        // other's scale at zero and its term drops out, which is exactly today's state.
-        var ratio = aniListScale > 0 && malScale > 0 ? (double)aniListScale / malScale : 0;
+        // MinVotes floor keeps meaning what it says. An artifact from only one provider has nothing
+        // to rescale against: AniList-only leaves the MAL term at zero, and MAL-only keeps its votes
+        // as counted, since AniList's term is the zero one there.
+        var ratio = aniListScale > 0 && malScale > 0 ? (double)aniListScale / malScale : 1;
 
         var pairs = new List<(long, long, float)>(raw.Count);
         foreach (var (a, b, aniList, mal) in raw)

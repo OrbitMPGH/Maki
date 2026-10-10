@@ -14,11 +14,20 @@ import { plural } from '@lingui/core/macro'
 import { useState } from 'react'
 import { useActivityStats, type ActivityTotals } from '../../../api/hooks'
 import { useStatsInsights, useStatsStanding } from '../../../api/stats'
-import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { SectionHeader } from '../../../components/ui/SectionHeader'
-import { formatDate, formatHour, formatMonthBucket, formatNumber, formatReadingTime, monthName } from '../../../format'
+import {
+  formatCalendarDate,
+  formatDayBucket,
+  formatHour,
+  formatMonthBucket,
+  formatNumber,
+  formatPercent,
+  formatReadingTime,
+  formatSignedPercent,
+} from '../../../format'
 import { ActivityFeed } from '../ActivityFeed'
+import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
 import { ChartSkeleton } from '../ChartSkeleton'
 import { MidwayList } from '../MidwayList'
 import { RankList } from '../RankList'
@@ -26,12 +35,9 @@ import { delta, type DateRange } from '../StatsRange'
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
 
-/** "2026-03" → "Mar 26"; "2026-03-14" → "14 Mar". */
+/** "2026-03" → "Mar 26"; "2026-03-14" → "14 Mar" or "Mar 14". */
 function bucketLabel(bucket: string): string {
-  const parts = bucket.split('-')
-  if (parts.length === 2) return formatMonthBucket(bucket)
-  const month = monthName(Number(parts[1]), 'short')
-  return `${Number(parts[2])} ${month}`
+  return bucket.split('-').length === 2 ? formatMonthBucket(bucket) : formatDayBucket(bucket)
 }
 
 /** Inclusive day count of a local-date range, for "12 of 30 days active". */
@@ -85,16 +91,19 @@ function ReadingInsight({
   const hour = primeStartHour !== null ? formatHour(primeStartHour) : null
 
   let kind: 'up' | 'down' | 'flat' | 'none' = 'none'
-  let pct = 0
+  let pct = ''
   if (prevTotals) {
     const d = delta(chapters, prevTotals.chaptersRead)
     if (d === null) {
       kind = 'none'
-    } else if (d === 0) {
-      kind = 'flat'
     } else {
-      kind = d > 0 ? 'up' : 'down'
-      pct = Math.abs(Math.round(d * 100))
+      const whole = Math.round(Math.abs(d) * 100)
+      if (whole === 0) {
+        kind = 'flat'
+      } else {
+        kind = d > 0 ? 'up' : 'down'
+        pct = formatPercent(whole / 100)
+      }
     }
   }
 
@@ -102,8 +111,8 @@ function ReadingInsight({
     <span className="stats-insight-dim">
       <Select
         value={kind}
-        _up={`Up ${pct}% on the period before.`}
-        _down={`Down ${pct}% on the period before.`}
+        _up={`Up ${pct} on the period before.`}
+        _down={`Down ${pct} on the period before.`}
         _flat="About the same as the period before."
         _none=""
         other=""
@@ -158,19 +167,15 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
 
   if (!activity.readTrackingAvailable) {
     return (
-      <EmptyState
-        compact
-        title={t`Reading stats need Kavita`}
-        description={t`Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way.`}
-      />
+      <ReadTrackingEmpty />
     )
   }
 
   const comparing = previous !== null && prevActivity !== undefined
   let deltaLabel: string | undefined
   if (previous) {
-    const fromLabel = formatDate(previous.from)
-    const toLabel = formatDate(previous.to)
+    const fromLabel = formatCalendarDate(previous.from)
+    const toLabel = formatCalendarDate(previous.to)
     deltaLabel = t`vs ${fromLabel} to ${toLabel}`
   }
   const compare = (pick: (totals: ActivityTotals) => number) =>
@@ -246,12 +251,12 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                   {f.delta !== undefined && (
                     <span
                       className="stats-figure-delta tnum"
-                      data-tone={f.delta === null || f.delta === 0 ? 'flat' : f.delta > 0 ? 'up' : 'down'}
+                      data-tone={f.delta === null || Math.round(f.delta * 100) === 0 ? 'flat' : f.delta > 0 ? 'up' : 'down'}
                       title={deltaLabel}
                     >
                       {f.delta === null
                         ? t`no baseline`
-                        : `${f.delta > 0 ? '+' : ''}${Math.round(f.delta * 100)}%`}
+                        : formatSignedPercent(f.delta)}
                     </span>
                   )}
                 </div>
@@ -269,6 +274,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                 {t`Day by day`}
               </p>
               <SegmentedControl
+                aria-label={t`Day by day`}
                 size="xs"
                 value={metric}
                 onChange={(v) => setMetric(v as 'chapters' | 'time')}
@@ -316,7 +322,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
               title={t`Most read`}
               items={activity.topRead.map((s) => {
                 const { count } = s
-                return { ...s, value: plural(count, { one: '# ch', other: '# ch' }) }
+                return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
               })}
               emptyText={t`No chapters read in this period.`}
             />
@@ -333,7 +339,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
               title={t`Barely touched`}
               items={activity.leastRead.map((s) => {
                 const { count } = s
-                return { ...s, value: plural(count, { one: '# ch', other: '# ch' }) }
+                return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
               })}
               emptyText={t`Everything you started, you kept reading.`}
             />

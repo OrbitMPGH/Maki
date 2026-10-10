@@ -40,12 +40,11 @@ public static class ComicInfoUpdater
             {
                 using var reader = new StreamReader(existingEntry.Open());
                 existingXml = reader.ReadToEnd();
-                using var xmlStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(existingXml));
-                info = ComicInfoBuilder.Deserialize(xmlStream);
+                info = ComicInfoBuilder.Deserialize(new StringReader(existingXml));
             }
 
             info ??= new ComicInfo();
-            var pageCount = source.Entries.Count(e => ImageExtensions.Contains(Path.GetExtension(e.Name)));
+            var pageCount = source.Entries.Count(e => Reading.CbzReader.IsImage(e.FullName));
             Standardize(info, series, parsed, chapter, pageCount);
 
             newXml = ComicInfoBuilder.Serialize(info);
@@ -75,7 +74,8 @@ public static class ComicInfoUpdater
         info.Genre = ComicInfoBuilder.JoinList(series.Genres) ?? info.Genre;
         info.Tags = ComicInfoBuilder.JoinList(series.Tags) ?? info.Tags;
         info.Web = SeriesWebLinks.Joined(series) ?? info.Web;
-        info.Manga = "YesAndRightToLeft";
+        info.Manga = ComicInfoBuilder.MangaFor(series.Type)
+            ?? (string.IsNullOrWhiteSpace(info.Manga) ? ComicInfoBuilder.DefaultManga : info.Manga);
 
         // File-level fields: prefer the linked chapter, then the parsed file name,
         // then whatever the file already declared.

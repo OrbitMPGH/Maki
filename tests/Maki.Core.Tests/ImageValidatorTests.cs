@@ -85,6 +85,16 @@ public class ImageValidatorTests : IDisposable
     }
 
     [Fact]
+    public async Task A_cancelled_check_throws_instead_of_calling_the_file_invalid()
+    {
+        var path = WritePng("page.png", 200, 200);
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ImageValidator.IsValidImageAsync(path, cts.Token));
+    }
+
+    [Fact]
     public async Task Rejects_a_missing_file()
     {
         Assert.False(await ImageValidator.IsValidImageAsync(Path.Combine(dir, "absent.png")));

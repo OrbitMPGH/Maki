@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Button,
@@ -20,9 +20,10 @@ import {
 import type { ProgressSettings, ReadingGoal } from '../../api/hooks'
 import { useLingui } from '@lingui/react'
 import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
-import { msg } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -42,6 +43,17 @@ const METRIC_DEFS: { value: ReadingGoal['metric']; label: MessageDescriptor }[] 
   { value: 'SeriesFinished', label: msg`series finished` },
 ]
 
+function goalAmount(goal: ReadingGoal): string {
+  switch (goal.metric) {
+    case 'Chapters':
+      return plural(goal.target, { one: '# chapter', other: '# chapters' })
+    case 'Minutes':
+      return plural(goal.target, { one: '# minute read', other: '# minutes read' })
+    default:
+      return plural(goal.target, { one: '# series finished', other: '# series finished' })
+  }
+}
+
 function usePeriodOptions() {
   const { _, i18n } = useLingui()
   return useMemo(
@@ -57,6 +69,10 @@ function useMetricOptions() {
     [_, i18n.locale],
   )
 }
+
+// UTC is stored explicitly. An empty zone means "never chosen", which the seeding below and the
+// server's X-Maki-TimeZone handling both fill with the browser's zone.
+const UTC_ZONE = 'UTC'
 
 /** What the browser thinks the user's zone is, used to prefill and as the "detect" value. */
 function browserTimeZone(): string {
@@ -80,13 +96,17 @@ export function ProgressSection() {
   const [period, setPeriod] = useState<ReadingGoal['period']>('Day')
   const [metric, setMetric] = useState<ReadingGoal['metric']>('Chapters')
   const [target, setTarget] = useState<number | string>(3)
+  const [deletingGoal, setDeletingGoal] = useState<ReadingGoal | null>(null)
 
   // Seed the time zone from the browser the first time somebody opens this, so streaks land on the
-  // right day without anybody having to think about it. Only when it is genuinely unset — never
+  // right day without anybody having to think about it. Only when it is genuinely unset, never
   // overwrite a zone the user chose.
+  const zoneSeeded = useRef(false)
   useEffect(() => {
+    if (zoneSeeded.current || save.isError) return
     if (settings && settings.timeZone === '' && browserTimeZone()) {
-      save.mutate({ ...settings, timeZone: browserTimeZone() })
+      zoneSeeded.current = true
+      save.mutate({ timeZone: browserTimeZone() })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings?.timeZone])
@@ -95,7 +115,7 @@ export function ProgressSection() {
     return null
   }
 
-  const patch = (changes: Partial<ProgressSettings>) => save.mutate({ ...settings, ...changes })
+  const patch = (changes: Partial<ProgressSettings>) => save.mutate(changes)
   const zone = browserTimeZone()
 
   return (
@@ -138,14 +158,14 @@ export function ProgressSection() {
           label={t`Time zone`}
           description={t`Decides when your reading day ends, which is what streaks and daily goals count against.`}
           data={[
-            { value: '', label: t`UTC` },
-            ...(zone ? [{ value: zone, label: t`${zone} (this browser)` }] : []),
-            ...(settings.timeZone && settings.timeZone !== zone
+            { value: UTC_ZONE, label: t`UTC` },
+            ...(zone && zone !== UTC_ZONE ? [{ value: zone, label: t`${zone} (this browser)` }] : []),
+            ...(settings.timeZone && settings.timeZone !== zone && settings.timeZone !== UTC_ZONE
               ? [{ value: settings.timeZone, label: settings.timeZone }]
               : []),
           ]}
-          value={settings.timeZone}
-          onChange={(v) => patch({ timeZone: v ?? '' })}
+          value={settings.timeZone || UTC_ZONE}
+          onChange={(v) => patch({ timeZone: v ?? UTC_ZONE })}
           disabled={!settings.enabled}
         />
 
@@ -160,13 +180,12 @@ export function ProgressSection() {
           {(summary?.goals ?? []).map((goal) => (
             <Group key={goal.id} justify="space-between" wrap="nowrap">
               <Text size="sm">
-                {periods.find((p) => p.value === goal.period)?.label}: {goal.target}{' '}
-                {metrics.find((m) => m.value === goal.metric)?.label}
+                {periods.find((p) => p.value === goal.period)?.label}: {goalAmount(goal)}
               </Text>
               <ActionIcon
                 variant="subtle"
                 color="var(--danger)"
-                onClick={() => deleteGoal.mutate(goal.id)}
+                onClick={() => setDeletingGoal(goal)}
                 aria-label={t`Remove goal`}
               >
                 <IconTrash size={16} />
@@ -209,6 +228,28 @@ export function ProgressSection() {
           </Group>
         </Stack>
       </Stack>
+
+      <ConfirmDialog
+        opened={deletingGoal !== null}
+        onClose={() => setDeletingGoal(null)}
+        title={<Trans>Remove this reading goal?</Trans>}
+        confirmLabel={<Trans>Remove goal</Trans>}
+        loading={deleteGoal.isPending}
+        onConfirm={() =>
+          deletingGoal && deleteGoal.mutate(deletingGoal.id, { onSuccess: () => setDeletingGoal(null) })
+        }
+      >
+        <Stack gap="xs">
+          {deletingGoal && (
+            <Text size="sm" fw={600}>
+              {periods.find((p) => p.value === deletingGoal.period)?.label}: {goalAmount(deletingGoal)}
+            </Text>
+          )}
+          <Text size="sm">
+            <Trans>Your reading history is not affected. You can set a new goal at any time.</Trans>
+          </Text>
+        </Stack>
+      </ConfirmDialog>
     </SettingsSection>
   )
 }

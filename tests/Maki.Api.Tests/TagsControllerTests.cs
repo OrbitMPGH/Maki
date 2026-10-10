@@ -61,6 +61,25 @@ public class TagsControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task List_counts_only_series_the_caller_can_see()
+    {
+        var tag = await CreateTag("Action");
+        var seriesId = _db.SeedSeries("Berserk");
+        var restricted = _db.SeedUser("restricted", allRootFolders: false);
+
+        using (var db = _db.NewContext())
+        {
+            db.SeriesTags.Add(new SeriesTag { SeriesId = seriesId, TagId = tag.Id });
+            await db.SaveChangesAsync();
+        }
+
+        var controller = new TagsController(new TestLocalizer(), _db.NewContext(restricted, allRootFolders: false));
+        var tags = Body<IEnumerable<TagDto>>(await controller.List(CancellationToken.None)).ToList();
+
+        Assert.Equal(0, tags.Single(t => t.Id == tag.Id).SeriesCount);
+    }
+
+    [Fact]
     public async Task List_reports_how_many_series_carry_each_tag()
     {
         var tag = await CreateTag("Action");

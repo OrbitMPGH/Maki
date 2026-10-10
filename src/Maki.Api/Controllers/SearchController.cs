@@ -1,13 +1,16 @@
 ﻿using System.Net;
+using Maki.Api.Auth;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
+using Maki.Core.Http;
 using Maki.Core.Metadata;
 using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Controllers;
@@ -26,6 +29,7 @@ public class SearchController(
 {
     /// <summary>Search a specific site source, for manually linking a series.</summary>
     [HttpGet("source")]
+    [Authorize(Policy = Policies.ManageSources)]
     public async Task<IActionResult> SearchSource(
         [FromQuery] string sourceName, [FromQuery] string query, CancellationToken ct)
     {
@@ -33,6 +37,16 @@ public class SearchController(
         if (source is null)
         {
             return this.Fail(localizer, "error.search.unknownSource", new { sourceName });
+        }
+
+        if (!await sourceAvailability.IsEnabledAsync(source.Name, ct))
+        {
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = source.Name });
+        }
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return BadRequest();
         }
 
         var results = await source.SearchAsync(query, ct);
@@ -47,6 +61,7 @@ public class SearchController(
     /// Fetches the series detail so the UI can show what will be linked.
     /// </summary>
     [HttpGet("resolvesource")]
+    [Authorize(Policy = Policies.ManageSources)]
     public async Task<IActionResult> ResolveSource([FromQuery] string url, CancellationToken ct)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var target) ||
@@ -55,12 +70,19 @@ public class SearchController(
             return this.Fail(localizer, "error.search.invalidUrl");
         }
 
+        var disabled = await sourceAvailability.DisabledAsync(ct);
         foreach (var source in sourceRegistry.All)
         {
             var seriesId = await source.ResolveSeriesIdFromUrlAsync(target, ct);
             if (seriesId is null)
             {
                 continue;
+            }
+
+            // Recognised but switched off: say so, rather than claiming no source knows the URL.
+            if (disabled.Contains(source.Name))
+            {
+                return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = source.Name });
             }
 
             try
@@ -78,10 +100,8 @@ public class SearchController(
             }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    error = $"URL matched {source.DisplayName} but the series page could not be fetched: {ex.Message}"
-                });
+                logger.LogWarning(ex, "Could not fetch the series page {Url} from {Source}", target, source.Name);
+                return this.BadGateway(localizer, "error.search.seriesPageFailed", new { source = source.DisplayName });
             }
         }
 
@@ -133,6 +153,13 @@ public class SearchController(
             try
             {
                 response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            }
+            catch (HttpRequestException ex) when (IsBlockedDestination(ex))
+            {
+                logger.LogWarning(
+                    "Blocked cover proxy connection to {Host} via source {Source}: not a public address",
+                    current.Host, sourceName);
+                return this.Fail(localizer, "error.search.hostNotServed");
             }
             catch (Exception ex) when (ex is HttpRequestException || (ex is OperationCanceledException && !ct.IsCancellationRequested))
             {
@@ -198,6 +225,19 @@ public class SearchController(
         }
 
         return this.Fail(localizer, "error.search.tooManyRedirects");
+    }
+
+    private static bool IsBlockedDestination(Exception? ex)
+    {
+        for (; ex is not null; ex = ex.InnerException)
+        {
+            if (ex is BlockedDestinationException)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Redirect hops the cover proxy will follow before giving up.</summary>

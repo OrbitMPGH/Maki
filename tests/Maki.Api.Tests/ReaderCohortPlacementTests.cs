@@ -37,6 +37,16 @@ public class ReaderCohortPlacementTests
         Assert.True(action[1] > action.GetValueOrDefault(0));
     }
 
+    [Fact]
+    public void AnInstalledArtifactChangesThePlacementKey()
+    {
+        var before = ReaderCohortService.PlacementKey(false, [1, 2], new DateTime(2026, 1, 1), [10L, 20L]);
+        var after = ReaderCohortService.PlacementKey(false, [2, 1], new DateTime(2026, 2, 1), [20L, 10L]);
+
+        Assert.NotEqual(before, after);
+        Assert.Equal(before, ReaderCohortService.PlacementKey(false, [2, 1], new DateTime(2026, 1, 1), [20L, 10L]));
+    }
+
     /// <summary>
     /// A reader whose finished series the artifact has never heard of cannot be placed, and that
     /// has to come back as "no cohorts" rather than as an even split across all of them — an even

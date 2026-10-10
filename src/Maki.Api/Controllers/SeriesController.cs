@@ -273,6 +273,9 @@ public class SeriesController(
             return Forbid();
         }
 
+        // Rescan, import linking, cleanup and delete hold this lock; without it one of them could
+        // land between the planner's disk listing and its save.
+        using var seriesLock = await SeriesLocks.SeriesAsync(id, ct);
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
@@ -329,9 +332,9 @@ public class SeriesController(
 
         var readCounts = await ReadChapterCountsBySeriesAsync(ct);
 
-        // Flat join-table read scoped to these series in SQL, since SeriesTags has no visibility filter of its own.
+        // Flat join-table read; the SeriesTag query filter keeps it to series the caller can see.
         var tagIdsBySeries = (await db.SeriesTags
-                .Where(x => db.Series.Any(s => s.Id == x.SeriesId))
+                .AsNoTracking()
                 .ToListAsync(ct))
             .GroupBy(x => x.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
@@ -437,6 +440,12 @@ public class SeriesController(
     /// been opened — and nothing could clear it, because the mark may not be lowered.
     /// </para>
     /// </summary>
+    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
+        await ReadCounts.Read(db)
+            .GroupBy(p => p.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
+
     /// <summary>
     /// The caller's own per-series state: their score, and their notification mode. Needed by every
     /// endpoint that hands back a <see cref="SeriesDto"/> after a mutation — neither is a column on
@@ -454,12 +463,6 @@ public class SeriesController(
         return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default);
     }
 
-    private async Task<Dictionary<int, int>> ReadChapterCountsBySeriesAsync(CancellationToken ct) =>
-        await ReadCounts.Read(db)
-            .GroupBy(p => p.SeriesId)
-            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
-
     /// <summary>
     /// Lists the raw CBZ files in the series folder cross-referenced with the database:
     /// each file's import status (linked / unlinked / unrecognized / missing-from-disk)
@@ -470,7 +473,7 @@ public class SeriesController(
     public async Task<IActionResult> Files(int id, [FromServices] UpgradeEvaluationService upgrades,
         [FromServices] IMemoryCache cache, CancellationToken ct)
     {
-        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        var series = await db.Series.AsNoTracking().Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -481,7 +484,7 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        var records = await db.ChapterFiles.Where(f => f.SeriesId == id).ToListAsync(ct);
+        var records = await db.ChapterFiles.AsNoTracking().Where(f => f.SeriesId == id).ToListAsync(ct);
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == id && c.ChapterFileId != null)
             .Select(c => new { c.ChapterFileId, c.Number, c.Language })
@@ -490,6 +493,10 @@ public class SeriesController(
         var languageByFile = chapters
             .GroupBy(c => c.ChapterFileId!.Value)
             .ToDictionary(g => g.Key, g => g.OrderBy(c => c.Number is null).ThenBy(c => c.Number).First().Language);
+
+        // A file is linked by any chapter pointing at it, numbered or not: a one-shot has no number
+        // by construction. The numbers only feed the label.
+        var linkedFileIds = chapters.Select(c => c.ChapterFileId!.Value).ToHashSet();
 
         // chapter numbers linked to each ChapterFile, ascending
         var chaptersByFile = chapters
@@ -539,7 +546,7 @@ public class SeriesController(
             var mapped = chaptersByFile.GetValueOrDefault(record.Id, []);
 
             var status = !present ? "missing"
-                : mapped.Count > 0 ? "linked"
+                : linkedFileIds.Contains(record.Id) ? "linked"
                 : parsed.IsRecognized ? "unlinked"
                 : "unrecognized";
 
@@ -732,19 +739,31 @@ public class SeriesController(
             .Where(k => k.Length > 0)
             .ToHashSet();
 
-        var states = await db.ScrobbleSyncStates.AsNoTracking().ToListAsync(ct);
-        var unmatched = await db.ScrobbleUnmatched.AsNoTracking().ToListAsync(ct);
-        var allMappings = await db.ScrobbleMappings.AsNoTracking().ToListAsync(ct);
-
         bool Matches(string title) => keys.Contains(ScrobbleMatching.NormalizeTitle(title));
 
         // Link this library series to its Kavita series by matching the stored title on any
         // scrobble row. Mappings count too (a review/manual match carries the title but may
-        // have no sync state yet), so a just-resolved series is visible immediately.
-        var kavitaIds = states.Where(s => Matches(s.Title)).Select(s => s.KavitaSeriesId)
-            .Concat(unmatched.Where(u => Matches(u.Title)).Select(u => u.KavitaSeriesId))
-            .Concat(allMappings.Where(m => m.Title.Length > 0 && Matches(m.Title)).Select(m => m.KavitaSeriesId))
+        // have no sync state yet), so a just-resolved series is visible immediately. Only the
+        // title and id columns are read for the match; the full rows are fetched for the hits.
+        var stateTitles = await db.ScrobbleSyncStates.AsNoTracking()
+            .Select(s => new { s.KavitaSeriesId, s.Title }).ToListAsync(ct);
+        var unmatchedTitles = await db.ScrobbleUnmatched.AsNoTracking()
+            .Select(u => new { u.KavitaSeriesId, u.Title }).ToListAsync(ct);
+        var mappingTitles = await db.ScrobbleMappings.AsNoTracking()
+            .Select(m => new { m.KavitaSeriesId, m.Title }).ToListAsync(ct);
+
+        var kavitaIds = stateTitles.Where(s => Matches(s.Title)).Select(s => s.KavitaSeriesId)
+            .Concat(unmatchedTitles.Where(u => Matches(u.Title)).Select(u => u.KavitaSeriesId))
+            .Concat(mappingTitles.Where(m => m.Title.Length > 0 && Matches(m.Title)).Select(m => m.KavitaSeriesId))
             .ToHashSet();
+
+        var kavitaIdList = kavitaIds.ToList();
+        var states = await db.ScrobbleSyncStates.AsNoTracking()
+            .Where(s => kavitaIdList.Contains(s.KavitaSeriesId)).ToListAsync(ct);
+        var unmatched = await db.ScrobbleUnmatched.AsNoTracking()
+            .Where(u => kavitaIdList.Contains(u.KavitaSeriesId)).ToListAsync(ct);
+        var allMappings = await db.ScrobbleMappings.AsNoTracking()
+            .Where(m => kavitaIdList.Contains(m.KavitaSeriesId)).ToListAsync(ct);
 
         var kavitaConfigured =
             !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
@@ -814,9 +833,9 @@ public class SeriesController(
     /// available, rather than an error — this is a supplementary section, not a core one.
     /// </summary>
     [HttpGet("{id:int}/related")]
-    public async Task<IActionResult> Related(int id, CancellationToken ct)
+    public async Task<IActionResult> Related(int id, [FromServices] HiddenContentService hidden, CancellationToken ct)
     {
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -834,7 +853,9 @@ public class SeriesController(
         var related = await mangaBakaStore.GetRelatedAsync(
             [mangaBakaId], new HashSet<long>(libraryIds), ContentRating.Allowed(currentUser.MaxContentRating), ct);
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
-        return Ok(related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList());
+        return Ok(HiddenContentService.Without(
+            related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList(),
+            await hidden.PredicateAsync(ct)));
     }
 
     /// <summary>
@@ -849,9 +870,9 @@ public class SeriesController(
     /// </para>
     /// </summary>
     [HttpGet("{id:int}/similar")]
-    public async Task<IActionResult> Similar(int id, CancellationToken ct)
+    public async Task<IActionResult> Similar(int id, [FromServices] HiddenContentService hidden, CancellationToken ct)
     {
-        var series = await db.Series.FindAsync([id], ct);
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
             return NotFound();
@@ -878,7 +899,8 @@ public class SeriesController(
             .ToListAsync(ct);
         var ownedSet = new HashSet<long>(owned);
         var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
-        return Ok(pool
+        var visible = HiddenContentService.Without(pool, await hidden.PredicateAsync(ct));
+        return Ok(visible
             .Where(r => !long.TryParse(r.ProviderId, out var providerId) ||
                 !ownedSet.Contains(providerId) && !suppressed.Contains(providerId))
             .Take(RailSize)
@@ -888,7 +910,7 @@ public class SeriesController(
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct)
     {
-        var series = await db.Series.Include(s => s.UserTags).Include(s => s.RootFolder)
+        var series = await db.Series.AsNoTracking().Include(s => s.UserTags).Include(s => s.RootFolder)
             .FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
         {
@@ -901,15 +923,21 @@ public class SeriesController(
         var active = await db.DownloadQueue
             .Where(q => q.SeriesId == id && q.Status != QueueStatus.Completed &&
                         q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+            .Select(q => q.Status)
             .ToListAsync(ct);
-        var queued = active.Count(q => q.Status is QueueStatus.Queued or QueueStatus.RateLimited);
+        var queued = active.Count(status => status is QueueStatus.Queued or QueueStatus.RateLimited);
 
         // Null means nothing has been read yet, which the UI hides instead of drawing an empty bar.
         // Through ReadCounts so this page and the library grid can't disagree about what "read" is.
         var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
 
-        var readerPrefs = await readingProfiles.ResolveAsync(id, ct);
+        var userState = await db.UserSeriesStates
+            .Where(x => x.SeriesId == id)
+            .Select(x => new { x.Rating, x.NotificationMode, x.ReaderPrefsJson, x.ReadingProfileId })
+            .FirstOrDefaultAsync(ct);
+        var readerPrefs = await readingProfiles.ResolveForAsync(
+            series.Type, userState?.ReaderPrefsJson, userState?.ReadingProfileId, ct);
         // A profile or series override is an explicit reading-style choice. With only the global
         // default, use the format's conventional style so an unconfigured manhua/manhwa does not
         // borrow a manga pace merely because the application default is paged.
@@ -921,7 +949,6 @@ public class SeriesController(
         var estimate = await readingTimeEstimates.EstimateAsync(
             id, estimateTotal, readRows, estimateMode, ct);
 
-        var userState = await UserStateForAsync(id, ct);
         var pendingProposalId = await db.TorrentProposals
             .Where(p => p.SeriesId == id && p.Status == TorrentProposalStatus.Pending)
             .OrderByDescending(p => p.CreatedAtUtc)
@@ -929,8 +956,8 @@ public class SeriesController(
             .FirstOrDefaultAsync(ct);
         var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
-            rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
-            notificationMode: userState.NotificationMode,
+            rating: userState?.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
+            notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             RemovedChapterCount = counts?.Removed ?? 0,
@@ -1281,6 +1308,15 @@ public class SeriesController(
         var folders = await SeriesFolders.ForAsync(db, series, ct);
         var newFolder = Path.Combine(destination.Path, series.FolderName);
 
+        // Add and import never give two series of one root the same folder, so a move must not
+        // either. Checked again under the folder-name lock just before the save, once the files
+        // have moved and a racing add could have claimed the name.
+        if ((await SeriesCreationService.SeriesFoldersInRootAsync(db, destination.Id, id, ct))
+            .Contains(series.FolderName))
+        {
+            return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
+        }
+
         // A failure part way through puts back whatever already moved, since RootFolderId is
         // not updated and would otherwise resolve it under the old root. The series' own folder
         // moves whole; a folder it only has some files in gives up just those files, the same
@@ -1424,8 +1460,7 @@ public class SeriesController(
                     logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
                     RollbackMoves();
 
-                    return StatusCode(StatusCodes.Status500InternalServerError,
-                        new { error = $"Could not move the series folder: {ex.Message}" });
+                    return this.ServerError(localizer, "error.series.moveFailed");
                 }
             }
         }
@@ -1456,21 +1491,31 @@ public class SeriesController(
 
         var oldRootFolderPath = series.RootFolder.Path;
         var oldRootFolderId = series.RootFolderId;
-        series.RootFolderId = destination.Id;
-        try
+        using (await SeriesLocks.FolderNamesAsync(CancellationToken.None))
         {
-            // Cancellation must not be observed here: every file has already moved, so a
-            // cancelled save would leave the DB pointing at the old root while the files sit
-            // in the new one. CancellationToken.None keeps this write unconditional.
-            await db.SaveChangesAsync(CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            series.RootFolderId = oldRootFolderId;
-            logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
-            RollbackMoves();
+            if ((await SeriesCreationService.SeriesFoldersInRootAsync(db, destination.Id, id, CancellationToken.None))
+                .Contains(series.FolderName))
+            {
+                RollbackMoves();
+                return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
+            }
 
-            return this.ServerError(localizer, "error.series.moveSaveFailed", new { message = ex.Message });
+            series.RootFolderId = destination.Id;
+            try
+            {
+                // Cancellation must not be observed here: every file has already moved, so a
+                // cancelled save would leave the DB pointing at the old root while the files sit
+                // in the new one. CancellationToken.None keeps this write unconditional.
+                await db.SaveChangesAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                series.RootFolderId = oldRootFolderId;
+                logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
+                RollbackMoves();
+
+                return this.ServerError(localizer, "error.series.moveSaveFailed", new { message = ex.Message });
+            }
         }
 
         // Best-effort only: the move and the DB save both already succeeded, so a stray empty
@@ -1664,7 +1709,7 @@ public class SeriesController(
     [HttpPost("{id:int}/monitormode")]
     public async Task<IActionResult> SetMonitorMode(int id, [FromBody] MonitorModeRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownMonitorMode", new { mode = request.Mode });
         }
@@ -1741,14 +1786,10 @@ public class SeriesController(
         // Resolved through db.Series, like the notification bulk: ids outside the caller's root
         // folders are dropped by the query filter instead of written.
         var wanted = (request.SeriesIds ?? []).Distinct().ToList();
-        var series = await db.Series.Where(s => wanted.Contains(s.Id)).ToListAsync(ct);
-        foreach (var s in series)
-        {
-            s.UpgradeProfileId = request.UpgradeProfileId;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { updated = series.Count });
+        var updated = await db.Series
+            .Where(s => wanted.Contains(s.Id))
+            .ExecuteUpdateAsync(u => u.SetProperty(s => s.UpgradeProfileId, request.UpgradeProfileId), ct);
+        return Ok(new { updated });
     }
 
     public record IncognitoRequest(string Mode);
@@ -1763,7 +1804,7 @@ public class SeriesController(
     [HttpPost("{id:int}/incognito")]
     public async Task<IActionResult> SetIncognito(int id, [FromBody] IncognitoRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownIncognitoMode", new { mode = request.Mode });
         }
@@ -1802,22 +1843,45 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
-        if (state is null)
-        {
-            state = new UserSeriesState { SeriesId = id };
-            db.UserSeriesStates.Add(state);
-        }
-
-        state.Rating = request.Rating;
-        state.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        var state = await UpsertUserStateAsync(id, s => s.Rating = request.Rating, ct);
 
         // Push the score (0 clears it on trackers that support that) in the background — tracker
         // auth-checks + network + pacing take several seconds, and the UI shouldn't wait on them.
         // The scrobble log records what synced.
         scrobbler.QueueRatingPush(currentUser.UserId, series, request.Rating ?? 0);
         return Ok(new { rating = state.Rating });
+    }
+
+    /// <summary>
+    /// Applies <paramref name="apply"/> to the caller's state row for the series, creating it on the
+    /// first write. Two first writes at once (rating and notification mode) both see no row and both
+    /// insert, so the loser of the unique <c>(UserId, SeriesId)</c> index retries as an update.
+    /// </summary>
+    private async Task<UserSeriesState> UpsertUserStateAsync(
+        int seriesId, Action<UserSeriesState> apply, CancellationToken ct)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
+            var inserting = state is null;
+            if (state is null)
+            {
+                state = new UserSeriesState { SeriesId = seriesId };
+                db.UserSeriesStates.Add(state);
+            }
+
+            apply(state);
+            state.UpdatedAt = DateTime.UtcNow;
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return state;
+            }
+            catch (DbUpdateException) when (inserting && attempt == 0)
+            {
+                db.Entry(state).State = EntityState.Detached;
+            }
+        }
     }
 
     /// <summary>One of the <see cref="SeriesNotificationMode"/> names.</summary>
@@ -1837,7 +1901,7 @@ public class SeriesController(
     public async Task<IActionResult> SetNotificationMode(
         int id, [FromBody] SetSeriesNotificationsRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownNotificationMode", new { mode = request.Mode });
         }
@@ -1847,16 +1911,7 @@ public class SeriesController(
             return NotFound();
         }
 
-        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == id, ct);
-        if (state is null)
-        {
-            state = new UserSeriesState { SeriesId = id };
-            db.UserSeriesStates.Add(state);
-        }
-
-        state.NotificationMode = mode;
-        state.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        await UpsertUserStateAsync(id, s => s.NotificationMode = mode, ct);
         return Ok(new { notificationMode = mode.ToString() });
     }
 
@@ -1869,7 +1924,7 @@ public class SeriesController(
     public async Task<IActionResult> SetNotificationModeBulk(
         [FromBody] BulkSeriesNotificationsRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
+        if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
         {
             return this.Fail(localizer, "error.series.unknownNotificationMode", new { mode = request.Mode });
         }
@@ -1944,6 +1999,4 @@ public class SeriesController(
         await db.SaveChangesAsync(ct);
         return Ok(new { tagIds = series.UserTags.Select(t => t.Id).ToList() });
     }
-
-    /// <summary>The "unmonitor specials" setting turns a requested All into MainOnly.</summary>
 }

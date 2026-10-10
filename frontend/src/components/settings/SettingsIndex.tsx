@@ -3,6 +3,7 @@ import { UnstyledButton } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import type { SettingsEntry } from '../../pages/settings/registry'
+import { scrollBehavior } from '../../lib/scrollBehavior'
 
 /**
  * The cards on one settings tab, as a sticky list beside them. Highlights whichever card is in the
@@ -45,7 +46,7 @@ export function SettingsIndex({ entries }: { entries: SettingsEntry[] }) {
           className="settings-index-link"
           data-active={active === e.id || undefined}
           onClick={() => {
-            document.getElementById(`setting-${e.id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+            document.getElementById(`setting-${e.id}`)?.scrollIntoView({ block: 'start', behavior: scrollBehavior() })
             setActive(e.id)
           }}
         >

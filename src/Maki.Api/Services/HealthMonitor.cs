@@ -28,9 +28,21 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     private static readonly SemaphoreSlim Gate = new(1);
     private const string UnmeasuredFilesId = "unmeasured-files";
     private const string UpgradeTrashId = "upgrade-trash";
-    public async Task RefreshAsync(CancellationToken ct)
+    /// <summary>
+    /// With the schedule off nothing keeps a backup fresh, so a stale or missing one is reported as
+    /// disabled rather than warned about forever; a fresh one still reads as healthy.
+    /// </summary>
+    public static (string Status, string Key) BackupCheck(DateTime latestUtc, DateTime nowUtc, int backupDays, bool scheduled)
     {
-        if (!await Gate.WaitAsync(0, ct)) return;
+        var key = latestUtc == DateTime.MinValue ? "health.check.noBackup" : "health.check.lastBackup";
+        if (latestUtc >= nowUtc.AddDays(-backupDays)) return ("healthy", key);
+        return scheduled ? ("warning", key) : ("disabled", "health.check.backupScheduleOff");
+    }
+
+    /// <summary>Runs the checks, or returns false at once when another run already holds the gate.</summary>
+    public async Task<bool> RefreshAsync(CancellationToken ct)
+    {
+        if (!await Gate.WaitAsync(0, ct)) return false;
         try
         {
             var options = System.Text.Json.JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync(SettingKeys.HealthOptions, ct) ?? "{}", HealthScanService.Json) ?? new();
@@ -77,8 +89,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 try
                 {
                     var full = Path.GetFullPath(directory);
-                    var drive = DriveInfo.GetDrives().Where(d => full.StartsWith(d.Name, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-                        .OrderByDescending(d => d.Name.Length).FirstOrDefault();
+                    var allDrives = DriveInfo.GetDrives();
+                    var mount = Maki.Core.Storage.DiskSpace.LongestMount(full, allDrives.Select(d => d.Name),
+                        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    var drive = allDrives.FirstOrDefault(d => d.Name == mount);
                     if (drive == null || !drives.Add(drive.Name)) continue;
                     var gib = drive.AvailableFreeSpace / Math.Pow(1024, 3);
                     var percent = 100.0 * drive.AvailableFreeSpace / drive.TotalSize;
@@ -106,15 +120,17 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     await settings.GetAsync(SettingKeys.QBittorrentUsername, token) ?? "", await settings.GetAsync(SettingKeys.QBittorrentPassword, token) ?? "", token));
             try
             {
-                var latest = Directory.EnumerateFiles(paths.BackupDir, "*.zip").Select(File.GetLastWriteTimeUtc).DefaultIfEmpty(DateTime.MinValue).Max();
-                Add("backup", "system",
-                    latest < DateTime.UtcNow.AddDays(-options.BackupDays) ? "warning" : "healthy",
-                    latest == DateTime.MinValue ? "health.check.noBackup" : "health.check.lastBackup",
-                    latest == DateTime.MinValue ? null : new { at = latest },
+                var latest = BackupService.NewestBackupUtc(paths);
+                var scheduled = await settings.GetAsync(SettingKeys.BackupScheduled, ct) == "true";
+                var (status, key) = BackupCheck(latest, DateTime.UtcNow, options.BackupDays, scheduled);
+                Add("backup", "system", status, key,
+                    key == "health.check.lastBackup" ? new { at = latest } : null,
                     "/settings?tab=system&s=backup");
             }
             catch { Add("backup", "system", "unavailable", "health.check.backupUnreadable"); }
-            var failed = await db.DownloadQueue.CountAsync(q => q.Status == QueueStatus.Failed, ct);
+            var failedNow = DateTime.UtcNow;
+            var failed = await Maki.Api.Jobs.HousekeepingJob
+                .RecentFailures(db.DownloadQueue, failedNow, failedNow.AddDays(-30)).CountAsync(ct);
             foreach (var root in roots)
             {
                 try
@@ -163,26 +179,28 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch { }
             var queue = services.GetRequiredService<DownloadQueueService>();
+            // Pending, not a warning: a cooldown is the app throttling itself and ends on its own,
+            // so it must not announce or count toward the badge. Sources not cooling down get no row.
             foreach (var source in sources.All)
-                Add($"cooldown:{source.Name}", "downloads",
-                    queue.CooldownRemaining(source.Name) > TimeSpan.Zero ? "warning" : "healthy",
-                    queue.CooldownRemaining(source.Name) > TimeSpan.Zero
-                        ? "health.check.coolingDown"
-                        : "health.check.noCooldown",
-                    new { source = source.Name }, "/activity");
+                if (queue.CooldownRemaining(source.Name) > TimeSpan.Zero)
+                    Add($"cooldown:{source.Name}", "downloads", "pending", "health.check.coolingDown",
+                        new { source = source.Name }, "/activity");
             try
             {
                 var scheduler = await schedulerFactory.GetScheduler(ct);
                 var running = scheduler.IsStarted && !scheduler.InStandbyMode;
                 Add("scheduler", "system", running ? "healthy" : "warning",
                     running ? "health.check.schedulerRunning" : "health.check.schedulerPaused");
-                var pending = (await db.Database.GetPendingMigrationsAsync(ct)).Count();
-                Add("database", "system", pending > 0 ? "warning" : "healthy",
-                    pending > 0 ? "health.check.migrationsPending" : "health.check.databaseCurrent",
-                    pending > 0 ? new { count = pending } : null);
-                if (File.Exists(Path.Combine(paths.ConfigDir, "health-migration-error.txt")))
+                var reachable = await db.Database.CanConnectAsync(ct);
+                Add("database", "system", reachable ? "healthy" : "unavailable",
+                    reachable ? "health.check.databaseCurrent" : "health.check.diagnosticsUnavailable");
+                if (MigrationErrorMarker.Exists(paths.ConfigDir, DateTime.UtcNow))
                 {
-                    Add("migration-history", "system", "warning", "health.check.migrationFailed");
+                    if (MigrationErrorMarker.Read(paths.ConfigDir, DateTime.UtcNow) is { } migrationError)
+                        Add("migration-history", "system", "warning", "health.check.migrationFailedDetail",
+                            new { error = migrationError });
+                    else
+                        Add("migration-history", "system", "warning", "health.check.migrationFailed");
                 }
             }
             catch { Add("database", "system", "unavailable", "health.check.diagnosticsUnavailable"); }
@@ -199,6 +217,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
                     await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
             }
+            foreach (var cooled in old.Where(r => r.Id.StartsWith("cooldown:", StringComparison.Ordinal) && !checks.Any(c => c.Id == r.Id)).ToList())
+                db.HealthChecks.Remove(cooled);
+            if (!checks.Any(c => c.Id == "migration-history") && old.FirstOrDefault(r => r.Id == "migration-history") is { } migrationRow)
+                db.HealthChecks.Remove(migrationRow);
             if (!checks.Any(c => c.Id == UnmeasuredFilesId) && old.FirstOrDefault(r => r.Id == UnmeasuredFilesId) is { } measuredRow)
                 db.HealthChecks.Remove(measuredRow);
             if (!checks.Any(c => c.Id == UpgradeTrashId) && old.FirstOrDefault(r => r.Id == UpgradeTrashId) is { } trashRow)
@@ -246,6 +268,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
         }
         finally { Gate.Release(); }
+        return true;
     }
 
     /// <summary>
@@ -260,11 +283,11 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
 
         // A row written before the checks were keyed still has its English, and a check whose key
         // this build does not know still has an id worth naming.
+        var locale = await locales.DefaultAsync(ct);
         var detail = row.MessageKey is { Length: > 0 } key
-            ? localizer.GetFor(await locales.DefaultAsync(ct), key, HealthParams(row.ParamsJson))
+            ? localizer.GetFor(locale, key, HealthParams(row.ParamsJson))
             : row.Message;
 
-        var locale = await locales.DefaultAsync(ct);
         var title = localizer.GetFor(locale, recovered ? "notify.health.recovered.title" : "notify.health.issue.title");
         var body = recovered
             ? localizer.GetFor(locale, "notify.health.recovered.body", new { detail })

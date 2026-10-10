@@ -44,6 +44,73 @@ public class FileNameBuilderTests
     }
 
     [Fact]
+    public void A_leading_dot_is_dropped_so_the_folder_is_not_hidden()
+    {
+        var series = new Series { Title = ".hack//G.U.+", FolderName = "x" };
+        Assert.Equal("hackG.U.+", FileNameBuilder.BuildSeriesFolderName(series));
+        Assert.Equal("hackG.U.+ Ch.1.cbz", FileNameBuilder.BuildChapterFileName(series, new Chapter { Number = 1 }));
+    }
+
+    [Theory]
+    [InlineData("Title .", "Title")]
+    [InlineData("Title . .", "Title")]
+    [InlineData(". .hack", "hack")]
+    public void Dots_and_spaces_are_trimmed_until_neither_edge_has_one(string input, string expected)
+    {
+        Assert.Equal(expected, FileNameSanitizer.Sanitize(input));
+    }
+
+    [Theory]
+    [InlineData("Aux", "Aux_")]
+    [InlineData("nul", "nul_")]
+    [InlineData("COM1", "COM1_")]
+    [InlineData("Con.Air", "Con_.Air")]
+    [InlineData("Aux Ch.1", "Aux Ch.1")]
+    [InlineData("Console", "Console")]
+    public void Windows_device_names_get_an_underscore(string input, string expected)
+    {
+        Assert.Equal(expected, FileNameSanitizer.Sanitize(input));
+    }
+
+    [Fact]
+    public void A_name_within_the_byte_limit_is_left_alone()
+    {
+        var name = new string('a', FileNameSanitizer.MaxBytes);
+        Assert.Equal(name, FileNameSanitizer.Sanitize(name));
+    }
+
+    [Fact]
+    public void An_over_long_name_keeps_its_start_and_end_within_the_limit()
+    {
+        // About 85 CJK characters already reach 255 bytes, the ext4 limit for one name.
+        var title = string.Concat(Enumerable.Repeat("\u9032\u6483\u306E\u5DE8\u4EBA", 30));
+        var name = FileNameSanitizer.Sanitize(title + " Vol.12 Ch.105");
+
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(name) <= FileNameSanitizer.MaxBytes);
+        Assert.StartsWith("\u9032\u6483\u306E", name);
+        Assert.EndsWith(" Vol.12 Ch.105", name);
+    }
+
+    [Fact]
+    public void Over_long_names_that_differ_only_in_the_middle_stay_distinct()
+    {
+        var head = new string('a', 150);
+        var tail = new string('z', 100);
+        Assert.NotEqual(
+            FileNameSanitizer.Sanitize(head + " one " + tail),
+            FileNameSanitizer.Sanitize(head + " two " + tail));
+    }
+
+    [Fact]
+    public void Shortening_never_splits_a_surrogate_pair()
+    {
+        var name = FileNameSanitizer.Sanitize(string.Concat(Enumerable.Repeat("\U0001F600", 100)));
+
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(name) <= FileNameSanitizer.MaxBytes);
+        Assert.DoesNotContain('\uFFFD', System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(name)));
+    }
+
+    [Fact]
     public void Relative_path_includes_series_folder()
     {
         var series = SeriesFor("Berserk");
@@ -81,6 +148,19 @@ public class FileNameBuilderTests
             new Chapter { Number = 24, Volume = 3, Language = "es" },
             "{Series Title} {Chapter VolChap} ({Chapter Language})");
         Assert.Equal("Berserk Vol.3 Ch.24 (es).cbz", name);
+    }
+
+    [Theory]
+    [InlineData("{Chapter.Language}")]
+    [InlineData("{chapter_language}")]
+    [InlineData("{ChapterLanguage}")]
+    public void A_language_token_spelled_with_other_separators_gets_no_suffix(string token)
+    {
+        var name = FileNameBuilder.BuildChapterFileName(
+            SeriesFor("Berserk"),
+            new Chapter { Number = 24, Language = "es" },
+            "{Series Title} {Chapter VolChap} " + token);
+        Assert.Equal("Berserk Ch.24 es.cbz", name);
     }
 
     [Fact]

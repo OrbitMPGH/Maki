@@ -18,6 +18,7 @@ import { TermFilters, useTermFilters } from './CatalogueRules'
 import { CreditPicker } from './CreditPicker'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
+import { formatFixedDecimal } from '../format'
 
 /** {@link BROWSE_SORTS} as `Select` data in the current language. */
 export function useBrowseSortOptions() {
@@ -333,7 +334,7 @@ export function CatalogueFilters({
   const chaptersMax = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
   const yearMin = years[0]
   const yearMax = years[1]
-  const ratingLabel = minRating > 0 ? `★ ${minRating.toFixed(1)}` : t`any`
+  const ratingLabel = minRating > 0 ? `★ ${formatFixedDecimal(minRating, 1)}` : t`any`
 
   return (
     <Stack gap="lg">
@@ -391,6 +392,7 @@ export function CatalogueFilters({
             </Trans>
           </Text>
           <RangeSlider
+            thumbFromLabel={t`Earliest year`} thumbToLabel={t`Latest year`}
             min={YEAR_MIN}
             max={YEAR_MAX}
             value={years}
@@ -412,7 +414,7 @@ export function CatalogueFilters({
             step={0.5}
             value={minRating}
             onChange={setMinRating}
-            label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : t`any`)}
+            label={(v) => (v > 0 ? `★ ${formatFixedDecimal(v, 1)}` : t`any`)}
             marks={[
               { value: 0, label: t`any` },
               { value: 7, label: '7' },

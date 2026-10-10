@@ -17,6 +17,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { SettingsNumberInput } from './SettingsNumberInput'
 import {
   IconArrowDown,
   IconArrowUp,
@@ -30,6 +31,7 @@ import {
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { EmptyState } from '../ui/EmptyState'
 import {
   FORMAT_CONDITION_TYPE_LABELS,
   FORMAT_CONDITION_TYPES,
@@ -344,13 +346,13 @@ function ProfileEditor({
   const [tiers, setTiers] = useState<ProfileTierDto[]>(initial.tiers)
   const [cutoff, setCutoff] = useState<QualityTierName>(initial.cutoff)
   const [upgradesEnabled, setUpgradesEnabled] = useState(initial.upgradesEnabled)
-  const [minScoreDelta, setMinScoreDelta] = useState<number | string>(initial.minScoreDelta)
+  const [minScoreDelta, setMinScoreDelta] = useState<number>(initial.minScoreDelta)
   const [maxTierScoreDrop, setMaxTierScoreDrop] = useState<number | string>(initial.maxTierScoreDrop ?? '')
-  const [upgradeUntilScore, setUpgradeUntilScore] = useState<number | string>(initial.upgradeUntilScore)
+  const [upgradeUntilScore, setUpgradeUntilScore] = useState<number>(initial.upgradeUntilScore)
   const [formatScores, setFormatScores] = useState<FormatScoreDto[]>(initial.formatScores)
-  const [resolutionWeight, setResolutionWeight] = useState<number | string>(initial.resolutionWeight)
-  const [compressionWeight, setCompressionWeight] = useState<number | string>(initial.compressionWeight)
-  const [pageTolerancePercent, setPageTolerancePercent] = useState<number | string>(initial.pageTolerancePercent)
+  const [resolutionWeight, setResolutionWeight] = useState<number>(initial.resolutionWeight)
+  const [compressionWeight, setCompressionWeight] = useState<number>(initial.compressionWeight)
+  const [pageTolerancePercent, setPageTolerancePercent] = useState<number>(initial.pageTolerancePercent)
   const [allowReplacingUnknown, setAllowReplacingUnknown] = useState(initial.allowReplacingUnknown)
 
   const groups = tierGroups(tiers)
@@ -368,13 +370,13 @@ function ProfileEditor({
     tiers,
     cutoff: effectiveCutoff ?? cutoff,
     upgradesEnabled,
-    minScoreDelta: Number(minScoreDelta) || 0,
+    minScoreDelta,
     maxTierScoreDrop: maxTierScoreDrop === '' ? null : Number(maxTierScoreDrop) || 0,
-    upgradeUntilScore: Number(upgradeUntilScore) || 0,
+    upgradeUntilScore,
     formatScores,
-    resolutionWeight: Number(resolutionWeight) || 0,
-    compressionWeight: Number(compressionWeight) || 0,
-    pageTolerancePercent: Number(pageTolerancePercent) || 0,
+    resolutionWeight,
+    compressionWeight,
+    pageTolerancePercent,
     allowReplacingUnknown,
   }
   useReportUnsaved(profileFingerprint(draft) !== profileFingerprint(initial))
@@ -384,57 +386,60 @@ function ProfileEditor({
   const toggleGrouped = (index: number) =>
     setTiers((current) => current.map((row, i) => (i === index ? { ...row, grouped: !row.grouped } : row)))
 
-  const tierRow = (row: ProfileTierDto, index: number) => (
-    <Group key={row.tier} gap="xs" wrap="nowrap" justify="space-between">
-      <Group gap="xs" wrap="nowrap">
-        <Group gap={2} wrap="nowrap">
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            color="var(--neutral)"
-            disabled={index === 0}
-            onClick={() => setTiers((current) => moveTier(current, index, -1))}
-            aria-label={t`Move up`}
-          >
-            <IconArrowUp size={14} />
-          </ActionIcon>
-          <ActionIcon
-            size="sm"
-            variant="subtle"
-            color="var(--neutral)"
-            disabled={index === tiers.length - 1}
-            onClick={() => setTiers((current) => moveTier(current, index, 1))}
-            aria-label={t`Move down`}
-          >
-            <IconArrowDown size={14} />
-          </ActionIcon>
-        </Group>
-        <Text size="sm" fw={500} w={100}>
-          {renderLabel(QUALITY_TIER_LABELS[row.tier])}
-        </Text>
-        {index > 0 && (
-          <Tooltip label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}>
+  const tierRow = (row: ProfileTierDto, index: number) => {
+    const tierLabel = renderLabel(QUALITY_TIER_LABELS[row.tier])
+    return (
+      <Group key={row.tier} gap="xs" wrap="nowrap" justify="space-between">
+        <Group gap="xs" wrap="nowrap">
+          <Group gap={2} wrap="nowrap">
             <ActionIcon
               size="sm"
-              variant={row.grouped ? 'light' : 'subtle'}
-              color={row.grouped ? undefined : 'var(--neutral)'}
-              onClick={() => toggleGrouped(index)}
-              aria-label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}
-              aria-pressed={row.grouped}
+              variant="subtle"
+              color="var(--neutral)"
+              disabled={index === 0}
+              onClick={() => setTiers((current) => moveTier(current, index, -1))}
+              aria-label={t`Move ${tierLabel} up`}
             >
-              {row.grouped ? <IconLink size={14} /> : <IconLinkOff size={14} />}
+              <IconArrowUp size={14} />
             </ActionIcon>
-          </Tooltip>
-        )}
+            <ActionIcon
+              size="sm"
+              variant="subtle"
+              color="var(--neutral)"
+              disabled={index === tiers.length - 1}
+              onClick={() => setTiers((current) => moveTier(current, index, 1))}
+              aria-label={t`Move ${tierLabel} down`}
+            >
+              <IconArrowDown size={14} />
+            </ActionIcon>
+          </Group>
+          <Text size="sm" fw={500} w={100}>
+            {renderLabel(QUALITY_TIER_LABELS[row.tier])}
+          </Text>
+          {index > 0 && (
+            <Tooltip label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}>
+              <ActionIcon
+                size="sm"
+                variant={row.grouped ? 'light' : 'subtle'}
+                color={row.grouped ? undefined : 'var(--neutral)'}
+                onClick={() => toggleGrouped(index)}
+                aria-label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}
+                aria-pressed={row.grouped}
+              >
+                {row.grouped ? <IconLink size={14} /> : <IconLinkOff size={14} />}
+              </ActionIcon>
+            </Tooltip>
+          )}
+        </Group>
+        <Switch
+          size="sm"
+          label={t`Allowed`}
+          checked={row.allowed}
+          onChange={(e) => setTierAllowed(row.tier, e.currentTarget.checked)}
+        />
       </Group>
-      <Switch
-        size="sm"
-        label={t`Allowed`}
-        checked={row.allowed}
-        onChange={(e) => setTierAllowed(row.tier, e.currentTarget.checked)}
-      />
-    </Group>
-  )
+    )
+  }
 
   return (
     <Stack gap="sm" mt="sm">
@@ -503,7 +508,7 @@ function ProfileEditor({
       />
 
       <Group grow align="flex-start">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Minimum score gain`}
           description={t`Within the same tier, a candidate must beat the current file's score by at least this much. A higher tier is governed by the next field.`}
           min={0}
@@ -520,14 +525,14 @@ function ProfileEditor({
         />
       </Group>
       <Group grow align="flex-start">
-        <NumberInput
+        <SettingsNumberInput
           label={t`Upgrade until score`}
           description={t`Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop.`}
           min={0}
           value={upgradeUntilScore}
           onChange={setUpgradeUntilScore}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Page tolerance %`}
           description={t`How much shorter a candidate's page count may be and still count as an upgrade.`}
           min={0}
@@ -548,7 +553,7 @@ function ProfileEditor({
           </Trans>
         </SettingsHelp>
         <Group grow align="flex-start">
-          <NumberInput
+          <SettingsNumberInput
             label={t`Resolution weight`}
             description={t`Scored on median page width, from 500 to 2000 pixels.`}
             min={0}
@@ -556,7 +561,7 @@ function ProfileEditor({
             value={resolutionWeight}
             onChange={setResolutionWeight}
           />
-          <NumberInput
+          <SettingsNumberInput
             label={t`Compression weight`}
             description={t`Scored on image data per pixel, adjusted so PNG and WebP compare fairly with JPG.`}
             min={0}
@@ -595,6 +600,7 @@ function ProfileEditor({
                   <Table.Td w={120}>
                     <NumberInput
                       size="xs"
+                      aria-label={t`Score for ${format.name}`}
                       value={scoreOf(formatScores, format.id)}
                       onChange={(value) =>
                         setFormatScores((current) => withScore(current, format.id, Number(value) || 0))
@@ -689,9 +695,7 @@ export function QualityFormatsSection() {
           <FormatRow key={format.id} format={format} />
         ))}
         {formats && formats.length === 0 && !creating && (
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>No quality formats yet.</Trans>
-          </Text>
+          <EmptyState compact mood="asleep" title={t`No quality formats yet.`} />
         )}
       </Stack>
     </SettingsSection>

@@ -105,6 +105,19 @@ public class BackupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Create_that_fails_while_writing_reports_failure_and_removes_the_partial_zip()
+    {
+        await File.WriteAllTextAsync(_paths.ConfigFile, "{}");
+        await using var lockHandle = new FileStream(_paths.ConfigFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        var ex = await Assert.ThrowsAsync<BackupCreateException>(
+            () => Build().CreateAsync("manual", CancellationToken.None));
+
+        Assert.Equal("error.system.backupFailed", ex.Key);
+        Assert.Empty(Directory.GetFiles(_paths.BackupDir, "*.zip"));
+    }
+
+    [Fact]
     public async Task Prune_keeps_the_newest_per_kind()
     {
         _settings.Set(SettingKeys.BackupRetention, "2");

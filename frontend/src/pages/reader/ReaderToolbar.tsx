@@ -27,6 +27,7 @@ import {
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { BACKGROUNDS, type PrefsSelection, type ReaderPrefs } from './prefs'
@@ -41,6 +42,7 @@ const OVERLAY_Z = 500
 export default function ReaderToolbar({
   manifest,
   page,
+  pageLabel,
   onSeek,
   onPrevChapter,
   onNextChapter,
@@ -62,10 +64,13 @@ export default function ReaderToolbar({
   onToggleStrip,
   visible,
   onHold,
+  onReveal,
   onShortcuts,
 }: {
   manifest: ReaderManifest
   page: number
+  /** The page counter's text: one number, or a range when a double-page spread is up. */
+  pageLabel: string
   onSeek: (page: number) => void
   onPrevChapter: () => void
   onNextChapter: () => void
@@ -89,15 +94,23 @@ export default function ReaderToolbar({
   visible: boolean
   /** Keeps the auto-hide from pulling the chrome out from under an open menu or the cursor. */
   onHold: (held: boolean) => void
+  /** Brings the chrome up; called when a keyboard user tabs onto a control while it is hidden. */
+  onReveal: () => void
   onShortcuts: () => void
 }) {
   const { t } = useLingui()
   const { scale } = prefs
 
-  // Only the slider mirrors: it is a spatial map of the pages. The chapter chevrons stay
-  // previous-left / next-right in both directions: they're semantic controls, not positions.
+  // The slider and the chapter chevrons mirror in RTL: the left chevron goes to the next chapter,
+  // so each chevron's disabled state follows the chapter it actually opens.
   const rtl = prefs.direction === 'rtl'
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // The thumb follows the pointer through this, and the page only moves once it is released.
+  const [scrub, setScrub] = useState<number | null>(null)
+  // A cancelled touch drag never fires onChangeEnd, so any page move also drops a stuck scrub.
+  useEffect(() => {
+    setScrub(null)
+  }, [page])
 
   // "Auto" names the profile the series' type resolves to, so choosing it says what it will do.
   const autoProfile = profiles.find((p) => p.id === autoProfileId)
@@ -117,9 +130,25 @@ export default function ReaderToolbar({
   const backChapterLabel = rtl ? t`Next chapter` : t`Previous chapter`
   const forwardChapterLabel = rtl ? t`Previous chapter` : t`Next chapter`
 
+  // The cursor over a bar, keyboard focus inside one, or the settings popover all keep it up.
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
   useEffect(() => {
-    onHold(settingsOpen)
-  }, [settingsOpen, onHold])
+    onHold(hovered || focused || settingsOpen)
+  }, [hovered, focused, settingsOpen, onHold])
+
+  // Only keyboard focus counts: a button clicked with the mouse keeps focus, and holding the chrome
+  // for that would stop it ever auto-hiding again.
+  const barFocus = {
+    onFocus: (event: React.FocusEvent) => {
+      if (!(event.target as HTMLElement).matches(':focus-visible')) return
+      setFocused(true)
+      onReveal()
+    },
+    onBlur: (event: React.FocusEvent<HTMLElement>) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false)
+    },
+  }
 
   // Escape closes the settings first. Mantine only closes on Escape when focus is inside the
   // dropdown, and focus is usually still on the gear, so the reader's own Escape (leave the reader)
@@ -159,8 +188,9 @@ export default function ReaderToolbar({
         className="reader-bar reader-bar-top"
         data-visible={visible}
         onClick={stop}
-        onMouseEnter={() => onHold(true)}
-        onMouseLeave={() => onHold(settingsOpen)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        {...barFocus}
       >
         <Group gap="sm" wrap="nowrap" px="md" h="100%">
           <ActionIcon
@@ -196,9 +226,10 @@ export default function ReaderToolbar({
                     <Text fz="xs" c="var(--ink-3)" truncate className="tnum">
                       {/* Named, since the bottom bar's bare page count sits right under it. */}
                       {chaptersRead < seriesChapterCount ? (
-                        <Trans>
-                          {chaptersRead}/{seriesChapterCount} chapters read
-                        </Trans>
+                        plural(seriesChapterCount, {
+                          one: `${chaptersRead}/# chapter read`,
+                          other: `${chaptersRead}/# chapters read`,
+                        })
                       ) : (
                         <Trans>all read</Trans>
                       )}
@@ -240,8 +271,9 @@ export default function ReaderToolbar({
         className="reader-bar reader-bar-bottom"
         data-visible={visible}
         onClick={stop}
-        onMouseEnter={() => onHold(true)}
-        onMouseLeave={() => onHold(settingsOpen)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        {...barFocus}
       >
         <Group gap="xs" wrap="nowrap" px="md" h="100%">
           <Tooltip label={backChapterLabel} withArrow zIndex={OVERLAY_Z}>
@@ -249,7 +281,7 @@ export default function ReaderToolbar({
               variant="subtle"
               color="gray"
               onClick={rtl ? onNextChapter : onPrevChapter}
-              disabled={manifest.previousChapterId === null}
+              disabled={(rtl ? manifest.nextChapterId : manifest.previousChapterId) === null}
               aria-label={backChapterLabel}
             >
               <IconChevronLeft size={18} />
@@ -267,8 +299,12 @@ export default function ReaderToolbar({
             className="reader-slider"
             min={1}
             max={Math.max(1, manifest.pageCount)}
-            value={rtl ? manifest.pageCount - page : page + 1}
-            onChange={(value) => onSeek(rtl ? manifest.pageCount - value : value - 1)}
+            value={scrub ?? (rtl ? manifest.pageCount - page : page + 1)}
+            onChange={setScrub}
+            onChangeEnd={(value) => {
+              setScrub(null)
+              onSeek(rtl ? manifest.pageCount - value : value - 1)
+            }}
             label={(value) => `${rtl ? manifest.pageCount - value + 1 : value} / ${manifest.pageCount}`}
             inverted={rtl}
             style={{ flex: 1 }}
@@ -283,7 +319,7 @@ export default function ReaderToolbar({
             c="var(--ink-3)"
             style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
           >
-            {page + 1} / {manifest.pageCount}
+            {pageLabel} / {manifest.pageCount}
           </Text>
 
           <Tooltip label={forwardChapterLabel} withArrow zIndex={OVERLAY_Z}>
@@ -291,7 +327,7 @@ export default function ReaderToolbar({
               variant="subtle"
               color="gray"
               onClick={rtl ? onPrevChapter : onNextChapter}
-              disabled={manifest.nextChapterId === null}
+              disabled={(rtl ? manifest.previousChapterId : manifest.nextChapterId) === null}
               aria-label={forwardChapterLabel}
             >
               <IconChevronRight size={18} />
@@ -335,6 +371,7 @@ export default function ReaderToolbar({
                     <Trans>Layout</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Layout`}
                     fullWidth
                     size="xs"
                     value={prefs.mode}
@@ -351,6 +388,7 @@ export default function ReaderToolbar({
                     <Trans>Direction</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Direction`}
                     fullWidth
                     size="xs"
                     value={prefs.direction}
@@ -366,6 +404,7 @@ export default function ReaderToolbar({
                     <Trans>Fit</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Fit`}
                     fullWidth
                     size="xs"
                     value={prefs.fit}
@@ -384,6 +423,7 @@ export default function ReaderToolbar({
                       <Trans>Scale ({scale}%)</Trans>
                     </Text>
                     <Slider
+                      thumbLabel={t`Scale`}
                       size="xs"
                       min={25}
                       max={400}
@@ -398,6 +438,7 @@ export default function ReaderToolbar({
                     <Trans>Background</Trans>
                   </Text>
                   <SegmentedControl
+                    aria-label={t`Background`}
                     fullWidth
                     size="xs"
                     value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
@@ -446,6 +487,7 @@ export default function ReaderToolbar({
                     <Trans>Reading profile</Trans>
                   </Text>
                   <Select
+                    aria-label={t`Reading profile`}
                     size="xs"
                     comboboxProps={{ zIndex: OVERLAY_Z + 1 }}
                     allowDeselect={false}
@@ -481,16 +523,18 @@ export default function ReaderToolbar({
             </ActionIcon>
           </Tooltip>
 
-          <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              onClick={onToggleFullscreen}
-              aria-label={t`Toggle full screen`}
-            >
-              {fullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
-            </ActionIcon>
-          </Tooltip>
+          {document.fullscreenEnabled && (
+            <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                onClick={onToggleFullscreen}
+                aria-label={t`Toggle full screen`}
+              >
+                {fullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
+              </ActionIcon>
+            </Tooltip>
+          )}
         </Group>
       </div>
     </>

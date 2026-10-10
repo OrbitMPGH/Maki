@@ -12,9 +12,9 @@ import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import './theme.css'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
-import { loadLocale, resolveInitialLocale } from './i18n'
+import { i18n, loadLocale, resolveInitialLocale } from './i18n'
 import App from './App.tsx'
-import { ApiError } from './api/client'
+import { ApiError, UnauthorizedError } from './api/client'
 import { syncSkeletonPulses } from './lib/skeletonSync'
 
 syncSkeletonPulses()
@@ -46,29 +46,44 @@ window.addEventListener('vite:preloadError', (event) => {
  * which is exactly how the series monitor toggle ended up reverting silently. Call sites only
  * need their own `onError` for extra work (resetting local state); the toast is automatic.
  *
- * `meta.errorMessage` overrides the text; `meta.silent` opts out entirely for flows that show
- * failure inline (bulk actions with per-row results). `meta.inlineNotFound` drops only a 404, for
- * pages that render their own not-found state.
+ * A call site never toasts the server's own message, that is this handler's job. `meta.errorMessage`
+ * overrides the text; `meta.silent` opts out entirely for flows that show failure inline (bulk
+ * actions with per-row results) or word it themselves in an `onError`. `meta.inlineNotFound` drops
+ * only a 404, for pages that render their own not-found state.
  */
+const recentErrorToasts = new Map<string, number>()
+const ERROR_TOAST_DEDUPE_MS = 3000
+
 function reportError(error: unknown, meta?: Record<string, unknown>) {
   if (meta?.silent) return
   if (meta?.inlineNotFound && error instanceof ApiError && error.status === 404) return
-  notifications.show({
-    message:
-      typeof meta?.errorMessage === 'string'
-        ? meta.errorMessage
-        : error instanceof Error
-          ? error.message
-          : String(error),
-    color: 'var(--danger)',
-  })
+  const message =
+    typeof meta?.errorMessage === 'string'
+      ? meta.errorMessage
+      : error instanceof Error
+        ? error.message
+        : String(error)
+  // A page mounting several queries while the API is down fails them all with the same text at
+  // once; one toast says it.
+  const now = Date.now()
+  const last = recentErrorToasts.get(message)
+  if (last !== undefined && now - last < ERROR_TOAST_DEDUPE_MS) return
+  recentErrorToasts.set(message, now)
+  notifications.show({ message, color: 'var(--danger)' })
+}
+
+function isFinalClientError(error: unknown): boolean {
+  if (error instanceof UnauthorizedError) return true
+  if (!(error instanceof ApiError)) return false
+  return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429
 }
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // A 404 won't change on a second try; retrying only delays the page's not-found state.
-      retry: (failureCount, error) => failureCount < 1 && !(error instanceof ApiError && error.status === 404),
+      // A 4xx (not-found, forbidden, validation) won't change on a second try; retrying only delays
+      // the page's own state. Timeouts and rate limits are the 4xx worth another go.
+      retry: (failureCount, error) => failureCount < 1 && !isFinalClientError(error),
       refetchOnWindowFocus: false,
     },
   },
@@ -87,7 +102,18 @@ const queryClient = new QueryClient({
 // Awaited before the first render rather than loaded in an effect: a catalogue that arrives after
 // mount means the app paints once in English and then swaps, which is worse than one chunk fetch on
 // a cold cache. Top-level await is fine here, main.tsx is an ES module.
-await loadLocale(resolveInitialLocale())
+// A failed chunk fetch must not leave a blank page: fall back to English, then to no catalogue.
+try {
+  await loadLocale(resolveInitialLocale())
+} catch (err) {
+  console.error('Failed to load the locale catalogue, falling back to English', err)
+  try {
+    await loadLocale('en')
+  } catch (enErr) {
+    console.error('Failed to load the English catalogue', enErr)
+    i18n.loadAndActivate({ locale: 'en', messages: {} })
+  }
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

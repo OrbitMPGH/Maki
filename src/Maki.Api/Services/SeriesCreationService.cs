@@ -93,6 +93,7 @@ public class SeriesCreationService(
     NotificationService notifications,
     IUserLocaleResolver locales,
     IMessageCatalog catalog,
+    ILocalizer localizer,
     ILogger<SeriesCreationService> logger)
 {
     /// <param name="deferSourceMatching">
@@ -125,25 +126,40 @@ public class SeriesCreationService(
         var payloadHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             $"{metadataProviderId}|{rootFolderId}|{monitored}|{monitorNewItems}|{incognito}|{addedFrom}" +
             (upgradeProfileId is { } profileId ? $"|{profileId}" : ""))));
-        if (clientMutationId is { } priorId && attributedUserId is > 0)
+        // Checked again once the provider lock is held: a retry racing the first attempt finds no
+        // receipt yet, waits on the lock, and by then the receipt is committed.
+        async Task<SeriesCreationResult?> ReplayAsync()
         {
+            if (clientMutationId is not { } priorId || attributedUserId is not > 0)
+            {
+                return null;
+            }
+
             var prior = await db.RecommendationMutationReceipts.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x => x.UserId == attributedUserId && x.ClientMutationId == priorId, ct);
-            if (prior is not null)
+            if (prior is null)
             {
-                if (prior.Operation != "add" || prior.PayloadHash != payloadHash)
-                    return SeriesCreationResult.Failed(SeriesCreationError.MutationIdReused);
-                if (int.TryParse(prior.ResultJson, out var priorSeriesId))
-                {
-                    // Scoped, not IgnoreQueryFilters. The receipt proves this caller made the add; it
-                    // does not prove they can still reach where it landed, and replaying a series
-                    // out of a root folder their access was since revoked would hand it back anyway.
-                    var priorSeries = await db.Series.FirstOrDefaultAsync(x => x.Id == priorSeriesId, ct);
-                    if (priorSeries is not null) return new SeriesCreationResult(priorSeries, null, [], Replayed: true);
-                }
-                return SeriesCreationResult.Failed(SeriesCreationError.OperationResultGone);
+                return null;
             }
+
+            if (prior.Operation != "add" || prior.PayloadHash != payloadHash)
+                return SeriesCreationResult.Failed(SeriesCreationError.MutationIdReused);
+            if (int.TryParse(prior.ResultJson, out var priorSeriesId))
+            {
+                // Scoped, not IgnoreQueryFilters. The receipt proves this caller made the add; it
+                // does not prove they can still reach where it landed, and replaying a series
+                // out of a root folder their access was since revoked would hand it back anyway.
+                var priorSeries = await db.Series.FirstOrDefaultAsync(x => x.Id == priorSeriesId, ct);
+                if (priorSeries is not null) return new SeriesCreationResult(priorSeries, null, [], Replayed: true);
+            }
+            return SeriesCreationResult.Failed(SeriesCreationError.OperationResultGone);
         }
+
+        if (await ReplayAsync() is { } replay)
+        {
+            return replay;
+        }
+
         var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct);
         if (rootFolder is null)
         {
@@ -162,9 +178,16 @@ public class SeriesCreationService(
         using var providerLock = metadata.MangaBakaId is int lockId
             ? await SeriesLocks.ProviderIdAsync(lockId, ct)
             : null;
+        if (providerLock is not null && await ReplayAsync() is { } lockedReplay)
+        {
+            return lockedReplay;
+        }
+
         if (metadata.MangaBakaId is int existingId)
         {
+            // Unfiltered: a copy in a root folder the caller was not granted is still a copy.
             var existing = await db.Series
+                .IgnoreQueryFilters()
                 .Where(s => s.MangaBakaId == existingId)
                 .Select(s => new { s.Id, s.Title })
                 .FirstOrDefaultAsync(ct);
@@ -184,7 +207,7 @@ public class SeriesCreationService(
                 : await MonitorDefaults.ForNewSeriesAsync(appSettings, ct);
         // An explicit choice from the add form wins, including an explicit "Off" over a rule that
         // would have hidden it. Only an absent value consults the per-rating rules.
-        series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode)
+        series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode) && Enum.IsDefined(explicitMode)
             ? explicitMode
             : await IncognitoRatingRules.ResolveAsync(appSettings, series.ContentRating, ct);
         series.RootFolderId = rootFolder.Id;
@@ -258,7 +281,7 @@ public class SeriesCreationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Post-creation history setup failed for {Title}", series.Title);
-            warnings.Add($"Could not finish library history setup: {ex.Message}");
+            warnings.Add(localizer.Get("error.seriesCreation.historyFailed"));
         }
 
         var seriesFolder = Path.Combine(rootFolder.Path, series.FolderName);
@@ -269,7 +292,7 @@ public class SeriesCreationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Could not create series folder for {Title}", series.Title);
-            warnings.Add($"Could not create the series folder ({seriesFolder}): {ex.Message}");
+            warnings.Add(localizer.Get("error.seriesCreation.folderFailed"));
         }
 
         if (metadata.CoverUrl != null)
@@ -287,7 +310,7 @@ public class SeriesCreationService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Cover setup failed for {Title}", series.Title);
-                warnings.Add($"Could not finish cover setup: {ex.Message}");
+                warnings.Add(localizer.Get("error.seriesCreation.coverFailed"));
             }
         }
 
@@ -301,7 +324,7 @@ public class SeriesCreationService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Could not schedule source matching for {Title}", series.Title);
-                warnings.Add($"Could not schedule source matching: {ex.Message}");
+                warnings.Add(localizer.Get("error.seriesCreation.sourceMatchScheduleFailed"));
             }
         }
         else
@@ -322,7 +345,7 @@ public class SeriesCreationService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
-                warnings.Add($"Could not match sources automatically: {ex.Message}. Link a source manually from the series page.");
+                warnings.Add(localizer.Get("error.seriesCreation.sourceMatchFailed"));
             }
         }
 

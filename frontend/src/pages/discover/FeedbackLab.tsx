@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
@@ -10,7 +11,7 @@ import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedbac
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesThumb } from '../stats/SeriesLink'
-import { formatDate, formatTime } from '../../format'
+import { formatDate, formatDecimal, formatTime } from '../../format'
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 
@@ -37,8 +38,11 @@ export function SignalsCard() {
   const untitled = (id: number) => t`Catalogue title ${id}`
   const { data: lab, isLoading, error } = useFeedbackLab()
   const undo = useUndoFeedback()
-  const loadError = error ? String(error) : ''
+  const loadError = error ? errorText(error) : ''
   const [manage, setManage] = useState<'titles' | 'anime' | null>(null)
+  // The modal fetches its own data on mount, so it is only mounted once someone has opened it.
+  const [manageOpened, setManageOpened] = useState(false)
+  if (manage !== null && !manageOpened) setManageOpened(true)
   const [actionError, setActionError] = useState('')
   const [howItWorks, setHowItWorks] = useState(false)
 
@@ -113,7 +117,7 @@ export function SignalsCard() {
         clientMutationId: randomUUID(),
       })
     } catch (cause) {
-      setActionError(String(cause))
+      setActionError(errorText(cause))
     }
   }
 
@@ -315,9 +319,11 @@ export function SignalsCard() {
           </>
         )}
       </Stack>
-      <ManageSignalsModal
-        opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
-      />
+      {manageOpened && (
+        <ManageSignalsModal
+          opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
+        />
+      )}
     </>
   )
 }
@@ -408,7 +414,7 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
 type ShelfPadItem = FeedbackLabData['sources'][number] & { kind: 'rated' | 'read' | 'added' }
 
 function formatRating(rating: number): string {
-  return Number.isInteger(rating) ? String(rating) : rating.toFixed(1)
+  return formatDecimal(rating)
 }
 
 /** Pill + tertiary label for a shelf-derived row padding the recent-feedback card. */
@@ -416,7 +422,7 @@ function useShelfPillInfo(item: ShelfPadItem) {
   const { t } = useLingui()
   if (item.kind === 'rated' && item.rating != null) {
     const label = t`★ ${formatRating(item.rating)} rated`
-    if (item.rating >= 4.5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
+    if (item.rating > 5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
     if (item.rating <= AVOID_RATING_CEILING) {
       return { label, color: 'var(--danger)', phrase: t`pushes down titles close to it` }
     }

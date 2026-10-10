@@ -64,7 +64,7 @@ public class UpdateCheckService(
             var client = httpClientFactory.CreateClient(HttpClientName);
             release = await client.GetFromJsonAsync<GitHubRelease>($"repos/{Repo}/releases/latest", ct);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.LogWarning(ex, "Update check failed");
             return _lastStatus;
@@ -117,11 +117,19 @@ public class UpdateCheckService(
 
     /// <summary>Tags/versions here are plain "X.Y.Z" (see distribution/release.ps1) — strip any
     /// leftover prerelease/build suffix before comparing as a System.Version.</summary>
-    private static bool IsNewer(string latest, string current)
+    internal static bool IsNewer(string latest, string current)
     {
         var latestCore = latest.Split('-', '+')[0];
         var currentCore = current.Split('-', '+')[0];
-        return Version.TryParse(latestCore, out var l) && Version.TryParse(currentCore, out var c) && l > c;
+        if (!Version.TryParse(latestCore, out var l) || !Version.TryParse(currentCore, out var c))
+        {
+            return false;
+        }
+
+        // The final release of a build someone is testing is an update for them.
+        var currentIsPrerelease = current.Split('+')[0].Contains('-');
+        var latestIsPrerelease = latest.Split('+')[0].Contains('-');
+        return l > c || (l == c && currentIsPrerelease && !latestIsPrerelease);
     }
 
     private record GitHubRelease(

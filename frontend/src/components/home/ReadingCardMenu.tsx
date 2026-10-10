@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useNavigate } from 'react-router-dom'
 import { ActionIcon, Button, Group, Menu, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -32,7 +33,7 @@ export function ReadingCardMenu({
     try {
       await hide.mutateAsync({ seriesId, hidden: true })
     } catch (error) {
-      const reason = String(error)
+      const reason = errorText(error)
       notifications.show({ color: 'var(--danger)', message: t`Could not remove ${seriesTitle}: ${reason}` })
       return
     }
@@ -49,7 +50,10 @@ export function ReadingCardMenu({
             style={{ flexShrink: 0 }}
             onClick={() => {
               notifications.hide(id)
-              void hide.mutateAsync({ seriesId, hidden: false })
+              hide.mutateAsync({ seriesId, hidden: false }).catch((error: unknown) => {
+                const reason = errorText(error)
+                notifications.show({ color: 'var(--danger)', message: t`Could not restore ${seriesTitle}: ${reason}` })
+              })
             }}
           >
             <Trans>Undo</Trans>

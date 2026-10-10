@@ -207,6 +207,7 @@ export function NamingTokenModal({
         </Trans>
       </Text>
       <TextInput
+        aria-label={t`Naming format`}
         ref={input}
         value={format}
         spellCheck={false}

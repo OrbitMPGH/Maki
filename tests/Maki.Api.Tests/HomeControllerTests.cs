@@ -185,6 +185,24 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task JumpBackIn_fills_past_finished_series_across_candidate_chunks()
+    {
+        // limit 1 resolves two candidates at a time; the newest two are fully read, the third is not.
+        var open = _db.SeedSeries("Open");
+        SeedProgress(open, SeedChapter(open, 1), pageIndex: 0, completed: true, updatedAt: Base);
+        SeedChapter(open, 2);
+        foreach (var (title, hours) in new[] { ("Done B", 1), ("Done A", 2) })
+        {
+            var done = _db.SeedSeries(title);
+            SeedProgress(done, SeedChapter(done, 1), pageIndex: 0, completed: true, updatedAt: Base.AddHours(hours));
+        }
+
+        var response = Reading(await Controller().Reading(limit: 1, ct: CancellationToken.None));
+
+        Assert.Equal(open, Assert.Single(response.JumpBackIn).SeriesId);
+    }
+
+    [Fact]
     public async Task JumpBackIn_ignores_watched_chapters()
     {
         var seriesId = _db.SeedSeries();
@@ -338,8 +356,7 @@ public class HomeControllerTests : IDisposable
                 new ContinueReadingService(db),
                 null!, // settings
                 null!, // import service
-                null!, // user metrics
-                null!, // achievements
+                null!, // achievement queue
                 null!, // app paths
                 null!, // logger
                 null!, // current user

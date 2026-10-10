@@ -1,6 +1,7 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
+import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -8,6 +9,7 @@ import {
   Button,
   Collapse,
   Group,
+  Loader,
   Modal,
   MultiSelect,
   RangeSlider,
@@ -94,6 +96,7 @@ import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
 import { LuckyButton } from '../components/LuckyButton'
 import { pickRandom } from '../lib/lucky'
+import { railSubtitle } from '../lib/railSubtitle'
 import {
   DiscoverRailRow,
   EngineCard,
@@ -101,7 +104,7 @@ import {
   RecommendationCard,
   RecommendationRow,
 } from '../components/ui/DiscoverRail'
-import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
+import { PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
@@ -118,7 +121,6 @@ import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
-import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
   DensityControl,
@@ -129,12 +131,16 @@ import {
   type Density,
   type DensityPref,
 } from '../components/ui/viewPrefs'
+import { formatFixedDecimal } from '../format'
 
 /**
  * Where the Recommended panel is remembered between visits. Its own key rather than the route,
  * because the tab is reached at one path and nothing else on Discover shares its controls.
  */
 const MEM = 'discover-recommended'
+
+// Pulls in the charting library, which the Browse tab never needs.
+const TasteTab = lazy(() => import('./discover/TasteTab').then((m) => ({ default: m.TasteTab })))
 
 /** Whether a saved default constrains anything. An empty spec is how "no default" reads back. */
 function hasAnyDefault(d: RecommendationDefaults | undefined): boolean {
@@ -270,7 +276,7 @@ function RecommendedTab() {
     setLabelCache((prev) => {
       const next = { ...prev }
       for (const s of library ?? []) {
-        if (s.mangaBakaId != null) next[String(s.mangaBakaId)] = s.title
+        if (s.mangaBakaId != null) next[String(s.mangaBakaId)] = s.displayTitle
       }
       for (const r of seedSearchResults ?? []) next[r.providerId] = r.title
       return next
@@ -506,15 +512,15 @@ function RecommendedTab() {
       chips.push(plural(seedIds.length, { one: '# seed', other: '# seeds' }))
     }
     if (years[0] > YEAR_MIN || years[1] < YEAR_MAX) chips.push(`${years[0]}–${years[1]}`)
-    if (minRating > 0) chips.push(`★ ≥ ${minRating.toFixed(1)}`)
+    if (minRating > 0) chips.push(`★ ≥ ${formatFixedDecimal(minRating, 1)}`)
     if (chapters[0] > CHAPTER_MIN || chapters[1] < CHAPTER_MAX) {
       const chapterMinChip = chapters[0]
       const chapterMaxChip = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
-      chips.push(t`${chapterMinChip}–${chapterMaxChip} ch`)
+      chips.push(t`${chapterMinChip}–${chapterMaxChip} ch.`)
     }
     if (obscurity !== 0) chips.push(obscurity > 0 ? t`hidden gems` : t`mainstream`)
     if (diversity !== 0) {
-      const diversityChip = diversity.toFixed(2)
+      const diversityChip = formatFixedDecimal(diversity, 2)
       chips.push(t`varied (${diversityChip})`)
     }
     chips.push(...ruleChips(terms.rules))
@@ -571,7 +577,7 @@ function RecommendedTab() {
   const chapterRangeMax = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
   const yearRangeMin = years[0]
   const yearRangeMax = years[1]
-  const minRatingDisplay = minRating.toFixed(1)
+  const minRatingDisplay = formatFixedDecimal(minRating, 1)
 
   return (
     <>
@@ -669,6 +675,7 @@ function RecommendedTab() {
                   <Trans>Year: {yearRangeMin}–{yearRangeMax}</Trans>
                 </Text>
                 <RangeSlider
+                  thumbFromLabel={t`Earliest year`} thumbToLabel={t`Latest year`}
                   min={YEAR_MIN}
                   max={YEAR_MAX}
                   value={years}
@@ -694,7 +701,7 @@ function RecommendedTab() {
                   step={0.5}
                   value={minRating}
                   onChange={setMinRating}
-                  label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : t`any`)}
+                  label={(v) => (v > 0 ? `★ ${formatFixedDecimal(v, 1)}` : t`any`)}
                   marks={[
                     { value: 0, label: t`any` },
                     { value: 7, label: '7' },
@@ -764,7 +771,7 @@ function RecommendedTab() {
 
       {error && (
         <Alert color="var(--warn)" variant="light">
-          {String(error)}
+          {errorText(error)}
         </Alert>
       )}
       {isFetching && !data && (
@@ -1038,7 +1045,7 @@ function FeedExpandModal({
 
       {error && (
         <Alert color="var(--warn)" variant="light">
-          {String(error)}
+          {errorText(error)}
         </Alert>
       )}
 
@@ -1090,14 +1097,7 @@ function FeedExpandModal({
   )
 }
 
-/**
- * Catalogue browse: Popular / New / Trending / … rails, independent of the library. The search box
- * takes over the tab while it has a query: rails are for wandering, search is for looking.
- *
- * Everything below the rails now lives in `CatalogueBrowser`, shared with the Add series page and
- * the creator page. Discover keeps its curated rails by handing them over as the idle state; the
- * pages that have no rails browse the filtered catalogue there instead.
- */
+/** Catalogue browse: Popular / New / Trending / … rails, independent of the library. */
 function DiscoverBrowseTab({
   refreshNonce,
   onRefresh,
@@ -1274,7 +1274,7 @@ function DiscoverBrowseTab({
       title={t`Catalogue unavailable`}
     >
       <Stack gap="sm" align="flex-start">
-        <Text size="sm">{String(error)}</Text>
+        <Text size="sm">{errorText(error)}</Text>
         <Button
           size="xs"
           variant="default"
@@ -1291,7 +1291,7 @@ function DiscoverBrowseTab({
   const sections: Record<DiscoverSectionKey, React.ReactNode> = {
     hero:
       heroItems.length > 0 ? (
-        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} />
+        <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} seriesIdFor={seriesIdFor} />
       ) : (isFetching && !rails) || (recentFetching && recentRail === undefined) ? (
         <DiscoverHeroSkeleton />
       ) : null,
@@ -1320,9 +1320,9 @@ function DiscoverBrowseTab({
         {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
           <DiscoverSeedStrip seedIds={recentRail.seedIds} />
         ) : (
-          recentRail.subtitle && (
+          railSubtitle(recentRail) && (
             <Text c="var(--ink-3)" size="sm" mb="sm">
-              {recentRail.subtitle}
+              {railSubtitle(recentRail)}
             </Text>
           )
         )}
@@ -1364,7 +1364,7 @@ function DiscoverBrowseTab({
             {rail.seedIds && rail.seedIds.length > 0 ? (
               <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
             ) : (
-              <Text c="var(--ink-3)" size="sm" mb="sm">{rail.subtitle}</Text>
+              <Text c="var(--ink-3)" size="sm" mb="sm">{railSubtitle(rail)}</Text>
             )}
             <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
           </div>
@@ -1533,14 +1533,7 @@ function DiscoverBrowseTab({
     </div>
   )
 
-  return (
-    <CatalogueBrowser
-      scope="discover"
-      idle={body}
-      placeholder={t`Describe what you're after, a title, or author:"Junji Ito"`}
-      hideSearch
-    />
-  )
+  return body
 }
 
 type DiscoverTab = 'browse' | 'recommended' | 'taste'
@@ -1551,8 +1544,8 @@ const TAB_PATHS: Record<DiscoverTab, string> = {
 }
 
 /**
- * Discover shell: four URL-synced tabs - catalogue Browse (default), per-Genre, Recommended, and
- * the reader's own taste profile.
+ * Discover shell: three URL-synced tabs - catalogue Browse (default), Recommended, and the
+ * reader's own taste profile.
  */
 export default function DiscoverPage() {
   const { t } = useLingui()
@@ -1635,7 +1628,9 @@ export default function DiscoverPage() {
       {active === 'recommended' ? (
         <RecommendedTab />
       ) : active === 'taste' ? (
-        <TasteTab />
+        <Suspense fallback={<Loader />}>
+          <TasteTab />
+        </Suspense>
       ) : (
         <DiscoverBrowseTab
           refreshNonce={refreshNonce}

@@ -330,8 +330,14 @@ public class LibraryImportService(
         // treat this as re-linking on-disk files into it rather than a failure. If it
         // already has files, adding another folder for it would be ambiguous, so refuse.
         var existingSeries = metadata.MangaBakaId is { } existingId
-            ? await db.Series.FirstOrDefaultAsync(s => s.MangaBakaId == existingId, ct)
+            ? await db.Series.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.MangaBakaId == existingId, ct)
             : null;
+        if (existingSeries is not null && !await db.Series.AnyAsync(s => s.Id == existingSeries.Id, ct))
+        {
+            return new ImportResult(item.FolderName, false,
+                localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
+        }
+
         if (existingSeries is not null)
         {
             using var seriesLock = new SeriesLockHandle(existingSeries.Id);
@@ -365,11 +371,13 @@ public class LibraryImportService(
         var otherFolders = await SeriesCreationService.SeriesFoldersInRootAsync(db, rootFolder.Id, null, ct);
         var targetDir = sourceDir;
         var seriesFolderName = item.FolderName;
+        string? renamedFrom = null;
         if (namingMode == FolderNamingMode.Rename)
         {
             // Two series in one folder rescan each other's files and delete them with their own.
             var wanted = SeriesCreationService.FreeFolderName(
-                standardName, series.MangaBakaId, name => !otherFolders.Contains(name));
+                standardName, series.MangaBakaId,
+                name => !otherFolders.Contains(name) && RenameTargetFree(rootFolder.Path, sourceDir, name));
             if (!string.Equals(item.FolderName, wanted, StringComparison.Ordinal))
             {
                 targetDir = LibraryPaths.Resolve(rootFolder.Path, wanted) ?? Path.Combine(rootFolder.Path, wanted);
@@ -383,6 +391,7 @@ public class LibraryImportService(
                 SeriesRenameService.MovePath(sourceDir, targetDir, Directory.Move);
                 logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, wanted);
                 seriesFolderName = wanted;
+                renamedFrom = sourceDir;
             }
         }
         else
@@ -462,7 +471,8 @@ public class LibraryImportService(
         }
         catch (Exception ex)
         {
-            return await RecoverFailedImportAsync(series, item, seriesFolderName, created: true, ex);
+            return await RecoverFailedImportAsync(
+                series, item, seriesFolderName, created: true, ex, renamedFrom is null ? null : (renamedFrom, targetDir));
         }
     }
 
@@ -473,7 +483,8 @@ public class LibraryImportService(
     /// that did link files stays, and the caller is sent to its page to rescan the rest.
     /// </summary>
     private async Task<ImportResult> RecoverFailedImportAsync(
-        Series series, ImportRequestItem item, string folderName, bool created, Exception ex)
+        Series series, ImportRequestItem item, string folderName, bool created, Exception ex,
+        (string From, string To)? renamed = null)
     {
         logger.LogError(ex, "Import of '{Folder}' into series {SeriesId} failed part way", item.FolderName, series.Id);
         var none = CancellationToken.None;
@@ -492,6 +503,11 @@ public class LibraryImportService(
                 }
 
                 coverService.DeleteCover(seriesId);
+                if (renamed is var (from, to))
+                {
+                    RestoreRenamedFolder(from, to);
+                }
+
                 return new ImportResult(item.FolderName, false, localizer.Get("error.libraryImport.failed"));
             }
 
@@ -507,6 +523,31 @@ public class LibraryImportService(
 
         return new ImportResult(item.FolderName, false,
             localizer.Get("error.libraryImport.partial", new { title }), seriesId, folderName);
+    }
+
+    private void RestoreRenamedFolder(string from, string to)
+    {
+        try
+        {
+            if (Directory.Exists(to) && (!Directory.Exists(from) || LibraryPaths.IsSameDirectory(from, to)))
+            {
+                SeriesRenameService.MovePath(to, from, Directory.Move);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not move '{Folder}' back to '{Original}' after the failed import", to, from);
+        }
+    }
+
+    /// <summary>
+    /// True when a rename of <paramref name="sourceDir"/> to <paramref name="name"/> would not land on
+    /// another folder. The source folder itself counts as free, so a re-cased spelling renames in place.
+    /// </summary>
+    internal static bool RenameTargetFree(string rootPath, string sourceDir, string name)
+    {
+        var target = LibraryPaths.Resolve(rootPath, name) ?? Path.Combine(rootPath, name);
+        return LibraryPaths.IsSameDirectory(sourceDir, target) || !Directory.Exists(target);
     }
 
     /// <summary>

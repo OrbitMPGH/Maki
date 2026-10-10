@@ -22,6 +22,12 @@ public record RepairCandidate(int ChapterId, string RelativePath, string Hash, A
 /// </summary>
 public sealed class PdfRepairUnsupportedException : Exception;
 
+/// <summary>A health action refused for a reason the caller can show. <see cref="Key"/> is the catalogue key.</summary>
+public sealed class HealthRefusedException(string key) : InvalidOperationException(key)
+{
+    public string Key { get; } = key;
+}
+
 public class HealthOperationService(MakiDbContext db, DownloadQueueService queue,
     ChapterSourceResolver resolver, ReaderArchiveCache archives, EventBroadcaster events, KavitaScanService kavita,
     ChapterFileQualityService quality, AppPaths? paths = null)
@@ -40,27 +46,27 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
 
     public async Task<(HealthFile File, RootFolder Root, List<Chapter> Chapters)> ValidateAsync(int id, string version, CancellationToken ct, int? operationId = null)
     {
-        var file = await db.HealthFiles.FindAsync([id], ct) ?? throw new InvalidOperationException("File no longer exists in inventory");
-        if (file.Removed || file.Version != version || file.Status == "pending") throw new InvalidOperationException("File review is stale; rescan and review again");
-        var root = await db.RootFolders.FindAsync([file.RootFolderId], ct) ?? throw new InvalidOperationException("Root folder no longer exists");
+        var file = await db.HealthFiles.FindAsync([id], ct) ?? throw new HealthRefusedException("error.health.fileGone");
+        if (file.Removed || file.Version != version || file.Status == "pending") throw new HealthRefusedException("error.health.reviewStale");
+        var root = await db.RootFolders.FindAsync([file.RootFolderId], ct) ?? throw new HealthRefusedException("error.health.rootGone");
         var path = HealthPaths.Resolve(root.Path, file.RelativePath);
-        if (!Directory.Exists(root.Path)) throw new InvalidOperationException("Root folder is unavailable");
+        if (!Directory.Exists(root.Path)) throw new HealthRefusedException("error.health.rootUnavailable");
         var info = new FileInfo(path);
         if ((info.Exists ? info.Length : -1) != file.Size || (info.Exists ? info.LastWriteTimeUtc : DateTime.MinValue) != file.ModifiedAt)
-            throw new InvalidOperationException("File changed after review; rescan first");
+            throw new HealthRefusedException("error.health.fileChanged");
         if (info.Exists)
         {
             await using var stream = File.OpenRead(path);
             if (file.ContentHash == null || Convert.ToHexString(await SHA256.HashDataAsync(stream, ct)) != file.ContentHash)
-                throw new InvalidOperationException("File content changed or was not hashed; rescan first");
+                throw new HealthRefusedException("error.health.fileContentChanged");
         }
         var chapterFiles = await db.ChapterFiles.Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id) && f.RelativePath == file.RelativePath).Select(f => f.Id).ToListAsync(ct);
         var chapters = await db.Chapters.Where(c => c.ChapterFileId != null && chapterFiles.Contains(c.ChapterFileId.Value)).ToListAsync(ct);
         if (await db.HealthOperations.AnyAsync(o => o.FileId == id && o.Id != operationId && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
-            throw new InvalidOperationException("Another file operation is active");
+            throw new HealthRefusedException("error.health.operationActive");
         var seriesIds = chapters.Select(c => c.SeriesId).ToArray();
         if (await db.DownloadQueue.AnyAsync(q => seriesIds.Contains(q.SeriesId) && q.HealthOperationId != operationId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed, ct))
-            throw new InvalidOperationException("Downloads or imports for this series are active");
+            throw new HealthRefusedException("error.health.downloadsActive");
         return (file, root, chapters);
     }
 
@@ -82,11 +88,11 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             var (file, _, chapters) = await ValidateAsync(fileId, version, ct);
             if (ComicFile.IsPdf(file.RelativePath)) throw new PdfRepairUnsupportedException();
             if (chapters.Count == 0 || chapters.Select(c => c.SeriesId).Distinct().Count() != 1)
-                throw new InvalidOperationException("Import and link this archive to one series before replacement");
+                throw new HealthRefusedException("error.health.needsLinkedSeries");
             if (mappingId != null && !await db.SourceMappings.AnyAsync(m => m.Id == mappingId && m.Enabled && m.SeriesId == chapters[0].SeriesId, ct))
-                throw new InvalidOperationException("Select an enabled source mapped to this series");
+                throw new HealthRefusedException("error.health.mappingNotEnabled");
             if (mappingId == null && !await db.SourceMappings.AnyAsync(m => m.Enabled && m.SeriesId == chapters[0].SeriesId, ct))
-                throw new InvalidOperationException("This series has no enabled source mappings");
+                throw new HealthRefusedException("error.download.noEnabledMapping");
             var excludes = mappingId == null
                 ? null
                 : await db.SourceMappings.Where(m => m.SeriesId == chapters[0].SeriesId && m.Id != mappingId).Select(m => m.Id).ToListAsync(ct);
@@ -130,12 +136,12 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
 
     public async Task ApplyAsync(int operationId, string version, bool confirmed, bool resetPositions, CancellationToken ct)
     {
-        if (!confirmed) throw new InvalidOperationException("Explicit confirmation is required");
+        if (!confirmed) throw new HealthRefusedException("error.health.confirmationRequired");
         await MutationGate.WaitAsync(ct);
         try
         {
-            var op = await db.HealthOperations.FindAsync([operationId], ct) ?? throw new InvalidOperationException("Operation not found");
-            if (op.Status != "review" || op.Version != version) throw new InvalidOperationException("Operation is not ready or review is stale");
+            var op = await db.HealthOperations.FindAsync([operationId], ct) ?? throw new HealthRefusedException("error.health.operationNotFound");
+            if (op.Status != "review" || op.Version != version) throw new HealthRefusedException("error.health.operationNotReady");
             var (file, root, chapters) = await ValidateAsync(op.FileId, version, ct, op.Id);
             if (op.Kind == "delete")
             {
@@ -171,26 +177,26 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             if (op.Kind == "repair")
             {
                 if (chapters.Count == 0 || candidates.Count != chapters.Count || !chapters.All(c => candidates.Count(p => p.ChapterId == c.Id) == 1))
-                    throw new InvalidOperationException("Replacement must cover every linked chapter");
+                    throw new HealthRefusedException("error.health.replacementIncomplete");
                 foreach (var candidate in candidates)
                 {
                     var path = HealthPaths.Resolve(root.Path, candidate.RelativePath);
                     await using var stream = File.OpenRead(path);
                     if (Convert.ToHexString(await SHA256.HashDataAsync(stream, ct)) != candidate.Hash)
-                        throw new InvalidOperationException("Candidate changed; request a new replacement");
+                        throw new HealthRefusedException("error.health.candidateChanged");
                     if (candidate.Analysis.Status != "complete" || candidate.Analysis.Problems.Any(p => p.Severity == "error"))
-                        throw new InvalidOperationException("Candidate failed validation or analysis is incomplete");
+                        throw new HealthRefusedException("error.health.candidateInvalid");
                 }
 
             }
             var reset = op.Kind == "repair" && RequiresReset(file, candidates, chapters.Count);
-            if (reset && !resetPositions) throw new InvalidOperationException("Confirm resetting affected bookmarks and resume positions");
+            if (reset && !resetPositions) throw new HealthRefusedException("error.health.resetConfirmationRequired");
             var rollbackRelative = $".maki/health/{op.Id}/original.cbz";
             var rollback = HealthPaths.Resolve(root.Path, rollbackRelative);
             Directory.CreateDirectory(Path.GetDirectoryName(rollback)!);
             candidates = candidates.Select(c => c with { FinalPath = Path.Combine(Path.GetDirectoryName(file.RelativePath) ?? "", $"health-{op.Id}-chapter-{c.ChapterId}.cbz") }).ToList();
             foreach (var candidate in candidates)
-                if (File.Exists(HealthPaths.Resolve(root.Path, candidate.FinalPath!))) throw new InvalidOperationException("Replacement destination already exists");
+                if (File.Exists(HealthPaths.Resolve(root.Path, candidate.FinalPath!))) throw new HealthRefusedException("error.health.destinationExists");
             op.JournalJson = JsonSerializer.Serialize(candidates, HealthScanService.Json);
             op.Status = "applying";
             await db.SaveChangesAsync(ct);

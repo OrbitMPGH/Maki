@@ -47,7 +47,8 @@ public class SenMangaSource(IHttpClientFactory httpClientFactory) : ISource
         }
 
         return response.Series
-            .Select(s => new SourceSeriesResult(s.Slug, s.Title, $"{BaseUrl}/manga/{s.Slug}", s.Cover))
+            .Where(s => !string.IsNullOrEmpty(s.Slug) && !string.IsNullOrEmpty(s.Title))
+            .Select(s => new SourceSeriesResult(s.Slug!, s.Title!, $"{BaseUrl}/manga/{s.Slug}", s.Cover))
             .ToList();
     }
 
@@ -123,7 +124,8 @@ public class SenMangaSource(IHttpClientFactory httpClientFactory) : ISource
             $"api/read/{chapter.SourceSeriesId}/{chapter.SourceChapterId}", JsonOptions, ct);
         if (read?.Pages is null)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException(
+                $"No page list in the response for api/read/{chapter.SourceSeriesId}/{chapter.SourceChapterId}");
         }
 
         var pages = read.Pages
@@ -141,8 +143,8 @@ public class SenMangaSource(IHttpClientFactory httpClientFactory) : ISource
 
     private sealed class SeriesSummary
     {
-        public string Title { get; set; } = "";
-        public string Slug { get; set; } = "";
+        public string? Title { get; set; }
+        public string? Slug { get; set; }
         public string? Cover { get; set; }
     }
 

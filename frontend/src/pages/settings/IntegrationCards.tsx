@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Code, Group, MultiSelect, NumberInput, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
+import { Code, Group, MultiSelect, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
 import { useAuth } from '../../auth/AuthProvider'
@@ -22,14 +22,18 @@ import { ImportListsSection } from '../../components/ImportListsSection'
 import { TrackerSyncControls } from '../../components/TrackerSyncControls'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
 import { savedToast } from './sharedRecord'
+import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 
 /** The record minus the Kavita library filter, which the Kavita card saves on its own. */
 const withoutLibraries = (s: ScrobbleSettings) => JSON.stringify({ ...s, libraryIds: null })
 
+/** The cards only show connection state; the live sync log polls faster on the Scrobble page. */
+const SETTINGS_STATUS_POLL_MS = 30_000
+
 export function ScrobbleSection() {
   const { t } = useLingui()
   const { data } = useScrobbleSettings()
-  const { data: status } = useScrobbleStatus()
+  const { data: status } = useScrobbleStatus(SETTINGS_STATUS_POLL_MS)
   const save = useSaveScrobbleSettings()
   const [form, setForm] = useState<ScrobbleSettings | null>(null)
 
@@ -65,7 +69,12 @@ export function ScrobbleSection() {
       onSave={() => {
         if (!form) return
         const { libraryIds: _, ...rest } = form
-        save.mutate(rest, { onSuccess: savedToast })
+        save.mutate(rest, {
+          onSuccess: (saved) => {
+            setForm(saved)
+            savedToast()
+          },
+        })
       }}
     >
       <Stack gap="xs">
@@ -83,12 +92,14 @@ export function ScrobbleSection() {
             <Group grow>
               <TextInput
                 label={t`Client ID`}
+                autoComplete="off"
                 value={form?.aniListClientId ?? ''}
                 onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
               />
               <TextInput
                 label={t`Client secret`}
                 type="password"
+                autoComplete="new-password"
                 value={form?.aniListClientSecret ?? ''}
                 onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
               />
@@ -113,12 +124,14 @@ export function ScrobbleSection() {
             <Group grow>
               <TextInput
                 label={t`Client ID`}
+                autoComplete="off"
                 value={form?.malClientId ?? ''}
                 onChange={(e) => set({ malClientId: e.currentTarget.value })}
               />
               <TextInput
                 label={t`Client secret`}
                 type="password"
+                autoComplete="new-password"
                 value={form?.malClientSecret ?? ''}
                 onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
               />
@@ -134,7 +147,8 @@ export function ScrobbleSection() {
           label={t`Personal Access Token`}
           description={t`From your MangaBaka settings. No OAuth needed.`}
           type="password"
-          placeholder="mb-..."
+          autoComplete="new-password"
+          placeholder={form?.mangaBakaTokenSet ? t`Saved` : 'mb-...'}
           value={form?.mangaBakaToken ?? ''}
           onChange={(e) => set({ mangaBakaToken: e.currentTarget.value })}
         />
@@ -146,12 +160,15 @@ export function ScrobbleSection() {
         <Group grow>
           <TextInput
             label={t`Email`}
+            autoComplete="off"
             value={form?.kitsuEmail ?? ''}
             onChange={(e) => set({ kitsuEmail: e.currentTarget.value })}
           />
           <TextInput
             label={t`Password`}
             type="password"
+            autoComplete="new-password"
+            placeholder={form?.kitsuPasswordSet ? t`Saved` : undefined}
             value={form?.kitsuPassword ?? ''}
             onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
           />
@@ -159,16 +176,15 @@ export function ScrobbleSection() {
         <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
 
         {isAdmin && (
-          <NumberInput
+          <SettingsNumberInput
             mt="xs"
             w={220}
             label={t`Sync interval (minutes)`}
             description={t`How often progress and ratings are pushed, from both Kavita and the built-in reader.`}
             min={5}
             max={1440}
-            clampBehavior="strict"
             value={form?.intervalMinutes ?? 30}
-            onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 30 })}
+            onChange={(value) => set({ intervalMinutes: value })}
           />
         )}
         <Switch
@@ -348,15 +364,14 @@ function ImportListInstanceControls({ form: { data, form, set } }: { form: Retur
         disabled={data === undefined}
         onChange={(e) => set({ enabled: e.currentTarget.checked })}
       />
-      <NumberInput
+      <SettingsNumberInput
         label={t`Sync interval (minutes)`}
         description={t`How often every user's lists are checked.`}
         min={15}
         max={1440}
-        clampBehavior="strict"
         value={form?.intervalMinutes ?? 15}
         disabled={data === undefined}
-        onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 15 })}
+        onChange={(value) => set({ intervalMinutes: value })}
       />
     </Stack>
   )

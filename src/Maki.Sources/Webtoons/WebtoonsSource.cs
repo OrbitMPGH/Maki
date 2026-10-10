@@ -1,9 +1,11 @@
 using System.Globalization;
 using System.Net;
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Webtoons;
 
@@ -94,7 +96,7 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
 
         var locale = segments[0];
         var tail = SourceUrl.PathTail(url, BaseUrl, $"/{locale}/");
-        var titleNo = QueryValue(url.Query, "title_no");
+        var titleNo = UrlText.QueryValue(url.Query, "title_no");
         if (tail is null || titleNo is null)
         {
             return null;
@@ -116,8 +118,15 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
     {
         var perLocale = await Task.WhenAll(SearchLocales.Select(locale => SearchLocaleAsync(locale, title, ct)));
 
+        // A locale that failed contributes nothing, but every locale failing is an outage, not
+        // "no results": rethrow so the health view and the cooldown see it.
+        if (perLocale.All(r => r.Failure is not null))
+        {
+            ExceptionDispatchInfo.Throw(perLocale[0].Failure!);
+        }
+
         var results = new List<SourceSeriesResult>();
-        foreach (var localeResults in perLocale)
+        foreach (var (localeResults, _) in perLocale)
         {
             results.AddRange(localeResults);
         }
@@ -130,7 +139,7 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
     /// account's region can't reach, or one the shared limiter rate-limits) only drop that
     /// locale's hits, they don't fail the whole seven-locale search.
     /// </summary>
-    private async Task<IReadOnlyList<SourceSeriesResult>> SearchLocaleAsync(
+    private async Task<(IReadOnlyList<SourceSeriesResult> Results, Exception? Failure)> SearchLocaleAsync(
         string locale, string title, CancellationToken ct)
     {
         string html;
@@ -140,12 +149,12 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
         }
         catch (Exception ex) when (ex is HttpRequestException or RateLimitException)
         {
-            return [];
+            return ([], ex);
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
         {
             // The client's own timeout, not the caller cancelling: this locale is slow, the rest stand.
-            return [];
+            return ([], new TimeoutException($"Webtoons {locale} search timed out", ex));
         }
 
         var doc = await Parser.ParseDocumentAsync(html, ct);
@@ -177,7 +186,7 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
                 UserGenerated: canvas, Author: string.IsNullOrEmpty(author) ? null : author));
         }
 
-        return results;
+        return (results, null);
     }
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
@@ -448,20 +457,6 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
             DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var date)
             ? date
             : null;
-
-    private static string? QueryValue(string query, string key)
-    {
-        foreach (var pair in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var split = pair.IndexOf('=');
-            if (split > 0 && pair[..split].Equals(key, StringComparison.OrdinalIgnoreCase))
-            {
-                return Uri.UnescapeDataString(pair[(split + 1)..]);
-            }
-        }
-
-        return null;
-    }
 
     /// <summary>Shape of <c>GET m.webtoons.com/api/v1/{type}/{titleNo}/episodes</c>.</summary>
     private sealed record EpisodeListResponse(EpisodeListResult? Result, bool Success);

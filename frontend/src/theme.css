@@ -43,14 +43,20 @@
   --ok: #3fb950;
   --ok-on: #071a10;
   --warn: #d6a327;
+  --warn-on: #1f1600;
   --info: #4c8dff;
+  --info-on: #06142b;
   --danger: #f2554c;
+  --danger-on: #2a0a08;
   /* Filled danger buttons carry white text, which --danger is too light for in the dark themes. */
   --danger-fill: #c0322b;
   --watched: #b197fc;
+  --watched-on: #1a0f33;
   --suggestive: #b0bd52;
+  --suggestive-on: #1a1d06;
   --suggestive-soft: color-mix(in srgb, var(--suggestive) 15%, transparent);
   --neutral: #a6adbb;
+  --neutral-on: #11141c;
   --ok-soft: color-mix(in srgb, var(--ok) 15%, transparent);
   --warn-soft: color-mix(in srgb, var(--warn) 15%, transparent);
   --info-soft: color-mix(in srgb, var(--info) 15%, transparent);
@@ -268,11 +274,17 @@
   --ok: #237b36;
   --ok-on: #ffffff;
   --warn: #876000;
+  --warn-on: #ffffff;
   --info: #245fbd;
+  --info-on: #ffffff;
   --danger: #c0322b;
+  --danger-on: #ffffff;
   --watched: #7040bd;
+  --watched-on: #ffffff;
   --suggestive: #657018;
+  --suggestive-on: #ffffff;
   --neutral: #606879;
+  --neutral-on: #ffffff;
   --rating: #b8860b;
   --tier-1: #7a4a1e;
   --tier-2: #6b7480;
@@ -830,7 +842,7 @@ body::before {
 }
 
 /* One notification in the bell dropdown or on the notifications page. The whole row is a button,
-   so it needs a hover affordance of its own — a Mantine variant can't be used here because the row
+   so it needs a hover affordance of its own, a Mantine variant can't be used here because the row
    is an UnstyledButton laid out as a grid of text. */
 .inbox-row {
   width: 100%;
@@ -1103,6 +1115,7 @@ body::before {
 }
 .cover-badge-read {
   background: var(--ok);
+  color: var(--ok-on);
 }
 /* Compact density (or any narrow container) can put the left and right corner badges close
    enough to overlap (a wide label + eye + status colliding). Drop the text label and shrink to
@@ -1186,7 +1199,7 @@ body::before {
   box-shadow:
     0 0 0 1.5px rgba(6, 7, 11, 0.45),
     0 2px 6px rgba(0, 0, 0, 0.35);
-  color: #fff;
+  color: var(--tone-on, #fff);
 }
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
 [data-theme='light'] .cover-state:not([data-tone='status']),
@@ -1630,12 +1643,15 @@ body::before {
   border-radius: var(--radius-pill);
   background: var(--brand);
 }
-/* Recently added's jump-to-reader button, top-right. It sits inside the corners row, so the row
-   keeps its full width instead of clearing room for an outside menu. */
-.cover-corners:has(> .cover-corner-right > .home-read-button) {
-  right: 8px;
-}
+/* Recently added's jump-to-reader button, top-right. A sibling of the card link inside a
+   .reading-card wrapper, which owns the hover lift. */
 .home-read-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  padding: 0;
+  border: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1648,10 +1664,19 @@ body::before {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
-.home-read-button:hover {
+.home-read-button::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.reading-card:hover > .home-read-button {
+  transform: translateY(-4px);
+}
+.home-read-button:hover,
+.reading-card:hover > .home-read-button:hover {
   color: var(--brand-on);
   background: var(--brand);
-  transform: translateY(-1px);
+  transform: translateY(-5px);
 }
 .home-read-button:focus-visible {
   outline: 2px solid var(--brand);
@@ -1956,7 +1981,7 @@ body::before {
   color: var(--ink-4);
   margin-bottom: 8px;
 }
-/* Poster and title are the click target, so they are buttons — but they must not look like one. */
+/* Poster and title are the click target, so they are buttons, but they must not look like one. */
 .discover-hero-poster,
 .discover-hero-title {
   padding: 0;
@@ -2923,7 +2948,7 @@ body::before {
   padding: 1px 7px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand);
+  color: var(--brand-fg);
   font-size: 11px;
   font-weight: var(--fw-semibold);
   white-space: nowrap;
@@ -3821,7 +3846,7 @@ body::before {
   border-bottom-color: var(--brand);
 }
 /* The gap on `.series-tab` never reaches this: Mantine wraps a tab's children in its own label
-   span, so the count and the word are inline siblings inside it — and JSX eats the newline
+   span, so the count and the word are inline siblings inside it, and JSX eats the newline
    between them, leaving them touching. The margin is the space. */
 .series-tab-count {
   margin-left: 9px;
@@ -4314,7 +4339,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 /* A season's run is drawn as an overlay ON TOP of the table, measured in
    SeriesDetailPage from the start and end badges' own DOM rects. Nothing about
    it participates in table layout, which is the point: earlier attempts that
-   did — a merged <td rowSpan>, per-cell borders, inset box-shadows — each
+   did, a merged <td rowSpan>, per-cell borders, inset box-shadows, each
    distorted the rows they crossed (broken row heights, the read-state tint
    clipped at span boundaries) and could only ever draw per-row segments rather
    than one continuous line.
@@ -4353,7 +4378,9 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   width: 3px;
   background: var(--info);
 }
-.chapter-span-line:focus-visible {
+.chapter-span-line:focus-visible,
+.chapter-span-badge:focus-visible,
+.chapter-row-selectable:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 1px;
   border-radius: var(--radius-2xs);
@@ -4371,7 +4398,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 }
 
 /* The marker badges sit in a fixed slot at the right of the Chapter cell, and
-   EVERY Chapter cell reserves that slot as padding — not just the handful that
+   EVERY Chapter cell reserves that slot as padding, not just the handful that
    carry a badge. The width is measured in SeriesDetailPage (the labels are free
    text from MangaBaka, so "S1" and "Film + OVA" differ wildly) and fed in as
    --chapter-marker-slot. Reserving it only where a badge exists is what let the
@@ -4386,7 +4413,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 
    `min-width` rather than `width`: the slot is measured from these very boxes,
    and pinning their width to the value they produce would feed the measurement
-   its own output — on the first pass, before the variable is set, every box
+   its own output, on the first pass, before the variable is set, every box
    would measure 0 and the slot would never grow past it. With min-width the
    first pass still measures intrinsic content, and the second settles. */
 .chapter-span-markers {
@@ -4593,7 +4620,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   cursor: pointer;
 }
 .stats-series-link:hover {
-  color: var(--brand);
+  color: var(--brand-fg);
   text-decoration: underline;
 }
 
@@ -5624,6 +5651,12 @@ body.reader-open {
 .reader-continuous[data-zoomed='true'] .reader-fit-original {
   max-width: none;
 }
+/* An unloaded page has no intrinsic size, so every lazy image would sit at height 0 inside the
+   first viewport and the browser would fetch them all at once. A placeholder gives the strip a
+   real length until each page reports its own size (ContinuousView sets data-loaded). */
+.reader-continuous .reader-page:not([data-loaded]) {
+  min-height: 60dvh;
+}
 
 .reader-page {
   display: block;
@@ -6087,7 +6120,9 @@ body.reader-open {
   }
   .cover-card:hover,
   .reading-card:hover > .cover-card,
-  .reading-card:hover > .reading-card-menu {
+  .reading-card:hover > .reading-card-menu,
+  .reading-card:hover > .home-read-button,
+  .reading-card:hover > .home-read-button:hover {
     transform: none;
   }
   /* The chapter flash is information, not decoration: collapsing its animation to nothing would
@@ -6249,8 +6284,8 @@ body.reader-open {
 /* The row reuses `.cover-badge`/`.cover-ring`/`.cover-count` so both views stay identical, but
    those are styled for a poster: they ride on cover art behind a dark scrim, which is why the
    count is a hard-coded light grey. On a row that grey sits on `--surface` (#ffffff in the light
-   theme, about 1.4:1), so the count has to follow the colour scheme instead. The badges are fine
-   as they are: they paint their own opaque background. */
+   theme, about 1.4:1), so the count has to follow the colour scheme instead. The badges paint
+   their own opaque background and, through `badgeFill`, their own `-on` foreground. */
 .series-row .cover-count {
   color: var(--mantine-color-dimmed);
 }
@@ -6430,7 +6465,7 @@ body.reader-open {
    page and the discover modal. Positions are percentages of the chapter domain,
    computed in AnimeCoverageBar; everything here is presentation only.
 
-   Lane offsets come through as inline `top` because the lane count is data —
+   Lane offsets come through as inline `top` because the lane count is data:
    most series need one row, a few need four. */
 .anime-coverage-track {
   position: relative;
@@ -6468,7 +6503,7 @@ body.reader-open {
   border-color: color-mix(in srgb, var(--neutral) 55%, transparent);
 }
 /* A season still airing has no end chapter, so its right edge is a fade rather
-   than a wall — same idiom the chapter-table line uses for a clipped span. */
+   than a wall, same idiom the chapter-table line uses for a clipped span. */
 .anime-coverage-span[data-open-ended] {
   border-right: 0;
   mask-image: linear-gradient(to right, #000 65%, transparent);
@@ -8027,7 +8062,7 @@ body.reader-open {
   height: 30px;
   border-radius: var(--mantine-radius-md);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand);
+  color: var(--brand-fg);
 }
 .layout-edit-badge {
   font-size: 11px;
@@ -8039,7 +8074,7 @@ body.reader-open {
   border: 1px solid var(--border);
 }
 .layout-edit-badge[data-tone='brand'] {
-  color: var(--brand);
+  color: var(--brand-fg);
   border-color: color-mix(in srgb, var(--brand) 40%, transparent);
 }
 .layout-edit-badge[data-tone='warn'] {
@@ -8081,7 +8116,7 @@ body.reader-open {
   cursor: pointer;
 }
 .layout-edit-add:hover {
-  color: var(--brand);
+  color: var(--brand-fg);
   border-color: var(--brand);
 }
 

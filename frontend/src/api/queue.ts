@@ -67,12 +67,36 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.torrentRemoved': msg`The torrent is no longer in qBittorrent`,
   'error.download.noEnabledMapping': msg`This series has no enabled sources`,
   'error.download.healthReviewActive': msg`A health review is active for this series`,
+  'error.download.challengeNotSolved': msg`The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)`,
   'error.download.sourceRejected': msg`The source refused the request`,
   'error.download.sourceError': msg`The source answered with an error`,
   'error.download.network': msg`Could not reach the source`,
   'error.download.disk': msg`Could not write the chapter to disk`,
   'error.download.invalidPage': msg`A page the source sent is not a readable image`,
   'error.download.notListed': msg`No source has this chapter right now`,
+  'error.download.itemTimedOut': msg`Gave up after the download time limit`,
+  'error.download.repairSourceGone': msg`The approved repair source is no longer available, request a new replacement`,
+  'error.download.repairNotAccepting': msg`The repair is no longer accepting candidates`,
+  'error.torrentImport.copyFailed': msg({
+    message: `Could not import {file}`,
+    comment: `{file} is a file name and is never translated. The error text follows it, untranslated.`,
+  }),
+  'error.torrentImport.notInQbittorrent': msg`The download is no longer in qBittorrent`,
+  'error.torrentImport.pathNotAccessible': msg({
+    message: `Download path not accessible from Maki: {path}`,
+    comment: `{path} is a filesystem path and is never translated.`,
+  }),
+  'error.torrentImport.noComicsEmpty': msg`No comics found in the completed download (it is empty)`,
+  'error.torrentImport.noComicsOfType': msg({
+    message: `No comics found in the completed download (found {census})`,
+    comment: `{census} lists the most common file types that were there with their counts, such as "2 .pdf, 1 .txt". The extensions are never translated.`,
+  }),
+  'error.torrentImport.noComicsFound': msg({
+    message: `No comics found in the completed download ({detail})`,
+    comment: `{detail} is a summary of the folder's contents and is not translated.`,
+  }),
+  'error.torrentImport.noRootFolder': msg`Series has no root folder`,
+  'error.torrentImport.seriesChanged': msg`The series was deleted or moved while this download was being imported, so nothing was imported`,
   'error.upgrades.volumeGuard': msg`Held back for review, {file}: {reason}`,
 }
 

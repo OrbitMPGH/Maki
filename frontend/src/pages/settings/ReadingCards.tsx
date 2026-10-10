@@ -109,13 +109,17 @@ function KavitaLiveReadControl() {
 
   // The connection settles a moment after the switch flips, so refetch until it does.
   const settling = enabled && status !== 'Connected' && status !== 'NotAdmin'
+  // Backs off after 30 s so a Kavita that stays down is not polled every few seconds forever.
   useEffect(() => {
     if (!settling) return
-    const id = setInterval(
-      () => void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] }),
-      3000,
-    )
-    return () => clearInterval(id)
+    const startedAt = Date.now()
+    let id: ReturnType<typeof setTimeout>
+    const tick = () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] })
+      id = setTimeout(tick, Date.now() - startedAt < 30_000 ? 3000 : 30_000)
+    }
+    id = setTimeout(tick, 3000)
+    return () => clearTimeout(id)
   }, [settling, queryClient])
 
   return (
@@ -260,7 +264,7 @@ export function OpdsSection() {
                 <Group gap="xs" wrap="nowrap">
                   <Code style={{ overflowWrap: 'anywhere' }}>{feedUrl}</Code>
                   <Tooltip label={t`Copy feed URL`}>
-                    <ActionIcon variant="light" onClick={copy}>
+                    <ActionIcon variant="light" onClick={copy} aria-label={t`Copy feed URL`}>
                       <IconCopy size={16} />
                     </ActionIcon>
                   </Tooltip>
@@ -333,7 +337,7 @@ export function OpdsSection() {
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button type="submit" loading={save.isPending}>
+            <Button type="submit" loading={save.isPending} disabled={!password}>
               <Trans>Enable</Trans>
             </Button>
           </Group>
@@ -371,7 +375,7 @@ export function OpdsSection() {
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button type="submit" color="var(--danger-fill)" loading={rotate.isPending}>
+            <Button type="submit" color="var(--danger-fill)" loading={rotate.isPending} disabled={!password}>
               <Trans>Regenerate</Trans>
             </Button>
           </Group>
@@ -409,12 +413,13 @@ function KavitaImportResultSummary({
         {seriesUnmatched > 0 ? (
           <Trans>
             <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
-            {seriesMatched} series, {seriesUnmatched} Kavita series unmatched
+            <Plural value={seriesMatched} one="# series" other="# series" />,{' '}
+            <Plural value={seriesUnmatched} one="# Kavita series" other="# Kavita series" /> unmatched
           </Trans>
         ) : (
           <Trans>
             <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
-            {seriesMatched} series
+            <Plural value={seriesMatched} one="# series" other="# series" />
           </Trans>
         )}
       </Text>
@@ -456,11 +461,7 @@ function KavitaReadImportControl() {
         <Button
           variant="light"
           loading={status?.running ?? false}
-          onClick={() =>
-            start.mutate(undefined, {
-              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-            })
-          }
+          onClick={() => start.mutate()}
         >
           <Trans>Import read status</Trans>
         </Button>

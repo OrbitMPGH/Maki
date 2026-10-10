@@ -2,7 +2,7 @@ import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/s
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
-import type { InboxPrefs, InboxPush } from './inbox'
+import { inboxPrefsQuery, type InboxPush } from './inbox'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import type { QueueHistoryDto, QueueItemDto } from './types'
 
@@ -120,6 +120,27 @@ export function useLiveEvents() {
 
   useEffect(() => {
     let summaryTimer: ReturnType<typeof setTimeout> | null = null
+    let seriesTimer: ReturnType<typeof setTimeout> | null = null
+    const importedSeries = new Set<number>()
+
+    // A bulk download fires one chapterImported per chapter. The library list is the heaviest thing
+    // they touch, so every event just marks work as pending and one timer refreshes it per second.
+    const scheduleSeriesRefresh = () => {
+      if (seriesTimer !== null) return
+      seriesTimer = setTimeout(() => {
+        seriesTimer = null
+        const ids = [...importedSeries]
+        importedSeries.clear()
+        for (const id of ids) {
+          void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
+          void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
+        }
+        if (ids.length > 0) {
+          void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
+        }
+        void queryClient.invalidateQueries({ queryKey: ['series'] })
+      }, 1000)
+    }
 
     // Events sent while the socket was down are gone, and the queue lists are patched in place from
     // events rather than refetched, so a download that finished during a blip stayed "in progress"
@@ -138,20 +159,27 @@ export function useLiveEvents() {
         ['requests'],
         ['home'],
         ['system', 'update'],
+        ['settings', 'metadata'],
       ]) {
         void queryClient.invalidateQueries({ queryKey })
       }
     }
     reconnectListeners.add(onReconnected)
 
+    const registered: Array<[string, Parameters<HubConnection['off']>[1]]> = []
+    let liveConn: HubConnection | null = null
+    const listen = (conn: HubConnection, name: string, handler: Parameters<HubConnection['on']>[1]) => {
+      conn.on(name, handler)
+      registered.push([name, handler])
+    }
+
     const unsubscribe = subscribe((conn) => {
-      conn.on('queueUpdated', (item: QueueItemDto) => {
+      liveConn = conn
+      listen(conn, 'queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
-        // Only the paged lists ['queue', page, pageSize] hold `items`; ['queue', 'import-plan', id] does not.
-        queryClient.setQueriesData<QueueHistoryDto>({
-          queryKey: ['queue'],
-          predicate: (q) => typeof q.queryKey[1] === 'number',
-        }, (old) => {
+        // Only the paged lists ['queue', page, pageSize] and the per-series ['queue', 'series', id]
+        // hold `items`; the import plan, keyed ['import-plan', id], is outside this prefix.
+        const patch = (old: QueueHistoryDto | undefined) => {
           if (!old || !Array.isArray(old.items)) return old
           if (isDone) {
             const items = old.items.filter((q) => q.id !== item.id)
@@ -169,7 +197,12 @@ export function useLiveEvents() {
           const next = [...old.items]
           next[idx] = item
           return { ...old, items: next }
-        })
+        }
+        queryClient.setQueriesData<QueueHistoryDto>({
+          queryKey: ['queue'],
+          predicate: (q) => typeof q.queryKey[1] === 'number',
+        }, patch)
+        queryClient.setQueryData<QueueHistoryDto>(['queue', 'series', item.seriesId], patch)
         if (isDone) {
           // The item moved into history, so refresh the paginated history feed.
           void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
@@ -184,26 +217,23 @@ export function useLiveEvents() {
         }
       })
 
-      conn.on('chapterImported', ({ seriesId }: { seriesId: number }) => {
-        void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
-        // Home's recently-added rail is keyed on ChapterFile.DateAdded, which this import just
-        // wrote; without this the rail only catches up on the next reload.
-        void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
-        // The detail page's Read button gates on this; without it the button only appears
-        // after a manual reload once the first chapter finishes downloading.
-        void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
+      // The flush also refreshes Home's recently-added rail (keyed on ChapterFile.DateAdded, which
+      // an import just wrote) and the detail page's Read button gate (`reader-continue`).
+      listen(conn, 'chapterImported', ({ seriesId }: { seriesId: number }) => {
+        importedSeries.add(seriesId)
+        scheduleSeriesRefresh()
       })
 
       // Auto-matching finished for a series added a moment ago. The sources card, the chapter
       // table and the series row itself (which carries the pending flag the spinner reads) all
       // change at once, so all three are refetched.
-      conn.on('sourceMatchFinished', ({ seriesId }: { seriesId: number }) => {
+      listen(conn, 'sourceMatchFinished', ({ seriesId }: { seriesId: number }) => {
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
-        // Prefix match, so this covers ['series', id] (the detail row carrying the pending flag)
-        // as well as the library list.
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
+        // The detail row carries the pending flag the spinner reads, so it refreshes at once; the
+        // library list joins the coalesced refresh.
+        void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        scheduleSeriesRefresh()
         // The per-source states the card drew while it waited. Cleared here rather than when the
         // next match starts: the first `Searching` pushes of a run arrive *before* the client has
         // noticed the series is matching again, so a clear at that point would wipe them.
@@ -213,7 +243,7 @@ export function useLiveEvents() {
       // One source's progress inside a match that's still running. Decoration on top of
       // `sourceMatchFinished`, which is still what makes the real rows appear. A client that
       // misses these just sees the finished table, as it did before.
-      conn.on(
+      listen(conn, 
         'sourceMatchProgress',
         ({
           seriesId,
@@ -237,26 +267,27 @@ export function useLiveEvents() {
       )
 
       // Kavita's live sync marked chapters read. Same queries a manual mark-read invalidates.
-      conn.on('readProgressChanged', ({ seriesId }: { seriesId: number }) => {
+      listen(conn, 'readProgressChanged', ({ seriesId }: { seriesId: number }) => {
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
+        void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        scheduleSeriesRefresh()
         void queryClient.invalidateQueries({ queryKey: ['home'] })
       })
 
-      conn.on('updateAvailable', () => {
+      listen(conn, 'updateAvailable', () => {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
       })
 
       // Admins only: the hub puts this one in the admin group. Covers both the nav badge and an
       // open Requests page, so a request filed while an admin is looking at it lands without a
       // reload.
-      conn.on('seriesRequested', () => {
+      listen(conn, 'seriesRequested', () => {
         void queryClient.invalidateQueries({ queryKey: ['requests'] })
       })
 
       // Addressed to one user's group, not a broadcast: this is somebody's own mail.
-      conn.on('inboxNotification', (item: InboxPush) => {
+      listen(conn, 'inboxNotification', async (item: InboxPush) => {
         // The push carries the recipient's new unread count, so the badge updates without a
         // round trip. The feed is invalidated rather than patched: it is paged and filtered, and
         // splicing a row into every cached filter combination is more ways to be wrong than it is
@@ -264,11 +295,18 @@ export function useLiveEvents() {
         queryClient.setQueryData(['inbox', 'unread'], { count: item.unread })
         void queryClient.invalidateQueries({ queryKey: ['inbox', 'feed'] })
 
-        // Read from the cache rather than a hook: this handler is registered once for the app's
-        // lifetime and must not re-subscribe every time the preference changes. Absent prefs
-        // (first load, still fetching) default to showing the toast, matching the server default.
-        const prefs = queryClient.getQueryData<InboxPrefs>(['inbox', 'prefs'])
+        // Read through the query client rather than a hook: this handler is registered once for
+        // the app's lifetime and must not re-subscribe every time the preference changes. The
+        // bell keeps the query cached; ensureQueryData covers a push that beats its first fetch.
+        // If the prefs cannot be loaded the toast shows, matching the server default.
+        const prefs = await queryClient.ensureQueryData(inboxPrefsQuery).catch(() => null)
         if (prefs?.toasts === false) return
+        // The reader owns the whole viewport and the toast stack sits over its bottom bar and tap
+        // zone; the badge and feed above are already updated, so the mail is there afterwards.
+        // Unlocks and level-ups are the exception: they are raised moments after the chapter's
+        // last page, and the reader is where somebody is when they land.
+        const earned = item.type === 'achievementUnlocked' || item.type === 'levelUp'
+        if (window.location.pathname.startsWith('/read/') && !earned) return
 
         notifications.show({
           title: item.title,
@@ -282,14 +320,8 @@ export function useLiveEvents() {
       unsubscribe()
       reconnectListeners.delete(onReconnected)
       if (summaryTimer !== null) clearTimeout(summaryTimer)
-      connection?.off('queueUpdated')
-      connection?.off('chapterImported')
-      connection?.off('readProgressChanged')
-      connection?.off('sourceMatchFinished')
-      connection?.off('sourceMatchProgress')
-      connection?.off('updateAvailable')
-      connection?.off('seriesRequested')
-      connection?.off('inboxNotification')
+      if (seriesTimer !== null) clearTimeout(seriesTimer)
+      for (const [name, handler] of registered) liveConn?.off(name, handler)
     }
   }, [queryClient])
 }

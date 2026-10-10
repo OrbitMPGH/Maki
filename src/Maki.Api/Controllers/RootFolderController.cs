@@ -64,13 +64,14 @@ public class RootFolderController(
             return NotFound();
         }
 
-        if (await db.Series.AnyAsync(s => s.RootFolderId == id, ct))
+        // Past the library scope: an admin granted only some folders must still be refused for one
+        // whose series they cannot see, not hit the foreign key.
+        if (await db.Series.IgnoreQueryFilters().AnyAsync(s => s.RootFolderId == id, ct))
         {
             return this.Conflict(localizer, "error.rootFolder.inUse");
         }
 
-        // The grants cascade away, but a cached snapshot still lists this id, and SQLite hands it to
-        // the next folder added.
+        // The grants cascade away, but a cached snapshot still lists this id until it is evicted.
         var grantees = await db.UserRootFolders
             .Where(g => g.RootFolderId == id)
             .Select(g => g.UserId)

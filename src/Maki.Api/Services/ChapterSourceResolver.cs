@@ -8,7 +8,6 @@ namespace Maki.Api.Services;
 
 public record ResolvedChapterSource(SourceMapping Mapping, ISource Source, string SourceChapterId);
 
-/// <summary>No mapping resolved and at least one was skipped because its source rate-limited the listing.</summary>
 /// <summary>No enabled mapping could hand over this chapter. The message lists what each source said.</summary>
 public sealed class ChapterUnavailableException(string key, string message) : InvalidOperationException(message)
 {
@@ -17,6 +16,7 @@ public sealed class ChapterUnavailableException(string key, string message) : In
     public string Key { get; } = key;
 }
 
+/// <summary>No mapping resolved and at least one was skipped because its source rate-limited the listing.</summary>
 public sealed class SourceRateLimitedException(string sourceName, TimeSpan? retryAfter)
     : RateLimitException($"Rate limited by {sourceName} while finding the chapter", retryAfter)
 {
@@ -147,7 +147,7 @@ public class ChapterSourceResolver(
         }
 
         throw new ChapterUnavailableException(ChapterUnavailableException.NotListed,
-            $"Chapter {chapter.Number} unavailable on all sources ({string.Join("; ", errors)})");
+            $"Chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)} unavailable on all sources ({string.Join("; ", errors)})");
     }
 
     /// <summary>
@@ -165,14 +165,14 @@ public class ChapterSourceResolver(
         var chapters = await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct);
         if (requireExactMatch)
         {
-            var exact = chapters.Where(c => c.Language == chapter.Language &&
+            var exact = chapters.Where(c => SourceLanguages.Same(c.Language, chapter.Language) &&
                 (chapter.Number != null ? c.Number == chapter.Number && (chapter.Volume == null || c.Volume == chapter.Volume) : c.Number == null && c.Title == chapter.Title)).ToList();
             return exact.Count == 1 ? exact[0].SourceChapterId : null;
         }
 
         // A mapping listing two languages carries both under one number, so language is part of every
         // match; a same-number hit in another language is "not listed", never a stand-in.
-        var sameLanguage = chapters.Where(c => c.Language == chapter.Language).ToList();
+        var sameLanguage = chapters.Where(c => SourceLanguages.Same(c.Language, chapter.Language)).ToList();
         var match = chapter.Number is not null
             ? sameLanguage.FirstOrDefault(c => c.Number == chapter.Number && c.Volume == chapter.Volume)
               ?? sameLanguage.FirstOrDefault(c => c.Number == chapter.Number)

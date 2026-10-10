@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Api.Localization;
 using Maki.Core.Localization;
 using Maki.Metadata.Embedding;
@@ -34,6 +35,7 @@ public class PrebuiltIndexJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
+                build.MarkBuilt();
                 logger.LogInformation("Prebuilt embedding index: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else
@@ -48,6 +50,7 @@ public class PrebuiltIndexJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Prebuilt embedding index check failed");
+            context.ReportFailure(ex);
         }
     }
 

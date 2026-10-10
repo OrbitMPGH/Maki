@@ -114,9 +114,11 @@ public class SettingsController(
 
     public record NamingPreviewRequest(string? SeriesFolderFormat, string? ChapterFormat);
 
-    /// <param name="Errors">Empty when both formats are saveable.</param>
+    /// <param name="SeriesFolderErrors">Localized reasons the series folder format would be refused.</param>
+    /// <param name="ChapterErrors">Same, for the chapter file format. Both empty when the formats are saveable.</param>
     public record NamingPreviewResponse(
-        string SeriesFolder, string ChapterFile, IReadOnlyList<string> Errors);
+        string SeriesFolder, string ChapterFile,
+        IReadOnlyList<string> SeriesFolderErrors, IReadOnlyList<string> ChapterErrors);
     public record SetupStatus(bool Completed);
     /// <param name="ItemTimeoutMinutes">
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
@@ -156,7 +158,7 @@ public class SettingsController(
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
-    public record BackupSettings(int Retention);
+    public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
     /// <param name="UserId">
@@ -457,9 +459,14 @@ public class SettingsController(
             return Unauthorized();
         }
 
-        return await AccountCredentials.ConfirmPasswordAsync(users, signIn, user, password) is { } key
-            ? this.Fail(localizer, key)
-            : null;
+        if (await AccountCredentials.ConfirmForMintAsync(users, signIn, user, password, TimeProvider.System) is { } key)
+        {
+            return key == AccountCredentials.RecentSignInRequiredKey
+                ? this.Forbidden(localizer, key)
+                : this.Fail(localizer, key);
+        }
+
+        return null;
     }
 
     private Task<UserApiKey?> CurrentOpdsKeyAsync(CancellationToken ct) =>
@@ -692,7 +699,7 @@ public class SettingsController(
                     return this.Fail(localizer, "error.settings.unknownContentRating", new { rating });
                 }
 
-                if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode))
+                if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode) || !Enum.IsDefined(parsedMode))
                 {
                     return this.Fail(localizer, "error.settings.unknownIncognitoMode", new { mode });
                 }
@@ -810,19 +817,16 @@ public class SettingsController(
         var folderFormat = request.SeriesFolderFormat ?? await naming.SeriesFolderFormatAsync(ct);
         var chapterFormat = request.ChapterFormat ?? await naming.ChapterFormatAsync(ct);
 
-        var errors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat)
-            .Select(e => localizer.Get("error.naming.formatInvalid",
-                new { field = localizer.Get("error.naming.fieldSeriesFolder"), reason = localizer.Get(e.Key, e.Args) }))
-            .Concat(Maki.Core.Naming.NamingFormatter.Validate(chapterFormat)
-                .Select(e => localizer.Get("error.naming.formatInvalid",
-                    new { field = localizer.Get("error.naming.fieldChapterFormat"), reason = localizer.Get(e.Key, e.Args) })))
-            .ToList();
+        string Render(Maki.Core.Naming.NamingValidationError e) => localizer.Get(e.Key, e.Args);
+        var folderErrors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat).Select(Render).ToList();
+        var chapterErrors = Maki.Core.Naming.NamingFormatter.Validate(chapterFormat).Select(Render).ToList();
 
         return Ok(new NamingPreviewResponse(
             Maki.Core.Naming.NamingFormatter.Format(folderFormat, sample),
             Maki.Core.Naming.NamingFormatter.Format(chapterFormat, sample)
                 + Maki.Core.Naming.NamingDefaults.ChapterExtension,
-            errors));
+            folderErrors,
+            chapterErrors));
     }
 
     /// <summary>
@@ -888,7 +892,11 @@ public class SettingsController(
     /// </summary>
     [Authorize(Policy = Policies.ChangeContentRating)]
     [HttpPut("discover")]
-    public async Task<IActionResult> SetDiscover([FromBody] DiscoverSettings request, CancellationToken ct)
+    public async Task<IActionResult> SetDiscover(
+        [FromBody] DiscoverSettings request,
+        [FromServices] IUserSnapshotCache snapshots,
+        [FromServices] AuthEventLogger auditLog,
+        CancellationToken ct)
     {
         if (!ContentRating.IsValid(request.MaxContentRating))
         {
@@ -898,6 +906,10 @@ public class SettingsController(
         await db.Users
             .Where(u => u.Id == currentUser.UserId)
             .ExecuteUpdateAsync(u => u.SetProperty(x => x.MaxContentRating, request.MaxContentRating), ct);
+        snapshots.Evict(currentUser.UserId);
+
+        await auditLog.LogAsync(AuthEventType.UserUpdated, currentUser.UserName, currentUser.UserId,
+            HttpContext, detail: $"content rating set to \"{request.MaxContentRating}\"", ct: ct);
         return Ok(new DiscoverSettings(request.MaxContentRating));
     }
 
@@ -907,8 +919,10 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2,
         await settings.GetAsync(SettingKeys.DownloadRetryEnabled, ct) != "false",
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
+        SmartDownloadJob.ClampChaptersLeft(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5),
+        SmartDownloadJob.ClampBatchSize(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10),
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
@@ -943,6 +957,16 @@ public class SettingsController(
         if (request.BulkHoldThreshold is < 0 or > 1000)
         {
             return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
+        }
+
+        if (request.SmartDownloadChaptersLeft is < SmartDownloadJob.MinChapters or > SmartDownloadJob.MaxChaptersLeft)
+        {
+            return this.Fail(localizer, "error.settings.smartChaptersLeftRange", new { min = SmartDownloadJob.MinChapters, max = SmartDownloadJob.MaxChaptersLeft });
+        }
+
+        if (request.SmartDownloadChapters is < SmartDownloadJob.MinChapters or > SmartDownloadJob.MaxChaptersPerBatch)
+        {
+            return this.Fail(localizer, "error.settings.smartChaptersRange", new { min = SmartDownloadJob.MinChapters, max = SmartDownloadJob.MaxChaptersPerBatch });
         }
 
         var sourceOrder = SourceOrderService.Parse(request.SourceOrder);
@@ -1115,7 +1139,8 @@ public class SettingsController(
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("backup")]
     public async Task<IActionResult> GetBackup(CancellationToken ct) => Ok(new BackupSettings(
-        int.TryParse(await settings.GetAsync(SettingKeys.BackupRetention, ct), out var n) ? n : 5));
+        int.TryParse(await settings.GetAsync(SettingKeys.BackupRetention, ct), out var n) ? n : 5,
+        await settings.GetAsync(SettingKeys.BackupScheduled, ct) == "true"));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("backup")]
@@ -1130,7 +1155,12 @@ public class SettingsController(
             SettingKeys.BackupRetention,
             request.Retention.ToString(CultureInfo.InvariantCulture),
             ct);
-        return Ok(request);
+        if (request.Scheduled is { } scheduled)
+        {
+            await settings.SetAsync(SettingKeys.BackupScheduled, scheduled ? "true" : "false", ct);
+        }
+
+        return await GetBackup(ct);
     }
 
     /// <summary>
@@ -1838,7 +1868,14 @@ public class SettingsController(
             "false",
             StringComparison.OrdinalIgnoreCase);
 
-        var layer = (await vectorIndexCache.GetAsync(ct))?.Taste;
+        // A status line must not build the whole index to render itself. When it is cold, start a
+        // background build (unless embeddings are off) and report what is loaded now.
+        var layer = vectorIndexCache.TryGetLoaded()?.Taste;
+        if (layer is null && modelSwitcher.CurrentModel != EmbeddingModelProfile.OffKind)
+        {
+            vectorIndexCache.WarmInBackground();
+        }
+
         var generatedAt =
             DateTime.TryParse(
                 await settings.GetAsync(SettingKeys.RecommendationsTasteVectorsGeneratedAt, ct),
@@ -1992,7 +2029,14 @@ public class SettingsController(
         /// Whether the caller may edit the instance half. The client uses it to disable those fields
         /// rather than showing a non-admin inputs whose writes will be dropped.
         /// </summary>
-        bool IsAdmin = false);
+        bool IsAdmin = false,
+        /// <summary>
+        /// Stands in for <c>KitsuPassword</c>, which is never sent back: a third-party password that
+        /// is often reused would otherwise be readable by any of the caller's API keys.
+        /// </summary>
+        bool KitsuPasswordSet = false,
+        /// <summary>Stands in for <c>MangaBakaToken</c>, which is never sent back, for the same reason.</summary>
+        bool MangaBakaTokenSet = false);
 
     /// <summary>
     /// Both halves of the scrobble configuration in one response, because one card in the UI shows
@@ -2025,17 +2069,19 @@ public class SettingsController(
             admin ? await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct) : null,
-            mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken),
+            null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientId, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientSecret, ct) : null,
             mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuEmail),
-            mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword),
+            null,
             int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
                 ? m
                 : Services.ScrobbleService.DefaultIntervalMinutes,
             mine.GetValueOrDefault(SettingKeys.ScrobblePlanToRead) == "true",
             admin ? await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct) : null,
-            IsAdmin: admin));
+            IsAdmin: admin,
+            KitsuPasswordSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword)),
+            MangaBakaTokenSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken))));
     }
 
     [Authorize(Policy = Policies.UseTrackers)]
@@ -2043,9 +2089,19 @@ public class SettingsController(
     public async Task<IActionResult> SetScrobble([FromBody] ScrobbleSettings request, CancellationToken ct)
     {
         // The caller's own remote accounts, always writable.
-        await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        if (request.MangaBakaToken is not null)
+        {
+            await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        }
+
         await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
-        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        // Null means "leave it" for the token and the password: GET never returns either, so a client
+        // that did not touch the field sends nothing back.
+        if (request.KitsuPassword is not null)
+        {
+            await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        }
+
         await userSettings.SetAsync(
             SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);
 
@@ -2113,7 +2169,9 @@ public class SettingsController(
         AuthRuntimeOptions.LockoutMinutesFrom(await settings.GetAsync(SettingKeys.AuthLockoutMinutes, ct)),
         AuthRuntimeOptions.SessionDaysFrom(await settings.GetAsync(SettingKeys.AuthSessionDays, ct))));
 
+    // Session cookie only: lockout and the trusted-proxy list outlive revoking a leaked admin key.
     [Authorize(Policy = Policies.Admin)]
+    [CookieSessionOnly]
     [HttpPut("security")]
     public async Task<IActionResult> SetSecurity([FromBody] SecuritySettings request, CancellationToken ct)
     {
@@ -2123,8 +2181,7 @@ public class SettingsController(
             // Validated on save rather than silently ignored at startup: a typo here means forwarded
             // headers are quietly dropped, which shows up much later as every audit-log entry and
             // every rate-limit bucket carrying the proxy's address instead of the client's.
-            var address = entry.Contains('/') ? entry.Split('/', 2)[0] : entry;
-            if (!System.Net.IPAddress.TryParse(address, out _))
+            if (!AuthRuntimeOptions.TryParseTrustedProxy(entry, out _, out _))
             {
                 return this.Fail(localizer, "error.settings.trustedProxyInvalid", new { entry });
             }
