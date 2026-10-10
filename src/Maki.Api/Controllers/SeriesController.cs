@@ -1074,46 +1074,13 @@ public class SeriesController(
         // still listed.
         var diskPlan = series.RootFolder is null ? null : await PlanSeriesDiskDeleteAsync(series, deleteFiles, ct);
 
-        // Snapshot before the hard delete: the event row must outlive the series (FK is severed
-        // to NULL), so it carries the title, the genre/tag lists the aggregation needs later, and
-        // enough provider metadata for the stats feed to reopen it in Discover.
-        string? coverUrl = null;
-        if (series.MangaBakaId is int mangaBakaId && await mangaBakaStore.IsAvailableAsync(ct))
-        {
-            try
-            {
-                coverUrl = (await mangaBakaStore.GetDetailAsync(mangaBakaId, ct))?.CoverUrl;
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                logger.LogWarning(ex, "Could not snapshot the provider cover for removed series {SeriesId}", id);
-            }
-        }
-
-        var payload = JsonSerializer.Serialize(new
-        {
-            genres = series.Genres,
-            tags = series.Tags,
-            providerId = series.MangaBakaId?.ToString(CultureInfo.InvariantCulture),
-            coverUrl,
-            rootFolderId = series.RootFolderId
-        });
+        var payload = await SeriesRemovalRecord.PayloadAsync(series, mangaBakaStore, logger, ct);
         var title = series.Title;
         var seriesKey = SeriesIdentity.For(series);
         // The join rows cascade away with the series, and tag-scoped connections still need them.
         var tagIds = await db.SeriesTags.Where(st => st.SeriesId == id).Select(st => st.TagId).ToListAsync(ct);
 
-        // Before the delete cascades the provenance rows away, while they can still say whose
-        // recommendation inputs this series was part of. Incremented in the database rather than on
-        // tracked entities: these are other people's counters, and another request of theirs may be
-        // advancing them at the same time.
-        var provenanceOwners = await db.UserSeriesStates.IgnoreQueryFilters()
-            .Where(x => x.SeriesId == id && x.AddedToLibraryAtUtc != null)
-            .Select(x => x.UserId).Distinct().ToListAsync(ct);
-        foreach (var owner in provenanceOwners)
-        {
-            await RecommendationFeedbackService.BumpAsync(db, owner, feedback: false, signal: true, ct);
-        }
+        await SeriesRemovalRecord.BumpRecommendationOwnersAsync(db, id, ct);
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
         if (diskPlan is not null)
