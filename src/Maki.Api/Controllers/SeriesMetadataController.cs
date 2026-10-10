@@ -29,6 +29,7 @@ public class SeriesMetadataController(
     MakiDbContext db,
     SeriesMetadataRefreshService metadataRefresh,
     SeriesMetadataChangeLog changeLog,
+    SeriesIdentityService identity,
     ICurrentUser currentUser,
     KavitaScanService kavitaScans) : ControllerBase
 {
@@ -127,6 +128,7 @@ public class SeriesMetadataController(
         }
 
         var before = SeriesMetadataChangeLog.Snapshot.Of(series);
+        var oldKey = SeriesIdentity.For(series);
         var overview = series.Overview;
         var genres = string.Join(", ", series.Genres);
         Apply(series, request, fields);
@@ -146,7 +148,7 @@ public class SeriesMetadataController(
             changeLog.RecordReplaced(series, SeriesMetadataField.Overview, userId);
         }
 
-        await db.SaveChangesAsync(ct);
+        await SaveAsync(series, oldKey, ct);
         await changeLog.PublishAsync(ct);
         return Ok(new MetadataStateDto(SeriesDto.LockedFieldNames(series.LockedFields)));
     }
@@ -171,10 +173,11 @@ public class SeriesMetadataController(
             return this.Fail(localizer, "error.metadata.noFields");
         }
 
+        var oldKey = SeriesIdentity.For(series);
         series.LockedFields &= ~fields;
         var refreshed = await metadataRefresh.RefreshAsync(
             series, includeCover: (fields & SeriesMetadataField.Cover) != 0, restore: fields, ct);
-        await db.SaveChangesAsync(ct);
+        await SaveAsync(series, oldKey, ct);
         await changeLog.PublishAsync(ct);
 
         if (refreshed && series.RootFolder is { } rootFolder)
@@ -183,6 +186,24 @@ public class SeriesMetadataController(
         }
 
         return Ok(new MetadataStateDto(SeriesDto.LockedFieldNames(series.LockedFields), refreshed));
+    }
+
+    /// <summary>
+    /// Saves, and when the change moved the series' stats identity (a title edit on a series with no
+    /// provider ids) re-keys its history in the same transaction, so the save and the re-key land together.
+    /// </summary>
+    private async Task SaveAsync(Series series, string oldKey, CancellationToken ct)
+    {
+        if (SeriesIdentity.For(series) == oldKey)
+        {
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await db.SaveChangesAsync(ct);
+        await identity.RekeyAsync(series, oldKey, ct);
+        await transaction.CommitAsync(ct);
     }
 
     /// <returns>The named fields, or null when a name is unknown or not allowed here.</returns>

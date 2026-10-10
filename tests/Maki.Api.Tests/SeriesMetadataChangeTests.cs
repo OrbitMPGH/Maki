@@ -236,7 +236,8 @@ public class SeriesMetadataChangeTests : IDisposable
 
     private SeriesMetadataController Controller(MakiDbContext db, int userId) =>
         new(new TestLocalizer(), db, new SeriesMetadataRefreshService([new StubProvider(Provider())], null!),
-            ChangeLog(db), new TestCurrentUser(userId),
+            ChangeLog(db), new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance),
+            new TestCurrentUser(userId),
             new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), new FakeAppSettings(),
                 _db.ScopeFactory(), NullLogger<KavitaScanService>.Instance));
 

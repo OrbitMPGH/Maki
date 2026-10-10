@@ -354,7 +354,8 @@ public class SeriesMetadataLockTests : IDisposable
         var covers = Covers();
         return new SeriesMetadataController(
             new TestLocalizer(), db, new SeriesMetadataRefreshService([new Provider(metadata)], covers),
-            ChangeLog(db), new TestCurrentUser(1), Kavita());
+            ChangeLog(db), new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance),
+            new TestCurrentUser(1), Kavita());
     }
 
     private MediaCoverController CoverController(MakiDbContext db) =>
