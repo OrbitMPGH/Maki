@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 
@@ -71,6 +72,31 @@ public class ReaderController(
     IAppSettings appSettings) : ControllerBase
 {
     private const int ThumbnailWidth = 200;
+
+    /// <summary>
+    /// Asks the decoder for the thumbnail's own size, which a JPEG honours by scaling in the DCT: a
+    /// 2000x3000 scan then decodes into ~1 MB of pixels instead of ~24 MB, up to four at a time
+    /// under the gate. The exact height comes from the header so the shape matches a full decode
+    /// and resize. A stream that cannot rewind, or a page already narrower, decodes as before.
+    /// </summary>
+    internal static async Task<DecoderOptions> ThumbnailDecoderAsync(Stream source, CancellationToken ct)
+    {
+        if (!source.CanSeek)
+        {
+            return new DecoderOptions();
+        }
+
+        var start = source.Position;
+        var info = await Image.IdentifyAsync(source, ct);
+        source.Position = start;
+        if (info.Width <= ThumbnailWidth)
+        {
+            return new DecoderOptions();
+        }
+
+        var height = Math.Max(1, (int)Math.Round((double)info.Height * ThumbnailWidth / info.Width));
+        return new DecoderOptions { TargetSize = new Size(ThumbnailWidth, height) };
+    }
 
     /// <summary>
     /// Loads (creating on demand) this user's state row for a series, or null when the series is not
@@ -333,7 +359,7 @@ public class ReaderController(
 
                     await using var _ = source;
 
-                    using var image = await Image.LoadAsync(source, ct);
+                    using var image = await Image.LoadAsync(await ThumbnailDecoderAsync(source, ct), source, ct);
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
                         Size = new Size(ThumbnailWidth, 0),
