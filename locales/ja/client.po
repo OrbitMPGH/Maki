@@ -6281,6 +6281,14 @@ msgstr "{label} を除外"
 msgid "Exclude from taste"
 msgstr "好みから除外"
 
+#: src/pages/LibraryPage.tsx
+msgid "Exclude genres"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Exclude your tags"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Excluded"
@@ -14100,6 +14108,10 @@ msgstr "ここにあるシリーズは「見つける」のレール、検索、
 msgid "Series with newly added chapters."
 msgstr "新しい章が追加されたシリーズです。"
 
+#: src/pages/LibraryPage.tsx
+msgid "Series with none of your tags"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Series you already have that match these filters."
@@ -16507,6 +16519,10 @@ msgstr "未指定"
 #, fuzzy
 msgid "Unsupported file type"
 msgstr "未対応のファイル形式"
+
+#: src/pages/LibraryPage.tsx
+msgid "Untagged only"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

@@ -143,6 +143,22 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Null(listed.Spec.ChapterMax);
         Assert.Equal("downloaded", listed.Spec.ChapterMode);
         Assert.Equal("", listed.Spec.SortDir);
+        Assert.Null(listed.Spec.ExcludeTagIds);
+        Assert.Null(listed.Spec.ExcludeGenres);
+        Assert.False(listed.Spec.UntaggedOnly);
+    }
+
+    [Fact]
+    public async Task Create_round_trips_the_exclude_filters()
+    {
+        var spec = new LibraryFilterSpec(ExcludeTagIds: [4, 5], ExcludeGenres: ["Horror"], UntaggedOnly: true);
+
+        await Controller().Create(new SaveFilterRequest("Clean", spec), CancellationToken.None);
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
+
+        Assert.Equal([4, 5], listed.Spec.ExcludeTagIds);
+        Assert.Equal(["Horror"], listed.Spec.ExcludeGenres);
+        Assert.True(listed.Spec.UntaggedOnly);
     }
 
     [Fact]

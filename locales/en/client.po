@@ -5227,6 +5227,14 @@ msgstr "Exclude {label}"
 msgid "Exclude from taste"
 msgstr "Exclude from taste"
 
+#: src/pages/LibraryPage.tsx
+msgid "Exclude genres"
+msgstr "Exclude genres"
+
+#: src/pages/LibraryPage.tsx
+msgid "Exclude your tags"
+msgstr "Exclude your tags"
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Excluded"
 msgstr "Excluded"
@@ -11707,6 +11715,10 @@ msgstr "Series with any of these never show up on Discover: not in rails, search
 msgid "Series with newly added chapters."
 msgstr "Series with newly added chapters."
 
+#: src/pages/LibraryPage.tsx
+msgid "Series with none of your tags"
+msgstr "Series with none of your tags"
+
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Series you already have that match these filters."
 msgstr "Series you already have that match these filters."
@@ -13699,6 +13711,10 @@ msgstr "Unspecified"
 #: src/api/upgrades.ts
 msgid "Unsupported file type"
 msgstr "Unsupported file type"
+
+#: src/pages/LibraryPage.tsx
+msgid "Untagged only"
+msgstr "Untagged only"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Until it is built, the badges compare against your own library only."

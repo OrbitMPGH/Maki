@@ -79,6 +79,12 @@ public record LibraryFilterSpec(
     string QualityProfile = "all",
     /// <summary><see cref="Maki.Core.Entities.SeriesTypes"/> values to include, empty for "any".</summary>
     List<string>? Types = null,
+    /// <summary>User tag ids a series must not carry. Absent on presets saved before this existed.</summary>
+    List<int>? ExcludeTagIds = null,
+    /// <summary>Genres a series must not carry.</summary>
+    List<string>? ExcludeGenres = null,
+    /// <summary>Only series with none of the user's own tags.</summary>
+    bool UntaggedOnly = false,
     /// <summary>"asc" or "desc" to override <see cref="Sort"/>'s natural direction; empty keeps it.</summary>
     string SortDir = "");
 

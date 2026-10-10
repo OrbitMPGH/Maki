@@ -6281,6 +6281,14 @@ msgstr "排除 {label}"
 msgid "Exclude from taste"
 msgstr "从品味中排除"
 
+#: src/pages/LibraryPage.tsx
+msgid "Exclude genres"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Exclude your tags"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Excluded"
@@ -14100,6 +14108,10 @@ msgstr "列表中的作品不会出现在“发现”的任何位置：推荐栏
 msgid "Series with newly added chapters."
 msgstr "有新增章节的作品。"
 
+#: src/pages/LibraryPage.tsx
+msgid "Series with none of your tags"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Series you already have that match these filters."
@@ -16507,6 +16519,10 @@ msgstr "未指定"
 #, fuzzy
 msgid "Unsupported file type"
 msgstr "不支持的文件类型"
+
+#: src/pages/LibraryPage.tsx
+msgid "Untagged only"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

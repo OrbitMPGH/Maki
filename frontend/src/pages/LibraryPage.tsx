@@ -17,6 +17,7 @@ import {
   Select,
   SimpleGrid,
   Stack,
+  Switch,
   Text,
   TextInput,
   Tooltip,
@@ -241,6 +242,9 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   completeness: 'all',
   sort: 'added',
   sortDir: '',
+  excludeTagIds: [],
+  excludeGenres: [],
+  untaggedOnly: false,
   genres: [],
   genreMatch: 'any',
   metadataTags: [],
@@ -368,7 +372,10 @@ export default function LibraryPage() {
   // Tag ids live as strings because that's what MultiSelect speaks.
   const [tagFilter, setTagFilter] = usePageState<string[]>(`${MEM}:tags`, [])
   const [tagMatch, setTagMatch] = usePageState(`${MEM}:tag-match`, 'any')
+  const [excludeTagFilter, setExcludeTagFilter] = usePageState<string[]>(`${MEM}:exclude-tags`, [])
+  const [untaggedOnly, setUntaggedOnly] = usePageState(`${MEM}:untagged`, false)
   const [genreFilter, setGenreFilter] = usePageState<string[]>(`${MEM}:genres`, [])
+  const [excludeGenreFilter, setExcludeGenreFilter] = usePageState<string[]>(`${MEM}:exclude-genres`, [])
   const [genreMatch, setGenreMatch] = usePageState(`${MEM}:genre-match`, 'any')
   const [metaTagFilter, setMetaTagFilter] = usePageState<string[]>(`${MEM}:meta-tags`, [])
   const [metaTagMatch, setMetaTagMatch] = usePageState(`${MEM}:meta-tag-match`, 'any')
@@ -427,12 +434,23 @@ export default function LibraryPage() {
     }
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
     if (typeFilter.length > 0) list = list.filter((s) => s.type != null && typeFilter.includes(s.type))
-    if (tagFilter.length > 0) {
-      const wanted = tagFilter.map(Number)
-      list = list.filter((s) => matches(wanted, s.tagIds, tagMatch))
+    if (untaggedOnly) {
+      list = list.filter((s) => (s.tagIds ?? []).length === 0)
+    } else {
+      if (tagFilter.length > 0) {
+        const wanted = tagFilter.map(Number)
+        list = list.filter((s) => matches(wanted, s.tagIds, tagMatch))
+      }
+      if (excludeTagFilter.length > 0) {
+        const unwanted = excludeTagFilter.map(Number)
+        list = list.filter((s) => !unwanted.some((id) => (s.tagIds ?? []).includes(id)))
+      }
     }
     if (genreFilter.length > 0) {
       list = list.filter((s) => matches(genreFilter, s.genres, genreMatch))
+    }
+    if (excludeGenreFilter.length > 0) {
+      list = list.filter((s) => !excludeGenreFilter.some((g) => (s.genres ?? []).includes(g)))
     }
     if (metaTagFilter.length > 0) {
       list = list.filter((s) => matches(metaTagFilter, s.metadataTags, metaTagMatch))
@@ -478,6 +496,7 @@ export default function LibraryPage() {
     return list
   }, [
     series, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
+    excludeTagFilter, excludeGenreFilter, untaggedOnly,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, sortDir, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter,
@@ -506,11 +525,13 @@ export default function LibraryPage() {
   useEffect(() => {
     if (tags == null) return
     const known = new Set(tagOptions.map((o) => o.value))
-    setTagFilter((current) => {
+    const dropStale = (current: string[]) => {
       const next = current.filter((id) => known.has(id))
       return next.length === current.length ? current : next
-    })
-  }, [tags, tagOptions, setTagFilter])
+    }
+    setTagFilter(dropStale)
+    setExcludeTagFilter(dropStale)
+  }, [tags, tagOptions, setTagFilter, setExcludeTagFilter])
 
   const genreOptions = useMemo(() => facetOptions(series, (s) => s.genres), [series])
   const metaTagOptions = useMemo(() => facetOptions(series, (s) => s.metadataTags), [series])
@@ -562,6 +583,9 @@ export default function LibraryPage() {
     sort,
     sortDir: sortDirOverride,
     genres: genreFilter,
+    excludeTagIds: excludeTagFilter.map(Number),
+    excludeGenres: excludeGenreFilter,
+    untaggedOnly,
     genreMatch,
     metadataTags: metaTagFilter,
     metadataTagMatch: metaTagMatch,
@@ -589,6 +613,9 @@ export default function LibraryPage() {
     setTagFilter((merged.tagIds ?? []).map(String))
     setTagMatch(merged.tagMatch)
     setGenreFilter(merged.genres ?? [])
+    setExcludeTagFilter((merged.excludeTagIds ?? []).map(String))
+    setExcludeGenreFilter(merged.excludeGenres ?? [])
+    setUntaggedOnly(merged.untaggedOnly ?? false)
     setGenreMatch(merged.genreMatch)
     setMetaTagFilter(merged.metadataTags ?? [])
     setMetaTagMatch(merged.metadataTagMatch)
@@ -618,6 +645,9 @@ export default function LibraryPage() {
     (typeFilter.length > 0 ? 1 : 0) +
     (tagFilter.length > 0 ? 1 : 0) +
     (genreFilter.length > 0 ? 1 : 0) +
+    (excludeTagFilter.length > 0 ? 1 : 0) +
+    (excludeGenreFilter.length > 0 ? 1 : 0) +
+    (untaggedOnly ? 1 : 0) +
     (metaTagFilter.length > 0 ? 1 : 0) +
     (monitoredFilter !== 'all' ? 1 : 0) +
     (completeness !== 'all' ? 1 : 0) +
@@ -772,6 +802,33 @@ export default function LibraryPage() {
    * A multi-value facet plus its AND/OR switch. The switch only appears once two values are
    * picked: with one selected, "any" and "all" mean the same thing and it's just noise.
    */
+  const excludeFilter = ({
+    label,
+    data,
+    value,
+    onChange,
+    disabled,
+  }: {
+    label: string
+    data: { value: string; label: string }[]
+    value: string[]
+    onChange: (v: string[]) => void
+    disabled?: boolean
+  }) => (
+    <MultiSelect
+      label={label}
+      data={data}
+      value={value}
+      onChange={onChange}
+      placeholder={value.length === 0 ? t`None` : undefined}
+      disabled={disabled || data.length === 0}
+      searchable
+      clearable
+      limit={100}
+      comboboxProps={{ withinPortal: true }}
+    />
+  )
+
   const facetFilter = ({
     label,
     description,
@@ -780,6 +837,7 @@ export default function LibraryPage() {
     onChange,
     mode,
     onModeChange,
+    disabled,
   }: {
     label: string
     description?: string
@@ -788,6 +846,7 @@ export default function LibraryPage() {
     onChange: (v: string[]) => void
     mode: string
     onModeChange: (v: string) => void
+    disabled?: boolean
   }) => (
     <div>
       <Group justify="space-between" align="center" mb={4} wrap="nowrap">
@@ -809,7 +868,7 @@ export default function LibraryPage() {
         value={value}
         onChange={onChange}
         placeholder={value.length === 0 ? (data.length > 0 ? t`Any` : t`None available`) : undefined}
-        disabled={data.length === 0}
+        disabled={disabled || data.length === 0}
         searchable
         clearable
         // The metadata-tag list runs to a few thousand entries on a big library; rendering them
@@ -1280,7 +1339,21 @@ export default function LibraryPage() {
             onChange: setTagFilter,
             mode: tagMatch,
             onModeChange: setTagMatch,
+            disabled: untaggedOnly,
           })}
+          {excludeFilter({
+            label: t`Exclude your tags`,
+            data: tagOptions,
+            value: excludeTagFilter,
+            onChange: setExcludeTagFilter,
+            disabled: untaggedOnly,
+          })}
+          <Switch
+            label={t`Untagged only`}
+            description={t`Series with none of your tags`}
+            checked={untaggedOnly}
+            onChange={(e) => setUntaggedOnly(e.currentTarget.checked)}
+          />
           <Button
             variant="subtle"
             size="compact-sm"
@@ -1301,6 +1374,12 @@ export default function LibraryPage() {
             onChange: setGenreFilter,
             mode: genreMatch,
             onModeChange: setGenreMatch,
+          })}
+          {excludeFilter({
+            label: t`Exclude genres`,
+            data: genreOptions,
+            value: excludeGenreFilter,
+            onChange: setExcludeGenreFilter,
           })}
           {facetFilter({
             label: t`Tags`,

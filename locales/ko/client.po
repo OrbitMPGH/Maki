@@ -6281,6 +6281,14 @@ msgstr "{label} 제외"
 msgid "Exclude from taste"
 msgstr "취향에서 제외"
 
+#: src/pages/LibraryPage.tsx
+msgid "Exclude genres"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Exclude your tags"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Excluded"
@@ -14100,6 +14108,10 @@ msgstr "이 목록의 시리즈는 탐색의 섹션, 검색, 추천, 창작자 �
 msgid "Series with newly added chapters."
 msgstr "새 챕터가 추가된 시리즈입니다."
 
+#: src/pages/LibraryPage.tsx
+msgid "Series with none of your tags"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Series you already have that match these filters."
@@ -16507,6 +16519,10 @@ msgstr "지정되지 않음"
 #, fuzzy
 msgid "Unsupported file type"
 msgstr "지원하지 않는 파일 형식"
+
+#: src/pages/LibraryPage.tsx
+msgid "Untagged only"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

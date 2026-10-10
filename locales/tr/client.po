@@ -6281,6 +6281,14 @@ msgstr "{label} etiketini hariç tut"
 msgid "Exclude from taste"
 msgstr "Zevk profilinden çıkar"
 
+#: src/pages/LibraryPage.tsx
+msgid "Exclude genres"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Exclude your tags"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Excluded"
@@ -14100,6 +14108,10 @@ msgstr "Bu listedeki seriler Keşfet'te hiçbir yerde görünmez: bölümlerde, 
 msgid "Series with newly added chapters."
 msgstr "Yeni bölümleri eklenen seriler."
 
+#: src/pages/LibraryPage.tsx
+msgid "Series with none of your tags"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Series you already have that match these filters."
@@ -16507,6 +16519,10 @@ msgstr "Belirtilmemiş"
 #, fuzzy
 msgid "Unsupported file type"
 msgstr "Desteklenmeyen dosya türü"
+
+#: src/pages/LibraryPage.tsx
+msgid "Untagged only"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

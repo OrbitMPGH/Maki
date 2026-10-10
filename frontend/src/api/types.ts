@@ -183,6 +183,12 @@ export interface LibraryFilterSpec {
   /** "all" | "behind" | "complete" */
   completeness: string
   sort: string
+  /** User tag ids a series must not carry. */
+  excludeTagIds?: number[] | null
+  /** Genres a series must not carry. */
+  excludeGenres?: string[] | null
+  /** Only series with none of the user's own tags. */
+  untaggedOnly?: boolean
   /** "asc" | "desc" to override the sort key's natural direction; empty or absent keeps it. */
   sortDir?: string
   genres?: string[] | null
