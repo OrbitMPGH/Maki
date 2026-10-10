@@ -20,7 +20,7 @@ import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLibrarySettings, useRootFolders } from '../api/hooks'
 import {
@@ -37,6 +37,7 @@ import type { MetadataSearchResult } from '../api/types'
 import { IgnoredFoldersModal } from '../components/import/IgnoredFoldersModal'
 import { ImportMatchFinder } from '../components/import/ImportMatchFinder'
 import { ImportPlanModal } from '../components/import/ImportPlanModal'
+import { RecentImports, UndoBatchButton } from '../components/import/RecentImports'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -121,6 +122,9 @@ export default function ImportPage() {
   const [finderFor, setFinderFor] = useState<ScanCandidate | null>(null)
   const [ignoredOpen, setIgnoredOpen] = useState(false)
   const [previewItems, setPreviewItems] = useState<ImportRequestItem[] | null>(null)
+  // The run whose results are on screen, which is the batch its Undo button undoes.
+  const [lastRunId, setLastRunId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
   const scannedRoot = scannedRootFolderId === null ? null : Number(scannedRootFolderId)
   const { data: ignoredFolders } = useIgnoredImportFolders(scannedRoot)
   const ignoreFolder = useIgnoreImportFolder()
@@ -226,6 +230,7 @@ export default function ImportPage() {
     },
     onMutate: (payload) => {
       operationIdRef.current = payload.operationId
+      setLastRunId(payload.operationId)
       setResults(null)
       setLinkedSeries({})
       // Every selected row starts out queued; SignalR events overwrite per row.
@@ -254,6 +259,7 @@ export default function ImportPage() {
         color: ok === data.length ? 'var(--ok)' : 'var(--warn)',
       })
       setProgress({})
+      void queryClient.invalidateQueries({ queryKey: ['libraryimport', 'batches'] })
       if (rootFolderId) {
         keepResultsRef.current = true
         scan.mutate(Number(rootFolderId))
@@ -263,6 +269,13 @@ export default function ImportPage() {
     // error toast comes from the global handler in main.tsx.
     onError: () => setProgress({}),
   })
+
+  const afterUndo = () => {
+    setResults(null)
+    setLinkedSeries({})
+    if (scannedRootFolderId) scan.mutate(Number(scannedRootFolderId))
+  }
+  const importedCount = (results ?? []).filter((r) => r.success).length
 
   const linkingIds = (results ?? []).filter((r) => r.linkPending && r.seriesId !== null).map((r) => r.seriesId!)
   const linkingTotal = linkingIds.length
@@ -418,6 +431,11 @@ export default function ImportPage() {
 
       {results && results.length > 0 && (
         <Stack className="import-results" gap={4} mb="md">
+          {importedCount > 0 && lastRunId && !doImport.isPending && (
+            <Group justify="flex-end">
+              <UndoBatchButton batchId={lastRunId} count={importedCount} onUndone={afterUndo} />
+            </Group>
+          )}
           {linkingTotal > 0 && (
             <Text size="sm" c="var(--ink-2)" mb={4}>
               {linkingDone < linkingTotal ? (
@@ -750,6 +768,9 @@ export default function ImportPage() {
             </Table>
           </Table.ScrollContainer>
         </Panel>
+      )}
+      {!doImport.isPending && (
+        <RecentImports rootFolderId={rootFolderId === null ? null : Number(rootFolderId)} onUndone={afterUndo} />
       )}
       {previewItems && scannedRoot !== null && (
         <ImportPlanModal rootFolderId={scannedRoot} items={previewItems} onClose={() => setPreviewItems(null)} />

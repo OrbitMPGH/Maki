@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace Maki.Api.Services;
@@ -29,7 +30,24 @@ public class SourceMatchQueue
     private readonly Channel<int> link = Channel.CreateUnbounded<int>(
         new UnboundedChannelOptions { SingleReader = true });
 
+    // The match run in progress per series. Kept here rather than in the worker so an import undo
+    // can wait for a match it has just cancelled to let go of the series.
+    private readonly ConcurrentDictionary<int, Task> matching = new();
+
     public ChannelReader<int> LinkReader => link.Reader;
+
+    /// <summary>
+    /// Claims <paramref name="seriesId"/> for a match run. Registered before the run reads the
+    /// series, so anyone who clears <c>SourceMatchPending</c> and then finds no run here knows a
+    /// later run will read the cleared flag.
+    /// </summary>
+    internal bool TryBeginMatch(int seriesId, Task run) => matching.TryAdd(seriesId, run);
+
+    internal void EndMatch(int seriesId) => matching.TryRemove(seriesId, out _);
+
+    /// <summary>The run in progress for the series, or a finished task when there is none.</summary>
+    public Task MatchInProgress(int seriesId) =>
+        matching.TryGetValue(seriesId, out var run) ? run : Task.CompletedTask;
 
     public void Enqueue(int seriesId, SourceMatchLane lane = SourceMatchLane.Interactive) =>
         (lane == SourceMatchLane.Interactive ? interactive : background).Writer.TryWrite(seriesId);

@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Maki.Api.Hubs;
+﻿using Maki.Api.Hubs;
 using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
@@ -36,10 +35,6 @@ public class SourceMatchWorkerHostedService(
     ILogger<SourceMatchWorkerHostedService> logger) : BackgroundService
 {
     internal const int MatchReaders = 2;
-
-    // A series read twice (a re-flag while its match ran) waits for the run in progress rather
-    // than matching beside it; the second run then finds nothing left to do or routes the link.
-    private readonly ConcurrentDictionary<int, Task> matching = new();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -82,12 +77,16 @@ public class SourceMatchWorkerHostedService(
         }
     }
 
+    /// <summary>
+    /// A series read twice (a re-flag while its match ran) waits for the run in progress rather
+    /// than matching beside it; the second run then finds nothing left to do or routes the link.
+    /// </summary>
     private async Task RunExclusiveAsync(int seriesId, CancellationToken ct)
     {
         while (true)
         {
             var run = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (matching.TryAdd(seriesId, run.Task))
+            if (queue.TryBeginMatch(seriesId, run.Task))
             {
                 try
                 {
@@ -95,17 +94,14 @@ public class SourceMatchWorkerHostedService(
                 }
                 finally
                 {
-                    matching.TryRemove(seriesId, out _);
+                    queue.EndMatch(seriesId);
                     run.SetResult();
                 }
 
                 return;
             }
 
-            if (matching.TryGetValue(seriesId, out var other))
-            {
-                await other.WaitAsync(ct);
-            }
+            await queue.MatchInProgress(seriesId).WaitAsync(ct);
         }
     }
 

@@ -689,6 +689,71 @@ msgstr "Nie udało się odczytać folderu głównego. Sprawdź, czy jest zamonto
 msgid "error.libraryImport.tooManyItems"
 msgstr "Zbyt wiele elementów w jednym żądaniu ({count}); importuj partiami po {max} lub mniej"
 
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: This import was already undone
+msgid "error.libraryImport.undoAlreadyDone"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Chapters were downloaded into this series since the import. Delete those files first, or keep the import.
+msgid "error.libraryImport.undoDownloadedSince"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: A download for this series is in progress. Try again once it finishes.
+msgid "error.libraryImport.undoDownloading"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Undo failed. Details are in the server log.
+msgid "error.libraryImport.undoFailed"
+msgstr ""
+
+#. {name} is a file name; {folder} is a folder name. Neither is translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: {name} could not be moved back and is still in "{folder}"
+msgid "error.libraryImport.undoFileNotMoved"
+msgstr ""
+
+#. {folder} is the folder the import left the files in, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: The folder "{folder}" is no longer there, so the import cannot be undone
+msgid "error.libraryImport.undoFolderGone"
+msgstr ""
+
+#. {name} is the folder's name before the import; {folder} is its name now. Neither is translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: The folder could not be renamed back to "{name}". Its files are safe in "{folder}".
+msgid "error.libraryImport.undoFolderNotMoved"
+msgstr ""
+
+#. {name} is the folder's name before the import, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Cannot rename the folder back: "{name}" already exists in the root folder
+msgid "error.libraryImport.undoFolderTaken"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Someone has read this series since the import. Undoing would remove the series and its reading progress, so remove it from the series page instead if that is what you want.
+msgid "error.libraryImport.undoHasProgress"
+msgstr ""
+
+#. {name} is a file name, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: {name} was kept: Maki built it, but the original it came from is no longer there
+msgid "error.libraryImport.undoKeptBuilt"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Sources are still being searched for this series. Try again in a minute.
+msgid "error.libraryImport.undoMatchRunning"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: The series was removed from the library since the import, so there is nothing to undo
+msgid "error.libraryImport.undoSeriesGone"
+msgstr ""
+
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 #. English: Set a config key or at least one notification URL.
 #, fuzzy

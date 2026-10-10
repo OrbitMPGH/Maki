@@ -110,3 +110,58 @@ export function useUnignoreImportFolder(rootFolderId: number | null) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ignoredKey(rootFolderId) }),
   })
 }
+
+/** One folder of an import run, as recorded for undo (`ImportBatchFolderDto`). */
+export interface ImportBatchFolder {
+  id: number
+  originalFolderName: string
+  folderName: string
+  seriesId: number | null
+  seriesTitle: string
+  createdSeries: boolean
+  folderAction: 'keep' | 'rename' | 'merge'
+  fileCount: number
+  builtCount: number
+  undoneAt: string | null
+  /** Still waiting on its source match or file link; undo cancels that. */
+  linkPending: boolean
+  seriesGone: boolean
+}
+
+export interface ImportBatch {
+  batchId: string
+  rootFolderId: number
+  createdAt: string
+  folders: ImportBatchFolder[]
+}
+
+export interface ImportUndoOutcome {
+  id: number
+  folderName: string
+  undone: boolean
+  error: string | null
+  warnings: string[] | null
+}
+
+const batchesKey = ['libraryimport', 'batches'] as const
+
+export function useImportBatches(rootFolderId: number | null) {
+  return useQuery({
+    queryKey: [...batchesKey, rootFolderId],
+    queryFn: () =>
+      api<ImportBatch[]>(`/libraryimport/batches${rootFolderId === null ? '' : `?rootFolderId=${rootFolderId}`}`),
+  })
+}
+
+export function useUndoImport() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (target: { batchId: string } | { folderId: number }) =>
+      'batchId' in target
+        ? api<ImportUndoOutcome[]>(`/libraryimport/batches/${encodeURIComponent(target.batchId)}/undo`, {
+            method: 'POST',
+          })
+        : [await api<ImportUndoOutcome>(`/libraryimport/batches/folders/${target.folderId}/undo`, { method: 'POST' })],
+    onSettled: () => queryClient.invalidateQueries({ queryKey: batchesKey }),
+  })
+}

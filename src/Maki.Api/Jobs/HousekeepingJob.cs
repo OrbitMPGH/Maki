@@ -211,6 +211,10 @@ public class HousekeepingJob(
         await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);
 
         await PruneInboxAsync(ct);
+
+        // Library import records past the window they can be undone in.
+        var importCutoff = now.AddDays(-LibraryImportUndoService.RetentionDays);
+        await db.ImportBatchFolders.Where(r => r.CreatedAt < importCutoff).ExecuteDeleteAsync(ct);
         var prunedScans = await PruneHealthScansAsync(db, cutoff, ct);
         if (prunedScans > 0)
         {

@@ -118,6 +118,24 @@ public class LibraryImportController(
         return resolution.Match is { } match ? Ok(match) : this.Fail(localizer, resolution.ErrorKey!);
     }
 
+    /// <summary>Import runs from the last <see cref="LibraryImportUndoService.RetentionDays"/> days, newest first.</summary>
+    [HttpGet("batches")]
+    public async Task<IActionResult> Batches(
+        [FromQuery] int? rootFolderId, [FromServices] LibraryImportUndoService undo, CancellationToken ct) =>
+        Ok(await undo.RecentAsync(rootFolderId, ct));
+
+    /// <summary>
+    /// Undoes every folder of one import run that is not undone yet. Runs to the end once started:
+    /// a folder half put back is worse than one finished a moment after the caller gave up.
+    /// </summary>
+    [HttpPost("batches/{batchId}/undo")]
+    public async Task<IActionResult> UndoBatch(string batchId, [FromServices] LibraryImportUndoService undo) =>
+        await undo.UndoBatchAsync(batchId, CancellationToken.None) is { } outcomes ? Ok(outcomes) : NotFound();
+
+    [HttpPost("batches/folders/{id:int}/undo")]
+    public async Task<IActionResult> UndoFolder(int id, [FromServices] LibraryImportUndoService undo) =>
+        await undo.UndoFolderAsync(id, CancellationToken.None) is { } outcome ? Ok(outcome) : NotFound();
+
     public record PlanRequest(int RootFolderId, List<ImportRequestItem> Items);
 
     /// <summary>

@@ -571,6 +571,8 @@ public class LibraryImportService(
             // Same as the Add path: importing a folder back after a delete re-attaches its history.
             await identity.AdoptOrphansAsync(series, ct);
 
+            var folderCover = Path.Combine(targetDir, LibraryCoverFileName);
+            var coverExisted = File.Exists(folderCover);
             if (metadata.CoverUrl != null)
             {
                 await events.ImportProgress(item.FolderName, ImportStage.DownloadingCover, operationId: operationId);
@@ -583,7 +585,16 @@ public class LibraryImportService(
                 }
             }
 
-            var (added, skipped) = await RegisterAndDeferLinkAsync(series, item, targetDir, owedLink, operationId, ct);
+            var (added, skipped, built, fileIds) =
+                await RegisterAndDeferLinkAsync(series, item, targetDir, owedLink, operationId, ct);
+            await RecordBatchFolderAsync(rootFolder.Id, operationId, series, created: true, item.FolderName, targetDir,
+                new ImportOperations
+                {
+                    FolderAction = decision.Action,
+                    Built = built,
+                    RegisteredFileIds = fileIds,
+                    WroteCover = !coverExisted && File.Exists(folderCover),
+                });
 
             // After registering rather than at the insert, so an import rolled back below leaves no
             // "added" behind it. Still after the orphan adoption, so a series removed and put back
@@ -612,23 +623,68 @@ public class LibraryImportService(
     /// files are on record and leave them unlinked.
     /// </para>
     /// </summary>
-    private async Task<(int Added, List<ImportSkippedFile> Unreadable)> RegisterAndDeferLinkAsync(
-        Series series, ImportRequestItem item, string targetDir, PendingImportLink owedLink, string? operationId,
-        CancellationToken ct, bool locked = false)
+    private async Task<(int Added, List<ImportSkippedFile> Unreadable, List<ImportBuiltFile> Built, List<int> FileIds)>
+        RegisterAndDeferLinkAsync(
+            Series series, ImportRequestItem item, string targetDir, PendingImportLink owedLink, string? operationId,
+            CancellationToken ct, bool locked = false)
     {
         using var seriesLock = locked ? null : await SeriesLocks.SeriesAsync(series.Id, ct);
         await events.ImportProgress(item.FolderName, ImportStage.AddingFiles, operationId: operationId);
-        var (cbzFiles, unreadable, _) = MaterializeComics(targetDir);
+        var (cbzFiles, unreadable, built) = MaterializeComics(targetDir);
         var added = await cbzLinkService.RegisterFilesAsync(series, targetDir, cbzFiles, "import", ct);
         series.SourceMatchPending = true;
         series.PendingImportLink = owedLink;
         await db.SaveChangesAsync(ct);
+        // Every row the series has: an import only ever runs into a series with no files.
+        var fileIds = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).Select(f => f.Id).ToListAsync(ct);
         sourceMatchQueue.Enqueue(series.Id, SourceMatchLane.Background);
 
         var skipped = unreadable
             .Select(f => new ImportSkippedFile(Path.GetRelativePath(targetDir, f), ImportSkipReason.Unreadable))
             .ToList();
-        return (added, skipped);
+        return (added, skipped, BuiltFiles(targetDir, built), fileIds);
+    }
+
+    private static List<ImportBuiltFile> BuiltFiles(string dir, IEnumerable<PlannedComic> built) =>
+        built.Select(c => new ImportBuiltFile(
+                Path.GetRelativePath(dir, c.Target),
+                Path.GetRelativePath(dir, c.Source.Path),
+                c.Source.Entry,
+                c.Action,
+                c.Aside is null ? null : Path.GetRelativePath(dir, c.Aside)))
+            .ToList();
+
+    /// <summary>
+    /// Keeps what one folder's import did, so it can be undone. A failure here is logged and the
+    /// import still succeeds: the files are in the library either way, only the undo is lost.
+    /// </summary>
+    private async Task RecordBatchFolderAsync(
+        int rootFolderId, string? operationId, Series series, bool created, string originalFolderName,
+        string targetDir, ImportOperations operations)
+    {
+        var row = new ImportBatchFolder
+        {
+            BatchId = operationId is { Length: > 0 and <= 64 } ? operationId : Guid.NewGuid().ToString("N"),
+            RootFolderId = rootFolderId,
+            SeriesId = series.Id,
+            SeriesTitle = series.Title,
+            CreatedSeries = created,
+            OriginalFolderName = originalFolderName,
+            FolderName = Path.GetFileName(Path.TrimEndingDirectorySeparator(targetDir)),
+            OperationsJson = operations.Serialize(),
+            UserId = currentUser.IsAuthenticated && currentUser.UserId > 0 ? currentUser.UserId : null,
+            CreatedAt = DateTime.UtcNow,
+        };
+        try
+        {
+            db.ImportBatchFolders.Add(row);
+            await db.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            db.Entry(row).State = EntityState.Detached;
+            logger.LogWarning(ex, "Could not record the import of '{Folder}', so it cannot be undone", originalFolderName);
+        }
     }
 
     /// <summary>
@@ -839,6 +895,12 @@ public class LibraryImportService(
         var targetDir = sourceDir;
         var seriesFolderName = decision.SeriesFolderName;
         var warnings = new List<string>();
+        var operations = new ImportOperations
+        {
+            FolderAction = decision.Action,
+            PreviousSeriesFolderName = series.FolderName,
+            PreviousRootFolderId = series.RootFolderId,
+        };
         if (decision.Action == ImportFolderAction.Rename)
         {
             targetDir = TargetDirOf(rootFolder.Path, decision.TargetName);
@@ -852,7 +914,7 @@ public class LibraryImportService(
             // was added), so fold the scanned folder's files into it.
             targetDir = TargetDirOf(rootFolder.Path, decision.TargetName);
             await events.ImportProgress(item.FolderName, ImportStage.MergingFolder, operationId: operationId);
-            var leftBehind = MergeDirectory(sourceDir, targetDir);
+            var leftBehind = MergeDirectory(sourceDir, targetDir, operations.Moved);
             logger.LogInformation("Merged '{Old}' into existing '{New}'", item.FolderName, decision.TargetName);
             if (leftBehind.Count > 0)
             {
@@ -880,21 +942,30 @@ public class LibraryImportService(
         if (!await db.Chapters.AnyAsync(c => c.SeriesId == series.Id, ct))
         {
             var owedLink = updateComicInfo ? PendingImportLink.LinkAndComicInfo : PendingImportLink.Link;
-            var (added, unreadableSkipped) = await RegisterAndDeferLinkAsync(
+            var (added, unreadableSkipped, deferredBuilt, deferredIds) = await RegisterAndDeferLinkAsync(
                 series, item, targetDir, owedLink, operationId, ct, locked: true);
+            operations.Built = deferredBuilt;
+            operations.RegisteredFileIds = deferredIds;
+            await RecordBatchFolderAsync(
+                rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
             return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName,
                 Warnings: warnings.Count > 0 ? warnings : null,
                 Skipped: unreadableSkipped.Count > 0 ? unreadableSkipped : null,
                 FilesAdded: added, LinkPending: true);
         }
 
-        var (cbzFiles, unreadable, _) = MaterializeComics(targetDir);
+        var (cbzFiles, unreadable, built) = MaterializeComics(targetDir);
         var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
             (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total, operationId: operationId),
             updateComicInfo, ct: ct);
         var skipped = await SkippedFilesAsync(series.Id, targetDir, cbzFiles, unreadable, ct);
+        operations.Built = BuiltFiles(targetDir, built);
+        operations.RegisteredFileIds =
+            await db.ChapterFiles.Where(f => f.SeriesId == series.Id).Select(f => f.Id).ToListAsync(ct);
+        await RecordBatchFolderAsync(
+            rootFolder.Id, operationId, series, created: false, item.FolderName, targetDir, operations);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized,
             warnings.Count > 0 ? warnings : null, skipped.Count > 0 ? skipped : null);
@@ -1087,7 +1158,7 @@ public class LibraryImportService(
     /// already taken in the target stays where it is, and so does every folder still holding one:
     /// nothing is deleted here, only moved. Returns the files left behind, relative to the source.
     /// </summary>
-    internal static List<string> MergeDirectory(string sourceDir, string targetDir)
+    internal static List<string> MergeDirectory(string sourceDir, string targetDir, List<string>? moved = null)
     {
         var leftBehind = new List<string>();
         foreach (var file in LibraryPaths.EnumerateFilesNoLinks(sourceDir).ToList())
@@ -1102,6 +1173,7 @@ public class LibraryImportService(
             }
 
             File.Move(file, dest);
+            moved?.Add(rel);
         }
 
         // Deepest first, and never recursive: a folder that still holds a collision, a link or a
