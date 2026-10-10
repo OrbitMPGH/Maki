@@ -257,6 +257,70 @@ public class NotificationsControllerTests : IDisposable
         Assert.Equal(StatusCodes.Status502BadGateway, status.StatusCode);
     }
 
+    [Fact]
+    public async Task Test_of_a_saved_connection_counts_toward_its_delivery_health()
+    {
+        var created = Assert.IsType<NotificationsController.NotificationDto>(
+            Assert.IsType<OkObjectResult>(await Controller().Create(DiscordRequest(), CancellationToken.None)).Value);
+
+        await Controller(Discord(new NotificationDeliveryException("Discord", 404, null)))
+            .Test(DiscordRequest(), CancellationToken.None, created.Id);
+        await Controller(Discord(new NotificationDeliveryException("Discord", 404, null)))
+            .Test(DiscordRequest(), CancellationToken.None, created.Id);
+
+        using (var db = _db.NewContext())
+        {
+            var row = db.Notifications.Single();
+            Assert.Equal(2, row.ConsecutiveFailures);
+            Assert.Equal("status:404", row.LastError);
+        }
+
+        await Controller(Discord()).Test(DiscordRequest(), CancellationToken.None, created.Id);
+
+        using (var db = _db.NewContext())
+        {
+            var row = db.Notifications.Single();
+            Assert.Equal(0, row.ConsecutiveFailures);
+            Assert.Null(row.LastError);
+            Assert.NotNull(row.LastSuccessAt);
+        }
+    }
+
+    [Fact]
+    public async Task Test_with_an_edited_config_leaves_the_saved_connection_health_alone()
+    {
+        var created = Assert.IsType<NotificationsController.NotificationDto>(
+            Assert.IsType<OkObjectResult>(await Controller().Create(DiscordRequest(), CancellationToken.None)).Value);
+
+        await Controller(Discord(throws: true)).Test(
+            DiscordRequest(webhookUrl: "https://discord.com/api/webhooks/other"), CancellationToken.None, created.Id);
+
+        using var db = _db.NewContext();
+        var row = db.Notifications.Single();
+        Assert.Equal(0, row.ConsecutiveFailures);
+        Assert.Null(row.LastAttemptAt);
+    }
+
+    [Fact]
+    public async Task List_exposes_delivery_health()
+    {
+        using (var db = _db.NewContext())
+        {
+            db.Notifications.Add(new Notification
+            {
+                Name = "dead", Type = NotificationType.Discord, ConsecutiveFailures = 6, LastError = "status:404",
+                LastAttemptAt = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+
+        var ok = Assert.IsType<OkObjectResult>(await Controller().List(CancellationToken.None));
+        var dto = Assert.Single(Assert.IsAssignableFrom<IEnumerable<NotificationsController.NotificationDto>>(ok.Value));
+        Assert.Equal(6, dto.ConsecutiveFailures);
+        Assert.Equal("status:404", dto.LastError);
+        Assert.NotNull(dto.LastAttemptAt);
+    }
+
     [Theory]
     [InlineData("0")]
     [InlineData("6")]

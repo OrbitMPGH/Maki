@@ -934,6 +934,10 @@ msgstr "{minutes, plural, one {pozostało około # min} few {pozostało około #
 msgid "{minutesPerChapter} min / ch."
 msgstr ""
 
+#: src/components/NotificationsSection.tsx
+msgid "{misses, plural, one {Failing: # miss in a row} other {Failing: # misses in a row}}"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
@@ -4811,6 +4815,10 @@ msgstr "Nie udało się wczytać Twoich sygnałów: {loadError}"
 msgid "Could not queue the release"
 msgstr "Nie udało się dodać wydania do kolejki"
 
+#: src/components/NotificationsSection.tsx
+msgid "Could not reach the service"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Could not reach the source"
@@ -7208,6 +7216,7 @@ msgstr "Problemy z kondycją systemu"
 msgid "Health settings"
 msgstr "Ustawienia kondycji"
 
+#: src/components/NotificationsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Healthy"
@@ -8188,6 +8197,10 @@ msgstr "Ostatni rozdział na dysku"
 #, fuzzy
 msgid "Last chapter to mark watched"
 msgstr "Ostatni rozdział do oznaczenia jako obejrzany"
+
+#: src/components/NotificationsSection.tsx
+msgid "Last delivered {lastSuccess}."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -9615,6 +9628,10 @@ msgstr "neutralne, zaczyna z wagą półki"
 msgid "never"
 msgstr "nigdy"
 
+#: src/components/NotificationsSection.tsx
+msgid "Never delivered."
+msgstr ""
+
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "Never run."
@@ -10416,6 +10433,10 @@ msgstr "Jeszcze niezsynchronizowane"
 #, fuzzy
 msgid "Not this anime?"
 msgstr "To nie to anime?"
+
+#: src/components/NotificationsSection.tsx
+msgid "Not used yet"
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -15486,6 +15507,10 @@ msgstr "Pobranie próbki nie powiodło się"
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "Zaznaczone serie zostaną usunięte z Maki i przestaną być monitorowane."
 
+#: src/components/NotificationsSection.tsx
+msgid "The send failed"
+msgstr ""
+
 #: src/api/queue.ts
 msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
 msgstr ""
@@ -15506,6 +15531,14 @@ msgstr ""
 
 #: src/api/client.ts
 msgid "The server sent a response Maki could not read ({status})."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "The service answered with HTTP {status}"
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "The service did not answer in time"
 msgstr ""
 
 #: src/api/ssoErrors.ts

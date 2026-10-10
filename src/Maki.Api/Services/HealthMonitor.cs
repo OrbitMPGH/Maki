@@ -28,6 +28,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     private static readonly SemaphoreSlim Gate = new(1);
     private const string UnmeasuredFilesId = "unmeasured-files";
     private const string UpgradeTrashId = "upgrade-trash";
+    private const string NotificationCheckPrefix = "notification:";
     /// <summary>
     /// With the schedule off nothing keeps a backup fresh, so a stale or missing one is reported as
     /// disabled rather than warned about forever; a fresh one still reads as healthy.
@@ -205,6 +206,33 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
             catch { Add("database", "system", "unavailable", "health.check.diagnosticsUnavailable"); }
             var old = await db.HealthChecks.Where(c => c.Category != "job").ToListAsync(ct);
+            var knownConnections = old.Where(r => r.Id.StartsWith(NotificationCheckPrefix, StringComparison.Ordinal))
+                .Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+            try
+            {
+                var connections = await db.Notifications.AsNoTracking()
+                    .Where(n => n.Enabled)
+                    .Select(n => new { n.Id, n.Name, n.ConsecutiveFailures })
+                    .ToListAsync(ct);
+                foreach (var connection in connections)
+                {
+                    var id = $"{NotificationCheckPrefix}{connection.Id}";
+                    var failing = connection.ConsecutiveFailures >= NotificationDeliveryHealth.FailingThreshold;
+                    if (!failing && !knownConnections.Contains(id)) continue;
+                    Add(id, "connections", failing ? "warning" : "healthy",
+                        failing ? "health.check.notificationFailing" : "health.check.notificationDelivering",
+                        new { name = connection.Name, count = connection.ConsecutiveFailures }, "/settings?tab=integrations&s=notifications");
+                }
+
+                var current = connections.Select(c => $"{NotificationCheckPrefix}{c.Id}").ToHashSet(StringComparer.Ordinal);
+                foreach (var gone in old.Where(r => knownConnections.Contains(r.Id) && !current.Contains(r.Id)).ToList())
+                {
+                    db.HealthChecks.Remove(gone);
+                    old.Remove(gone);
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch { }
             foreach (var check in checks)
             {
                 var row = old.FirstOrDefault(r => r.Id == check.Id);

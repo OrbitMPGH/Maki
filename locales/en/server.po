@@ -3039,6 +3039,16 @@ msgstr "{service}: connected"
 msgid "health.check.connectionFailed"
 msgstr "{service}: connection failed"
 
+#. {name} is the label the admin gave the connection, never translated.
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.notificationFailing"
+msgstr "Notification connection {name} failed to deliver {count} times in a row"
+
+#. {name} is the label the admin gave the connection, never translated.
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.notificationDelivering"
+msgstr "Notification connection {name} is delivering again"
+
 #. {job} is the scheduler's own name for the job and is not translated.
 #: src/Maki.Api/Services/HealthJobListener.cs
 msgid "health.check.jobSucceeded"

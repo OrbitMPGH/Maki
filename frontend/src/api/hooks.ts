@@ -4468,13 +4468,18 @@ export function useDeleteNotification() {
   })
 }
 
+/** Pass `id` when testing a saved connection so the result counts toward its delivery health. */
 export function useTestNotification() {
+  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (value: NotificationRequest) =>
-      api<{ success: boolean }>('/notifications/test', {
+    mutationFn: ({ value, id }: { value: NotificationRequest; id?: number | null }) =>
+      api<{ success: boolean }>(`/notifications/test${id != null ? `?id=${id}` : ''}`, {
         method: 'POST',
         body: JSON.stringify(value),
       }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'], exact: true })
+    },
     meta: { silent: true },
   })
 }

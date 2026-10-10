@@ -660,6 +660,11 @@ export interface NotificationDto {
   events: NotificationEvents
   /** Series-scoped events only fire for series carrying one of these tags. Empty means every series. */
   tagIds: number[]
+  lastAttemptAt: string | null
+  lastSuccessAt: string | null
+  /** A short code, never provider text: `status:404`, `timeout`, `network` or `error`. */
+  lastError: string | null
+  consecutiveFailures: number
 }
 
 export interface NotificationRequest {

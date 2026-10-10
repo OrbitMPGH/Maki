@@ -14,6 +14,7 @@ import {
   Table,
   Text,
   TextInput,
+  Tooltip,
 } from '@mantine/core'
 import {
   IconBell,
@@ -48,12 +49,13 @@ import type {
   TagDto,
 } from '../api/types'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { msg, t as now } from '@lingui/core/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { EmptyState } from './ui/EmptyState'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { useLabel } from '../i18n-context'
+import { formatDateTime } from '../format'
 
 interface EventField {
   key: keyof NotificationRequest['events']
@@ -204,6 +206,65 @@ const EMPTY_EVENTS: NotificationRequest['events'] = {
 
 function toRequest(n: NotificationDto): NotificationRequest {
   return { name: n.name, type: n.type, enabled: n.enabled, config: { ...n.config }, events: n.events, tagIds: n.tagIds }
+}
+
+/** The stored code to a sentence. Anything the server adds later reads as a generic failure. */
+function useDeliveryErrorText() {
+  const { t } = useLingui()
+  return (code: string | null) => {
+    if (code?.startsWith('status:')) {
+      const status = code.slice('status:'.length)
+      return t`The service answered with HTTP ${status}`
+    }
+    if (code === 'timeout') return t`The service did not answer in time`
+    if (code === 'network') return t`Could not reach the service`
+    return t`The send failed`
+  }
+}
+
+/** Failing after any miss, healthy after a delivery, and quiet until the connection has sent something. */
+function DeliveryChip({ n }: { n: NotificationDto }) {
+  const { t } = useLingui()
+  const errorText = useDeliveryErrorText()
+  const lastSuccess = n.lastSuccessAt ? formatDateTime(n.lastSuccessAt) : null
+
+  const misses = n.consecutiveFailures
+  if (misses > 0) {
+    const label = plural(misses, { one: 'Failing: # miss in a row', other: 'Failing: # misses in a row' })
+    return (
+      <Tooltip
+        multiline
+        maw={280}
+        label={
+          <>
+            {errorText(n.lastError)}
+            {' '}
+            {lastSuccess ? t`Last delivered ${lastSuccess}.` : t`Never delivered.`}
+          </>
+        }
+      >
+        <Badge size="sm" variant="light" color="var(--danger)" tabIndex={0}>
+          {label}
+        </Badge>
+      </Tooltip>
+    )
+  }
+
+  if (!lastSuccess) {
+    return (
+      <Badge size="sm" variant="light" color="var(--neutral)">
+        <Trans>Not used yet</Trans>
+      </Badge>
+    )
+  }
+
+  return (
+    <Tooltip label={t`Last delivered ${lastSuccess}.`}>
+      <Badge size="sm" variant="light" color="var(--ok)" tabIndex={0}>
+        <Trans>Healthy</Trans>
+      </Badge>
+    </Tooltip>
+  )
 }
 
 function TagDot({ color }: { color: string }) {
@@ -379,7 +440,7 @@ export function NotificationsSection() {
 
   const runTest = () => {
     if (!editing) return
-    test.mutate(editing.form, {
+    test.mutate({ value: editing.form, id: editing.id }, {
       onSuccess: (r) =>
         toast.show({
           message: r.success ? now`Test notification sent` : now`Test failed`,
@@ -441,9 +502,12 @@ export function NotificationsSection() {
                   <TagScope tagIds={n.tagIds} tags={tags} />
                 </Table.Td>
                 <Table.Td>
-                  <Badge size="sm" variant="light" color={n.enabled ? 'var(--ok)' : 'var(--neutral)'}>
-                    {n.enabled ? <Trans>Enabled</Trans> : <Trans>Disabled</Trans>}
-                  </Badge>
+                  <Group gap={6} wrap="wrap">
+                    <Badge size="sm" variant="light" color={n.enabled ? 'var(--ok)' : 'var(--neutral)'}>
+                      {n.enabled ? <Trans>Enabled</Trans> : <Trans>Disabled</Trans>}
+                    </Badge>
+                    {n.enabled && <DeliveryChip n={n} />}
+                  </Group>
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs" justify="flex-end" wrap="nowrap">

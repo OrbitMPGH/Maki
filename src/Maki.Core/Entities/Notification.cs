@@ -47,6 +47,19 @@ public class Notification
     public bool OnRequestResolved { get; set; }
     public bool OnManualMatchNeeded { get; set; }
 
+    public DateTime? LastAttemptAt { get; set; }
+
+    public DateTime? LastSuccessAt { get; set; }
+
+    /// <summary>
+    /// A short code for the last failure (<c>status:404</c>, <c>timeout</c>, <c>network</c>, <c>error</c>),
+    /// never provider text: a response body or exception message can echo a webhook URL or token.
+    /// </summary>
+    public string? LastError { get; set; }
+
+    /// <summary>Failed sends since the last success. Reset to 0 by any successful send.</summary>
+    public int ConsecutiveFailures { get; set; }
+
     /// <summary>Limits series events to series carrying one of these tags. Empty means every series.</summary>
     public ICollection<NotificationTag> Tags { get; set; } = [];
 }

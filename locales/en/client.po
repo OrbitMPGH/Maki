@@ -784,6 +784,10 @@ msgstr "{minutes, plural, one {about # min left} other {about # min left}}"
 msgid "{minutesPerChapter} min / ch."
 msgstr "{minutesPerChapter} min / ch."
 
+#: src/components/NotificationsSection.tsx
+msgid "{misses, plural, one {Failing: # miss in a row} other {Failing: # misses in a row}}"
+msgstr "{misses, plural, one {Failing: # miss in a row} other {Failing: # misses in a row}}"
+
 #: src/api/upgrades.ts
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
@@ -4005,6 +4009,10 @@ msgstr "Could not load your signals: {loadError}"
 msgid "Could not queue the release"
 msgstr "Could not queue the release"
 
+#: src/components/NotificationsSection.tsx
+msgid "Could not reach the service"
+msgstr "Could not reach the service"
+
 #: src/api/queue.ts
 msgid "Could not reach the source"
 msgstr "Could not reach the source"
@@ -5996,6 +6004,7 @@ msgstr "Health issues"
 msgid "Health settings"
 msgstr "Health settings"
 
+#: src/components/NotificationsSection.tsx
 #: src/pages/HealthPage.tsx
 msgid "Healthy"
 msgstr "Healthy"
@@ -6813,6 +6822,10 @@ msgstr "Last chapter on disk"
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "Last chapter to mark watched"
 msgstr "Last chapter to mark watched"
+
+#: src/components/NotificationsSection.tsx
+msgid "Last delivered {lastSuccess}."
+msgstr "Last delivered {lastSuccess}."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Last download failed: {lastError}. The next scheduled run retries."
@@ -7991,6 +8004,10 @@ msgstr "neutral, seeds at shelf weight"
 msgid "never"
 msgstr "never"
 
+#: src/components/NotificationsSection.tsx
+msgid "Never delivered."
+msgstr "Never delivered."
+
 #: src/components/ImportListsSection.tsx
 msgid "Never run."
 msgstr "Never run."
@@ -8647,6 +8664,10 @@ msgstr "Not synced yet"
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "Not this anime?"
 msgstr "Not this anime?"
+
+#: src/components/NotificationsSection.tsx
+msgid "Not used yet"
+msgstr "Not used yet"
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "not yet synced"
@@ -12863,6 +12884,10 @@ msgstr "The sample download failed"
 msgid "The selected series will be removed from Maki and stop being monitored."
 msgstr "The selected series will be removed from Maki and stop being monitored."
 
+#: src/components/NotificationsSection.tsx
+msgid "The send failed"
+msgstr "The send failed"
+
 #: src/api/queue.ts
 msgid "The series was deleted or moved while this download was being imported, so nothing was imported"
 msgstr "The series was deleted or moved while this download was being imported, so nothing was imported"
@@ -12882,6 +12907,14 @@ msgstr "The server returned an error ({status})."
 #: src/api/client.ts
 msgid "The server sent a response Maki could not read ({status})."
 msgstr "The server sent a response Maki could not read ({status})."
+
+#: src/components/NotificationsSection.tsx
+msgid "The service answered with HTTP {status}"
+msgstr "The service answered with HTTP {status}"
+
+#: src/components/NotificationsSection.tsx
+msgid "The service did not answer in time"
+msgstr "The service did not answer in time"
 
 #: src/api/ssoErrors.ts
 msgid "The sign-in did not complete. Please try again."

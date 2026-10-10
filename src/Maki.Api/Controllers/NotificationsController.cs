@@ -30,7 +30,9 @@ public class NotificationsController(
         bool RequestResolved = false, bool ManualMatchNeeded = false);
     public record NotificationDto(
         int Id, string Name, NotificationType Type, bool Enabled,
-        Dictionary<string, string> Config, EventsDto Events, int[] TagIds);
+        Dictionary<string, string> Config, EventsDto Events, int[] TagIds,
+        DateTime? LastAttemptAt = null, DateTime? LastSuccessAt = null,
+        string? LastError = null, int ConsecutiveFailures = 0);
     /// <param name="TagIds">Series events only reach this connection for series carrying one of these tags. Empty or absent means every series.</param>
     public record NotificationRequest(
         string Name, NotificationType Type, bool Enabled,
@@ -101,9 +103,14 @@ public class NotificationsController(
         return NoContent();
     }
 
-    /// <summary>Sends a test message through the supplied (possibly unsaved) connection config.</summary>
+    /// <summary>
+    /// Sends a test message through the supplied (possibly unsaved) connection config. When
+    /// <paramref name="id"/> names a saved connection and the config is unchanged from what is stored,
+    /// the result also counts toward that connection's delivery health.
+    /// </summary>
     [HttpPost("test")]
-    public async Task<IActionResult> Test([FromBody] NotificationRequest request, CancellationToken ct)
+    public async Task<IActionResult> Test(
+        [FromBody] NotificationRequest request, CancellationToken ct, [FromQuery] int? id = null)
     {
         if (Validate(request) is { } invalid)
         {
@@ -119,13 +126,20 @@ public class NotificationsController(
             Title: localizer.Get("notify.test.title"),
             Body: localizer.Get("notify.test.body", new { name = request.Name }));
 
+        var recordAs = await SavedConnectionIdAsync(id, transient, ct);
         try
         {
             await notifications.SendToAsync(transient, message, ct);
+            if (recordAs is { } okId)
+            {
+                await notifications.RecordResultAsync(okId, null, ct);
+            }
+
             return Ok(new { success = true });
         }
         catch (NotificationDeliveryException ex) when (ex.StatusCode is { } status)
         {
+            await RecordFailureAsync(recordAs, ex, ct);
             const string key = "error.notifications.deliveryRejected";
             var error = localizer.Get(key, new
             {
@@ -138,6 +152,7 @@ public class NotificationsController(
         }
         catch (InvalidOperationException ex)
         {
+            await RecordFailureAsync(recordAs, ex, ct);
             logger.LogWarning(ex, "Test notification through {Provider} failed", request.Type);
             const string key = "error.notifications.deliveryFailed";
             return StatusCode(StatusCodes.Status502BadGateway,
@@ -145,10 +160,34 @@ public class NotificationsController(
         }
         catch (Exception ex)
         {
+            await RecordFailureAsync(recordAs, ex, ct);
             logger.LogWarning(ex, "Test notification through {Provider} failed", request.Type);
             const string key = "error.notifications.deliveryFailed";
             return StatusCode(StatusCodes.Status502BadGateway,
                 new { success = false, code = key, error = localizer.Get(key) });
+        }
+    }
+
+    /// <summary>The saved connection a test belongs to, or null when it is unsaved or its config was edited.</summary>
+    private async Task<int?> SavedConnectionIdAsync(int? id, Notification tested, CancellationToken ct)
+    {
+        if (id is not { } savedId)
+        {
+            return null;
+        }
+
+        var saved = await db.Notifications.AsNoTracking()
+            .Where(n => n.Id == savedId)
+            .Select(n => new { n.Type, n.ConfigJson })
+            .FirstOrDefaultAsync(ct);
+        return saved is not null && saved.Type == tested.Type && saved.ConfigJson == tested.ConfigJson ? savedId : null;
+    }
+
+    private async Task RecordFailureAsync(int? id, Exception ex, CancellationToken ct)
+    {
+        if (id is { } savedId)
+        {
+            await notifications.RecordResultAsync(savedId, ex, ct);
         }
     }
 
@@ -319,6 +358,7 @@ public class NotificationsController(
             n.OnImportCompleted, n.OnHealthIssue, n.OnUpdateAvailable,
             n.OnSeriesAdded, n.OnSeriesRemoved, n.OnRequestSubmitted,
             n.OnRequestResolved, n.OnManualMatchNeeded),
-            n.Tags.Select(t => t.TagId).Order().ToArray());
+            n.Tags.Select(t => t.TagId).Order().ToArray(),
+            n.LastAttemptAt, n.LastSuccessAt, n.LastError, n.ConsecutiveFailures);
     }
 }

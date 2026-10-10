@@ -11,7 +11,7 @@ public class NotificationServiceTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private sealed class RecordingProvider(NotificationType type, bool throws = false) : INotificationProvider
+    private sealed class RecordingProvider(NotificationType type, bool throws = false, Exception? error = null) : INotificationProvider
     {
         public List<string> Sent { get; } = [];
         public List<NotificationMessage> Messages { get; } = [];
@@ -20,6 +20,11 @@ public class NotificationServiceTests : IDisposable
 
         public Task SendAsync(Notification connection, NotificationMessage message, CancellationToken ct = default)
         {
+            if (error is not null)
+            {
+                throw error;
+            }
+
             if (throws)
             {
                 throw new InvalidOperationException("boom");
@@ -74,6 +79,63 @@ public class NotificationServiceTests : IDisposable
             new NotificationMessage(NotificationEventType.DownloadFailed, "t", "b"));
 
         Assert.Equal(["good"], good.Sent);
+    }
+
+    private Notification Row(int id)
+    {
+        using var db = _db.NewContext();
+        return db.Notifications.Single(n => n.Id == id);
+    }
+
+    private int SeedHook()
+    {
+        Seed(new Notification { Name = "hook", Type = NotificationType.Discord, Enabled = true, OnDownloadFailed = true });
+        using var db = _db.NewContext();
+        return db.Notifications.Single().Id;
+    }
+
+    private static readonly NotificationMessage FailedMessage =
+        new(NotificationEventType.DownloadFailed, "t", "b");
+
+    [Fact]
+    public async Task Failures_count_up_and_a_success_resets_them()
+    {
+        var id = SeedHook();
+        var rejected = new RecordingProvider(NotificationType.Discord,
+            error: new NotificationDeliveryException("Discord", 404, "Unknown Webhook"));
+        for (var i = 0; i < 3; i++)
+        {
+            await Service(rejected).DispatchAsync(NotificationEventType.DownloadFailed, FailedMessage);
+        }
+
+        var failing = Row(id);
+        Assert.Equal(3, failing.ConsecutiveFailures);
+        Assert.Equal("status:404", failing.LastError);
+        Assert.NotNull(failing.LastAttemptAt);
+        Assert.Null(failing.LastSuccessAt);
+
+        await Service(new RecordingProvider(NotificationType.Discord))
+            .DispatchAsync(NotificationEventType.DownloadFailed, FailedMessage);
+
+        var healthy = Row(id);
+        Assert.Equal(0, healthy.ConsecutiveFailures);
+        Assert.Null(healthy.LastError);
+        Assert.NotNull(healthy.LastSuccessAt);
+    }
+
+    [Fact]
+    public async Task The_stored_error_is_a_code_that_cannot_carry_a_secret()
+    {
+        var id = SeedHook();
+        var leak = new HttpRequestException("failed for https://discord.com/api/webhooks/1/SECRETTOKEN");
+
+        await Service(new RecordingProvider(NotificationType.Discord, error: leak))
+            .DispatchAsync(NotificationEventType.DownloadFailed, FailedMessage);
+        Assert.Equal("network", Row(id).LastError);
+
+        await Service(new RecordingProvider(NotificationType.Discord, error: new InvalidOperationException("SECRETTOKEN")))
+            .DispatchAsync(NotificationEventType.DownloadFailed, FailedMessage);
+        Assert.Equal("error", Row(id).LastError);
     }
 
     [Fact]

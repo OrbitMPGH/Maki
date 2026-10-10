@@ -17,7 +17,8 @@ public class NotificationService(
     IEnumerable<INotificationProvider> providers,
     ILogger<NotificationService> logger,
     IUserLocaleResolver? locales = null,
-    IMessageCatalog? catalog = null)
+    IMessageCatalog? catalog = null,
+    TimeProvider? time = null)
 {
     private readonly Dictionary<NotificationType, INotificationProvider> _providers =
         providers.ToDictionary(p => p.Type);
@@ -76,11 +77,13 @@ public class NotificationService(
             try
             {
                 await SendCoreAsync(connection, message, ct);
+                await RecordResultAsync(connection.Id, null, ct);
             }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Notification '{Name}' ({Type}) failed for {Event}",
                     connection.Name, connection.Type, type);
+                await RecordResultAsync(connection.Id, ex, ct);
             }
         }
     }
@@ -102,6 +105,47 @@ public class NotificationService(
         }
 
         return [.. await db.SeriesTags.Where(st => st.SeriesId == seriesId).Select(st => st.TagId).ToListAsync(ct)];
+    }
+
+    /// <summary>
+    /// Stamps a send onto the connection's delivery health. Runs in its own scope because the send
+    /// loop outlives the one that loaded the connections, and swallows its own failures: bookkeeping
+    /// must not turn a delivered message into an error.
+    /// </summary>
+    public async Task RecordResultAsync(int connectionId, Exception? failure, CancellationToken ct = default)
+    {
+        if (connectionId == 0 || (failure is not null && ct.IsCancellationRequested))
+        {
+            return;
+        }
+
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            var now = (time ?? TimeProvider.System).GetUtcNow().UtcDateTime;
+            var query = db.Notifications.Where(n => n.Id == connectionId);
+            if (failure is null)
+            {
+                await query.ExecuteUpdateAsync(s => s
+                    .SetProperty(n => n.LastAttemptAt, now)
+                    .SetProperty(n => n.LastSuccessAt, now)
+                    .SetProperty(n => n.LastError, (string?)null)
+                    .SetProperty(n => n.ConsecutiveFailures, 0), ct);
+            }
+            else
+            {
+                var error = NotificationDeliveryHealth.Classify(failure);
+                await query.ExecuteUpdateAsync(s => s
+                    .SetProperty(n => n.LastAttemptAt, now)
+                    .SetProperty(n => n.LastError, error)
+                    .SetProperty(n => n.ConsecutiveFailures, n => n.ConsecutiveFailures + 1), ct);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not record delivery health for notification connection {Id}", connectionId);
+        }
     }
 
     /// <summary>Sends to a single connection; throws on failure (used by the Test endpoint).</summary>
