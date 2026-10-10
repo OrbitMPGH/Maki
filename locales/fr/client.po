@@ -3028,6 +3028,10 @@ msgstr "Archives inventoriées"
 msgid "Art"
 msgstr "Illustration"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ascending"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Ask for this"
@@ -5448,6 +5452,10 @@ msgstr ""
 #, fuzzy
 msgid "Density: {densityLabel}"
 msgstr "Densité : {densityLabel}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Descending"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -8178,6 +8186,10 @@ msgstr "Dernier chapitre à marquer comme vu"
 msgid "Last download failed: {lastError}. The next scheduled run retries."
 msgstr "Dernier téléchargement échoué : {lastError}. La prochaine exécution planifiée réessaiera."
 
+#: src/pages/LibraryPage.tsx
+msgid "Last downloaded"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last error: {lastError}"
@@ -9489,6 +9501,10 @@ msgstr "Mon serveur Discord"
 #, fuzzy
 msgid "My phone"
 msgstr "Mon téléphone"
+
+#: src/pages/LibraryPage.tsx
+msgid "My rating"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12208,6 +12224,7 @@ msgid "Recently changed"
 msgstr "Récemment modifié"
 
 #: src/api/customRails.ts
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Recently read"
 msgstr "Lues récemment"
@@ -13044,6 +13061,10 @@ msgstr "Nouvelle tentative…"
 #, fuzzy
 msgid "Reusing the name of the active preset overwrites it."
 msgstr "Réutiliser le nom du préréglage actif l'écrase."
+
+#: src/pages/LibraryPage.tsx
+msgid "Reverse sort order"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -15945,15 +15966,11 @@ msgstr "Noir teinté"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Title"
 msgstr "Titre"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Title A–Z"
-msgstr "Titre A–Z"
 
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts

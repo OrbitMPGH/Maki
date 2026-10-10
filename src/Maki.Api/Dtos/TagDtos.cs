@@ -78,7 +78,9 @@ public record LibraryFilterSpec(
     /// </summary>
     string QualityProfile = "all",
     /// <summary><see cref="Maki.Core.Entities.SeriesTypes"/> values to include, empty for "any".</summary>
-    List<string>? Types = null);
+    List<string>? Types = null,
+    /// <summary>"asc" or "desc" to override <see cref="Sort"/>'s natural direction; empty keeps it.</summary>
+    string SortDir = "");
 
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
 

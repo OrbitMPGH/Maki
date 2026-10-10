@@ -132,6 +132,10 @@ export interface SeriesDto {
   enabledSources?: string[]
   /** Sources the downloaded files came from. Survives the mapping being removed or switched off. */
   fileSources?: string[]
+  /** When you last read a chapter of this series, or null if never. Library list endpoint only. */
+  lastReadAt?: string | null
+  /** When the newest chapter file landed, or null with no files. Library list endpoint only. */
+  lastDownloadedAt?: string | null
   /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.
@@ -179,6 +183,8 @@ export interface LibraryFilterSpec {
   /** "all" | "behind" | "complete" */
   completeness: string
   sort: string
+  /** "asc" | "desc" to override the sort key's natural direction; empty or absent keeps it. */
+  sortDir?: string
   genres?: string[] | null
   /** "any" | "all" */
   genreMatch: string

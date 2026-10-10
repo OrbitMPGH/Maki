@@ -3028,6 +3028,10 @@ msgstr "보관 파일 확인 완료"
 msgid "Art"
 msgstr "예술"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ascending"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Ask for this"
@@ -5448,6 +5452,10 @@ msgstr ""
 #, fuzzy
 msgid "Density: {densityLabel}"
 msgstr "밀도: {densityLabel}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Descending"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -8178,6 +8186,10 @@ msgstr "시청 완료로 표시할 마지막 챕터"
 msgid "Last download failed: {lastError}. The next scheduled run retries."
 msgstr "마지막 다운로드 실패: {lastError}. 다음 예약 실행에서 재시도합니다."
 
+#: src/pages/LibraryPage.tsx
+msgid "Last downloaded"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last error: {lastError}"
@@ -9489,6 +9501,10 @@ msgstr "내 Discord 서버"
 #, fuzzy
 msgid "My phone"
 msgstr "내 휴대폰"
+
+#: src/pages/LibraryPage.tsx
+msgid "My rating"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12208,6 +12224,7 @@ msgid "Recently changed"
 msgstr "최근 변경됨"
 
 #: src/api/customRails.ts
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Recently read"
 msgstr "최근 읽은 항목"
@@ -13044,6 +13061,10 @@ msgstr "다시 시도 중…"
 #, fuzzy
 msgid "Reusing the name of the active preset overwrites it."
 msgstr "활성 프리셋의 이름을 재사용하면 기존 프리셋을 덮어씁니다."
+
+#: src/pages/LibraryPage.tsx
+msgid "Reverse sort order"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -15945,15 +15966,11 @@ msgstr "틴티드 블랙"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Title"
 msgstr "제목"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Title A–Z"
-msgstr "제목 A–Z"
 
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts

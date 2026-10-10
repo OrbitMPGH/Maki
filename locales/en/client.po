@@ -2525,6 +2525,10 @@ msgstr "Archives inventoried"
 msgid "Art"
 msgstr "Art"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ascending"
+msgstr "Ascending"
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Ask for this"
 msgstr "Ask for this"
@@ -4540,6 +4544,10 @@ msgstr "Density"
 #: src/pages/LibraryPage.tsx
 msgid "Density: {densityLabel}"
 msgstr "Density: {densityLabel}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Descending"
+msgstr "Descending"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Description"
@@ -6801,6 +6809,10 @@ msgstr "Last chapter to mark watched"
 msgid "Last download failed: {lastError}. The next scheduled run retries."
 msgstr "Last download failed: {lastError}. The next scheduled run retries."
 
+#: src/pages/LibraryPage.tsx
+msgid "Last downloaded"
+msgstr "Last downloaded"
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Last error: {lastError}"
 msgstr "Last error: {lastError}"
@@ -7879,6 +7891,10 @@ msgstr "My Discord server"
 #: src/components/NotificationsSection.tsx
 msgid "My phone"
 msgstr "My phone"
+
+#: src/pages/LibraryPage.tsx
+msgid "My rating"
+msgstr "My rating"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "MyAnimeList"
@@ -10130,6 +10146,7 @@ msgid "Recently changed"
 msgstr "Recently changed"
 
 #: src/api/customRails.ts
+#: src/pages/LibraryPage.tsx
 msgid "Recently read"
 msgstr "Recently read"
 
@@ -10828,6 +10845,10 @@ msgstr "Retrying…"
 #: src/pages/LibraryPage.tsx
 msgid "Reusing the name of the active preset overwrites it."
 msgstr "Reusing the name of the active preset overwrites it."
+
+#: src/pages/LibraryPage.tsx
+msgid "Reverse sort order"
+msgstr "Reverse sort order"
 
 #: src/pages/ActivityPage.tsx
 msgid "Revert this upgrade"
@@ -13232,13 +13253,10 @@ msgstr "Tinted black"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Title"
 msgstr "Title"
-
-#: src/pages/LibraryPage.tsx
-msgid "Title A–Z"
-msgstr "Title A–Z"
 
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts

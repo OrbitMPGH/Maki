@@ -179,6 +179,15 @@ public record SeriesDto(
     public IReadOnlyList<string> FileSources { get; init; } = [];
 
     /// <summary>
+    /// When the caller last touched a chapter of this series in the reader, or null if never. Filled
+    /// only by the Library list, for its "Recently read" sort.
+    /// </summary>
+    public DateTime? LastReadAt { get; init; }
+
+    /// <summary>When the newest chapter file landed in this series, or null with no files. Library list only.</summary>
+    public DateTime? LastDownloadedAt { get; init; }
+
+    /// <summary>
     /// Personal time left, based on timed chapters from the built-in reader. Filled only by the
     /// detail endpoint; null when fewer than three comparable chapters have timing data.
     /// </summary>

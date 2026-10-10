@@ -3028,6 +3028,10 @@ msgstr "已盘点归档"
 msgid "Art"
 msgstr "画作"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ascending"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Ask for this"
@@ -5448,6 +5452,10 @@ msgstr ""
 #, fuzzy
 msgid "Density: {densityLabel}"
 msgstr "密度：{densityLabel}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Descending"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -8178,6 +8186,10 @@ msgstr "要标记为已看过的最后一章"
 msgid "Last download failed: {lastError}. The next scheduled run retries."
 msgstr "上次下载失败：{lastError}。下次计划运行时会重试。"
 
+#: src/pages/LibraryPage.tsx
+msgid "Last downloaded"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last error: {lastError}"
@@ -9489,6 +9501,10 @@ msgstr "我的 Discord 服务器"
 #, fuzzy
 msgid "My phone"
 msgstr "我的手机"
+
+#: src/pages/LibraryPage.tsx
+msgid "My rating"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12208,6 +12224,7 @@ msgid "Recently changed"
 msgstr "最近更改"
 
 #: src/api/customRails.ts
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Recently read"
 msgstr "最近阅读"
@@ -13044,6 +13061,10 @@ msgstr "正在重试…"
 #, fuzzy
 msgid "Reusing the name of the active preset overwrites it."
 msgstr "重新使用当前预设的名称会将其覆盖。"
+
+#: src/pages/LibraryPage.tsx
+msgid "Reverse sort order"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -15945,15 +15966,11 @@ msgstr "带色调的黑色"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Title"
 msgstr "标题"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Title A–Z"
-msgstr "标题 A–Z"
 
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts

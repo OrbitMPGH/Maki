@@ -38,6 +38,8 @@ import {
   IconPlus,
   IconRefresh,
   IconSearch,
+  IconSortAscending,
+  IconSortDescending,
   IconBell,
   IconSettings,
   IconTag,
@@ -100,13 +102,65 @@ import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } fr
 import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
 
-const SORT_VALUES = ['added', 'title', 'incomplete', 'status'] as const
+const SORT_VALUES = ['added', 'title', 'incomplete', 'status', 'read', 'rating', 'downloaded'] as const
 
 const SORT_LABELS: Record<string, MessageDescriptor> = {
   added: msg`Recently added`,
-  title: msg`Title A–Z`,
+  title: msg`Title`,
   incomplete: msg`Most missing`,
   status: msg`Status`,
+  read: msg`Recently read`,
+  rating: msg`My rating`,
+  downloaded: msg`Last downloaded`,
+}
+
+type SortDir = 'asc' | 'desc'
+
+/** The direction each key starts in: names read A to Z, dates and scores read biggest first. */
+const SORT_DEFAULT_DIR: Record<string, SortDir> = {
+  added: 'desc',
+  title: 'asc',
+  incomplete: 'desc',
+  status: 'asc',
+  read: 'desc',
+  rating: 'desc',
+  downloaded: 'desc',
+}
+
+function toTime(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  const t = Date.parse(iso)
+  return Number.isNaN(t) ? null : t
+}
+
+/**
+ * Orders two series by `sort` in `dir`. A series with no value for a nullable key (never read,
+ * unrated, no files) sorts after every series that has one, whichever way the list is facing.
+ */
+function compareSeries(sort: string, dir: SortDir): (a: SeriesDto, b: SeriesDto) => number {
+  const sign = dir === 'asc' ? 1 : -1
+  const nullable = (pick: (s: SeriesDto) => number | null) => (a: SeriesDto, b: SeriesDto) => {
+    const x = pick(a)
+    const y = pick(b)
+    if (x == null || y == null) return x == null ? (y == null ? 0 : 1) : -1
+    return (x - y) * sign
+  }
+  switch (sort) {
+    case 'title':
+      return (a, b) => titleSortKey(a).localeCompare(titleSortKey(b)) * sign
+    case 'incomplete':
+      return (a, b) => (missingCount(a) - missingCount(b)) * sign
+    case 'status':
+      return (a, b) => a.status.localeCompare(b.status) * sign
+    case 'read':
+      return nullable((s) => toTime(s.lastReadAt))
+    case 'rating':
+      return nullable((s) => s.rating)
+    case 'downloaded':
+      return nullable((s) => toTime(s.lastDownloadedAt))
+    default:
+      return (a, b) => (new Date(a.added).getTime() - new Date(b.added).getTime()) * sign
+  }
 }
 
 type ViewMode = 'grid' | 'list'
@@ -186,6 +240,7 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   monitored: 'all',
   completeness: 'all',
   sort: 'added',
+  sortDir: '',
   genres: [],
   genreMatch: 'any',
   metadataTags: [],
@@ -305,6 +360,9 @@ export default function LibraryPage() {
   // in here feel sticky: the input itself stays instant, the grid catches up a frame later.
   const [debouncedQuery] = useDebouncedValue(query, 200)
   const [sort, setSort] = usePageState(`${MEM}:sort`, 'added')
+  // Empty means the key's own default, so switching key never leaves a stale direction behind.
+  const [sortDirOverride, setSortDirOverride] = usePageState<SortDir | ''>(`${MEM}:sort-dir`, '')
+  const sortDir: SortDir = sortDirOverride || SORT_DEFAULT_DIR[sort] || 'desc'
   const [statusFilter, setStatusFilter] = usePageState(`${MEM}:status`, 'all')
   const [typeFilter, setTypeFilter] = usePageState<string[]>(`${MEM}:types`, [])
   // Tag ids live as strings because that's what MultiSelect speaks.
@@ -416,22 +474,11 @@ export default function LibraryPage() {
         return pct >= readRange[0] && pct <= readRange[1]
       })
     }
-    list.sort((a, b) => {
-      switch (sort) {
-        case 'title':
-          return titleSortKey(a).localeCompare(titleSortKey(b))
-        case 'incomplete':
-          return missingCount(b) - missingCount(a)
-        case 'status':
-          return a.status.localeCompare(b.status)
-        default:
-          return new Date(b.added).getTime() - new Date(a.added).getTime()
-      }
-    })
+    list.sort(compareSeries(sort, sortDir))
     return list
   }, [
     series, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
-    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, contentRatingFilter,
+    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, sortDir, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter,
   ])
@@ -513,6 +560,7 @@ export default function LibraryPage() {
     monitored: monitoredFilter,
     completeness,
     sort,
+    sortDir: sortDirOverride,
     genres: genreFilter,
     genreMatch,
     metadataTags: metaTagFilter,
@@ -560,6 +608,7 @@ export default function LibraryPage() {
     setFileSourceMatch(merged.fileSourceMatch)
     setQualityProfileFilter(merged.qualityProfile ?? 'all')
     setSort(merged.sort)
+    setSortDirOverride(merged.sortDir === 'asc' || merged.sortDir === 'desc' ? merged.sortDir : '')
     setActiveFilterId(id)
   }
 
@@ -1088,9 +1137,25 @@ export default function LibraryPage() {
                   className="library-sort"
                   data={sortOptions}
                   value={sort}
-                  onChange={(v) => setSort(v ?? 'added')}
+                  onChange={(v) => {
+                    setSort(v ?? 'added')
+                    setSortDirOverride('')
+                  }}
                   comboboxProps={{ withinPortal: true }}
                 />
+                <Tooltip label={sortDir === 'asc' ? t`Ascending` : t`Descending`} withArrow>
+                  <ActionIcon
+                    variant="default"
+                    size="input-sm"
+                    aria-label={t`Reverse sort order`}
+                    onClick={() => {
+                      const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc'
+                      setSortDirOverride(next === SORT_DEFAULT_DIR[sort] ? '' : next)
+                    }}
+                  >
+                    {sortDir === 'asc' ? <IconSortAscending size={16} /> : <IconSortDescending size={16} />}
+                  </ActionIcon>
+                </Tooltip>
                 <LuckyButton
                   candidates={luckyPool}
                   onPick={(id) => navigate(`/series/${id}`, { state: { lucky: true } })}

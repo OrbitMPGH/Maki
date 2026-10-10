@@ -142,6 +142,19 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Null(listed.Spec.ChapterMin);
         Assert.Null(listed.Spec.ChapterMax);
         Assert.Equal("downloaded", listed.Spec.ChapterMode);
+        Assert.Equal("", listed.Spec.SortDir);
+    }
+
+    [Fact]
+    public async Task Create_round_trips_the_sort_direction()
+    {
+        var spec = new LibraryFilterSpec(Sort: "read", SortDir: "asc");
+
+        await Controller().Create(new SaveFilterRequest("Oldest read first", spec), CancellationToken.None);
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
+
+        Assert.Equal("read", listed.Spec.Sort);
+        Assert.Equal("asc", listed.Spec.SortDir);
     }
 
     [Fact]

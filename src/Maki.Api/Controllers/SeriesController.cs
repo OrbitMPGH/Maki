@@ -367,6 +367,19 @@ public class SeriesController(
             .GroupBy(f => f.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(f => f.SourceName).Order().ToList());
 
+        // One grouped read each. Watched ticks are not reading, matching the Home rails.
+        var lastReadBySeries = await db.ChapterProgress
+            .Where(p => !p.Watched)
+            .OwnedByScopeUser(db)
+            .GroupBy(p => p.SeriesId)
+            .Select(g => new { SeriesId = g.Key, At = g.Max(p => p.UpdatedAt) })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.At, ct);
+
+        var lastDownloadBySeries = await db.ChapterFiles
+            .GroupBy(f => f.SeriesId)
+            .Select(g => new { SeriesId = g.Key, At = g.Max(f => f.DateAdded) })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.At, ct);
+
         var titleLanguage = await TitleLanguageAsync(ct);
 
         return Ok(series.Select(s =>
@@ -398,6 +411,8 @@ public class SeriesController(
                         .Order(),
                 ],
                 FileSources = fileSourcesBySeries.GetValueOrDefault(s.Id) ?? [],
+                LastReadAt = lastReadBySeries.TryGetValue(s.Id, out var lastRead) ? lastRead : null,
+                LastDownloadedAt = lastDownloadBySeries.TryGetValue(s.Id, out var lastDownload) ? lastDownload : null,
             };
         }));
     }
