@@ -137,6 +137,103 @@ public class LibraryImportScanTests : IDisposable
         Assert.Equal(["Monster"], _provider.Queries);
     }
 
+    private LibraryImportService IgnoreService(Maki.Data.MakiDbContext db, ICurrentUser? currentUser = null) => new(
+        db, [_provider], null!, null!, new SourceMatchQueue(), null!, null!, null!, null!, null!, null!,
+        currentUser ?? new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
+
+    [Fact]
+    public async Task AnIgnoredFolderIsSkippedBeforeAnySearchUntilItIsUnignored()
+    {
+        var root = SeedRoot();
+        WriteComic("Extras", "art book.cbz");
+        WriteComic("Monster", "Monster v01.cbz");
+
+        await using (var db = _db.NewContext())
+        {
+            Assert.Null(await IgnoreService(db).IgnoreFolderAsync(root, "Extras", CancellationToken.None));
+            // Twice is not an error, and does not add a second row.
+            Assert.Null(await IgnoreService(db).IgnoreFolderAsync(root, "extras", CancellationToken.None));
+        }
+
+        var candidates = await ScanAsync(root);
+
+        Assert.Equal(["Monster"], candidates.Select(c => c.FolderName));
+        Assert.Equal(["Monster"], _provider.Queries);
+
+        await using (var db = _db.NewContext())
+        {
+            var ignored = Assert.Single(await IgnoreService(db).IgnoredFoldersAsync(root, CancellationToken.None));
+            Assert.Equal("Extras", ignored.FolderName);
+            Assert.True(await IgnoreService(db).UnignoreFolderAsync(ignored.Id, CancellationToken.None));
+        }
+
+        Assert.Contains(await ScanAsync(root), c => c.FolderName == "Extras");
+    }
+
+    [Fact]
+    public async Task TheIgnoreListIsPerRootFolder()
+    {
+        var root = SeedRoot();
+        var other = SeedRoot();
+        WriteComic("Extras", "art book.cbz");
+
+        await using (var db = _db.NewContext())
+        {
+            Assert.Null(await IgnoreService(db).IgnoreFolderAsync(other, "Extras", CancellationToken.None));
+        }
+
+        Assert.Contains(await ScanAsync(root), c => c.FolderName == "Extras");
+    }
+
+    [Theory]
+    [InlineData("../outside")]
+    [InlineData("..")]
+    [InlineData("")]
+    public async Task IgnoringRefusesAnythingButAPlainFolderName(string folderName)
+    {
+        var root = SeedRoot();
+        await using var db = _db.NewContext();
+
+        Assert.Equal("error.libraryImport.invalidFolderName",
+            await IgnoreService(db).IgnoreFolderAsync(root, folderName, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task TheIgnoreListOfARootTheCallerHasNoGrantOnIsOutOfReach()
+    {
+        var root = SeedRoot();
+        var restricted = new RestrictedCurrentUser([root + 1]);
+        int id;
+        await using (var db = _db.NewContext())
+        {
+            await IgnoreService(db).IgnoreFolderAsync(root, "Extras", CancellationToken.None);
+            id = Assert.Single(await IgnoreService(db).IgnoredFoldersAsync(root, CancellationToken.None)).Id;
+        }
+
+        await using (var db = _db.NewContext())
+        {
+            var service = IgnoreService(db, restricted);
+            Assert.Empty(await service.IgnoredFoldersAsync(root, CancellationToken.None));
+            Assert.Equal("error.series.rootFolderNotFound",
+                await service.IgnoreFolderAsync(root, "Art", CancellationToken.None));
+            Assert.False(await service.UnignoreFolderAsync(id, CancellationToken.None));
+        }
+    }
+
+    [Fact]
+    public async Task AFolderWithNoComicsIsNotOfferedOrSearched()
+    {
+        var root = SeedRoot();
+        Directory.CreateDirectory(Path.Combine(_root, "Notes"));
+        File.WriteAllText(Path.Combine(_root, "Notes", "readme.txt"), "not a comic");
+        WriteComic("Monster", "Monster v01.cbz");
+
+        var candidates = await ScanAsync(root);
+
+        Assert.Equal(["Monster"], candidates.Select(c => c.FolderName));
+        Assert.Equal(["Monster"], _provider.Queries);
+    }
+
     [Fact]
     public async Task ScanRefusesARootFolderTheCallerHasNoGrantOn()
     {

@@ -174,13 +174,21 @@ public class LibraryImportService(
             withoutFiles.TryAdd(series.FolderName, series);
         }
 
+        // Dismissed by hand ("Extras", "Art"): skipped before the folder is listed or searched.
+        var ignored = (await db.ImportIgnoredFolders
+                .Where(x => x.RootFolderId == rootFolderId)
+                .Select(x => x.FolderName)
+                .ToListAsync(ct))
+            .ToHashSet(LibraryPaths.FolderComparer);
+
         var provider = metadataProviders.First();
         var dirs = Directory.GetDirectories(rootFolder.Path)
             .Order()
             .Where(dir =>
             {
                 var folderName = Path.GetFileName(dir);
-                return !folderName.StartsWith('.') && !claimed.Contains(folderName) && !LibraryPaths.IsLink(dir);
+                return !folderName.StartsWith('.') && !claimed.Contains(folderName) && !ignored.Contains(folderName) &&
+                       !LibraryPaths.IsLink(dir);
             })
             .ToList();
         var candidates = new ImportScanCandidate?[dirs.Count];
@@ -197,6 +205,74 @@ public class LibraryImportService(
     }
 
     private const int ScanConcurrency = 4;
+
+    public async Task<List<ImportIgnoredFolder>> IgnoredFoldersAsync(int rootFolderId, CancellationToken ct) =>
+        CanSeeRoot(rootFolderId)
+            ? await db.ImportIgnoredFolders
+                .AsNoTracking()
+                .Where(x => x.RootFolderId == rootFolderId)
+                .OrderBy(x => x.FolderName)
+                .ToListAsync(ct)
+            : [];
+
+    /// <summary>
+    /// Keeps <paramref name="folderName"/> out of every later scan of this root. Returns the error key
+    /// when it cannot, null when it is ignored (or already was).
+    /// </summary>
+    public async Task<string?> IgnoreFolderAsync(int rootFolderId, string folderName, CancellationToken ct)
+    {
+        if (!CanSeeRoot(rootFolderId) || !await db.RootFolders.AnyAsync(r => r.Id == rootFolderId, ct))
+        {
+            return "error.series.rootFolderNotFound";
+        }
+
+        if (!IsPlainFolderName(folderName))
+        {
+            return "error.libraryImport.invalidFolderName";
+        }
+
+        var taken = (await db.ImportIgnoredFolders
+                .Where(x => x.RootFolderId == rootFolderId)
+                .Select(x => x.FolderName)
+                .ToListAsync(ct))
+            .Contains(folderName, LibraryPaths.FolderComparer);
+        if (!taken)
+        {
+            db.ImportIgnoredFolders.Add(new ImportIgnoredFolder
+            {
+                RootFolderId = rootFolderId, FolderName = folderName, CreatedAt = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync(ct);
+        }
+
+        return null;
+    }
+
+    /// <summary>False when there was no such entry the caller may see.</summary>
+    public async Task<bool> UnignoreFolderAsync(int id, CancellationToken ct)
+    {
+        var row = await db.ImportIgnoredFolders.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (row is null || !CanSeeRoot(row.RootFolderId))
+        {
+            return false;
+        }
+
+        db.ImportIgnoredFolders.Remove(row);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    private bool CanSeeRoot(int rootFolderId) =>
+        currentUser.AllRootFolders || currentUser.RootFolderIds.Contains(rootFolderId);
+
+    /// <summary>
+    /// Exactly one entry directly inside the root, never an absolute path (Path.Combine would discard
+    /// the root entirely) or a ".."-laden one that walks out of it.
+    /// </summary>
+    private static bool IsPlainFolderName(string? folderName) =>
+        !string.IsNullOrEmpty(folderName) &&
+        Path.GetFileName(folderName) == folderName &&
+        folderName.Trim('.', ' ').Length > 0;
 
     private async Task<ImportScanCandidate?> ScanFolderAsync(
         string dir, IMetadataProvider provider, IReadOnlyDictionary<string, Series> withoutFiles,
@@ -216,12 +292,14 @@ public class LibraryImportService(
             return null;
         }
 
-        var existing = withoutFiles.GetValueOrDefault(folderName);
-        if (existing is not null && comics.Count == 0)
+        if (comics.Count == 0)
         {
-            // The empty folder Maki made when the series was added: nothing here to import.
+            // Nothing here to import: the empty folder Maki made when a series was added, or a
+            // folder of covers, notes or anything else that is not a comic. Not worth a search.
             return null;
         }
+
+        var existing = withoutFiles.GetValueOrDefault(folderName);
 
         var recognized = comics.Count(c => ReleaseNameParser.ParseFileName(c.Name).IsRecognized);
         var cleanedTitle = ReleaseNameParser.CleanFolderTitle(folderName);
@@ -271,13 +349,9 @@ public class LibraryImportService(
             return new ImportResult(item.FolderName, false, localizer.Get("error.series.rootFolderNotFound"));
         }
 
-        // FolderName comes straight off the request. It must name exactly one entry directly
-        // inside the root, never an absolute path (Path.Combine would discard the root entirely)
-        // or a ".."-laden one that walks out of it, or import could move/rewrite files anywhere
-        // on disk the process can reach.
-        if (string.IsNullOrEmpty(item.FolderName) ||
-            Path.GetFileName(item.FolderName) != item.FolderName ||
-            item.FolderName.Trim('.', ' ').Length == 0)
+        // FolderName comes straight off the request. Anything but a plain name could move or
+        // rewrite files anywhere on disk the process can reach.
+        if (!IsPlainFolderName(item.FolderName))
         {
             return new ImportResult(item.FolderName, false,
                 localizer.Get("error.libraryImport.invalidFolderName"));

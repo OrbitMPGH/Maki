@@ -15,7 +15,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { IconFolderSearch, IconPackageImport, IconSearch } from '@tabler/icons-react'
+import { IconEyeOff, IconFolderSearch, IconPackageImport, IconSearch } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -23,10 +23,12 @@ import type { MessageDescriptor } from '@lingui/core'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLibrarySettings, useRootFolders } from '../api/hooks'
+import { useIgnoreImportFolder, useIgnoredImportFolders } from '../api/libraryImport'
 import { useHubEvent } from '../api/signalr'
 import { useLabel } from '../i18n-context'
 import { randomUUID } from '../lib/uuid'
 import type { MetadataSearchResult } from '../api/types'
+import { IgnoredFoldersModal } from '../components/import/IgnoredFoldersModal'
 import { ImportMatchFinder } from '../components/import/ImportMatchFinder'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -120,6 +122,10 @@ export default function ImportPage() {
   // Matches picked by hand (search or pasted id), shown ahead of the scan's own candidates.
   const [pickedMatches, setPickedMatches] = useState<Record<string, MetadataSearchResult[]>>({})
   const [finderFor, setFinderFor] = useState<ScanCandidate | null>(null)
+  const [ignoredOpen, setIgnoredOpen] = useState(false)
+  const scannedRoot = scannedRootFolderId === null ? null : Number(scannedRootFolderId)
+  const { data: ignoredFolders } = useIgnoredImportFolders(scannedRoot)
+  const ignoreFolder = useIgnoreImportFolder()
   const [results, setResults] = useState<ImportResultDto[] | null>(null)
   const [progress, setProgress] = useState<Record<string, ImportProgressEvent>>({})
   // Keyed by series id. Recorded whatever import they belong to: a quick series can finish linking
@@ -155,6 +161,19 @@ export default function ImportPage() {
   const matchesOf = (c: ScanCandidate) => {
     const picked = pickedMatches[c.folderName] ?? []
     return [...picked, ...c.matches.filter((m) => !picked.some((p) => p.providerId === m.providerId))]
+  }
+
+  const ignore = (folderName: string) => {
+    if (scannedRoot === null) return
+    ignoreFolder.mutate(
+      { rootFolderId: scannedRoot, folderName },
+      {
+        onSuccess: () => {
+          setCandidates((list) => list?.filter((c) => c.folderName !== folderName) ?? null)
+          setSelection((s) => ({ ...s, [folderName]: '' }))
+        },
+      },
+    )
   }
 
   const pickMatch = (folderName: string, match: MetadataSearchResult) => {
@@ -482,6 +501,16 @@ export default function ImportPage() {
         </Stack>
       )}
 
+      {(ignoredFolders?.length ?? 0) > 0 && (
+        <Button variant="subtle" size="xs" mb="xs" onClick={() => setIgnoredOpen(true)}>
+          <Plural
+            value={ignoredFolders?.length ?? 0}
+            one="# ignored folder"
+            other="# ignored folders"
+          />
+        </Button>
+      )}
+
       {inLibraryCount > 0 && (
         <Switch
           mb="md"
@@ -512,7 +541,7 @@ export default function ImportPage() {
         <EmptyState
           mood="asleep"
           title={t`Nothing to import`}
-          description={t`Every folder in this root is already claimed by a series in the library.`}
+          description={t`Every folder in this root is already in the library, ignored, or holds no comics.`}
         />
       )}
 
@@ -560,9 +589,25 @@ export default function ImportPage() {
                         />
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm" fw={600}>
-                          {c.folderName}
-                        </Text>
+                        <Group gap={4} wrap="nowrap" justify="space-between">
+                          <Text size="sm" fw={600}>
+                            {c.folderName}
+                          </Text>
+                          {c.existingSeriesId === null && (
+                            <Tooltip label={t`Ignore this folder`}>
+                              <ActionIcon
+                                variant="subtle"
+                                size="sm"
+                                color="var(--ink-3)"
+                                aria-label={t`Ignore ${folderName}`}
+                                onClick={() => ignore(c.folderName)}
+                                disabled={doImport.isPending || !!rowProgress}
+                              >
+                                <IconEyeOff size={14} />
+                              </ActionIcon>
+                            </Tooltip>
+                          )}
+                        </Group>
                         {c.existingSeriesId !== null ? (
                           <Badge size="xs" variant="light">
                             <Trans>In library</Trans>
@@ -679,6 +724,9 @@ export default function ImportPage() {
             </Table>
           </Table.ScrollContainer>
         </Panel>
+      )}
+      {ignoredOpen && scannedRoot !== null && (
+        <IgnoredFoldersModal rootFolderId={scannedRoot} onClose={() => setIgnoredOpen(false)} />
       )}
       {finderFor && (
         <ImportMatchFinder

@@ -77,6 +77,25 @@ public class LibraryImportController(
         }
     }
 
+    public record IgnoreRequest(int RootFolderId, string FolderName);
+
+    public record IgnoredFolderDto(int Id, string FolderName, DateTime CreatedAt);
+
+    [HttpGet("ignored")]
+    public async Task<IActionResult> Ignored([FromQuery] int rootFolderId, CancellationToken ct) =>
+        Ok((await importService.IgnoredFoldersAsync(rootFolderId, ct))
+            .Select(x => new IgnoredFolderDto(x.Id, x.FolderName, x.CreatedAt)));
+
+    [HttpPost("ignored")]
+    public async Task<IActionResult> Ignore([FromBody] IgnoreRequest request, CancellationToken ct) =>
+        await importService.IgnoreFolderAsync(request.RootFolderId, request.FolderName, ct) is { } error
+            ? this.Fail(localizer, error)
+            : NoContent();
+
+    [HttpDelete("ignored/{id:int}")]
+    public async Task<IActionResult> Unignore(int id, CancellationToken ct) =>
+        await importService.UnignoreFolderAsync(id, ct) ? NoContent() : NotFound();
+
     /// <summary>
     /// A pasted MangaBaka id or link, or an AniList or MyAnimeList one, as the match for a folder the
     /// title search could not place.

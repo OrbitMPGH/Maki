@@ -85,6 +85,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
     public DbSet<ImportListSkip> ImportListSkips => Set<ImportListSkip>();
+    public DbSet<ImportIgnoredFolder> ImportIgnoredFolders => Set<ImportIgnoredFolder>();
+    public DbSet<ImportBatchFolder> ImportBatchFolders => Set<ImportBatchFolder>();
     public DbSet<UpgradeProfile> UpgradeProfiles => Set<UpgradeProfile>();
     public DbSet<QualityFormat> QualityFormats => Set<QualityFormat>();
     public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
@@ -630,6 +632,20 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(x => x.MangaBakaId);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ImportIgnoredFolder>(e =>
+        {
+            e.HasIndex(x => new { x.RootFolderId, x.FolderName }).IsUnique();
+            e.HasOne<RootFolder>().WithMany().HasForeignKey(x => x.RootFolderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ImportBatchFolder>(e =>
+        {
+            e.HasIndex(x => x.BatchId);
+            e.HasIndex(x => x.CreatedAt);
+            e.HasOne<RootFolder>().WithMany().HasForeignKey(x => x.RootFolderId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<ScrobbleUnmatched>(e =>
