@@ -6457,11 +6457,6 @@ msgstr "Получите образец одной и той же главы и�
 msgid "Fetch more when unread chapters drop to"
 msgstr ""
 
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-msgid "Fetch new chapters as they land"
-msgstr "Получает новые главы, как только они выходят."
-
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Fetching"
@@ -9284,6 +9279,10 @@ msgstr "Найдено монитором"
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "Следить за новыми главами"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Monitor: {mode}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -17334,6 +17333,10 @@ msgstr ""
 #, fuzzy
 msgid "Which languages Maki looks for, and which chapters it leaves alone."
 msgstr "На каких языках Maki ищет главы и какие пропускает."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Which new chapters get fetched as they land"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Which page Maki opens on, and whether the Home page exists at all."

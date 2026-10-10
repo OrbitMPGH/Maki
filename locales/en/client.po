@@ -5374,10 +5374,6 @@ msgstr "Fetch a sample of the same chapter from each source and rank them by sca
 msgid "Fetch more when unread chapters drop to"
 msgstr "Fetch more when unread chapters drop to"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
-msgid "Fetch new chapters as they land"
-msgstr "Fetch new chapters as they land"
-
 #: src/components/ui/status.tsx
 msgid "Fetching"
 msgstr "Fetching"
@@ -7714,6 +7710,10 @@ msgstr "Monitor catches"
 #: src/components/ImportListsSection.tsx
 msgid "Monitor for new chapters"
 msgstr "Monitor for new chapters"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Monitor: {mode}"
+msgstr "Monitor: {mode}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -14383,6 +14383,10 @@ msgstr "Which language series titles are shown in, when MangaBaka has one. Displ
 #: src/components/SetupWizard.tsx
 msgid "Which languages Maki looks for, and which chapters it leaves alone."
 msgstr "Which languages Maki looks for, and which chapters it leaves alone."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Which new chapters get fetched as they land"
+msgstr "Which new chapters get fetched as they land"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Which page Maki opens on, and whether the Home page exists at all."

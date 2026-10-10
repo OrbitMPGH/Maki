@@ -6457,11 +6457,6 @@ msgstr "从每个来源获取同一章节的样本，并按扫描质量排序。
 msgid "Fetch more when unread chapters drop to"
 msgstr ""
 
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-msgid "Fetch new chapters as they land"
-msgstr "新章节一发布就获取。"
-
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Fetching"
@@ -9284,6 +9279,10 @@ msgstr "监控器捕获"
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "监视新章节"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Monitor: {mode}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -17334,6 +17333,10 @@ msgstr ""
 #, fuzzy
 msgid "Which languages Maki looks for, and which chapters it leaves alone."
 msgstr "Maki 要查找哪些语言的章节，以及要跳过哪些章节。"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Which new chapters get fetched as they land"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Which page Maki opens on, and whether the Home page exists at all."

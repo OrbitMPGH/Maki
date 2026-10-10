@@ -96,6 +96,10 @@ public class SettingsController(
     /// filled in, and a non-null default here would blank the format every time it did.
     /// </param>
     /// <param name="ChapterFormat">Naming format for a downloaded chapter's file, extension excluded.</param>
+    /// <param name="NewSeriesMonitorMode">
+    /// Read-only: the mode an add with monitoring left at its default starts with, so the add form can
+    /// show it to someone who cannot read the admin-only monitoring settings. Ignored on a write.
+    /// </param>
     /// <param name="WriteCoverToFolder">
     /// Null on a write leaves the stored switch alone. It used to default to false, so every setup
     /// wizard save (which sends only its two fields) silently switched cover.jpg off again.
@@ -107,7 +111,8 @@ public class SettingsController(
         bool? WriteCoverToFolder = null,
         string? SeriesFolderFormat = null,
         string? ChapterFormat = null,
-        bool? RenameImportedFiles = null);
+        bool? RenameImportedFiles = null,
+        string? NewSeriesMonitorMode = null);
 
     /// <param name="Example">The token rendered against the sample series and chapter.</param>
     public record NamingTokenDto(string Token, string Category, string Description, string Example);
@@ -677,7 +682,8 @@ public class SettingsController(
             await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true",
             await naming.SeriesFolderFormatAsync(ct),
             await naming.ChapterFormatAsync(ct),
-            await settings.GetAsync(SettingKeys.LibraryRenameImportedFiles, ct) != "false"));
+            await settings.GetAsync(SettingKeys.LibraryRenameImportedFiles, ct) != "false",
+            (await MonitorDefaults.ForNewSeriesAsync(settings, ct)).ToString()));
     }
 
     [Authorize(Policy = Policies.Admin)]

@@ -3232,6 +3232,8 @@ export interface LibrarySettings {
    * a write to keep the stored value.
    */
   renameImportedFiles?: boolean
+  /** Read-only: the mode an add with monitoring left at its default starts with. Ignored on a write. */
+  newSeriesMonitorMode?: string
 }
 
 export function useLibrarySettings() {

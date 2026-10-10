@@ -6457,11 +6457,6 @@ msgstr "Pobierz próbkę tego samego rozdziału z każdego źródła i uszereguj
 msgid "Fetch more when unread chapters drop to"
 msgstr ""
 
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-msgid "Fetch new chapters as they land"
-msgstr "Pobiera nowe rozdziały, gdy tylko się pojawią."
-
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Fetching"
@@ -9284,6 +9279,10 @@ msgstr "Automatycznie wykryte"
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "Monitoruj nowe rozdziały"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Monitor: {mode}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -17334,6 +17333,10 @@ msgstr ""
 #, fuzzy
 msgid "Which languages Maki looks for, and which chapters it leaves alone."
 msgstr "W jakich językach Maki ma szukać serii i które rozdziały ma pomijać."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Which new chapters get fetched as they land"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Which page Maki opens on, and whether the Home page exists at all."

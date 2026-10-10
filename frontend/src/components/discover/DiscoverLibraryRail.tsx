@@ -3,7 +3,7 @@ import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Button, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconArrowRight, IconCheck, IconEyeOff, IconFolder, IconPlus } from '@tabler/icons-react'
+import { IconArrowRight, IconBell, IconCheck, IconEyeOff, IconFolder, IconPlus } from '@tabler/icons-react'
 import {
   useAddSeries,
   useLibrarySettings,
@@ -19,6 +19,8 @@ import type { RootFolder } from '../../api/types'
 import { RequestForm } from '../RequestForm'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
+import { useLabel } from '../../i18n-context'
+import { MONITOR_OPTIONS } from '../series/SeriesActionsMenu'
 
 /**
  * What this modal can actually do with the series it is showing: add it, ask an admin for it, or
@@ -46,6 +48,7 @@ export function DiscoverLibraryRail({
   addedFrom?: 'recommendation' | 'library'
 }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const navigate = useNavigate()
   const { can } = useAuth()
   const incognitoOptions = useIncognitoOptions()
@@ -62,7 +65,11 @@ export function DiscoverLibraryRail({
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [upgradeProfileId, setUpgradeProfileId] = useState<string | null>(null)
-  const [monitored, setMonitored] = useState(true)
+  /**
+   * Null until the reader picks a mode, and then nothing is sent, so the server applies the
+   * instance's default exactly as it did when this was a plain switch.
+   */
+  const [monitorMode, setMonitorMode] = useState<string | null>(null)
   /** On by default: the modal only offers it when the reader finished the anime. */
   const [markAnimeWatched, setMarkAnimeWatched] = useState(true)
   /**
@@ -101,6 +108,7 @@ export function DiscoverLibraryRail({
   }, [ratingRule, incognitoPinned])
 
   const seriesId = inLibrarySeriesId ?? addedSeriesId
+  const shownMonitorMode = monitorMode ?? librarySettings?.newSeriesMonitorMode ?? 'All'
   const title = detail?.title ?? item.title
   const animeResume = detail?.animeResume ?? null
 
@@ -118,9 +126,8 @@ export function DiscoverLibraryRail({
       {
         metadataProviderId: item.providerId,
         rootFolderId: Number(rootFolderId),
-        monitored,
-        // Left out when monitoring, so the server applies the instance's default mode.
-        monitorNewItems: monitored ? undefined : 'None',
+        monitored: monitorMode !== 'None',
+        monitorNewItems: monitorMode ?? undefined,
         incognito: incognito ?? 'Off',
         addedFrom: addedFrom ?? 'library',
         clientMutationId: addMutationId.current,
@@ -220,7 +227,7 @@ export function DiscoverLibraryRail({
         </>
       ) : canAdd ? (
         // Every control here carries its own meaning, so none of them gets a field label: the path
-        // reads as a path, the switch says Monitor, and the incognito select spells its own state.
+        // reads as a path, and the monitor and incognito selects spell their own state.
         // This panel sits inside the band beside the title, and four labels' worth of height is
         // what pushed the band past the poster.
         <Stack gap={10}>
@@ -272,14 +279,19 @@ export function DiscoverLibraryRail({
               comboboxProps={{ zIndex: 1001 }}
             />
           </Tooltip>
-          <Tooltip label={t`Fetch new chapters as they land`} withArrow zIndex={1001}>
-            <Switch
-              label={t`Monitor`}
-              checked={monitored}
-              onChange={(e) => setMonitored(e.currentTarget.checked)}
-              labelPosition="left"
-              size="sm"
-              styles={{ body: { justifyContent: 'space-between' } }}
+          <Tooltip label={t`Which new chapters get fetched as they land`} withArrow zIndex={1001}>
+            <Select
+              aria-label={t`Monitor`}
+              leftSection={<IconBell size={15} />}
+              data={MONITOR_OPTIONS.map(({ value, label }) => {
+                const mode = renderLabel(label)
+                return { value, label: t`Monitor: ${mode}` }
+              })}
+              value={shownMonitorMode}
+              onChange={(value) => value && setMonitorMode(value)}
+              allowDeselect={false}
+              size="xs"
+              comboboxProps={{ zIndex: 1001 }}
             />
           </Tooltip>
           {animeResume && (
