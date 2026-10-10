@@ -68,7 +68,7 @@ public partial class ReleaseService(
         var categories = ParseIds(await settings.GetAsync(SettingKeys.ProwlarrCategories, ct));
 
         var candidates = string.IsNullOrWhiteSpace(query)
-            ? SearchQuery.Candidates(series.Title).ToList()
+            ? SearchQuery.WithFallbacks(series.Title, series.OriginalTitle, series.AltTitles).ToList()
             : [query.Trim()];
 
         var attempted = candidates[0];

@@ -128,6 +128,43 @@ public class ReleaseServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Search_without_a_query_retries_alternate_titles_up_to_the_cap()
+    {
+        var seriesId = _db.SeedSeries("Main Title");
+        using (var db = _db.NewContext())
+        {
+            var series = db.Series.First(s => s.Id == seriesId);
+            series.OriginalTitle = "Original";
+            series.AltTitles = [.. Enumerable.Range(1, 6).Select(i => new LocalizedTitle($"Alt {i}", "en"))];
+            db.SaveChanges();
+        }
+
+        await ConfigureProwlarr();
+
+        var result = await Build().SearchAsync(seriesId);
+
+        Assert.Empty(result.Releases);
+        Assert.Equal("Alt 3", result.Query);
+    }
+
+    [Fact]
+    public async Task Search_with_an_explicit_query_does_not_fall_back()
+    {
+        var seriesId = _db.SeedSeries("Main Title");
+        using (var db = _db.NewContext())
+        {
+            db.Series.First(s => s.Id == seriesId).AltTitles = [new LocalizedTitle("Alt One", "en")];
+            db.SaveChanges();
+        }
+
+        await ConfigureProwlarr();
+
+        var result = await Build().SearchAsync(seriesId, "typed");
+
+        Assert.Equal("typed", result.Query);
+    }
+
+    [Fact]
     public async Task Grab_extracts_the_magnet_infohash_and_persists_a_torrent_item()
     {
         var seriesId = _db.SeedSeries("Berserk");
