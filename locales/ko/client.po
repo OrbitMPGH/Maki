@@ -17296,6 +17296,10 @@ msgstr "읽은 내용과 읽은 시간, 라이브러리에 있는 항목을 확�
 msgid "What you've read"
 msgstr "읽은 내용"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "What's new"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "What's new in v{version}"

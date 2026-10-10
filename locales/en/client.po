@@ -14359,6 +14359,10 @@ msgstr "What you read, when you read it, and what the library holds."
 msgid "What you've read"
 msgstr "What you've read"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "What's new"
+msgstr "What's new"
+
 #: src/components/layout/SidebarFooter.tsx
 msgid "What's new in v{version}"
 msgstr "What's new in v{version}"

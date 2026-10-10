@@ -8,17 +8,26 @@ import {
   Badge,
   Button,
   Code,
+  Collapse,
   FileButton,
   Group,
   Modal,
   Progress,
+  ScrollArea,
   Stack,
   Switch,
   Table,
   Text,
   UnstyledButton,
 } from '@mantine/core'
-import { IconAlertTriangle, IconDownload, IconTrash, IconUpload } from '@tabler/icons-react'
+import {
+  IconAlertTriangle,
+  IconChevronDown,
+  IconChevronRight,
+  IconDownload,
+  IconTrash,
+  IconUpload,
+} from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { SettingsSection } from './SettingsSection'
@@ -272,6 +281,67 @@ export function BackupSection() {
 }
 
 
+/**
+ * GitHub release bodies are markdown and the project ships no renderer, so this handles the three
+ * shapes release notes actually use (headings, bullets, plain lines) and shows everything else
+ * as written. Always text nodes, never HTML.
+ */
+function ReleaseNotes({ notes }: { notes: string }) {
+  const [open, setOpen] = useState(false)
+  const lines = notes.replace(/\r\n?/g, '\n').trim().split('\n')
+
+  return (
+    <Stack gap={6}>
+      <UnstyledButton
+        fz="sm"
+        c="var(--brand-fg)"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Group gap={4} wrap="nowrap">
+          {open ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+          <Trans>What's new</Trans>
+        </Group>
+      </UnstyledButton>
+      <Collapse expanded={open}>
+        <ScrollArea.Autosize mah={280} type="auto" offsetScrollbars>
+          <Stack gap={4}>
+            {lines.map((line, i) => {
+              const heading = /^\s*#{1,6}\s+(.*)$/.exec(line)
+              if (heading) {
+                return (
+                  <Text key={i} size="sm" fw={600} mt={i === 0 ? 0 : 6}>
+                    {heading[1]}
+                  </Text>
+                )
+              }
+              const bullet = /^\s*[-*]\s+(.*)$/.exec(line)
+              if (bullet) {
+                return (
+                  <Group key={i} gap={6} align="flex-start" wrap="nowrap" pl="xs">
+                    <Text size="sm" c="var(--ink-3)">
+                      {'•'}
+                    </Text>
+                    <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-wrap', minWidth: 0 }}>
+                      {bullet[1]}
+                    </Text>
+                  </Group>
+                )
+              }
+              if (!line.trim()) return null
+              return (
+                <Text key={i} size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-wrap' }}>
+                  {line}
+                </Text>
+              )
+            })}
+          </Stack>
+        </ScrollArea.Autosize>
+      </Collapse>
+    </Stack>
+  )
+}
+
 export function UpdatesSection() {
   const { t } = useLingui()
   const { data: settings } = useUpdateSettings()
@@ -338,6 +408,9 @@ export function UpdatesSection() {
             <Trans>Check now</Trans>
           </Button>
         </Group>
+        {status?.updateAvailable && !status.isDevBuild && status.releaseNotes?.trim() && (
+          <ReleaseNotes notes={status.releaseNotes} />
+        )}
         {isSkipped && (
           <Group gap={6}>
             <Text size="xs" c="dimmed">

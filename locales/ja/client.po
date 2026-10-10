@@ -17296,6 +17296,10 @@ msgstr "何をいつ読んだか、ライブラリに何があるかを確認で
 msgid "What you've read"
 msgstr "読んだもの"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "What's new"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "What's new in v{version}"
