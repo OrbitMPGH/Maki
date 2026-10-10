@@ -637,6 +637,12 @@ public static class SettingKeys
     /// </summary>
     public const string DiscoverFollowingWatermark = "discover.following.watermark";
 
+    /// <summary>
+    /// Instance: write time and length of the dump, vector database and taste file the search
+    /// indexes were last warmed from. A restart with these unchanged skips the warm.
+    /// </summary>
+    public const string DiscoverWarmedStamp = "discover.warmedstamp";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";

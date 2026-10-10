@@ -41,9 +41,6 @@ public class DiscoverCacheWarmJob(
 
     public const string ScheduledTriggerName = "discover-cache-warm-trigger";
 
-    /// <summary>The source files the indexes were last warmed from, so a restart can skip the warm.</summary>
-    public const string WarmedStampKey = "discover.warmedstamp";
-
     public async Task Execute(IJobExecutionContext context)
     {
         try
@@ -67,7 +64,7 @@ public class DiscoverCacheWarmJob(
             var stamp = SourceStamp();
             var everything = context.Trigger.Key.Name != ScheduledTriggerName
                 || (context.PreviousFireTimeUtc is null
-                    && stamp != await settings.GetAsync(WarmedStampKey, context.CancellationToken));
+                    && stamp != await settings.GetAsync(SettingKeys.DiscoverWarmedStamp, context.CancellationToken));
 
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
@@ -95,7 +92,7 @@ public class DiscoverCacheWarmJob(
 
             if (everything)
             {
-                await settings.SetAsync(WarmedStampKey, stamp, context.CancellationToken);
+                await settings.SetAsync(SettingKeys.DiscoverWarmedStamp, stamp, context.CancellationToken);
             }
         }
         catch (LocalCatalogueUnavailableException)
