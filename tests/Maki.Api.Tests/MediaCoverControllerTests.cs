@@ -4,6 +4,7 @@ using Maki.Core.Security;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
@@ -89,7 +90,8 @@ public class MediaCoverControllerTests : IDisposable
     }
 
     private MediaCoverController Controller(int userId, bool allRootFolders = false) =>
-        new(_paths, _db.NewContext(userId, allRootFolders))
+        new(_paths, _db.NewContext(userId, allRootFolders), null!, new TestLocalizer(), null!,
+            NullLogger<MediaCoverController>.Instance)
         {
             // The action sets a response header, which needs a real HttpContext behind it.
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }

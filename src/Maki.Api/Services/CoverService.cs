@@ -65,49 +65,70 @@ public class CoverService(
             var client = httpClientFactory.CreateClient("covers");
             await using var stream = await client.GetStreamAsync(coverUrl, ct);
             using var image = await Image.LoadAsync(stream, ct);
-
-            if (image.Width > PosterWidth)
-            {
-                image.Mutate(x => x.Resize(PosterWidth, 0));
-            }
-
-            var target = CoverPathFor(seriesId);
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            var temp = target + ".tmp";
-            try
-            {
-                await image.SaveAsync(temp, new JpegEncoder { Quality = 90 }, CancellationToken.None);
-                if (SameBytes(temp, target))
-                {
-                    // Keeps the write time, which is what the cover URL's cache-buster follows.
-                    File.Delete(temp);
-                }
-                else
-                {
-                    File.Move(temp, target, overwrite: true);
-                    CoverVersionCache.Set(seriesId, File.GetLastWriteTimeUtc(target).Ticks);
-                }
-            }
-            catch
-            {
-                try
-                {
-                    File.Delete(temp);
-                }
-                catch (IOException)
-                {
-                }
-
-                throw;
-            }
-
-            return target;
+            return await SavePosterAsync(seriesId, image);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to download cover for series {SeriesId} from {Url}", seriesId, coverUrl);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Stores an image a user uploaded as the series' poster, through the same resize and encode as a
+    /// downloaded one. The caller has already checked the bytes are a raster image of sane size.
+    /// Orientation is applied and every metadata profile dropped, so a phone photo's EXIF location
+    /// never reaches the poster other users can fetch.
+    /// </summary>
+    public async Task<string> StoreUploadedCoverAsync(int seriesId, Stream content, CancellationToken ct = default)
+    {
+        using var image = await Image.LoadAsync(content, ct);
+        image.Mutate(x => x.AutoOrient());
+        image.Metadata.ExifProfile = null;
+        image.Metadata.IptcProfile = null;
+        image.Metadata.XmpProfile = null;
+        image.Metadata.IccProfile = null;
+        return await SavePosterAsync(seriesId, image);
+    }
+
+    private async Task<string> SavePosterAsync(int seriesId, Image image)
+    {
+        if (image.Width > PosterWidth)
+        {
+            image.Mutate(x => x.Resize(PosterWidth, 0));
+        }
+
+        var target = CoverPathFor(seriesId);
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        var temp = target + ".tmp";
+        try
+        {
+            await image.SaveAsync(temp, new JpegEncoder { Quality = 90 }, CancellationToken.None);
+            if (SameBytes(temp, target))
+            {
+                // Keeps the write time, which is what the cover URL's cache-buster follows.
+                File.Delete(temp);
+            }
+            else
+            {
+                File.Move(temp, target, overwrite: true);
+                CoverVersionCache.Set(seriesId, File.GetLastWriteTimeUtc(target).Ticks);
+            }
+        }
+        catch
+        {
+            try
+            {
+                File.Delete(temp);
+            }
+            catch (IOException)
+            {
+            }
+
+            throw;
+        }
+
+        return target;
     }
 
     /// <summary>

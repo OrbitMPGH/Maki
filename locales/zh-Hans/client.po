@@ -2038,6 +2038,10 @@ msgstr "做几个选择即可启动资料库。更改会自动保存，之后也
 msgid "A few large picks at the top, from your recent reading or what is trending."
 msgstr "顶部会显示少量重点推荐，来自你最近阅读的作品或当前热门内容。"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "A field you save is locked, so metadata refreshes leave it alone. It applies to everyone who can see this series."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "A file could not be moved back, nothing was changed"
@@ -3589,6 +3593,7 @@ msgstr "无法读取此下载"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5984,6 +5989,8 @@ msgstr "编辑“首页”布局"
 msgid "Edit layout"
 msgstr "编辑布局"
 
+#: src/components/series/EditMetadataModal.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Edit metadata"
@@ -7028,6 +7035,7 @@ msgstr "宝藏"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
@@ -8000,6 +8008,10 @@ msgstr "任务"
 #, fuzzy
 msgid "Josei"
 msgstr "女性向"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -9242,6 +9254,10 @@ msgstr "元数据数据库已就绪。"
 
 #: src/pages/ImportPage.tsx
 msgid "Metadata match for {folderName}"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Metadata saved"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -11619,6 +11635,14 @@ msgstr "位置"
 msgid "Positive"
 msgstr "正向"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Poster"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Poster replaced"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Posters"
@@ -11660,6 +11684,10 @@ msgstr "正在准备模型……"
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "{relatedTo} 的前传"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Press Enter to add a genre"
+msgstr ""
 
 #: src/components/SeriesTagsEditor.tsx
 #, fuzzy
@@ -13008,6 +13036,10 @@ msgstr "重置所有用户受影响章节的书签和继续阅读位置。完成
 msgid "Reset to defaults"
 msgstr "恢复默认值"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Reset to provider"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Reset two-factor"
@@ -13104,6 +13136,10 @@ msgstr "恢复此标题"
 #, fuzzy
 msgid "Restored"
 msgstr "已恢复"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Restored from the provider"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
@@ -13411,6 +13447,7 @@ msgstr "示例章节"
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -14281,6 +14318,14 @@ msgstr "会话有效期（天）"
 msgid "Sessions"
 msgstr "会话"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Set by hand"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Set by hand. Metadata refreshes leave it alone."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Set goal"
@@ -15026,6 +15071,7 @@ msgstr "统计内容"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
@@ -15211,6 +15257,7 @@ msgid "Syncing…"
 msgstr "正在同步…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Synopsis"
@@ -16124,6 +16171,7 @@ msgstr "带色调的黑色"
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16282,6 +16330,14 @@ msgstr "总计"
 #, fuzzy
 msgid "Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better."
 msgstr "所显示页面的总字节数。它还会根据相同页面记录来源的压缩程度，这就是列按此顺序开始的原因，但放大扫描图的来源可能更大，却不代表更好。"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Total chapters"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Total volumes"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -16567,6 +16623,10 @@ msgstr "取消关联"
 msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr ""
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Unlocked. The provider's value returns on the next metadata refresh."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -16848,6 +16908,10 @@ msgstr "升级到每个章节都来自官方来源为止"
 #, fuzzy
 msgid "Upload failed: {status}"
 msgstr "上传失败：{status}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Upload image"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy

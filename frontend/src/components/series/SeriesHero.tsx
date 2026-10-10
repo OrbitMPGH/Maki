@@ -32,6 +32,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import { useBackTarget } from '../../lib/navHistory'
 import {HeroBackdrop} from './HeroBackdrop'
+import { MetadataLock } from './EditMetadataModal'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
@@ -184,6 +185,7 @@ export function SeriesHero({
                         <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                             <Title order={1} className="series-hero-title" title={series.title}>
                                 {series.displayTitle}
+                                {series.lockedFields.includes('title') && <>{' '}<MetadataLock size={18} /></>}
                             </Title>
 
                             {altTitles.length > 0 && (

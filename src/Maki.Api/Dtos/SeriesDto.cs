@@ -216,6 +216,24 @@ public record SeriesDto(
     public int? PendingProposalId { get; init; }
 
     /// <summary>
+    /// Metadata fields a user set by hand (<see cref="Series.LockedFields"/>), camelCased:
+    /// "title", "overview", "status", "totalChapters", "totalVolumes", "genres", "cover".
+    /// </summary>
+    public IReadOnlyList<string> LockedFields { get; init; } = [];
+
+    public static IReadOnlyList<string> LockedFieldNames(SeriesMetadataField locked) =>
+        Enum.GetValues<SeriesMetadataField>()
+            .Where(f => f != SeriesMetadataField.None && (locked & f) == f)
+            .Select(MetadataFieldName)
+            .ToList();
+
+    public static string MetadataFieldName(SeriesMetadataField field)
+    {
+        var name = field.ToString();
+        return char.ToLowerInvariant(name[0]) + name[1..];
+    }
+
+    /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
     /// carve-outs, so a plain <c>&lt;img src&gt;</c> loads it without a header.
     /// <para>
@@ -304,6 +322,7 @@ public record SeriesDto(
     {
         UpgradeProfileId = s.UpgradeProfileId,
         ReadFileCleanup = s.ReadFileCleanup.ToString(),
+        LockedFields = LockedFieldNames(s.LockedFields),
         LastUpgradeScan = s.LastUpgradeScanUtc is { } at
             ? new LastUpgradeScanDto(at, s.LastUpgradeScanProbed ?? 0, s.LastUpgradeScanQueued ?? 0,
                 s.LastUpgradeScanChecked, LastUpgradeScanDto.ParseSkips(s.LastUpgradeScanSkipsJson))

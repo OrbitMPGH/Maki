@@ -1,4 +1,5 @@
 using Maki.Api.Configuration;
+using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
@@ -249,6 +250,14 @@ public class ImageCacheRebuildService(
             {
                 // Nowhere to fetch from. Not a failure: a manually added series with no provider
                 // match never had a poster to rebuild.
+                status.ReportCover(downloaded: false, failed: false, skipped: true);
+                continue;
+            }
+
+            if (series.IsLocked(SeriesMetadataField.Cover))
+            {
+                // A user uploaded this poster. The provider's would replace it, and there is no copy
+                // of the upload to restore from, so a broken one waits for a new upload or a reset.
                 status.ReportCover(downloaded: false, failed: false, skipped: true);
                 continue;
             }

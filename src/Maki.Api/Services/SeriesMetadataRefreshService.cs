@@ -18,10 +18,10 @@ public class SeriesMetadataRefreshService(
     /// artwork should not quietly rewrite overviews, genres and titles across the whole library,
     /// which is what a full refresh over every series would do.
     /// </summary>
-    /// <returns>false when the series has no provider id, or the lookup returned no cover.</returns>
+    /// <returns>false when the series has no provider id, carries a user-set cover, or the lookup returned no cover.</returns>
     public async Task<bool> RefreshCoverAsync(Series series, CancellationToken ct = default)
     {
-        if (series.MangaBakaId is null)
+        if (series.MangaBakaId is null || series.IsLocked(SeriesMetadataField.Cover))
         {
             return false;
         }
@@ -45,7 +45,15 @@ public class SeriesMetadataRefreshService(
     }
 
     /// <returns>false when the series has no provider id or the lookup returned nothing.</returns>
-    public async Task<bool> RefreshAsync(Series series, bool includeCover, CancellationToken ct = default)
+    public Task<bool> RefreshAsync(Series series, bool includeCover, CancellationToken ct = default) =>
+        RefreshAsync(series, includeCover, SeriesMetadataField.None, ct);
+
+    /// <param name="restore">
+    /// Fields just reset to the provider. These take the provider's value even when it is empty,
+    /// where an ordinary refresh keeps the current value, so a reset never leaves the user's text behind.
+    /// </param>
+    public async Task<bool> RefreshAsync(
+        Series series, bool includeCover, SeriesMetadataField restore, CancellationToken ct = default)
     {
         if (series.MangaBakaId is null)
         {
@@ -59,12 +67,29 @@ public class SeriesMetadataRefreshService(
             return false;
         }
 
-        series.Status = metadata.Status;
+        bool Open(SeriesMetadataField field) => !series.IsLocked(field);
+        bool Restoring(SeriesMetadataField field) => (restore & field) == field;
+
+        if (Open(SeriesMetadataField.Status))
+        {
+            series.Status = metadata.Status;
+        }
+
         // Not ??-coalesced: a provider that stops reporting a type should clear it rather than
         // pin a reading profile onto a series it no longer classifies.
         series.Type = metadata.Type;
-        series.Overview = metadata.Description ?? series.Overview;
-        series.Genres = [.. metadata.Genres];
+        if (Open(SeriesMetadataField.Overview))
+        {
+            series.Overview = Restoring(SeriesMetadataField.Overview)
+                ? metadata.Description
+                : metadata.Description ?? series.Overview;
+        }
+
+        if (Open(SeriesMetadataField.Genres))
+        {
+            series.Genres = [.. metadata.Genres];
+        }
+
         // A partial result's tags are unfiltered for spoilers, so they only fill an empty list.
         if (!metadata.Partial || series.Tags.Count == 0)
         {
@@ -78,8 +103,20 @@ public class SeriesMetadataRefreshService(
         }
 
         series.Year = metadata.Year ?? series.Year;
-        series.TotalChapters = metadata.TotalChapters ?? series.TotalChapters;
-        series.TotalVolumes = metadata.TotalVolumes ?? series.TotalVolumes;
+        if (Open(SeriesMetadataField.TotalChapters))
+        {
+            series.TotalChapters = Restoring(SeriesMetadataField.TotalChapters)
+                ? metadata.TotalChapters
+                : metadata.TotalChapters ?? series.TotalChapters;
+        }
+
+        if (Open(SeriesMetadataField.TotalVolumes))
+        {
+            series.TotalVolumes = Restoring(SeriesMetadataField.TotalVolumes)
+                ? metadata.TotalVolumes
+                : metadata.TotalVolumes ?? series.TotalVolumes;
+        }
+
         series.AuthorStory = metadata.AuthorStory ?? series.AuthorStory;
         series.AuthorArt = metadata.AuthorArt ?? series.AuthorArt;
         series.Publisher = metadata.Publisher ?? series.Publisher;
@@ -96,11 +133,15 @@ public class SeriesMetadataRefreshService(
         series.KitsuId = metadata.KitsuId ?? series.KitsuId;
         series.MangaBakaId = metadata.MangaBakaId ?? series.MangaBakaId;
         series.LastMetadataRefresh = DateTime.UtcNow;
-        series.Title = metadata.Title;
-        series.SortTitle = SeriesMetadataMapper.SortTitleFor(metadata.Title);
+        if (Open(SeriesMetadataField.Title))
+        {
+            series.Title = metadata.Title;
+            series.SortTitle = SeriesMetadataMapper.SortTitleFor(metadata.Title);
+        }
+
         series.OriginalTitle = metadata.OriginalTitle ?? series.OriginalTitle;
 
-        if (includeCover && metadata.CoverUrl != null)
+        if (includeCover && Open(SeriesMetadataField.Cover) && metadata.CoverUrl != null)
         {
             var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
             if (coverPath != null)

@@ -7,6 +7,7 @@ import {
     IconFileText,
     IconFolderSymlink,
     IconEye,
+    IconPencil,
     IconPhoto,
     IconRefresh,
     IconScan,
@@ -58,6 +59,7 @@ export function SeriesActionsMenu({
                                       busy,
                                       onRefreshChapters,
                                       onRefreshMetadata,
+                                      onEditMetadata,
                                       onRescan,
                                       onMove,
                                       onRename,
@@ -90,6 +92,7 @@ export function SeriesActionsMenu({
     busy: boolean
     onRefreshChapters: () => void
     onRefreshMetadata: () => void
+    onEditMetadata: () => void
     onRescan: () => void
     onMove: () => void
     onRename: () => void
@@ -152,6 +155,9 @@ export function SeriesActionsMenu({
                         </Menu.Item>
                         <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
                             <Trans>Refresh metadata and poster</Trans>
+                        </Menu.Item>
+                        <Menu.Item leftSection={<IconPencil size={16} />} onClick={onEditMetadata}>
+                            <Trans>Edit metadata</Trans>
                         </Menu.Item>
 
                         <Menu.Divider />

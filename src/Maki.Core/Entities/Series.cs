@@ -137,6 +137,14 @@ public class Series
     public DateTime Added { get; set; }
     public DateTime? LastMetadataRefresh { get; set; }
 
+    /// <summary>
+    /// Fields a user set by hand. A metadata refresh, the poster download and the image-cache
+    /// rebuild all skip a locked field, so the user's value holds until someone resets it.
+    /// </summary>
+    public SeriesMetadataField LockedFields { get; set; }
+
+    public bool IsLocked(SeriesMetadataField field) => (LockedFields & field) == field;
+
     public List<Chapter> Chapters { get; set; } = [];
     public List<SourceMapping> SourceMappings { get; set; } = [];
 

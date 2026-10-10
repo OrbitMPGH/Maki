@@ -156,7 +156,12 @@ export interface SeriesDto {
   } | null
   /** Id of the series' pending torrent volume proposal, if any. */
   pendingProposalId: number | null
+  /** Metadata fields set by hand, which a refresh leaves alone. See `MetadataField`. */
+  lockedFields: MetadataField[]
 }
+
+/** The camelCase names of `SeriesMetadataField` on the server. */
+export type MetadataField = 'title' | 'overview' | 'status' | 'totalChapters' | 'totalVolumes' | 'genres' | 'cover'
 
 /** A user-assigned library label. `color` is a Mantine colour name. */
 export interface TagDto {

@@ -144,6 +144,7 @@ import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
+import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesReviews } from '../components/series/SeriesReviews'
@@ -458,6 +459,7 @@ function SeriesDetailBody() {
   const { data: rootFolders } = useRootFolders()
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [renameModalOpen, setRenameModalOpen] = useState(false)
+  const [editMetadataOpen, setEditMetadataOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
   const search = useSearchChapter()
@@ -1753,6 +1755,7 @@ function SeriesDetailBody() {
                       setMoveModalOpen(true)
                     }}
                     onRename={() => setRenameModalOpen(true)}
+                    onEditMetadata={() => setEditMetadataOpen(true)}
                     onSetMonitor={(mode) =>
                         setMonitorMode.mutate(
                             { seriesId, mode },
@@ -1852,6 +1855,7 @@ function SeriesDetailBody() {
               <Panel className="series-detail-synopsis" edge="brand">
                 <Title order={2} size="h3" fz="var(--type-section)">
                   <Trans>Synopsis</Trans>
+                  {series.lockedFields.includes('overview') && <>{' '}<MetadataLock /></>}
                 </Title>
                 {series.overview ? (
                     <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '100ch' }}>
@@ -1886,6 +1890,7 @@ function SeriesDetailBody() {
                       <div>
                         <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
                           <Trans>Genres</Trans>
+                          {series.lockedFields.includes('genres') && <>{' '}<MetadataLock /></>}
                         </Title>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
                             buckets, on their own dot colour to read apart from the tags below. */}
@@ -2047,10 +2052,16 @@ function SeriesDetailBody() {
                     )}
                     {series.type && <RecordRow label={t`Type`}>{series.type}</RecordRow>}
                     {series.year && <RecordRow label={t`Year`}>{series.year}</RecordRow>}
-                    <RecordRow label={t`Status`}>{renderLabel(status.label)}</RecordRow>
+                    <RecordRow label={t`Status`}>
+                      {renderLabel(status.label)}
+                      {series.lockedFields.includes('status') && <>{' '}<MetadataLock /></>}
+                    </RecordRow>
                     {contentRating && <RecordRow label={t`Content rating`}>{renderLabel(contentRating.label)}</RecordRow>}
                     {series.totalVolumes != null && (
-                        <RecordRow label={t`Volumes`}>{series.totalVolumes}</RecordRow>
+                        <RecordRow label={t`Volumes`}>
+                          {series.totalVolumes}
+                          {series.lockedFields.includes('totalVolumes') && <>{' '}<MetadataLock /></>}
+                        </RecordRow>
                     )}
                     <RecordRow label={t`Chapters known`}>{series.knownChapterCount}</RecordRow>
                     {series.readTimeEstimate && (
@@ -2155,6 +2166,14 @@ function SeriesDetailBody() {
             opened={renameModalOpen}
             onClose={() => setRenameModalOpen(false)}
         />
+
+        {canEditMetadata && (
+            <EditMetadataModal
+                series={series}
+                opened={editMetadataOpen}
+                onClose={() => setEditMetadataOpen(false)}
+            />
+        )}
 
         <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title={t`Move series`} centered>
           <Stack gap="md">

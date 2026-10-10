@@ -2038,6 +2038,10 @@ msgstr "Ein paar Einstellungen, um deine Bibliothek einzurichten. Alles wird aut
 msgid "A few large picks at the top, from your recent reading or what is trending."
 msgstr "Oben einige große Empfehlungen, basierend auf deiner letzten Lektüre oder aktuellen Trends."
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "A field you save is locked, so metadata refreshes leave it alone. It applies to everyone who can see this series."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "A file could not be moved back, nothing was changed"
@@ -3589,6 +3593,7 @@ msgstr "Dieser Download kann nicht gelesen werden"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5984,6 +5989,8 @@ msgstr "Layout von Start bearbeiten"
 msgid "Edit layout"
 msgstr "Layout bearbeiten"
 
+#: src/components/series/EditMetadataModal.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Edit metadata"
@@ -7028,6 +7035,7 @@ msgstr "Perlen"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
@@ -8000,6 +8008,10 @@ msgstr "Job"
 #, fuzzy
 msgid "Josei"
 msgstr "Josei"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -9242,6 +9254,10 @@ msgstr "Metadaten-Datenbank bereit."
 
 #: src/pages/ImportPage.tsx
 msgid "Metadata match for {folderName}"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Metadata saved"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -11619,6 +11635,14 @@ msgstr "Position"
 msgid "Positive"
 msgstr "Positiv"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Poster"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Poster replaced"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Posters"
@@ -11660,6 +11684,10 @@ msgstr "Modell wird vorbereitet…"
 #, fuzzy
 msgid "Prequel to {relatedTo}"
 msgstr "Vorgeschichte von {relatedTo}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Press Enter to add a genre"
+msgstr ""
 
 #: src/components/SeriesTagsEditor.tsx
 #, fuzzy
@@ -13008,6 +13036,10 @@ msgstr "Lesezeichen und Fortsetzungspositionen für betroffene Kapitel werden f�
 msgid "Reset to defaults"
 msgstr "Auf Standardwerte zurücksetzen"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Reset to provider"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Reset two-factor"
@@ -13104,6 +13136,10 @@ msgstr "Diesen Titel wiederherstellen"
 #, fuzzy
 msgid "Restored"
 msgstr "Wiederhergestellt"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Restored from the provider"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
@@ -13411,6 +13447,7 @@ msgstr "Beispielkapitel"
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -14281,6 +14318,14 @@ msgstr "Sitzungsdauer (Tage)"
 msgid "Sessions"
 msgstr "Sitzungen"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Set by hand"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Set by hand. Metadata refreshes leave it alone."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Set goal"
@@ -15026,6 +15071,7 @@ msgstr "Statistikbereiche"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
@@ -15211,6 +15257,7 @@ msgid "Syncing…"
 msgstr "Synchronisiere…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Synopsis"
@@ -16124,6 +16171,7 @@ msgstr "Getöntes Schwarz"
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16282,6 +16330,14 @@ msgstr "Gesamt"
 #, fuzzy
 msgid "Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better."
 msgstr "Gesamtzahl der Bytes über die angezeigten Seiten. Für dieselben Seiten zeigt dies, wie stark die Quelle sie komprimiert hat, weshalb die Spalten in dieser Reihenfolge beginnen. Eine Quelle, die ihre Scans hochskaliert, ist größer, ohne besser zu sein."
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Total chapters"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Total volumes"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -16567,6 +16623,10 @@ msgstr "Verknüpfung aufheben"
 msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr ""
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Unlocked. The provider's value returns on the next metadata refresh."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -16848,6 +16908,10 @@ msgstr "Upgrades, bis jedes Kapitel aus einer offiziellen Quelle stammt"
 #, fuzzy
 msgid "Upload failed: {status}"
 msgstr "Upload fehlgeschlagen: {status}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Upload image"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy

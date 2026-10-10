@@ -1705,6 +1705,10 @@ msgstr "A few choices to get your library running. Everything saves as you go, a
 msgid "A few large picks at the top, from your recent reading or what is trending."
 msgstr "A few large picks at the top, from your recent reading or what is trending."
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "A field you save is locked, so metadata refreshes leave it alone. It applies to everyone who can see this series."
+msgstr "A field you save is locked, so metadata refreshes leave it alone. It applies to everyone who can see this series."
+
 #: src/pages/ActivityPage.tsx
 msgid "A file could not be moved back, nothing was changed"
 msgstr "A file could not be moved back, nothing was changed"
@@ -2991,6 +2995,7 @@ msgstr "Can't read this download"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -4995,6 +5000,8 @@ msgstr "Edit Home layout"
 msgid "Edit layout"
 msgstr "Edit layout"
 
+#: src/components/series/EditMetadataModal.tsx
+#: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/UsersSection.tsx
 msgid "Edit metadata"
 msgstr "Edit metadata"
@@ -5860,6 +5867,7 @@ msgstr "gems"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
@@ -6663,6 +6671,10 @@ msgstr "Job"
 #: src/components/CatalogueFilters.tsx
 msgid "Josei"
 msgstr "Josei"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
+msgstr "JPEG, PNG, GIF or WebP, up to 10 MB."
 
 #: src/components/SourceCompareModal.tsx
 msgid "Judge the scans, not the site"
@@ -7697,6 +7709,10 @@ msgstr "Metadata database ready."
 #: src/pages/ImportPage.tsx
 msgid "Metadata match for {folderName}"
 msgstr "Metadata match for {folderName}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Metadata saved"
+msgstr "Metadata saved"
 
 #: src/components/SetupWizard.tsx
 msgid "Metadata straight from the MangaBaka API"
@@ -9667,6 +9683,14 @@ msgstr "Position"
 msgid "Positive"
 msgstr "Positive"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Poster"
+msgstr "Poster"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Poster replaced"
+msgstr "Poster replaced"
+
 #: src/pages/HealthPage.tsx
 msgid "Posters"
 msgstr "Posters"
@@ -9702,6 +9726,10 @@ msgstr "Preparing model…"
 #: src/components/ui/DiscoverRail.tsx
 msgid "Prequel to {relatedTo}"
 msgstr "Prequel to {relatedTo}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Press Enter to add a genre"
+msgstr "Press Enter to add a genre"
 
 #: src/components/SeriesTagsEditor.tsx
 msgid "Press Enter to create a new tag"
@@ -10821,6 +10849,10 @@ msgstr "Reset bookmarks and resume positions for affected chapters across all us
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Reset to provider"
+msgstr "Reset to provider"
+
 #: src/components/settings/UsersSection.tsx
 msgid "Reset two-factor"
 msgstr "Reset two-factor"
@@ -10899,6 +10931,10 @@ msgstr "Restore this title"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Restored"
 msgstr "Restored"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Restored from the provider"
+msgstr "Restored from the provider"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
@@ -11160,6 +11196,7 @@ msgstr "Sample chapter"
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -11883,6 +11920,14 @@ msgstr "Session lifetime (days)"
 msgid "Sessions"
 msgstr "Sessions"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Set by hand"
+msgstr "Set by hand"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Set by hand. Metadata refreshes leave it alone."
+msgstr "Set by hand. Metadata refreshes leave it alone."
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Set goal"
 msgstr "Set goal"
@@ -12499,6 +12544,7 @@ msgstr "Stats sections"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
@@ -12652,6 +12698,7 @@ msgid "Syncing…"
 msgstr "Syncing…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Synopsis"
 msgstr "Synopsis"
@@ -13412,6 +13459,7 @@ msgstr "Tinted black"
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/series/EditMetadataModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -13542,6 +13590,14 @@ msgstr "Total"
 #: src/components/SourceCompareModal.tsx
 msgid "Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better."
 msgstr "Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better."
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Total chapters"
+msgstr "Total chapters"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Total volumes"
+msgstr "Total volumes"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Track progress and achievements"
@@ -13778,6 +13834,10 @@ msgstr "Unlink"
 msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "Unlinked {unlinkedPhrase} from {fileName}"
 
+#: src/components/series/EditMetadataModal.tsx
+msgid "Unlocked. The provider's value returns on the next metadata refresh."
+msgstr "Unlocked. The provider's value returns on the next metadata refresh."
+
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Unmatched"
@@ -14010,6 +14070,10 @@ msgstr "Upgrades until each chapter is from an official source"
 #: src/api/hooks.ts
 msgid "Upload failed: {status}"
 msgstr "Upload failed: {status}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Upload image"
+msgstr "Upload image"
 
 #: src/components/NamingTokenModal.tsx
 msgid "Upper Case"

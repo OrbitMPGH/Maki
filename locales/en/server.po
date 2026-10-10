@@ -557,6 +557,43 @@ msgstr "Undoing this import removes a series. That needs the Delete series permi
 msgid "error.libraryImport.undoSeriesGone"
 msgstr "The series was removed from the library since the import, so there is nothing to undo"
 
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+msgid "error.metadata.coverInvalid"
+msgstr "That file is not an image Maki can use. Upload a JPEG, PNG, GIF or WebP no larger than {pixels} pixels on either side."
+
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+msgid "error.metadata.coverMissing"
+msgstr "Choose an image to upload."
+
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+msgid "error.metadata.coverTooLarge"
+msgstr "The image is larger than {megabytes} MB."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.invalidCount"
+msgstr "Chapter and volume counts must be between 0 and {max}."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.invalidStatus"
+msgstr "Unknown status."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.noFields"
+msgstr "Choose at least one field."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.titleRequired"
+msgstr "The title can't be empty."
+
+#. Shared by the title, the synopsis and the genre list.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.tooLong"
+msgstr "That value is too long."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.unknownField"
+msgstr "Unknown metadata field."
+
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 msgid "error.notifications.appriseTarget"
 msgstr "Set a config key or at least one notification URL."
