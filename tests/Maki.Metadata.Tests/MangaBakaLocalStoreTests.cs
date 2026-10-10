@@ -16,15 +16,21 @@ public class MangaBakaLocalStoreTests : IDisposable
         _settings,
         NullLogger<MangaBakaLocalStore>.Instance);
 
-    /// <summary>A store wired to the catalogue indexes, so typo tolerance and credits are live.</summary>
+    /// <summary>
+    /// A store wired to built catalogue indexes, so typo tolerance and credits are live. Built up
+    /// front because a title rescue never waits for a cold build; seed the fixture first.
+    /// </summary>
     private MangaBakaLocalStore Catalogued(CatalogueOptions? options = null)
     {
         var dumpOptions = new MangaBakaDumpOptions(_db.Path, Path.GetTempPath());
+        var cache = new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance);
+        cache.GetAsync().GetAwaiter().GetResult();
+
         return new MangaBakaLocalStore(
             dumpOptions,
             _settings,
             NullLogger<MangaBakaLocalStore>.Instance,
-            new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance),
+            cache,
             options ?? CatalogueOptions.Default);
     }
 
@@ -597,6 +603,30 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         Assert.Equal("1", Assert.Single(outcome.Items).ProviderId);
         Assert.Equal("berserk", outcome.CorrectedQuery);
+    }
+
+    /// <summary>
+    /// A cold catalogue costs seconds to build, so the rescue does not wait for it: this search
+    /// answers exactly and starts the build, and a later one gets the correction.
+    /// </summary>
+    [Fact]
+    public async Task Search_with_a_cold_catalogue_answers_exact_and_builds_it_in_the_background()
+    {
+        _db.AddSeries(1, "Berserk").BuildSearchIndex();
+        var dumpOptions = new MangaBakaDumpOptions(_db.Path, Path.GetTempPath());
+        var cache = new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance);
+        var store = new MangaBakaLocalStore(
+            dumpOptions, _settings, NullLogger<MangaBakaLocalStore>.Instance, cache, CatalogueOptions.Default);
+
+        var cold = await store.SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
+
+        Assert.Empty(cold.Items);
+        Assert.Null(cold.CorrectedQuery);
+
+        await cache.GetAsync();
+        var warm = await store.SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
+
+        Assert.Equal("berserk", warm.CorrectedQuery);
     }
 
     [Fact]

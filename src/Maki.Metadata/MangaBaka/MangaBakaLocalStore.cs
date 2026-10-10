@@ -153,7 +153,10 @@ public class MangaBakaLocalStore(
             return new TitleSearchOutcome(exact, null, credits.Credits);
         }
 
-        indexes ??= await catalogue.GetAsync(ct);
+        // Unlike a credit, a rescue only improves an answer this search already has, so it never
+        // waits out a cold build (~9 s and ~52 MB after an idle unload). The build starts in the
+        // background and a later search gets the rescue.
+        indexes ??= catalogue.GetIfReady();
         if (indexes is null || indexes.Terms.IsEmpty)
         {
             return new TitleSearchOutcome(exact, null, credits.Credits);
