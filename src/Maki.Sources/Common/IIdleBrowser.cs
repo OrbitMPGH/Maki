@@ -12,8 +12,9 @@ namespace Maki.Sources.Common;
 /// </para>
 ///
 /// <para>
-/// Relaunching costs a couple of seconds plus a fresh Cloudflare clearance, so this is for an
-/// instance that has been quiet for a while, not something to do between two chapters.
+/// Relaunching costs a couple of seconds (the Cloudflare clearance is cached by the fetcher and
+/// survives it), so this is for an instance that has been quiet for minutes, not something to do
+/// between two chapters.
 /// </para>
 /// </summary>
 public interface IIdleBrowser

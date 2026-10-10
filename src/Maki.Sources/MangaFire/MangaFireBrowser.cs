@@ -28,6 +28,7 @@ namespace Maki.Sources.MangaFire;
 public sealed class MangaFireBrowser(
     ChallengeAwareFetcher fetcher,
     IAppSettings settings,
+    SharedPlaywright shared,
     ILogger<MangaFireBrowser> logger) : IAsyncDisposable, IIdleBrowser
 {
     private const string BaseUrl = "https://mangafire.to";
@@ -106,7 +107,10 @@ public sealed class MangaFireBrowser(
         }
         finally
         {
-            playwright?.Dispose();
+            if (playwright is not null)
+            {
+                await shared.ReleaseAsync(playwright);
+            }
         }
     }
 
@@ -407,7 +411,7 @@ public sealed class MangaFireBrowser(
 
         var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/home", ct);
 
-        _playwright ??= await Playwright.CreateAsync();
+        _playwright ??= await shared.AcquireAsync();
         if (_browser == null)
         {
             // Use the ~100 MB headless shell, not full Chromium — we never render headed, and it
@@ -426,7 +430,19 @@ public sealed class MangaFireBrowser(
                 Args = args,
             };
 
-            _browser = await _playwright.Chromium.LaunchAsync(launch);
+            try
+            {
+                _browser = await _playwright.Chromium.LaunchAsync(launch);
+            }
+            catch (PlaywrightException)
+            {
+                // The driver is shared with the other browser, so one that cannot launch may itself
+                // be gone. Drop it so the retry starts a fresh one.
+                var driver = _playwright;
+                _playwright = null;
+                await shared.DiscardAsync(driver);
+                throw;
+            }
         }
 
         var context = await _browser.NewContextAsync(new()

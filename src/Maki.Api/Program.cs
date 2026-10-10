@@ -721,6 +721,7 @@ try
     // stay testable without FlareSolverr and settings in the way.
     builder.Services.AddSingleton<IHtmlFetcher>(sp => sp.GetRequiredService<ChallengeAwareFetcher>());
 
+    builder.Services.AddSingleton<SharedPlaywright>();
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
     // Both of the above, again, as the seam BrowserIdleShutdownJob closes them through. Resolved
@@ -1194,14 +1195,15 @@ try
 
         // And the headless browsers, which are ~160 MB of native memory between the Playwright
         // driver and the shell's processes. Nothing launches one at startup, so this can start
-        // early; it does nothing until a scrape has actually happened.
+        // early; it does nothing until a scrape has actually happened. Every minute, since the idle
+        // window is three: a five-minute tick held a browser up to eight. The check is in memory.
         q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
             .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.BrowserIdleShutdownJob.Key)
             .WithIdentity("browser-idle-shutdown-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // Opt-in scheduled backup (backup.scheduled). The job itself decides whether the newest
         // backup is stale, so the hourly tick is cheap when nothing is due.

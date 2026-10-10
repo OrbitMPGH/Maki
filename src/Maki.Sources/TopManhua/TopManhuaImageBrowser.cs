@@ -23,6 +23,7 @@ namespace Maki.Sources.TopManhua;
 /// </summary>
 public sealed class TopManhuaImageBrowser(
     ChallengeAwareFetcher fetcher,
+    SharedPlaywright shared,
     ILogger<TopManhuaImageBrowser> logger) : IAsyncDisposable, IIdleBrowser
 {
     private const string BaseUrl = "https://www.topmanhua.fan";
@@ -99,7 +100,10 @@ public sealed class TopManhuaImageBrowser(
         }
         finally
         {
-            playwright?.Dispose();
+            if (playwright is not null)
+            {
+                await shared.ReleaseAsync(playwright);
+            }
         }
     }
 
@@ -241,14 +245,25 @@ public sealed class TopManhuaImageBrowser(
 
         var session = await fetcher.GetBrowserSessionAsync($"{BaseUrl}/", ct);
 
-        _playwright ??= await Playwright.CreateAsync();
-        _browser ??= await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+        _playwright ??= await shared.AcquireAsync();
+        try
         {
-            Headless = true,
-            // ~100 MB headless shell — we never render headed, and it keeps the image far smaller.
-            Channel = "chromium-headless-shell",
-            Args = ["--disable-blink-features=AutomationControlled"],
-        });
+            _browser ??= await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            {
+                Headless = true,
+                // ~100 MB headless shell — we never render headed, and it keeps the image far smaller.
+                Channel = "chromium-headless-shell",
+                Args = ["--disable-blink-features=AutomationControlled"],
+            });
+        }
+        catch (PlaywrightException)
+        {
+            // Shared driver; see MangaFireBrowser.EnsureContextAsync.
+            var driver = _playwright;
+            _playwright = null;
+            await shared.DiscardAsync(driver);
+            throw;
+        }
 
         var context = await _browser.NewContextAsync(new()
         {

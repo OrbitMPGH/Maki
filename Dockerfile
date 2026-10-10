@@ -117,8 +117,8 @@ COPY --from=frontend /src/frontend/dist ./wwwroot/
 COPY distribution/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# MangaFire's vrf request signature is only defeatable inside a real browser, so install a browser
-# for Playwright. We only ever launch headless, so install the ~100 MB chromium-headless-shell rather
+# MangaFire's vrf request signature and TopManhua's image CDN only answer a real browser, so install
+# one for Playwright. We only ever launch headless, so install the ~100 MB chromium-headless-shell rather
 # than full Chromium (which also drags in the ~170 MB headed binary) — MangaFireBrowser launches with
 # Channel = "chromium-headless-shell" to match. Done in the per-arch runtime stage (browser binaries
 # are architecture-specific) via the Node driver shipped in the publish output — the aspnet image has
