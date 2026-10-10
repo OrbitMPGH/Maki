@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using System.Threading.Channels;
 using Maki.Core.Entities;
 using Maki.Core.Scrobbling;
 using Maki.Core.Quality;
@@ -27,8 +28,9 @@ public enum SourceMatchState
 /// </summary>
 public readonly record struct SourceMatchStep(string SourceName, SourceMatchState State);
 
-/// <summary>A source that carries a series, as <see cref="SourceMatchService.FindCandidatesAsync"/> ranks it.</summary>
-public sealed record SourceCandidate(ISource Source, string SourceSeriesId, string? LanguageFilter);
+/// <summary>A source that carries a series, as <see cref="SourceMatchService.FindCandidatesAsync"/> finds it.</summary>
+/// <param name="Priority">The source's slot in the effective priority order, lower first.</param>
+public sealed record SourceCandidate(ISource Source, string SourceSeriesId, string? LanguageFilter, int Priority = 0);
 
 /// <summary>
 /// Tries to link a freshly added series to site sources by title search.
@@ -560,12 +562,14 @@ public partial class SourceMatchService(
     /// A source with an entry in <paramref name="known"/> is answered from it instead of searched.
     /// Touches no DbContext, so it is safe for a series that was never saved.
     /// </summary>
+    /// <param name="settled">Called with each outcome as soon as its source settles, from that source's task.</param>
     private async Task<SearchRun> SearchSourcesAsync(
         MatchTarget target,
         IReadOnlySet<string> skip,
         IReadOnlyDictionary<string, SourceOutcome>? known,
         IProgress<SourceMatchStep>? progress,
-        CancellationToken ct)
+        CancellationToken ct,
+        Action<SourceOutcome, SourceLanguagePreference>? settled = null)
     {
         var baseOrder = OrderSources(
             sourceRegistry.All, await settings.GetAsync(Maki.Core.Configuration.SettingKeys.SourcePriorityOrder, ct));
@@ -593,43 +597,68 @@ public partial class SourceMatchService(
         // Every source has its own host and its own rate limiter, so waiting for one before starting
         // the next was costing the sum of every site's latency for nothing.
         using var gate = new SemaphoreSlim(MaxParallelSources, MaxParallelSources);
-        var outcomes = await Task.WhenAll(work.Select(item =>
+        var outcomes = await Task.WhenAll(work.Select(async item =>
         {
+            SourceOutcome outcome;
             if (known?.TryGetValue(item.Source.Name, out var earlier) == true)
             {
                 progress?.Report(new SourceMatchStep(
                     item.Source.Name, earlier.Match is null ? SourceMatchState.NoMatch : SourceMatchState.Matched));
                 // Priority is re-read rather than reused, in case the order changed in between.
-                return Task.FromResult(earlier with { Priority = item.Priority });
+                outcome = earlier with { Priority = item.Priority };
+            }
+            else
+            {
+                outcome = await WithGate(gate, () => SearchOneAsync(item.Source, item.Priority, target, progress, ct), ct);
             }
 
-            return WithGate(gate, () => SearchOneAsync(item.Source, item.Priority, target, progress, ct), ct);
+            settled?.Invoke(outcome, languages);
+            return outcome;
         }));
 
         return new SearchRun(orderedSources, disabledSources, languages, outcomes);
     }
 
     /// <summary>
-    /// The sources that carry <paramref name="series"/>, best first, by the same rules
-    /// <see cref="AutoMatchAsync"/> maps with. Writes nothing, so the series can be a transient one
-    /// built from provider metadata for a title that is not in the library.
+    /// The sources that carry <paramref name="series"/>, by the same rules <see cref="AutoMatchAsync"/>
+    /// maps with, written to <paramref name="found"/> in the order their searches settle rather than
+    /// priority order, so a caller can act on the fastest one without waiting for the slowest. The
+    /// writer is completed when every source has answered, with the error if the run itself failed.
+    /// Writes nothing to the database, so the series can be a transient one built from provider
+    /// metadata for a title that is not in the library.
     /// </summary>
-    public async Task<List<SourceCandidate>> FindCandidatesAsync(Series series, CancellationToken ct = default)
+    public async Task FindCandidatesAsync(
+        Series series, ChannelWriter<SourceCandidate> found, CancellationToken ct = default)
     {
-        var target = MatchTarget.For(series);
-        var run = await SearchSourcesAsync(
-            target, new HashSet<string>(StringComparer.OrdinalIgnoreCase), null, null, ct);
-
-        if (series.MangaBakaId is { } mangaBakaId)
+        Exception? error = null;
+        try
         {
-            searchCache.Store(mangaBakaId, target, run.Outcomes);
-        }
+            var target = MatchTarget.For(series);
+            var run = await SearchSourcesAsync(
+                target, new HashSet<string>(StringComparer.OrdinalIgnoreCase), null, null, ct,
+                (outcome, languages) =>
+                {
+                    if (outcome.Match is { } match)
+                    {
+                        found.TryWrite(new SourceCandidate(
+                            outcome.Source, match.SourceSeriesId,
+                            SourceLanguagePreference.SeedFilter(outcome.Source, languages), outcome.Priority));
+                    }
+                });
 
-        return [.. run.Outcomes
-            .Where(o => o.Match is not null)
-            .OrderBy(o => o.Priority)
-            .Select(o => new SourceCandidate(
-                o.Source, o.Match!.SourceSeriesId, SourceLanguagePreference.SeedFilter(o.Source, run.Languages)))];
+            if (series.MangaBakaId is { } mangaBakaId)
+            {
+                searchCache.Store(mangaBakaId, target, run.Outcomes);
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
+        finally
+        {
+            found.TryComplete(error);
+        }
     }
 
     /// <param name="progress">

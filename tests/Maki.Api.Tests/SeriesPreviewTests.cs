@@ -60,20 +60,6 @@ public class SeriesPreviewTests : IDisposable
     public void An_empty_listing_has_no_first_chapter() =>
         Assert.Null(SeriesPreviewService.PickFirstChapter([]));
 
-    private static SeriesPreviewService.ListedCandidate Listed(string name, decimal? first) =>
-        new(new SourceCandidate(new FakeSource { Name = name }, "s", null), first is null ? null : Chapter(first), null);
-
-    [Fact]
-    public void A_source_with_chapter_one_beats_a_higher_ranked_one_that_starts_later()
-    {
-        // Official sites tend to list only the newest free chapters, and a preview of chapter 3 is
-        // not what anyone opened it for.
-        var order = SeriesPreviewService.FetchOrder(
-            [Listed("webtoons", 3), Listed("empty", null), Listed("mangadex", 1), Listed("weebcentral", 1)]);
-
-        Assert.Equal(["mangadex", "weebcentral", "webtoons"], order.Select(l => l.Candidate.Source.Name));
-    }
-
     private SeriesPreviewService Service(params FakeSource[] sources)
     {
         var services = new ServiceCollection();
@@ -185,6 +171,91 @@ public class SeriesPreviewTests : IDisposable
 
         Assert.Equal(1, asked);
         Assert.Equal("error.preview.noChapter", snapshot.Error);
+    }
+
+    [Fact]
+    public async Task The_first_source_with_chapter_one_is_fetched_without_waiting_for_slower_searches()
+    {
+        var fastAsked = new TaskCompletionSource();
+        var slowAsked = 0;
+        var slow = new FakeSource
+        {
+            Name = "slow",
+            OnSearchAsync = async (_, ct) =>
+            {
+                await fastAsked.Task.WaitAsync(TimeSpan.FromSeconds(5), ct);
+                return [Hit()];
+            },
+            OnListChapters = _ => [Chapter(1)],
+            OnGetPages = _ =>
+            {
+                Interlocked.Increment(ref slowAsked);
+                return new ChapterPages([]);
+            },
+        };
+        var fast = new FakeSource
+        {
+            Name = "fast",
+            OnSearch = _ => [Hit()],
+            OnListChapters = _ => [Chapter(1)],
+            OnGetPages = _ =>
+            {
+                fastAsked.TrySetResult();
+                return new ChapterPages([]);
+            },
+        };
+        var service = Service(slow, fast);
+
+        service.Start(1, Ippo, 1, new TestLocalizer());
+        var snapshot = await Settled(service, 1, 1);
+
+        Assert.True(fastAsked.Task.IsCompletedSuccessfully);
+        Assert.Equal(1, slowAsked);
+        Assert.Equal("error.preview.noChapter", snapshot.Error);
+    }
+
+    [Fact]
+    public async Task A_source_that_starts_later_waits_until_no_source_has_chapter_one()
+    {
+        // Official sites tend to list only the newest free chapters, and a preview of chapter 3 is
+        // not what anyone opened it for.
+        var asked = new List<string>();
+        FakeSource Source(string name, decimal first, int delayMs) => new()
+        {
+            Name = name,
+            OnSearchAsync = async (_, ct) =>
+            {
+                await Task.Delay(delayMs, ct);
+                return [Hit()];
+            },
+            OnListChapters = _ => [Chapter(first)],
+            OnGetPages = _ =>
+            {
+                lock (asked)
+                {
+                    asked.Add(name);
+                }
+
+                return new ChapterPages([]);
+            },
+        };
+        var service = Service(Source("webtoons", 3, 0), Source("comikey", 5, 0), Source("mangadex", 1, 200));
+
+        service.Start(1, Ippo, 1, new TestLocalizer());
+        await Settled(service, 1, 1);
+
+        Assert.Equal(["mangadex", "webtoons", "comikey"], asked);
+    }
+
+    [Fact]
+    public async Task A_series_no_source_carries_reports_no_source()
+    {
+        var service = Service(new FakeSource { Name = "miss", OnSearch = _ => [] });
+
+        service.Start(1, Ippo, 1, new TestLocalizer());
+        var snapshot = await Settled(service, 1, 1);
+
+        Assert.Equal("error.preview.noSource", snapshot.Error);
     }
 
     [Fact]

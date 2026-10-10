@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Threading.Channels;
 using Maki.Api.Configuration;
 using Maki.Api.Localization;
 using Maki.Core.Download;
@@ -23,8 +24,8 @@ public record SeriesPreviewSnapshot(
     IReadOnlyList<bool> Ready);
 
 /// <summary>
-/// Fetches the first chapter of a series that is not in the library, from the best source that
-/// carries it, so a user can read a few pages before deciding to add it.
+/// Fetches the first chapter of a series that is not in the library, from the first source found to
+/// carry chapter 1, so a user can read a few pages before deciding to add it.
 /// <para>
 /// Same shape as <see cref="SourceComparePreviewService"/>: a detached job the client polls, pages
 /// fetched through <see cref="PageDownloader"/> into a throwaway folder and served by index, so
@@ -169,42 +170,55 @@ public sealed class SeriesPreviewService(
     internal sealed record ListedCandidate(SourceCandidate Candidate, SourceChapter? First, string? ErrorKey);
 
     /// <summary>
-    /// The order sources are asked for pages in. A source that carries chapter 1 beats a
-    /// higher-ranked one that starts later: the point of the preview is the start of the story, and
-    /// the official sites in particular tend to list only the latest free chapters. Priority order
-    /// holds within each group.
+    /// Searches, lists and fetches as one pipeline: each source's listing starts as soon as its search
+    /// matches, and the first listing that carries chapter 1 is fetched straight away, so the preview
+    /// waits on the fastest source rather than the slowest. A source that starts later is only used
+    /// once every source has answered and none had chapter 1: official sites tend to list only the
+    /// latest free chapters, and a preview of chapter 3 is not what anyone opened it for.
     /// </summary>
-    internal static IEnumerable<ListedCandidate> FetchOrder(IEnumerable<ListedCandidate> listed)
-    {
-        var usable = listed.Where(l => l.First is not null).ToList();
-        return usable.Where(l => l.First!.Number == 1m).Concat(usable.Where(l => l.First!.Number != 1m));
-    }
-
     private async Task RunAsync(Job job, Series series)
     {
         var ct = job.Cts.Token;
+        var found = Channel.CreateUnbounded<SourceCandidate>();
+        var listed = Channel.CreateUnbounded<ListedCandidate>();
+
+        // The searches run to the end under the job's own token even once the chapter is in: the
+        // add that usually follows a preview reuses every one of them. Listings stop with the run.
+        _ = SearchAsync(series, found.Writer, ct);
+        using var listingCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var listing = ListAllAsync(job, found.Reader, listed.Writer, listingCts.Token);
 
         try
         {
-            List<SourceCandidate> candidates;
-            using (var scope = scopes.CreateScope())
-            {
-                candidates = await scope.ServiceProvider.GetRequiredService<SourceMatchService>()
-                    .FindCandidatesAsync(series, ct);
-            }
-
-            if (candidates.Count == 0)
-            {
-                job.Fail("error.preview.noSource");
-                return;
-            }
-
-            var listed = await ListAllAsync(job, candidates, ct);
-            var lastError = listed.LastOrDefault(l => l.ErrorKey is not null)?.ErrorKey;
+            var anyCandidate = false;
+            string? lastError = null;
+            var startsLater = new List<ListedCandidate>();
 
             // Anything that fails to hand over its pages passes to the next: "MangaDex hides the
             // licensed English chapters" is a normal answer, not an error.
-            foreach (var entry in FetchOrder(listed))
+            await foreach (var entry in listed.Reader.ReadAllAsync(ct))
+            {
+                anyCandidate = true;
+                if (entry.First is null)
+                {
+                    lastError = entry.ErrorKey ?? lastError;
+                    continue;
+                }
+
+                if (entry.First.Number != 1m)
+                {
+                    startsLater.Add(entry);
+                    continue;
+                }
+
+                lastError = await FetchAsync(job, entry.Candidate.Source, entry.First, ct);
+                if (lastError is null)
+                {
+                    return;
+                }
+            }
+
+            foreach (var entry in startsLater.OrderBy(e => e.Candidate.Priority))
             {
                 ct.ThrowIfCancellationRequested();
                 lastError = await FetchAsync(job, entry.Candidate.Source, entry.First!, ct);
@@ -214,7 +228,7 @@ public sealed class SeriesPreviewService(
                 }
             }
 
-            job.Fail(lastError ?? "error.preview.noChapter");
+            job.Fail(anyCandidate ? lastError ?? "error.preview.noChapter" : "error.preview.noSource");
         }
         catch (OperationCanceledException)
         {
@@ -227,6 +241,8 @@ public sealed class SeriesPreviewService(
         }
         finally
         {
+            listingCts.Cancel();
+            await listing;
             job.MarkFinished();
 
             if (!_jobs.TryGetValue(job.ProviderId, out var current) || current != job)
@@ -262,25 +278,65 @@ public sealed class SeriesPreviewService(
         }
     }
 
+    private async Task SearchAsync(Series series, ChannelWriter<SourceCandidate> found, CancellationToken ct)
+    {
+        try
+        {
+            using var scope = scopes.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<SourceMatchService>().FindCandidatesAsync(series, found, ct);
+        }
+        catch (Exception ex)
+        {
+            found.TryComplete(ex);
+        }
+    }
+
     /// <summary>
-    /// Lists every candidate's chapters, a few sources at a time. Listings go through the shared
-    /// cache, so adding the series straight after the preview costs no second request.
+    /// Lists each candidate's chapters as it arrives, a few sources at a time, and completes
+    /// <paramref name="listed"/> once the search is over and every listing has answered. Listings go
+    /// through the shared cache, so adding the series straight after the preview costs no second request.
     /// </summary>
-    private async Task<ListedCandidate[]> ListAllAsync(Job job, List<SourceCandidate> candidates, CancellationToken ct)
+    private async Task ListAllAsync(
+        Job job, ChannelReader<SourceCandidate> found, ChannelWriter<ListedCandidate> listed, CancellationToken ct)
     {
         using var gate = new SemaphoreSlim(MaxParallelSources, MaxParallelSources);
-        return await Task.WhenAll(candidates.Select(async candidate =>
+        var listings = new List<Task>();
+        Exception? error = null;
+        try
+        {
+            await foreach (var candidate in found.ReadAllAsync(ct))
+            {
+                listings.Add(ListIntoAsync(candidate));
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
+
+        try
+        {
+            await Task.WhenAll(listings);
+        }
+        catch (Exception ex)
+        {
+            error ??= ex;
+        }
+
+        listed.TryComplete(error);
+
+        async Task ListIntoAsync(SourceCandidate candidate)
         {
             await gate.WaitAsync(ct);
             try
             {
-                return await ListAsync(job, candidate, ct);
+                listed.TryWrite(await ListAsync(job, candidate, ct));
             }
             finally
             {
                 gate.Release();
             }
-        }));
+        }
     }
 
     private async Task<ListedCandidate> ListAsync(Job job, SourceCandidate candidate, CancellationToken ct)
