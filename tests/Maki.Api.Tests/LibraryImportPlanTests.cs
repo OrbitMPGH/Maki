@@ -282,6 +282,51 @@ public class LibraryImportPlanTests : IDisposable
     }
 
     [Fact]
+    public async Task A_merge_preview_keeps_the_series_folder_CBZ_over_a_scanned_copy_to_repack()
+    {
+        var rootId = SeedRoot();
+        await using (var db = _db.NewContext())
+        {
+            db.Series.Add(new Series
+            {
+                Title = "Chainsaw Man", SortTitle = "Chainsaw Man", FolderName = "Chainsaw Man",
+                RootFolderId = rootId, MangaBakaId = 42,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // The series folder already holds a CBZ of chapter 1; the scanned folder brings a tar of it.
+        WriteZip(At("Chainsaw Man", "Chainsaw Man 001.cbz"));
+        WriteTar(At("cm raws", "Chainsaw Man 001.cbt"), "001.png");
+        WriteZip(At("cm raws", "Chainsaw Man 002.cbz"));
+
+        LibraryImportPlan plan;
+        await using (var db = _db.NewContext())
+        {
+            plan = await ImportService(db).PlanAsync(rootId, new ImportRequestItem("cm raws", "42"));
+        }
+
+        Assert.Equal(ImportFolderAction.Merge, plan.FolderAction);
+        var first = Assert.Single(plan.Files!, f => f.Name == "Chainsaw Man 001.cbz");
+        Assert.Equal(ImportFileAction.Register, first.Action);
+        Assert.Contains(new ImportSkippedFile("Chainsaw Man 001.cbt", ImportSkipReason.Duplicate), plan.Skipped!);
+
+        ImportResult result;
+        await using (var db = _db.NewContext())
+        {
+            result = await ImportService(db).ImportAsync(rootId, new ImportRequestItem("cm raws", "42"));
+        }
+
+        Assert.True(result.Success, result.Error);
+        await using var check = _db.NewContext();
+        Assert.Equal(
+            plan.Files!.Select(f => Path.Combine("Chainsaw Man", f.Name)).Order(StringComparer.Ordinal),
+            (await check.ChapterFiles.Select(f => f.RelativePath).ToListAsync()).Order(StringComparer.Ordinal));
+        // Nothing was built from the tar: the CBZ already in the folder is the one registered.
+        Assert.Equal(1, Directory.GetFiles(At("Chainsaw Man"), "Chainsaw Man 001.*").Count(f => f.EndsWith(".cbz")));
+    }
+
+    [Fact]
     public async Task The_plan_reports_the_refusal_the_import_would_give()
     {
         var rootId = SeedRoot();

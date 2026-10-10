@@ -80,9 +80,17 @@ public static class ComicSourceScanner
             // A folder holding both "X.cbr" and the "X.cbz" a previous import made of it wants the
             // finished one, whichever way round the two sort. Ready-to-place kinds (Cbz/Zip/Pdf)
             // outrank one that still needs repacking, and Cbz outranks the other ready kinds.
-            .Select(g => g.OrderBy(s => !s.IsReadyToPlace ? 2 : s.Kind == ComicSourceKind.Cbz ? 0 : 1).First())
+            .Select(g => g.OrderBy(Preference).First())
             .ToList();
     }
+
+    /// <summary>
+    /// Which of two comics producing one name is used, lowest first: a CBZ, then another kind that
+    /// is placed as it is (zip, PDF), then one that has to be repacked. Shared with the import
+    /// preview, which has to pick the way a scan of the merged folder will.
+    /// </summary>
+    public static int Preference(ComicSource source) =>
+        !source.IsReadyToPlace ? 2 : source.Kind == ComicSourceKind.Cbz ? 0 : 1;
 
     /// <summary>
     /// What the path actually held, for an error message when none of it was a comic: the three most

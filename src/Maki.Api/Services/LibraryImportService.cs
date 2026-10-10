@@ -245,14 +245,36 @@ public class LibraryImportService(
             .Contains(folderName, LibraryPaths.FolderComparer);
         if (!taken)
         {
-            db.ImportIgnoredFolders.Add(new ImportIgnoredFolder
-            {
-                RootFolderId = rootFolderId, FolderName = folderName, CreatedAt = DateTime.UtcNow,
-            });
-            await db.SaveChangesAsync(ct);
+            await InsertIgnoredFolderAsync(rootFolderId, folderName, ct);
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Adds the row, treating the unique index refusing it as done: two clicks, or two admins,
+    /// ignoring one folder at once both pass the check above, and either way the folder is ignored.
+    /// </summary>
+    internal async Task InsertIgnoredFolderAsync(int rootFolderId, string folderName, CancellationToken ct)
+    {
+        var row = new ImportIgnoredFolder
+        {
+            RootFolderId = rootFolderId, FolderName = folderName, CreatedAt = DateTime.UtcNow,
+        };
+        db.ImportIgnoredFolders.Add(row);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            db.Entry(row).State = EntityState.Detached;
+            if (!await db.ImportIgnoredFolders.AsNoTracking()
+                    .AnyAsync(x => x.RootFolderId == rootFolderId && x.FolderName == folderName, ct))
+            {
+                throw;
+            }
+        }
     }
 
     /// <summary>False when there was no such entry the caller may see.</summary>
@@ -405,11 +427,22 @@ public class LibraryImportService(
                 .ToList();
             skipped.AddRange(leftBehind.Select(c =>
                 new ImportSkippedFile(Path.GetRelativePath(sourceDir, c.Comic.Source.Path), ImportSkipReason.LeftBehind)));
-            comics = comics
+            // After the move one scan of the series folder sees both sides, and it keeps one comic per
+            // name the way ComicSourceScanner.Scan does: a ready CBZ over anything to repack.
+            var merged = comics
                 .Except(leftBehind)
-                .Concat(PlanComics(targetDir).Comics.Select(c => (Comic: c, Name: Path.GetRelativePath(targetDir, c.Target))))
-                .DistinctBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(c => (c.Comic, c.Name, Moved: true))
+                .Concat(PlanComics(targetDir).Comics
+                    .Select(c => (Comic: c, Name: Path.GetRelativePath(targetDir, c.Target), Moved: false)))
+                .GroupBy(c => Path.GetFileNameWithoutExtension(c.Comic.Source.Name), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderBy(c => ComicSourceScanner.Preference(c.Comic.Source)).ToList())
                 .ToList();
+            skipped.AddRange(merged
+                .SelectMany(g => g.Skip(1))
+                .Where(c => c.Moved)
+                .Select(c => new ImportSkippedFile(
+                    Path.GetRelativePath(sourceDir, c.Comic.Source.Path), ImportSkipReason.Duplicate)));
+            comics = merged.Select(g => (g[0].Comic, g[0].Name)).ToList();
         }
 
         var chapters = existingSeries is null

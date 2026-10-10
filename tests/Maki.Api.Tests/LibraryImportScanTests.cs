@@ -171,6 +171,25 @@ public class LibraryImportScanTests : IDisposable
     }
 
     [Fact]
+    public async Task IgnoringAFolderSomebodyIgnoredAMomentAgoIsNotAnError()
+    {
+        var root = SeedRoot();
+        await using (var first = _db.NewContext())
+        {
+            await IgnoreService(first).InsertIgnoredFolderAsync(root, "Extras", CancellationToken.None);
+        }
+
+        // The second of two ignores that both passed the existence check: the unique index refuses it.
+        await using (var second = _db.NewContext())
+        {
+            await IgnoreService(second).InsertIgnoredFolderAsync(root, "Extras", CancellationToken.None);
+        }
+
+        await using var check = _db.NewContext();
+        Assert.Single(check.ImportIgnoredFolders);
+    }
+
+    [Fact]
     public async Task TheIgnoreListIsPerRootFolder()
     {
         var root = SeedRoot();
