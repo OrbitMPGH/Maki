@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -213,9 +214,10 @@ public sealed class CreditIndex
         }
 
         // Group by name, then dedupe (name, series) so somebody credited as both writer and artist
-        // on one title is one work with two roles rather than two works.
-        var packed = entries.ToArray();
-        Array.Sort(packed, static (a, b) =>
+        // on one title is one work with two roles rather than two works. Sorted in the list's own
+        // buffer: a ToArray here was a second ~24 MB copy of a million entries at the build's peak.
+        var packed = CollectionsMarshal.AsSpan(entries);
+        packed.Sort(static (a, b) =>
         {
             var byName = a.NameId.CompareTo(b.NameId);
             return byName != 0 ? byName : a.SeriesId.CompareTo(b.SeriesId);
@@ -252,7 +254,7 @@ public sealed class CreditIndex
 
             // Popularity rank ascending, 1 being the most popular, unknown last. This is the order
             // a creator page shows and the order a cap keeps the head of.
-            Array.Sort(packed, cursor, end - cursor, PopularityOrder.Instance);
+            packed.Slice(cursor, end - cursor).Sort(PopularityOrder.Instance);
 
             // Names with no credits cannot happen, but the offsets still have to cover every id.
             while (nextName <= nameId)
