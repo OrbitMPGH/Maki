@@ -15163,8 +15163,8 @@ msgid "Writes the series cover into the folder as cover.jpg."
 msgstr "Writes the series cover into the folder as cover.jpg."
 
 #: src/components/import/ImportPlanModal.tsx
-msgid "Writes the series cover over the cover.jpg already in the folder."
-msgstr "Writes the series cover over the cover.jpg already in the folder."
+#~ msgid "Writes the series cover over the cover.jpg already in the folder."
+#~ msgstr "Writes the series cover over the cover.jpg already in the folder."
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Written <0>claim=value</0>, e.g. <1>groups=maki-admins</1>."

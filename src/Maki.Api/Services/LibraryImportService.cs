@@ -484,13 +484,13 @@ public class LibraryImportService(
             })
             .ToList();
 
-        // Only a new series gets a cover written into its folder; see ImportAsync.
+        // Only a new series gets a cover written into its folder, and never over one already there; see ImportAsync.
         var writesCover = existingSeries is null && metadata.CoverUrl is not null &&
+                          !File.Exists(Path.Combine(sourceDir, LibraryCoverFileName)) &&
                           await appSettings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true";
         return new LibraryImportPlan(
             item.FolderName, null, metadata.Title, existingSeries?.Id, decision.Action, decision.TargetName,
-            decision.SeriesFolderName, linkDeferred, files, skipped, writesCover,
-            writesCover && File.Exists(Path.Combine(sourceDir, LibraryCoverFileName)));
+            decision.SeriesFolderName, linkDeferred, files, skipped, writesCover);
     }
 
     /// <summary>The cover <see cref="CoverService.WriteLibraryCoverAsync(int, string, CancellationToken)"/> writes.</summary>

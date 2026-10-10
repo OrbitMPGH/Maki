@@ -89,7 +89,6 @@ public record LibraryImportPlanFile(
 /// </param>
 /// <param name="Skipped">Comics the import leaves out, with an <see cref="ImportSkipReason"/>.</param>
 /// <param name="WritesCover">A cover.jpg is written into the folder.</param>
-/// <param name="ReplacesCover">There already is a cover.jpg that writing the cover replaces.</param>
 public record LibraryImportPlan(
     string FolderName,
     string? Error,
@@ -101,8 +100,7 @@ public record LibraryImportPlan(
     bool LinkDeferred = true,
     IReadOnlyList<LibraryImportPlanFile>? Files = null,
     IReadOnlyList<ImportSkippedFile>? Skipped = null,
-    bool WritesCover = false,
-    bool ReplacesCover = false);
+    bool WritesCover = false);
 
 /// <param name="Name">The CBZ Maki wrote, relative to the folder the files ended up in.</param>
 /// <param name="Source">The original it was built from, relative to the same folder.</param>

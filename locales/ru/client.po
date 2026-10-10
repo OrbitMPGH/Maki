@@ -18130,8 +18130,8 @@ msgid "Writes the series cover into the folder as cover.jpg."
 msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
-msgid "Writes the series cover over the cover.jpg already in the folder."
-msgstr ""
+#~ msgid "Writes the series cover over the cover.jpg already in the folder."
+#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

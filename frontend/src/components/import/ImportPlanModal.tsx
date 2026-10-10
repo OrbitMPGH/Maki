@@ -142,12 +142,8 @@ function FolderPlan({ plan }: { plan: ImportPlan }) {
           )}
         </Text>
         {plan.writesCover && (
-          <Text size="xs" c={plan.replacesCover ? 'var(--warn)' : 'var(--ink-3)'}>
-            {plan.replacesCover ? (
-              <Trans>Writes the series cover over the cover.jpg already in the folder.</Trans>
-            ) : (
-              <Trans>Writes the series cover into the folder as cover.jpg.</Trans>
-            )}
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>Writes the series cover into the folder as cover.jpg.</Trans>
           </Text>
         )}
         <Stack gap={4}>

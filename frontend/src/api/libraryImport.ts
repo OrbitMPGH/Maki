@@ -51,7 +51,6 @@ export interface ImportPlan {
   files: ImportPlanFile[] | null
   skipped: { name: string; reason: string }[] | null
   writesCover: boolean
-  replacesCover: boolean
 }
 
 /** Must not exceed LibraryImportController.MaxItemsPerRequest. */
