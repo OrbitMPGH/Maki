@@ -244,7 +244,11 @@ public class ChapterDownloadProcessor(
                 return DownloadOutcome.Settled;
             }
 
-            var comicInfo = ComicInfoBuilder.Serialize(ComicInfoBuilder.Build(series, chapter, pageFiles.Count));
+            var group = await db.ChapterSourceLinks
+                .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
+                .Select(l => l.Group)
+                .FirstOrDefaultAsync(ct) ?? ChapterFileQualityService.SiteGroup(source);
+            var comicInfo = ComicInfoBuilder.Serialize(ComicInfoBuilder.Build(series, chapter, pageFiles.Count, group));
             var tmpDir = Path.Combine(rootFolder.Path, ".maki", "tmp");
             tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
             CbzPackager.Package(pageFiles, comicInfo, tmpCbz);
@@ -294,7 +298,7 @@ public class ChapterDownloadProcessor(
                 rootFolder = await db.RootFolders.FindAsync([series.RootFolderId], ct) ?? rootFolder;
             }
 
-            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
+            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct, group);
 
             var seriesFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
             var heldByOthers = (await db.Chapters
@@ -349,13 +353,9 @@ public class ChapterDownloadProcessor(
             }
 
             chapterFile.SourceChapterId = sourceChapterId;
-            var linkGroup = await db.ChapterSourceLinks
-                .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
-                .Select(l => l.Group)
-                .FirstOrDefaultAsync(CancellationToken.None);
             // Not cancellable: the archive is already in the library. Sampled like the backfill, since the
             // pages were validated moments ago and a full second read would only repeat that work.
-            quality.Stamp(chapterFile, finalPath, source.Kind, linkGroup ?? ChapterFileQualityService.SiteGroup(source),
+            quality.Stamp(chapterFile, finalPath, source.Kind, group,
                 ChapterFileMeasureService.SampleSize, CancellationToken.None);
             await SourceQualitySamples.RecordAsync(db, mapping, chapter.Id, SourceQualityOrigin.Download,
                 chapterFile.PageCount, chapterFile.MedianWidth, chapterFile.MedianHeight, chapterFile.Size,

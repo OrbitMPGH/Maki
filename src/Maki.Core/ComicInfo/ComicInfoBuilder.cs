@@ -11,7 +11,7 @@ namespace Maki.Core.ComicInfo;
 
 public static class ComicInfoBuilder
 {
-    public static ComicInfo Build(Series series, Chapter chapter, int pageCount)
+    public static ComicInfo Build(Series series, Chapter chapter, int pageCount, string? group = null)
     {
         return new ComicInfo
         {
@@ -40,6 +40,8 @@ public static class ComicInfoBuilder
             Web = SeriesWebLinks.Joined(series),
             LanguageISO = chapter.Language,
             Manga = MangaFor(series.Type) ?? DefaultManga,
+            AgeRating = AgeRatingFor(series.ContentRating),
+            ScanInformation = ScanInformationFor(group),
             PageCount = pageCount.ToString(CultureInfo.InvariantCulture)
         };
     }
@@ -72,6 +74,24 @@ public static class ComicInfoBuilder
         SeriesTypes.Oel or SeriesTypes.Other => "No",
         _ => null
     };
+
+    /// <summary>
+    /// ComicInfo's AgeRating for Maki's content rating. The vocabulary says nothing about violence,
+    /// so "safe" maps to Teen rather than Everyone, and each step up sits one band higher than the
+    /// sexual content alone would put it. Null for an unknown or absent rating.
+    /// </summary>
+    internal static string? AgeRatingFor(string? contentRating) => contentRating?.Trim().ToLowerInvariant() switch
+    {
+        "safe" => "Teen",
+        "suggestive" => "Mature 17+",
+        "erotica" => "Adults Only 18+",
+        "pornographic" => "X18+",
+        _ => null
+    };
+
+    /// <summary>The scanlation group as ComicInfo's ScanInformation, or null when there is none.</summary>
+    internal static string? ScanInformationFor(string? group) =>
+        string.IsNullOrWhiteSpace(group) ? null : group.Trim();
 
     /// <summary>A stored comma-separated list, normalized the same way.</summary>
     internal static string? JoinList(string? joined) => joined is null ? null : JoinList(joined.Split(','));

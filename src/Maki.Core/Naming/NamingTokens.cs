@@ -14,13 +14,18 @@ namespace Maki.Core.Naming;
 /// chapter tokens can render "Ch.1-6" instead of naming the file after its first chapter and
 /// colliding with the real Ch.1. Null for the ordinary one-chapter-one-file case.
 /// </param>
+/// <param name="Group">
+/// The scanlation group behind the file, or null when it has none or none is known yet; the
+/// {Chapter Group} token then renders empty.
+/// </param>
 /// <param name="WholeVolumes">
 /// Whether that span is every chapter Maki knows of in the volumes it covers. Only then is
 /// "Vol.1" an honest name for it; a partial volume keeps its chapter range, which is also what
 /// stops two halves of one volume wanting the same name.
 /// </param>
 public sealed record NamingContext(
-    Series Series, Chapter? Chapter = null, Chapter? Through = null, bool WholeVolumes = false);
+    Series Series, Chapter? Chapter = null, Chapter? Through = null, bool WholeVolumes = false,
+    string? Group = null);
 
 /// <summary>
 /// Catalogue keys for the group headings the token picker shows. Core has no <c>ILocalizer</c>, so
@@ -93,6 +98,8 @@ public static class NamingTokens
         Token("{Chapter OneShotSuffix}", NamingTokenCategory.Chapter,
             (c, _) => IsOneShot(c.Chapter) && ChapterTitle(c) is { Length: > 0 } t ? $" - {t}" : null),
         Token("{Chapter Language}", NamingTokenCategory.Chapter, (c, _) => c.Chapter?.Language),
+        Token("{Chapter Group}", NamingTokenCategory.Chapter,
+            (c, _) => string.IsNullOrWhiteSpace(c.Group) ? null : c.Group.Trim()),
 
         // ---- Series ID ----------------------------------------------------------------------
         Token("{MangaBakaId}", NamingTokenCategory.SeriesId,

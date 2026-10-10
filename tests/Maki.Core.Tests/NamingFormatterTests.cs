@@ -240,6 +240,42 @@ public class NamingFormatterTests
     }
 
     [Fact]
+    public void Group_token_renders_the_scanlation_group()
+    {
+        var context = Context() with { Group = "Group Name" };
+
+        Assert.Equal("Berserk Vol.3 Ch.24 [Group Name]",
+            NamingFormatter.Format("{Series Title} {Chapter VolChap} [{Chapter Group}]", context));
+        Assert.Equal("Berserk Vol.3 Ch.24 Group.Name",
+            NamingFormatter.Format("{Series Title} {Chapter VolChap} {Chapter.Group}", context));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Group_token_leaves_no_brackets_or_double_spaces_without_a_group(string? group)
+    {
+        var context = Context() with { Group = group };
+
+        Assert.Equal("Berserk Vol.3 Ch.24",
+            NamingFormatter.Format("{Series Title} {Chapter VolChap} [{Chapter Group}]", context));
+        Assert.Equal("Berserk Vol.3 Ch.24 Done",
+            NamingFormatter.Format("{Series Title} {Chapter VolChap} [{Chapter Group}] Done", context));
+        Assert.Equal("Berserk Vol.3 Ch.24",
+            NamingFormatter.Format("{Series Title} {Chapter VolChap} - {Chapter Group}", context));
+    }
+
+    [Fact]
+    public void Group_token_validates_and_does_not_change_the_default_format()
+    {
+        Assert.Empty(NamingFormatter.Validate("{Series Title} [{Chapter Group}]"));
+        Assert.DoesNotContain("Group", NamingDefaults.ChapterFormat);
+        Assert.Equal("The Series Title's! Vol.3 Ch.24 [Group Name]",
+            NamingFormatter.Format("{Series Title} {Chapter VolChap} [{Chapter Group}]", NamingDefaults.SampleContext()));
+    }
+
+    [Fact]
     public void A_span_of_one_chapter_is_named_like_any_other_chapter()
     {
         var chapter = new Chapter { Number = 24m, Volume = 3 };

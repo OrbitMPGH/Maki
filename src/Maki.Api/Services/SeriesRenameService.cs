@@ -162,9 +162,10 @@ public class SeriesRenameService(
             var existingExtension = Path.GetExtension(file.RelativePath);
             var to = Path.Combine(folderTo, ComicFile.IsPdf(existingExtension)
                 ? await naming.BuildChapterFileNameAsync(
-                    series, chapter, through, CoversWholeVolumes(ordered, span), existingExtension, ct)
+                    series, chapter, through, CoversWholeVolumes(ordered, span), existingExtension, ct,
+                    group: file.Group)
                 : await naming.BuildChapterFileNameAsync(
-                    series, chapter, through, CoversWholeVolumes(ordered, span), ct));
+                    series, chapter, through, CoversWholeVolumes(ordered, span), ct, group: file.Group));
 
             if (targets.TryGetValue(to, out var claimedBy))
             {

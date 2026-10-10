@@ -17,6 +17,20 @@ public class FileNameBuilderTests
     }
 
     [Fact]
+    public void Group_reaches_the_name_and_the_relative_path()
+    {
+        const string format = "{Series Title} {Chapter VolChap} [{Chapter Group}]";
+        var series = SeriesFor("Berserk");
+        var chapter = new Chapter { Number = 5 };
+
+        Assert.Equal("Berserk Ch.5 [Group Name].cbz",
+            FileNameBuilder.BuildChapterFileName(series, chapter, format, "Group Name"));
+        Assert.Equal("Berserk Ch.5.cbz", FileNameBuilder.BuildChapterFileName(series, chapter, format));
+        Assert.Equal(Path.Combine("Berserk", "Berserk Ch.5 [Group Name].cbz"),
+            FileNameBuilder.BuildRelativePath(series, chapter, format, "Group Name"));
+    }
+
+    [Fact]
     public void Volume_less_decimal_chapter()
     {
         var name = FileNameBuilder.BuildChapterFileName(

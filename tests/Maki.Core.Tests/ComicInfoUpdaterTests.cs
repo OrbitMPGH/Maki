@@ -87,6 +87,53 @@ public class ComicInfoUpdaterTests : IDisposable
     }
 
     [Fact]
+    public void Fills_scan_information_and_age_rating_from_the_stored_values()
+    {
+        var path = CreateCbz("Berserk v01.cbz", comicInfoXml: null);
+        var series = TestSeries();
+        series.ContentRating = "suggestive";
+
+        ComicInfoUpdater.UpdateFile(path, series, ReleaseNameParser.ParseFileName(path), null, "Group Name");
+
+        var info = ReadComicInfo(path);
+        Assert.Equal("Group Name", info.ScanInformation);
+        Assert.Equal("Mature 17+", info.AgeRating);
+    }
+
+    [Fact]
+    public void Keeps_existing_scan_information_and_age_rating_when_maki_has_no_value()
+    {
+        var path = CreateCbz("Berserk v01.cbz", """
+            <?xml version="1.0"?>
+            <ComicInfo>
+              <ScanInformation>Old Group</ScanInformation>
+              <AgeRating>Teen</AgeRating>
+            </ComicInfo>
+            """);
+
+        ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null, group: null);
+
+        var info = ReadComicInfo(path);
+        Assert.Equal("Old Group", info.ScanInformation);
+        Assert.Equal("Teen", info.AgeRating);
+    }
+
+    [Fact]
+    public void A_known_group_replaces_the_scan_information_a_file_declared()
+    {
+        var path = CreateCbz("Berserk v01.cbz", """
+            <?xml version="1.0"?>
+            <ComicInfo>
+              <ScanInformation>Old Group</ScanInformation>
+            </ComicInfo>
+            """);
+
+        ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null, "New Group");
+
+        Assert.Equal("New Group", ReadComicInfo(path).ScanInformation);
+    }
+
+    [Fact]
     public void Keeps_the_existing_fields_of_a_file_that_declares_utf16()
     {
         var path = CreateCbz("Berserk v01.cbz", """

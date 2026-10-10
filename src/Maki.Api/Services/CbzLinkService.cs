@@ -626,7 +626,7 @@ public class CbzLinkService(
     {
         try
         {
-            if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter))
+            if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter, chapterFile.Group))
             {
                 chapterFile.Size = new FileInfo(file).Length; // rewrite changed the archive size
                 // Belt and braces: the new size already invalidates the cache entry, but a

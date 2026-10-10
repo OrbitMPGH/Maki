@@ -140,6 +140,46 @@ public class ComicInfoBuilderTests
         Assert.Equal("ComicInfo", doc.DocumentElement!.Name);
     }
 
+    [Theory]
+    [InlineData("safe", "Teen")]
+    [InlineData("suggestive", "Mature 17+")]
+    [InlineData("erotica", "Adults Only 18+")]
+    [InlineData("pornographic", "X18+")]
+    [InlineData("Erotica", "Adults Only 18+")]
+    [InlineData("unrated", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void Content_rating_maps_to_a_comicinfo_age_rating(string? contentRating, string? expected)
+    {
+        var series = TestSeries();
+        series.ContentRating = contentRating;
+
+        Assert.Equal(expected, ComicInfoBuilder.Build(series, new Chapter { Number = 1 }, 10).AgeRating);
+    }
+
+    [Fact]
+    public void Scan_group_is_written_as_scan_information_and_round_trips()
+    {
+        var info = ComicInfoBuilder.Build(TestSeries(), new Chapter { Number = 1 }, 10, group: " Group Name ");
+
+        Assert.Equal("Group Name", info.ScanInformation);
+        var xml = ComicInfoBuilder.Serialize(info);
+        Assert.Contains("<ScanInformation>Group Name</ScanInformation>", xml);
+        Assert.Equal("Group Name", ComicInfoBuilder.Deserialize(new StringReader(xml))!.ScanInformation);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void No_scan_group_leaves_scan_information_unset(string? group)
+    {
+        var info = ComicInfoBuilder.Build(TestSeries(), new Chapter { Number = 1 }, 10, group);
+
+        Assert.Null(info.ScanInformation);
+        Assert.DoesNotContain("<ScanInformation", ComicInfoBuilder.Serialize(info));
+    }
+
     [Fact]
     public void Characters_xml_cannot_carry_are_stripped_instead_of_failing_the_write()
     {

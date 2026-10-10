@@ -12,7 +12,7 @@ namespace Maki.Core.ComicInfo;
 /// series-level fields are standardized to Maki's metadata (English title, summary,
 /// authors, genres), file-level fields (chapter/volume number, title, dates) are kept
 /// or filled from the linked chapter / parsed file name. Fields Maki has no opinion
-/// on (publisher, translator, scan info, ...) are preserved as-is.
+/// on (publisher, translator, ...) are preserved as-is.
 /// </summary>
 public static class ComicInfoUpdater
 {
@@ -25,7 +25,8 @@ public static class ComicInfoUpdater
     /// Standardizes the ComicInfo.xml of <paramref name="cbzPath"/> in place (atomic rewrite).
     /// Returns true when the file was rewritten, false when it was already up to date.
     /// </summary>
-    public static bool UpdateFile(string cbzPath, Series series, ParsedReleaseFile parsed, Chapter? chapter)
+    public static bool UpdateFile(
+        string cbzPath, Series series, ParsedReleaseFile parsed, Chapter? chapter, string? group = null)
     {
         // A PDF read in place is left exactly as it was found; there is no ComicInfo.xml to write.
         if (Reading.ComicFile.IsPdf(cbzPath)) return false;
@@ -45,7 +46,7 @@ public static class ComicInfoUpdater
 
             info ??= new ComicInfo();
             var pageCount = source.Entries.Count(e => Reading.CbzReader.IsImage(e.FullName));
-            Standardize(info, series, parsed, chapter, pageCount);
+            Standardize(info, series, parsed, chapter, pageCount, group);
 
             newXml = ComicInfoBuilder.Serialize(info);
             if (existingXml != null && XmlEquals(existingXml, newXml))
@@ -58,7 +59,8 @@ public static class ComicInfoUpdater
         return true;
     }
 
-    private static void Standardize(ComicInfo info, Series series, ParsedReleaseFile parsed, Chapter? chapter, int pageCount)
+    private static void Standardize(
+        ComicInfo info, Series series, ParsedReleaseFile parsed, Chapter? chapter, int pageCount, string? group)
     {
         // Series-level fields: always Maki's view, so imports and downloads agree.
         info.Series = series.Title;
@@ -74,6 +76,7 @@ public static class ComicInfoUpdater
         info.Genre = ComicInfoBuilder.JoinList(series.Genres) ?? info.Genre;
         info.Tags = ComicInfoBuilder.JoinList(series.Tags) ?? info.Tags;
         info.Web = SeriesWebLinks.Joined(series) ?? info.Web;
+        info.AgeRating = ComicInfoBuilder.AgeRatingFor(series.ContentRating) ?? info.AgeRating;
         info.Manga = ComicInfoBuilder.MangaFor(series.Type)
             ?? (string.IsNullOrWhiteSpace(info.Manga) ? ComicInfoBuilder.DefaultManga : info.Manga);
 
@@ -116,6 +119,7 @@ public static class ComicInfoUpdater
             info.Day = released.Day.ToString(CultureInfo.InvariantCulture);
         }
 
+        info.ScanInformation = ComicInfoBuilder.ScanInformationFor(group) ?? info.ScanInformation;
         info.LanguageISO = chapter?.Language ?? info.LanguageISO;
         info.PageCount = pageCount > 0 ? pageCount.ToString(CultureInfo.InvariantCulture) : info.PageCount;
     }

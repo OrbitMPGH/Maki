@@ -19,8 +19,8 @@ public static class FileNameBuilder
     public static string BuildChapterFileName(Series series, Chapter chapter) =>
         BuildChapterFileName(series, chapter, NamingDefaults.ChapterFormat);
 
-    public static string BuildChapterFileName(Series series, Chapter chapter, string format) =>
-        BuildChapterFileName(series, chapter, null, false, format);
+    public static string BuildChapterFileName(Series series, Chapter chapter, string format, string? group = null) =>
+        BuildChapterFileName(series, chapter, null, false, format, NamingDefaults.ChapterExtension, group);
 
     /// <summary>
     /// Names a file that backs a span of chapters — a volume compilation — after the whole span
@@ -39,8 +39,8 @@ public static class FileNameBuilder
     /// </summary>
     public static string BuildChapterFileName(
         Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string format,
-        string extension) =>
-        NamingFormatter.Format(format, new NamingContext(series, chapter, through, wholeVolumes))
+        string extension, string? group = null) =>
+        NamingFormatter.Format(format, new NamingContext(series, chapter, through, wholeVolumes, group))
         + LanguageSuffix(chapter, format)
         + extension;
 
@@ -87,8 +87,8 @@ public static class FileNameBuilder
     /// series already lives in is a fact, and re-deriving it here would send a download into a
     /// folder that doesn't exist whenever the format changed after the series was added.
     /// </summary>
-    public static string BuildRelativePath(Series series, Chapter chapter, string format) =>
-        Path.Combine(series.FolderName, BuildChapterFileName(series, chapter, format));
+    public static string BuildRelativePath(Series series, Chapter chapter, string format, string? group = null) =>
+        Path.Combine(series.FolderName, BuildChapterFileName(series, chapter, format, group));
 
     public static string BuildSeriesFolderName(Series series) =>
         BuildSeriesFolderName(series, NamingDefaults.SeriesFolderFormat);

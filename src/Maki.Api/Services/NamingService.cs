@@ -30,10 +30,13 @@ public class NamingService(IAppSettings settings)
     public async Task<string> BuildSeriesFolderNameAsync(Series series, CancellationToken ct = default) =>
         FileNameBuilder.BuildSeriesFolderName(series, await SeriesFolderFormatAsync(ct));
 
-    /// <summary>The chapter's file name, extension included, without any folder.</summary>
+    /// <summary>
+    /// The chapter's file name, extension included, without any folder. <paramref name="group"/> fills
+    /// <c>{Chapter Group}</c>; null renders it empty.
+    /// </summary>
     public async Task<string> BuildChapterFileNameAsync(
-        Series series, Chapter chapter, CancellationToken ct = default) =>
-        FileNameBuilder.BuildChapterFileName(series, chapter, await ChapterFormatAsync(ct));
+        Series series, Chapter chapter, CancellationToken ct = default, string? group = null) =>
+        FileNameBuilder.BuildChapterFileName(series, chapter, await ChapterFormatAsync(ct), group);
 
     /// <summary>
     /// The file name for an archive backing a span of chapters (a volume compilation). See
@@ -41,9 +44,10 @@ public class NamingService(IAppSettings settings)
     /// </summary>
     public async Task<string> BuildChapterFileNameAsync(
         Series series, Chapter chapter, Chapter? through, bool wholeVolumes,
-        CancellationToken ct = default) =>
+        CancellationToken ct = default, string? group = null) =>
         FileNameBuilder.BuildChapterFileName(
-            series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct));
+            series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct),
+            NamingDefaults.ChapterExtension, group);
 
     /// <summary>
     /// Same as above, but keeping <paramref name="extension"/> instead of <c>.cbz</c>, for renaming
@@ -51,17 +55,17 @@ public class NamingService(IAppSettings settings)
     /// </summary>
     public async Task<string> BuildChapterFileNameAsync(
         Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string extension,
-        CancellationToken ct = default) =>
+        CancellationToken ct = default, string? group = null) =>
         FileNameBuilder.BuildChapterFileName(
-            series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct), extension);
+            series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct), extension, group);
 
     /// <summary>
     /// The chapter file's path relative to the root folder. Uses the series' existing
     /// <see cref="Series.FolderName"/>, never the folder format — see <see cref="FileNameBuilder"/>.
     /// </summary>
     public async Task<string> BuildChapterRelativePathAsync(
-        Series series, Chapter chapter, CancellationToken ct = default) =>
-        FileNameBuilder.BuildRelativePath(series, chapter, await ChapterFormatAsync(ct));
+        Series series, Chapter chapter, CancellationToken ct = default, string? group = null) =>
+        FileNameBuilder.BuildRelativePath(series, chapter, await ChapterFormatAsync(ct), group);
 
     /// <summary>
     /// A stored format that no longer validates (a token removed by an upgrade, a hand-edited

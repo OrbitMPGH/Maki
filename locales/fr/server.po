@@ -2376,6 +2376,11 @@ msgid "naming.token.anilistid.description"
 msgstr "Identifiant AniList ; vide si aucune correspondance"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Scanlation group, e.g. Group Name. Blank when the file has none
+msgid "naming.token.chaptergroup.description"
+msgstr ""
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 #. English: BCP-47 language tag, e.g. en
 #, fuzzy
 msgid "naming.token.chapterlanguage.description"
