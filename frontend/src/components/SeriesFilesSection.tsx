@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActionIcon, Badge, Button, Checkbox, Group, Loader, Modal, Paper, Stack, Table, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Button, Checkbox, Group, Modal, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconFileTypePdf,
   IconFileZip,
@@ -103,6 +103,21 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       return next
     })
 
+  const tableHead = (
+    <Table.Thead>
+      <Table.Tr>
+        {selectMode && <Table.Th w={40} />}
+        <Table.Th><Trans>File</Trans></Table.Th>
+        <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
+        <Table.Th w={160}><Trans>Status</Trans></Table.Th>
+        <Table.Th><Trans>Mapped to</Trans></Table.Th>
+        <Table.Th w={90}><Trans>Size</Trans></Table.Th>
+        <Table.Th w={180}><Trans>Quality</Trans></Table.Th>
+        {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)} />}
+      </Table.Tr>
+    </Table.Thead>
+  )
+
   return (
     <div>
       <Group justify="space-between" wrap="wrap" gap="sm">
@@ -128,7 +143,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               size="xs"
               variant="subtle"
               leftSection={<IconRefresh size={14} />}
-              loading={isFetching}
+              loading={isFetching && !isLoading}
               onClick={() => void refetch()}
             >
               <Trans>Refresh</Trans>
@@ -158,12 +173,19 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       </Group>
 
       {(isLoading ? (
-          <Group py="md" gap="xs">
-            <Loader size="sm" />
-            <Text size="sm" c="var(--ink-3)">
+          <Panel p={0} className="table-panel" mt="sm">
+            <VisuallyHidden role="status">
               <Trans>Scanning folder…</Trans>
-            </Text>
-          </Group>
+            </VisuallyHidden>
+            <Table.ScrollContainer minWidth={640}>
+              <Table className="panel-table ops-table" aria-busy>
+                {tableHead}
+                <Table.Tbody>
+                  <FileRowSkeletons />
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </Panel>
         ) : !files || files.length === 0 ? (
           <Text c="var(--ink-3)" size="sm" py="sm">
             <Trans>No files in the series folder.</Trans>
@@ -233,18 +255,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           <Panel p={0} className="table-panel" mt="sm">
             <Table.ScrollContainer minWidth={640}>
               <Table className="panel-table ops-table" highlightOnHover>
-                <Table.Thead>
-                  <Table.Tr>
-                    {selectMode && <Table.Th w={40} />}
-                    <Table.Th><Trans>File</Trans></Table.Th>
-                    <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
-                    <Table.Th w={160}><Trans>Status</Trans></Table.Th>
-                    <Table.Th><Trans>Mapped to</Trans></Table.Th>
-                    <Table.Th w={90}><Trans>Size</Trans></Table.Th>
-                    <Table.Th w={180}><Trans>Quality</Trans></Table.Th>
-                    {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)} />}
-                  </Table.Tr>
-                </Table.Thead>
+                {tableHead}
                 <Table.Tbody>
                   {files.map((f) => {
                     const v = fileStatusVisual(f.status)
@@ -453,4 +464,26 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       <RelinkFilesModal seriesId={seriesId} opened={relinkOpen} onClose={() => setRelinkOpen(false)} />
     </div>
   )
+}
+
+const SKELETON_NAME_WIDTHS = ['72%', '58%', '66%', '50%', '62%', '54%']
+
+/** Stand-in rows while the folder is scanned, one bar per real cell so the columns keep their widths. */
+function FileRowSkeletons() {
+  return SKELETON_NAME_WIDTHS.map((nameWidth, i) => (
+    <Table.Tr key={i} aria-hidden>
+      <Table.Td>
+        <Group gap={6} wrap="nowrap">
+          <Skeleton h={15} w={15} radius="xs" />
+          <Skeleton h={14} w={nameWidth} />
+        </Group>
+      </Table.Td>
+      <Table.Td><Skeleton h={18} w={44} radius="sm" /></Table.Td>
+      <Table.Td><Skeleton h={18} w={78} radius="sm" /></Table.Td>
+      <Table.Td><Skeleton h={14} w={64} /></Table.Td>
+      <Table.Td><Skeleton h={14} w={52} /></Table.Td>
+      <Table.Td><Skeleton h={18} w={110} radius="sm" /></Table.Td>
+      <Table.Td><Skeleton h={18} w={56} ml="auto" /></Table.Td>
+    </Table.Tr>
+  ))
 }
