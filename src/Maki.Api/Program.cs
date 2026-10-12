@@ -34,6 +34,7 @@ using Maki.Sources.Manhwa18Net;
 using Maki.Sources.NaverWebtoon;
 using Maki.Sources.SenManga;
 using Maki.Sources.Shinigami;
+using Maki.Sources.Suwayomi;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
@@ -771,6 +772,40 @@ try
     builder.Services.AddSingleton<ISource, ComicWalkerSource>();
     builder.Services.AddSingleton<ISource, RawkumaSource>();
     builder.Services.AddSingleton<ISource, TeamXSource>();
+
+    // Suwayomi: optional, inert until a URL is set. Its clients skip PublicAddressGuard because the
+    // server is on the LAN; SuwayomiOriginHandler pins them to the configured origin instead, and
+    // redirects are refused rather than followed so that check holds past the first hop. API and
+    // images get separate limits so a chapter download never queues a search or the health probe.
+    builder.Services.AddSingleton<SuwayomiSettings>();
+    builder.Services.AddSingleton<SuwayomiTokenStore>();
+    builder.Services.AddSingleton<SuwayomiClient>();
+    builder.Services.AddSingleton<SuwayomiMangaIdCache>();
+    builder.Services.AddSingleton<ISourceProvider, SuwayomiSourceProvider>();
+    AddSuwayomiClient(SuwayomiClient.HttpClientName, TimeSpan.FromSeconds(60));
+    AddSuwayomiClient(SuwayomiClient.PagesHttpClientName, TimeSpan.FromMinutes(2));
+
+    void AddSuwayomiClient(string name, TimeSpan timeout)
+    {
+        var limiter = new System.Threading.RateLimiting.ConcurrencyLimiter(
+            new System.Threading.RateLimiting.ConcurrencyLimiterOptions
+            {
+                PermitLimit = 4,
+                QueueLimit = int.MaxValue,
+                QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst
+            });
+        builder.Services.AddHttpClient(name, client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+                client.Timeout = timeout;
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false })
+            .AddHttpMessageHandler(sp => new SuwayomiOriginHandler(sp.GetRequiredService<SuwayomiSettings>()))
+            .AddHttpMessageHandler(sp => new SuwayomiAuthHandler(sp.GetRequiredService<SuwayomiTokenStore>()))
+            .AddHttpMessageHandler(() => new TransientRetryHandler())
+            .AddHttpMessageHandler(() => new RateLimitDetectingHandler())
+            .AddHttpMessageHandler(() => new RateLimitingHandler(limiter));
+    }
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();

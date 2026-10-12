@@ -63,6 +63,18 @@ public static class SettingKeys
     /// </summary>
     public const string KavitaUserId = "kavita.userid";
 
+    /// <summary>Suwayomi base URL including any <c>server.webUISubpath</c>. Unset means the integration is off.</summary>
+    public const string SuwayomiUrl = "suwayomi.url";
+    /// <summary><c>none</c>, <c>basic</c> or <c>uilogin</c>; see <c>SuwayomiAuthMode</c>.</summary>
+    public const string SuwayomiAuthMode = "suwayomi.authmode";
+    public const string SuwayomiUsername = "suwayomi.username";
+    public const string SuwayomiPassword = "suwayomi.password";
+    /// <summary>
+    /// JSON array of the Suwayomi sources the admin exposed (<c>SuwayomiExposedSource</c>). A snapshot,
+    /// so the source registry is the same at startup whether Suwayomi is reachable or not.
+    /// </summary>
+    public const string SuwayomiSources = "suwayomi.sources";
+
     /// <summary>"true" → new series default to MonitorNewItems.MainOnly (specials unmonitored).</summary>
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
