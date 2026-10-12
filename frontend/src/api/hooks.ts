@@ -2668,8 +2668,11 @@ export function useCheckForUpdatesNow() {
   })
 }
 
-/** One source's state inside a running match, as `SourceMatchState` spells it server-side. */
-export type SourceMatchState = 'Searching' | 'Matched' | 'NoMatch'
+/**
+ * One source's state inside a running match, as `SourceMatchState` spells it server-side. `Failed`
+ * means the search itself errored, so the source may still carry the series.
+ */
+export type SourceMatchState = 'Searching' | 'Matched' | 'NoMatch' | 'Failed'
 
 /** Source name to its state, for the match currently running on one series. */
 export type SourceMatchProgress = Record<string, SourceMatchState>
@@ -2749,6 +2752,20 @@ export function useSources() {
  * behind it, so the query never fetches and an empty map simply means nothing has been pushed yet
  * (a match that finished, or a hub connection that came up mid-match).
  */
+/**
+ * Sources whose search failed in the last match of one series, from `sourceMatchFinished`. Like the
+ * progress map there is no endpoint behind it: it lives in this tab until the next match starts.
+ */
+export function useSourceMatchFailures(seriesId: number) {
+  return useQuery<string[]>({
+    queryKey: ['sourcematch-failed', seriesId],
+    queryFn: () => [],
+    enabled: false,
+    initialData: [],
+    staleTime: Infinity,
+  })
+}
+
 export function useSourceMatchProgress(seriesId: number) {
   return useQuery<SourceMatchProgress>({
     queryKey: ['sourcematch-progress', seriesId],

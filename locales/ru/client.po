@@ -778,6 +778,10 @@ msgstr "{exposed} отмечено как «видел в другом мест�
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# нельзя удалить} few {# нельзя удалить} many {# нельзя удалить} other {# нельзя удалить}}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14797,6 +14801,10 @@ msgstr "Поиск по названию, описанию или ощущени
 msgid "Search chapters"
 msgstr "Поиск глав"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Search failed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Search file paths"
@@ -15784,6 +15792,10 @@ msgstr "Снимок на диске: {snapshotSize}, время обновле�
 #, fuzzy
 msgid "So there is always something to look back at where you stopped."
 msgstr "Чтобы всегда было к чему вернуться в том месте, где вы остановились."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Some sources could not be searched"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy

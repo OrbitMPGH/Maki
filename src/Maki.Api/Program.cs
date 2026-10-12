@@ -1068,7 +1068,10 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
-        q.ScheduleJob<Maki.Api.Jobs.HealthCheckJob>(t => t
+        // Stable job key so a failed Suwayomi search can run it early (HealthCheckJob.RequestSoonAsync).
+        q.AddJob<Maki.Api.Jobs.HealthCheckJob>(j => j.WithIdentity(Maki.Api.Jobs.HealthCheckJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.HealthCheckJob.Key)
             .WithIdentity("health-check")
             .StartAt(DateTimeOffset.UtcNow.AddSeconds(10))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));

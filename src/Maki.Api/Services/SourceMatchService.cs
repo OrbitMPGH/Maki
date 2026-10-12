@@ -18,8 +18,15 @@ public enum SourceMatchState
     /// <summary>A result was accepted. The mapping row itself is not written until the run ends.</summary>
     Matched,
 
-    /// <summary>Nothing matched, or the source failed. Reported when that source settles.</summary>
-    NoMatch
+    /// <summary>The source answered and nothing it had was accepted. Reported when that source settles.</summary>
+    NoMatch,
+
+    /// <summary>
+    /// The search itself failed (site or Suwayomi down, a challenge, a timeout), so whether the source
+    /// carries the series is unknown. Kept apart from <see cref="NoMatch"/> so the card does not
+    /// report an outage as "not on this site".
+    /// </summary>
+    Failed
 }
 
 /// <summary>
@@ -431,7 +438,7 @@ public partial class SourceMatchService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Source search failed on {Source} for {Title}", source.Name, target.Title);
-            progress?.Report(new SourceMatchStep(source.Name, SourceMatchState.NoMatch));
+            progress?.Report(new SourceMatchStep(source.Name, SourceMatchState.Failed));
             return nothing with { Failed = true };
         }
     }

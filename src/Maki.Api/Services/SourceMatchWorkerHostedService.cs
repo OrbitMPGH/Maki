@@ -195,7 +195,7 @@ public class SourceMatchWorkerHostedService(
         }
 
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
-        var progress = new HubProgress(events, series.Id, series.RootFolderId);
+        var progress = new FailureCollector(new HubProgress(events, series.Id, series.RootFolderId));
 
         var mapped = new List<string>();
         var failed = false;
@@ -252,9 +252,20 @@ public class SourceMatchWorkerHostedService(
             .Select(s => s.PendingImportLink)
             .FirstOrDefaultAsync(ct) != PendingImportLink.None;
 
-        await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count);
+        // A source whose search failed can still be mapped from a neighbour's cross-reference.
+        var unsearched = progress.Failed.Except(mapped, StringComparer.OrdinalIgnoreCase).ToList();
+        await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count, unsearched);
 
-        if (mapped.Count == 0 && !failed)
+        var registry = scope.ServiceProvider.GetRequiredService<Maki.Core.Sources.SourceRegistry>();
+        if (unsearched.Any(name => registry.Find(name) is Maki.Sources.Suwayomi.SuwayomiSource) &&
+            scope.ServiceProvider.GetService<ISchedulerFactory>() is { } schedulers)
+        {
+            // The health check would otherwise notice Suwayomi is down at its next quarter hour.
+            await HealthCheckJob.RequestSoonAsync(schedulers, logger);
+        }
+
+        // "Link one by hand" would be wrong while sources that may carry it could not be asked.
+        if (mapped.Count == 0 && !failed && unsearched.Count == 0)
         {
             await NotifyManualMatchNeededAsync(
                 scope.ServiceProvider.GetRequiredService<NotificationService>(),
@@ -273,13 +284,21 @@ public class SourceMatchWorkerHostedService(
 
         // Off by default: the SignalR event above already redraws the Sources card while the user is
         // looking at it. This is for people who add a series and walk away.
+        string Names(IEnumerable<string> names) =>
+            string.Join(", ", names.Select(name => registry.Find(name)?.DisplayName ?? name));
         var inbox = scope.ServiceProvider.GetRequiredService<InboxService>();
         inbox.Raise(InboxEventType.SourceMatchFinished, new InboxMessage(
-                Key: mapped.Count > 0 ? "inbox.sourceMatch.matched" : "inbox.sourceMatch.none",
+                Key: (mapped.Count > 0, unsearched.Count > 0) switch
+                {
+                    (true, true) => "inbox.sourceMatch.matchedSomeFailed",
+                    (true, false) => "inbox.sourceMatch.matched",
+                    (false, true) => "inbox.sourceMatch.failed",
+                    _ => "inbox.sourceMatch.none"
+                },
                 // Source names are product names and are never translated, so joining them here
                 // rather than in the message is safe.
-                Params: InboxMessage.Args(new { sources = string.Join(", ", mapped) }),
-                Level: mapped.Count > 0 ? NotificationLevel.Info : NotificationLevel.Warning,
+                Params: InboxMessage.Args(new { sources = Names(mapped), failed = Names(unsearched) }),
+                Level: mapped.Count > 0 && unsearched.Count == 0 ? NotificationLevel.Info : NotificationLevel.Warning,
                 SeriesId: series.Id,
                 Url: $"/series/{series.Id}"),
             InboxAudience.SeriesTrackers(series.Id, series.RootFolderId));
@@ -427,6 +446,25 @@ public class SourceMatchWorkerHostedService(
     /// the finished table, and a hub push is not worth failing a match over.
     /// </para>
     /// </summary>
+    /// <summary>Passes every step on and remembers the sources whose search failed.</summary>
+    private sealed class FailureCollector(IProgress<SourceMatchStep> inner) : IProgress<SourceMatchStep>
+    {
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _failed =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        public IEnumerable<string> Failed => _failed.Keys;
+
+        public void Report(SourceMatchStep step)
+        {
+            if (step.State == SourceMatchState.Failed)
+            {
+                _failed.TryAdd(step.SourceName, 0);
+            }
+
+            inner.Report(step);
+        }
+    }
+
     private sealed class HubProgress(EventBroadcaster events, int seriesId, int rootFolderId)
         : IProgress<SourceMatchStep>
     {

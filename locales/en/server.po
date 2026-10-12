@@ -2470,6 +2470,24 @@ msgstr "No sources matched"
 msgid "inbox.sourceMatch.none.body"
 msgstr "{series}: no source had a match, link one by hand to download"
 
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+msgid "inbox.sourceMatch.matchedSomeFailed.title"
+msgstr "Sources matched, some could not be searched"
+
+#. {sources} and {failed} are comma-separated lists of site names, none of which are translated.
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+msgid "inbox.sourceMatch.matchedSomeFailed.body"
+msgstr "{series}: matched {sources}. Could not search {failed}; match again once they are back."
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+msgid "inbox.sourceMatch.failed.title"
+msgstr "Sources could not be searched"
+
+#. {failed} is a comma-separated list of site names, none of which are translated.
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+msgid "inbox.sourceMatch.failed.body"
+msgstr "{series}: nothing matched, and {failed} could not be searched. Match again once they are back."
+
 #: src/Maki.Api/Services/ImportListService.cs
 msgid "inbox.importList.finished.title"
 msgstr "Import list finished"

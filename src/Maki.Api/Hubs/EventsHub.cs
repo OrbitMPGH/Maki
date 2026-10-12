@@ -150,7 +150,9 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     /// <see cref="ChapterImported"/> and for the same reason: whoever can see the series is who is
     /// staring at its Sources card waiting for the spinner to go away.
     /// </summary>
-    public async Task SourceMatchFinished(int seriesId, int rootFolderId, int mappedCount)
+    /// <param name="failedSources">Names of the sources whose search failed, so the card can say so rather than "no match".</param>
+    public async Task SourceMatchFinished(
+        int seriesId, int rootFolderId, int mappedCount, IReadOnlyList<string>? failedSources = null)
     {
         var groups = await AudienceForAsync(rootFolderId);
         if (groups.Count == 0)
@@ -158,7 +160,7 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
             return;
         }
 
-        await hubContext.Clients.Groups(groups).SendAsync("sourceMatchFinished", new { seriesId, mappedCount });
+        await hubContext.Clients.Groups(groups).SendAsync("sourceMatchFinished", new { seriesId, mappedCount, failedSources = failedSources ?? [] });
     }
 
     /// <summary>

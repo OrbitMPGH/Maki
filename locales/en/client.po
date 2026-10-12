@@ -641,6 +641,10 @@ msgstr "{exposed} seen elsewhere"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
+msgstr "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
+
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
 msgid "{fileCount, plural, one {# file} other {# files}}"
@@ -12029,6 +12033,10 @@ msgstr "Search by title, description, or by feel"
 msgid "Search chapters"
 msgstr "Search chapters"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Search failed"
+msgstr "Search failed"
+
 #: src/pages/HealthPage.tsx
 msgid "Search file paths"
 msgstr "Search file paths"
@@ -12830,6 +12838,10 @@ msgstr "Snapshot on disk: {snapshotSize}, refreshed at an unknown time"
 #: src/pages/settings/DownloadCards.tsx
 msgid "So there is always something to look back at where you stopped."
 msgstr "So there is always something to look back at where you stopped."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Some sources could not be searched"
+msgstr "Some sources could not be searched"
 
 #: src/api/inbox.ts
 msgid "Somebody filed a request"

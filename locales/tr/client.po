@@ -778,6 +778,10 @@ msgstr "{exposed} başka yerde görüldü"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# tanesi silinemedi} other {# tanesi silinemedi}}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14797,6 +14801,10 @@ msgstr "Başlığa, açıklamaya veya hisse göre arayın"
 msgid "Search chapters"
 msgstr "Bölümlerde ara"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Search failed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Search file paths"
@@ -15784,6 +15792,10 @@ msgstr "Diskteki anlık görüntü: {snapshotSize}, bilinmeyen bir zamanda yenil
 #, fuzzy
 msgid "So there is always something to look back at where you stopped."
 msgstr "Böylece bıraktığınız yere dönüp bakacak bir şey her zaman olur."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Some sources could not be searched"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy

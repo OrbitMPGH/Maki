@@ -27,6 +27,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import {
+  IconAlertTriangle,
   IconCheck,
   IconColumns,
   IconRuler,
@@ -39,6 +40,7 @@ import {
   IconWand,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
+import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import {
   useAutoMatchSources,
@@ -48,6 +50,7 @@ import {
   useRemoveMapping,
   useResolveSourceUrl,
   useSourceMappings,
+  useSourceMatchFailures,
   useSourceMatchProgress,
   useSources,
   useSourceSearch,
@@ -144,6 +147,8 @@ export function SourceMappingsSection({
   }, [mappings, byQuality, sourceOrder])
   const { data: sources } = useSources()
   const { data: progress } = useSourceMatchProgress(seriesId)
+  const { data: failedSources } = useSourceMatchFailures(seriesId)
+  const queryClient = useQueryClient()
   const updateMapping = useUpdateMapping()
   const deleteMapping = useDeleteMapping()
   const removeMapping = useRemoveMapping()
@@ -155,6 +160,7 @@ export function SourceMappingsSection({
   const { t } = useLingui()
   const renderLabel = useLabel()
   const sourceLabel = useSourceLabel()
+  const failedNames = failedSources.map(sourceLabel).join(', ')
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
@@ -415,6 +421,24 @@ export function SourceMappingsSection({
         />
       )}
 
+      {!matching && failedSources.length > 0 && (
+        <Alert
+          color="yellow"
+          variant="light"
+          mb="sm"
+          icon={<IconAlertTriangle size={16} />}
+          title={t`Some sources could not be searched`}
+          withCloseButton
+          closeButtonLabel={t`Dismiss`}
+          onClose={() => queryClient.setQueryData(['sourcematch-failed', seriesId], [])}
+        >
+          <Trans>
+            {failedNames} did not answer, so they may still carry this
+            series. Run Auto-match again once they are back.
+          </Trans>
+        </Alert>
+      )}
+
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
           <EmptyState compact mood="asleep" title={t`No sources linked. Chapters cannot be synced or downloaded.`} />
@@ -626,6 +650,15 @@ export function SourceMappingsSection({
                       ) : state === 'NoMatch' ? (
                         <Badge size="xs" color="var(--neutral)" variant="light">
                           <Trans>No match</Trans>
+                        </Badge>
+                      ) : state === 'Failed' ? (
+                        <Badge
+                          size="xs"
+                          color="var(--warn)"
+                          variant="light"
+                          leftSection={<IconAlertTriangle size={10} />}
+                        >
+                          <Trans>Search failed</Trans>
                         </Badge>
                       ) : (
                         <Loader size={12} />

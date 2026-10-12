@@ -778,6 +778,10 @@ msgstr "{exposed} vistos em outro lugar"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# não pôde ser excluído} many {# não puderam ser excluídos}other {# não puderam ser excluídos}}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14797,6 +14801,10 @@ msgstr "Pesquisar por título, descrição ou sensação"
 msgid "Search chapters"
 msgstr "Pesquisar capítulos"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Search failed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Search file paths"
@@ -15784,6 +15792,10 @@ msgstr "Snapshot no disco: {snapshotSize}, atualizado em um horário desconhecid
 #, fuzzy
 msgid "So there is always something to look back at where you stopped."
 msgstr "Assim sempre há algo para revisitar de onde você parou."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Some sources could not be searched"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy

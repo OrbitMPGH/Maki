@@ -497,7 +497,7 @@ public class SourceMatchServiceTests : IDisposable
 
         // The throwing source is tolerated; the healthy one still maps.
         Assert.Equal(["ok"], mapped);
-        Assert.Equal(["boom"], steps.Named(SourceMatchState.NoMatch));
+        Assert.Equal(["boom"], steps.Named(SourceMatchState.Failed));
     }
 
     [Fact]

@@ -778,6 +778,10 @@ msgstr "{exposed}件を他で視聴済み"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, other {#件を削除できませんでした}}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14796,6 +14800,10 @@ msgstr "タイトル、説明、または傾向で検索"
 msgid "Search chapters"
 msgstr "章を検索"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Search failed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Search file paths"
@@ -15783,6 +15791,10 @@ msgstr "ディスク上のスナップショット：{snapshotSize}、更新時�
 #, fuzzy
 msgid "So there is always something to look back at where you stopped."
 msgstr "止めた場所をいつでも振り返れるようにするためです。"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Some sources could not be searched"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy

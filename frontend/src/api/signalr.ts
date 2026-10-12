@@ -232,7 +232,8 @@ export function useLiveEvents() {
       // Auto-matching finished for a series added a moment ago. The sources card, the chapter
       // table and the series row itself (which carries the pending flag the spinner reads) all
       // change at once, so all three are refetched.
-      listen(conn, 'sourceMatchFinished', ({ seriesId }: { seriesId: number }) => {
+      listen(conn, 'sourceMatchFinished', ({ seriesId, failedSources }: { seriesId: number; failedSources?: string[] }) => {
+        queryClient.setQueryData(['sourcematch-failed', seriesId], failedSources ?? [])
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         // The detail row carries the pending flag the spinner reads, so it refreshes at once; the
@@ -277,6 +278,8 @@ export function useLiveEvents() {
               return { ...prev, [sourceName]: state }
             },
           )
+          // A new run has started, so the last one's failures no longer describe anything.
+          if (state === 'Searching') queryClient.setQueryData(['sourcematch-failed', seriesId], [])
         },
       )
 

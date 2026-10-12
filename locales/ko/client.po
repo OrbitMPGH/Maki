@@ -778,6 +778,10 @@ msgstr "다른 곳에서 봄 {exposed}개"
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, other {삭제할 수 없음 #개}}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14796,6 +14800,10 @@ msgstr "제목, 설명 또는 느낌으로 검색"
 msgid "Search chapters"
 msgstr "챕터 검색"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Search failed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Search file paths"
@@ -15783,6 +15791,10 @@ msgstr "디스크의 스냅샷: {snapshotSize}, 새로 고침 시간 알 수 없
 #, fuzzy
 msgid "So there is always something to look back at where you stopped."
 msgstr "그래서 멈춘 곳을 언제든 다시 볼 수 있습니다."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Some sources could not be searched"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
