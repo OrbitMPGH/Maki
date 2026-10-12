@@ -24,16 +24,22 @@ public class PageDownloader(
     // otherwise hold the page, and the worker, until the per-item deadline.
     private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
+    /// <param name="sourceName">The cooldown key.</param>
+    /// <param name="pageClient">
+    /// The source, when it fetches pages from an admin-configured origin (see
+    /// <see cref="IPageClientSource"/>). Callers pass <c>source as IPageClientSource</c>.
+    /// </param>
     /// <returns>Ordered list of downloaded page file paths.</returns>
     public async Task<List<string>> DownloadAsync(
         ChapterPages pages,
         string sourceName,
         string workingDir,
         Func<int, int, Task>? onProgress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IPageClientSource? pageClient = null)
     {
         Directory.CreateDirectory(workingDir);
-        var client = httpClientFactory.CreateClient(HttpClientName);
+        var client = httpClientFactory.CreateClient(pageClient?.PageHttpClientName ?? HttpClientName);
 
         var results = new string[pages.Pages.Count];
         var done = 0;
@@ -49,7 +55,7 @@ public class PageDownloader(
 
                 if (!File.Exists(target))
                 {
-                    await DownloadPageAsync(client, page, sourceName, target, token);
+                    await DownloadPageAsync(client, pageClient, page, sourceName, target, token);
                 }
 
                 var current = Interlocked.Increment(ref done);
@@ -62,7 +68,8 @@ public class PageDownloader(
         return [.. results];
     }
 
-    private async Task DownloadPageAsync(HttpClient client, PageRequest page, string sourceName, string target, CancellationToken ct)
+    private async Task DownloadPageAsync(
+        HttpClient client, IPageClientSource? pageClient, PageRequest page, string sourceName, string target, CancellationToken ct)
     {
         var temp = target + ".tmp";
 
@@ -79,7 +86,7 @@ public class PageDownloader(
             // the cooldown, so honor it per page — not only when a worker picks up its next item.
             await cooldown.WaitAsync(sourceName, ct);
 
-            PublicAddressGuard.EnsureAllowed(page.Url);
+            EnsureAllowed(pageClient, page.Url);
             using var request = new HttpRequestMessage(HttpMethod.Get, page.Url);
             if (page.Headers != null)
             {
@@ -175,6 +182,20 @@ public class PageDownloader(
         }
 
         await File.WriteAllBytesAsync(path, data, ct);
+    }
+
+    private static void EnsureAllowed(IPageClientSource? pageClient, string url)
+    {
+        if (pageClient is null)
+        {
+            PublicAddressGuard.EnsureAllowed(url);
+            return;
+        }
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !pageClient.IsPageUrlAllowed(uri))
+        {
+            throw new BlockedDestinationException($"Refusing to fetch '{url}': outside the source's configured origin");
+        }
     }
 
     // An image proxy URL like "/image.php?id=1" would otherwise name the page "001.php", which readers

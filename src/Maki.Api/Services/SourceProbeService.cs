@@ -58,7 +58,8 @@ public sealed class SourceProbeService(
                 {
                     var files = await pageDownloader.DownloadAsync(
                         new ChapterPages([pages.Pages[index]]), sourceName,
-                        Path.Combine(dir, index.ToString(System.Globalization.CultureInfo.InvariantCulture)), null, ct);
+                        Path.Combine(dir, index.ToString(System.Globalization.CultureInfo.InvariantCulture)), null, ct,
+                        source as IPageClientSource);
                     var data = await File.ReadAllBytesAsync(files[0], ct);
                     measured.Add((Path.GetFileName(files[0]), data));
                     bytes += data.Length;

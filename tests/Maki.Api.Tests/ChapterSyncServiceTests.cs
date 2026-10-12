@@ -28,9 +28,13 @@ public class ChapterSyncServiceTests : IDisposable
 
     private ChapterSyncService BuildService(
         SourceAvailability availability, DownloadQueueService? queue, IAppSettings settings, params ISource[] sources) =>
+        BuildService(availability, queue, settings, new SourceRegistry(sources));
+
+    private ChapterSyncService BuildService(
+        SourceAvailability availability, DownloadQueueService? queue, IAppSettings settings, SourceRegistry registry) =>
         new(
             _db.NewContext(),
-            new SourceRegistry(sources),
+            registry,
             queue ?? new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
             availability,
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
@@ -58,6 +62,43 @@ public class ChapterSyncServiceTests : IDisposable
             .Where(l => l.Chapter!.SeriesId == seriesId)
             .OrderBy(l => l.ChapterId)
             .ToList();
+    }
+
+    private sealed class StubProvider : ISourceProvider
+    {
+        public IReadOnlyList<ISource> Next { get; set; } = [];
+        public IReadOnlyList<ISource> Current { get; private set; } = [];
+
+        public Task ReloadAsync(CancellationToken ct = default)
+        {
+            Current = Next;
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task A_provider_source_gone_after_a_reload_is_skipped_and_keeps_its_chapters()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("suwayomi-1"));
+        var source = new FakeSource
+        {
+            Name = "suwayomi-1",
+            OnListChapters = _ => [new FakeSource { Name = "suwayomi-1" }.Chapter(1)]
+        };
+        var provider = new StubProvider { Next = [source] };
+        var registry = new SourceRegistry([], [provider]);
+        await registry.ReloadAsync();
+
+        Assert.Single(await BuildService(Sources.AllEnabled, null, new FakeAppSettings(), registry).SyncSeriesAsync(seriesId));
+
+        provider.Next = [];
+        await registry.ReloadAsync();
+
+        Assert.Empty(await BuildService(Sources.AllEnabled, null, new FakeAppSettings(), registry).SyncSeriesAsync(seriesId));
+        Assert.Single(ChaptersOf(seriesId));
+        Assert.Single(LinksOf(seriesId));
+        using var db = _db.NewContext();
+        Assert.Null(db.SourceMappings.Single(m => m.SeriesId == seriesId).LastError);
     }
 
     [Fact]

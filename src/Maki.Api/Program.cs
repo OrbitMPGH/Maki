@@ -1416,6 +1416,11 @@ try
         // under the settings cache.
         app.Services.GetRequiredService<SettingsService>().Invalidate();
 
+        // Providers build their sources from settings, so after the invalidate, and before Kestrel and
+        // Quartz so a sync or a priority save never asks for one of them by name before it exists.
+        app.Services.GetRequiredService<SourceRegistry>()
+            .ReloadAsync(CancellationToken.None).GetAwaiter().GetResult();
+
         // Left alone when nothing is stored, so a test host booting beside another test does not
         // reset a profile that test set.
         var parsingProfile = NameParsingProfile.FromSetting(app.Services.GetRequiredService<SettingsService>()

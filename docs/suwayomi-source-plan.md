@@ -79,7 +79,7 @@ Suwayomi master (unreleased) adds multi-user accounts with permissions. When tha
 
 - Add `ISourceProvider` in `Maki.Core/Sources/`: `IReadOnlyList<ISource> Current { get; }` and an explicit `Task ReloadAsync(CancellationToken)`.
 - `SourceRegistry` takes the static sources plus the providers and holds an immutable snapshot that it swaps atomically after a provider reloads. Static sources win on a name clash (they cannot clash given the `suwayomi-` prefix, but the rule should be explicit). **Keep the existing single-argument constructor as an overload**: 51 tests build `new SourceRegistry([...])`.
-- `IAppSettings` has no change notification, so reloads are explicit: `PUT settings/suwayomi/sources` and `PUT settings/suwayomi` call `ReloadAsync` after saving. A URL change also clears `SuwayomiMangaIdCache`. Startup loads once.
+- `IAppSettings` has no change notification, so reloads are explicit: `PUT settings/suwayomi/sources` and `PUT settings/suwayomi` call `SourceRegistry.ReloadAsync` after saving, which reloads every provider and swaps the snapshot. A URL change also clears `SuwayomiMangaIdCache`. `Program.cs` calls it once at startup, before Kestrel and Quartz.
 - The list of exposed Suwayomi sources is **persisted in settings**, not read live from Suwayomi. The registry is therefore the same at startup whether Suwayomi is up or not, `SetSourcePriority`'s unknown-name check keeps passing, and a Suwayomi outage shows up as failing sources rather than vanishing ones.
 
 New setting keys in `SettingKeys`:
@@ -98,7 +98,7 @@ New folder, matching the existing one-folder-per-source layout:
 - `SuwayomiClient`: GraphQL POST over the `suwayomi` named `HttpClient`, error mapping, version probe. One per instance.
 - `SuwayomiAuthHandler`: see Authentication above.
 - `SuwayomiSource : ISource, IPageClientSource`: one instance per exposed source, constructed from the settings snapshot plus the shared client.
-- `SuwayomiSourceProvider : ISourceProvider`: reads `suwayomi.sources` on `ReloadAsync`.
+- `SuwayomiSourceProvider : ISourceProvider`: reads `suwayomi.sources` when `SourceRegistry.ReloadAsync` reloads it.
 - `SuwayomiMangaIdCache`: `(sourceId, url) -> mangaId` and `(mangaId, chapterUrl) -> chapterId`, in memory.
 
 Field mapping:
@@ -239,7 +239,7 @@ Each exposed source is one more entry in `SourceMatchService`'s fan-out, which i
 
 Each phase leaves a non-Suwayomi install unchanged.
 
-1. **Registry and page seam.** `ISourceProvider`, dynamic `SourceRegistry` (single-argument constructor kept), `IPageClientSource` and the optional `DownloadAsync` parameter, the four callers passing their source. Tests: a provider reload is visible through `All`/`Find`; a vanished source's mappings are skipped; fetcher-path cases in the existing `PageDownloaderCooldownTests` and `PageDownloaderRateLimitTests` (cooldown honoured, 429/503 → `RateLimitException`, 404 → `HttpRequestException`, a disallowed URL → `BlockedDestinationException`). No user-visible change.
+1. **Registry and page seam.** *(Done.)* `ISourceProvider`, dynamic `SourceRegistry` (single-argument constructor kept), `IPageClientSource` and the optional `DownloadAsync` parameter, the four callers passing their source. Tests: a provider reload is visible through `All`/`Find`; a vanished source's mappings are skipped; page-client cases in `PageDownloaderPageClientTests` (cooldown honoured, 429/503 → `RateLimitException`, 404 → `HttpRequestException`, a disallowed URL → `BlockedDestinationException`). No user-visible change.
 2. **Client, source and settings keys.** Setting keys, `suwayomi` and `suwayomi-pages` named clients with their handlers, `SuwayomiTokenStore`, `SuwayomiAuthHandler`, `SuwayomiClient`, `SuwayomiSource`, provider, id cache. Testable without a UI by writing the keys directly. Tests use a stub `HttpMessageHandler` that matches GraphQL requests on `operationName` in the body (`FakeHttpClientFactory` matches on URL substring, and every GraphQL call is the same URL), either by extending `FakeHttpClientFactory` with a body matcher or a small dedicated stub in the Suwayomi tests. Cases: v2.1 and v2.4 response shapes; 200-with-Unauthorized and 401 both refresh once and retry once; concurrent callers refresh once; `-1` chapter number; an `all`-language source; a manga missing from Suwayomi; an uninstalled extension; a relative page URL made absolute under a subpath; the client refusing an off-origin URL and a redirect.
 3. **Endpoints.** Controller actions, thumbnail passthrough with its sniff/CSP/ownership checks, `ControllerAuthorizationInventoryTests` entries, `GET settings/suwayomi` never returning the password.
 4. **UI.** Integration card, source picker, `provider` field and badge on the priority list, strings extracted.

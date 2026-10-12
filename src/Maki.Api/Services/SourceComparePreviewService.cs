@@ -414,7 +414,7 @@ public sealed class SourceComparePreviewService(
             var depth = Math.Min(job.SampleCount + AlignmentLookahead, pages.Pages.Count);
             var sample = new ChapterPages([.. pages.Pages.Take(depth)]);
             var dir = Path.Combine(JobDir(job), panel.SourceName);
-            var files = await pageDownloader.DownloadAsync(sample, panel.SourceName, dir, null, ct);
+            var files = await pageDownloader.DownloadAsync(sample, panel.SourceName, dir, null, ct, source as IPageClientSource);
 
             var rendered = new List<ComparePage?>();
             var hashes = new List<ulong?>();
