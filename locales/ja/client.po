@@ -53,6 +53,11 @@ msgstr "（アクセス不可）"
 msgid "(no longer in the library)"
 msgstr "ライブラリにありません"
 
+#. placeholder {0}: picked.length
+#: src/pages/settings/ManageSourcesModal.tsx
+#~ msgid "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
+#~ msgstr ""
+
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -894,6 +899,10 @@ msgstr "{indexer} · Torrent"
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
 msgstr "{inLibraryCount, plural, other {すでにライブラリにある # 件のシリーズを表示}}"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "{installed, plural, =0 {No Suwayomi sources yet.} one {# Suwayomi source, {inUse} switched on.} other {# Suwayomi sources, {inUse} switched on.}}"
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
@@ -905,8 +914,8 @@ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP、レベル{nextLevel}まで"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
-msgstr ""
+#~ msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
+#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -933,6 +942,10 @@ msgstr "{label} - ページ{pageNumber}"
 #, fuzzy
 msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 msgstr "{label}にはすでにファイルがあります。決める前に比較してください。このアーカイブをインポートすると既存ファイルと並んでリンクされ、置き換えにはなりません。入れ替えるには不要なファイルを先に削除してください。"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -969,6 +982,10 @@ msgstr "{languageCount, plural, other {# 言語}}"
 msgid "{languageCount, plural, one {Covers # language} other {Covers # languages}}"
 msgstr "{languageCount, plural, other {# 言語に対応}}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{languagesOn, plural, =0 {No languages on} one {# language on} other {# languages on}}"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "{latestVersion} available, skipped"
@@ -995,8 +1012,8 @@ msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · クリックして折りたたむ"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
-msgstr ""
+#~ msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
+#~ msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -1004,8 +1021,8 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, other {#件のシリーズでソースを見つけ、ファイルをリンクしました}}"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "{mappings, plural, one {# series linked} other {# series linked}}"
-msgstr ""
+#~ msgid "{mappings, plural, one {# series linked} other {# series linked}}"
+#~ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1428,8 +1445,8 @@ msgid "{searchCap}+ matches"
 msgstr "{searchCap}件以上一致"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
-msgstr ""
+#~ msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
+#~ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1552,6 +1569,10 @@ msgstr "{seriesWantedCount, plural, other {シリーズ内#件}}"
 #, fuzzy
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, other {最初の # 件を表示しています。検索して絞り込んでください。}}"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{siteName} languages"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -2169,7 +2190,6 @@ msgid "12 months"
 msgstr "12か月"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "18+"
 msgstr "18+"
@@ -3804,6 +3824,10 @@ msgstr "カタログを閲覧中"
 msgid "Building metadata search indexes"
 msgstr "メタデータ検索インデックスを構築中"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Built in"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Bulk new chapters"
@@ -3904,7 +3928,6 @@ msgstr "このダウンロードを読み取れません"
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Cancel"
@@ -4204,6 +4227,10 @@ msgstr "リンク済みの章を変更"
 msgid "Change own content rating"
 msgstr "自分のコンテンツレーティングを変更"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Change the chapter language of {label}"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Change the chapter range"
@@ -4310,8 +4337,16 @@ msgstr "章をダウンロード済み"
 msgid "Chapter file format"
 msgstr "章ファイル形式"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Chapter language"
+msgstr ""
+
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Chapter language for {displayName}"
+#~ msgid "Chapter language for {displayName}"
+#~ msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Chapter language for {label}"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -4510,8 +4545,8 @@ msgid "Choose a root folder"
 msgstr "ルートフォルダーを選択"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Choose sources"
-msgstr ""
+#~ msgid "Choose sources"
+#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -6041,6 +6076,7 @@ msgid "Disk used"
 msgstr "使用ディスク"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/SourceMappingsSection.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -6347,8 +6383,8 @@ msgid "Each account has its own login, permissions, content rating and reading h
 msgstr "アカウントごとにログイン情報、権限、コンテンツレーティング、読書履歴があります。"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
-msgstr ""
+#~ msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
+#~ msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -8781,8 +8817,8 @@ msgid "Language is"
 msgstr "言語は"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Language, e.g. en"
-msgstr ""
+#~ msgid "Language, e.g. en"
+#~ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -8804,10 +8840,15 @@ msgstr "言語, 翻訳, 表示言語, language, translation, translate, locale, 
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Languages"
 msgstr "言語"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Languages of {siteName}"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9559,6 +9600,7 @@ msgstr "シグナルの管理"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Manage sources"
 msgstr "ソースを管理"
@@ -9753,7 +9795,6 @@ msgid "Matching the remaining sources…"
 msgstr "残りのソースを照合中…"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Mature"
 msgstr "成人向け"
@@ -10703,12 +10744,20 @@ msgstr "まだインデックスがありません。事前構築されたベク
 msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarrにインデクサーが設定されていません。"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "No language matches"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "No library folder yet. Series need one to download into."
 msgstr "ライブラリフォルダーがまだありません。シリーズをダウンロードするにはフォルダーが必要です。"
 
-#: src/pages/settings/SuwayomiCards.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "no longer in Suwayomi"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
 msgid "No longer in Suwayomi"
 msgstr ""
 
@@ -11785,8 +11834,8 @@ msgid "Only the built-in reader records it."
 msgstr "記録するのは内蔵リーダーだけです。"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Only the sources already chosen are listed. You can still remove them."
-msgstr ""
+#~ msgid "Only the sources already chosen are listed. You can still remove them."
+#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12260,6 +12309,14 @@ msgstr "この環境では個人の追加による重み付けは無効です。
 msgid "Phone reader"
 msgstr "スマートフォンリーダー"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick a chapter language first"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick a language"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12280,6 +12337,10 @@ msgstr "未来の時刻を選んでください"
 #, fuzzy
 msgid "Pick another default profile first"
 msgstr "先に別の既定プロファイルを選んでください"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick languages"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -12580,6 +12641,10 @@ msgstr "アップグレードから保護"
 #, fuzzy
 msgid "Protected from upgrades"
 msgstr "アップグレードから保護済み"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Provider"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -13423,7 +13488,6 @@ msgstr "再読み込み"
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Remove"
 msgstr "削除"
@@ -13566,8 +13630,8 @@ msgid "Remove source?"
 msgstr "ソースを削除しますか？"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Remove sources with linked series?"
-msgstr ""
+#~ msgid "Remove sources with linked series?"
+#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -13845,7 +13909,6 @@ msgid "Require single sign-on"
 msgstr "シングルサインオンを必須にする"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Required"
 msgstr "必須"
@@ -14320,8 +14383,8 @@ msgstr "サンプル章"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Save"
 msgstr "保存"
@@ -14414,7 +14477,6 @@ msgstr "復旧コードを保存"
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
-#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Saved"
@@ -14810,7 +14872,6 @@ msgid "Search shows"
 msgstr "アニメを検索"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Search sources"
 msgstr "ソースを検索"
@@ -15255,6 +15316,7 @@ msgid "Set to <0>0</0> to disable lockout."
 msgstr "ロックアウトを無効にするには<0>0</0>に設定します。"
 
 #: src/components/settings/AccountSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Set up"
 msgstr "セットアップ"
@@ -15301,7 +15363,11 @@ msgid "Setup steps"
 msgstr "セットアップ手順"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Several languages"
+#~ msgid "Several languages"
+#~ msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Several languages, pick one"
 msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -15355,8 +15421,8 @@ msgid "Show all"
 msgstr "すべて表示"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Show every language"
-msgstr ""
+#~ msgid "Show every language"
+#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -16159,13 +16225,17 @@ msgstr "超自然"
 msgid "Suwayomi"
 msgstr ""
 
-#: src/pages/settings/SuwayomiCards.tsx
-msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
 msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Suwayomi sources"
-msgstr ""
+#~ msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
+#~ msgstr ""
+
+#: src/pages/settings/SuwayomiCards.tsx
+#~ msgid "Suwayomi sources"
+#~ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -16762,6 +16832,10 @@ msgstr "選択したソースからこの章を取得できませんでした"
 #, fuzzy
 msgid "The specific things that keep coming back in your library, each with more of the same beside it."
 msgstr "ライブラリに繰り返し登場する具体的な作品と、その横にある類似作品。"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "The Suwayomi sources below are the ones it listed last time."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -18257,8 +18331,8 @@ msgid "very tight"
 msgstr "非常に密"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-msgid "via Suwayomi"
-msgstr ""
+#~ msgid "via Suwayomi"
+#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

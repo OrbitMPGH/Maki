@@ -26,44 +26,20 @@ export interface SuwayomiTestResult {
   sourceCount: number
 }
 
-export interface SuwayomiSourceRow {
-  id: string
-  /** The name Maki knows it by, `suwayomi-{id}`. */
-  sourceName: string
-  name: string
-  displayName: string
-  lang: string
-  contentWarning: string | null
-  isNsfw: boolean
-  /** Mihon's `all`/`multi`: the admin has to say which language its chapters are in. */
-  mixedLanguage: boolean
-  /** Null when Suwayomi could not be asked; false when it no longer has the source. */
-  installed: boolean | null
-  exposed: boolean
-  chapterLanguage: string | null
-  /** Series linked to it, so removing it can say what stops syncing. */
-  mappings: number
-}
-
-export interface SuwayomiSources {
+export interface SuwayomiRefreshResult {
   reachable: boolean
-  /** Why Suwayomi could not be asked, already localized. */
+  /** Why Suwayomi could not be asked, already localized. The stored list is left as it was. */
   error: string | null
-  sources: SuwayomiSourceRow[]
-}
-
-export interface SuwayomiSourceChoice {
-  id: string
-  chapterLanguage: string | null
+  installed: number
 }
 
 const connectionKey = ['settings', 'suwayomi'] as const
-const sourcesKey = ['settings', 'suwayomi', 'sources'] as const
 
-export function useSuwayomiConnection() {
+export function useSuwayomiConnection(enabled = true) {
   return useQuery({
     queryKey: connectionKey,
     queryFn: () => api<SuwayomiConnection>('/settings/suwayomi'),
+    enabled,
   })
 }
 
@@ -81,7 +57,6 @@ export function useSaveSuwayomiConnection() {
     onSuccess: (saved) => {
       queryClient.setQueryData(connectionKey, saved)
       invalidateSources(queryClient)
-      void queryClient.invalidateQueries({ queryKey: sourcesKey })
     },
   })
 }
@@ -93,24 +68,24 @@ export function useTestSuwayomiConnection() {
   })
 }
 
-/** Reaches Suwayomi, so it only runs while the picker is open. */
-export function useSuwayomiSources(enabled: boolean) {
-  return useQuery({
-    queryKey: sourcesKey,
-    queryFn: () => api<SuwayomiSources>('/settings/suwayomi/sources'),
-    enabled,
-    staleTime: 0,
+/** Reads Suwayomi's installed sources into Maki's list, where new ones arrive switched off. */
+export function useRefreshSuwayomiSources() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<SuwayomiRefreshResult>('/settings/suwayomi/sources/refresh', { method: 'POST' }),
+    onSuccess: () => invalidateSources(queryClient),
   })
 }
 
-export function useSaveSuwayomiSources() {
+/** The one language a mixed-language source's chapters are filed under. */
+export function useSetSuwayomiSourceLanguage() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (sources: SuwayomiSourceChoice[]) =>
-      api<SuwayomiSources>('/settings/suwayomi/sources', { method: 'PUT', body: JSON.stringify({ sources }) }),
-    onSuccess: (saved) => {
-      queryClient.setQueryData(sourcesKey, saved)
-      invalidateSources(queryClient)
-    },
+    mutationFn: ({ id, chapterLanguage }: { id: string; chapterLanguage: string }) =>
+      api<void>(`/settings/suwayomi/sources/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ chapterLanguage }),
+      }),
+    onSuccess: () => invalidateSources(queryClient),
   })
 }

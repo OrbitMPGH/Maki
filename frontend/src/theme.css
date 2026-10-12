@@ -4486,6 +4486,59 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   position: relative;
   padding-inline-end: calc(var(--chapter-marker-slot, 0px) + 18px) !important;
 }
+/* Neither the volume pill nor the chapter number may shrink or wrap, so the
+   Chapter column can't be squeezed narrower than "Vol. 11 Ch. 102". Release
+   dates likewise stay on one line. */
+.chapter-table .chapter-label,
+.chapter-table .chapter-span-badge {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.chapter-table thead th {
+  position: relative;
+}
+
+/* Drag handle on a header cell's trailing edge (lib/useColumnWidths.ts). The
+   hit area straddles the border; the visible rule only shows on hover, focus
+   or while dragging. */
+.column-resize-handle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: -5px;
+  width: 10px;
+  z-index: 1;
+  cursor: col-resize;
+  touch-action: none;
+}
+.column-resize-handle::after {
+  content: '';
+  position: absolute;
+  inset-block: 20%;
+  inset-inline-start: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--border);
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+thead th:hover > .column-resize-handle::after,
+.column-resize-handle:focus-visible::after {
+  opacity: 1;
+}
+.column-resize-handle:hover::after,
+.column-resize-handle:focus-visible::after,
+.column-resize-handle[data-resizing]::after {
+  opacity: 1;
+  background: var(--brand);
+}
+.column-resize-handle:focus-visible {
+  outline: none;
+}
+body.column-resizing,
+body.column-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
 /* Every marker sits in a slot as wide as the widest one in the series and is
    centred in it, so "S1" and "Film + OVA" share a centre line rather than only
    a right edge. That shared centre is where the season lines run.
@@ -8468,6 +8521,23 @@ body.reader-open {
   font-weight: var(--fw-regular);
   color: var(--ink-4);
 }
+/* A source that comes from an add-on rather than Maki itself, marked beside its name. */
+.source-provider {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  font-size: var(--type-label);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.source-provider[data-provider='suwayomi'] {
+  background: var(--watched-soft);
+  color: var(--watched);
+}
 .source-tags {
   display: flex;
   flex-wrap: wrap;
@@ -8533,6 +8603,11 @@ body.reader-open {
 .source-tag[data-tone='filter'] {
   background: var(--info-soft);
   color: var(--info);
+}
+.source-tag[data-tone='setup'] {
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--warn) 60%, transparent);
+  color: var(--warn);
 }
 .source-tag[data-tone='language'],
 .source-tag[data-tone='languages'] {

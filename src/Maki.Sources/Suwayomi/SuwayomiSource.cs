@@ -17,8 +17,7 @@ namespace Maki.Sources.Suwayomi;
 /// </para>
 /// </summary>
 public sealed partial class SuwayomiSource(
-    SuwayomiExposedSource exposed,
-    string chapterLanguage,
+    SuwayomiStoredSource stored,
     Uri baseUri,
     SuwayomiClient client,
     SuwayomiMangaIdCache cache) : ISource, IPageClientSource
@@ -26,26 +25,49 @@ public sealed partial class SuwayomiSource(
     public const string NamePrefix = "suwayomi-";
 
     /// <summary>The Mihon source id, as Suwayomi sends it.</summary>
-    public string SourceId { get; } = exposed.Id;
+    public string SourceId { get; } = stored.Id;
 
-    public string Name { get; } = NamePrefix + exposed.Id;
+    public string Name { get; } = NamePrefix + stored.Id;
 
     public string DisplayName { get; } =
-        string.IsNullOrWhiteSpace(exposed.DisplayName) ? exposed.Name : exposed.DisplayName;
+        string.IsNullOrWhiteSpace(stored.DisplayName) ? stored.Name : stored.DisplayName;
+
+    /// <summary>
+    /// The site without its language, "MangaDex" for "MangaDex (EN)". Mihon extensions register one
+    /// source per language, so this is what ties a site's language variants together.
+    /// </summary>
+    public string SiteName { get; } = string.IsNullOrWhiteSpace(stored.Name) ? stored.DisplayName : stored.Name;
+
+    /// <summary>The extension's own language code, <c>all</c>/<c>multi</c>/<c>other</c> for one that mixes them.</summary>
+    public string Lang { get; } = stored.Lang;
+
+    public bool MixedLanguage { get; } = SuwayomiStoredSource.IsMixedLanguage(stored.Lang);
+
+    /// <summary>
+    /// What every chapter is filed under. Null for a mixed-language source nobody picked a language
+    /// for yet, which stays switched off until someone does (<c>SourceAvailability</c>).
+    /// </summary>
+    public string? ChapterLanguage { get; } = stored.EffectiveChapterLanguage;
+
+    public bool NeedsSetup => ChapterLanguage is null;
+
+    /// <summary>Suwayomi no longer listed it at the last refresh.</summary>
+    public bool Missing { get; } = stored.Missing;
 
     public string BaseUrl { get; } = baseUri.GetLeftPart(UriPartial.Authority) + baseUri.AbsolutePath.TrimEnd('/');
 
     public SourceCapabilities Capabilities => SourceCapabilities.None;
 
-    public SourceRating Rating { get; } = exposed.ContentWarning?.ToUpperInvariant() switch
+    public SourceRating Rating { get; } = stored.ContentWarning?.ToUpperInvariant() switch
     {
         "NSFW" => SourceRating.Adult,
         "MIXED" => SourceRating.Mature,
-        null when exposed.IsNsfw => SourceRating.Adult,
+        null when stored.IsNsfw => SourceRating.Adult,
         _ => SourceRating.General
     };
 
-    public IReadOnlyList<string> SupportedLanguages { get; } = [chapterLanguage];
+    public IReadOnlyList<string> SupportedLanguages { get; } =
+        stored.EffectiveChapterLanguage is { } language ? [language] : [];
 
     public string PageHttpClientName => SuwayomiClient.PagesHttpClientName;
 
@@ -99,6 +121,10 @@ public sealed partial class SuwayomiSource(
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
+        // Filing a mixed-language source's chapters under a guessed language would put them in the
+        // wrong series folder and write the wrong LanguageISO, so it waits for a choice.
+        var language = ChapterLanguage ?? throw new SourceErrorException(
+            $"{DisplayName} publishes several languages. Choose the one to file its chapters under in Manage sources.");
         await client.EnsureInstalledAsync(SourceId, ct);
         var connection = await client.ConnectionAsync(ct);
         var (mangaId, refresh) = await RefreshAsync(connection, sourceSeriesId, manga: false, chapters: true, ct);
@@ -112,7 +138,7 @@ public sealed partial class SuwayomiSource(
         // then the earliest in the source's own order, rather than whichever the extension sorted first.
         return SourceChapterList.Normalize(
             chapters,
-            c => ToSourceChapter(c, sourceSeriesId),
+            c => ToSourceChapter(c, sourceSeriesId, language),
             group => group.OrderByDescending(c => c.UploadDate).ThenBy(c => c.SourceOrder).First());
     }
 
@@ -225,7 +251,7 @@ public sealed partial class SuwayomiSource(
         return id;
     }
 
-    private SourceChapter ToSourceChapter(SuwayomiChapter chapter, string seriesUrl)
+    private SourceChapter ToSourceChapter(SuwayomiChapter chapter, string seriesUrl, string language)
     {
         var parsed = ChapterNumberParser.Parse(chapter.Name);
         return new SourceChapter(
@@ -236,7 +262,7 @@ public sealed partial class SuwayomiSource(
             chapter.ChapterNumber >= 0 ? (decimal)chapter.ChapterNumber : null,
             parsed.Volume,
             TitleOf(chapter.Name),
-            chapterLanguage,
+            language,
             chapter.UploadDate > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(chapter.UploadDate).UtcDateTime : null,
             chapter.RealUrl,
             string.IsNullOrWhiteSpace(chapter.Scanlator) ? null : chapter.Scanlator.Trim());

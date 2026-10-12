@@ -188,8 +188,9 @@ Use a scratch series here: reaching a chapter's last page marks it read and adds
 - [ ] **7.8** Suwayomi, when the release touches it: start `ghcr.io/suwayomi/suwayomi-server:stable`,
       add an extension store in its UI and install one English extension. Set its URL under
       **Settings → Integrations → Suwayomi**; **Test** reports the version and source count.
-      **Choose sources**, pick that extension's source, and it appears in Manage sources marked
-      "via Suwayomi". Add a series that source carries: it auto-matches there, a chapter downloads
+      **Manage sources** opens filtered to Suwayomi with that extension's source listed, switched
+      off; turn it on and save. If the extension has an "all" source, it needs **Set up** (a chapter
+      language) before its switch works. Add a series that source carries: it auto-matches there, a chapter downloads
       from it, and its search results show covers. Stop the container: the Health page shows
       Suwayomi failing on its next refresh while the series' other sources keep syncing. Start it,
       uninstall the extension: Health names the source as no longer installed.

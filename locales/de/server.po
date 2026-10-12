@@ -2013,6 +2013,12 @@ msgstr "utcOffsetMinutes liegt außerhalb des gültigen Bereichs"
 msgid "error.suwayomi.authModeInvalid"
 msgstr "Unbekannter Suwayomi-Anmeldemodus. Verwende none, basic oder uilogin."
 
+#. {source} is a Suwayomi source's name and is never translated.
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: {source} publishes in one language, so its chapters are always filed under that one.
+msgid "error.suwayomi.chapterLanguageFixed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: "{language}" is not a language code, such as en or pt-BR.
 #, fuzzy

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
-  ActionIcon, Button, Chip, Group, Kbd, Modal, Popover, SegmentedControl, Switch, Tabs, Text,
-  TextInput, Tooltip,
+  ActionIcon, Alert, Button, Chip, Group, Kbd, Loader, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
+  Switch, Tabs, Text, TextInput, Tooltip,
 } from '@mantine/core'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
-  IconArrowUp, IconChevronDown, IconChevronUp, IconFilter, IconGripVertical, IconSearch,
-  IconShield,
+  IconArrowUp, IconChevronDown, IconChevronUp, IconFilter, IconGripVertical, IconLanguage, IconPuzzle,
+  IconSearch, IconShield,
 } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -16,16 +16,45 @@ import {
   type SourceContent, type SourceInfo, type SourceQualitySummary,
 } from '../../api/hooks'
 import { languageName } from '../../api/titles'
+import { useRefreshSuwayomiSources, useSetSuwayomiSourceLanguage, useSuwayomiConnection } from '../../api/suwayomi'
 import { SourceIcon, baseLanguage, sourceHost } from '../../sourceIcons'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 
 type StateFilter = 'all' | 'on' | 'off'
+export type ProviderFilter = 'builtin' | 'suwayomi'
+
+/** One row in the catalogue: a source, or every language variant of one Suwayomi site. */
+interface CatalogueEntry {
+  key: string
+  source: SourceInfo
+  /** Set for a site whose extension registers one Suwayomi source per language. */
+  members?: SourceInfo[]
+}
+
+/**
+ * Which site a Suwayomi source is a language variant of. A mixed-language source stays on its own
+ * row: it is one source with a chapter language to set, not one of several to pick from.
+ */
+const siteKeyOf = (source: SourceInfo) =>
+  source.suwayomi && !source.suwayomi.mixedLanguage ? source.suwayomi.siteName.toLowerCase() : null
 
 /** What the search box matches a source's site on. A Suwayomi source's base URL is the Suwayomi server. */
 const hostOf = (source: SourceInfo) => (source.provider === 'suwayomi' ? 'suwayomi' : sourceHost(source.baseUrl))
 type Pane = 'catalogue' | 'priority'
 
 const CONTENT_ORDER: SourceContent[] = ['manga', 'manhwa', 'manhua', 'webtoon', 'doujinshi']
+
+/**
+ * Offered as a mixed-language Suwayomi source's chapter language alongside every language a source
+ * here already publishes, so the usual ones are there even before any source carries them.
+ */
+const COMMON_LANGUAGES = [
+  'en', 'ja', 'ko', 'zh', 'zh-Hans', 'zh-Hant', 'es', 'es-419', 'pt', 'pt-BR', 'fr', 'de', 'it', 'ru', 'pl',
+  'tr', 'uk', 'id', 'vi', 'th', 'ar',
+]
+/** What the server accepts as a chapter language; Mihon's `all`/`multi`/`other` fail it. */
+const LANGUAGE_CODE = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
+const MIXED_LANGUAGE = new Set(['all', 'multi', 'other'])
 
 /** Language names in the reader's UI language, falling back to the English table in `titles.ts`. */
 function useLanguageNamer() {
@@ -94,6 +123,12 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
   const languageCount = new Set(languages.map(baseLanguage)).size
   return (
     <div className="source-tags">
+      {source.suwayomi?.missing && (
+        <span className="source-tag" data-tone="adult"><Trans>No longer in Suwayomi</Trans></span>
+      )}
+      {source.suwayomi?.needsSetup && (
+        <span className="source-tag" data-tone="setup"><Trans>Several languages, pick one</Trans></span>
+      )}
       {source.kind === 'official' && <span className="source-tag" data-tone="official"><Trans>Official</Trans></span>}
       {source.kind === 'scanlator' && <span className="source-tag" data-tone="kind"><Trans>Scanlator</Trans></span>}
       {source.kind === 'aggregator' && <span className="source-tag" data-tone="kind"><Trans>Aggregator</Trans></span>}
@@ -251,52 +286,262 @@ function PriorityRail({ items, onChange, labelOf }: {
 }
 
 /**
+ * The chapter language of a Suwayomi source that mixes languages. Mihon chapters carry no language,
+ * so every chapter from it is filed under this one, and the source stays off until one is picked.
+ */
+function SuwayomiLanguageSetup({ source, options, opened, onToggle, onSaved }: {
+  source: SourceInfo
+  options: { value: string; label: string }[]
+  opened: boolean
+  onToggle: (open: boolean) => void
+  onSaved: () => void
+}) {
+  const { t } = useLingui()
+  const save = useSetSuwayomiSourceLanguage()
+  const current = source.suwayomi?.chapterLanguage ?? null
+  const needsSetup = source.suwayomi?.needsSetup ?? false
+  const [value, setValue] = useState<string | null>(current)
+  const label = source.displayName
+
+  useEffect(() => {
+    if (opened) setValue(current)
+  }, [opened, current])
+
+  return (
+    <Popover opened={opened} onChange={onToggle} position="bottom-end" width={300} shadow="md" withArrow trapFocus>
+      <Popover.Target>
+        {needsSetup ? (
+          <Button
+            size="compact-xs"
+            variant="light"
+            leftSection={<IconLanguage size={13} />}
+            onClick={() => onToggle(!opened)}
+            aria-expanded={opened}
+          >
+            <Trans>Set up</Trans>
+          </Button>
+        ) : (
+          <ActionIcon
+            variant="subtle"
+            color="var(--neutral)"
+            size="sm"
+            onClick={() => onToggle(!opened)}
+            aria-expanded={opened}
+            aria-label={t`Change the chapter language of ${label}`}
+          >
+            <IconLanguage size={15} />
+          </ActionIcon>
+        )}
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Stack gap="xs">
+          <Text size="sm" fw={600} c="var(--ink-hi)"><Trans>Chapter language</Trans></Text>
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>
+              {label} mixes languages, and Suwayomi does not say which one a chapter is in. Every
+              chapter from it is filed under the language you pick here.
+            </Trans>
+          </Text>
+          <Select
+            data={options}
+            value={value}
+            onChange={setValue}
+            searchable
+            openOnFocus={false}
+            selectFirstOptionOnChange
+            placeholder={t`Pick a language`}
+            aria-label={t`Chapter language for ${label}`}
+            nothingFoundMessage={t`No language matches`}
+            maxDropdownHeight={220}
+            comboboxProps={{ withinPortal: false }}
+          />
+          <Group justify="flex-end" gap="xs">
+            <Button size="xs" variant="default" onClick={() => onToggle(false)}>
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button
+              size="xs"
+              disabled={!value || value === current}
+              loading={save.isPending}
+              onClick={() => {
+                if (!value || !source.suwayomi) return
+                save.mutate({ id: source.suwayomi.sourceId, chapterLanguage: value }, {
+                  onSuccess: () => {
+                    onToggle(false)
+                    if (needsSetup) onSaved()
+                  },
+                })
+              }}
+            >
+              <Trans>Save</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
+  )
+}
+
+/**
+ * The languages of a Suwayomi site whose extension registers one source per language, as MangaDex
+ * does. Each pick is still its own source underneath, with its own chapters and its own place on the
+ * priority rail; this only spares the catalogue forty rows of the same site.
+ */
+function SuwayomiLanguagePicker({ siteName, members, selected, onChange, opened, onToggle, nameOfLanguage }: {
+  siteName: string
+  members: SourceInfo[]
+  selected: string[]
+  onChange: (names: string[]) => void
+  opened: boolean
+  onToggle: (open: boolean) => void
+  nameOfLanguage: (code: string) => string
+}) {
+  const { t } = useLingui()
+  const gone = t`no longer in Suwayomi`
+  const options = members
+    .map((member) => {
+      const code = member.suwayomi?.lang ?? member.supportedLanguages?.[0] ?? member.name
+      const label = `${nameOfLanguage(code)} (${code})`
+      return { value: member.name, label: member.suwayomi?.missing ? `${label}, ${gone}` : label }
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+
+  return (
+    <Popover opened={opened} onChange={onToggle} position="bottom-end" width={320} shadow="md" withArrow trapFocus>
+      <Popover.Target>
+        <Button
+          size="compact-xs"
+          variant="light"
+          leftSection={<IconLanguage size={13} />}
+          onClick={() => onToggle(!opened)}
+          aria-expanded={opened}
+        >
+          <Trans>Languages</Trans>
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Stack gap="xs">
+          <Text size="sm" fw={600} c="var(--ink-hi)"><Trans>{siteName} languages</Trans></Text>
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>
+              Suwayomi has a separate source for each language of this site, with its own chapters.
+              Every language you pick is searched for each series you add and gets its own place in
+              the priority list.
+            </Trans>
+          </Text>
+          <MultiSelect
+            data={options}
+            value={selected}
+            onChange={onChange}
+            searchable
+            clearable
+            openOnFocus={false}
+            selectFirstOptionOnChange
+            hidePickedOptions
+            placeholder={selected.length === 0 ? t`Pick languages` : undefined}
+            aria-label={t`Languages of ${siteName}`}
+            nothingFoundMessage={t`No language matches`}
+            maxDropdownHeight={220}
+            comboboxProps={{ withinPortal: false }}
+          />
+          <Group justify="flex-end">
+            <Button size="xs" variant="default" onClick={() => onToggle(false)}>
+              <Trans>Done</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
+  )
+}
+
+/** Suwayomi's mark on a row, in place of the host a built-in source shows. */
+function SuwayomiBadge() {
+  return (
+    <span className="source-provider" data-provider="suwayomi">
+      <IconPuzzle size={12} stroke={2.2} />
+      Suwayomi
+    </span>
+  )
+}
+
+/**
  * Every registered source: switch them on or off in the catalogue and rank the enabled ones on the
  * rail. Edits stay local until Save, which writes the whole thing through the priority endpoint
  * once. Disabled sources are appended after the ranked ones, so a source switched back on later
- * joins at the bottom, the same as it does here.
+ * joins at the bottom, the same as it does here. With Suwayomi connected, opening this first reads
+ * its installed sources, so an extension installed since shows up here, switched off.
  */
-export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
+export function ManageSourcesModal({ opened, onClose, initialProvider = null }: {
+  opened: boolean
+  onClose: () => void
+  /** Opens with the provider filter already set, as the Suwayomi card does. */
+  initialProvider?: ProviderFilter | null
+}) {
   const { t } = useLingui()
   const narrow = useMediaQuery('(max-width: 760px)') ?? false
   const { data: sources, isFetching: sourcesFetching } = useSources()
   const { data: priority, isFetching: priorityFetching } = useSourcePriority(opened)
   const save = useSaveSourcePriority()
+  const { data: suwayomi, isPending: suwayomiPending } = useSuwayomiConnection(opened)
+  const refresh = useRefreshSuwayomiSources()
+  const refreshSources = refresh.mutate
   const contentLabels = useContentLabels()
   const nameOfLanguage = useLanguageNamer()
 
   const [rail, setRail] = useState<string[]>([])
   const [initialRail, setInitialRail] = useState<string[]>([])
+  const [ready, setReady] = useState(false)
+  const [refreshState, setRefreshState] = useState<'idle' | 'running' | 'done'>('idle')
   const [pane, setPane] = useState<Pane>('catalogue')
   const [search, setSearch] = useState('')
   const [stateFilter, setStateFilter] = useState<StateFilter>('all')
   const [contentFilter, setContentFilter] = useState<SourceContent[]>([])
   const [adultOnly, setAdultOnly] = useState(false)
   const [languageFilter, setLanguageFilter] = useState<string | null>(null)
+  const [providerFilter, setProviderFilter] = useState<ProviderFilter | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [setupFor, setSetupFor] = useState<string | null>(null)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  const suwayomiUrl = suwayomi?.url ?? null
+  useEffect(() => {
+    if (!opened) {
+      setRefreshState('idle')
+      return
+    }
+    if (!suwayomiUrl || refreshState !== 'idle') return
+    setRefreshState('running')
+    refreshSources(undefined, { onSettled: () => setRefreshState((state) => (state === 'running' ? 'done' : state)) })
+  }, [opened, suwayomiUrl, refreshState, refreshSources])
+  const waitingForSuwayomi = suwayomiPending || (Boolean(suwayomiUrl) && refreshState !== 'done')
 
   // Seed once per opening. A background refetch of the priority must not wipe a draft in progress.
   const seeded = useRef(false)
   useEffect(() => {
     if (!opened) {
       seeded.current = false
+      setReady(false)
       return
     }
-    // Waiting out a refetch keeps a reopen straight after a save from seeding the pre-save order.
-    if (seeded.current || !priority || priorityFetching || sourcesFetching) return
+    // Waiting out a refetch keeps a reopen straight after a save from seeding the pre-save order,
+    // and waiting out the Suwayomi refresh keeps a source it just dropped off the rail.
+    if (seeded.current || !priority || priorityFetching || sourcesFetching || waitingForSuwayomi) return
     seeded.current = true
     const start = priority.order.filter((name) => !priority.disabled.includes(name))
     setRail(start)
     setInitialRail(start)
+    setReady(true)
     setPane('catalogue')
     setSearch('')
     setStateFilter('all')
     setContentFilter([])
     setAdultOnly(false)
     setLanguageFilter(null)
-  }, [opened, priority, priorityFetching, sourcesFetching])
+    setProviderFilter(initialProvider)
+    setSetupFor(null)
+  }, [opened, priority, priorityFetching, sourcesFetching, waitingForSuwayomi, initialProvider])
 
   useHotkeys(opened ? [['/', () => searchRef.current?.focus()]] : [])
 
@@ -314,6 +559,31 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
     return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   }, [sources])
 
+  const hasSuwayomi = (sources ?? []).some((s) => s.provider === 'suwayomi')
+  const sites = useMemo(() => {
+    const bySite = new Map<string, SourceInfo[]>()
+    for (const source of sources ?? []) {
+      const site = siteKeyOf(source)
+      if (site) bySite.set(site, [...(bySite.get(site) ?? []), source])
+    }
+    return new Map([...bySite].filter(([, members]) => members.length > 1))
+  }, [sources])
+  const languageOptions = useMemo(() => {
+    const codes = new Map<string, string>()
+    const candidates = [
+      ...COMMON_LANGUAGES,
+      ...(sources ?? []).flatMap((s) => [...(s.supportedLanguages ?? []), s.suwayomi?.lang ?? '']),
+    ]
+    for (const code of candidates) {
+      const key = code.toLowerCase()
+      if (!LANGUAGE_CODE.test(code) || MIXED_LANGUAGE.has(key) || codes.has(key)) continue
+      codes.set(key, code)
+    }
+    return [...codes.values()]
+      .map((code) => ({ value: code, label: `${nameOfLanguage(code)} (${code})` }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [sources, nameOfLanguage])
+
   const needle = search.trim().toLowerCase()
   const visible = (sources ?? []).filter((source) => {
     const on = railSet.has(source.name)
@@ -323,6 +593,8 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
       const haystack = `${source.displayName} ${source.name} ${hostOf(source)}`.toLowerCase()
       if (!haystack.includes(needle)) return false
     }
+    if (providerFilter === 'suwayomi' && source.provider !== 'suwayomi') return false
+    if (providerFilter === 'builtin' && source.provider === 'suwayomi') return false
     if (adultOnly && source.rating !== 'adult') return false
     if (contentFilter.length && !contentFilter.some((c) => source.content?.includes(c))) return false
     if (languageFilter && !(source.supportedLanguages ?? []).some((code) => baseLanguage(code) === languageFilter)) {
@@ -330,11 +602,30 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
     }
     return true
   })
-  const enabledRows = visible
+  // A site appears once, among the enabled when any of its languages is on, at its best-ranked one.
+  const toEntries = (rows: SourceInfo[]) => {
+    const entries: CatalogueEntry[] = []
+    const seen = new Set<string>()
+    for (const source of rows) {
+      const site = siteKeyOf(source)
+      const members = site ? sites.get(site) : undefined
+      if (!site || !members) {
+        entries.push({ key: source.name, source })
+      } else if (!seen.has(site)) {
+        seen.add(site)
+        entries.push({ key: `site:${site}`, source, members })
+      }
+    }
+    return entries
+  }
+  const enabledRows = toEntries(visible
     .filter((source) => railSet.has(source.name))
-    .sort((a, b) => rail.indexOf(a.name) - rail.indexOf(b.name))
-  const disabledRows = visible.filter((source) => !railSet.has(source.name))
-  const activeFilters = contentFilter.length + (adultOnly ? 1 : 0) + (languageFilter ? 1 : 0)
+    .sort((a, b) => rail.indexOf(a.name) - rail.indexOf(b.name)))
+  const enabledKeys = new Set(enabledRows.map((entry) => entry.key))
+  const disabledRows = toEntries(visible.filter((source) => !railSet.has(source.name)))
+    .filter((entry) => !enabledKeys.has(entry.key))
+  const activeFilters =
+    contentFilter.length + (adultOnly ? 1 : 0) + (languageFilter ? 1 : 0) + (providerFilter ? 1 : 0)
 
   const initialSet = new Set(initialRail)
   const turnedOn = rail.filter((name) => !initialSet.has(name)).length
@@ -355,6 +646,16 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
     setRail((current) => (on ? [...current.filter((n) => n !== name), name] : current.filter((n) => n !== name)))
   }
 
+  /** Languages picked for a site keep their rank; new ones join the bottom, like a switched-on source. */
+  function pickLanguages(members: SourceInfo[], picked: string[]) {
+    const memberNames = new Set(members.map((m) => m.name))
+    const wanted = new Set(picked)
+    setRail((current) => [
+      ...current.filter((name) => !memberNames.has(name) || wanted.has(name)),
+      ...picked.filter((name) => !current.includes(name)),
+    ])
+  }
+
   function resetToDefaults() {
     if (!sources) return
     setRail(
@@ -369,10 +670,12 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
     setContentFilter([])
     setAdultOnly(false)
     setLanguageFilter(null)
+    setProviderFilter(null)
   }
 
   function close() {
     save.reset()
+    refresh.reset()
     setConfirmDiscard(false)
     onClose()
   }
@@ -391,9 +694,11 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
     // slots are refilled in rail order, and anything the stored order never had goes last.
     const stored = priority?.order ?? []
     const storedSet = new Set(stored)
-    const queue = rail.filter((name) => storedSet.has(name))
+    // A Suwayomi refresh can drop a source between seeding and saving; the server refuses unknown names.
+    const known = rail.filter((name) => byName.has(name))
+    const queue = known.filter((name) => storedSet.has(name))
     const order = stored.map((name) => (railSet.has(name) ? queue.shift()! : name))
-    for (const name of [...rail, ...(sources ?? []).map((s) => s.name)]) {
+    for (const name of [...known, ...(sources ?? []).map((s) => s.name)]) {
       if (!storedSet.has(name) && !order.includes(name)) order.push(name)
     }
     save.mutate(
@@ -408,26 +713,88 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
   }
 
   const total = sources?.length ?? 0
-  const row = (source: SourceInfo) => {
+  const siteRow = (key: string, members: SourceInfo[]) => {
+    const first = members[0]
+    const siteName = first.suwayomi?.siteName ?? first.displayName
+    const picked = members.filter((m) => railSet.has(m.name)).map((m) => m.name)
+    const languagesOn = picked.length
+    const ratings = new Set(members.map((m) => m.rating))
+    // The tags speak for the site: every language it has, and its strictest rating.
+    const site: SourceInfo = {
+      ...first,
+      supportedLanguages: members.flatMap((m) => m.supportedLanguages ?? []),
+      rating: ratings.has('adult') ? 'adult' : ratings.has('mature') ? 'mature' : first.rating,
+      quality: null,
+    }
+    return (
+      <div key={key} className="source-row" data-off={languagesOn === 0 || undefined}>
+        <SourceIcon name={first.name} label={siteName} size={36} />
+        <div style={{ minWidth: 0 }}>
+          <div className="source-row-name">
+            <span>{siteName}</span>
+            <SuwayomiBadge />
+            <span className="source-row-host">
+              <Plural value={languagesOn} _0="No languages on" one="# language on" other="# languages on" />
+            </span>
+          </div>
+          <SourceTags source={site} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
+        </div>
+        <SuwayomiLanguagePicker
+          siteName={siteName}
+          members={members}
+          selected={picked}
+          onChange={(names) => pickLanguages(members, names)}
+          opened={setupFor === key}
+          onToggle={(open) => setSetupFor(open ? key : null)}
+          nameOfLanguage={nameOfLanguage}
+        />
+      </div>
+    )
+  }
+
+  const row = ({ key, source, members }: CatalogueEntry) => {
+    if (members) return siteRow(key, members)
     const on = railSet.has(source.name)
     const label = source.displayName
+    const needsSetup = source.suwayomi?.needsSetup ?? false
     return (
       <div key={source.name} className="source-row" data-off={!on || undefined}>
         <SourceIcon name={source.name} label={label} size={36} />
         <div style={{ minWidth: 0 }}>
           <div className="source-row-name">
             <span>{label}</span>
-            <span className="source-row-host">
-              {source.provider === 'suwayomi' ? <Trans>via Suwayomi</Trans> : sourceHost(source.baseUrl)}
-            </span>
+            {source.provider === 'suwayomi'
+              ? <SuwayomiBadge />
+              : <span className="source-row-host">{sourceHost(source.baseUrl)}</span>}
           </div>
           <SourceTags source={source} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
         </div>
-        <Switch
-          checked={on}
-          onChange={(e) => toggle(source.name, e.currentTarget.checked)}
-          aria-label={t`Enable ${label}`}
-        />
+        <Group gap={8} wrap="nowrap">
+          {source.suwayomi?.mixedLanguage && (
+            <SuwayomiLanguageSetup
+              source={source}
+              options={languageOptions}
+              opened={setupFor === source.name}
+              onToggle={(open) => setSetupFor(open ? source.name : null)}
+              onSaved={() => toggle(source.name, true)}
+            />
+          )}
+          <Tooltip
+            label={t`Pick a chapter language first`}
+            disabled={!needsSetup}
+            events={{ hover: true, focus: true, touch: true }}
+            withArrow
+          >
+            <span>
+              <Switch
+                checked={on && !needsSetup}
+                disabled={needsSetup}
+                onChange={(e) => toggle(source.name, e.currentTarget.checked)}
+                aria-label={t`Enable ${label}`}
+              />
+            </span>
+          </Tooltip>
+        </Group>
       </div>
     )
   }
@@ -489,6 +856,27 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
                 <Trans>18+ only</Trans>
               </Chip>
             </div>
+            {hasSuwayomi && (
+              <div>
+                <div className="source-filter-label"><Trans>Provider</Trans></div>
+                <Group gap={6}>
+                  <Chip
+                    size="xs" variant="light"
+                    checked={providerFilter === 'builtin'}
+                    onChange={(checked) => setProviderFilter(checked ? 'builtin' : null)}
+                  >
+                    <Trans>Built in</Trans>
+                  </Chip>
+                  <Chip
+                    size="xs" variant="light"
+                    checked={providerFilter === 'suwayomi'}
+                    onChange={(checked) => setProviderFilter(checked ? 'suwayomi' : null)}
+                  >
+                    Suwayomi
+                  </Chip>
+                </Group>
+              </div>
+            )}
             {languageCounts.length > 0 && (
               <div>
                 <div className="source-filter-label"><Trans>Language</Trans></div>
@@ -518,7 +906,18 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
         </Popover>
       </div>
       <div className="source-manager-list">
-        {enabledRows.length > 0 && (
+        {refresh.data && !refresh.data.reachable && (
+          <Alert color="yellow" variant="light" mb="xs">
+            {refresh.data.error}{' '}
+            <Trans>The Suwayomi sources below are the ones it listed last time.</Trans>
+          </Alert>
+        )}
+        {!ready && (
+          <Group justify="center" p="xl">
+            <Loader size="sm" />
+          </Group>
+        )}
+        {ready && enabledRows.length > 0 && (
           <>
             <div className="source-manager-group">
               <span><Trans>Enabled</Trans></span>
@@ -527,7 +926,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
             {enabledRows.map(row)}
           </>
         )}
-        {disabledRows.length > 0 && (
+        {ready && disabledRows.length > 0 && (
           <>
             <div className="source-manager-group">
               <span><Trans>Disabled</Trans></span>
@@ -536,7 +935,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
             {disabledRows.map(row)}
           </>
         )}
-        {visible.length === 0 && sources && (
+        {ready && visible.length === 0 && sources && (
           <div className="source-manager-empty">
             <Trans>No sources match. Clear a filter or try another name.</Trans>
           </div>
@@ -574,7 +973,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
       opened={opened}
       onClose={requestClose}
       size={980}
-      closeOnEscape={!filtersOpen}
+      closeOnEscape={!filtersOpen && !setupFor}
       fullScreen={narrow}
       closeButtonProps={{ 'aria-label': t`Close` }}
       styles={{

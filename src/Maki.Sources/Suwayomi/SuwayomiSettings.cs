@@ -43,7 +43,8 @@ public sealed record SuwayomiConnection(Uri BaseUri, SuwayomiAuthMode AuthMode, 
 }
 
 /// <summary>
-/// One Suwayomi source the admin chose to use in Maki, as stored in <see cref="SettingKeys.SuwayomiSources"/>.
+/// One source installed in Suwayomi, as stored in <see cref="SettingKeys.SuwayomiSources"/>. Every
+/// installed source is stored and registered; whether Maki uses it is the ordinary per-source switch.
 /// </summary>
 /// <param name="Id">The Mihon source id, a non-negative long kept as a string as Suwayomi sends it.</param>
 /// <param name="Lang">The source's own language code; <c>all</c>/<c>multi</c> for sources that mix languages.</param>
@@ -52,14 +53,16 @@ public sealed record SuwayomiConnection(Uri BaseUri, SuwayomiAuthMode AuthMode, 
 /// cannot say; defaults to <paramref name="Lang"/> otherwise.
 /// </param>
 /// <param name="ContentWarning"><c>SAFE</c>, <c>MIXED</c> or <c>NSFW</c>; null for a v2.1 server, which reports only <paramref name="IsNsfw"/>.</param>
-public sealed record SuwayomiExposedSource(
+/// <param name="Missing">Suwayomi no longer listed it at the last refresh. Kept only while series are linked to it.</param>
+public sealed record SuwayomiStoredSource(
     string Id,
     string Name,
     string DisplayName,
     string Lang,
     string? ChapterLanguage = null,
     string? ContentWarning = null,
-    bool IsNsfw = false)
+    bool IsNsfw = false,
+    bool Missing = false)
 {
     /// <summary>Mihon's codes for a source that publishes several languages under one id.</summary>
     public static bool IsMixedLanguage(string lang) =>
@@ -100,15 +103,15 @@ public sealed class SuwayomiSettings(IAppSettings settings)
     }
 
     /// <summary>The stored snapshot as written. Throws <see cref="JsonException"/> on a malformed value.</summary>
-    public async Task<IReadOnlyList<SuwayomiExposedSource>> ExposedAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<SuwayomiStoredSource>> StoredAsync(CancellationToken ct = default)
     {
         var raw = await settings.GetAsync(SettingKeys.SuwayomiSources, ct);
         return string.IsNullOrWhiteSpace(raw)
             ? []
-            : JsonSerializer.Deserialize<List<SuwayomiExposedSource>>(raw, Json) ?? [];
+            : JsonSerializer.Deserialize<List<SuwayomiStoredSource>>(raw, Json) ?? [];
     }
 
-    public static string Serialize(IEnumerable<SuwayomiExposedSource> sources) =>
+    public static string Serialize(IEnumerable<SuwayomiStoredSource> sources) =>
         JsonSerializer.Serialize(sources, Json);
 
     public static bool TryParseBaseUri(string? url, out Uri baseUri)

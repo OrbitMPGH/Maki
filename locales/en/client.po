@@ -45,6 +45,11 @@ msgstr "(inaccessible)"
 msgid "(no longer in the library)"
 msgstr "(no longer in the library)"
 
+#. placeholder {0}: picked.length
+#: src/pages/settings/ManageSourcesModal.tsx
+#~ msgid "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
+#~ msgstr "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
+
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
@@ -733,6 +738,10 @@ msgstr "{indexer} · Torrent"
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
 msgstr "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "{installed, plural, =0 {No Suwayomi sources yet.} one {# Suwayomi source, {inUse} switched on.} other {# Suwayomi sources, {inUse} switched on.}}"
+msgstr "{installed, plural, =0 {No Suwayomi sources yet.} one {# Suwayomi source, {inUse} switched on.} other {# Suwayomi sources, {inUse} switched on.}}"
+
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
@@ -742,8 +751,8 @@ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
-msgstr "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
+#~ msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
+#~ msgstr "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -765,6 +774,10 @@ msgstr "{label} - page {pageNumber}"
 #: src/pages/HealthPage.tsx
 msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 msgstr "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
+msgstr "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
 
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "{label} moved to position {position} of {total}"
@@ -794,6 +807,10 @@ msgstr "{languageCount, plural, one {# language} other {# languages}}"
 msgid "{languageCount, plural, one {Covers # language} other {Covers # languages}}"
 msgstr "{languageCount, plural, one {Covers # language} other {Covers # languages}}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{languagesOn, plural, =0 {No languages on} one {# language on} other {# languages on}}"
+msgstr "{languagesOn, plural, =0 {No languages on} one {# language on} other {# languages on}}"
+
 #: src/components/layout/SidebarFooter.tsx
 msgid "{latestVersion} available, skipped"
 msgstr "{latestVersion} available, skipped"
@@ -815,16 +832,16 @@ msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · click to collapse"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
-msgstr "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
+#~ msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
+#~ msgstr "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
 
 #: src/pages/ImportPage.tsx
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "{mappings, plural, one {# series linked} other {# series linked}}"
-msgstr "{mappings, plural, one {# series linked} other {# series linked}}"
+#~ msgid "{mappings, plural, one {# series linked} other {# series linked}}"
+#~ msgstr "{mappings, plural, one {# series linked} other {# series linked}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{markerLabel} Anime adaptation ends here"
@@ -1166,8 +1183,8 @@ msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ matches"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
-msgstr "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
+#~ msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
+#~ msgstr "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -1266,6 +1283,10 @@ msgstr "{seriesWantedCount, plural, one {# in series} other {# in series}}"
 #: src/components/TagBrowserModal.tsx
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{siteName} languages"
+msgstr "{siteName} languages"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
@@ -1762,7 +1783,6 @@ msgid "12 months"
 msgstr "12 months"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 msgid "18+"
 msgstr "18+"
 
@@ -3088,6 +3108,10 @@ msgstr "Browsing the catalogue"
 msgid "Building metadata search indexes"
 msgstr "Building metadata search indexes"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Built in"
+msgstr "Built in"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Bulk new chapters"
 msgstr "Bulk new chapters"
@@ -3174,7 +3198,6 @@ msgstr "Can't read this download"
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Cancel"
 msgstr "Cancel"
@@ -3416,6 +3439,10 @@ msgstr "Change linked chapters"
 msgid "Change own content rating"
 msgstr "Change own content rating"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Change the chapter language of {label}"
+msgstr "Change the chapter language of {label}"
+
 #: src/pages/RequestsPage.tsx
 msgid "Change the chapter range"
 msgstr "Change the chapter range"
@@ -3501,9 +3528,17 @@ msgstr "Chapter downloaded"
 msgid "Chapter file format"
 msgstr "Chapter file format"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Chapter language"
+msgstr "Chapter language"
+
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Chapter language for {displayName}"
-msgstr "Chapter language for {displayName}"
+#~ msgid "Chapter language for {displayName}"
+#~ msgstr "Chapter language for {displayName}"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Chapter language for {label}"
+msgstr "Chapter language for {label}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Chapter languages"
@@ -3665,8 +3700,8 @@ msgid "Choose a root folder"
 msgstr "Choose a root folder"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Choose sources"
-msgstr "Choose sources"
+#~ msgid "Choose sources"
+#~ msgstr "Choose sources"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
@@ -4912,6 +4947,7 @@ msgid "Disk used"
 msgstr "Disk used"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/SourceMappingsSection.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 #: src/pages/NotificationsPage.tsx
 msgid "Dismiss"
@@ -5161,8 +5197,8 @@ msgid "Each account has its own login, permissions, content rating and reading h
 msgstr "Each account has its own login, permissions, content rating and reading history."
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
-msgstr "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
+#~ msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
+#~ msgstr "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -7133,8 +7169,8 @@ msgid "Language is"
 msgstr "Language is"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Language, e.g. en"
-msgstr "Language, e.g. en"
+#~ msgid "Language, e.g. en"
+#~ msgstr "Language, e.g. en"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -7153,9 +7189,14 @@ msgstr "language, translation, translate, locale, interface language, ui languag
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/registry.ts
 msgid "Languages"
 msgstr "Languages"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Languages of {siteName}"
+msgstr "Languages of {siteName}"
 
 #: src/components/SetupWizard.tsx
 msgid "Languages to download"
@@ -7764,6 +7805,7 @@ msgstr "Manage signals"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 msgid "Manage sources"
 msgstr "Manage sources"
 
@@ -7923,7 +7965,6 @@ msgid "Matching the remaining sources…"
 msgstr "Matching the remaining sources…"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 msgid "Mature"
 msgstr "Mature"
 
@@ -8692,11 +8733,19 @@ msgstr "No index yet, the prebuilt vectors download automatically."
 msgid "No indexers configured in Prowlarr."
 msgstr "No indexers configured in Prowlarr."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "No language matches"
+msgstr "No language matches"
+
 #: src/components/SetupWizard.tsx
 msgid "No library folder yet. Series need one to download into."
 msgstr "No library folder yet. Series need one to download into."
 
-#: src/pages/settings/SuwayomiCards.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "no longer in Suwayomi"
+msgstr "no longer in Suwayomi"
+
+#: src/pages/settings/ManageSourcesModal.tsx
 msgid "No longer in Suwayomi"
 msgstr "No longer in Suwayomi"
 
@@ -9568,8 +9617,8 @@ msgid "Only the built-in reader records it."
 msgstr "Only the built-in reader records it."
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Only the sources already chosen are listed. You can still remove them."
-msgstr "Only the sources already chosen are listed. You can still remove them."
+#~ msgid "Only the sources already chosen are listed. You can still remove them."
+#~ msgstr "Only the sources already chosen are listed. You can still remove them."
 
 #: src/pages/HealthPage.tsx
 msgid "Only this source is tried. Nothing falls back to another one, so the request fails rather than fetching from somewhere you did not pick."
@@ -9954,6 +10003,14 @@ msgstr "Personal add weighting is disabled for this instance."
 msgid "Phone reader"
 msgstr "Phone reader"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick a chapter language first"
+msgstr "Pick a chapter language first"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick a language"
+msgstr "Pick a language"
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Pick a root folder"
@@ -9970,6 +10027,10 @@ msgstr "Pick a time in the future"
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Pick another default profile first"
 msgstr "Pick another default profile first"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick languages"
+msgstr "Pick languages"
 
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are actually contained in, useful for compilation CBZs or oddly-named releases the automatic matcher couldn't parse."
@@ -10213,6 +10274,10 @@ msgstr "Protect from upgrades"
 #: src/components/series/FileQualityBadge.tsx
 msgid "Protected from upgrades"
 msgstr "Protected from upgrades"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Provider"
+msgstr "Provider"
 
 #: src/pages/settings/registry.ts
 msgid "Prowlarr"
@@ -10898,7 +10963,6 @@ msgstr "Reload"
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 msgid "Remove"
 msgstr "Remove"
 
@@ -11013,8 +11077,8 @@ msgid "Remove source?"
 msgstr "Remove source?"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Remove sources with linked series?"
-msgstr "Remove sources with linked series?"
+#~ msgid "Remove sources with linked series?"
+#~ msgstr "Remove sources with linked series?"
 
 #: src/pages/HealthPage.tsx
 msgid "Remove the record"
@@ -11239,7 +11303,6 @@ msgid "Require single sign-on"
 msgstr "Require single sign-on"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 msgid "Required"
 msgstr "Required"
 
@@ -11629,8 +11692,8 @@ msgstr "Sample chapter"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 msgid "Save"
 msgstr "Save"
 
@@ -11707,7 +11770,6 @@ msgstr "Save your recovery codes"
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
-#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Saved"
 msgstr "Saved"
@@ -12028,7 +12090,6 @@ msgid "Search shows"
 msgstr "Search shows"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 msgid "Search sources"
 msgstr "Search sources"
 
@@ -12388,6 +12449,7 @@ msgid "Set to <0>0</0> to disable lockout."
 msgstr "Set to <0>0</0> to disable lockout."
 
 #: src/components/settings/AccountSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 msgid "Set up"
 msgstr "Set up"
 
@@ -12425,8 +12487,12 @@ msgid "Setup steps"
 msgstr "Setup steps"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Several languages"
-msgstr "Several languages"
+#~ msgid "Several languages"
+#~ msgstr "Several languages"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Several languages, pick one"
+msgstr "Several languages, pick one"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Shapes recommendations"
@@ -12469,8 +12535,8 @@ msgid "Show all"
 msgstr "Show all"
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Show every language"
-msgstr "Show every language"
+#~ msgid "Show every language"
+#~ msgstr "Show every language"
 
 #: src/components/TagBuckets.tsx
 msgid "Show fewer"
@@ -13125,13 +13191,17 @@ msgstr "Supernatural"
 msgid "Suwayomi"
 msgstr "Suwayomi"
 
-#: src/pages/settings/SuwayomiCards.tsx
-msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
-msgstr "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
+msgstr "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
 
 #: src/pages/settings/SuwayomiCards.tsx
-msgid "Suwayomi sources"
-msgstr "Suwayomi sources"
+#~ msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
+#~ msgstr "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
+
+#: src/pages/settings/SuwayomiCards.tsx
+#~ msgid "Suwayomi sources"
+#~ msgstr "Suwayomi sources"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -13613,6 +13683,10 @@ msgstr "The source you picked could not provide this chapter"
 #: src/pages/discover/TasteTab.tsx
 msgid "The specific things that keep coming back in your library, each with more of the same beside it."
 msgstr "The specific things that keep coming back in your library, each with more of the same beside it."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "The Suwayomi sources below are the ones it listed last time."
+msgstr "The Suwayomi sources below are the ones it listed last time."
 
 #: src/api/upgrades.ts
 msgid "The title might be a different series"
@@ -14824,8 +14898,8 @@ msgid "very tight"
 msgstr "very tight"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-msgid "via Suwayomi"
-msgstr "via Suwayomi"
+#~ msgid "via Suwayomi"
+#~ msgstr "via Suwayomi"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Vietnamese"

@@ -70,8 +70,8 @@ public static class SettingKeys
     public const string SuwayomiUsername = "suwayomi.username";
     public const string SuwayomiPassword = "suwayomi.password";
     /// <summary>
-    /// JSON array of the Suwayomi sources the admin exposed (<c>SuwayomiExposedSource</c>). A snapshot,
-    /// so the source registry is the same at startup whether Suwayomi is reachable or not.
+    /// JSON array of every source installed in Suwayomi at the last refresh (<c>SuwayomiStoredSource</c>).
+    /// A snapshot, so the source registry is the same at startup whether Suwayomi is reachable or not.
     /// </summary>
     public const string SuwayomiSources = "suwayomi.sources";
 

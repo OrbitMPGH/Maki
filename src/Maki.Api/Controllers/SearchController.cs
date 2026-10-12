@@ -300,6 +300,9 @@ public class SearchController(
             // signed-in user reads this list. The UI shows Provider for those instead of a host.
             BaseUrl = s is SuwayomiSource ? "" : s.BaseUrl,
             Provider = s is SuwayomiSource ? "suwayomi" : null,
+            Suwayomi = s is SuwayomiSource suwayomi
+                ? new { suwayomi.SourceId, suwayomi.SiteName, suwayomi.Lang, suwayomi.MixedLanguage, suwayomi.ChapterLanguage, suwayomi.NeedsSetup, suwayomi.Missing }
+                : null,
             NeedsFlareSolverr = s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr),
             // Whether ListChaptersAsync honours SourceMapping.LanguageFilter, so the mappings card
             // only offers a language picker where one does something. A multi-language source that

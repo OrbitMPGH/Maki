@@ -2012,6 +2012,12 @@ msgstr "utcOffsetMinutes est hors limites"
 msgid "error.suwayomi.authModeInvalid"
 msgstr ""
 
+#. {source} is a Suwayomi source's name and is never translated.
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: {source} publishes in one language, so its chapters are always filed under that one.
+msgid "error.suwayomi.chapterLanguageFixed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: "{language}" is not a language code, such as en or pt-BR.
 msgid "error.suwayomi.chapterLanguageInvalid"

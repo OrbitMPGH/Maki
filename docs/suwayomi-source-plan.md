@@ -1,6 +1,6 @@
 # Suwayomi as an optional source: plan
 
-Status: implemented on `dev`, phases 1 to 5. Not yet run against a real Suwayomi server; release checklist item 7.8 covers that. Researched against `dev` (f293475) and Suwayomi-Server `v2.4.2366` (latest stable, 2026-09-29), with `v2.1.1867` and `master` (d4f88a3) checked for drift. Revision 3, after two review rounds; reviewer and author agree it is ready for implementation.
+Status: implemented on `dev`, phases 1 to 5. Revised after implementation: the separate source picker is gone. Every installed Suwayomi source is stored and registered, switched off, and turned on in Manage sources like any other source; see "Source picker" below for what replaced it. Not yet run against a real Suwayomi server; release checklist item 7.8 covers that. Researched against `dev` (f293475) and Suwayomi-Server `v2.4.2366` (latest stable, 2026-09-29), with `v2.1.1867` and `master` (d4f88a3) checked for drift. Revision 3, after two review rounds; reviewer and author agree it is ready for implementation.
 
 ## Goal
 
@@ -89,7 +89,7 @@ New setting keys in `SettingKeys`:
 | `suwayomi.url` | Base URL including any subpath, e.g. `http://suwayomi:4567` |
 | `suwayomi.authmode` | `none`, `basic`, `uilogin` |
 | `suwayomi.username` / `suwayomi.password` | Never returned by GET, only `passwordSet`, mirroring the Kitsu password in `GET/PUT settings/scrobble` (null on PUT means unchanged, empty clears). Stored plaintext in `AppConfig` like the Prowlarr, Kavita and qBittorrent secrets, so backups carry it the same way |
-| `suwayomi.sources` | JSON array of exposed sources: `{ id, name, displayName, lang, chapterLanguage, contentWarning }`. A snapshot so the registry can be built without calling Suwayomi |
+| `suwayomi.sources` | JSON array of every installed source: `{ id, name, displayName, lang, chapterLanguage, contentWarning, isNsfw, missing }`. A snapshot so the registry can be built without calling Suwayomi; refreshed when the connection is saved and whenever Manage sources opens |
 
 ### 2. The virtual source (Maki.Sources/Suwayomi)
 
@@ -189,16 +189,18 @@ Filling `PageRequest.Data` inside `GetPagesAsync` instead was considered and rej
 - "Test connection": calls `aboutServer` and `sources`, shows the server version and how many sources are installed, reports an unsupported version (below v2.1, or below v2.2 with `ui_login`). With `ui_login` the test also logs in so a wrong password shows up here, not later in a sync.
 - Empty source list: explain that extensions are installed in Suwayomi, and link to the configured Suwayomi URL.
 
-**Source picker** (a modal from the card, structured like `ManageSourcesModal`):
+**Source picker** (revised: there is none; Manage sources is the picker):
 
-- Every installed Suwayomi source with display name, language and content warning. No icons in v1: Suwayomi's `iconUrl` needs auth and an icon passthrough is not worth the endpoint yet, so `SourceIcon`'s monogram fallback applies.
-- Grouped by language, filtered by the instance's enabled languages by default, since a typical Suwayomi install has hundreds of language variants.
-- A checkbox per source. Nothing is exposed until the admin ticks it. The picker says plainly that a ticked source whose language is English or the instance language is **on immediately** and searched for every added series (`SourceAvailability.DefaultsOn`); there is no second opt-in. It also shows the number exposed.
-- `all`/`multi` sources require a chapter language to be chosen before they can be ticked.
-- Unticking a source that has mappings warns with the count. The mappings are kept and simply stop running, so re-ticking restores them.
-- Sources exposed earlier but no longer installed in Suwayomi are listed as missing rather than dropped silently.
+- Every installed Suwayomi source is stored in `suwayomi.sources` and registered. `SourceAvailability.DefaultsOn` is false for every Suwayomi source, so all of them arrive switched off and are turned on with the ordinary per-source switch; there was a separate picker with checkboxes at first, and two places to say "use this source" was one too many.
+- Opening Manage sources with Suwayomi connected calls `POST settings/suwayomi/sources/refresh` before seeding the draft, so an extension installed since shows up. A source Suwayomi no longer lists is dropped from the snapshot unless series are linked to it; then it stays, flagged `missing`, and the row says "No longer in Suwayomi".
+- `all`/`multi`/`other` sources (`SuwayomiSource.NeedsSetup` until set) show a **Set up** button that picks one chapter language from a searchable list of language names, never a typed code. Mihon chapters have no language, so it is one language per source; two languages would need a per-chapter answer Suwayomi cannot give. Until it is set, `SourceAvailability` keeps the source disabled whatever the stored order says, and `ListChaptersAsync` throws rather than guess.
+- Mihon extensions register one source per language (MangaDex has forty-odd: `MangaDex (EN)`, `MangaDex (ES)`, all named `MangaDex`). Manage sources groups a site's single-language variants into one row, keyed on `SuwayomiSource.SiteName`, with a **Languages** multi-select instead of a switch. Each pick is still its own source with its own chapters, mappings and place on the priority rail, which keeps ranking English MangaDex above Spanish possible; the grouping only spares the catalogue forty rows of one site. A site with one variant keeps its plain row, and a mixed-language variant stays on its own row with its **Set up** button.
+- The Suwayomi card's **Manage sources** button opens the same modal with its Provider filter set to Suwayomi. The filter (Built in / Suwayomi) sits in the Filters popover.
+- Rows carry a coloured Suwayomi badge in place of the `sourceHost(baseUrl)` line, which would otherwise print the Suwayomi hostname for every one of them. Search matches "suwayomi" instead of that host.
+- The language ranking (`GET settings/sources/languages`) only offers the languages of Suwayomi sources that are switched on, or one install would add every language it has an extension for.
+- The thumbnail relay serves only sources that are switched on, since every installed source is now registered.
 
-Once exposed, the sources appear in the normal priority list. `GET search/sources` gains `provider: "suwayomi"` (null for built-ins); `ManageSourcesModal` shows "via Suwayomi" in place of the `sourceHost(baseUrl)` line, which would otherwise print the Suwayomi hostname for every one of them, and its search matches "suwayomi" instead of that host. They rank after every listed source by default, because `OrderSources` puts unlisted names last. A built-in source and its Suwayomi twin (MangaDex both ways, say) coexist; the admin's priority order decides.
+`GET search/sources` carries `provider: "suwayomi"` (null for built-ins) and a `suwayomi` object (`sourceId`, `siteName`, `lang`, `mixedLanguage`, `chapterLanguage`, `needsSetup`, `missing`). Suwayomi sources rank after every listed source by default, because `OrderSources` puts unlisted names last. A built-in source and its Suwayomi twin (MangaDex both ways, say) coexist; the admin's priority order decides.
 
 All new strings through `t`/`<Trans>` and `this.Fail(localizer, key)`.
 
@@ -208,8 +210,8 @@ All new strings through `t`/`<Trans>` and `this.Fail(localizer, key)`.
 | --- | --- | --- |
 | `GET/PUT settings/suwayomi` | Connection settings; PUT reloads the registry | Admin, in `SuwayomiController` (not `SettingsController`, whose constructor three tests build by hand) |
 | `POST settings/suwayomi/test` | Version + source count, on unsaved values; the stored password is reused only for the stored URL. Under `ui_login` the version check is sent anonymously, so a server too old to have a login mutation says so instead of failing the login | Admin |
-| `GET settings/suwayomi/sources` | Installed sources merged with the exposed snapshot (live + missing) | Admin |
-| `PUT settings/suwayomi/sources` | Save the exposed set; reloads the provider | Admin |
+| `POST settings/suwayomi/sources/refresh` | Reads the installed sources into the snapshot, keeping chosen chapter languages; reloads the provider when it changed | Admin |
+| `PUT settings/suwayomi/sources/{id}` | Sets a mixed-language source's chapter language; reloads the provider | Admin |
 | `GET suwayomi/thumbnail/{sourceId}/{mangaId}` | Cover passthrough, `SuwayomiController` | Any signed-in user |
 
 ### 5. Health

@@ -34,11 +34,14 @@ public sealed class SuwayomiHealthCheckTests : IDisposable
 
     public void Dispose() => _world.Dispose();
 
+    /// <summary>Stores these sources and switches them on, which a Suwayomi source never is by default.</summary>
     private async Task Expose(params string[] ids)
     {
         _world.Settings.Set(SettingKeys.SuwayomiUrl, "http://192.168.1.20:4567");
         await _world.Settings.SetAsync(SettingKeys.SuwayomiSources, ids.Length == 0 ? null : SuwayomiSettings.Serialize(
-            ids.Select(id => new SuwayomiExposedSource(id, $"Source {id}", $"Source {id} (EN)", "en"))));
+            ids.Select(id => new SuwayomiStoredSource(id, $"Source {id}", $"Source {id} (EN)", "en"))));
+        await _world.Settings.SetAsync(SettingKeys.SourcePriorityOrder, string.Join(',', ids.Select(id => "suwayomi-" + id)));
+        await _world.Settings.SetAsync(SettingKeys.SourcesDisabled, null);
         await _registry.ReloadAsync();
     }
 

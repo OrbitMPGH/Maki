@@ -2680,6 +2680,8 @@ export interface SourceInfo {
   baseUrl: string
   /** Set for a source that is not built in. A Suwayomi source's `baseUrl` is the Suwayomi server, not the site. */
   provider?: 'suwayomi' | null
+  /** Set for a Suwayomi source. */
+  suwayomi?: SuwayomiSourceState | null
   needsFlareSolverr: boolean
   /**
    * Whether this source honours a mapping's `languageFilter`, so the mappings card offers a
@@ -2701,6 +2703,22 @@ export interface SourceInfo {
   defaultRank?: number
   /** How this source's copies measure in general; null when nothing has measured it. */
   quality?: SourceQualitySummary | null
+}
+
+export interface SuwayomiSourceState {
+  /** The Mihon source id, the part of `name` after `suwayomi-`. */
+  sourceId: string
+  /** The site without its language ("MangaDex"), shared by every language variant of one extension. */
+  siteName: string
+  /** The extension's own language code; `all`, `multi` or `other` for one that mixes languages. */
+  lang: string
+  mixedLanguage: boolean
+  /** What every chapter is filed under. Null until someone picks one for a mixed-language source. */
+  chapterLanguage: string | null
+  /** A mixed-language source with no chapter language yet. It stays off until one is set. */
+  needsSetup: boolean
+  /** Suwayomi no longer listed it at the last refresh; kept because series are linked to it. */
+  missing: boolean
 }
 
 export interface SourceQualitySummary {
@@ -3545,6 +3563,8 @@ export function useSaveSourcePriority() {
       // /search/sources carries the enabled flag and is cached with staleTime: Infinity,
       // so every screen showing source state would go stale without this.
       void queryClient.invalidateQueries({ queryKey: ['sources'] })
+      // A Suwayomi source's language is offered for ranking only while that source is on.
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'sources', 'languages'] })
     },
   })
 }

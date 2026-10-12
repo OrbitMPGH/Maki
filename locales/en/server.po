@@ -1397,6 +1397,11 @@ msgstr "utcOffsetMinutes out of range"
 msgid "error.suwayomi.authModeInvalid"
 msgstr "Unknown Suwayomi sign-in mode. Use none, basic or uilogin."
 
+#. {source} is a Suwayomi source's name and is never translated.
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+msgid "error.suwayomi.chapterLanguageFixed"
+msgstr "{source} publishes in one language, so its chapters are always filed under that one."
+
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 msgid "error.suwayomi.chapterLanguageInvalid"
 msgstr "\"{language}\" is not a language code, such as en or pt-BR."

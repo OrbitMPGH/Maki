@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Maki.Api.Controllers;
+using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
@@ -47,7 +48,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     {
         var controller = new SuwayomiController(
             new TestLocalizer(), _settings, _suwayomiSettings, _client, _tokens, _cache,
-            new SuwayomiConnectionTester(() => _server), _registry, _db.NewContext(), new SuwayomiChainFactory(_suwayomiSettings, () => _tokens, _server),
+            new SuwayomiConnectionTester(() => _server), _registry, new SourceAvailability(_settings, _registry), _db.NewContext(), new SuwayomiChainFactory(_suwayomiSettings, () => _tokens, _server),
             NullLogger<SuwayomiController>.Instance)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
@@ -71,6 +72,11 @@ public sealed class SuwayomiControllerTests : IDisposable
 
     private void LiveSources(params (string Id, string Name, string DisplayName, string Lang)[] sources) =>
         _server.Sources(sources);
+
+    private Task<List<string>> DisabledAsync() => new SourceAvailability(_settings, _registry).DisabledAsync();
+
+    private void SwitchOn(params string[] names) =>
+        _settings.Set(SettingKeys.SourcePriorityOrder, string.Join(',', names)).Set(SettingKeys.SourcesDisabled, "");
 
     private static string Error(IActionResult result) =>
         JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<ObjectResult>(result).Value).GetProperty("code").GetString()!;
@@ -118,7 +124,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     public async Task Saving_the_connection_reloads_the_sources_and_clearing_the_url_turns_them_off()
     {
         _settings.Set(SettingKeys.SuwayomiSources,
-            SuwayomiSettings.Serialize([new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en")]));
+            SuwayomiSettings.Serialize([new SuwayomiStoredSource("100", "MangaDex", "MangaDex (EN)", "en")]));
 
         await Controller().SetConnection(new(Base + "/", "none", null), default);
         Assert.Equal(Base, await _settings.GetAsync(SettingKeys.SuwayomiUrl));
@@ -186,97 +192,107 @@ public sealed class SuwayomiControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task Adding_a_source_while_suwayomi_is_down_says_so()
+    public async Task Saving_the_connection_stores_every_installed_source_switched_off()
     {
-        Configure();
-        _server.Ops["Sources"] = _ => new HttpResponseMessage(HttpStatusCode.BadGateway);
+        await Controller().SetConnection(new(Base, "none", null), default);
 
-        Assert.Equal("error.suwayomi.noResponse", Error(await Controller().SetSources(new([new("100")]), default)));
+        Assert.Equal(["Comick (ALL)", "MangaDex (EN)"], (await _suwayomiSettings.StoredAsync()).Select(s => s.DisplayName));
+        Assert.NotNull(_registry.Find("suwayomi-100"));
+        Assert.True(Assert.IsType<SuwayomiSource>(_registry.Find("suwayomi-200")).NeedsSetup);
+        Assert.Equal(["suwayomi-100", "suwayomi-200"], (await DisabledAsync()).Order());
     }
 
     [Fact]
-    public async Task The_source_list_merges_live_sources_with_selected_ones_suwayomi_lost()
+    public async Task Saving_the_connection_while_suwayomi_is_down_still_saves()
+    {
+        _server.Ops["Sources"] = _ => new HttpResponseMessage(HttpStatusCode.BadGateway);
+
+        Assert.IsType<OkObjectResult>(await Controller().SetConnection(new(Base, "none", null), default));
+
+        Assert.Equal(Base, await _settings.GetAsync(SettingKeys.SuwayomiUrl));
+        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiSources));
+    }
+
+    [Fact]
+    public async Task A_refresh_keeps_chosen_languages_and_drops_uninstalled_sources_nothing_is_linked_to()
     {
         Configure();
         _settings.Set(SettingKeys.SuwayomiSources, SuwayomiSettings.Serialize(
         [
-            new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en"),
-            new SuwayomiExposedSource("300", "Gone", "Gone (EN)", "en")
+            new SuwayomiStoredSource("200", "Comick", "Comick (ALL)", "all", ChapterLanguage: "fr"),
+            new SuwayomiStoredSource("300", "Gone", "Gone (EN)", "en"),
+            new SuwayomiStoredSource("400", "Unused", "Unused (EN)", "en")
         ]));
-        _db.SeedSeries(mappings: [new SourceMapping { SourceName = "suwayomi-100", SourceSeriesId = "/m/1", Url = "u" }]);
+        _db.SeedSeries(mappings: [new SourceMapping { SourceName = "suwayomi-300", SourceSeriesId = "/m/1", Url = "u" }]);
 
-        var rows = Body<SuwayomiController.SuwayomiSourcesResponse>(await Controller().GetSources(default)).Sources;
+        var result = Body<SuwayomiController.SuwayomiRefreshResult>(await Controller().RefreshSources(default));
 
-        var mangadex = Assert.Single(rows, r => r.Id == "100");
-        Assert.True(mangadex.Exposed);
-        Assert.Equal(true, mangadex.Installed);
-        Assert.Equal(1, mangadex.Mappings);
-        Assert.True(Assert.Single(rows, r => r.Id == "200").MixedLanguage);
-        Assert.Equal(false, Assert.Single(rows, r => r.Id == "300").Installed);
+        Assert.True(result.Reachable);
+        Assert.Equal(2, result.Installed);
+        var stored = await _suwayomiSettings.StoredAsync();
+        Assert.Equal(["200", "300", "100"], stored.Select(s => s.Id));
+        Assert.Equal("fr", stored[0].ChapterLanguage);
+        Assert.True(stored[1].Missing);
+        Assert.False(stored[2].Missing);
+        Assert.Equal(["fr"], _registry.GetRequired("suwayomi-200").SupportedLanguages);
+        Assert.Null(_registry.Find("suwayomi-400"));
     }
 
     [Fact]
-    public async Task An_unreachable_server_still_lists_the_selection()
+    public async Task An_unreachable_server_leaves_the_stored_sources_alone()
     {
         Configure();
-        _settings.Set(SettingKeys.SuwayomiSources,
-            SuwayomiSettings.Serialize([new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en")]));
+        var stored = SuwayomiSettings.Serialize([new SuwayomiStoredSource("100", "MangaDex", "MangaDex (EN)", "en")]);
+        _settings.Set(SettingKeys.SuwayomiSources, stored);
         _server.Ops["Sources"] = _ => new HttpResponseMessage(HttpStatusCode.BadGateway);
 
-        var response = Body<SuwayomiController.SuwayomiSourcesResponse>(await Controller().GetSources(default));
+        var result = Body<SuwayomiController.SuwayomiRefreshResult>(await Controller().RefreshSources(default));
 
-        Assert.False(response.Reachable);
-        Assert.Equal("error.suwayomi.noResponse", response.Error);
-        Assert.Null(Assert.Single(response.Sources).Installed);
+        Assert.False(result.Reachable);
+        Assert.Equal("error.suwayomi.noResponse", result.Error);
+        Assert.Equal(stored, await _settings.GetAsync(SettingKeys.SuwayomiSources));
     }
 
     [Fact]
-    public async Task Saving_the_selection_takes_names_from_suwayomi_and_exposes_the_sources()
+    public async Task A_mixed_language_source_stays_off_until_it_has_a_chapter_language()
     {
         Configure();
+        await Controller().RefreshSources(default);
+        SwitchOn("suwayomi-100", "suwayomi-200");
 
-        await Controller().SetSources(new([new("100"), new("200", "fr")]), default);
+        Assert.Equal(["suwayomi-200"], await DisabledAsync());
 
-        var stored = await _suwayomiSettings.ExposedAsync();
-        Assert.Equal(["MangaDex (EN)", "Comick (ALL)"], stored.Select(s => s.DisplayName));
-        Assert.Null(stored[0].ChapterLanguage);
-        Assert.Equal("fr", stored[1].ChapterLanguage);
-        Assert.Equal(["fr"], _registry.GetRequired("suwayomi-200").SupportedLanguages);
+        Assert.IsType<NoContentResult>(await Controller().SetSourceLanguage("200", new(" pt-BR "), default));
 
-        await Controller().SetSources(new([]), default);
-        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiSources));
-        Assert.Null(_registry.Find("suwayomi-100"));
+        var source = Assert.IsType<SuwayomiSource>(_registry.Find("suwayomi-200"));
+        Assert.False(source.NeedsSetup);
+        Assert.Equal(["pt-BR"], source.SupportedLanguages);
+        Assert.Empty(await DisabledAsync());
+
+        await Controller().RefreshSources(default);
+        Assert.Equal("pt-BR", Assert.Single(await _suwayomiSettings.StoredAsync(), s => s.Id == "200").ChapterLanguage);
     }
 
     [Theory]
     [InlineData("200", null, "error.suwayomi.chapterLanguageRequired")]
     [InlineData("200", "French", "error.suwayomi.chapterLanguageInvalid")]
-    [InlineData("999", null, "error.suwayomi.unknownSource")]
-    public async Task A_selection_suwayomi_cannot_back_is_refused(string id, string? language, string expected)
+    [InlineData("100", "fr", "error.suwayomi.chapterLanguageFixed")]
+    [InlineData("999", "fr", "error.suwayomi.unknownSource")]
+    public async Task A_chapter_language_that_cannot_apply_is_refused(string id, string? language, string expected)
     {
         Configure();
+        await Controller().RefreshSources(default);
 
-        Assert.Equal(expected, Error(await Controller().SetSources(new([new(id, language)]), default)));
-        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiSources));
+        Assert.Equal(expected, Error(await Controller().SetSourceLanguage(id, new(language), default)));
+        Assert.All(await _suwayomiSettings.StoredAsync(), s => Assert.Null(s.ChapterLanguage));
     }
 
     [Fact]
-    public async Task A_selected_source_suwayomi_lost_can_be_kept()
+    public async Task A_thumbnail_is_served_only_for_a_manga_of_a_source_that_is_on()
     {
         Configure();
-        _settings.Set(SettingKeys.SuwayomiSources,
-            SuwayomiSettings.Serialize([new SuwayomiExposedSource("300", "Gone", "Gone (EN)", "en")]));
-
-        Assert.IsType<OkObjectResult>(await Controller().SetSources(new([new("300"), new("100")]), default));
-
-        Assert.Equal(["300", "100"], (await _suwayomiSettings.ExposedAsync()).Select(s => s.Id));
-    }
-
-    [Fact]
-    public async Task A_thumbnail_is_served_only_for_a_manga_of_an_exposed_source()
-    {
-        Configure();
-        await Controller().SetSources(new([new("100")]), default);
+        await Controller().RefreshSources(default);
+        SwitchOn("suwayomi-100");
         _server.Ops["MangaSource"] = vars => FakeSuwayomiServer.Data(new
         {
             manga = new { sourceId = vars.GetProperty("id").GetInt32() == 7 ? "100" : "200" }
@@ -300,7 +316,8 @@ public sealed class SuwayomiControllerTests : IDisposable
     public async Task A_thumbnail_that_is_not_an_image_is_refused()
     {
         Configure();
-        await Controller().SetSources(new([new("100")]), default);
+        await Controller().RefreshSources(default);
+        SwitchOn("suwayomi-100");
         _cache.SetOwner(new Uri(Base), 7, "100");
         _server.OnGet = _ => new HttpResponseMessage(HttpStatusCode.OK)
         {

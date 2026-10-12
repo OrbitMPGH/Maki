@@ -94,6 +94,17 @@ public class SuwayomiSourceTests
     }
 
     [Fact]
+    public async Task A_mixed_language_source_without_a_language_lists_nothing_rather_than_guessing()
+    {
+        var h = new SuwayomiHarness();
+        var source = h.Source(lang: "all");
+
+        Assert.True(source.NeedsSetup);
+        await Assert.ThrowsAsync<SourceErrorException>(() => source.ListChaptersAsync(SeriesUrl));
+        Assert.Empty(h.Server.Calls);
+    }
+
+    [Fact]
     public async Task A_v21_server_falls_back_to_fetchChapters_and_remembers_it()
     {
         var h = new SuwayomiHarness();
@@ -288,7 +299,7 @@ public class SuwayomiSourceTests
         Assert.Equal(SourceRating.General, h.Source(contentWarning: "SAFE").Rating);
 
         var legacy = new SuwayomiSource(
-            new SuwayomiExposedSource("100", "Fake", "Fake", "en", IsNsfw: true), "en", new Uri(SuwayomiHarness.Base), h.Client, h.Cache);
+            new SuwayomiStoredSource("100", "Fake", "Fake", "en", IsNsfw: true), new Uri(SuwayomiHarness.Base), h.Client, h.Cache);
         Assert.Equal(SourceRating.Adult, legacy.Rating);
         Assert.Equal("suwayomi-100", legacy.Name);
         Assert.Equal(SuwayomiHarness.Base, legacy.BaseUrl);
@@ -600,24 +611,27 @@ public class SuwayomiTransportTests
 public class SuwayomiSourceProviderTests
 {
     [Fact]
-    public async Task Exposed_sources_become_sources_and_unusable_entries_are_skipped()
+    public async Task Every_stored_source_becomes_a_source_and_bad_ids_are_skipped()
     {
         var h = new SuwayomiHarness();
         await h.Settings.SetAsync(SettingKeys.SuwayomiSources, SuwayomiSettings.Serialize(
         [
-            new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en"),
-            new SuwayomiExposedSource("200", "Comick", "Comick (ALL)", "all"),
-            new SuwayomiExposedSource("300", "Comick", "Comick (ALL)", "all", ChapterLanguage: "fr"),
-            new SuwayomiExposedSource("not-an-id", "Broken", "Broken", "en"),
-            new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en")
+            new SuwayomiStoredSource("100", "MangaDex", "MangaDex (EN)", "en"),
+            new SuwayomiStoredSource("200", "Comick", "Comick (ALL)", "all"),
+            new SuwayomiStoredSource("300", "Comick", "Comick (ALL)", "all", ChapterLanguage: "fr"),
+            new SuwayomiStoredSource("not-an-id", "Broken", "Broken", "en"),
+            new SuwayomiStoredSource("100", "MangaDex", "MangaDex (EN)", "en")
         ]));
         var provider = new SuwayomiSourceProvider(h.SuwayomiSettings, h.Client, h.Cache, NullLogger<SuwayomiSourceProvider>.Instance);
 
         Assert.Empty(provider.Current);
         await provider.ReloadAsync();
 
-        Assert.Equal(["suwayomi-100", "suwayomi-300"], provider.Current.Select(s => s.Name));
-        Assert.Equal(["fr"], provider.Current[1].SupportedLanguages);
+        Assert.Equal(["suwayomi-100", "suwayomi-200", "suwayomi-300"], provider.Current.Select(s => s.Name));
+        var unset = Assert.IsType<SuwayomiSource>(provider.Current[1]);
+        Assert.True(unset.NeedsSetup);
+        Assert.Empty(unset.SupportedLanguages);
+        Assert.Equal(["fr"], provider.Current[2].SupportedLanguages);
 
         var registry = new SourceRegistry([], [provider]);
         await registry.ReloadAsync();
@@ -635,7 +649,7 @@ public class SuwayomiSourceProviderTests
         Assert.Empty(provider.Current);
 
         await h.Settings.SetAsync(SettingKeys.SuwayomiSources,
-            SuwayomiSettings.Serialize([new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en")]));
+            SuwayomiSettings.Serialize([new SuwayomiStoredSource("100", "MangaDex", "MangaDex (EN)", "en")]));
         await h.Settings.SetAsync(SettingKeys.SuwayomiUrl, null);
         await provider.ReloadAsync();
         Assert.Empty(provider.Current);

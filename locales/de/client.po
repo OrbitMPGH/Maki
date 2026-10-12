@@ -53,6 +53,11 @@ msgstr "(nicht zugänglich)"
 msgid "(no longer in the library)"
 msgstr "(nicht mehr in der Bibliothek)"
 
+#. placeholder {0}: picked.length
+#: src/pages/settings/ManageSourcesModal.tsx
+#~ msgid "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
+#~ msgstr ""
+
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -894,6 +899,10 @@ msgstr "{indexer} · Torrent"
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
 msgstr "{inLibraryCount, plural, one {# bereits vorhandene Serie in der Bibliothek anzeigen} other {# bereits vorhandene Serien in der Bibliothek anzeigen}}"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "{installed, plural, =0 {No Suwayomi sources yet.} one {# Suwayomi source, {inUse} switched on.} other {# Suwayomi sources, {inUse} switched on.}}"
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
@@ -906,8 +915,8 @@ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP bis Level {nextLevel}"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
-msgstr "{inUse, plural, =0 {Noch keine Suwayomi-Quellen in Verwendung.} one {# Suwayomi-Quelle in Verwendung.} other {# Suwayomi-Quellen in Verwendung.}}"
+#~ msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
+#~ msgstr "{inUse, plural, =0 {Noch keine Suwayomi-Quellen in Verwendung.} one {# Suwayomi-Quelle in Verwendung.} other {# Suwayomi-Quellen in Verwendung.}}"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -934,6 +943,10 @@ msgstr "{label} - Seite {pageNumber}"
 #, fuzzy
 msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 msgstr "{label} hat bereits eine Datei. Vergleiche beide, bevor du entscheidest: Beim Import dieses Archivs wird es neben der vorhandenen Datei verknüpft, nicht ersetzt. Wenn du sie austauschen willst, lösche zuerst die Datei, die du nicht behalten möchtest."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -970,6 +983,10 @@ msgstr "{languageCount, plural, one {# Sprache} other {# Sprachen}}"
 msgid "{languageCount, plural, one {Covers # language} other {Covers # languages}}"
 msgstr "{languageCount, plural, one {Deckt # Sprache ab} other {Deckt # Sprachen ab}}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{languagesOn, plural, =0 {No languages on} one {# language on} other {# languages on}}"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "{latestVersion} available, skipped"
@@ -997,8 +1014,8 @@ msgstr "{lineLabel} · zum Einklappen klicken"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
-msgstr "{linkedSeries, plural, one {# Serie ist mit den Quellen verknüpft, die du entfernst. Die Verknüpfung bleibt erhalten und wird nicht mehr synchronisiert, bis die Quelle wieder ausgewählt wird.} other {# Serien sind mit den Quellen verknüpft, die du entfernst. Ihre Verknüpfungen bleiben erhalten und werden nicht mehr synchronisiert, bis die Quelle wieder ausgewählt wird.}}"
+#~ msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
+#~ msgstr "{linkedSeries, plural, one {# Serie ist mit den Quellen verknüpft, die du entfernst. Die Verknüpfung bleibt erhalten und wird nicht mehr synchronisiert, bis die Quelle wieder ausgewählt wird.} other {# Serien sind mit den Quellen verknüpft, die du entfernst. Ihre Verknüpfungen bleiben erhalten und werden nicht mehr synchronisiert, bis die Quelle wieder ausgewählt wird.}}"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -1007,8 +1024,8 @@ msgstr "{linkingTotal, plural, one {Quellen gefunden und Dateien für # Serie ve
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "{mappings, plural, one {# series linked} other {# series linked}}"
-msgstr "{mappings, plural, one {# Serie verknüpft} other {# Serien verknüpft}}"
+#~ msgid "{mappings, plural, one {# series linked} other {# series linked}}"
+#~ msgstr "{mappings, plural, one {# Serie verknüpft} other {# Serien verknüpft}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1433,8 +1450,8 @@ msgstr "{searchCap}+ Treffer"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
-msgstr "{selectedCount, plural, =0 {Keine Quellen ausgewählt} one {# Quelle ausgewählt} other {# Quellen ausgewählt}}"
+#~ msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
+#~ msgstr "{selectedCount, plural, =0 {Keine Quellen ausgewählt} one {# Quelle ausgewählt} other {# Quellen ausgewählt}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1557,6 +1574,10 @@ msgstr "{seriesWantedCount, plural, one {# in der Serie} other {# in der Serie}}
 #, fuzzy
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, one {Die ersten # Ergebnisse werden angezeigt. Verfeinere die Suche, um die Auswahl einzugrenzen.} other {Die ersten # Ergebnisse werden angezeigt. Verfeinere die Suche, um die Auswahl einzugrenzen.}}"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{siteName} languages"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -2175,7 +2196,6 @@ msgid "12 months"
 msgstr "12 Monate"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "18+"
 msgstr "18+"
@@ -3812,6 +3832,10 @@ msgstr "Katalog wird durchsucht"
 msgid "Building metadata search indexes"
 msgstr "Metadaten-Suchindizes werden erstellt"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Built in"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Bulk new chapters"
@@ -3912,7 +3936,6 @@ msgstr "Dieser Download kann nicht gelesen werden"
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Cancel"
@@ -4212,6 +4235,10 @@ msgstr "Verknüpfte Kapitel ändern"
 msgid "Change own content rating"
 msgstr "Eigene Inhaltsbewertung ändern"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Change the chapter language of {label}"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Change the chapter range"
@@ -4318,10 +4345,18 @@ msgstr "Kapitel heruntergeladen"
 msgid "Chapter file format"
 msgstr "Dateiformat für Kapitel"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Chapter language"
+msgstr ""
+
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Chapter language for {displayName}"
-msgstr "Kapitelsprache für {displayName}"
+#~ msgid "Chapter language for {displayName}"
+#~ msgstr "Kapitelsprache für {displayName}"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Chapter language for {label}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -4520,8 +4555,8 @@ msgstr "Stammordner auswählen"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Choose sources"
-msgstr "Quellen auswählen"
+#~ msgid "Choose sources"
+#~ msgstr "Quellen auswählen"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -6051,6 +6086,7 @@ msgid "Disk used"
 msgstr "Belegter Speicher"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/SourceMappingsSection.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -6358,8 +6394,8 @@ msgstr "Jedes Konto hat eine eigene Anmeldung, Berechtigungen, Inhaltseinstufung
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
-msgstr "Jede ausgewählte Quelle wird für jede Serie durchsucht, die du hinzufügst. Eine Quelle auf Englisch oder in der Sprache dieser Instanz wird beim Speichern sofort eingeschaltet; die übrigen warten unter Quellen verwalten."
+#~ msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
+#~ msgstr "Jede ausgewählte Quelle wird für jede Serie durchsucht, die du hinzufügst. Eine Quelle auf Englisch oder in der Sprache dieser Instanz wird beim Speichern sofort eingeschaltet; die übrigen warten unter Quellen verwalten."
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -8794,8 +8830,8 @@ msgstr "Sprache ist"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Language, e.g. en"
-msgstr "Sprache, z. B. en"
+#~ msgid "Language, e.g. en"
+#~ msgstr "Sprache, z. B. en"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -8817,10 +8853,15 @@ msgstr "Sprache, Übersetzung, übersetzen, Locale, Oberflächensprache, UI-Spra
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Languages"
 msgstr "Sprachen"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Languages of {siteName}"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9572,6 +9613,7 @@ msgstr "Signale verwalten"
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Manage sources"
 msgstr "Quellen verwalten"
@@ -9767,7 +9809,6 @@ msgid "Matching the remaining sources…"
 msgstr "Übrige Quellen werden zugeordnet…"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Mature"
 msgstr "Erwachsen"
@@ -10717,12 +10758,20 @@ msgstr "Noch kein Index. Die vorgefertigten Vektoren werden automatisch herunter
 msgid "No indexers configured in Prowlarr."
 msgstr "Keine Indexer in Prowlarr konfiguriert."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "No language matches"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "No library folder yet. Series need one to download into."
 msgstr "Noch kein Bibliotheksordner. Serien benötigen einen Ordner zum Herunterladen."
 
-#: src/pages/settings/SuwayomiCards.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "no longer in Suwayomi"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "No longer in Suwayomi"
 msgstr "Nicht mehr in Suwayomi"
@@ -11802,8 +11851,8 @@ msgstr "Nur der integrierte Reader erfasst dies."
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Only the sources already chosen are listed. You can still remove them."
-msgstr "Es werden nur die bereits ausgewählten Quellen angezeigt. Du kannst sie trotzdem entfernen."
+#~ msgid "Only the sources already chosen are listed. You can still remove them."
+#~ msgstr "Es werden nur die bereits ausgewählten Quellen angezeigt. Du kannst sie trotzdem entfernen."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12278,6 +12327,14 @@ msgstr "Persönliche Hinzufüge-Gewichtung ist für diese Instanz deaktiviert."
 msgid "Phone reader"
 msgstr "Telefon-Reader"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick a chapter language first"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick a language"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12298,6 +12355,10 @@ msgstr "Wähle einen Zeitpunkt in der Zukunft"
 #, fuzzy
 msgid "Pick another default profile first"
 msgstr "Wähle zuerst ein anderes Standardprofil"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Pick languages"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -12598,6 +12659,10 @@ msgstr "Vor Upgrades schützen"
 #, fuzzy
 msgid "Protected from upgrades"
 msgstr "Vor Upgrades geschützt"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Provider"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -13441,7 +13506,6 @@ msgstr "Neu laden"
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Remove"
 msgstr "Entfernen"
@@ -13585,8 +13649,8 @@ msgstr "Quelle entfernen?"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Remove sources with linked series?"
-msgstr "Quellen mit verknüpften Serien entfernen?"
+#~ msgid "Remove sources with linked series?"
+#~ msgstr "Quellen mit verknüpften Serien entfernen?"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -13864,7 +13928,6 @@ msgid "Require single sign-on"
 msgstr "Single Sign-on erzwingen"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Required"
 msgstr "Erforderlich"
@@ -14339,8 +14402,8 @@ msgstr "Beispielkapitel"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/SettingsSection.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Save"
 msgstr "Speichern"
@@ -14433,7 +14496,6 @@ msgstr "Deine Wiederherstellungscodes speichern"
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
-#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Saved"
@@ -14830,7 +14892,6 @@ msgid "Search shows"
 msgstr "Serien suchen"
 
 #: src/pages/settings/ManageSourcesModal.tsx
-#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Search sources"
 msgstr "Quellen durchsuchen"
@@ -15275,6 +15336,7 @@ msgid "Set to <0>0</0> to disable lockout."
 msgstr "Auf <0>0</0> setzen, um die Sperre zu deaktivieren."
 
 #: src/components/settings/AccountSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Set up"
 msgstr "Einrichten"
@@ -15322,8 +15384,12 @@ msgstr "Einrichtungsschritte"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Several languages"
-msgstr "Mehrere Sprachen"
+#~ msgid "Several languages"
+#~ msgstr "Mehrere Sprachen"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Several languages, pick one"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -15377,8 +15443,8 @@ msgstr "Alle anzeigen"
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Show every language"
-msgstr "Alle Sprachen anzeigen"
+#~ msgid "Show every language"
+#~ msgstr "Alle Sprachen anzeigen"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -16182,15 +16248,19 @@ msgstr "Übernatürlich"
 msgid "Suwayomi"
 msgstr "Suwayomi"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#, fuzzy
-msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
-msgstr "In Suwayomi sind noch keine Erweiterungen installiert. Installiere sie in Suwayomi und komm dann hierher zurück."
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
+msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
-msgid "Suwayomi sources"
-msgstr "Suwayomi-Quellen"
+#~ msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
+#~ msgstr "In Suwayomi sind noch keine Erweiterungen installiert. Installiere sie in Suwayomi und komm dann hierher zurück."
+
+#: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
+#~ msgid "Suwayomi sources"
+#~ msgstr "Suwayomi-Quellen"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -16788,6 +16858,10 @@ msgstr "Die gewählte Quelle konnte dieses Kapitel nicht liefern"
 #, fuzzy
 msgid "The specific things that keep coming back in your library, each with more of the same beside it."
 msgstr "Die konkreten Dinge, die in deiner Bibliothek immer wieder auftauchen, jeweils mit weiteren ähnlichen daneben."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "The Suwayomi sources below are the ones it listed last time."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -18285,8 +18359,8 @@ msgstr "sehr eng"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
-msgid "via Suwayomi"
-msgstr "über Suwayomi"
+#~ msgid "via Suwayomi"
+#~ msgstr "über Suwayomi"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

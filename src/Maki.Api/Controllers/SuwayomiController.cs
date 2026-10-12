@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Maki.Api.Auth;
 using Maki.Api.Localization;
+using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Http;
 using Maki.Core.Download;
@@ -15,11 +16,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Controllers;
 
 /// <summary>
-/// The optional Suwayomi integration: its connection, which of its sources Maki uses, and a relay
-/// for its thumbnails. Kept out of <c>SettingsController</c> so that controller's constructor does
-/// not grow for an add-on. The settings actions are admin-only one by one, the same rule
-/// <c>SettingsController</c> follows, because <c>GET settings/suwayomi/sources</c> reaches the server
-/// with the stored credentials. The thumbnail relay is for any signed-in reader, like the cover proxy.
+/// The optional Suwayomi integration: its connection, the snapshot of its installed sources, the
+/// chapter language of the ones that mix languages, and a relay for its thumbnails. Kept out of
+/// <c>SettingsController</c> so that controller's constructor does not grow for an add-on. Which
+/// Suwayomi sources Maki uses is the ordinary per-source switch in Manage sources. The settings
+/// actions are admin-only one by one, the same rule <c>SettingsController</c> follows, because they
+/// reach the server with the stored credentials. The thumbnail relay is for any signed-in reader,
+/// like the cover proxy.
 /// </summary>
 [ApiController]
 [Route("api/v1")]
@@ -32,6 +35,7 @@ public partial class SuwayomiController(
     SuwayomiMangaIdCache cache,
     SuwayomiConnectionTester tester,
     SourceRegistry sourceRegistry,
+    SourceAvailability sourceAvailability,
     MakiDbContext db,
     IHttpClientFactory httpClientFactory,
     ILogger<SuwayomiController> logger) : ControllerBase
@@ -47,28 +51,13 @@ public partial class SuwayomiController(
         string? Password = null,
         bool PasswordSet = false);
 
-    public record SuwayomiSourceChoice(string Id, string? ChapterLanguage = null);
+    /// <param name="Error">Why Suwayomi could not be asked, localized; the stored list is left as it was.</param>
+    public record SuwayomiRefreshResult(bool Reachable, string? Error, int Installed);
 
-    public record SuwayomiSourcesRequest(List<SuwayomiSourceChoice> Sources);
+    public record SuwayomiSourceLanguage(string? ChapterLanguage);
 
-    /// <param name="Installed">Null when Suwayomi could not be asked.</param>
-    /// <param name="Mappings">Series linked to it, so removing it can say what stops syncing.</param>
-    public record SuwayomiSourceRow(
-        string Id,
-        string SourceName,
-        string Name,
-        string DisplayName,
-        string Lang,
-        string? ContentWarning,
-        bool IsNsfw,
-        bool MixedLanguage,
-        bool? Installed,
-        bool Exposed,
-        string? ChapterLanguage,
-        int Mappings);
-
-    /// <param name="Error">Why Suwayomi could not be asked, localized; the stored sources are still listed.</param>
-    public record SuwayomiSourcesResponse(bool Reachable, string? Error, IReadOnlyList<SuwayomiSourceRow> Sources);
+    /// <summary>Serialises the snapshot's read-modify-write between a refresh and a language change.</summary>
+    private static readonly SemaphoreSlim SnapshotGate = new(1, 1);
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("settings/suwayomi")]
@@ -122,6 +111,19 @@ public partial class SuwayomiController(
 
         tokens.Clear();
         await sourceRegistry.ReloadAsync(ct);
+        if (url is not null)
+        {
+            try
+            {
+                await RefreshSnapshotAsync(ct);
+            }
+            catch (Exception ex) when (IsUnreachable(ex, ct))
+            {
+                // Saving still succeeds; Manage sources refreshes again when it opens.
+                logger.LogInformation(ex, "Could not list Suwayomi's sources after saving the connection");
+            }
+        }
+
         return await GetConnection(ct);
     }
 
@@ -179,141 +181,100 @@ public partial class SuwayomiController(
         }
     }
 
-    /// <summary>Every installed source merged with the stored selection, including selected ones Suwayomi no longer has.</summary>
+    /// <summary>
+    /// Reads Suwayomi's installed sources into the stored snapshot, so a newly installed extension
+    /// shows up in Manage sources, switched off. Chapter languages already chosen are kept. A source
+    /// Suwayomi no longer lists is dropped, unless series are linked to it: then it stays, marked
+    /// missing, so those links keep a name and the health check can say what is wrong.
+    /// </summary>
     [Authorize(Policy = Policies.Admin)]
-    [HttpGet("settings/suwayomi/sources")]
-    public async Task<IActionResult> GetSources(CancellationToken ct)
+    [HttpPost("settings/suwayomi/sources/refresh")]
+    public async Task<IActionResult> RefreshSources(CancellationToken ct)
     {
         if (await suwayomiSettings.GetAsync(ct) is null)
         {
             return this.Fail(localizer, "error.suwayomi.notConfigured");
         }
 
-        var exposed = (await StoredAsync(ct)).ToDictionary(e => e.Id, StringComparer.Ordinal);
-        var mappings = await db.SourceMappings.IgnoreQueryFilters()
-            .Where(m => m.SourceName.StartsWith(SuwayomiSource.NamePrefix))
-            .GroupBy(m => m.SourceName)
-            .Select(g => new { g.Key, Count = g.Count() })
-            .ToDictionaryAsync(g => g.Key, g => g.Count, ct);
-
-        IReadOnlyList<SuwayomiSourceInfo>? live = null;
-        string? error = null;
         try
         {
-            live = await client.ListSourcesAsync(ct);
+            return Ok(new SuwayomiRefreshResult(true, null, await RefreshSnapshotAsync(ct)));
         }
         catch (Exception ex) when (IsUnreachable(ex, ct))
         {
             logger.LogInformation(ex, "Could not list Suwayomi's sources");
-            error = localizer.Get(UnreachableKey(ex));
+            return Ok(new SuwayomiRefreshResult(false, localizer.Get(UnreachableKey(ex)), 0));
         }
-
-        var rows = new List<SuwayomiSourceRow>();
-        foreach (var source in live ?? [])
-        {
-            exposed.TryGetValue(source.Id, out var chosen);
-            rows.Add(Row(source.Id, source.Name, source.DisplayName, source.Lang, source.ContentWarning, source.IsNsfw,
-                installed: true, chosen, mappings));
-        }
-
-        var liveIds = (live ?? []).Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
-        foreach (var chosen in exposed.Values.Where(e => !liveIds.Contains(e.Id)))
-        {
-            rows.Add(Row(chosen.Id, chosen.Name, chosen.DisplayName, chosen.Lang, chosen.ContentWarning, chosen.IsNsfw,
-                installed: live is null ? null : false, chosen, mappings));
-        }
-
-        return Ok(new SuwayomiSourcesResponse(
-            live is not null, error,
-            [.. rows.OrderBy(r => r.Lang, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.DisplayName, StringComparer.OrdinalIgnoreCase)]));
     }
 
     /// <summary>
-    /// Replaces the selection. Names, languages and content warnings are taken from Suwayomi, not the
-    /// request, so the stored snapshot says what the server says; a source Suwayomi no longer lists
-    /// keeps the snapshot it already had, and is accepted only if it was already selected.
+    /// Sets the language a mixed-language source's chapters are filed under. Mihon chapters carry no
+    /// language, so it is one per source; until it is set the source cannot be switched on.
     /// </summary>
     [Authorize(Policy = Policies.Admin)]
-    [HttpPut("settings/suwayomi/sources")]
-    public async Task<IActionResult> SetSources([FromBody] SuwayomiSourcesRequest request, CancellationToken ct)
+    [HttpPut("settings/suwayomi/sources/{id}")]
+    public async Task<IActionResult> SetSourceLanguage(string id, [FromBody] SuwayomiSourceLanguage request, CancellationToken ct)
     {
         if (await suwayomiSettings.GetAsync(ct) is null)
         {
             return this.Fail(localizer, "error.suwayomi.notConfigured");
         }
 
-        var stored = (await StoredAsync(ct)).ToDictionary(e => e.Id, StringComparer.Ordinal);
-        Dictionary<string, SuwayomiSourceInfo> live;
-        Exception? unreachable = null;
+        await SnapshotGate.WaitAsync(ct);
         try
         {
-            live = (await client.ListSourcesAsync(ct)).ToDictionary(s => s.Id, StringComparer.Ordinal);
+            var stored = (await StoredAsync(ct)).ToList();
+            var index = stored.FindIndex(e => e.Id == id);
+            if (index < 0)
+            {
+                return this.Fail(localizer, "error.suwayomi.unknownSource", new { id });
+            }
+
+            // For the rest the extension's own language is the truth, and overriding it would file
+            // every chapter under a wrong one.
+            var entry = stored[index];
+            if (!SuwayomiStoredSource.IsMixedLanguage(entry.Lang))
+            {
+                return this.Fail(localizer, "error.suwayomi.chapterLanguageFixed", new { source = entry.DisplayName });
+            }
+
+            var language = request.ChapterLanguage?.Trim();
+            if (string.IsNullOrEmpty(language))
+            {
+                return this.Fail(localizer, "error.suwayomi.chapterLanguageRequired", new { source = entry.DisplayName });
+            }
+
+            if (!LanguageCode().IsMatch(language))
+            {
+                return this.Fail(localizer, "error.suwayomi.chapterLanguageInvalid", new { language });
+            }
+
+            stored[index] = entry with { ChapterLanguage = language };
+            await settings.SetAsync(SettingKeys.SuwayomiSources, SuwayomiSettings.Serialize(stored), ct);
         }
-        catch (Exception ex) when (IsUnreachable(ex, ct))
+        finally
         {
-            // Unreachable still allows dropping sources, or keeping ones already chosen.
-            logger.LogInformation(ex, "Could not list Suwayomi's sources while saving the selection");
-            live = [];
-            unreachable = ex;
+            SnapshotGate.Release();
         }
 
-        var next = new List<SuwayomiExposedSource>();
-        foreach (var choice in (request.Sources ?? []).DistinctBy(c => c.Id))
-        {
-            SuwayomiExposedSource entry;
-            if (live.TryGetValue(choice.Id, out var source))
-            {
-                entry = new SuwayomiExposedSource(
-                    source.Id, source.Name, source.DisplayName, source.Lang, null, source.ContentWarning, source.IsNsfw);
-            }
-            else if (stored.TryGetValue(choice.Id, out var kept))
-            {
-                entry = kept with { ChapterLanguage = null };
-            }
-            else
-            {
-                return unreachable is not null
-                    ? FailedToReach(unreachable)
-                    : this.Fail(localizer, "error.suwayomi.unknownSource", new { id = choice.Id });
-            }
-
-            // Only a mixed-language source takes a chapter language: for the rest, the extension's own
-            // language is the truth, and overriding it would file every chapter under a wrong one.
-            if (SuwayomiExposedSource.IsMixedLanguage(entry.Lang))
-            {
-                var language = choice.ChapterLanguage?.Trim();
-                if (string.IsNullOrEmpty(language))
-                {
-                    return this.Fail(localizer, "error.suwayomi.chapterLanguageRequired", new { source = entry.DisplayName });
-                }
-
-                if (!LanguageCode().IsMatch(language))
-                {
-                    return this.Fail(localizer, "error.suwayomi.chapterLanguageInvalid", new { language });
-                }
-
-                entry = entry with { ChapterLanguage = language };
-            }
-
-            next.Add(entry);
-        }
-
-        await settings.SetAsync(SettingKeys.SuwayomiSources, next.Count == 0 ? null : SuwayomiSettings.Serialize(next), ct);
         await sourceRegistry.ReloadAsync(ct);
-        return await GetSources(ct);
+        return NoContent();
     }
 
     /// <summary>
     /// Relays a Suwayomi thumbnail, which needs Suwayomi's credentials and usually lives on the LAN,
     /// so the cover proxy (public addresses only, no credentials) cannot fetch it. The caller picks
-    /// two integers and nothing else, and only a manga of a source the admin exposed is served:
-    /// without that, any reader could browse the thumbnails of every extension installed.
+    /// two integers and nothing else, and only a manga of a source that is switched on is served:
+    /// every installed source is registered, so without that any reader could browse the thumbnails
+    /// of every extension installed.
     /// </summary>
     [HttpGet("suwayomi/thumbnail/{sourceId:long}/{mangaId:int}")]
     public async Task<IActionResult> Thumbnail(long sourceId, int mangaId, CancellationToken ct)
     {
         var id = sourceId.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        if (sourceRegistry.Find(SuwayomiSource.NamePrefix + id) is not SuwayomiSource ||
+        var name = SuwayomiSource.NamePrefix + id;
+        if (sourceRegistry.Find(name) is not SuwayomiSource ||
+            !await sourceAvailability.IsEnabledAsync(name, ct) ||
             await suwayomiSettings.GetAsync(ct) is not { } connection)
         {
             return NotFound();
@@ -367,28 +328,64 @@ public partial class SuwayomiController(
         }
     }
 
-    private async Task<IReadOnlyList<SuwayomiExposedSource>> StoredAsync(CancellationToken ct)
+    /// <returns>How many sources Suwayomi listed.</returns>
+    private async Task<int> RefreshSnapshotAsync(CancellationToken ct)
+    {
+        var live = (await client.ListSourcesAsync(ct)).DistinctBy(s => s.Id).ToList();
+        var linked = (await db.SourceMappings.IgnoreQueryFilters()
+                .Where(m => m.SourceName.StartsWith(SuwayomiSource.NamePrefix))
+                .Select(m => m.SourceName)
+                .Distinct()
+                .ToListAsync(ct))
+            .ToHashSet(StringComparer.Ordinal);
+
+        await SnapshotGate.WaitAsync(ct);
+        try
+        {
+            var before = await settings.GetAsync(SettingKeys.SuwayomiSources, ct);
+            var stored = (await StoredAsync(ct)).DistinctBy(e => e.Id).ToDictionary(e => e.Id, StringComparer.Ordinal);
+            var next = live.Select(source => new SuwayomiStoredSource(
+                    source.Id, source.Name, source.DisplayName, source.Lang,
+                    SuwayomiStoredSource.IsMixedLanguage(source.Lang) ? stored.GetValueOrDefault(source.Id)?.ChapterLanguage : null,
+                    source.ContentWarning, source.IsNsfw))
+                .ToList();
+            var liveIds = live.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
+            next.AddRange(stored.Values
+                .Where(e => !liveIds.Contains(e.Id) && linked.Contains(SuwayomiSource.NamePrefix + e.Id))
+                .Select(e => e with { Missing = true }));
+
+            var after = next.Count == 0
+                ? null
+                : SuwayomiSettings.Serialize(next
+                    .OrderBy(e => string.IsNullOrWhiteSpace(e.DisplayName) ? e.Name : e.DisplayName, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(e => e.Id, StringComparer.Ordinal));
+            if (string.Equals(before, after, StringComparison.Ordinal))
+            {
+                return live.Count;
+            }
+
+            await settings.SetAsync(SettingKeys.SuwayomiSources, after, ct);
+        }
+        finally
+        {
+            SnapshotGate.Release();
+        }
+
+        await sourceRegistry.ReloadAsync(ct);
+        return live.Count;
+    }
+
+    private async Task<IReadOnlyList<SuwayomiStoredSource>> StoredAsync(CancellationToken ct)
     {
         try
         {
-            return await suwayomiSettings.ExposedAsync(ct);
+            return await suwayomiSettings.StoredAsync(ct);
         }
         catch (System.Text.Json.JsonException ex)
         {
             logger.LogWarning(ex, "The stored Suwayomi source list is not valid JSON; treating it as empty");
             return [];
         }
-    }
-
-    private static SuwayomiSourceRow Row(
-        string id, string name, string displayName, string lang, string? contentWarning, bool isNsfw,
-        bool? installed, SuwayomiExposedSource? chosen, Dictionary<string, int> mappings)
-    {
-        var sourceName = SuwayomiSource.NamePrefix + id;
-        return new SuwayomiSourceRow(
-            id, sourceName, name, displayName, lang, contentWarning, isNsfw,
-            SuwayomiExposedSource.IsMixedLanguage(lang), installed, chosen is not null, chosen?.ChapterLanguage,
-            mappings.GetValueOrDefault(sourceName));
     }
 
     private static SuwayomiAuthMode? ParseAuthMode(string? value) => value?.Trim().ToLowerInvariant() switch

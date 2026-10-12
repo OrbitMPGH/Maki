@@ -121,8 +121,8 @@ internal sealed class SuwayomiHarness : IHttpClientFactory
     }
 
     public SuwayomiSource Source(string id = "100", string lang = "en", string? chapterLanguage = null, string? contentWarning = null) =>
-        new(new SuwayomiExposedSource(id, "Fake", "Fake (EN)", lang, chapterLanguage, contentWarning),
-            chapterLanguage ?? lang, new Uri(Base), Client, Cache);
+        new(new SuwayomiStoredSource(id, "Fake", "Fake (EN)", lang, chapterLanguage, contentWarning),
+            new Uri(Base), Client, Cache);
 
     public void Installed(params string[] ids) =>
         Server.Ops["InstalledSources"] = (_, _) => FakeSuwayomi.Data(new { sources = new { nodes = ids.Select(id => new { id }).ToArray() } });

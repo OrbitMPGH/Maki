@@ -1274,7 +1274,7 @@ public class SettingsController(
     [HttpGet("sources/languages")]
     public async Task<IActionResult> GetSourceLanguages(CancellationToken ct)
     {
-        var offered = SourceLanguagePreference.Offered(sourceRegistry.All);
+        var offered = SourceLanguagePreference.Offered(await LanguageSourcesAsync(ct));
         var stored = SourceLanguagePreference.Parse(
             await settings.GetAsync(SettingKeys.SourceLanguageOrder, ct),
             await settings.GetAsync(SettingKeys.SourceLanguagesDisabled, ct));
@@ -1298,12 +1298,23 @@ public class SettingsController(
         return Ok(new SourceLanguageSettings(order, disabled, [.. offered]));
     }
 
+    /// <summary>
+    /// The sources whose languages the ranking offers: every built-in one, but only the Suwayomi
+    /// sources switched on, or one Suwayomi install would bring every language it has an extension for.
+    /// </summary>
+    private async Task<List<ISource>> LanguageSourcesAsync(CancellationToken ct)
+    {
+        var disabled = await sourceAvailability.DisabledAsync(ct);
+        return [.. sourceRegistry.All.Where(s =>
+            s is not Maki.Sources.Suwayomi.SuwayomiSource || !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase))];
+    }
+
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("sources/languages")]
     public async Task<IActionResult> SetSourceLanguages(
         [FromBody] SourceLanguageSettings request, CancellationToken ct)
     {
-        var offered = SourceLanguagePreference.Offered(sourceRegistry.All);
+        var offered = SourceLanguagePreference.Offered(await LanguageSourcesAsync(ct));
         var unknown = request.Order.Concat(request.Disabled)
             .Where(code => !offered.Contains(code, StringComparer.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
