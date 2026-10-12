@@ -2120,8 +2120,9 @@ msgid "👎 Disliked"
 msgstr "👎 No me gusta"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "0 deletes them for good on the next housekeeping pass."
-msgstr ""
+msgstr "0 los elimina para siempre en la siguiente pasada de mantenimiento."
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4409,8 +4410,9 @@ msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "Capítulos: {chapterRangeMin}–{chapterRangeMax}"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Chapters: {chapters}"
-msgstr ""
+msgstr "Capítulos: {chapters}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6955,13 +6957,15 @@ msgstr "Nombre del archivo"
 
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "File name parsing"
-msgstr ""
+msgstr "Análisis de nombres de archivo"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese"
-msgstr ""
+msgstr "análisis de nombres de archivo, indicador de volumen, indicador de capítulo, tomo, banda, nombres de versiones, archivos no reconocidos, francés, alemán, español, japonés, coreano, chino"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -8767,8 +8771,9 @@ msgid "Languages to download, most preferred first. Auto-match tries sources tha
 msgstr "Idiomas que se descargarán, de mayor a menor preferencia. Auto-match prueba primero las fuentes que publican en tu idioma preferido y omite las que no publican ninguno de estos idiomas. Las fuentes asignadas automáticamente nuevas usarán estos idiomas; las asignaciones existentes no se cambian. Arrastra para reordenar."
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Languages to read markers in"
-msgstr ""
+msgstr "Idiomas en los que leer indicadores"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -9442,8 +9447,9 @@ msgid "Maki {version}"
 msgstr "Maki {version}"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Maki always reads English markers like v01, Vol. 3 and Ch. 12 in release and file names. Turn a language on to read its markers as well, so a release named Tome 3 or 第3巻 is recognized as a volume. Changes apply to the next search, import or rescan; files that are already linked stay where they are. A title that ends in one of these words and a number, like Brass Band 2, reads as a volume once that language is on."
-msgstr ""
+msgstr "Maki siempre lee los indicadores en inglés, como v01, Vol. 3 y Ch. 12, en los nombres de versiones y de archivos. Activa un idioma para leer también sus indicadores, así una versión llamada Tome 3 o 第3巻 se reconoce como volumen. Los cambios se aplican a la siguiente búsqueda, importación o nuevo escaneo; los archivos que ya están vinculados se quedan donde están. Un título que termina en una de estas palabras seguida de un número, como Brass Band 2, se lee como volumen cuando ese idioma está activado."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -18062,8 +18068,9 @@ msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
 msgstr "Usa unos 240 MB de RAM. Necesita la base de datos local de MangaBaka de arriba."
 
 #: src/api/upgrades.ts
+#, fuzzy
 msgid "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
-msgstr ""
+msgstr "Usa palabras de volumen o capítulo de un idioma que está desactivado en Ajustes › Biblioteca › Análisis de nombres de archivo"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -18305,8 +18312,9 @@ msgid "Volumes that hold chapters still read from single files"
 msgstr "Tomos que contienen capítulos que aún se leen desde archivos individuales"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Volumes: {volumes}"
-msgstr ""
+msgstr "Volúmenes: {volumes}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

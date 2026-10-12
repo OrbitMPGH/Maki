@@ -1006,8 +1006,9 @@ msgstr "Ce téléchargement n'attend pas une décision d'importation"
 
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: The file name parsing settings changed after this review opened. Open it again to see what the import would do now.
+#, fuzzy
 msgid "error.queue.planStale"
-msgstr ""
+msgstr "Les paramètres d'analyse des noms de fichiers ont changé après l'ouverture de cette revue. Ouvrez-la de nouveau pour voir ce que l'importation ferait maintenant."
 
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: Only failed items can be retried
@@ -2554,8 +2555,9 @@ msgstr "FlareSolverr n'a pas répondu"
 #. {language} is the code the caller sent, e.g. "xx".
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Maki has no volume or chapter words for the language "{language}"
+#, fuzzy
 msgid "error.nameParsing.unknownLanguage"
-msgstr ""
+msgstr "Maki n'a pas de mots de volume ou de chapitre pour la langue « {language} »"
 
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #: src/Maki.Core/Naming/NamingFormatter.cs

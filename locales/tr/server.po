@@ -1006,8 +1006,9 @@ msgstr "Bu indirme, bir içe aktarma kararı beklemiyor"
 
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: The file name parsing settings changed after this review opened. Open it again to see what the import would do now.
+#, fuzzy
 msgid "error.queue.planStale"
-msgstr ""
+msgstr "Bu inceleme açıldıktan sonra dosya adı ayrıştırma ayarları değişti. İçe aktarmanın şimdi ne yapacağını görmek için incelemeyi yeniden açın."
 
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: Only failed items can be retried
@@ -2554,8 +2555,9 @@ msgstr "FlareSolverr yanıt vermedi"
 #. {language} is the code the caller sent, e.g. "xx".
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Maki has no volume or chapter words for the language "{language}"
+#, fuzzy
 msgid "error.nameParsing.unknownLanguage"
-msgstr ""
+msgstr "Maki'de \"{language}\" dili için cilt veya bölüm kelimesi yok"
 
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #: src/Maki.Core/Naming/NamingFormatter.cs

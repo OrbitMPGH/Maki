@@ -426,8 +426,9 @@ msgstr "{0, plural, one {Quer # capítulo} many {Quer # capítulos}other {Quer #
 
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
+#, fuzzy
 msgid "{0} in"
-msgstr ""
+msgstr "{0} em"
 
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
@@ -4409,8 +4410,9 @@ msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "Capítulos: {chapterRangeMin}–{chapterRangeMax}"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Chapters: {chapters}"
-msgstr ""
+msgstr "Capítulos: {chapters}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6955,13 +6957,15 @@ msgstr "Nome do arquivo"
 
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "File name parsing"
-msgstr ""
+msgstr "Leitura de nomes de arquivo"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese"
-msgstr ""
+msgstr "leitura de nomes de arquivo, marcador de volume, marcador de capítulo, tomo, band, nomes de lançamentos, arquivos não reconhecidos, francês, alemão, espanhol, japonês, coreano, chinês"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -8767,8 +8771,9 @@ msgid "Languages to download, most preferred first. Auto-match tries sources tha
 msgstr "Idiomas para baixar, do mais ao menos preferido. A correspondência automática tenta primeiro fontes que publicam no seu idioma preferido e ignora as que não publicam em nenhum destes idiomas. Novas fontes correspondidas automaticamente recebem estes idiomas; os vínculos existentes não são alterados. Arraste para reordenar."
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Languages to read markers in"
-msgstr ""
+msgstr "Idiomas em que ler os marcadores"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -9442,8 +9447,9 @@ msgid "Maki {version}"
 msgstr "Maki {version}"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Maki always reads English markers like v01, Vol. 3 and Ch. 12 in release and file names. Turn a language on to read its markers as well, so a release named Tome 3 or 第3巻 is recognized as a volume. Changes apply to the next search, import or rescan; files that are already linked stay where they are. A title that ends in one of these words and a number, like Brass Band 2, reads as a volume once that language is on."
-msgstr ""
+msgstr "O Maki sempre lê marcadores em inglês, como v01, Vol. 3 e Ch. 12, nos nomes de lançamentos e de arquivos. Ative um idioma para ler também os marcadores dele, assim um lançamento chamado Tome 3 ou 第3巻 é reconhecido como volume. As mudanças valem para a próxima busca, importação ou verificação; arquivos que já estão vinculados continuam onde estão. Um título que termina em uma dessas palavras seguida de número, como Brass Band 2, é lido como volume depois que o idioma estiver ativo."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -18062,8 +18068,9 @@ msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
 msgstr "Usa cerca de 240 MB de RAM. Precisa do banco de dados local do MangaBaka acima."
 
 #: src/api/upgrades.ts
+#, fuzzy
 msgid "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
-msgstr ""
+msgstr "Usa palavras de volume ou capítulo de um idioma desativado em Configurações > Biblioteca > Leitura de nomes de arquivo"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -18305,8 +18312,9 @@ msgid "Volumes that hold chapters still read from single files"
 msgstr "Volumes que contêm capítulos ainda lidos em arquivos individuais"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Volumes: {volumes}"
-msgstr ""
+msgstr "Volumes: {volumes}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

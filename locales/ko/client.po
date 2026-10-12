@@ -426,8 +426,9 @@ msgstr "{0, plural, other {원하는 챕터 #개}}"
 
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
+#, fuzzy
 msgid "{0} in"
-msgstr ""
+msgstr "{0} 지점에서 중단"
 
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
@@ -4408,8 +4409,9 @@ msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "챕터: {chapterRangeMin}–{chapterRangeMax}"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Chapters: {chapters}"
-msgstr ""
+msgstr "챕터: {chapters}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6954,13 +6956,15 @@ msgstr "파일 이름"
 
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "File name parsing"
-msgstr ""
+msgstr "파일 이름 파싱"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese"
-msgstr ""
+msgstr "파일 이름 파싱, 권 표기, 챕터 표기, 릴리스 이름, 인식되지 않는 파일, 프랑스어, 독일어, 스페인어, 일본어, 한국어, 중국어"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -8766,8 +8770,9 @@ msgid "Languages to download, most preferred first. Auto-match tries sources tha
 msgstr "다운로드할 언어를 선호도 순으로 지정합니다. 자동 연결은 가장 선호하는 언어를 제공하는 소스부터 시도하고 선택한 언어를 하나도 제공하지 않는 소스는 건너뜁니다. 새로 자동 연결되는 소스에는 이 언어가 설정되며 기존 연결은 변경되지 않습니다. 드래그하여 순서를 바꾸세요."
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Languages to read markers in"
-msgstr ""
+msgstr "마커를 읽을 언어"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -9441,8 +9446,9 @@ msgid "Maki {version}"
 msgstr "Maki {version}"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Maki always reads English markers like v01, Vol. 3 and Ch. 12 in release and file names. Turn a language on to read its markers as well, so a release named Tome 3 or 第3巻 is recognized as a volume. Changes apply to the next search, import or rescan; files that are already linked stay where they are. A title that ends in one of these words and a number, like Brass Band 2, reads as a volume once that language is on."
-msgstr ""
+msgstr "Maki는 릴리스와 파일 이름의 영어 표기(v01, Vol. 3, Ch. 12 등)를 항상 읽습니다. 언어를 켜면 그 언어의 표기도 함께 읽으므로, Tome 3이나 第3巻이라고 적힌 릴리스를 권으로 인식합니다. 변경 사항은 다음 검색, 가져오기, 다시 검사할 때 적용됩니다. 이미 연결된 파일은 그대로 둡니다. Brass Band 2처럼 이런 단어와 숫자로 끝나는 제목은 해당 언어를 켜면 권으로 읽습니다."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -18061,8 +18067,9 @@ msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
 msgstr "메모리를 약 240MB 사용합니다. 위의 로컬 MangaBaka 데이터베이스가 필요합니다."
 
 #: src/api/upgrades.ts
+#, fuzzy
 msgid "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
-msgstr ""
+msgstr "설정 > 라이브러리 > 파일 이름 파싱에서 꺼 둔 언어의 권이나 챕터 표기를 사용합니다"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -18304,8 +18311,9 @@ msgid "Volumes that hold chapters still read from single files"
 msgstr "단일 파일에서 읽고 있는 챕터를 담는 권 파일"
 
 #: src/pages/settings/LibraryCards.tsx
+#, fuzzy
 msgid "Volumes: {volumes}"
-msgstr ""
+msgstr "권: {volumes}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
