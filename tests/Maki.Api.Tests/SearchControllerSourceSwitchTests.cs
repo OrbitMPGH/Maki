@@ -61,4 +61,34 @@ public class SearchControllerSourceSwitchTests
 
         Assert.Equal("error.sourceMapping.sourceDisabled", Code(result));
     }
+
+    [Fact]
+    public async Task Only_suwayomis_thumbnail_relay_skips_the_cover_proxy()
+    {
+        var registry = new SourceRegistry(
+        [
+            new FakeSource
+            {
+                Name = "src",
+                OnSearch = _ =>
+                [
+                    new SourceSeriesResult("a", "A", "https://src.test/a", "/api/v1/suwayomi/thumbnail/100/7"),
+                    new SourceSeriesResult("b", "B", "https://src.test/b", "https://cdn.src.test/b.jpg"),
+                    new SourceSeriesResult("c", "C", "https://src.test/c", "/api/v1/series/1/cover")
+                ]
+            }
+        ]);
+        var settings = new FakeAppSettings();
+        var controller = new SearchController(
+            new TestLocalizer(), Array.Empty<IMetadataProvider>(), registry,
+            new SourceAvailability(settings, registry), new TestCurrentUser(1), null!, settings,
+            NullLogger<SearchController>.Instance);
+
+        var results = Assert.IsAssignableFrom<IEnumerable<SourceSeriesResult>>(
+            Assert.IsType<OkObjectResult>(await controller.SearchSource("src", "x", default)).Value).ToList();
+
+        Assert.Equal("/api/v1/suwayomi/thumbnail/100/7", results[0].CoverUrl);
+        Assert.StartsWith("/api/v1/search/cover?sourceName=src&url=", results[1].CoverUrl);
+        Assert.StartsWith("/api/v1/search/cover?sourceName=src&url=", results[2].CoverUrl);
+    }
 }

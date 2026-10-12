@@ -781,6 +781,7 @@ try
     builder.Services.AddSingleton<SuwayomiTokenStore>();
     builder.Services.AddSingleton<SuwayomiClient>();
     builder.Services.AddSingleton<SuwayomiMangaIdCache>();
+    builder.Services.AddSingleton(_ => new SuwayomiConnectionTester());
     builder.Services.AddSingleton<ISourceProvider, SuwayomiSourceProvider>();
     AddSuwayomiClient(SuwayomiClient.HttpClientName, TimeSpan.FromSeconds(60));
     AddSuwayomiClient(SuwayomiClient.PagesHttpClientName, TimeSpan.FromMinutes(2));

@@ -12,6 +12,7 @@ public sealed class SuwayomiMangaIdCache
 {
     private readonly ConcurrentDictionary<(Uri Server, string SourceId, string Url), int> _manga = new();
     private readonly ConcurrentDictionary<(Uri Server, int MangaId, string Url), int> _chapters = new();
+    private readonly ConcurrentDictionary<(Uri Server, int MangaId), string> _owners = new();
 
     public int? Manga(Uri server, string sourceId, string url) =>
         _manga.TryGetValue((server, sourceId, url), out var id) ? id : null;
@@ -27,9 +28,16 @@ public sealed class SuwayomiMangaIdCache
 
     public void ForgetChapter(Uri server, int mangaId, string url) => _chapters.TryRemove((server, mangaId, url), out _);
 
+    /// <summary>Which source a local manga id belongs to, for the thumbnail endpoint's ownership check.</summary>
+    public string? Owner(Uri server, int mangaId) =>
+        _owners.TryGetValue((server, mangaId), out var sourceId) ? sourceId : null;
+
+    public void SetOwner(Uri server, int mangaId, string sourceId) => _owners[(server, mangaId)] = sourceId;
+
     public void Clear()
     {
         _manga.Clear();
         _chapters.Clear();
+        _owners.Clear();
     }
 }

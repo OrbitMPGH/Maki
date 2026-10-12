@@ -1,0 +1,374 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using Maki.Api.Controllers;
+using Maki.Core.Configuration;
+using Maki.Core.Entities;
+using Maki.Core.Sources;
+using Maki.Sources.Suwayomi;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Maki.Api.Tests;
+
+public sealed class SuwayomiControllerTests : IDisposable
+{
+    private const string Base = "http://192.168.1.20:4567";
+
+    private static readonly byte[] Png =
+        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52];
+
+    private readonly TestDb _db = new();
+    private readonly FakeAppSettings _settings = new();
+    private readonly FakeServer _server = new();
+    private readonly SuwayomiSettings _suwayomiSettings;
+    private readonly SuwayomiTokenStore _tokens;
+    private readonly SuwayomiClient _client;
+    private readonly SuwayomiMangaIdCache _cache = new();
+    private readonly SourceRegistry _registry;
+
+    public SuwayomiControllerTests()
+    {
+        _suwayomiSettings = new SuwayomiSettings(_settings);
+        var factory = new ChainFactory(this);
+        _tokens = new SuwayomiTokenStore(_suwayomiSettings, factory);
+        _client = new SuwayomiClient(factory, _suwayomiSettings, TimeProvider.System);
+        var provider = new SuwayomiSourceProvider(_suwayomiSettings, _client, _cache, NullLogger<SuwayomiSourceProvider>.Instance);
+        _registry = new SourceRegistry([], [provider]);
+
+        _server.Ops["AboutServer"] = _ => FakeServer.Data(new { aboutServer = new { name = "Suwayomi", version = "v2.4.2366", buildType = "Stable" } });
+        LiveSources(("100", "MangaDex", "MangaDex (EN)", "en"), ("200", "Comick", "Comick (ALL)", "all"));
+    }
+
+    public void Dispose() => _db.Dispose();
+
+    private SuwayomiController Controller()
+    {
+        var controller = new SuwayomiController(
+            new TestLocalizer(), _settings, _suwayomiSettings, _client, _tokens, _cache,
+            new SuwayomiConnectionTester(() => _server), _registry, _db.NewContext(), new ChainFactory(this),
+            NullLogger<SuwayomiController>.Instance)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+        return controller;
+    }
+
+    private void Configure(string authMode = "none", string? username = null, string? password = null)
+    {
+        _settings.Set(SettingKeys.SuwayomiUrl, Base).Set(SettingKeys.SuwayomiAuthMode, authMode);
+        if (username is not null)
+        {
+            _settings.Set(SettingKeys.SuwayomiUsername, username);
+        }
+
+        if (password is not null)
+        {
+            _settings.Set(SettingKeys.SuwayomiPassword, password);
+        }
+    }
+
+    private void LiveSources(params (string Id, string Name, string DisplayName, string Lang)[] sources) =>
+        _server.Ops["Sources"] = _ => FakeServer.Data(new
+        {
+            sources = new
+            {
+                nodes = sources.Select(s => new
+                {
+                    id = s.Id, name = s.Name, displayName = s.DisplayName, lang = s.Lang,
+                    isNsfw = false, contentWarning = "SAFE"
+                }).ToArray()
+            }
+        });
+
+    private static string Error(IActionResult result) =>
+        JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<ObjectResult>(result).Value).GetProperty("code").GetString()!;
+
+    private static T Body<T>(IActionResult result) => Assert.IsType<T>(Assert.IsType<OkObjectResult>(result).Value);
+
+    [Fact]
+    public async Task The_password_is_never_returned_and_null_leaves_it_alone()
+    {
+        Configure("basic", "maki", "secret");
+
+        var read = Body<SuwayomiController.SuwayomiConnectionSettings>(await Controller().GetConnection(default));
+        Assert.Null(read.Password);
+        Assert.True(read.PasswordSet);
+
+        await Controller().SetConnection(new(Base, "basic", "maki", Password: null), default);
+        Assert.Equal("secret", await _settings.GetAsync(SettingKeys.SuwayomiPassword));
+
+        await Controller().SetConnection(new(Base, "basic", "maki", Password: ""), default);
+        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiPassword));
+    }
+
+    [Theory]
+    [InlineData("suwayomi:4567", "none", null, "error.settings.urlInvalid")]
+    [InlineData(Base, "token", null, "error.suwayomi.authModeInvalid")]
+    [InlineData(Base, "uilogin", " ", "error.suwayomi.usernameRequired")]
+    public async Task Bad_connection_settings_are_refused(string url, string mode, string? username, string expected) =>
+        Assert.Equal(expected, Error(await Controller().SetConnection(new(url, mode, username), default)));
+
+    [Fact]
+    public async Task Saving_the_connection_reloads_the_sources_and_clearing_the_url_turns_them_off()
+    {
+        _settings.Set(SettingKeys.SuwayomiSources,
+            SuwayomiSettings.Serialize([new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en")]));
+
+        await Controller().SetConnection(new(Base + "/", "none", null), default);
+        Assert.Equal(Base, await _settings.GetAsync(SettingKeys.SuwayomiUrl));
+        Assert.NotNull(_registry.Find("suwayomi-100"));
+
+        await Controller().SetConnection(new("", "none", null), default);
+        Assert.Null(_registry.Find("suwayomi-100"));
+        Assert.NotNull(await _settings.GetAsync(SettingKeys.SuwayomiSources));
+    }
+
+    [Fact]
+    public async Task The_test_reports_version_and_source_count_using_the_stored_password()
+    {
+        Configure("uilogin", "maki", "secret");
+        _server.Ops["Login"] = vars =>
+            vars.GetProperty("password").GetString() == "secret"
+                ? FakeServer.Data(new { login = new { accessToken = "a1", refreshToken = "r1" } })
+                : FakeServer.Errors("Unauthorized");
+
+        var result = await Controller().TestConnection(new(Base, "uilogin", "maki"), default);
+
+        var body = JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal("v2.4.2366", body.GetProperty("version").GetString());
+        Assert.Equal(2, body.GetProperty("sourceCount").GetInt32());
+        Assert.Equal(1, _server.Count("Login"));
+    }
+
+    [Fact]
+    public async Task The_test_says_which_version_a_sign_in_mode_needs()
+    {
+        _server.Ops["AboutServer"] = _ => FakeServer.Data(new { aboutServer = new { name = "Suwayomi", version = "v2.1.1867", buildType = "Stable" } });
+
+        var result = await Controller().TestConnection(new(Base, "uilogin", "maki", "pw"), default);
+
+        Assert.Equal("error.suwayomi.versionUnsupported", Error(result));
+        Assert.Equal(0, _server.Count("Login"));
+        Assert.IsType<OkObjectResult>(await Controller().TestConnection(new(Base, "none", null), default));
+    }
+
+    [Fact]
+    public async Task A_refused_login_reads_as_a_login_failure_not_an_outage()
+    {
+        _server.Ops["Login"] = _ => FakeServer.Errors("Unauthorized");
+
+        var result = await Controller().TestConnection(new(Base, "uilogin", "maki", "wrong"), default);
+
+        Assert.Equal(StatusCodes.Status502BadGateway, Assert.IsType<ObjectResult>(result).StatusCode);
+        Assert.Equal("error.suwayomi.loginFailed", Error(result));
+    }
+
+    [Fact]
+    public async Task The_stored_password_is_not_sent_to_a_different_server()
+    {
+        Configure("uilogin", "maki", "secret");
+        string? sent = null;
+        _server.Ops["Login"] = vars =>
+        {
+            sent = vars.GetProperty("password").GetString();
+            return FakeServer.Errors("Unauthorized");
+        };
+
+        await Controller().TestConnection(new("http://192.168.1.99:4567", "uilogin", "maki"), default);
+
+        Assert.Equal("", sent);
+    }
+
+    [Fact]
+    public async Task Adding_a_source_while_suwayomi_is_down_says_so()
+    {
+        Configure();
+        _server.Ops["Sources"] = _ => new HttpResponseMessage(HttpStatusCode.BadGateway);
+
+        Assert.Equal("error.suwayomi.noResponse", Error(await Controller().SetSources(new([new("100")]), default)));
+    }
+
+    [Fact]
+    public async Task The_source_list_merges_live_sources_with_selected_ones_suwayomi_lost()
+    {
+        Configure();
+        _settings.Set(SettingKeys.SuwayomiSources, SuwayomiSettings.Serialize(
+        [
+            new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en"),
+            new SuwayomiExposedSource("300", "Gone", "Gone (EN)", "en")
+        ]));
+        _db.SeedSeries(mappings: [new SourceMapping { SourceName = "suwayomi-100", SourceSeriesId = "/m/1", Url = "u" }]);
+
+        var rows = Body<SuwayomiController.SuwayomiSourcesResponse>(await Controller().GetSources(default)).Sources;
+
+        var mangadex = Assert.Single(rows, r => r.Id == "100");
+        Assert.True(mangadex.Exposed);
+        Assert.Equal(true, mangadex.Installed);
+        Assert.Equal(1, mangadex.Mappings);
+        Assert.True(Assert.Single(rows, r => r.Id == "200").MixedLanguage);
+        Assert.Equal(false, Assert.Single(rows, r => r.Id == "300").Installed);
+    }
+
+    [Fact]
+    public async Task An_unreachable_server_still_lists_the_selection()
+    {
+        Configure();
+        _settings.Set(SettingKeys.SuwayomiSources,
+            SuwayomiSettings.Serialize([new SuwayomiExposedSource("100", "MangaDex", "MangaDex (EN)", "en")]));
+        _server.Ops["Sources"] = _ => new HttpResponseMessage(HttpStatusCode.BadGateway);
+
+        var response = Body<SuwayomiController.SuwayomiSourcesResponse>(await Controller().GetSources(default));
+
+        Assert.False(response.Reachable);
+        Assert.Equal("error.suwayomi.noResponse", response.Error);
+        Assert.Null(Assert.Single(response.Sources).Installed);
+    }
+
+    [Fact]
+    public async Task Saving_the_selection_takes_names_from_suwayomi_and_exposes_the_sources()
+    {
+        Configure();
+
+        await Controller().SetSources(new([new("100"), new("200", "fr")]), default);
+
+        var stored = await _suwayomiSettings.ExposedAsync();
+        Assert.Equal(["MangaDex (EN)", "Comick (ALL)"], stored.Select(s => s.DisplayName));
+        Assert.Null(stored[0].ChapterLanguage);
+        Assert.Equal("fr", stored[1].ChapterLanguage);
+        Assert.Equal(["fr"], _registry.GetRequired("suwayomi-200").SupportedLanguages);
+
+        await Controller().SetSources(new([]), default);
+        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiSources));
+        Assert.Null(_registry.Find("suwayomi-100"));
+    }
+
+    [Theory]
+    [InlineData("200", null, "error.suwayomi.chapterLanguageRequired")]
+    [InlineData("200", "French", "error.suwayomi.chapterLanguageInvalid")]
+    [InlineData("999", null, "error.suwayomi.unknownSource")]
+    public async Task A_selection_suwayomi_cannot_back_is_refused(string id, string? language, string expected)
+    {
+        Configure();
+
+        Assert.Equal(expected, Error(await Controller().SetSources(new([new(id, language)]), default)));
+        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiSources));
+    }
+
+    [Fact]
+    public async Task A_selected_source_suwayomi_lost_can_be_kept()
+    {
+        Configure();
+        _settings.Set(SettingKeys.SuwayomiSources,
+            SuwayomiSettings.Serialize([new SuwayomiExposedSource("300", "Gone", "Gone (EN)", "en")]));
+
+        Assert.IsType<OkObjectResult>(await Controller().SetSources(new([new("300"), new("100")]), default));
+
+        Assert.Equal(["300", "100"], (await _suwayomiSettings.ExposedAsync()).Select(s => s.Id));
+    }
+
+    [Fact]
+    public async Task A_thumbnail_is_served_only_for_a_manga_of_an_exposed_source()
+    {
+        Configure();
+        await Controller().SetSources(new([new("100")]), default);
+        _server.Ops["MangaSource"] = vars => FakeServer.Data(new
+        {
+            manga = new { sourceId = vars.GetProperty("id").GetInt32() == 7 ? "100" : "200" }
+        });
+        _server.OnGet = request => request.RequestUri!.AbsolutePath == "/api/v1/manga/7/thumbnail"
+            ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Png) }
+            : new HttpResponseMessage(HttpStatusCode.NotFound);
+
+        var controller = Controller();
+        var served = Assert.IsType<FileContentResult>(await controller.Thumbnail(100, 7, default));
+        Assert.Equal("image/png", served.ContentType);
+        Assert.Equal("default-src 'none'; sandbox", controller.Response.Headers.ContentSecurityPolicy.ToString());
+        Assert.Equal("private,max-age=86400", controller.Response.Headers.CacheControl.ToString());
+
+        Assert.IsType<NotFoundResult>(await Controller().Thumbnail(100, 8, default));
+        Assert.IsType<NotFoundResult>(await Controller().Thumbnail(200, 8, default));
+        Assert.Equal(1, _server.Calls.Count(c => c == "GET /api/v1/manga/7/thumbnail"));
+    }
+
+    [Fact]
+    public async Task A_thumbnail_that_is_not_an_image_is_refused()
+    {
+        Configure();
+        await Controller().SetSources(new([new("100")]), default);
+        _cache.SetOwner(new Uri(Base), 7, "100");
+        _server.OnGet = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("<script>alert(1)</script>", Encoding.UTF8, "text/html")
+        };
+
+        Assert.Equal("error.search.notAnImage", Error(await Controller().Thumbnail(100, 7, default)));
+    }
+
+    [Fact]
+    public void Every_action_but_the_thumbnail_relay_is_admin_only()
+    {
+        var actions = typeof(SuwayomiController).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)
+            .Where(m => m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute), true).Length > 0)
+            .ToList();
+
+        Assert.Equal(6, actions.Count);
+        foreach (var action in actions)
+        {
+            var policies = action.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+                .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+                .Select(a => a.Policy)
+                .ToArray();
+            Assert.Equal(action.Name == nameof(SuwayomiController.Thumbnail) ? [] : [Maki.Api.Auth.Policies.Admin], policies);
+        }
+    }
+
+    private sealed class ChainFactory(SuwayomiControllerTests test) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) =>
+            new(new SuwayomiOriginHandler(test._suwayomiSettings)
+            {
+                InnerHandler = new SuwayomiAuthHandler(test._tokens) { InnerHandler = test._server }
+            }, disposeHandler: false);
+    }
+
+    /// <summary>Routes GraphQL calls by operationName, the one thing that tells them apart.</summary>
+    private sealed class FakeServer : HttpMessageHandler
+    {
+        public Dictionary<string, Func<JsonElement, HttpResponseMessage>> Ops { get; } = [];
+        public Func<HttpRequestMessage, HttpResponseMessage> OnGet { get; set; } = _ => new HttpResponseMessage(HttpStatusCode.NotFound);
+        public List<string> Calls { get; } = [];
+
+        public int Count(string op) => Calls.Count(c => c == op);
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            if (request.Method == HttpMethod.Get)
+            {
+                Calls.Add("GET " + request.RequestUri!.AbsolutePath);
+                return OnGet(request);
+            }
+
+            using var doc = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
+            var op = doc.RootElement.GetProperty("operationName").GetString()!;
+            Calls.Add(op);
+            return Ops.TryGetValue(op, out var respond)
+                ? respond(doc.RootElement.GetProperty("variables").Clone())
+                : throw new InvalidOperationException($"No answer for {op}");
+        }
+
+        public static HttpResponseMessage Data(object data) => Json(new { data });
+
+        public static HttpResponseMessage Errors(params string[] messages) =>
+            Json(new { data = (object?)null, errors = messages.Select(m => new { message = m }).ToArray() });
+
+        private static HttpResponseMessage Json(object body) =>
+            new(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };
+
+        // The connection tester disposes its handler; this one is shared across the test.
+        protected override void Dispose(bool disposing)
+        {
+        }
+    }
+}

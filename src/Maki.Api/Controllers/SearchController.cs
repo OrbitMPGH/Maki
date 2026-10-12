@@ -10,6 +10,7 @@ using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Sources.Suwayomi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -247,10 +248,10 @@ public class SearchController(
     /// Ceiling on a proxied cover. Real covers are well under a megabyte; the cap stops a reader from
     /// making the server buffer an arbitrarily large file from an allowed host.
     /// </summary>
-    private const int MaxCoverBytes = 10 * 1024 * 1024;
+    internal const int MaxCoverBytes = 10 * 1024 * 1024;
 
     /// <summary>The whole body, or null once it would exceed <paramref name="max"/> bytes.</summary>
-    private static async Task<byte[]?> ReadCappedAsync(HttpContent content, int max, CancellationToken ct)
+    internal static async Task<byte[]?> ReadCappedAsync(HttpContent content, int max, CancellationToken ct)
     {
         if (content.Headers.ContentLength is > 0 and var declared && declared > max)
         {
@@ -369,9 +370,11 @@ public class SearchController(
     // request is same-origin, so the browser attaches the session cookie by itself. The instance API
     // key used to be appended here, which put it in the JSON of an ordinary search response and from
     // there into browser history and any proxy log the image request passed through.
+    // Suwayomi's thumbnail relay is already a same-origin path and passes as is. Only that prefix:
+    // a scraper handing back some other relative URL must not point readers at arbitrary Maki paths.
     private static string? ProxiedCoverUrl(string sourceName, string? coverUrl) =>
-        coverUrl is null
-            ? null
-            : $"/api/v1/search/cover?sourceName={Uri.EscapeDataString(sourceName)}" +
-              $"&url={Uri.EscapeDataString(coverUrl)}";
+        coverUrl is null ? null
+        : coverUrl.StartsWith(SuwayomiSource.ThumbnailPrefix, StringComparison.Ordinal) ? coverUrl
+        : $"/api/v1/search/cover?sourceName={Uri.EscapeDataString(sourceName)}" +
+          $"&url={Uri.EscapeDataString(coverUrl)}";
 }

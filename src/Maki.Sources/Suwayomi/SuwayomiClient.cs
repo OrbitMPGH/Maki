@@ -67,9 +67,14 @@ public sealed class SuwayomiClient(IHttpClientFactory httpClientFactory, Suwayom
     public async Task<SuwayomiConnection> ConnectionAsync(CancellationToken ct = default) =>
         await settings.GetAsync(ct) ?? throw new SourceErrorException("Suwayomi is not configured in Maki's settings");
 
-    public async Task<SuwayomiAbout> AboutAsync(CancellationToken ct = default)
+    /// <param name="anonymous">
+    /// Send no credentials. <c>aboutServer</c> needs none under <c>ui_login</c>, so a version check
+    /// can run before signing in, which a server older than v2.2 could not do at all. Under
+    /// <c>basic_auth</c> every request needs the header, so this is for <c>ui_login</c> only.
+    /// </param>
+    public async Task<SuwayomiAbout> AboutAsync(CancellationToken ct = default, bool anonymous = false)
     {
-        var data = await PostAsync("AboutServer", "query AboutServer { aboutServer { name version buildType } }", null, ct);
+        var data = await PostAsync("AboutServer", "query AboutServer { aboutServer { name version buildType } }", null, ct, anonymous);
         var about = data.GetProperty("aboutServer");
         return new SuwayomiAbout(
             SuwayomiGraphQl.String(about, "name") ?? "Suwayomi",
@@ -252,11 +257,12 @@ public sealed class SuwayomiClient(IHttpClientFactory httpClientFactory, Suwayom
         return ([.. pages.EnumerateArray().Select(p => p.GetString()).OfType<string>()], chapterUrl);
     }
 
-    private async Task<JsonElement> PostAsync(string operation, string query, object? variables, CancellationToken ct)
+    private async Task<JsonElement> PostAsync(
+        string operation, string query, object? variables, CancellationToken ct, bool skipAuth = false)
     {
         var connection = await ConnectionAsync(ct);
         return await SuwayomiGraphQl.PostAsync(
-            httpClientFactory.CreateClient(HttpClientName), connection.GraphQlUri, operation, query, variables, ct);
+            httpClientFactory.CreateClient(HttpClientName), connection.GraphQlUri, operation, query, variables, ct, skipAuth);
     }
 
     private static SourceErrorException NotInstalled(string sourceId) =>

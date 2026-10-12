@@ -2007,6 +2007,56 @@ msgstr "Daten müssen zwischen 1900 und 9998 liegen"
 msgid "error.stats.utcOffsetOutOfRange"
 msgstr "utcOffsetMinutes liegt außerhalb des gültigen Bereichs"
 
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Unknown Suwayomi sign-in mode. Use none, basic or uilogin.
+msgid "error.suwayomi.authModeInvalid"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: "{language}" is not a language code, such as en or pt-BR.
+msgid "error.suwayomi.chapterLanguageInvalid"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: {source} publishes several languages. Pick the language its chapters are in.
+msgid "error.suwayomi.chapterLanguageRequired"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi refused the username or password.
+msgid "error.suwayomi.loginFailed"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi did not answer. Check the URL and that the server is running.
+msgid "error.suwayomi.noResponse"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi is not set up yet. Enter its URL first.
+msgid "error.suwayomi.notConfigured"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi answered with a redirect. If it runs under a subpath, include the subpath in the URL.
+msgid "error.suwayomi.redirected"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi has no source with id {id}.
+msgid "error.suwayomi.unknownSource"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: This sign-in mode needs a username.
+msgid "error.suwayomi.usernameRequired"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi {version} is too old for this sign-in mode. Maki needs {minimum} or later.
+msgid "error.suwayomi.versionUnsupported"
+msgstr ""
+
 #. {label} is the tag name the user typed in.
 #: src/Maki.Api/Controllers/TagsController.cs
 #. English: A tag called "{label}" already exists

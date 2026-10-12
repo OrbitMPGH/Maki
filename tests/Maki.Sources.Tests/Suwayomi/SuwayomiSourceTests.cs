@@ -529,3 +529,17 @@ public class SuwayomiSourceProviderTests
         Assert.Empty(provider.Current);
     }
 }
+
+public class SuwayomiVersionTests
+{
+    [Theory]
+    [InlineData("v2.4.2366", "none", null)]
+    [InlineData("v2.1.1867", "basic", null)]
+    [InlineData("v2.0.1727", "none", "v2.1")]
+    [InlineData("v2.1.1867", "uilogin", "v2.2")]
+    [InlineData("v2.2.2100", "uilogin", null)]
+    [InlineData("v3.0.0", "uilogin", null)]
+    [InlineData("preview-abc123", "uilogin", null)]
+    public void A_sign_in_mode_has_its_own_minimum(string version, string mode, string? expected) =>
+        Assert.Equal(expected, SuwayomiVersion.Unmet(version, SuwayomiSettings.ParseAuthMode(mode)));
+}

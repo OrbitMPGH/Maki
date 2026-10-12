@@ -57,13 +57,20 @@ public sealed partial class SuwayomiSource(
 
     /// <summary>The Maki endpoint that relays a Suwayomi thumbnail, since covers on a LAN host can't go through the cover proxy.</summary>
     public static string ThumbnailPath(string sourceId, int mangaId) =>
-        $"/api/v1/suwayomi/thumbnail/{sourceId}/{mangaId.ToString(CultureInfo.InvariantCulture)}";
+        $"{ThumbnailPrefix}{sourceId}/{mangaId.ToString(CultureInfo.InvariantCulture)}";
+
+    public const string ThumbnailPrefix = "/api/v1/suwayomi/thumbnail/";
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
         await client.EnsureInstalledAsync(SourceId, ct);
         var connection = await client.ConnectionAsync(ct);
         var results = await client.SearchAsync(SourceId, title, ct);
+        foreach (var manga in results.Where(m => m.Id > 0))
+        {
+            cache.SetOwner(connection.BaseUri, manga.Id, SourceId);
+        }
+
         return [.. results
             .Where(m => m.Url.Length > 0)
             .Select(m => new SourceSeriesResult(
@@ -76,6 +83,7 @@ public sealed partial class SuwayomiSource(
         var connection = await client.ConnectionAsync(ct);
         var (_, refresh) = await RefreshAsync(connection, sourceSeriesId, manga: true, chapters: false, ct);
         var manga = refresh.Manga!;
+        cache.SetOwner(connection.BaseUri, manga.Id, SourceId);
         return new SourceSeriesDetail(
             sourceSeriesId, manga.Title, SeriesUrl(connection, manga), CoverUrl(manga), manga.Description,
             manga.Status?.ToLowerInvariant());
