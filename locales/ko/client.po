@@ -53,11 +53,6 @@ msgstr "(접근할 수 없음)"
 msgid "(no longer in the library)"
 msgstr "(라이브러리에서 더 이상 없음)"
 
-#. placeholder {0}: picked.length
-#: src/pages/settings/ManageSourcesModal.tsx
-#~ msgid "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
-#~ msgstr ""
-
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -698,7 +693,7 @@ msgstr "{cycles, plural, other {#× 다시 추가됨}}"
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, other {삭제된 파일, 제거된 챕터, 파일과 함께 삭제된 시리즈는 여기서 #일 동안 기다린 뒤 영구 삭제됩니다. 복원하면 파일이 원래 위치로 돌아갑니다.}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
 msgstr "{daysLeft, plural, other {#일 후 파일 제거}}"
@@ -917,10 +912,6 @@ msgstr "{intoLevel} / {levelSpan} XP, 레벨 {nextLevel}까지"
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP, 레벨 {nextLevel}까지"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -1015,45 +1006,37 @@ msgstr "{left, plural, other {#개 남음}} · 약 {eta}"
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · 클릭하여 접기"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
-#~ msgstr ""
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, other {시리즈 #개의 소스를 찾고 파일을 연결함}}"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{mappings, plural, one {# series linked} other {# series linked}}"
-#~ msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here"
 msgstr "{markerLabel} 애니메이션 적용 종료 지점"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here · click to collapse"
 msgstr "{markerLabel} 애니메이션 적용 종료 지점 · 클릭하여 접기"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here · click to expand"
 msgstr "{markerLabel} 애니메이션 적용 종료 지점 · 클릭하여 펼치기"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here"
 msgstr "{markerLabel} 애니메이션 적용 시작 지점"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here · click to collapse"
 msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 접기"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here · click to expand"
 msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 펼치기"
@@ -1330,7 +1313,7 @@ msgstr "{readCount} / {haveCount, plural, other {# 챕터}}"
 msgid "{readCount} of {seriesChapterCount} read"
 msgstr "{seriesChapterCount}개 중 {readCount}개 읽음"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{readCount} read"
 msgstr "{readCount}개 읽음"
@@ -1447,10 +1430,6 @@ msgstr "{samples, plural, other {라이브러리의 시리즈 {series}개에 걸
 #, fuzzy
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}개 이상 일치"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
-#~ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1737,12 +1716,12 @@ msgstr "지난 30일 동안 {topSourceName}이(가) 다운로드의 {topSourceRa
 msgid "{total, plural, one {{completed} / # file inspected} other {{completed} / # files inspected}}"
 msgstr "{total, plural, other {{completed} / 파일 #개 검사함}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
 msgstr "{total, plural, other {챕터 #개 중 {wantedCount}개 원함 · 클릭하면 모두 원함}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
 msgstr "{total, plural, other {챕터 #개 · {downloadedCount}개 다운로드됨}}"
@@ -1753,7 +1732,7 @@ msgstr "{total, plural, other {챕터 #개 · {downloadedCount}개 다운로드�
 msgid "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
 msgstr "{total, plural, other {챕터 #개가 목록에 있으며 원하는 항목이 없으므로 다운로드되지 않음}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {All # chapter wanted} other {All # chapters wanted}}"
 msgstr "{total, plural, other {챕터 #개 모두 원함}}"
@@ -1768,7 +1747,7 @@ msgstr "{total, plural, other {{ok}/#개 폴더 가져옴}}"
 msgid "{total, plural, one {Measured {measured} of # source} other {Measured {measured} of # sources}}"
 msgstr "{total, plural, other {소스 #개 중 {measured}개 측정됨}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {None of the # chapter wanted} other {None of the # chapters wanted}}"
 msgstr "{total, plural, other {챕터 #개 중 원하는 챕터 없음}}"
@@ -1793,7 +1772,7 @@ msgstr "{total, plural, other {소스 #개 검색}}"
 msgid "{total, plural, one {Show all #} other {Show all #}}"
 msgstr "{total, plural, other {전체 #개 보기}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, other {{spanLabel}에서 원함: 챕터 #개 중 {wantedCount}개}}"
@@ -1978,12 +1957,12 @@ msgstr "{volumesRead, plural, other {…전체 볼륨 #개 추가}}"
 msgid "{volumesText} + {chaptersText}"
 msgstr "{volumesText} + {chaptersText}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{wantedCount} wanted"
 msgstr "{wantedCount}개 원함"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{watchedCount} watched"
 msgstr "{watchedCount}개 시청함"
@@ -2605,7 +2584,7 @@ msgstr "확인됨"
 msgid "Action"
 msgstr "액션"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Actions for {spanLabel}"
 msgstr "{spanLabel} 작업"
@@ -2977,8 +2956,8 @@ msgstr "All: 모든 챕터. Smart: 읽는 위치 앞의 다음 몇 개만. Main 
 msgid "Allow replacing unknown-tier files"
 msgstr "알 수 없는 티어의 파일 교체 허용"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Allow upgrades"
 msgstr "업그레이드 허용"
@@ -4061,7 +4040,7 @@ msgstr "{chapter}화 · {volume}권"
 msgid "Ch. {chapterLabel}"
 msgstr "챕터 {chapterLabel}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch. {chapterNumber}"
 msgstr "챕터 {chapterNumber}"
@@ -4184,8 +4163,8 @@ msgstr "챕터 {0}"
 msgid "Ch.{chapter}"
 msgstr "챕터 {chapter}"
 
+#: src/components/series/chapterTable.ts
 #: src/pages/ActivityPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Ch.{chapterNumber}"
 msgstr "챕터 {chapterNumber}"
@@ -4195,12 +4174,12 @@ msgstr "챕터 {chapterNumber}"
 msgid "Ch.{chapterNumber} - {chapterTitle}"
 msgstr "챕터 {chapterNumber} - {chapterTitle}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch.{from}–{to}"
 msgstr "챕터 {from}–{to}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch.{from}+"
 msgstr "챕터 {from}+"
@@ -4344,10 +4323,6 @@ msgstr "챕터 파일 형식"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Chapter language"
 msgstr ""
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Chapter language for {displayName}"
-#~ msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Chapter language for {label}"
@@ -4547,10 +4522,6 @@ msgstr "중국어"
 #, fuzzy
 msgid "Choose a root folder"
 msgstr "루트 폴더 선택"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Choose sources"
-#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5007,7 +4978,7 @@ msgstr "두 소스 매핑 중 하나를 비활성화하는 것을 고려하세�
 msgid "consistent"
 msgstr "일관됨"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
 msgstr "볼륨/모음 파일에 포함됨"
@@ -5762,7 +5733,7 @@ msgstr "백업 삭제"
 msgid "Delete connection"
 msgstr "연결 삭제"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Delete file"
 msgstr "파일 삭제"
@@ -6180,7 +6151,7 @@ msgstr "아래로"
 msgid "Download"
 msgstr "다운로드"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Download {chapterLbl}"
 msgstr "{chapterLbl} 다운로드"
@@ -6252,13 +6223,13 @@ msgstr "다운로드 대기열"
 msgid "Download the next"
 msgstr "다음 항목 다운로드"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Download this chapter"
 msgstr "이 챕터 다운로드"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Downloaded"
@@ -6385,10 +6356,6 @@ msgstr "예: 연재 중 및 미수록"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "각 계정에는 별도의 로그인, 권한, 콘텐츠 등급 및 읽기 기록이 있습니다."
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
-#~ msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6848,12 +6815,12 @@ msgstr "편집 종료"
 msgid "Exit full screen"
 msgstr "전체 화면 종료"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Expand"
 msgstr "펼치기"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "{spanLabel} 펼치기"
@@ -7058,12 +7025,12 @@ msgstr "가져오기 시 파일 이름"
 msgid "file on disk, not linked"
 msgstr "디스크에 있는 미연결 파일"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "File removed"
 msgstr "파일 제거됨"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "File removed soon"
 msgstr "곧 파일 제거됨"
@@ -7176,7 +7143,7 @@ msgstr "{folderName}의 일치 항목 찾기"
 msgid "Find another match for {folderName}"
 msgstr "{folderName}의 다른 일치 항목 찾기"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Find better copy"
 msgstr "더 나은 파일 찾기"
@@ -8820,10 +8787,6 @@ msgstr "언어 필터"
 msgid "Language is"
 msgstr "언어 일치"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Language, e.g. en"
-#~ msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -9213,7 +9176,7 @@ msgstr "밝은"
 msgid "Link"
 msgstr "연결"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Link {chapterLbl} to a file"
 msgstr "{chapterLbl} 챕터를 파일에 연결"
@@ -9279,7 +9242,7 @@ msgstr "소스 연결"
 msgid "Link those by hand on the Files tab."
 msgstr "파일 탭에서 직접 연결하세요."
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Link to a file already on disk"
 msgstr "디스크에 있는 파일에 연결"
@@ -9712,6 +9675,7 @@ msgstr "Kavita에서도 챕터를 읽음으로 표시"
 msgid "Mark chapters watched"
 msgstr "챕터를 시청 완료로 표시"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark read"
@@ -9723,12 +9687,14 @@ msgstr "읽음으로 표시"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "kavita에서 읽음 표시, kavita로 보내기, 읽기 상태 가져오기, kavita 진행 상황, 실시간 동기화, 즉시"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark unread"
 msgstr "읽지 않음으로 표시"
 
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark watched"
@@ -9744,7 +9710,7 @@ msgstr "이미 읽었거나 본 것으로 표시했습니다. 취향 프로필�
 msgid "Marked ch. 1 to {to} watched"
 msgstr "1화부터 {to}화까지 시청 완료로 표시됨"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
 msgstr "시청함으로 표시됨, 읽지는 않음. 읽기 통계에 포함되지 않음"
@@ -10017,10 +9983,10 @@ msgid "missing"
 msgstr "누락됨"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Missing"
 msgstr "누락"
@@ -10114,7 +10080,7 @@ msgstr "더 보기"
 msgid "More actions"
 msgstr "추가 작업"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "More actions for {chapterLbl}"
 msgstr "{chapterLbl} 추가 작업"
@@ -11779,9 +11745,9 @@ msgstr "장르별 타일을 표시하고, 타일을 선택하면 해당 장르�
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/chapterTable.ts
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "One-shot"
 msgstr "One-shot"
@@ -11836,10 +11802,6 @@ msgstr "내가 읽고 있는 시리즈만"
 #, fuzzy
 msgid "Only the built-in reader records it."
 msgstr "내장 리더만 기록합니다."
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Only the sources already chosen are listed. You can still remove them."
-#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12067,7 +12029,7 @@ msgstr "패키징"
 msgid "Page"
 msgstr "페이지"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "페이지 {pageIndex}/{pageCount}"
@@ -12634,8 +12596,8 @@ msgstr "제안 만료 (일)"
 msgid "Protect {fileName} from upgrades"
 msgstr "{fileName} 업그레이드로부터 보호"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Protect from upgrades"
 msgstr "업그레이드로부터 보호"
@@ -12919,6 +12881,7 @@ msgstr "소유했을 때 예상되는 것보다 {ratioValue}만큼 더 도달함
 msgid "read"
 msgstr "읽음"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -12929,7 +12892,7 @@ msgstr "읽음"
 msgid "Read"
 msgstr "읽음"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read {chapterLbl}"
 msgstr "{chapterLbl} 읽음"
@@ -12959,7 +12922,7 @@ msgstr "몇 챕터를 읽으면 여기에 내용이 채워집니다."
 msgid "Read ch. {resumeAt}"
 msgstr "{resumeAt}화 읽기"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read file cleanup is on for this series"
 msgstr "이 시리즈는 읽은 파일 정리가 켜져 있음"
@@ -12979,12 +12942,12 @@ msgstr "읽기 시작"
 msgid "Read history stays, and the chapters aren't downloaded again."
 msgstr "읽기 기록은 남고, 챕터는 다시 다운로드하지 않습니다."
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Kavita"
 msgstr "Kavita에서 읽음"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Maki"
 msgstr "Maki에서 읽음"
@@ -13065,9 +13028,9 @@ msgid "Readers like you also recommended this"
 msgstr "나와 비슷한 독자도 이 항목을 추천함"
 
 #: src/components/ImportListsSection.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
-#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
 #: src/pages/stats/sectionList.ts
@@ -13632,10 +13595,6 @@ msgstr "정리하지 않고 소스를 제거할까요?"
 #, fuzzy
 msgid "Remove source?"
 msgstr "소스를 제거할까요?"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Remove sources with linked series?"
-#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15084,7 +15043,7 @@ msgstr "필터링된 항목 선택"
 msgid "Select missing ({missingCount})"
 msgstr "누락 항목 선택 ({missingCount})"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Select these chapters"
 msgstr "이 챕터 선택"
@@ -15386,10 +15345,6 @@ msgstr "설정 가이드"
 msgid "Setup steps"
 msgstr "설정 단계"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Several languages"
-#~ msgstr ""
-
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Several languages, pick one"
 msgstr ""
@@ -15443,10 +15398,6 @@ msgstr "다시 표시"
 #, fuzzy
 msgid "Show all"
 msgstr "전체 보기"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Show every language"
-#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -16257,14 +16208,6 @@ msgstr ""
 msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
 msgstr ""
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
-#~ msgstr ""
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Suwayomi sources"
-#~ msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
@@ -16605,7 +16548,7 @@ msgstr "파일 이름에 챕터 또는 볼륨 번호가 없어 일치시킬 수 
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "이 업그레이드가 교체하려던 파일이 없습니다"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
 msgstr "파일을 일부러 삭제했습니다. 요청하지 않으면 Maki가 다시 다운로드하지 않습니다."
@@ -17391,7 +17334,7 @@ msgstr "전체 화면 전환"
 msgid "Toggle page thumbnails"
 msgstr "페이지 썸네일 전환"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Toggle read state of {chapterLbl}"
 msgstr "{chapterLbl}의 읽음 상태 전환"
@@ -18022,7 +17965,7 @@ msgstr "ComicInfo 업데이트 중"
 msgid "Upgrade"
 msgstr "업그레이드"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Upgrade now"
 msgstr "지금 업그레이드"
@@ -18358,10 +18301,6 @@ msgstr "버전"
 msgid "very tight"
 msgstr "매우 촘촘함"
 
-#: src/pages/settings/ManageSourcesModal.tsx
-#~ msgid "via Suwayomi"
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Vietnamese"
@@ -18407,7 +18346,7 @@ msgstr "{title} 보고 추가"
 msgid "View in library"
 msgstr "라이브러리에서 보기"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Vol. {fileVolume}"
 msgstr "{fileVolume}권"
@@ -18424,7 +18363,7 @@ msgstr "{volume}권"
 msgid "Vol.{0} Ch.{1}"
 msgstr "{0}권 {1}화"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/chapterTable.ts
 #, fuzzy
 msgid "Vol.{volNum} Ch.{chapterNumber}"
 msgstr "{volNum}권 {chapterNumber}화"
@@ -18565,7 +18504,7 @@ msgstr "읽기 대기 중"
 msgid "Want"
 msgstr "원함"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Want {chapterLbl}"
 msgstr "{chapterLbl} 원함"
@@ -18591,7 +18530,7 @@ msgstr "원하는 챕터는 기존 자동화로 다시 다운로드할 수 있�
 msgid "Warning"
 msgstr "경고"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Watched"
 msgstr "시청함"

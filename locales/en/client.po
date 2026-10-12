@@ -45,11 +45,6 @@ msgstr "(inaccessible)"
 msgid "(no longer in the library)"
 msgstr "(no longer in the library)"
 
-#. placeholder {0}: picked.length
-#: src/pages/settings/ManageSourcesModal.tsx
-#~ msgid "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
-#~ msgstr "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
-
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
@@ -577,7 +572,7 @@ msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
 msgstr "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
 
@@ -754,10 +749,6 @@ msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
-#~ msgstr "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
-
 #: src/components/SourceMappingsSection.tsx
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -835,39 +826,31 @@ msgstr "{left, plural, one {# left} other {# left}} · ~{eta}"
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · click to collapse"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
-#~ msgstr "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
-
 #: src/pages/ImportPage.tsx
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{mappings, plural, one {# series linked} other {# series linked}}"
-#~ msgstr "{mappings, plural, one {# series linked} other {# series linked}}"
-
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation ends here"
 msgstr "{markerLabel} Anime adaptation ends here"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation ends here · click to collapse"
 msgstr "{markerLabel} Anime adaptation ends here · click to collapse"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation ends here · click to expand"
 msgstr "{markerLabel} Anime adaptation ends here · click to expand"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation starts here"
 msgstr "{markerLabel} Anime adaptation starts here"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation starts here · click to collapse"
 msgstr "{markerLabel} Anime adaptation starts here · click to collapse"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation starts here · click to expand"
 msgstr "{markerLabel} Anime adaptation starts here · click to expand"
 
@@ -1090,7 +1073,7 @@ msgstr "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 msgid "{readCount} of {seriesChapterCount} read"
 msgstr "{readCount} of {seriesChapterCount} read"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{readCount} read"
 msgstr "{readCount} read"
 
@@ -1185,10 +1168,6 @@ msgstr "{samples, plural, one {Measured from # chapter across {series} series in
 #: src/components/CatalogueBrowser.tsx
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ matches"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
-#~ msgstr "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -1420,11 +1399,11 @@ msgstr "{topSourceName} delivered {topSourceRate} of its downloads in the last 3
 msgid "{total, plural, one {{completed} / # file inspected} other {{completed} / # files inspected}}"
 msgstr "{total, plural, one {{completed} / # file inspected} other {{completed} / # files inspected}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
 msgstr "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
 msgstr "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
 
@@ -1433,7 +1412,7 @@ msgstr "{total, plural, one {# chapter · {downloadedCount} downloaded} other {#
 msgid "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
 msgstr "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {All # chapter wanted} other {All # chapters wanted}}"
 msgstr "{total, plural, one {All # chapter wanted} other {All # chapters wanted}}"
 
@@ -1445,7 +1424,7 @@ msgstr "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# fold
 msgid "{total, plural, one {Measured {measured} of # source} other {Measured {measured} of # sources}}"
 msgstr "{total, plural, one {Measured {measured} of # source} other {Measured {measured} of # sources}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {None of the # chapter wanted} other {None of the # chapters wanted}}"
 msgstr "{total, plural, one {None of the # chapter wanted} other {None of the # chapters wanted}}"
 
@@ -1465,7 +1444,7 @@ msgstr "{total, plural, one {Search # source} other {Search # sources}}"
 msgid "{total, plural, one {Show all #} other {Show all #}}"
 msgstr "{total, plural, one {Show all #} other {Show all #}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 
@@ -1613,11 +1592,11 @@ msgstr "{volumesRead, plural, one {…plus # whole volume.} other {…plus # who
 msgid "{volumesText} + {chaptersText}"
 msgstr "{volumesText} + {chaptersText}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{wantedCount} wanted"
 msgstr "{wantedCount} wanted"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "{watchedCount} watched"
 msgstr "{watchedCount} watched"
 
@@ -2118,7 +2097,7 @@ msgstr "Acknowledged"
 msgid "Action"
 msgstr "Action"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Actions for {spanLabel}"
 msgstr "Actions for {spanLabel}"
 
@@ -2422,8 +2401,8 @@ msgstr "All: every chapter. Smart: only the next few ahead of your reading. Main
 msgid "Allow replacing unknown-tier files"
 msgstr "Allow replacing unknown-tier files"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/SeriesDetailPage.tsx
 msgid "Allow upgrades"
 msgstr "Allow upgrades"
 
@@ -3306,7 +3285,7 @@ msgstr "ch. {chapter} · vol. {volume}"
 msgid "Ch. {chapterLabel}"
 msgstr "Ch. {chapterLabel}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Ch. {chapterNumber}"
 msgstr "Ch. {chapterNumber}"
 
@@ -3405,8 +3384,8 @@ msgstr "Ch.{0}"
 msgid "Ch.{chapter}"
 msgstr "Ch.{chapter}"
 
+#: src/components/series/chapterTable.ts
 #: src/pages/ActivityPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 msgid "Ch.{chapterNumber}"
 msgstr "Ch.{chapterNumber}"
 
@@ -3414,11 +3393,11 @@ msgstr "Ch.{chapterNumber}"
 msgid "Ch.{chapterNumber} - {chapterTitle}"
 msgstr "Ch.{chapterNumber} - {chapterTitle}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Ch.{from}–{to}"
 msgstr "Ch.{from}–{to}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Ch.{from}+"
 msgstr "Ch.{from}+"
 
@@ -3535,10 +3514,6 @@ msgstr "Chapter file format"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Chapter language"
 msgstr "Chapter language"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Chapter language for {displayName}"
-#~ msgstr "Chapter language for {displayName}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Chapter language for {label}"
@@ -3702,10 +3677,6 @@ msgstr "Chinese"
 #: src/pages/ImportPage.tsx
 msgid "Choose a root folder"
 msgstr "Choose a root folder"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Choose sources"
-#~ msgstr "Choose sources"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
@@ -4079,7 +4050,7 @@ msgstr "Consider disabling one of the two source mappings; the warning clears on
 msgid "consistent"
 msgstr "consistent"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Contained in a volume/compilation file"
 msgstr "Contained in a volume/compilation file"
 
@@ -4692,7 +4663,7 @@ msgstr "Delete backup"
 msgid "Delete connection"
 msgstr "Delete connection"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Delete file"
 msgstr "Delete file"
 
@@ -5033,7 +5004,7 @@ msgstr "Down"
 msgid "Download"
 msgstr "Download"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Download {chapterLbl}"
 msgstr "Download {chapterLbl}"
 
@@ -5091,12 +5062,12 @@ msgstr "Download queue"
 msgid "Download the next"
 msgstr "Download the next"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Download this chapter"
 msgstr "Download this chapter"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Downloaded"
 msgstr "Downloaded"
@@ -5199,10 +5170,6 @@ msgstr "e.g. Ongoing & behind"
 #: src/components/settings/UsersSection.tsx
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "Each account has its own login, permissions, content rating and reading history."
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
-#~ msgstr "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -5574,11 +5541,11 @@ msgstr "Exit editing"
 msgid "Exit full screen"
 msgstr "Exit full screen"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Expand"
 msgstr "Expand"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Expand {spanLabel}"
 msgstr "Expand {spanLabel}"
 
@@ -5744,11 +5711,11 @@ msgstr "File naming on import"
 msgid "file on disk, not linked"
 msgstr "file on disk, not linked"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "File removed"
 msgstr "File removed"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "File removed soon"
 msgstr "File removed soon"
 
@@ -5841,7 +5808,7 @@ msgstr "Find a match for {folderName}"
 msgid "Find another match for {folderName}"
 msgstr "Find another match for {folderName}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Find better copy"
 msgstr "Find better copy"
 
@@ -7172,10 +7139,6 @@ msgstr "Language filter"
 msgid "Language is"
 msgstr "Language is"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Language, e.g. en"
-#~ msgstr "Language, e.g. en"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "language, languages, download language, language priority, preferred language"
@@ -7493,7 +7456,7 @@ msgstr "Light"
 msgid "Link"
 msgstr "Link"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Link {chapterLbl} to a file"
 msgstr "Link {chapterLbl} to a file"
 
@@ -7546,7 +7509,7 @@ msgstr "Link source"
 msgid "Link those by hand on the Files tab."
 msgstr "Link those by hand on the Files tab."
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Link to a file already on disk"
 msgstr "Link to a file already on disk"
 
@@ -7898,6 +7861,7 @@ msgstr "Mark chapters read in Kavita too"
 msgid "Mark chapters watched"
 msgstr "Mark chapters watched"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Mark read"
 msgstr "Mark read"
@@ -7907,11 +7871,13 @@ msgstr "Mark read"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Mark unread"
 msgstr "Mark unread"
 
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Mark watched"
 msgstr "Mark watched"
@@ -7924,7 +7890,7 @@ msgstr "Marked as already read or seen. Your taste profile was not changed."
 msgid "Marked ch. 1 to {to} watched"
 msgstr "Marked ch. 1 to {to} watched"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Marked watched, not read. Doesn't count toward reading stats"
 msgstr "Marked watched, not read. Doesn't count toward reading stats"
 
@@ -8144,10 +8110,10 @@ msgid "missing"
 msgstr "missing"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 msgid "Missing"
 msgstr "Missing"
 
@@ -8224,7 +8190,7 @@ msgstr "More"
 msgid "More actions"
 msgstr "More actions"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "More actions for {chapterLbl}"
 msgstr "More actions for {chapterLbl}"
 
@@ -9573,9 +9539,9 @@ msgstr "One tile per genre, each opening its most popular titles."
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/chapterTable.ts
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 msgid "One-shot"
 msgstr "One-shot"
 
@@ -9619,10 +9585,6 @@ msgstr "Only series I'm reading"
 #: src/pages/discover/TasteTab.tsx
 msgid "Only the built-in reader records it."
 msgstr "Only the built-in reader records it."
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Only the sources already chosen are listed. You can still remove them."
-#~ msgstr "Only the sources already chosen are listed. You can still remove them."
 
 #: src/pages/HealthPage.tsx
 msgid "Only this source is tried. Nothing falls back to another one, so the request fails rather than fetching from somewhere you did not pick."
@@ -9807,7 +9769,7 @@ msgstr "Packaging"
 msgid "Page"
 msgstr "Page"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Page {pageIndex}/{pageCount}"
 
@@ -10269,8 +10231,8 @@ msgstr "Proposal expiry (days)"
 msgid "Protect {fileName} from upgrades"
 msgstr "Protect {fileName} from upgrades"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/SeriesDetailPage.tsx
 msgid "Protect from upgrades"
 msgstr "Protect from upgrades"
 
@@ -10501,6 +10463,7 @@ msgstr "Reached for {ratioValue} more than owning it would predict, across {seri
 msgid "read"
 msgstr "read"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -10510,7 +10473,7 @@ msgstr "read"
 msgid "Read"
 msgstr "Read"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Read {chapterLbl}"
 msgstr "Read {chapterLbl}"
 
@@ -10534,7 +10497,7 @@ msgstr "Read a few chapters and this fills in."
 msgid "Read ch. {resumeAt}"
 msgstr "Read ch. {resumeAt}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Read file cleanup is on for this series"
 msgstr "Read file cleanup is on for this series"
 
@@ -10550,11 +10513,11 @@ msgstr "Read from"
 msgid "Read history stays, and the chapters aren't downloaded again."
 msgstr "Read history stays, and the chapters aren't downloaded again."
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Read in Kavita"
 msgstr "Read in Kavita"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Read in Maki"
 msgstr "Read in Maki"
 
@@ -10620,9 +10583,9 @@ msgid "Readers like you also recommended this"
 msgstr "Readers like you also recommended this"
 
 #: src/components/ImportListsSection.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
-#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
 #: src/pages/stats/sectionList.ts
@@ -11079,10 +11042,6 @@ msgstr "Remove source without cleanup?"
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove source?"
 msgstr "Remove source?"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Remove sources with linked series?"
-#~ msgstr "Remove sources with linked series?"
 
 #: src/pages/HealthPage.tsx
 msgid "Remove the record"
@@ -12265,7 +12224,7 @@ msgstr "Select filtered"
 msgid "Select missing ({missingCount})"
 msgstr "Select missing ({missingCount})"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Select these chapters"
 msgstr "Select these chapters"
 
@@ -12510,10 +12469,6 @@ msgstr "Setup guide"
 msgid "Setup steps"
 msgstr "Setup steps"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Several languages"
-#~ msgstr "Several languages"
-
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Several languages, pick one"
 msgstr "Several languages, pick one"
@@ -12557,10 +12512,6 @@ msgstr "Show again"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Show all"
 msgstr "Show all"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Show every language"
-#~ msgstr "Show every language"
 
 #: src/components/TagBuckets.tsx
 msgid "Show fewer"
@@ -13223,14 +13174,6 @@ msgstr "Suwayomi"
 msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
 msgstr "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
-#~ msgstr "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Suwayomi sources"
-#~ msgstr "Suwayomi sources"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
@@ -13507,7 +13450,7 @@ msgstr "The file name carries no chapter or volume number, so nothing can be mat
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "The file this upgrade was meant to replace is gone"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
 msgstr "The file was deleted on purpose. Maki won't download it again unless you ask."
 
@@ -14140,7 +14083,7 @@ msgstr "Toggle full screen"
 msgid "Toggle page thumbnails"
 msgstr "Toggle page thumbnails"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Toggle read state of {chapterLbl}"
 msgstr "Toggle read state of {chapterLbl}"
 
@@ -14653,7 +14596,7 @@ msgstr "Updating ComicInfo"
 msgid "Upgrade"
 msgstr "Upgrade"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Upgrade now"
 msgstr "Upgrade now"
 
@@ -14925,10 +14868,6 @@ msgstr "Version"
 msgid "very tight"
 msgstr "very tight"
 
-#: src/pages/settings/ManageSourcesModal.tsx
-#~ msgid "via Suwayomi"
-#~ msgstr "via Suwayomi"
-
 #: src/components/SourceMappingsSection.tsx
 msgid "Vietnamese"
 msgstr "Vietnamese"
@@ -14966,7 +14905,7 @@ msgstr "View and add {title}"
 msgid "View in library"
 msgstr "View in library"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Vol. {fileVolume}"
 msgstr "Vol. {fileVolume}"
 
@@ -14980,7 +14919,7 @@ msgstr "Vol. {volume}"
 msgid "Vol.{0} Ch.{1}"
 msgstr "Vol.{0} Ch.{1}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/chapterTable.ts
 msgid "Vol.{volNum} Ch.{chapterNumber}"
 msgstr "Vol.{volNum} Ch.{chapterNumber}"
 
@@ -15094,7 +15033,7 @@ msgstr "Waiting to read"
 msgid "Want"
 msgstr "Want"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Want {chapterLbl}"
 msgstr "Want {chapterLbl}"
 
@@ -15115,7 +15054,7 @@ msgstr "Wanted chapters may be downloaded again by existing automation."
 msgid "Warning"
 msgstr "Warning"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 msgid "Watched"
 msgstr "Watched"
 

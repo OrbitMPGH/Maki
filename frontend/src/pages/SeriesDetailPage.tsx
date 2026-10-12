@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { msg, plural, t as staticT } from '@lingui/core/macro'
@@ -21,12 +21,10 @@ import {
   Modal,
   Pagination,
   Paper,
-  Progress,
   Radio,
   SegmentedControl,
   Select,
   Stack,
-  Switch,
   Table,
   Tabs,
   Text,
@@ -39,15 +37,12 @@ import {
   IconArrowLeft,
   IconBook,
   IconChevronDown,
-  IconCircleCheck,
-  IconClock,
   IconDownload,
   IconEye,
   IconEyeCheck,
   IconLink,
   IconLinkOff,
   IconListCheck,
-  IconMinus,
   IconSearch,
   IconSend,
   IconRowRemove,
@@ -55,12 +50,7 @@ import {
   IconWand,
   IconX,
   IconDeviceTv,
-  IconDotsVertical,
-  IconPhotoSearch,
   IconEyeOff,
-  IconLock,
-  IconLockOpen,
-  IconSparkles,
   IconSortAscendingNumbers,
   IconSortDescendingNumbers,
 } from '@tabler/icons-react'
@@ -103,7 +93,6 @@ import {
   useSeriesReadProgress,
   useSetChapterRead,
   useSetChaptersState,
-  type ChapterProgressDto,
   type ChapterReadState,
 } from '../api/reader'
 import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from '../api/animeResume'
@@ -125,7 +114,6 @@ import {
 import type { UpgradeScanResultDto } from '../api/upgrades'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
-import { queueErrorMessage } from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { useDocumentTitle } from '../lib/documentTitle'
 import { usePageLabel } from '../lib/navHistory'
@@ -141,7 +129,15 @@ import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
-import { FileQualityBadge } from '../components/series/FileQualityBadge'
+import {
+  ChapterRow,
+  ChapterRowSkeletons,
+  ChapterSpanRow,
+  ChunkedRows,
+  type ChapterRowActions,
+  type ChapterSpanRowActions,
+} from '../components/series/ChapterTableRows'
+import { chapterLabel, readStateOf, type FileOrigin } from '../components/series/chapterTable'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
@@ -155,16 +151,15 @@ import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
 import { SourceCompareModal } from '../components/SourceCompareModal'
 import type { PickChapter } from '../components/SourceCompareModal'
-import { formatCalendarDate, formatDate, formatReadingTime } from '../format'
+import { formatDate, formatReadingTime } from '../format'
 import {
   contentRatingVisual,
-  queueStatusVisual,
   seriesProgressVisual,
   seriesStatusVisual,
-  statusColor,
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { useColumnWidths } from '../lib/useColumnWidths'
+import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
@@ -173,20 +168,11 @@ import { isUnfinished } from '../lib/lucky'
 import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 import { cleanSynopsis } from '../lib/synopsis'
-import { onPressKey, pressable } from '../lib/pressable'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
 import { scrollBehavior } from '../lib/scrollBehavior'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from '../components/PermanentDeleteFallback'
-
-function chapterLabel(c: ChapterDto): string {
-  if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
-  // Prefer the volume the backing file actually is; fall back to metadata volume.
-  const volNum = c.fileVolume ?? (c.volume !== null ? String(c.volume) : null)
-  const chapterNumber = c.number
-  return volNum !== null ? staticT`Vol.${volNum} Ch.${chapterNumber}` : staticT`Ch.${chapterNumber}`
-}
 
 /** A special is a decimal-numbered chapter (10.5 omake etc.). */
 const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
@@ -259,18 +245,14 @@ type RenderedRow =
     | { kind: 'chapter'; chapter: ChapterDto }
     | { kind: 'span'; span: AnimeSpan; rows: ChapterDto[] }
 
+const NO_ROWS: RenderedRow[] = []
+
 type ReadTimeEstimate = {
   seconds: number
   remainingChapters: number
   style: 'scrolling' | 'paged'
   sampleChapters: number
   seriesSpecific: boolean
-}
-
-/** "Ch.1–270", or "Ch.315+" for a season with no end marker yet. */
-const spanRangeLabel = (span: AnimeSpan) => {
-  const { from, to, openEnded } = span
-  return openEnded ? staticT`Ch.${from}+` : staticT`Ch.${from}–${to}`
 }
 
 /**
@@ -298,37 +280,13 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   cutoffUnmet: (c) => c.fileQuality?.cutoffMet === false && !c.fileQuality?.trusted,
 }
 
-interface ReadState {
-  read: boolean
-  /** A resume position exists and the chapter isn't finished. */
-  inProgress: boolean
-  /** Read according to Kavita rather than read here, so no page position is known. */
-  external: boolean
-  /** Ticked off without being read. Counts as read everywhere, but never reached the stats log. */
-  watched: boolean
-}
-
-/**
- * Read state of one chapter row, straight off its `ChapterProgress` row, the only source of truth
- * for read state. Nothing is inferred from the series' high-water mark: that mark is forward-only
- * and covers every chapter numbered below it, so one stale Kavita read made a whole run of never
- * opened chapters look read, with no way to correct it.
- *
- * `completed` is the sticky read flag; `pageIndex` is a resume position that may move backwards, so
- * a row with a position but no completion is in progress. A row carrying `unreadAt` is a tombstone
- * left by an explicit mark-unread and is plainly unread: its zero position is not progress.
- */
-function readStateOf(p: ChapterProgressDto | undefined): ReadState {
-  if (!p || p.unreadAt !== null) {
-    return { read: false, inProgress: false, external: false, watched: false }
-  }
-
-  return {
-    read: p.completed,
-    inProgress: !p.completed && p.pageIndex > 0,
-    external: p.external,
-    watched: p.watched,
-  }
+// Errors are reported globally (see main.tsx); only success needs saying here. `info` is for
+// outcomes that aren't failures but aren't wins either — a download action that found nothing
+// left to queue, which would otherwise report a cheerful "Queued 0".
+const notify = {
+  ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
+  info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
+  err: (message: string) => notifications.show({ message, color: 'var(--danger)' }),
 }
 
 // The route is not keyed by id, so everything below (scan watcher, selection, filters, the sources
@@ -357,9 +315,19 @@ function SeriesDetailBody() {
   // Anything unrecognised falls back rather than rendering no panel at all, which is what a
   // bookmark of the old ?tab=sources would otherwise do now that sources lives under Progress.
   const requestedTab = searchParams.get('tab')
-  const tab = TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : 'details'
+  const urlTab = TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : 'details'
+  // Held in state as well, because the router applies every URL change inside a transition: a tab
+  // read off the URL alone kept the old tab on screen, unresponsive, until the new one had rendered
+  // in full. A URL change from elsewhere (a link to ?tab=files) still wins.
+  const [tab, setTab] = useState<Tab>(urlTab)
+  const [syncedUrlTab, setSyncedUrlTab] = useState<Tab>(urlTab)
+  if (urlTab !== syncedUrlTab) {
+    setSyncedUrlTab(urlTab)
+    setTab(urlTab)
+  }
   const changeTab = (value: string | null) => {
-    if (!value) return
+    if (!value || !TABS.includes(value as Tab)) return
+    setTab(value as Tab)
     const next = new URLSearchParams(searchParams)
     if (value === 'details') next.delete('tab')
     else next.set('tab', value)
@@ -371,7 +339,7 @@ function SeriesDetailBody() {
   // rather than the generic "Series".
   usePageLabel(series?.title)
   useDocumentTitle(series?.displayTitle)
-  const { data: chapters } = useChapters(seriesId)
+  const { data: chapters, isError: chaptersFailed } = useChapters(seriesId)
 
   /**
    * Series.Tags is a flat list of names: the weight, description and spoiler flag live only on
@@ -391,7 +359,7 @@ function SeriesDetailBody() {
    * brought in from disk, or "torrent:{indexer}". Only a scraped file can be re-fetched from a
    * different source, so the badge says which kind it is.
    */
-  const fileOrigin = (name: string, releaseName: string | null) => {
+  const fileOrigin = useCallback((name: string, releaseName: string | null): FileOrigin => {
     const source = sources?.find((x) => x.name === name)
     if (source) {
       return { label: source.displayName, scraped: true, hint: '' }
@@ -407,7 +375,7 @@ function SeriesDetailBody() {
       return { label: t`Torrent`, scraped: false, hint }
     }
     return { label: name, scraped: false, hint: '' }
-  }
+  }, [sources, t])
   const queryClient = useQueryClient()
 
   // `sourceMatchFinished` normally refreshes these, but this page also polls the series row while
@@ -998,6 +966,14 @@ function SeriesDetailBody() {
           ),
       [renderedRows.rows, currentChapterPage, chapterPageSize],
   )
+  /**
+   * What the table body actually renders. Deferred, and empty while another tab is open, so that
+   * opening Chapters commits the tab with a skeleton at once and builds the rows in a background
+   * render that yields to the browser. A long page used to freeze the click for seconds. A sort or
+   * search on a long page gets the same treatment: the old rows stay until the new ones are ready.
+   */
+  const shownRows = useDeferredValue(tab === 'chapters' ? pagedRows : NO_ROWS, NO_ROWS)
+  const chapterRowsLoading = chapters === undefined || (shownRows.length === 0 && pagedRows.length > 0)
 
   useEffect(() => {
     setChapterPage(1)
@@ -1011,10 +987,10 @@ function SeriesDetailBody() {
   /** One entry per displayed row; a folded span is a single step carrying every chapter it hides. */
   const rangeUnits = useMemo(
       () =>
-          pagedRows.map((r) =>
+          shownRows.map((r) =>
               r.kind === 'chapter' ? { ids: [r.chapter.id] } : { ids: r.rows.map((c) => c.id) },
           ),
-      [pagedRows],
+      [shownRows],
   )
 
   /**
@@ -1138,7 +1114,7 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, pagedRows, markerSlot, chapterSort, chapterColumnWidths])
+  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSort, chapterColumnWidths])
 
   const setChaptersState = useSetChaptersState(seriesId)
 
@@ -1184,171 +1160,47 @@ function SeriesDetailBody() {
     )
   }
 
-  /** The single row a folded span collapses to: the range, what's in it, and what to do with it. */
-  const renderSpanRow = (span: AnimeSpan, rows: ChapterDto[]) => {
-    const { label: spanLabel } = span
-    const total = rows.length
-    const downloaded = rows.filter((c) => c.hasFile)
-    const downloadedCount = downloaded.length
-    const states = downloaded.map(readStateFor)
-    const watchedCount = states.filter((st) => st.watched).length
-    const readCount = states.filter((st) => st.read && !st.watched).length
-    const done = watchedCount + readCount
-    const ids = rows.map((c) => c.id)
-
-    // A folded span stands in for every chapter under it, so its switch has to speak for all of
-    // them. When they disagree there is no honest on/off to show: the track gets a half-filled
-    // look and the thumb a dash, and clicking resolves the whole range to wanted (the same way a
-    // tri-state checkbox settles), which is why `checked` is "all of them" and not "any of them".
-    const wantedCount = rows.filter((c) => c.wanted).length
-    const allWanted = wantedCount === rows.length
-    const mixed = wantedCount > 0 && !allWanted
-
-    return (
-        <Table.Tr key={`span:${span.key}`} className="chapter-span-row">
-          <Table.Td onClick={(e) => e.stopPropagation()}>
-            <Tooltip
-                label={
-                  mixed
-                      ? plural(total, {
-                          one: `${wantedCount} of # chapter wanted · click to want all`,
-                          other: `${wantedCount} of # chapters wanted · click to want all`,
-                        })
-                      : allWanted
-                          ? plural(total, { one: 'All # chapter wanted', other: 'All # chapters wanted' })
-                          : plural(total, { one: 'None of the # chapter wanted', other: 'None of the # chapters wanted' })
-                }
-                withArrow
-            >
-              <Switch
-                  size="xs"
-                  checked={allWanted}
-                  classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
-                  thumbIcon={mixed ? <IconMinus size={10} stroke={3} /> : undefined}
-                  aria-label={plural(total, {
-                    one: `Wanted for ${spanLabel}: ${wantedCount} of # chapter`,
-                    other: `Wanted for ${spanLabel}: ${wantedCount} of # chapters`,
-                  })}
-                  disabled={!canEditMetadata || setChaptersWanted.isPending}
-                  onChange={(e) => applyWanted(ids, e.currentTarget.checked)}
-              />
-            </Tooltip>
-          </Table.Td>
-          <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
-            <Group gap={6} wrap="nowrap">
-              <Badge
-                  size="sm"
-                  color="var(--info)"
-                  variant="light"
-                  leftSection={<IconDeviceTv size={12} />}
-                  className="chapter-span-badge"
-                  data-span-fold={span.key}
-                  {...pressable(() => toggleSpanFold(span.key))}
-              >
-                {span.label}
-              </Badge>
-              <Text size="sm" fw={600} className="tnum chapter-label">
-                {spanRangeLabel(span)}
-              </Text>
-            </Group>
-          </Table.Td>
-          <Table.Td>
-            <Text size="sm" c="var(--ink-3)" className="tnum">
-              {plural(total, {
-                one: `# chapter · ${downloadedCount} downloaded`,
-                other: `# chapters · ${downloadedCount} downloaded`,
-              })}
-              {watchedCount > 0 && (
-                  <>
-                    {' · '}
-                    <Trans>{watchedCount} watched</Trans>
-                  </>
-              )}
-              {readCount > 0 && (
-                  <>
-                    {' · '}
-                    <Trans>{readCount} read</Trans>
-                  </>
-              )}
-              {/* Spelled out only when the range disagrees with itself: the switch alone can show
-                that state but not its size, and hovering for a tooltip is a poor way to find out. */}
-              {mixed && (
-                  <>
-                    {' · '}
-                    <Trans>{wantedCount} wanted</Trans>
-                  </>
-              )}
-            </Text>
-          </Table.Td>
-          <Table.Td />
-          <Table.Td />
-          <Table.Td>
-            {downloaded.length > 0 && (
-                <Progress
-                    value={(done / downloaded.length) * 100}
-                    color={watchedCount > readCount ? 'var(--watched)' : 'var(--ok)'}
-                    size="sm"
-                    radius="xl"
-                />
-            )}
-          </Table.Td>
-          <Table.Td onClick={(e) => e.stopPropagation()}>
-            <Group gap={2} wrap="nowrap" justify="flex-end">
-              {readTracking && (
-                  <Menu shadow="md" position="bottom-end" withinPortal>
-                    <Menu.Target>
-                      <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`Actions for ${spanLabel}`}>
-                        <IconDotsVertical size={17} />
-                      </ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item
-                          leftSection={<IconDeviceTv size={15} />}
-                          onClick={() => applyReadState(ids, 'watched')}
-                      >
-                        <Trans>Mark watched</Trans>
-                      </Menu.Item>
-                      <Menu.Item
-                          leftSection={<IconEyeCheck size={15} />}
-                          onClick={() => applyReadState(ids, 'read')}
-                      >
-                        <Trans>Mark read</Trans>
-                      </Menu.Item>
-                      <Menu.Item
-                          leftSection={<IconEyeOff size={15} />}
-                          onClick={() => applyReadState(ids, 'unread')}
-                      >
-                        <Trans>Mark unread</Trans>
-                      </Menu.Item>
-                      <Menu.Divider />
-                      <Menu.Item
-                          leftSection={<IconListCheck size={15} />}
-                          onClick={() => {
-                            setSelectMode(true)
-                            selectAnchor.current = null
-                            setSelected(new Set(ids))
-                          }}
-                      >
-                        <Trans>Select these chapters</Trans>
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-              )}
-              <Tooltip label={t`Expand`} withArrow>
-                <ActionIcon
-                    variant="subtle"
-                    color="var(--neutral)"
-                    onClick={() => toggleSpanFold(span.key)}
-                    aria-label={t`Expand ${spanLabel}`}
-                >
-                  <IconChevronDown size={17} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          </Table.Td>
-        </Table.Tr>
-    )
-  }
+  // The rows are memoized, so everything they call goes through these stable objects: a handler
+  // that changed identity every render would re-render all of them on any state change at all.
+  const chapterRowActions = useStableActions<ChapterRowActions>({
+    clickRow: clickChapterRow,
+    toggleWanted: (chapterId, wanted) => toggleWanted.mutate({ chapterId, wanted }),
+    setRead: (chapterId, read) => setRead.mutate({ chapterId, read }),
+    link: (chapterId) => setLinkChapterIds([chapterId]),
+    download: (chapterId, chapterLbl) =>
+      search.mutate(chapterId, {
+        onSuccess: () => notify.ok(staticT`Queued ${chapterLbl}`),
+      }),
+    pickChapter: setPickChapter,
+    upgradeNow: (chapterId) =>
+      upgradeChapterNow.mutate(chapterId, {
+        onSuccess: (result) => {
+          setUpgradeNowResult(result)
+          setUpgradeNowModalOpen(true)
+        },
+        onError: (error) => {
+          notify.err(
+              error instanceof ApiError && error.status === 409
+                  ? staticT`A scan is already running`
+                  : staticT`Couldn't run the scan`,
+          )
+        },
+      }),
+    setTrusted: (fileId, trusted) => setFileTrusted.mutate({ fileId, trusted }),
+    deleteFile: (chapterId) => setDeleteFileIds([chapterId]),
+    toggleSpanFold,
+    setMarkerRef,
+  })
+  const spanRowActions = useStableActions<ChapterSpanRowActions>({
+    applyWanted,
+    applyReadState,
+    selectChapters: (ids) => {
+      setSelectMode(true)
+      selectAnchor.current = null
+      setSelected(new Set(ids))
+    },
+    toggleSpanFold,
+  })
 
   const nextChapter = useMemo(
       () => {
@@ -1438,15 +1290,6 @@ function SeriesDetailBody() {
   const contentRating = contentRatingVisual(series.contentRating)
   const altTitles = readableTitles(series.altTitles, i18n.locale)
   const seriesTitle = series.title
-  // Errors are reported globally (see main.tsx); only success needs saying here. `info` is for
-  // outcomes that aren't failures but aren't wins either — a download action that found nothing
-  // left to queue, which would otherwise report a cheerful "Queued 0".
-  const notify = {
-    ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
-    info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
-    err: (message: string) => notifications.show({ message, color: 'var(--danger)' }),
-  }
-
   const scanSeriesForUpgrades = () =>
     runUpgradeScan.mutate(seriesId, {
       onSuccess: () => {
@@ -2804,11 +2647,11 @@ function SeriesDetailBody() {
                 }}
             />
 
-            {!chapters || chapters.length === 0 ? (
+            {(chapters === undefined && chaptersFailed) || chapters?.length === 0 ? (
                 <Text c="var(--ink-3)" size="sm">
                   <Trans>No chapters known.</Trans> <Trans>Link a source and refresh.</Trans>
                 </Text>
-            ) : renderedRows.rows.length === 0 ? (
+            ) : chapters !== undefined && renderedRows.rows.length === 0 ? (
                 <Text c="var(--ink-3)" size="sm">
                   <Trans>No chapters match this search and filter.</Trans>
                 </Text>
@@ -2821,7 +2664,12 @@ function SeriesDetailBody() {
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
                       <Table.ScrollContainer minWidth={isMobile ? 0 : chapterTableMinWidth}>
-                        <Table className="chapter-table" highlightOnHover verticalSpacing="xs">
+                        <Table
+                            className="chapter-table"
+                            highlightOnHover
+                            verticalSpacing="xs"
+                            aria-busy={chapterRowsLoading || undefined}
+                        >
                           <Table.Thead>
                             <Table.Tr>
                               <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}><Trans>Wanted</Trans></Table.Th>
@@ -2850,428 +2698,56 @@ function SeriesDetailBody() {
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
-                            {pagedRows.map((row) => {
-                              if (row.kind === 'span') {
-                                return renderSpanRow(row.span, row.rows)
-                              }
-                              const c = row.chapter
-                              const chapterLbl = chapterLabel(c)
-                              const chapterNumber = c.number
-                              const fileVolume = c.fileVolume
-                              const { read, inProgress, external, watched } = readStateFor(c)
-                              const rowProgress = readProgress.get(c.id)
-                              const pageIndex = rowProgress ? rowProgress.pageIndex + 1 : null
-                              const pageCount = rowProgress ? rowProgress.pageCount : null
-                              const queueItem = queueByChapterId.get(c.id)
-                              const isSelected = selectMode && selected.has(c.id)
-                              return (
-                                  <Table.Tr
-                                      key={c.id}
-                                      opacity={c.wanted || c.hasFile ? 1 : 0.55}
-                                      className={[
-                                        watched
-                                            ? 'chapter-row-watched'
-                                            : read
-                                                ? 'chapter-row-read'
-                                                : inProgress
-                                                    ? 'chapter-row-reading'
-                                                    : '',
-                                        selectMode ? 'chapter-row-selectable' : '',
-                                        isSelected ? 'chapter-row-selected' : '',
-                                      ]
-                                          .filter(Boolean)
-                                          .join(' ') || undefined}
-                                      onClick={selectMode ? (e) => clickChapterRow(c.id, e.shiftKey) : undefined}
-                                      tabIndex={selectMode ? 0 : undefined}
-                                      onKeyDown={
-                                        selectMode ? onPressKey((e) => clickChapterRow(c.id, e.shiftKey)) : undefined
-                                      }
-                                      aria-selected={selectMode ? isSelected : undefined}
-                                  >
-                                    {/* The controls in this cell stay live in select mode, so its clicks mustn't
-                        bubble up and toggle the row as well. Same for the actions cell. */}
-                                    <Table.Td onClick={(e) => e.stopPropagation()}>
-                                      <Switch
-                                          size="xs"
-                                          checked={c.wanted}
-                                          disabled={
-                                            !canEditMetadata ||
-                                            (toggleWanted.isPending && toggleWanted.variables?.chapterId === c.id)
-                                          }
-                                          aria-label={t`Want ${chapterLbl}`}
-                                          onChange={(e) =>
-                                              toggleWanted.mutate({ chapterId: c.id, wanted: e.currentTarget.checked })
-                                          }
+                            {chapterRowsLoading ? (
+                                <ChapterRowSkeletons count={pagedRows.length > 0 ? Math.min(pagedRows.length, 12) : 8} />
+                            ) : (
+                                <ChunkedRows rows={shownRows}>
+                                  {(rows) => rows.map((row) => {
+                                  if (row.kind === 'span') {
+                                    return (
+                                        <ChapterSpanRow
+                                            key={`span:${row.span.key}`}
+                                            span={row.span}
+                                            rows={row.rows}
+                                            readProgress={readProgress}
+                                            hasAnimeMarkers={hasAnimeMarkers}
+                                            readTracking={readTracking}
+                                            canEditMetadata={canEditMetadata}
+                                            wantedPending={setChaptersWanted.isPending}
+                                            actions={spanRowActions}
+                                        />
+                                    )
+                                  }
+                                  const c = row.chapter
+                                  const markers = c.number === null ? undefined : animeMarkers.get(c.number)
+                                  return (
+                                      <ChapterRow
+                                          key={c.id}
+                                          chapter={c}
+                                          progress={readProgress.get(c.id)}
+                                          queueItem={queueByChapterId.get(c.id)}
+                                          selectMode={selectMode}
+                                          selected={selectMode && selected.has(c.id)}
+                                          hasAnimeMarkers={hasAnimeMarkers}
+                                          markers={markers}
+                                          foldedSpans={markers ? foldedSpans : undefined}
+                                          spanForMarker={spanForMarker}
+                                          canEditMetadata={canEditMetadata}
+                                          canDownload={canDownload}
+                                          canDelete={canDelete}
+                                          canFindBetterCopy={enabledMappings > 1}
+                                          wantedPending={toggleWanted.isPending && toggleWanted.variables?.chapterId === c.id}
+                                          readPending={setRead.isPending && setRead.variables?.chapterId === c.id}
+                                          upgradePending={upgradeChapterNow.isPending}
+                                          upgradingThis={upgradeChapterNow.isPending && upgradeChapterNow.variables === c.id}
+                                          fileOrigin={fileOrigin}
+                                          renderLabel={renderLabel}
+                                          actions={chapterRowActions}
                                       />
-                                    </Table.Td>
-                                    {/* The marker slot is reserved on every row, not just the ones carrying a badge:
-                        the season lines run down that slot, and a label free to grow into it on the
-                        other 200 rows would have the line drawn straight through it. */}
-                                    <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined} data-chapter-number={c.number ?? undefined}>
-                                      <Group gap={6} wrap="nowrap">
-                                        {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
-                                            <Tooltip label={t`Contained in a volume/compilation file`} withArrow>
-                                              <Badge size="sm" color="var(--watched)" variant="light" className="tnum chapter-label">
-                                                <Trans>Vol. {fileVolume}</Trans>
-                                              </Badge>
-                                            </Tooltip>
-                                        )}
-                                        <Text size="sm" fw={600} className="tnum chapter-label">
-                                          {c.isOneShot || c.number === null
-                                              ? chapterLabel(c)
-                                              : c.fileVolume !== null
-                                                  ? <Trans>Ch. {chapterNumber}</Trans>
-                                                  : chapterLabel(c)}
-                                        </Text>
-                                      </Group>
-                                      {hasAnimeMarkers && c.number !== null && (
-                                          <div className="chapter-span-markers">
-                                            {(animeMarkers.get(c.number) ?? []).map((marker, i) => {
-                                              // A marker that starts or ends an included span doubles as its fold
-                                              // control and as the anchor the overlay measures its line from;
-                                              // everything else (an unpaired end, or one bumped by the 3-lane cap) is
-                                              // a plain informational badge, same as always.
-                                              const span = spanForMarker(c.number!, marker.kind)
-                                              const { label: markerLabel } = marker
-                                              return (
-                                                  <Tooltip
-                                                      key={i}
-                                                      label={
-                                                          span
-                                                              ? marker.kind === 'start'
-                                                                  ? foldedSpans.has(span.key)
-                                                                      ? t`${markerLabel} Anime adaptation starts here · click to expand`
-                                                                      : t`${markerLabel} Anime adaptation starts here · click to collapse`
-                                                                  : foldedSpans.has(span.key)
-                                                                      ? t`${markerLabel} Anime adaptation ends here · click to expand`
-                                                                      : t`${markerLabel} Anime adaptation ends here · click to collapse`
-                                                              : marker.kind === 'start'
-                                                                  ? t`${markerLabel} Anime adaptation starts here`
-                                                                  : t`${markerLabel} Anime adaptation ends here`
-                                                      }
-                                                      withArrow
-                                                  >
-                                                    <Badge
-                                                        size="sm"
-                                                        color={marker.kind === 'start' ? 'var(--info)' : 'var(--danger)'}
-                                                        variant="light"
-                                                        className={`chapter-span-marker${span ? ' chapter-span-badge' : ''}`}
-                                                        data-span-fold={span && marker.kind === 'start' ? span.key : undefined}
-                                                        ref={
-                                                          span
-                                                              ? (el: HTMLDivElement | null) =>
-                                                                  setMarkerRef(`${span.key}:${marker.kind}`, el)
-                                                              : undefined
-                                                        }
-                                                        {...(span
-                                                            ? pressable((e) => {
-                                                              e.stopPropagation()
-                                                              toggleSpanFold(span.key)
-                                                            })
-                                                            : { onClick: (e: { stopPropagation: () => void }) => e.stopPropagation() })}
-                                                    >
-                                                      {marker.label}
-                                                    </Badge>
-                                                  </Tooltip>
-                                              )
-                                            })}
-                                          </div>
-                                      )}
-                                    </Table.Td>
-                                    <Table.Td>
-                                      <Text size="sm" c="var(--ink-3)" lineClamp={1}>
-                                        {c.title}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      <Text size="sm" c="var(--ink-3)" className="tnum chapter-label">
-                                        {c.releaseDate ? formatCalendarDate(c.releaseDate) : '-'}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      {/* Where the file on disk actually came from, which is what makes a source
-                          comparison actionable: the winner is often not what you already have. */}
-                                      {!c.hasFile || !c.fileSourceName ? (
-                                          <Text size="sm" c="var(--ink-3)" className="chapter-source-empty">
-                                            -
-                                          </Text>
-                                      ) : (
-                                          (() => {
-                                            const origin = fileOrigin(c.fileSourceName, c.fileReleaseName)
-                                            return (
-                                                <Stack gap={4} align="flex-start">
-                                                  <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                                                    <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
-                                                      {origin.label}
-                                                    </Badge>
-                                                  </Tooltip>
-                                                  <FileQualityBadge quality={c.fileQuality} />
-                                                </Stack>
-                                            )
-                                          })()
-                                      )}
-                                    </Table.Td>
-                                    <Table.Td>
-                                      {/* Wraps rather than clipping: a re-read chapter carries three badges. */}
-                                      <Group gap={6} wrap="wrap">
-                                        {queueItem ? (
-                                            (() => {
-                                              const visual = queueStatusVisual(queueItem.status)
-                                              const failure = queueErrorMessage(queueItem, renderLabel)
-                                              return (
-                                                  <Tooltip
-                                                    label={failure ?? renderLabel(visual.label)}
-                                                    withArrow
-                                                    disabled={failure === null}
-                                                  >
-                                                    <Group gap={6} wrap="nowrap">
-                                                      {queueItem.pagesTotal > 0 && (
-                                                          <Progress
-                                                              value={(queueItem.pagesDone / queueItem.pagesTotal) * 100}
-                                                              w={72}
-                                                              radius="xl"
-                                                              animated={queueItem.status === 'Downloading'}
-                                                              color={queueItem.status === 'Failed' ? 'var(--danger)' : 'brand'}
-                                                          />
-                                                      )}
-                                                      <Badge
-                                                          size="sm"
-                                                          color={statusColor(visual.color)}
-                                                          variant="light"
-                                                          leftSection={<visual.Icon size={12} />}
-                                                          className="tnum"
-                                                      >
-                                                        {queueItem.pagesTotal > 0
-                                                            ? `${renderLabel(visual.label)} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
-                                                            : renderLabel(visual.label)}
-                                                      </Badge>
-                                                    </Group>
-                                                  </Tooltip>
-                                              )
-                                            })()
-                                        ) : c.hasFile ? (
-                                            <>
-                                              <Badge size="sm" color="var(--ok)" variant="light" leftSection={<IconCircleCheck size={12} />}>
-                                                <Trans>Downloaded</Trans>
-                                              </Badge>
-                                              {c.fileDeleteDueAt && (() => {
-                                                const daysLeft = Math.max(
-                                                    0,
-                                                    Math.ceil((Date.parse(c.fileDeleteDueAt) - Date.now()) / 86_400_000),
-                                                )
-                                                return (
-                                                    <Tooltip label={t`Read file cleanup is on for this series`} withArrow>
-                                                      <Badge size="sm" color="var(--neutral)" variant="light" leftSection={<IconClock size={12} />}>
-                                                        {daysLeft === 0
-                                                            ? t`File removed soon`
-                                                            : plural(daysLeft, {
-                                                              one: 'File removed in # day',
-                                                              other: 'File removed in # days',
-                                                            })}
-                                                      </Badge>
-                                                    </Tooltip>
-                                                )
-                                              })()}
-                                            </>
-                                        ) : c.fileRemovedAt ? (
-                                            <Tooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
-                                              <Badge size="sm" color="var(--neutral)" variant="light" leftSection={<IconTrash size={12} />}>
-                                                <Trans>File removed</Trans>
-                                              </Badge>
-                                            </Tooltip>
-                                        ) : (
-                                            <Badge size="sm" color="var(--neutral)" variant="light">
-                                              <Trans>Missing</Trans>
-                                            </Badge>
-                                        )}
-                                        {read && (
-                                            <Tooltip
-                                                label={
-                                                  watched
-                                                      ? t`Marked watched, not read. Doesn't count toward reading stats`
-                                                      : external
-                                                          ? t`Read in Kavita`
-                                                          : t`Read in Maki`
-                                                }
-                                                withArrow
-                                            >
-                                              <Badge
-                                                  size="sm"
-                                                  color={watched ? 'var(--watched)' : 'var(--ok)'}
-                                                  variant={watched || external ? 'light' : 'filled'}
-                                                  c={watched || external ? undefined : 'var(--ok-on)'}
-                                                  leftSection={
-                                                    watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
-                                                  }
-                                              >
-                                                {watched ? <Trans>Watched</Trans> : <Trans>Read</Trans>}
-                                              </Badge>
-                                            </Tooltip>
-                                        )}
-                                        {/* Shown alongside Read when a finished chapter is being re-read. */}
-                                        {inProgress && (
-                                            <Badge size="sm" color="var(--info)" variant="light" className="tnum">
-                                              {/* pageCount is 0 on rows imported from Kavita: the reader fills it
-                                  in on first open, so show a plain label until then. */}
-                                              {rowProgress && rowProgress.pageCount > 0 ? (
-                                                  <Trans>Page {pageIndex}/{pageCount}</Trans>
-                                              ) : (
-                                                  <Trans>Reading</Trans>
-                                              )}
-                                            </Badge>
-                                        )}
-                                      </Group>
-                                    </Table.Td>
-                                    <Table.Td onClick={(e) => e.stopPropagation()}>
-                                      <Group gap={2} wrap="nowrap" justify="flex-end">
-                                        {/* Marking read needs the file for its page count, so a removed chapter can only be un-read. */}
-                                        {(c.hasFile || (c.fileRemovedAt && read)) && (
-                                            <Tooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
-                                              <ActionIcon
-                                                  variant={read ? 'light' : 'subtle'}
-                                                  color={read ? 'var(--ok)' : 'gray'}
-                                                  loading={setRead.isPending && setRead.variables?.chapterId === c.id}
-                                                  onClick={() => setRead.mutate({ chapterId: c.id, read: !read })}
-                                                  aria-label={t`Toggle read state of ${chapterLbl}`}
-                                              >
-                                                {!read ? <IconEye size={17} /> : <IconEyeOff size={17} />}
-                                              </ActionIcon>
-                                            </Tooltip>
-                                        )}
-                                        {c.hasFile && (
-                                              <Tooltip label={t`Read`} withArrow>
-                                                <ActionIcon
-                                                    component={Link}
-                                                    to={`/read/${c.id}`}
-                                                    variant="subtle"
-                                                    color="brand"
-                                                    aria-label={t`Read ${chapterLbl}`}
-                                                >
-                                                  <IconBook size={17} />
-                                                </ActionIcon>
-                                              </Tooltip>
-                                        )}
-                                        {!c.hasFile && canEditMetadata && (
-                                            <Tooltip label={t`Link to a file already on disk`} withArrow>
-                                              <ActionIcon
-                                                  variant="subtle"
-                                                  color="var(--neutral)"
-                                                  onClick={() => setLinkChapterIds([c.id])}
-                                                  aria-label={t`Link ${chapterLbl} to a file`}
-                                              >
-                                                <IconLink size={17} />
-                                              </ActionIcon>
-                                            </Tooltip>
-                                        )}
-                                        {!c.hasFile && canDownload && (
-                                            <Tooltip label={t`Download this chapter`} withArrow>
-                                              <ActionIcon
-                                                  variant="subtle"
-                                                  color="brand"
-                                                  onClick={() =>
-                                                      search.mutate(c.id, {
-                                                        onSuccess: () => notify.ok(staticT`Queued ${chapterLbl}`),
-                                                      })
-                                                  }
-                                                  aria-label={t`Download ${chapterLbl}`}
-                                              >
-                                                <IconDownload size={17} />
-                                              </ActionIcon>
-                                            </Tooltip>
-                                        )}
-                                        {(canDownload || canDelete) && c.hasFile && (
-                                            <Menu shadow="md" position="bottom-end" withinPortal>
-                                              <Menu.Target>
-                                                <ActionIcon
-                                                    variant="subtle"
-                                                    color="var(--neutral)"
-                                                    aria-label={t`More actions for ${chapterLbl}`}
-                                                >
-                                                  <IconDotsVertical size={17} />
-                                                </ActionIcon>
-                                              </Menu.Target>
-                                              <Menu.Dropdown>
-                                                {canDownload && c.number !== null && enabledMappings > 1 && (
-                                                    <Menu.Item
-                                                        leftSection={<IconPhotoSearch size={14} />}
-                                                        onClick={() =>
-                                                            setPickChapter({
-                                                              id: c.id,
-                                                              number: c.number!,
-                                                              label: chapterLbl,
-                                                              currentSourceName: c.fileSourceName,
-                                                            })
-                                                        }
-                                                    >
-                                                      <Trans>Find better copy</Trans>
-                                                    </Menu.Item>
-                                                )}
-                                                {canDownload && (
-                                                <Menu.Item
-                                                    leftSection={
-                                                      upgradeChapterNow.isPending && upgradeChapterNow.variables === c.id
-                                                          ? <Loader size={14} />
-                                                          : <IconSparkles size={14} />
-                                                    }
-                                                    disabled={upgradeChapterNow.isPending}
-                                                    onClick={() =>
-                                                        upgradeChapterNow.mutate(c.id, {
-                                                          onSuccess: (result) => {
-                                                            setUpgradeNowResult(result)
-                                                            setUpgradeNowModalOpen(true)
-                                                          },
-                                                          onError: (error) => {
-                                                            notify.err(
-                                                                error instanceof ApiError && error.status === 409
-                                                                    ? staticT`A scan is already running`
-                                                                    : staticT`Couldn't run the scan`,
-                                                            )
-                                                          },
-                                                        })
-                                                    }
-                                                >
-                                                  <Trans>Upgrade now</Trans>
-                                                </Menu.Item>
-                                                )}
-                                                {canDownload && c.fileQuality && (
-                                                    <Menu.Item
-                                                        leftSection={
-                                                          c.fileQuality.trusted
-                                                              ? <IconLockOpen size={14} />
-                                                              : <IconLock size={14} />
-                                                        }
-                                                        onClick={() =>
-                                                            setFileTrusted.mutate({
-                                                              fileId: c.fileQuality!.fileId,
-                                                              trusted: !c.fileQuality!.trusted,
-                                                            })
-                                                        }
-                                                    >
-                                                      {c.fileQuality.trusted
-                                                          ? <Trans>Allow upgrades</Trans>
-                                                          : <Trans>Protect from upgrades</Trans>}
-                                                    </Menu.Item>
-                                                )}
-                                                {canDelete && (
-                                                    <>
-                                                      {canDownload && <Menu.Divider />}
-                                                      <Menu.Item
-                                                          color="var(--danger)"
-                                                          leftSection={<IconTrash size={14} />}
-                                                          onClick={() => setDeleteFileIds([c.id])}
-                                                      >
-                                                        <Trans>Delete file</Trans>
-                                                      </Menu.Item>
-                                                    </>
-                                                )}
-                                              </Menu.Dropdown>
-                                            </Menu>
-                                        )}
-                                      </Group>
-                                    </Table.Td>
-                                  </Table.Tr>
-                              )
-                            })}
+                                  )
+                                })}
+                                </ChunkedRows>
+                            )}
                           </Table.Tbody>
                         </Table>
                       </Table.ScrollContainer>

@@ -53,11 +53,6 @@ msgstr "(inacessível)"
 msgid "(no longer in the library)"
 msgstr "(não está mais na biblioteca)"
 
-#. placeholder {0}: picked.length
-#: src/pages/settings/ManageSourcesModal.tsx
-#~ msgid "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
-#~ msgstr ""
-
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -698,7 +693,7 @@ msgstr "{cycles, plural, one {readicionado #×} many {readicionados #×}other {r
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, one {Arquivos excluídos, capítulos removidos e séries excluídas com seus arquivos ficam aqui por # dia antes de serem excluídos definitivamente. Restaurar devolve o arquivo ao lugar de origem.} many {Arquivos excluídos, capítulos removidos e séries excluídas com seus arquivos ficam aqui por # dias antes de serem excluídos definitivamente. Restaurar devolve o arquivo ao lugar de origem.} other {Arquivos excluídos, capítulos removidos e séries excluídas com seus arquivos ficam aqui por # dias antes de serem excluídos definitivamente. Restaurar devolve o arquivo ao lugar de origem.}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
 msgstr "{daysLeft, plural, one {Arquivo removido em # dia} many {Arquivo removido em # dias} other {Arquivo removido em # dias}}"
@@ -917,10 +912,6 @@ msgstr "{intoLevel} / {levelSpan} XP até o nível {nextLevel}"
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP até o nível {nextLevel}"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -1015,45 +1006,37 @@ msgstr "{left, plural, one {Falta #} many {Faltam #} other {Faltam #}} · ~{eta}
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · clique para recolher"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
-#~ msgstr ""
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, one {Fontes encontradas e arquivos vinculados para # série} many {Fontes encontradas e arquivos vinculados para # séries} other {Fontes encontradas e arquivos vinculados para # séries}}"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{mappings, plural, one {# series linked} other {# series linked}}"
-#~ msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here"
 msgstr "{markerLabel} A adaptação de anime termina aqui"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here · click to collapse"
 msgstr "{markerLabel} A adaptação de anime termina aqui · clique para recolher"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here · click to expand"
 msgstr "{markerLabel} A adaptação de anime termina aqui · clique para expandir"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here"
 msgstr "{markerLabel} A adaptação de anime começa aqui"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here · click to collapse"
 msgstr "{markerLabel} A adaptação de anime começa aqui · clique para recolher"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here · click to expand"
 msgstr "{markerLabel} A adaptação de anime começa aqui · clique para expandir"
@@ -1330,7 +1313,7 @@ msgstr "{readCount} / {haveCount, plural, one {# capítulo} many {# capítulos} 
 msgid "{readCount} of {seriesChapterCount} read"
 msgstr "{readCount} de {seriesChapterCount} lidos"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{readCount} read"
 msgstr "{readCount} lidos"
@@ -1448,10 +1431,6 @@ msgstr "{samples, plural, one {Medido a partir de # capítulo em {series} série
 #, fuzzy
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ resultados"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
-#~ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1738,12 +1717,12 @@ msgstr "{topSourceName} forneceu {topSourceRate} dos downloads nos últimos 30 d
 msgid "{total, plural, one {{completed} / # file inspected} other {{completed} / # files inspected}}"
 msgstr "{total, plural, one {{completed} / # arquivo verificado} many {{completed} / # arquivos verificados} other {{completed} / # arquivos verificados}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
 msgstr "{total, plural, one {{wantedCount} de # capítulo desejado · clique para desejar todos} many {{wantedCount} de # capítulos desejados · clique para desejar todos} other {{wantedCount} de # capítulos desejados · clique para desejar todos}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
 msgstr "{total, plural, one {# capítulo · {downloadedCount} baixado} many {# capítulos · {downloadedCount} baixados} other {# capítulos · {downloadedCount} baixados}}"
@@ -1754,7 +1733,7 @@ msgstr "{total, plural, one {# capítulo · {downloadedCount} baixado} many {# c
 msgid "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
 msgstr "{total, plural, one {# capítulo listado, nenhum desejado, nada será baixado} many {# capítulos listados, nenhum desejado, nada será baixado}other {# capítulos listados, nenhum desejado, nada será baixado}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {All # chapter wanted} other {All # chapters wanted}}"
 msgstr "{total, plural, one {Todo # capítulo desejado} many {Todos os # capítulos desejados} other {Todos os # capítulos desejados}}"
@@ -1769,7 +1748,7 @@ msgstr "{total, plural, one {Importada {ok}/# pasta} many {Importadas {ok}/# pas
 msgid "{total, plural, one {Measured {measured} of # source} other {Measured {measured} of # sources}}"
 msgstr "{total, plural, one {Medido {measured} de # fonte} many {Medido {measured} de # fontes} other {Medido {measured} de # fontes}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {None of the # chapter wanted} other {None of the # chapters wanted}}"
 msgstr "{total, plural, one {Nenhum dos # capítulo desejado} many {Nenhum dos # capítulos desejados} other {Nenhum dos # capítulos desejados}}"
@@ -1794,7 +1773,7 @@ msgstr "{total, plural, one {Pesquisar # fonte} many {Pesquisar # fontes} other 
 msgid "{total, plural, one {Show all #} other {Show all #}}"
 msgstr "{total, plural, one {Mostrar todos (#)} many {Mostrar todos (#)} other {Mostrar todos (#)}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, one {Desejados para {spanLabel}: {wantedCount} de # capítulo} many {Desejados para {spanLabel}: {wantedCount} de # capítulos} other {Desejados para {spanLabel}: {wantedCount} de # capítulos}}"
@@ -1979,12 +1958,12 @@ msgstr "{volumesRead, plural, one {…mais # volume completo.} many {…mais # v
 msgid "{volumesText} + {chaptersText}"
 msgstr "{volumesText} + {chaptersText}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{wantedCount} wanted"
 msgstr "{wantedCount} desejados"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{watchedCount} watched"
 msgstr "{watchedCount} assistidos"
@@ -2606,7 +2585,7 @@ msgstr "Reconhecido"
 msgid "Action"
 msgstr "Ação"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Actions for {spanLabel}"
 msgstr "Ações para {spanLabel}"
@@ -2978,8 +2957,8 @@ msgstr "Todos: cada capítulo. Smart: só os próximos poucos à frente da sua l
 msgid "Allow replacing unknown-tier files"
 msgstr "Permitir substituir arquivos de nível desconhecido"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Allow upgrades"
 msgstr "Permitir upgrades"
@@ -4062,7 +4041,7 @@ msgstr "cap. {chapter} · vol. {volume}"
 msgid "Ch. {chapterLabel}"
 msgstr "Cap. {chapterLabel}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch. {chapterNumber}"
 msgstr "Cap. {chapterNumber}"
@@ -4185,8 +4164,8 @@ msgstr "Cap.{0}"
 msgid "Ch.{chapter}"
 msgstr "Cap.{chapter}"
 
+#: src/components/series/chapterTable.ts
 #: src/pages/ActivityPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Ch.{chapterNumber}"
 msgstr "Cap.{chapterNumber}"
@@ -4196,12 +4175,12 @@ msgstr "Cap.{chapterNumber}"
 msgid "Ch.{chapterNumber} - {chapterTitle}"
 msgstr "Cap. {chapterNumber} - {chapterTitle}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch.{from}–{to}"
 msgstr "Cap.{from}–{to}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch.{from}+"
 msgstr "Cap.{from}+"
@@ -4345,10 +4324,6 @@ msgstr "Formato do arquivo de capítulo"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Chapter language"
 msgstr ""
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Chapter language for {displayName}"
-#~ msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Chapter language for {label}"
@@ -4548,10 +4523,6 @@ msgstr "Chinês"
 #, fuzzy
 msgid "Choose a root folder"
 msgstr "Escolher uma pasta raiz"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Choose sources"
-#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5008,7 +4979,7 @@ msgstr "Considere desativar um dos dois mapeamentos de fonte; o aviso desaparece
 msgid "consistent"
 msgstr "consistente"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
 msgstr "Contido em um arquivo de volume/compilação"
@@ -5763,7 +5734,7 @@ msgstr "Excluir backup"
 msgid "Delete connection"
 msgstr "Excluir conexão"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Delete file"
 msgstr "Excluir arquivo"
@@ -6181,7 +6152,7 @@ msgstr "Para baixo"
 msgid "Download"
 msgstr "Baixar"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Download {chapterLbl}"
 msgstr "Baixar {chapterLbl}"
@@ -6253,13 +6224,13 @@ msgstr "Fila de downloads"
 msgid "Download the next"
 msgstr "Baixar o próximo"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Download this chapter"
 msgstr "Baixar este capítulo"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Downloaded"
@@ -6386,10 +6357,6 @@ msgstr "ex. Em andamento e atrasado"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "Cada conta tem seu próprio login, permissões, classificação de conteúdo e histórico de leitura."
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
-#~ msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6849,12 +6816,12 @@ msgstr "Sair da edição"
 msgid "Exit full screen"
 msgstr "Sair da tela cheia"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Expand"
 msgstr "Expandir"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "Expandir {spanLabel}"
@@ -7059,12 +7026,12 @@ msgstr "Nomeação de arquivos na importação"
 msgid "file on disk, not linked"
 msgstr "arquivo no disco, sem vínculo"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "File removed"
 msgstr "Arquivo removido"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "File removed soon"
 msgstr "Arquivo removido em breve"
@@ -7177,7 +7144,7 @@ msgstr "Encontrar uma correspondência para {folderName}"
 msgid "Find another match for {folderName}"
 msgstr "Encontrar outra correspondência para {folderName}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Find better copy"
 msgstr "Encontrar cópia melhor"
@@ -8821,10 +8788,6 @@ msgstr "Filtro de idioma"
 msgid "Language is"
 msgstr "O idioma é"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Language, e.g. en"
-#~ msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -9214,7 +9177,7 @@ msgstr "Claro"
 msgid "Link"
 msgstr "Vincular"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Link {chapterLbl} to a file"
 msgstr "Vincular {chapterLbl} a um arquivo"
@@ -9280,7 +9243,7 @@ msgstr "Vincular fonte"
 msgid "Link those by hand on the Files tab."
 msgstr "Vincule esses capítulos manualmente na aba Arquivos."
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Link to a file already on disk"
 msgstr "Vincular a um arquivo que já está no disco"
@@ -9713,6 +9676,7 @@ msgstr "Marcar capítulos como lidos também no Kavita"
 msgid "Mark chapters watched"
 msgstr "Marcar capítulos como assistidos"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark read"
@@ -9724,12 +9688,14 @@ msgstr "Marcar como lido"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "marcar como lido no kavita, enviar ao kavita, importar status de leitura, progresso do kavita, sincronização ao vivo, instantâneo"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark unread"
 msgstr "Marcar como não lido"
 
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark watched"
@@ -9745,7 +9711,7 @@ msgstr "Marcado como já lido ou assistido. Seu perfil de gosto não foi alterad
 msgid "Marked ch. 1 to {to} watched"
 msgstr "Capítulos 1 a {to} marcados como assistidos"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
 msgstr "Marcado como assistido, não lido. Não conta nas estatísticas de leitura"
@@ -10018,10 +9984,10 @@ msgid "missing"
 msgstr "ausente"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Missing"
 msgstr "Faltando"
@@ -10115,7 +10081,7 @@ msgstr "Mais"
 msgid "More actions"
 msgstr "Mais ações"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "More actions for {chapterLbl}"
 msgstr "Mais ações para {chapterLbl}"
@@ -11780,9 +11746,9 @@ msgstr "Um quadro por gênero, cada um abre os títulos mais populares."
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/chapterTable.ts
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "One-shot"
 msgstr "One-shot"
@@ -11837,10 +11803,6 @@ msgstr "Somente séries que estou lendo"
 #, fuzzy
 msgid "Only the built-in reader records it."
 msgstr "Apenas o leitor integrado registra isso."
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Only the sources already chosen are listed. You can still remove them."
-#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12068,7 +12030,7 @@ msgstr "Empacotamento"
 msgid "Page"
 msgstr "Página"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Página {pageIndex}/{pageCount}"
@@ -12635,8 +12597,8 @@ msgstr "Validade da proposta (dias)"
 msgid "Protect {fileName} from upgrades"
 msgstr "Proteger {fileName} de upgrades"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Protect from upgrades"
 msgstr "Proteger de upgrades"
@@ -12920,6 +12882,7 @@ msgstr "Alcançado por {ratioValue} a mais do que possuir preveria, em {seriesPh
 msgid "read"
 msgstr "lido"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -12930,7 +12893,7 @@ msgstr "lido"
 msgid "Read"
 msgstr "Ler"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read {chapterLbl}"
 msgstr "Ler {chapterLbl}"
@@ -12960,7 +12923,7 @@ msgstr "Leia alguns capítulos e isto será preenchido."
 msgid "Read ch. {resumeAt}"
 msgstr "Ler o cap. {resumeAt}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read file cleanup is on for this series"
 msgstr "A limpeza de arquivos lidos está ativa para esta série"
@@ -12980,12 +12943,12 @@ msgstr "Lido de"
 msgid "Read history stays, and the chapters aren't downloaded again."
 msgstr "O histórico de leitura continua, e os capítulos não são baixados de novo."
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Kavita"
 msgstr "Ler no Kavita"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Maki"
 msgstr "Ler no Maki"
@@ -13066,9 +13029,9 @@ msgid "Readers like you also recommended this"
 msgstr "Leitores como você também recomendaram isto"
 
 #: src/components/ImportListsSection.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
-#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
 #: src/pages/stats/sectionList.ts
@@ -13633,10 +13596,6 @@ msgstr "Remover fonte sem limpar?"
 #, fuzzy
 msgid "Remove source?"
 msgstr "Remover fonte?"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Remove sources with linked series?"
-#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15085,7 +15044,7 @@ msgstr "Selecionar filtrados"
 msgid "Select missing ({missingCount})"
 msgstr "Selecionar ausentes ({missingCount})"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Select these chapters"
 msgstr "Selecionar estes capítulos"
@@ -15387,10 +15346,6 @@ msgstr "Guia de configuração"
 msgid "Setup steps"
 msgstr "Etapas da configuração"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Several languages"
-#~ msgstr ""
-
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Several languages, pick one"
 msgstr ""
@@ -15444,10 +15399,6 @@ msgstr "Mostrar novamente"
 #, fuzzy
 msgid "Show all"
 msgstr "Mostrar tudo"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Show every language"
-#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -16258,14 +16209,6 @@ msgstr ""
 msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
 msgstr ""
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
-#~ msgstr ""
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Suwayomi sources"
-#~ msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
@@ -16606,7 +16549,7 @@ msgstr "O nome do arquivo não contém número de capítulo ou volume, então na
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "O arquivo que este upgrade deveria substituir não existe mais"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
 msgstr "O arquivo foi excluído de propósito. O Maki não o baixa de novo a menos que você peça."
@@ -17392,7 +17335,7 @@ msgstr "Alternar tela cheia"
 msgid "Toggle page thumbnails"
 msgstr "Alternar miniaturas de páginas"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Toggle read state of {chapterLbl}"
 msgstr "Alternar estado de leitura de {chapterLbl}"
@@ -18023,7 +17966,7 @@ msgstr "Atualizando o ComicInfo"
 msgid "Upgrade"
 msgstr "Upgrade"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Upgrade now"
 msgstr "Fazer upgrade agora"
@@ -18359,10 +18302,6 @@ msgstr "Versão"
 msgid "very tight"
 msgstr "muito próximo"
 
-#: src/pages/settings/ManageSourcesModal.tsx
-#~ msgid "via Suwayomi"
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Vietnamese"
@@ -18408,7 +18347,7 @@ msgstr "Ver e adicionar {title}"
 msgid "View in library"
 msgstr "Ver na biblioteca"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Vol. {fileVolume}"
 msgstr "Vol. {fileVolume}"
@@ -18425,7 +18364,7 @@ msgstr "Vol. {volume}"
 msgid "Vol.{0} Ch.{1}"
 msgstr "Vol.{0} Cap.{1}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/chapterTable.ts
 #, fuzzy
 msgid "Vol.{volNum} Ch.{chapterNumber}"
 msgstr "Vol.{volNum} Cap.{chapterNumber}"
@@ -18566,7 +18505,7 @@ msgstr "Aguardando leitura"
 msgid "Want"
 msgstr "Querer"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Want {chapterLbl}"
 msgstr "Querer {chapterLbl}"
@@ -18592,7 +18531,7 @@ msgstr "Capítulos desejados podem ser baixados novamente pela automação exist
 msgid "Warning"
 msgstr "Aviso"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Watched"
 msgstr "Assistido"

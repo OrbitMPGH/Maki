@@ -53,11 +53,6 @@ msgstr "（无法访问）"
 msgid "(no longer in the library)"
 msgstr "（已不在资料库中）"
 
-#. placeholder {0}: picked.length
-#: src/pages/settings/ManageSourcesModal.tsx
-#~ msgid "{0, plural, =0 {No languages on} one {# language on} other {# languages on}}"
-#~ msgstr ""
-
 #. placeholder {0}: spans.length
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -698,7 +693,7 @@ msgstr "{cycles, plural, other {重新添加 #×}}"
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, other {已删除的文件、已移除的章节以及随文件一并删除的系列会在此保留 # 天，之后才会永久删除。恢复会把文件放回原处。}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
 msgstr "{daysLeft, plural, other {# 天后移除文件}}"
@@ -917,10 +912,6 @@ msgstr "距离等级 {nextLevel} 还需 {intoLevel} / {levelSpan} XP"
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "距离等级 {nextLevel} 还需 {intoLevelFormatted} / {levelSpanFormatted} XP"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -1015,45 +1006,37 @@ msgstr "{left, plural, other {还剩 # 个}} · 约 {eta}"
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · 点击收起"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
-#~ msgstr ""
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, other {已为 # 个系列找到来源并关联文件}}"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{mappings, plural, one {# series linked} other {# series linked}}"
-#~ msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here"
 msgstr "{markerLabel} 动画改编到此结束"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here · click to collapse"
 msgstr "{markerLabel} 动画改编到此结束 · 点击收起"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation ends here · click to expand"
 msgstr "{markerLabel} 动画改编到此结束 · 点击展开"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here"
 msgstr "{markerLabel} 动画改编从此处开始"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here · click to collapse"
 msgstr "{markerLabel} 动画改编从此处开始 · 点击收起"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{markerLabel} Anime adaptation starts here · click to expand"
 msgstr "{markerLabel} 动画改编从此处开始 · 点击展开"
@@ -1330,7 +1313,7 @@ msgstr "{readCount} / {haveCount, plural, other {# 个章节}}"
 msgid "{readCount} of {seriesChapterCount} read"
 msgstr "已阅读 {readCount}/{seriesChapterCount}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{readCount} read"
 msgstr "{readCount} 已读"
@@ -1447,10 +1430,6 @@ msgstr "{samples, plural, other {根据你资料库中 {series} 个系列的 # �
 #, fuzzy
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ 个匹配"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
-#~ msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1737,12 +1716,12 @@ msgstr "过去 30 天，{topSourceName}提供了 {topSourceRate} 的下载。"
 msgid "{total, plural, one {{completed} / # file inspected} other {{completed} / # files inspected}}"
 msgstr "{total, plural, other {{completed}/# 个文件已检查}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {{wantedCount} of # chapter wanted · click to want all} other {{wantedCount} of # chapters wanted · click to want all}}"
 msgstr "{total, plural, other {已想要 {wantedCount}/# 个章节 · 点击可全部设为想要}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {# chapter · {downloadedCount} downloaded} other {# chapters · {downloadedCount} downloaded}}"
 msgstr "{total, plural, other {# 个章节 · 已下载 {downloadedCount}}}"
@@ -1753,7 +1732,7 @@ msgstr "{total, plural, other {# 个章节 · 已下载 {downloadedCount}}}"
 msgid "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
 msgstr "{total, plural, other {已列出 # 个章节，没有想要的内容，不会下载任何内容}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {All # chapter wanted} other {All # chapters wanted}}"
 msgstr "{total, plural, other {全部 # 个章节已设为想要}}"
@@ -1768,7 +1747,7 @@ msgstr "{total, plural, other {已导入 {ok}/# 个文件夹}}"
 msgid "{total, plural, one {Measured {measured} of # source} other {Measured {measured} of # sources}}"
 msgstr "{total, plural, other {已测量 {measured}/# 个来源}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {None of the # chapter wanted} other {None of the # chapters wanted}}"
 msgstr "{total, plural, other {# 个章节均未设为想要}}"
@@ -1793,7 +1772,7 @@ msgstr "{total, plural, other {搜索 # 个来源}}"
 msgid "{total, plural, one {Show all #} other {Show all #}}"
 msgstr "{total, plural, other {显示全部 # 项}}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, other {{spanLabel} 想要 {wantedCount}/# 个章节}}"
@@ -1978,12 +1957,12 @@ msgstr "{volumesRead, plural, other {……另有 # 个完整卷。}}"
 msgid "{volumesText} + {chaptersText}"
 msgstr "{volumesText} + {chaptersText}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{wantedCount} wanted"
 msgstr "{wantedCount} 个想要"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{watchedCount} watched"
 msgstr "{watchedCount} 个已看过"
@@ -2605,7 +2584,7 @@ msgstr "已确认"
 msgid "Action"
 msgstr "动作"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Actions for {spanLabel}"
 msgstr "{spanLabel} 的操作"
@@ -2977,8 +2956,8 @@ msgstr "全部：每个章节。Smart：只下载你阅读位置之后的几个�
 msgid "Allow replacing unknown-tier files"
 msgstr "允许替换未知层级的文件"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Allow upgrades"
 msgstr "允许升级"
@@ -4061,7 +4040,7 @@ msgstr "第 {chapter} 章 · 卷 {volume}"
 msgid "Ch. {chapterLabel}"
 msgstr "第 {chapterLabel} 章"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch. {chapterNumber}"
 msgstr "第 {chapterNumber} 章"
@@ -4184,8 +4163,8 @@ msgstr "第 {0} 章"
 msgid "Ch.{chapter}"
 msgstr "第 {chapter} 章"
 
+#: src/components/series/chapterTable.ts
 #: src/pages/ActivityPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Ch.{chapterNumber}"
 msgstr "第 {chapterNumber} 章"
@@ -4195,12 +4174,12 @@ msgstr "第 {chapterNumber} 章"
 msgid "Ch.{chapterNumber} - {chapterTitle}"
 msgstr "第 {chapterNumber} 章 - {chapterTitle}"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch.{from}–{to}"
 msgstr "第 {from}–{to} 章"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Ch.{from}+"
 msgstr "第 {from} 章起"
@@ -4344,10 +4323,6 @@ msgstr "章节文件格式"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Chapter language"
 msgstr ""
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Chapter language for {displayName}"
-#~ msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Chapter language for {label}"
@@ -4547,10 +4522,6 @@ msgstr "中文"
 #, fuzzy
 msgid "Choose a root folder"
 msgstr "选择根文件夹"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Choose sources"
-#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5007,7 +4978,7 @@ msgstr "可以考虑禁用两个来源映射中的一个；警告会在下次刷
 msgid "consistent"
 msgstr "一致"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
 msgstr "包含在卷文件或合集文件中"
@@ -5762,7 +5733,7 @@ msgstr "删除备份"
 msgid "Delete connection"
 msgstr "删除连接"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Delete file"
 msgstr "删除文件"
@@ -6180,7 +6151,7 @@ msgstr "下移"
 msgid "Download"
 msgstr "下载"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Download {chapterLbl}"
 msgstr "下载 {chapterLbl}"
@@ -6252,13 +6223,13 @@ msgstr "下载队列"
 msgid "Download the next"
 msgstr "下载后续章节"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Download this chapter"
 msgstr "下载此章节"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "Downloaded"
@@ -6385,10 +6356,6 @@ msgstr "例如：连载中和落后"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "每个账户都有自己的登录信息、权限、内容分级和阅读历史。"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
-#~ msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6848,12 +6815,12 @@ msgstr "退出编辑"
 msgid "Exit full screen"
 msgstr "退出全屏"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Expand"
 msgstr "展开"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "展开 {spanLabel}"
@@ -7058,12 +7025,12 @@ msgstr "导入时的文件命名"
 msgid "file on disk, not linked"
 msgstr "磁盘上未关联的文件"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "File removed"
 msgstr "文件已移除"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "File removed soon"
 msgstr "文件即将移除"
@@ -7176,7 +7143,7 @@ msgstr "为 {folderName} 查找匹配"
 msgid "Find another match for {folderName}"
 msgstr "为 {folderName} 查找其他匹配"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Find better copy"
 msgstr "查找更好的版本"
@@ -8820,10 +8787,6 @@ msgstr "语言筛选"
 msgid "Language is"
 msgstr "语言为"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Language, e.g. en"
-#~ msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -9213,7 +9176,7 @@ msgstr "浅色"
 msgid "Link"
 msgstr "关联"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Link {chapterLbl} to a file"
 msgstr "将 {chapterLbl} 关联到文件"
@@ -9279,7 +9242,7 @@ msgstr "关联来源"
 msgid "Link those by hand on the Files tab."
 msgstr "请在“文件”标签页中手动关联这些章节。"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Link to a file already on disk"
 msgstr "关联到磁盘上已有的文件"
@@ -9712,6 +9675,7 @@ msgstr "同时在 Kavita 中将章节标记为已读"
 msgid "Mark chapters watched"
 msgstr "将章节标记为已看过"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark read"
@@ -9723,12 +9687,14 @@ msgstr "标记为已读"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "在 Kavita 中标为已读，推送到 Kavita，导入阅读状态，Kavita 进度，实时同步，即时，kavita"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark unread"
 msgstr "标记为未读"
 
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark watched"
@@ -9744,7 +9710,7 @@ msgstr "已标记为已读或看过。你的品味资料没有改变。"
 msgid "Marked ch. 1 to {to} watched"
 msgstr "已将第 1 到 {to} 章标记为已看过"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
 msgstr "已标记为看过，未标记为已读。不计入阅读统计"
@@ -10017,10 +9983,10 @@ msgid "missing"
 msgstr "缺失"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Missing"
 msgstr "缺失"
@@ -10114,7 +10080,7 @@ msgstr "更多"
 msgid "More actions"
 msgstr "更多操作"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "More actions for {chapterLbl}"
 msgstr "有关 {chapterLbl} 的更多操作"
@@ -11779,9 +11745,9 @@ msgstr "每种类型显示一个方块，点击后打开最受欢迎的作品。
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/series/chapterTable.ts
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "One-shot"
 msgstr "单话"
@@ -11836,10 +11802,6 @@ msgstr "仅我正在阅读的系列"
 #, fuzzy
 msgid "Only the built-in reader records it."
 msgstr "只有内置阅读器会记录它。"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Only the sources already chosen are listed. You can still remove them."
-#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12067,7 +12029,7 @@ msgstr "打包中"
 msgid "Page"
 msgstr "页面"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "第 {pageIndex}/{pageCount} 页"
@@ -12634,8 +12596,8 @@ msgstr "提议有效期（天）"
 msgid "Protect {fileName} from upgrades"
 msgstr "保护 {fileName} 不被升级"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Protect from upgrades"
 msgstr "保护不被升级"
@@ -12919,6 +12881,7 @@ msgstr "在 {seriesPhrase} 中，被阅读的次数比拥有它所预测的多 {
 msgid "read"
 msgstr "已读"
 
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -12929,7 +12892,7 @@ msgstr "已读"
 msgid "Read"
 msgstr "已读"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read {chapterLbl}"
 msgstr "阅读 {chapterLbl}"
@@ -12959,7 +12922,7 @@ msgstr "阅读几章后这里会填充内容。"
 msgid "Read ch. {resumeAt}"
 msgstr "阅读第 {resumeAt} 章"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read file cleanup is on for this series"
 msgstr "此系列已开启阅读文件清理"
@@ -12979,12 +12942,12 @@ msgstr "阅读起点"
 msgid "Read history stays, and the chapters aren't downloaded again."
 msgstr "阅读记录会保留，这些章节也不会被重新下载。"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Kavita"
 msgstr "在 Kavita 中阅读"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Maki"
 msgstr "在 Maki 中阅读"
@@ -13065,9 +13028,9 @@ msgid "Readers like you also recommended this"
 msgstr "像你一样的读者也推荐了此内容"
 
 #: src/components/ImportListsSection.tsx
+#: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
-#: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
 #: src/pages/stats/sectionList.ts
@@ -13632,10 +13595,6 @@ msgstr "移除来源但不清理？"
 #, fuzzy
 msgid "Remove source?"
 msgstr "移除来源？"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Remove sources with linked series?"
-#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15084,7 +15043,7 @@ msgstr "选择筛选结果"
 msgid "Select missing ({missingCount})"
 msgstr "选择缺失章节 ({missingCount})"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Select these chapters"
 msgstr "选择这些章节"
@@ -15386,10 +15345,6 @@ msgstr "设置指南"
 msgid "Setup steps"
 msgstr "设置步骤"
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Several languages"
-#~ msgstr ""
-
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Several languages, pick one"
 msgstr ""
@@ -15443,10 +15398,6 @@ msgstr "再次显示"
 #, fuzzy
 msgid "Show all"
 msgstr "显示全部"
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Show every language"
-#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -16257,14 +16208,6 @@ msgstr ""
 msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
 msgstr ""
 
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
-#~ msgstr ""
-
-#: src/pages/settings/SuwayomiCards.tsx
-#~ msgid "Suwayomi sources"
-#~ msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
@@ -16605,7 +16548,7 @@ msgstr "文件名不包含章节或卷号，因此无法与任何内容匹配。
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "此次升级要替换的文件已不存在"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "The file was deleted on purpose. Maki won't download it again unless you ask."
 msgstr "该文件是被有意删除的。除非你要求，Maki 不会重新下载它。"
@@ -17391,7 +17334,7 @@ msgstr "切换全屏"
 msgid "Toggle page thumbnails"
 msgstr "切换页面缩略图"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Toggle read state of {chapterLbl}"
 msgstr "切换 {chapterLbl} 的阅读状态"
@@ -18022,7 +17965,7 @@ msgstr "正在更新 ComicInfo"
 msgid "Upgrade"
 msgstr "升级"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Upgrade now"
 msgstr "立即升级"
@@ -18358,10 +18301,6 @@ msgstr "版本"
 msgid "very tight"
 msgstr "非常紧密"
 
-#: src/pages/settings/ManageSourcesModal.tsx
-#~ msgid "via Suwayomi"
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Vietnamese"
@@ -18407,7 +18346,7 @@ msgstr "查看并添加 {title}"
 msgid "View in library"
 msgstr "在资料库中查看"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Vol. {fileVolume}"
 msgstr "卷 {fileVolume}"
@@ -18424,7 +18363,7 @@ msgstr "第 {volume} 卷"
 msgid "Vol.{0} Ch.{1}"
 msgstr "第 {0} 卷，第 {1} 章"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/chapterTable.ts
 #, fuzzy
 msgid "Vol.{volNum} Ch.{chapterNumber}"
 msgstr "第 {volNum} 卷 第 {chapterNumber} 章"
@@ -18565,7 +18504,7 @@ msgstr "等待阅读"
 msgid "Want"
 msgstr "想要"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Want {chapterLbl}"
 msgstr "想要 {chapterLbl}"
@@ -18591,7 +18530,7 @@ msgstr "现有自动化任务可能会再次下载想要的章节。"
 msgid "Warning"
 msgstr "警告"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Watched"
 msgstr "已看过"
