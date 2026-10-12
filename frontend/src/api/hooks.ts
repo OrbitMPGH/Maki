@@ -2678,6 +2678,8 @@ export interface SourceInfo {
   name: string
   displayName: string
   baseUrl: string
+  /** Set for a source that is not built in. A Suwayomi source's `baseUrl` is the Suwayomi server, not the site. */
+  provider?: 'suwayomi' | null
   needsFlareSolverr: boolean
   /**
    * Whether this source honours a mapping's `languageFilter`, so the mappings card offers a

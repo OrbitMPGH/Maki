@@ -297,6 +297,9 @@ public class SearchController(
             s.Name,
             s.DisplayName,
             s.BaseUrl,
+            // Where a source comes from when it is not built in. A Suwayomi source's BaseUrl is the
+            // Suwayomi server, so the UI shows this instead of a host that is the same for all of them.
+            Provider = s is SuwayomiSource ? "suwayomi" : null,
             NeedsFlareSolverr = s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr),
             // Whether ListChaptersAsync honours SourceMapping.LanguageFilter, so the mappings card
             // only offers a language picker where one does something. A multi-language source that

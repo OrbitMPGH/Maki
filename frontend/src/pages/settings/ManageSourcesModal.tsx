@@ -20,6 +20,9 @@ import { SourceIcon, baseLanguage, sourceHost } from '../../sourceIcons'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 
 type StateFilter = 'all' | 'on' | 'off'
+
+/** What the search box matches a source's site on. A Suwayomi source's base URL is the Suwayomi server. */
+const hostOf = (source: SourceInfo) => (source.provider === 'suwayomi' ? 'suwayomi' : sourceHost(source.baseUrl))
 type Pane = 'catalogue' | 'priority'
 
 const CONTENT_ORDER: SourceContent[] = ['manga', 'manhwa', 'manhua', 'webtoon', 'doujinshi']
@@ -317,7 +320,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
     if (stateFilter === 'on' && !on) return false
     if (stateFilter === 'off' && on) return false
     if (needle) {
-      const haystack = `${source.displayName} ${source.name} ${sourceHost(source.baseUrl)}`.toLowerCase()
+      const haystack = `${source.displayName} ${source.name} ${hostOf(source)}`.toLowerCase()
       if (!haystack.includes(needle)) return false
     }
     if (adultOnly && source.rating !== 'adult') return false
@@ -414,7 +417,9 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
         <div style={{ minWidth: 0 }}>
           <div className="source-row-name">
             <span>{label}</span>
-            <span className="source-row-host">{sourceHost(source.baseUrl)}</span>
+            <span className="source-row-host">
+              {source.provider === 'suwayomi' ? <Trans>via Suwayomi</Trans> : sourceHost(source.baseUrl)}
+            </span>
           </div>
           <SourceTags source={source} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
         </div>

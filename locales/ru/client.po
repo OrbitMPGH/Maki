@@ -904,6 +904,10 @@ msgstr "{intoLevel} / {levelSpan} XP до уровня {nextLevel}"
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP до уровня {nextLevel}"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "{inUse, plural, =0 {No Suwayomi sources in use yet.} one {# Suwayomi source in use.} other {# Suwayomi sources in use.}}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
@@ -990,10 +994,18 @@ msgstr "{left, plural, one {Остался #} few {Осталось #} many {О�
 msgid "{lineLabel} · click to collapse"
 msgstr "{lineLabel} · нажмите, чтобы свернуть"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "{linkedSeries, plural, one {# series is linked to the sources you are removing. Its link is kept and stops syncing until the source is chosen again.} other {# series are linked to the sources you are removing. Their links are kept and stop syncing until the source is chosen again.}}"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, one {Источники найдены, файлы привязаны для # серии} few {Источники найдены, файлы привязаны для # серий} many {Источники найдены, файлы привязаны для # серий} other {Источники найдены, файлы привязаны для # серии}}"
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "{mappings, plural, one {# series linked} other {# series linked}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1416,6 +1428,10 @@ msgstr "{samples, plural, one {Измерено по # главе, серий в
 msgid "{searchCap}+ matches"
 msgstr "{searchCap}+ совпадений"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "{selectedCount, plural, =0 {No sources chosen} one {# source chosen} other {# sources chosen}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -1557,6 +1573,10 @@ msgstr "{source} {tierLabel} ({score})"
 #, fuzzy
 msgid "{source} {tierLabel} {medianWidth}px ({score})"
 msgstr "{source} {tierLabel} {medianWidth}px ({score})"
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "{sourceCount, plural, one {Suwayomi {version} answered with # source installed.} other {Suwayomi {version} answered with # sources installed.}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2150,6 +2170,7 @@ msgid "12 months"
 msgstr "12 месяцев"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "18+"
 msgstr "18+"
@@ -3594,6 +3615,10 @@ msgstr "Основывайте рекомендации на этих назва
 msgid "Based on your recent activity"
 msgstr "На основе недавней активности"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Basic auth"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Bearer token"
@@ -3876,6 +3901,7 @@ msgstr "Не удаётся прочитать эту загрузку"
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Cancel"
@@ -4281,6 +4307,10 @@ msgstr "Глава загружена"
 msgid "Chapter file format"
 msgstr "Формат файлов глав"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Chapter language for {displayName}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Chapter languages"
@@ -4475,6 +4505,10 @@ msgstr "Китайский"
 #, fuzzy
 msgid "Choose a root folder"
 msgstr "Выберите корневую папку"
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Choose sources"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -6308,6 +6342,10 @@ msgstr "например, Выходит и отстаёт"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "У каждой учётной записи свои данные для входа, разрешения, возрастной рейтинг и история чтения."
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Each chosen source is searched for every series you add. One in English or this instance's language is switched on as soon as you save; the rest wait in Manage sources."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -8344,6 +8382,10 @@ msgstr "Включать вложенные теги"
 msgid "Include subtags when adding"
 msgstr "Включать подметки при добавлении"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Include the subpath if Suwayomi runs under one."
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Includes subtags"
@@ -8734,6 +8776,10 @@ msgstr "Фильтр языка"
 #, fuzzy
 msgid "Language is"
 msgstr "Язык"
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Language, e.g. en"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -9674,6 +9720,10 @@ msgstr "Сопоставить"
 msgid "Match mode for {label}"
 msgstr "Режим совпадения для {label}"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Match Suwayomi's own auth mode setting."
+msgstr ""
+
 #: src/theme-context.tsx
 #, fuzzy
 msgid "Match system"
@@ -9700,6 +9750,7 @@ msgid "Matching the remaining sources…"
 msgstr "Сопоставление оставшихся источников…"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Mature"
 msgstr "Для взрослых"
@@ -10654,6 +10705,10 @@ msgstr "Индексаторы в Prowlarr не настроены."
 msgid "No library folder yet. Series need one to download into."
 msgstr "Пока нет папки библиотеки. Сериям нужна папка, куда их скачивать."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "No longer in Suwayomi"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "no longer steers your taste"
@@ -10962,6 +11017,7 @@ msgstr "нет"
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "None"
 msgstr "Нет"
@@ -11041,6 +11097,10 @@ msgstr "не настроено (см. настройки)"
 #, fuzzy
 msgid "Not connected"
 msgstr "Не подключено"
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Not connected."
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -11721,6 +11781,10 @@ msgstr "Только серии, которые я читаю"
 msgid "Only the built-in reader records it."
 msgstr "Это записывает только встроенная читалка."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Only the sources already chosen are listed. You can still remove them."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Only this source is tried. Nothing falls back to another one, so the request fails rather than fetching from somewhere you did not pick."
@@ -11864,6 +11928,10 @@ msgstr "Необязательно"
 #, fuzzy
 msgid "Optional, and yours to set. Maki never adds one for you."
 msgstr "Необязательно, настройте сами. Maki никогда не добавляет значение за вас."
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Optional. Point Maki at a Suwayomi server to use the sources of the extensions installed there, alongside Maki's own. Extensions are installed and configured in Suwayomi; Maki only reads from it."
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -12043,6 +12111,7 @@ msgstr "Пропущено: {reasons}"
 #: src/pages/LoginPage.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Password"
@@ -13351,6 +13420,7 @@ msgstr "Перезагрузить"
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Remove"
 msgstr "Удалить"
@@ -13491,6 +13561,10 @@ msgstr "Удалить источник без очистки?"
 #, fuzzy
 msgid "Remove source?"
 msgstr "Удалить источник?"
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Remove sources with linked series?"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -13768,6 +13842,7 @@ msgid "Require single sign-on"
 msgstr "Требовать единый вход"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Required"
 msgstr "Обязательно"
@@ -14243,6 +14318,7 @@ msgstr "Пример главы"
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/SettingsSection.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Save"
 msgstr "Сохранить"
@@ -14335,6 +14411,7 @@ msgstr "Сохранить коды восстановления"
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
+#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Saved"
@@ -14351,6 +14428,10 @@ msgstr "Сохранено как значение по умолчанию"
 #, fuzzy
 msgid "Saved filters"
 msgstr "Сохранённые фильтры"
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Saved. Leave empty to keep it."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14726,6 +14807,7 @@ msgid "Search shows"
 msgstr "Поиск шоу"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Search sources"
 msgstr "Искать источники"
@@ -15215,6 +15297,10 @@ msgstr "Руководство по настройке"
 msgid "Setup steps"
 msgstr "Этапы настройки"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Several languages"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Shapes recommendations"
@@ -15264,6 +15350,10 @@ msgstr "Показать снова"
 #, fuzzy
 msgid "Show all"
 msgstr "Показать все"
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Show every language"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -15406,6 +15496,7 @@ msgstr "Выйти из всех остальных мест"
 
 #: src/components/settings/AccountSection.tsx
 #: src/pages/settings/registry.ts
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Sign-in"
 msgstr "Вход"
@@ -16061,6 +16152,23 @@ msgstr "Пикантно"
 msgid "Supernatural"
 msgstr "Сверхъестественное"
 
+#: src/pages/settings/registry.ts
+msgid "Suwayomi"
+msgstr ""
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Suwayomi has no extensions installed yet. Install them in Suwayomi, then come back here."
+msgstr ""
+
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "Suwayomi sources"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Switch reading direction"
@@ -16226,6 +16334,7 @@ msgstr "Сообщает о каждой новой главе независи�
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Test"
 msgstr "Проверить"
@@ -17471,6 +17580,10 @@ msgstr "Обычная глава"
 msgid "Typical sitting"
 msgstr "Обычный сеанс"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "UI login (v2.2 or later)"
+msgstr ""
+
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "Un-ignore"
@@ -17901,6 +18014,7 @@ msgstr "Верхний регистр"
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "URL"
 msgstr "URL"
@@ -18031,6 +18145,7 @@ msgstr "ID пользователя, группы или канала. Для о
 #: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Username"
@@ -18137,6 +18252,10 @@ msgstr "Версия"
 #, fuzzy
 msgid "very tight"
 msgstr "очень близкие"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "via Suwayomi"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

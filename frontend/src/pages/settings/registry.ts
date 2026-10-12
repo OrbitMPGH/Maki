@@ -438,6 +438,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'suwayomi',
+    tab: 'integrations',
+    title: msg`Suwayomi`,
+    admin: true,
+    keywords: msg({
+      message: `suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'scrobbling',
     tab: 'integrations',
     title: msg`Trackers`,
