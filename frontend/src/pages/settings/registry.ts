@@ -246,6 +246,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'name-parsing',
+    tab: 'library',
+    title: msg`File name parsing`,
+    admin: true,
+    keywords: msg({
+      message: `file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'library-files',
     tab: 'library',
     title: msg`ComicInfo & covers`,

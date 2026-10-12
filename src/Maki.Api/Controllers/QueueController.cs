@@ -6,6 +6,7 @@ using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Parsing;
 using Maki.Core.Security;
 using Maki.Core.Quality;
 using Maki.Core.Sources;
@@ -303,10 +304,12 @@ public class QueueController(
             return this.Conflict(localizer, "error.queue.onlyTorrentImportable");
         }
 
+        var parsingFingerprint = NameParsingProfile.Current.Fingerprint;
         var contentPath = await importer.ResolveContentPathAsync(item, ct);
         var plan = await importer.PlanAsync(item, item.Series, contentPath, ct);
         return Ok(new
         {
+            parsingFingerprint,
             plan.QueueItemId,
             plan.SeriesId,
             plan.SeriesTitle,
@@ -346,6 +349,12 @@ public class QueueController(
 
         try
         {
+            if (request.Mode != ImportDecision.Reject && request.ParsingFingerprint is { } reviewed &&
+                reviewed != NameParsingProfile.Current.Fingerprint)
+            {
+                return this.Conflict(localizer, "error.queue.planStale");
+            }
+
             // Conditional, so a second click or the poll job cannot take the same parked row: only
             // one caller moves it out of AwaitingImport.
             var claimed = await db.DownloadQueue

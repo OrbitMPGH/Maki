@@ -2100,10 +2100,20 @@ export function useImportPlan(id: number | null) {
 export function useSettleImport() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, mode, skipFiles }: { id: number; mode: ImportDecision; skipFiles?: string[] }) =>
+    mutationFn: ({
+      id,
+      mode,
+      skipFiles,
+      parsingFingerprint,
+    }: {
+      id: number
+      mode: ImportDecision
+      skipFiles?: string[]
+      parsingFingerprint?: string
+    }) =>
       api<ImportDecisionResultDto | void>(`/queue/${id}/import`, {
         method: 'POST',
-        body: JSON.stringify({ mode, skipFiles }),
+        body: JSON.stringify({ mode, skipFiles, parsingFingerprint }),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
@@ -3303,6 +3313,39 @@ export function useSaveLibrarySettings() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: key })
     },
+  })
+}
+
+/** One language whose volume and chapter words the parsers can read besides English. */
+export interface NameParsingLanguage {
+  code: string
+  /** The words as written in release names ("Tome", "T"), not translated. */
+  volumeWords: string[]
+  chapterWords: string[]
+}
+
+export interface NameParsingSettings {
+  /** Switched-on languages, in picker order. */
+  languages: string[]
+  available: NameParsingLanguage[]
+}
+
+export function useNameParsingSettings() {
+  return useQuery({
+    queryKey: ['settings', 'nameparsing'],
+    queryFn: () => api<NameParsingSettings>('/settings/nameparsing'),
+  })
+}
+
+export function useSaveNameParsingSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (languages: string[]) =>
+      api<NameParsingSettings>('/settings/nameparsing', {
+        method: 'PUT',
+        body: JSON.stringify({ languages }),
+      }),
+    onSuccess: (saved) => queryClient.setQueryData(['settings', 'nameparsing'], saved),
   })
 }
 

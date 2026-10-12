@@ -294,6 +294,7 @@ public class ReleaseTitleParserTests
         var parsed = ReleaseTitleParser.Parse("Title v\uFF11 + 99999999999999999999999999999999 (\uFF12\uFF10\uFF12\uFF14) (Digital)");
 
         Assert.NotEmpty(parsed.TitleCandidates);
-        Assert.Null(parsed.Year);
+        Assert.Equal(new NumberRange(1, 1), parsed.Span.Volumes);
+        Assert.Equal(2024, parsed.Year);
     }
 }

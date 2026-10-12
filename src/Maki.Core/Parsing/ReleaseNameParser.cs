@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Maki.Core.Parsing;
@@ -36,8 +37,11 @@ public record ParsedReleaseFile(decimal? Number, int? Volume, int? VolumeEnd)
 /// </summary>
 public static partial class ReleaseNameParser
 {
-    [GeneratedRegex(@"\s*[\(\[][^\)\]]*[\)\]]")]
+    [GeneratedRegex(@"\s*[\(\[【][^\)\]】]*[\)\]】]")]
     internal static partial Regex TagGroups();
+
+    [GeneratedRegex(@"-([\p{L}\p{N}]+)$")]
+    private static partial Regex SceneSuffix();
 
     // A volume range takes a bare hyphen, or a spaced one when the end carries its own v/vol marker
     // or is a number that closes the name or runs into a tag, "+", "," or "Complete"/"END":
@@ -80,9 +84,11 @@ public static partial class ReleaseNameParser
     }
 
     /// <summary>Parses a CBZ file name (with or without extension) into chapter/volume info.</summary>
-    public static ParsedReleaseFile ParseFileName(string fileName)
+    /// <param name="profile">The marker languages to read; null means <see cref="NameParsingProfile.Current"/>.</param>
+    public static ParsedReleaseFile ParseFileName(string fileName, NameParsingProfile? profile = null)
     {
-        var name = Path.GetFileName(fileName);
+        profile ??= NameParsingProfile.Current;
+        var name = Normalize(Path.GetFileName(fileName));
         var extension = Path.GetExtension(name);
         if (ArchiveExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
         {
@@ -97,21 +103,65 @@ public static partial class ReleaseNameParser
         // volume from one.
         var tags = ExtractTags(name);
         var stripped = TagGroups().Replace(name, string.Empty).Trim();
-        var parsed = ParseCleanedName(stripped);
+        var parsed = ParseCleanedName(stripped, profile);
         if (!parsed.IsRecognized)
         {
-            parsed = ParseCleanedName(name);
+            parsed = ParseCleanedName(name, profile);
         }
 
         return parsed with { Tags = tags };
     }
 
-    /// <summary>The trimmed inner text of every "(...)"/"[...]" group <see cref="TagGroups"/> matches, in order.</summary>
-    internal static IReadOnlyList<string> ExtractTags(string name) =>
-        TagGroups().Matches(name)
+    /// <summary>
+    /// Folds fullwidth digits, letters and brackets to ASCII, which Japanese and Chinese names use
+    /// freely. Done once on the way in, never on a copy: the title parser cuts the name by match
+    /// positions, and NFKC can change a string's length.
+    /// </summary>
+    internal static string Normalize(string name) =>
+        name.IsNormalized(NormalizationForm.FormKC) ? name : name.Normalize(NormalizationForm.FormKC);
+
+    /// <summary>
+    /// The trimmed inner text of every "(...)"/"[...]" group <see cref="TagGroups"/> matches, in order,
+    /// then the <see cref="SceneGroup"/> if there is one, so a bracketed group still wins.
+    /// </summary>
+    internal static IReadOnlyList<string> ExtractTags(string name)
+    {
+        var tags = TagGroups().Matches(name)
             .Select(m => m.Value.Trim())
             .Select(v => v.Length >= 2 ? v[1..^1].Trim() : v)
             .ToList();
+        if (SceneGroup(name) is { } group)
+        {
+            tags.Add(group);
+        }
+
+        return tags;
+    }
+
+    /// <summary>
+    /// A scene release joins its words with dots or underscores and no spaces:
+    /// "Series.Name.T29.Author.FR.[CBZ]-GROUP". A plain hyphenated title like "Chainsaw-Man" is not one.
+    /// </summary>
+    internal static bool IsSceneStyle(string name)
+    {
+        var bare = TagGroups().Replace(name, string.Empty).Trim();
+        return bare.Length > 0 && !bare.Any(char.IsWhiteSpace) && bare.IndexOfAny(['.', '_']) >= 0;
+    }
+
+    /// <summary>
+    /// The "-GROUP" a scene release ends in. Without it the only tag such a name has is often "[CBZ]",
+    /// which used to be read as the group. A suffix with no letter ("T01-02") or one that is a
+    /// marker or a noise word is not a group.
+    /// </summary>
+    private static string? SceneGroup(string name)
+    {
+        if (!IsSceneStyle(name)) return null;
+
+        var suffix = SceneSuffix().Match(TagGroups().Replace(name, string.Empty).Trim());
+        if (!suffix.Success || !suffix.Groups[1].Value.Any(char.IsLetter)) return null;
+
+        return ReleaseTags.Group([suffix.Groups[1].Value]);
+    }
 
     /// <summary>First and last number of a <see cref="ChapterPattern"/> match; End is null unless it is a real, ascending range.</summary>
     /// <remarks>Null when the digits overflow, so a nonsense run reads as no marker rather than throwing.</remarks>
@@ -128,6 +178,11 @@ public static partial class ReleaseNameParser
     internal static (int Start, int? End)? VolumeRange(Match match)
     {
         if (TryInt(match.Groups[1].Value) is not { } start) return null;
+        if (match.Groups["all"].Success)
+        {
+            return start > 1 && start - 1 <= MaxVolumeSpan ? (1, start) : (start, null);
+        }
+
         if (!match.Groups[2].Success) return (start, null);
         var end = TryInt(match.Groups[2].Value);
         return end > start && end < MinYearLikeVolume && end - start <= MaxVolumeSpan ? (start, end) : (start, null);
@@ -142,22 +197,22 @@ public static partial class ReleaseNameParser
     private static int? TryInt(string digits) =>
         int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : null;
 
-    private static ParsedReleaseFile ParseCleanedName(string stripped)
+    private static ParsedReleaseFile ParseCleanedName(string stripped, NameParsingProfile profile)
     {
         // Explicit chapter marker wins ("Chapter 0001", "Ch. 10.5").
-        var chapter = ChapterPattern().Match(stripped);
-        if (chapter.Success && ChapterRange(chapter) is var (number, numberEnd))
+        var chapter = profile.ChapterMatches(stripped).FirstOrDefault();
+        if (chapter is not null && ChapterRange(chapter) is var (number, numberEnd))
         {
-            var volumeForChapter = VolumePattern().Match(stripped);
+            var volumeForChapter = profile.VolumeMatches(stripped).FirstOrDefault();
             return new ParsedReleaseFile(
                 number,
-                volumeForChapter.Success ? TryInt(volumeForChapter.Groups[1].Value) : null,
+                volumeForChapter is not null ? TryInt(volumeForChapter.Groups[1].Value) : null,
                 null) { NumberEnd = numberEnd };
         }
 
         // Volume marker ("v01", "v01-02", "Vol. 3").
-        var volume = VolumePattern().Match(stripped);
-        if (volume.Success && VolumeRange(volume) is var (start, end))
+        var volume = profile.VolumeMatches(stripped).FirstOrDefault();
+        if (volume is not null && VolumeRange(volume) is var (start, end))
         {
             return new ParsedReleaseFile(null, start, end);
         }

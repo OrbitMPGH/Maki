@@ -236,13 +236,17 @@ public class ReleaseNameParserTests
         Assert.Empty(parsed.Tags);
     }
 
-    [Theory]
-    [InlineData("Title \uFF11\uFF10\uFF11.cbz")]
-    [InlineData("Title v\uFF11.zip")]
-    [InlineData("Title c\u0661\u0662.cbz")]
-    public void Non_ascii_digits_are_unrecognized_rather_than_throwing(string file)
+    [Fact]
+    public void Non_ascii_digits_are_unrecognized_rather_than_throwing()
     {
-        Assert.False(ReleaseNameParser.ParseFileName(file).IsRecognized);
+        Assert.False(ReleaseNameParser.ParseFileName("Title c\u0661\u0662.cbz").IsRecognized);
+    }
+
+    [Fact]
+    public void Fullwidth_digits_fold_to_ascii()
+    {
+        Assert.Equal(101m, ReleaseNameParser.ParseFileName("Title \uFF11\uFF10\uFF11.cbz").Number);
+        Assert.Equal(1, ReleaseNameParser.ParseFileName("Title v\uFF11.zip").Volume);
     }
 
     [Fact]

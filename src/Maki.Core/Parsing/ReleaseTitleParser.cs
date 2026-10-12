@@ -50,19 +50,24 @@ public static partial class ReleaseTitleParser
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();
 
-    private static readonly char[] EdgePunctuation = [' ', '-', (char)0x2013, (char)0x2014, '_', '.', ',', ':', ';', '+', '~', '|', '/'];
+    private static readonly char[] EdgePunctuation =
+        [' ', '-', (char)0x2013, (char)0x2014, '_', '.', ',', ':', ';', '+', '~', '|', '/', '「', '」', '『', '』', '、', '。'];
 
     private enum TokenKind { Volume, Chapter }
 
     private sealed record Token(int Start, int End, TokenKind Kind, NumberRange Range);
 
-    public static ParsedReleaseTitle Parse(string title)
+    /// <param name="profile">The marker languages to read; null means <see cref="NameParsingProfile.Current"/>.</param>
+    public static ParsedReleaseTitle Parse(string title, NameParsingProfile? profile = null)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
             return new ParsedReleaseTitle([], new ReleaseSpan(null, []), [], false, null, null);
         }
 
+        profile ??= NameParsingProfile.Current;
+        title = ReleaseNameParser.Normalize(title);
+        var scene = ReleaseNameParser.IsSceneStyle(title);
         var tags = ReleaseNameParser.ExtractTags(title);
         var remainder = ReleaseNameParser.TagGroups().Replace(title, " ").Replace('_', ' ');
 
@@ -75,7 +80,7 @@ public static partial class ReleaseTitleParser
         for (var i = 0; i < halves.Length; i++)
         {
             var half = halves[i];
-            var tokens = SpanTokens(half);
+            var tokens = SpanTokens(half, profile);
             if (i == halves.Length - 1 && TrailingBareNumber(half, tokens) is { } trailing)
             {
                 // A trailing range is a chapter span only when the title names no other span: after
@@ -106,6 +111,17 @@ public static partial class ReleaseTitleParser
             if (candidate.Length > 0 && !candidates.Contains(candidate, StringComparer.OrdinalIgnoreCase))
             {
                 candidates.Add(candidate);
+            }
+
+            // A scene name carries the author, language and group after the volume, and they drag the
+            // whole candidate under the match threshold. The title is what comes before the volume.
+            if (scene && tokens.Count > 0)
+            {
+                var leading = Clean(half[..tokens[0].Start].Replace('.', ' '));
+                if (leading.Length > 0 && !candidates.Contains(leading, StringComparer.OrdinalIgnoreCase))
+                {
+                    candidates.Add(leading);
+                }
             }
         }
 
@@ -165,14 +181,14 @@ public static partial class ReleaseTitleParser
     private static bool IsChapterLike(string number) =>
         number.Split('.')[0].Length <= 4 && !YearLike().IsMatch(number);
 
-    private static List<Token> SpanTokens(string half)
+    private static List<Token> SpanTokens(string half, NameParsingProfile profile)
     {
-        var marked = ReleaseNameParser.VolumePattern().Matches(half)
+        var marked = profile.VolumeMatches(half)
             .Select(m => ReleaseNameParser.VolumeRange(m) is var (start, end)
                 ? new Token(m.Index, m.Index + m.Length, TokenKind.Volume,
                     new NumberRange(start, end is { } e && e > start ? e : start))
                 : null)
-            .Concat(ReleaseNameParser.ChapterPattern().Matches(half).Select(m =>
+            .Concat(profile.ChapterMatches(half).Select(m =>
                 ReleaseNameParser.ChapterRange(m) is var (start, end)
                     ? new Token(m.Index, m.Index + m.Length, TokenKind.Chapter, new NumberRange(start, end ?? start))
                     : null))

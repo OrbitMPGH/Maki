@@ -3576,6 +3576,10 @@ msgstr "Chapters to fetch each time"
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Chapters: {chapters}"
+msgstr "Chapters: {chapters}"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Chapters: {chaptersMin}–{chaptersMax}"
@@ -5641,6 +5645,16 @@ msgid "File name"
 msgstr "File name"
 
 #: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "File name parsing"
+msgstr "File name parsing"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese"
+msgstr "file name parsing, volume marker, chapter marker, tome, band, release names, unrecognized files, french, german, spanish, japanese, korean, chinese"
+
+#: src/pages/settings/LibraryCards.tsx
 msgid "File naming on import"
 msgstr "File naming on import"
 
@@ -7101,6 +7115,10 @@ msgstr "Languages to download"
 msgid "Languages to download, most preferred first. Auto-match tries sources that publish your top language first and skips sources that publish none of these. New auto-matched sources get these languages; existing mappings are never changed. Drag to reorder."
 msgstr "Languages to download, most preferred first. Auto-match tries sources that publish your top language first and skips sources that publish none of these. New auto-matched sources get these languages; existing mappings are never changed. Drag to reorder."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Languages to read markers in"
+msgstr "Languages to read markers in"
+
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "Large tiles"
 msgstr "Large tiles"
@@ -7643,6 +7661,10 @@ msgstr "Maki {latestVersion} available"
 #: src/components/layout/SidebarFooter.tsx
 msgid "Maki {version}"
 msgstr "Maki {version}"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Maki always reads English markers like v01, Vol. 3 and Ch. 12 in release and file names. Turn a language on to read its markers as well, so a release named Tome 3 or 第3巻 is recognized as a volume. Changes apply to the next search, import or rescan; files that are already linked stay where they are. A title that ends in one of these words and a number, like Brass Band 2, reads as a volume once that language is on."
+msgstr "Maki always reads English markers like v01, Vol. 3 and Ch. 12 in release and file names. Turn a language on to read its markers as well, so a release named Tome 3 or 第3巻 is recognized as a volume. Changes apply to the next search, import or rescan; files that are already linked stay where they are. A title that ends in one of these words and a number, like Brass Band 2, reads as a volume once that language is on."
 
 #: src/components/SetupWizard.tsx
 msgid "Maki asks Kavita to scan a series after its files change and sends it posters, links and status. The API key is under User Settings, 3rd Party Clients. Fill the path mapping only if Kavita sees the library under another path."
@@ -14625,6 +14647,10 @@ msgstr "Uses about 240 MB of RAM."
 msgid "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
 msgstr "Uses about 240 MB of RAM. Needs the local MangaBaka database above."
 
+#: src/api/upgrades.ts
+msgid "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
+msgstr "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "UTC"
 msgstr "UTC"
@@ -14818,6 +14844,10 @@ msgstr "Volumes {range}"
 #: src/components/RelinkFilesModal.tsx
 msgid "Volumes that hold chapters still read from single files"
 msgstr "Volumes that hold chapters still read from single files"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Volumes: {volumes}"
+msgstr "Volumes: {volumes}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "vs {fromLabel} to {toLabel}"

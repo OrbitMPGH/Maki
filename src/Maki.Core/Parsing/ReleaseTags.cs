@@ -33,9 +33,16 @@ public static partial class ReleaseTags
     private static partial Regex LanguageTagPattern();
 
     // These describe the release, not who made it. The three-letter codes are ISO 639-2 language
-    // tags, which the two-letter pattern above deliberately leaves alone.
+    // tags, which the two-letter pattern above deliberately leaves alone. The uppercase codes and
+    // language names cover what non-English releases write ("(FR)", "[Español]"), and the container
+    // formats are what a scene release puts in brackets ("[CBZ]"); none of them names a group.
     private static readonly HashSet<string> NoiseTokens = new(StringComparer.OrdinalIgnoreCase)
     {
+        "CBZ", "CBR", "CB7", "PDF", "EPUB", "END", "Fin",
+        "DE", "FR", "ES", "PT", "PT-BR", "BR", "PL", "RU", "TR", "JP", "KR", "CN",
+        "German", "Deutsch", "French", "Français", "Francais", "VF", "VOSTFR", "Spanish", "Español",
+        "Espanol", "Portuguese", "Português", "Portugues", "Polish", "Polski", "Russian", "Русский",
+        "Turkish", "Türkçe", "Turkce", "Japanese", "日本語", "Korean", "한국어", "Chinese", "中文", "简体",
         "BW", "c2c", "Censored", "Chapter", "Chapters", "Color", "Colored", "Colour", "Coloured",
         "Compilation", "compilation", "Complete", "Completed", "Digital", "Digital-HD",
         "Digital-Compilation", "English", "Fan", "Fanmade", "Fixed", "HD", "Manga", "Manhua",
@@ -73,6 +80,7 @@ public static partial class ReleaseTags
             if (ResolutionPattern().IsMatch(tag)) continue;
             if (tag.Length == 1 && char.IsLetter(tag[0])) continue;
             if (VersionMarkerPattern().IsMatch(tag)) continue;
+            if (IsMarker(tag)) continue;
             if (tag.StartsWith("Digital", StringComparison.OrdinalIgnoreCase)) continue;
             if (LanguageTagPattern().IsMatch(tag)) continue;
             if (NoiseTokens.Contains(tag)) continue;
@@ -81,4 +89,13 @@ public static partial class ReleaseTags
 
         return null;
     }
+
+    /// <summary>
+    /// A tag that is nothing but a volume or chapter marker in any language ("(Tome 3)", "(第3巻)").
+    /// Every language counts whatever the settings say: a marker is never a group's name.
+    /// </summary>
+    private static bool IsMarker(string tag) =>
+        NameParsingProfile.AllLanguages.VolumeMatches(tag)
+            .Concat(NameParsingProfile.AllLanguages.ChapterMatches(tag))
+            .Any(m => m.Index == 0 && m.Length == tag.Length);
 }

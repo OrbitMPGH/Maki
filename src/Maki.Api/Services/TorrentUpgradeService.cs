@@ -146,12 +146,15 @@ public class TorrentUpgradeService(
             var (parsed, trailing) = WithTrailingChapter(ReleaseTitleParser.Parse(release.Title), series);
             var matched = ReleaseTitleMatcher.Matches(parsed, series.Title, series.OriginalTitle, series.AltTitles);
             var wholeSeries = parsed.Span.IsEmpty && parsed.IsDigital && matched;
+            var markersOff = parsed.Span.IsEmpty &&
+                             !ReleaseTitleParser.Parse(release.Title, NameParsingProfile.AllLanguages).Span.IsEmpty;
             var candidate = TorrentUpgradeRules.Candidate(release.Title, release.Indexer, parsed.Group,
                 parsed.Span.Volumes is not null || wholeSeries);
             if (evaluator is null || library is null)
             {
                 views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, 0,
-                    new SpanVerdict(SpanOutcome.Ignore, [SpanVerdictReasons.NoProfile], 0, 0, 0, 0, 0, []), wholeSeries));
+                    WithMarkersOff(new SpanVerdict(SpanOutcome.Ignore, [SpanVerdictReasons.NoProfile], 0, 0, 0, 0, 0, []), markersOff),
+                    wholeSeries));
                 continue;
             }
 
@@ -166,12 +169,18 @@ public class TorrentUpgradeService(
                 verdict = verdict.AtMostProposal(SpanVerdictReasons.TrailingNumber);
             }
 
+            verdict = WithMarkersOff(verdict, markersOff);
+
             views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, score.Score, verdict, wholeSeries,
                 library.Language));
         }
 
         return views;
     }
+
+    /// <summary>Tells the results page a release would read with a marker language that is switched off.</summary>
+    private static SpanVerdict WithMarkersOff(SpanVerdict verdict, bool markersOff) =>
+        markersOff ? verdict with { Reasons = [.. verdict.Reasons, SpanVerdictReasons.MarkersOff] } : verdict;
 
     /// <summary>
     /// A number ending the release title is a chapter unless the series' own title ends in it

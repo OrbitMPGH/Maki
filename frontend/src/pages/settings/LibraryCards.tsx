@@ -8,6 +8,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import {
   ActionIcon,
   Button,
+  Checkbox,
   Group,
   Modal,
   Radio,
@@ -30,8 +31,10 @@ import {
   useAddRootFolder,
   useDeleteRootFolder,
   useLibrarySettings,
+  useNameParsingSettings,
   useNamingPreview,
   useSaveLibrarySettings,
+  useSaveNameParsingSettings,
   useDumpProgress,
   useMetadataSettings,
   useMonitoringSettings,
@@ -48,6 +51,7 @@ import {
   type LibrarySettings,
 } from '../../api/hooks'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
+import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
 import { formatBytes, formatDate, formatDateTime, formatNumber } from '../../format'
@@ -615,6 +619,61 @@ export function NamingSection() {
   )
 }
 
+/** Which languages' volume and chapter words the release and file name parsers read besides English. */
+export function NameParsingSection() {
+  const { t } = useLingui()
+  const { data: settings } = useNameParsingSettings()
+  const save = useSaveNameParsingSettings()
+
+  const apply = (languages: string[]) =>
+    save.mutate(languages, {
+      onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+    })
+
+  return (
+    <SettingsSection
+      id="name-parsing"
+      title={<Trans>File name parsing</Trans>}
+      description={
+        <Trans>
+          Maki always reads English markers like v01, Vol. 3 and Ch. 12 in release and file names.
+          Turn a language on to read its markers as well, so a release named Tome 3 or 第3巻 is
+          recognized as a volume. Changes apply to the next search, import or rescan; files that are
+          already linked stay where they are. A title that ends in one of these words and a number,
+          like Brass Band 2, reads as a volume once that language is on.
+        </Trans>
+      }
+    >
+      <Checkbox.Group
+        aria-label={t`Languages to read markers in`}
+        value={settings?.languages ?? []}
+        onChange={apply}
+      >
+        <Stack gap="sm">
+          {settings?.available.map((language) => {
+            const name = SUPPORTED_LOCALES.find((l) => l.code === language.code)?.label ?? language.code
+            const volumes = language.volumeWords.join(', ')
+            const chapters = language.chapterWords.join(', ')
+            return (
+              <Checkbox
+                key={language.code}
+                value={language.code}
+                label={name}
+                disabled={save.isPending}
+                description={
+                  <>
+                    {volumes && <span style={{ display: 'block' }}>{t`Volumes: ${volumes}`}</span>}
+                    {chapters && <span style={{ display: 'block' }}>{t`Chapters: ${chapters}`}</span>}
+                  </>
+                }
+              />
+            )
+          })}
+        </Stack>
+      </Checkbox.Group>
+    </SettingsSection>
+  )
+}
 
 const RECYCLE_REASON_LABELS: Record<RecycleReason, MessageDescriptor> = {
   deleteFile: msg`Deleted file`,

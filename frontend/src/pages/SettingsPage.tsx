@@ -33,6 +33,7 @@ import { KavitaSyncSection, OpdsSection } from './settings/ReadingCards'
 import {
   LibraryFilesSection,
   MetadataSection,
+  NameParsingSection,
   NamingSection,
   NewSeriesDefaultsSection,
   RecommendationIndexSection,
@@ -85,6 +86,7 @@ function useSectionNodes(): Record<string, ReactNode> {
 
       'root-folders': <RootFoldersSection />,
       naming: <NamingSection />,
+      'name-parsing': <NameParsingSection />,
       'library-files': <LibraryFilesSection />,
       'recycle-bin': <RecycleBinSection />,
       monitoring: <NewSeriesDefaultsSection />,

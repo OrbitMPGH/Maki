@@ -150,7 +150,11 @@ export function ImportReviewModal({
   const decide = (mode: ImportDecision) => {
     if (queueItemId === null) return
     const skipFiles = plan?.isUpgrade && mode !== 'Reject' ? [...skipped] : undefined
-    settle.mutate({ id: queueItemId, mode, skipFiles }, { onSuccess: onClose })
+    settle.mutate(
+      { id: queueItemId, mode, skipFiles, parsingFingerprint: plan?.parsingFingerprint },
+      // A refusal can mean the plan went stale; the fresh one is what the next click should send.
+      { onSuccess: onClose, onError: () => void refetch() },
+    )
   }
   /** Only the button that was pressed shows pending; the others just go disabled. */
   const pendingProps = (mode: ImportDecision) => {

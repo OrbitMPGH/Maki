@@ -106,6 +106,22 @@ public class TorrentUpgradeServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_release_that_would_parse_with_a_language_switched_off_says_so()
+    {
+        Chapter(1, 1);
+
+        var french = await EvaluateAsync("Kaguya T01 (1r0n)");
+        var frenchDigital = await EvaluateAsync("Kaguya T01 (Digital) (1r0n)");
+        var english = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+
+        Assert.Equal(SpanOutcome.Ignore, french.Verdict.Outcome);
+        Assert.Contains(SpanVerdictReasons.MarkersOff, french.Verdict.Reasons);
+        Assert.True(frenchDigital.WholeSeries);
+        Assert.Contains(SpanVerdictReasons.MarkersOff, frenchDigital.Verdict.Reasons);
+        Assert.DoesNotContain(SpanVerdictReasons.MarkersOff, english.Verdict.Reasons);
+    }
+
+    [Fact]
     public async Task Chapter_states_follow_the_file_the_profile_and_the_wanted_flag()
     {
         var below = Chapter(1, 1);

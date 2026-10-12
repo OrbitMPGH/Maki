@@ -201,4 +201,16 @@ public class QueueControllerTests : IDisposable
         Assert.DoesNotContain(db.DownloadQueue, q => q.Id == queuedId || q.Id == failedId);
         Assert.Equal(QueueStatus.Cancelled, StatusOf(downloadingId));
     }
+
+    [Fact]
+    public async Task An_import_reviewed_under_other_parsing_settings_is_refused_and_stays_parked()
+    {
+        var id = SeedItem(QueueStatus.AwaitingImport);
+
+        var result = await Controller().Import(id,
+            new ImportDecisionDto(ImportDecision.Replace, ParsingFingerprint: "fr"), CancellationToken.None);
+
+        Assert.Equal(409, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
+        Assert.Equal(QueueStatus.AwaitingImport, StatusOf(id));
+    }
 }

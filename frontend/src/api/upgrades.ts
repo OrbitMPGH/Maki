@@ -453,6 +453,7 @@ export const PROPOSAL_REASON_LABELS: Record<string, MessageDescriptor> = {
   whole_series_pack: msg`Whole-series pack, needs your call`,
   trailing_number: msg`Release number may be a sequel, not a chapter`,
   upgrades_disabled: msg`Automatic upgrades are off, needs your call`,
+  markers_off: msg`Uses volume or chapter words from a language that is off in Settings > Library > File name parsing`,
 }
 
 /** `LABELS[x] ?? x`, same as `upgradeReasonLabel`. */

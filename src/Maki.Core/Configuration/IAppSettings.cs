@@ -149,6 +149,13 @@ public static class SettingKeys
     public const string LibraryWriteCoverToFolder = "library.writecovertofolder";
 
     /// <summary>
+    /// Comma-separated languages whose volume and chapter words the file name and release parsers
+    /// read besides English ("fr,de"), see <see cref="Parsing.NameParsingProfile"/>. Unset reads
+    /// English only, which is what every install parsed before the setting existed.
+    /// </summary>
+    public const string ParsingLanguages = "parsing.languages";
+
+    /// <summary>
     /// The user's built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
     /// blob. A series may override the whole spec through <c>UserSeriesState.ReaderPrefsJson</c>.
     /// </summary>

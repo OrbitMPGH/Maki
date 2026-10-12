@@ -42,6 +42,12 @@ public static class SpanVerdictReasons
 
     /// <summary>A manual search ran with the instance switches off, so nothing is grabbed on its own.</summary>
     public const string UpgradesDisabled = "upgrades_disabled";
+
+    /// <summary>
+    /// The title reads no span, but would with a marker language that is switched off. A digital
+    /// release then reads as a whole-series pack, so this can sit on a stored proposal too.
+    /// </summary>
+    public const string MarkersOff = "markers_off";
 }
 
 public static class SpanVerdictExtensions

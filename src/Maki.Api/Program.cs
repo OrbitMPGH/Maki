@@ -11,6 +11,7 @@ using Maki.Core.Http;
 using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
+using Maki.Core.Parsing;
 using Maki.Core.Recommendations;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -1414,6 +1415,15 @@ try
         // Anything read before the migration and the marker-gated repairs above may have changed
         // under the settings cache.
         app.Services.GetRequiredService<SettingsService>().Invalidate();
+
+        // Left alone when nothing is stored, so a test host booting beside another test does not
+        // reset a profile that test set.
+        var parsingProfile = NameParsingProfile.FromSetting(app.Services.GetRequiredService<SettingsService>()
+            .GetAsync(SettingKeys.ParsingLanguages, CancellationToken.None).GetAwaiter().GetResult());
+        if (parsingProfile.Languages.Count > 0)
+        {
+            NameParsingProfile.Current = parsingProfile;
+        }
     }
 
     var authOptions = app.Services.GetRequiredService<AuthRuntimeOptions>();

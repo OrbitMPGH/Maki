@@ -475,6 +475,8 @@ export interface ImportPlanFileDto {
 }
 
 export interface TorrentImportPlanDto {
+  /** Sent back with the decision, so an import reviewed under other name parsing settings is refused. */
+  parsingFingerprint: string
   queueItemId: number
   seriesId: number
   seriesTitle: string

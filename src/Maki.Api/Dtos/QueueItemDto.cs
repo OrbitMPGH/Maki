@@ -128,7 +128,13 @@ public enum ImportDecision
 }
 
 /// <param name="SkipFiles">Downloaded file names to leave out, for Replace and SkipExisting.</param>
-public record ImportDecisionDto(ImportDecision Mode, IReadOnlyList<string>? SkipFiles = null);
+/// <param name="ParsingFingerprint">
+/// The <c>parsingFingerprint</c> of the plan the user reviewed. When the name parsing settings have
+/// changed since, the files would be read differently from what the review showed, so the import is
+/// refused. Null skips the check.
+/// </param>
+public record ImportDecisionDto(
+    ImportDecision Mode, IReadOnlyList<string>? SkipFiles = null, string? ParsingFingerprint = null);
 
 public record ImportDecisionResultDto(int Imported, int Linked, int Skipped, int Deleted);
 

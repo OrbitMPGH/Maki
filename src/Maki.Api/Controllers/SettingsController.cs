@@ -8,6 +8,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Parsing;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Api.Localization;
@@ -125,6 +126,15 @@ public class SettingsController(
     public record NamingPreviewResponse(
         string SeriesFolder, string ChapterFile,
         IReadOnlyList<string> SeriesFolderErrors, IReadOnlyList<string> ChapterErrors);
+    /// <param name="Languages">The marker languages to read besides English. Codes without marker words are refused.</param>
+    public record NameParsingSettings(IReadOnlyList<string> Languages);
+
+    /// <param name="VolumeWords">The words this language adds, as the settings card shows them.</param>
+    public record NameParsingLanguageDto(string Code, IReadOnlyList<string> VolumeWords, IReadOnlyList<string> ChapterWords);
+
+    /// <param name="Available">Every language that can be switched on, in picker order.</param>
+    public record NameParsingSettingsDto(IReadOnlyList<string> Languages, IReadOnlyList<NameParsingLanguageDto> Available);
+
     public record SetupStatus(bool Completed);
     /// <param name="ItemTimeoutMinutes">
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
@@ -799,6 +809,34 @@ public class SettingsController(
         // Re-read rather than echoing the request: a caller that omitted a field (the setup wizard
         // does) would otherwise be told those settings are now null.
         return await GetLibrary(ct);
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("nameparsing")]
+    public IActionResult GetNameParsing() => Ok(new NameParsingSettingsDto(
+        NameParsingProfile.Current.Languages,
+        ReleaseMarkers.Languages
+            .Select(code => new NameParsingLanguageDto(code, ReleaseMarkers.VolumeWords(code), ReleaseMarkers.ChapterWords(code)))
+            .ToList()));
+
+    /// <summary>
+    /// Saves the marker languages and swaps the parsers over at once. Nothing already linked moves:
+    /// the new words apply to the next search, import or rescan.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("nameparsing")]
+    public async Task<IActionResult> SetNameParsing([FromBody] NameParsingSettings request, CancellationToken ct)
+    {
+        var languages = request.Languages ?? [];
+        if (languages.FirstOrDefault(l => ReleaseMarkers.Language(l) is null) is { } unknown)
+        {
+            return this.Fail(localizer, "error.nameParsing.unknownLanguage", new { language = unknown });
+        }
+
+        var profile = new NameParsingProfile(languages);
+        await settings.SetAsync(SettingKeys.ParsingLanguages, profile.Languages.Count > 0 ? profile.Fingerprint : null, ct);
+        NameParsingProfile.Current = profile;
+        return GetNameParsing();
     }
 
     /// <summary>
