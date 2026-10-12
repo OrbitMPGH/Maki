@@ -8,6 +8,7 @@ using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Sources.Suwayomi;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -30,6 +31,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     private const string UpgradeTrashId = "upgrade-trash";
     private const string RecycleBinId = "recycle-bin";
     private const string NotificationCheckPrefix = "notification:";
+    private const string SuwayomiCheckId = "Suwayomi";
+    private const string SuwayomiMissingPrefix = "suwayomi:missing:";
+    private const string SuwayomiLink = "/settings?tab=integrations&s=suwayomi";
     /// <summary>
     /// With the schedule off nothing keeps a backup fresh, so a stale or missing one is reported as
     /// disabled rather than warned about forever; a fresh one still reads as healthy.
@@ -245,6 +249,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch { }
+            await CheckSuwayomiAsync();
             foreach (var check in checks)
             {
                 var row = old.FirstOrDefault(r => r.Id == check.Id);
@@ -280,6 +285,66 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     await NotifyAsync(row, true, ct);
                 }
             await db.SaveChangesAsync(ct);
+
+            // Only while a Suwayomi source is in use: an add-on nobody switched on gets no rows at all,
+            // and one switched off again takes its rows with it. One call answers both questions, since
+            // listing the sources needs the server up and the credentials accepted. A source whose
+            // extension is gone warns here; sync writes the mapping's own LastError, never this.
+            async Task CheckSuwayomiAsync()
+            {
+                var inUse = sources.All.OfType<SuwayomiSource>()
+                    .Where(s => !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+                var knownMissing = old.Where(r => r.Id.StartsWith(SuwayomiMissingPrefix, StringComparison.Ordinal))
+                    .Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+                if (inUse.Count == 0)
+                {
+                    foreach (var stale in old.Where(r => r.Id == SuwayomiCheckId || knownMissing.Contains(r.Id)).ToList())
+                    {
+                        db.HealthChecks.Remove(stale);
+                        old.Remove(stale);
+                    }
+
+                    return;
+                }
+
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(TimeSpan.FromSeconds(10));
+                HashSet<string> installed;
+                try
+                {
+                    installed = (await services.GetRequiredService<SuwayomiClient>().ListSourcesAsync(timeout.Token))
+                        .Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+                catch
+                {
+                    // Unknown is not missing: the rows from the last answer stay as they were.
+                    Add(SuwayomiCheckId, "connections", "error", "health.check.connectionFailed",
+                        new { service = SuwayomiCheckId }, SuwayomiLink, true);
+                    return;
+                }
+
+                Add(SuwayomiCheckId, "connections", "healthy", "health.check.connected",
+                    new { service = SuwayomiCheckId }, SuwayomiLink, true);
+                var current = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var source in inUse)
+                {
+                    var id = SuwayomiMissingPrefix + source.SourceId;
+                    current.Add(id);
+                    var missing = !installed.Contains(source.SourceId);
+                    if (!missing && !knownMissing.Contains(id)) continue;
+                    Add(id, "connections", missing ? "warning" : "healthy",
+                        missing ? "health.check.suwayomiSourceMissing" : "health.check.suwayomiSourceInstalled",
+                        new { source = source.DisplayName }, SuwayomiLink);
+                }
+
+                foreach (var gone in old.Where(r => knownMissing.Contains(r.Id) && !current.Contains(r.Id)).ToList())
+                {
+                    db.HealthChecks.Remove(gone);
+                    old.Remove(gone);
+                }
+            }
 
             async Task Probe(string name, string urlKey, string? secretKey, bool required, Func<string, string?, CancellationToken, Task<bool>> ping)
             {

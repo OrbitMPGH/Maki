@@ -137,6 +137,14 @@ in Maki's built-in reader or over OPDS.
 
 Sources are built into Maki, so there are no extensions to install.
 
+If you already run [Suwayomi](https://github.com/Suwayomi/Suwayomi-Server), or want more sites than
+the list below, Maki can also use the sources of the extensions installed there. This is optional:
+set Suwayomi's URL under **Settings → Integrations → Suwayomi**, pick which of its sources to use,
+and they show up next to the built-in ones in **Manage sources**, marked "via Suwayomi". Extensions
+are installed and configured in Suwayomi itself. Maki reads search results, chapter lists and
+pages through Suwayomi's API, so a source that works in Suwayomi works here. Without a Suwayomi URL
+set, nothing changes. Suwayomi v2.1 or later is supported, v2.2 or later for its UI login mode.
+
 | Source | Notes |
 |---|---|
 | MangaDex | Official API, language filter |
@@ -210,12 +218,24 @@ services:
     ports:
       - "8191:8191"
     restart: unless-stopped
+
+  # Optional. Extension sources through Suwayomi (see Sources). Install extensions in its own UI.
+  suwayomi:
+    image: ghcr.io/suwayomi/suwayomi-server:stable
+    container_name: suwayomi
+    volumes:
+      - ./suwayomi-data:/home/suwayomi/.local/share/Tachidesk
+    ports:
+      - "4567:4567"
+    restart: unless-stopped
 ```
 
 1. Open `http://localhost:8990` and create the administrator account.
 2. Under **Settings**, add `/library` as a root folder.
 3. If you use FlareSolverr, set its URL under **Settings → FlareSolverr** to
-   `http://flaresolverr:8191` and hit **Test**.
+   `http://flaresolverr:8191` and hit **Test**. If you use Suwayomi, set
+   `http://suwayomi:4567` under **Settings → Integrations → Suwayomi**, hit **Test**, then
+   **Choose sources**.
 4. Click **Add Series**, search for a title, and pick it. Maki links sources and syncs chapters
    in the background.
 5. Download a chapter or click **Search all missing**, then follow progress under **Activity**.

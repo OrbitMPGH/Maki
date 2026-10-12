@@ -4631,6 +4631,16 @@ msgstr "Die Aktion ist fehlgeschlagen. Details stehen im Serverprotokoll."
 msgid "health.check.libraryUnavailable"
 msgstr "Integritätsprüfungen der Bibliothek konnten nicht abgeschlossen werden"
 
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {source} is installed in Suwayomi again.
+msgid "health.check.suwayomiSourceInstalled"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {source} is no longer installed in Suwayomi. Reinstall its extension there, or remove the source in Maki's Suwayomi settings.
+msgid "health.check.suwayomiSourceMissing"
+msgstr ""
+
 #. {path} is a directory on disk and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {path} is writable

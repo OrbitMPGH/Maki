@@ -21,7 +21,7 @@ public sealed class SuwayomiControllerTests : IDisposable
 
     private readonly TestDb _db = new();
     private readonly FakeAppSettings _settings = new();
-    private readonly FakeServer _server = new();
+    private readonly FakeSuwayomiServer _server = new();
     private readonly SuwayomiSettings _suwayomiSettings;
     private readonly SuwayomiTokenStore _tokens;
     private readonly SuwayomiClient _client;
@@ -31,13 +31,13 @@ public sealed class SuwayomiControllerTests : IDisposable
     public SuwayomiControllerTests()
     {
         _suwayomiSettings = new SuwayomiSettings(_settings);
-        var factory = new ChainFactory(this);
+        var factory = new SuwayomiChainFactory(_suwayomiSettings, () => _tokens, _server);
         _tokens = new SuwayomiTokenStore(_suwayomiSettings, factory);
         _client = new SuwayomiClient(factory, _suwayomiSettings, TimeProvider.System);
         var provider = new SuwayomiSourceProvider(_suwayomiSettings, _client, _cache, NullLogger<SuwayomiSourceProvider>.Instance);
         _registry = new SourceRegistry([], [provider]);
 
-        _server.Ops["AboutServer"] = _ => FakeServer.Data(new { aboutServer = new { name = "Suwayomi", version = "v2.4.2366", buildType = "Stable" } });
+        _server.Ops["AboutServer"] = _ => FakeSuwayomiServer.Data(new { aboutServer = new { name = "Suwayomi", version = "v2.4.2366", buildType = "Stable" } });
         LiveSources(("100", "MangaDex", "MangaDex (EN)", "en"), ("200", "Comick", "Comick (ALL)", "all"));
     }
 
@@ -47,7 +47,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     {
         var controller = new SuwayomiController(
             new TestLocalizer(), _settings, _suwayomiSettings, _client, _tokens, _cache,
-            new SuwayomiConnectionTester(() => _server), _registry, _db.NewContext(), new ChainFactory(this),
+            new SuwayomiConnectionTester(() => _server), _registry, _db.NewContext(), new SuwayomiChainFactory(_suwayomiSettings, () => _tokens, _server),
             NullLogger<SuwayomiController>.Instance)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
@@ -70,17 +70,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     }
 
     private void LiveSources(params (string Id, string Name, string DisplayName, string Lang)[] sources) =>
-        _server.Ops["Sources"] = _ => FakeServer.Data(new
-        {
-            sources = new
-            {
-                nodes = sources.Select(s => new
-                {
-                    id = s.Id, name = s.Name, displayName = s.DisplayName, lang = s.Lang,
-                    isNsfw = false, contentWarning = "SAFE"
-                }).ToArray()
-            }
-        });
+        _server.Sources(sources);
 
     private static string Error(IActionResult result) =>
         JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<ObjectResult>(result).Value).GetProperty("code").GetString()!;
@@ -131,8 +121,8 @@ public sealed class SuwayomiControllerTests : IDisposable
         Configure("uilogin", "maki", "secret");
         _server.Ops["Login"] = vars =>
             vars.GetProperty("password").GetString() == "secret"
-                ? FakeServer.Data(new { login = new { accessToken = "a1", refreshToken = "r1" } })
-                : FakeServer.Errors("Unauthorized");
+                ? FakeSuwayomiServer.Data(new { login = new { accessToken = "a1", refreshToken = "r1" } })
+                : FakeSuwayomiServer.Errors("Unauthorized");
 
         var result = await Controller().TestConnection(new(Base, "uilogin", "maki"), default);
 
@@ -145,7 +135,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     [Fact]
     public async Task The_test_says_which_version_a_sign_in_mode_needs()
     {
-        _server.Ops["AboutServer"] = _ => FakeServer.Data(new { aboutServer = new { name = "Suwayomi", version = "v2.1.1867", buildType = "Stable" } });
+        _server.Ops["AboutServer"] = _ => FakeSuwayomiServer.Data(new { aboutServer = new { name = "Suwayomi", version = "v2.1.1867", buildType = "Stable" } });
 
         var result = await Controller().TestConnection(new(Base, "uilogin", "maki", "pw"), default);
 
@@ -157,7 +147,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     [Fact]
     public async Task A_refused_login_reads_as_a_login_failure_not_an_outage()
     {
-        _server.Ops["Login"] = _ => FakeServer.Errors("Unauthorized");
+        _server.Ops["Login"] = _ => FakeSuwayomiServer.Errors("Unauthorized");
 
         var result = await Controller().TestConnection(new(Base, "uilogin", "maki", "wrong"), default);
 
@@ -173,7 +163,7 @@ public sealed class SuwayomiControllerTests : IDisposable
         _server.Ops["Login"] = vars =>
         {
             sent = vars.GetProperty("password").GetString();
-            return FakeServer.Errors("Unauthorized");
+            return FakeSuwayomiServer.Errors("Unauthorized");
         };
 
         await Controller().TestConnection(new("http://192.168.1.99:4567", "uilogin", "maki"), default);
@@ -273,7 +263,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     {
         Configure();
         await Controller().SetSources(new([new("100")]), default);
-        _server.Ops["MangaSource"] = vars => FakeServer.Data(new
+        _server.Ops["MangaSource"] = vars => FakeSuwayomiServer.Data(new
         {
             manga = new { sourceId = vars.GetProperty("id").GetInt32() == 7 ? "100" : "200" }
         });
@@ -321,54 +311,6 @@ public sealed class SuwayomiControllerTests : IDisposable
                 .Select(a => a.Policy)
                 .ToArray();
             Assert.Equal(action.Name == nameof(SuwayomiController.Thumbnail) ? [] : [Maki.Api.Auth.Policies.Admin], policies);
-        }
-    }
-
-    private sealed class ChainFactory(SuwayomiControllerTests test) : IHttpClientFactory
-    {
-        public HttpClient CreateClient(string name) =>
-            new(new SuwayomiOriginHandler(test._suwayomiSettings)
-            {
-                InnerHandler = new SuwayomiAuthHandler(test._tokens) { InnerHandler = test._server }
-            }, disposeHandler: false);
-    }
-
-    /// <summary>Routes GraphQL calls by operationName, the one thing that tells them apart.</summary>
-    private sealed class FakeServer : HttpMessageHandler
-    {
-        public Dictionary<string, Func<JsonElement, HttpResponseMessage>> Ops { get; } = [];
-        public Func<HttpRequestMessage, HttpResponseMessage> OnGet { get; set; } = _ => new HttpResponseMessage(HttpStatusCode.NotFound);
-        public List<string> Calls { get; } = [];
-
-        public int Count(string op) => Calls.Count(c => c == op);
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-        {
-            if (request.Method == HttpMethod.Get)
-            {
-                Calls.Add("GET " + request.RequestUri!.AbsolutePath);
-                return OnGet(request);
-            }
-
-            using var doc = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
-            var op = doc.RootElement.GetProperty("operationName").GetString()!;
-            Calls.Add(op);
-            return Ops.TryGetValue(op, out var respond)
-                ? respond(doc.RootElement.GetProperty("variables").Clone())
-                : throw new InvalidOperationException($"No answer for {op}");
-        }
-
-        public static HttpResponseMessage Data(object data) => Json(new { data });
-
-        public static HttpResponseMessage Errors(params string[] messages) =>
-            Json(new { data = (object?)null, errors = messages.Select(m => new { message = m }).ToArray() });
-
-        private static HttpResponseMessage Json(object body) =>
-            new(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };
-
-        // The connection tester disposes its handler; this one is shared across the test.
-        protected override void Dispose(bool disposing)
-        {
         }
     }
 }
