@@ -100,6 +100,7 @@ public class SuwayomiSourceTests
         h.MangaByUrl(7);
         h.Server.Ops["Refresh"] = (_, _) => FakeSuwayomi.Errors(
             "Validation error (FieldUndefined@[fetchMangaAndChapters]) : Field 'fetchMangaAndChapters' in type 'Mutation' is undefined");
+        h.Server.Ops["MangaById"] = (_, _) => FakeSuwayomi.Data(new { manga = SuwayomiHarness.Manga(7, SeriesUrl) });
         h.Server.Ops["RefreshChapters"] = (vars, _) =>
         {
             Assert.Equal(7, vars.GetProperty("id").GetInt32());
@@ -112,6 +113,50 @@ public class SuwayomiSourceTests
 
         Assert.Equal(1, h.Server.Count("Refresh"));
         Assert.Equal(2, h.Server.Count("RefreshChapters"));
+    }
+
+    [Fact]
+    public async Task On_a_v21_server_a_cached_id_naming_another_manga_is_still_caught()
+    {
+        var h = new SuwayomiHarness();
+        h.Cache.SetManga(new Uri(SuwayomiHarness.Base), "100", SeriesUrl, 12);
+        h.MangaByUrl(30);
+        h.Server.Ops["Refresh"] = (_, _) => FakeSuwayomi.Errors(
+            "Validation error (FieldUndefined@[fetchMangaAndChapters]) : Field 'fetchMangaAndChapters' in type 'Mutation' is undefined");
+        h.Server.Ops["MangaById"] = (vars, _) => FakeSuwayomi.Data(new
+        {
+            manga = vars.GetProperty("id").GetInt32() == 12
+                ? SuwayomiHarness.Manga(12, "/manga/someone-else", "Someone Else")
+                : SuwayomiHarness.Manga(30, SeriesUrl)
+        });
+        h.Server.Ops["RefreshChapters"] = (vars, _) => FakeSuwayomi.Data(new
+        {
+            fetchChapters = new
+            {
+                chapters = vars.GetProperty("id").GetInt32() == 30
+                    ? new[] { SuwayomiHarness.Chapter(1, "/c/ippo-1", "Ch.1", 1) }
+                    : [SuwayomiHarness.Chapter(9, "/c/other-1", "Ch.1", 1)]
+            }
+        });
+
+        var chapter = Assert.Single(await h.Source().ListChaptersAsync(SeriesUrl));
+
+        Assert.Equal("/c/ippo-1", chapter.SourceChapterId);
+        Assert.Equal(30, h.Cache.Manga(new Uri(SuwayomiHarness.Base), "100", SeriesUrl));
+    }
+
+    [Fact]
+    public async Task A_chapter_the_site_took_down_is_a_404_so_the_download_moves_on()
+    {
+        var h = new SuwayomiHarness();
+        h.MangaByUrl(7);
+        h.Server.Ops["ChapterByUrl"] = (_, _) => FakeSuwayomi.Data(new { chapters = new { nodes = new[] { new { id = 42 } } } });
+        h.Server.Ops["Pages"] = (_, _) => FakeSuwayomi.Errors("Exception while fetching data (/fetchChapterPages) : HTTP error 404");
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(
+            () => h.Source().GetPagesAsync(new SourceChapter("suwayomi-100", SeriesUrl, "/c/1", "Ch.1", 1, null, null, "en", null)));
+
+        Assert.Equal(HttpStatusCode.NotFound, ex.StatusCode);
     }
 
     [Fact]
@@ -390,6 +435,39 @@ public class SuwayomiAuthTests
 
         Assert.Equal(2, h.Server.Count("Login"));
     }
+
+    [Fact]
+    public async Task A_wrong_password_reads_as_refused_and_is_not_retried_on_every_request()
+    {
+        var h = new SuwayomiHarness(authMode: "uilogin", username: "maki", password: "wrong");
+        h.Server.Ops["Login"] = (_, _) => FakeSuwayomi.Errors(FakeSuwayomi.LoginRefused);
+        SearchAccepts(h, "a1");
+
+        var first = await Assert.ThrowsAsync<HttpRequestException>(() => h.Client.SearchAsync("100", "x"));
+        Assert.Equal(HttpStatusCode.Unauthorized, first.StatusCode);
+        await Assert.ThrowsAsync<HttpRequestException>(() => h.Client.SearchAsync("100", "y"));
+        Assert.Equal(1, h.Server.Count("Login"));
+
+        h.Clock.Now += TimeSpan.FromSeconds(31);
+        await Assert.ThrowsAsync<HttpRequestException>(() => h.Client.SearchAsync("100", "z"));
+        Assert.Equal(2, h.Server.Count("Login"));
+    }
+
+    [Fact]
+    public async Task Fixing_the_password_is_tried_at_once_rather_than_after_the_hold()
+    {
+        var h = new SuwayomiHarness(authMode: "uilogin", username: "maki", password: "wrong");
+        h.Server.Ops["Login"] = (vars, _) => vars.GetProperty("password").GetString() == "right"
+            ? FakeSuwayomi.Data(new { login = new { accessToken = "a1", refreshToken = "r1" } })
+            : FakeSuwayomi.Errors(FakeSuwayomi.LoginRefused);
+        SearchAccepts(h, "a1");
+        await Assert.ThrowsAsync<HttpRequestException>(() => h.Client.SearchAsync("100", "x"));
+
+        await h.Settings.SetAsync(SettingKeys.SuwayomiPassword, "right");
+        await h.Client.SearchAsync("100", "y");
+
+        Assert.Equal(2, h.Server.Count("Login"));
+    }
 }
 
 public class SuwayomiTransportTests
@@ -432,6 +510,40 @@ public class SuwayomiTransportTests
 
         h.Server.Ops["Search"] = (_, _) => FakeSuwayomi.Errors("HTTP error 429");
         await Assert.ThrowsAsync<RateLimitException>(() => h.Client.SearchAsync("100", "x"));
+    }
+
+    [Fact]
+    public async Task The_health_probe_skips_the_queue_other_calls_wait_in()
+    {
+        var h = new SuwayomiHarness();
+        var skipped = new List<bool>();
+        h.Server.Ops["Sources"] = (_, request) =>
+        {
+            skipped.Add(request.Options.TryGetValue(RateLimitingHandler.Skip, out var skip) && skip);
+            return FakeSuwayomi.Data(new { sources = new { nodes = Array.Empty<object>() } });
+        };
+
+        await h.Client.ListSourcesAsync(probe: true);
+        await h.Client.ListSourcesAsync();
+
+        Assert.Equal([true, false], skipped);
+    }
+
+    [Fact]
+    public void The_id_cache_empties_a_map_that_outgrows_its_cap()
+    {
+        var cache = new SuwayomiMangaIdCache();
+        var server = new Uri(SuwayomiHarness.Base);
+        for (var i = 0; i < SuwayomiMangaIdCache.MaxEntries; i++)
+        {
+            cache.SetChapter(server, 7, $"/c/{i}", i);
+        }
+
+        Assert.Equal(5, cache.Chapter(server, 7, "/c/5"));
+        cache.SetChapter(server, 7, "/c/next", 1);
+
+        Assert.Null(cache.Chapter(server, 7, "/c/5"));
+        Assert.Equal(1, cache.Chapter(server, 7, "/c/next"));
     }
 
     [Fact]

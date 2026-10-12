@@ -10,6 +10,13 @@ namespace Maki.Sources.Suwayomi;
 /// </summary>
 public sealed class SuwayomiMangaIdCache
 {
+    /// <summary>
+    /// Per map. Past it the map is emptied rather than trimmed: every entry can be looked up again in
+    /// one cheap query, so a crude bound costs a few lookups and keeps a long-running instance from
+    /// holding every chapter it ever listed.
+    /// </summary>
+    internal const int MaxEntries = 20_000;
+
     private readonly ConcurrentDictionary<(Uri Server, string SourceId, string Url), int> _manga = new();
     private readonly ConcurrentDictionary<(Uri Server, int MangaId, string Url), int> _chapters = new();
     private readonly ConcurrentDictionary<(Uri Server, int MangaId), string> _owners = new();
@@ -17,14 +24,14 @@ public sealed class SuwayomiMangaIdCache
     public int? Manga(Uri server, string sourceId, string url) =>
         _manga.TryGetValue((server, sourceId, url), out var id) ? id : null;
 
-    public void SetManga(Uri server, string sourceId, string url, int id) => _manga[(server, sourceId, url)] = id;
+    public void SetManga(Uri server, string sourceId, string url, int id) => Bounded(_manga)[(server, sourceId, url)] = id;
 
     public void ForgetManga(Uri server, string sourceId, string url) => _manga.TryRemove((server, sourceId, url), out _);
 
     public int? Chapter(Uri server, int mangaId, string url) =>
         _chapters.TryGetValue((server, mangaId, url), out var id) ? id : null;
 
-    public void SetChapter(Uri server, int mangaId, string url, int id) => _chapters[(server, mangaId, url)] = id;
+    public void SetChapter(Uri server, int mangaId, string url, int id) => Bounded(_chapters)[(server, mangaId, url)] = id;
 
     public void ForgetChapter(Uri server, int mangaId, string url) => _chapters.TryRemove((server, mangaId, url), out _);
 
@@ -32,7 +39,18 @@ public sealed class SuwayomiMangaIdCache
     public string? Owner(Uri server, int mangaId) =>
         _owners.TryGetValue((server, mangaId), out var sourceId) ? sourceId : null;
 
-    public void SetOwner(Uri server, int mangaId, string sourceId) => _owners[(server, mangaId)] = sourceId;
+    public void SetOwner(Uri server, int mangaId, string sourceId) => Bounded(_owners)[(server, mangaId)] = sourceId;
+
+    private static ConcurrentDictionary<TKey, TValue> Bounded<TKey, TValue>(ConcurrentDictionary<TKey, TValue> map)
+        where TKey : notnull
+    {
+        if (map.Count >= MaxEntries)
+        {
+            map.Clear();
+        }
+
+        return map;
+    }
 
     public void Clear()
     {

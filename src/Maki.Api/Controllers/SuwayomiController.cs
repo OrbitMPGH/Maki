@@ -36,7 +36,10 @@ public partial class SuwayomiController(
     IHttpClientFactory httpClientFactory,
     ILogger<SuwayomiController> logger) : ControllerBase
 {
-    /// <param name="Password">Never returned. On PUT, null leaves the stored one alone and an empty string clears it.</param>
+    /// <param name="Password">
+    /// Never returned. On PUT, null keeps the stored one for the same URL (and clears it for a new
+    /// one), and an empty string clears it.
+    /// </param>
     public record SuwayomiConnectionSettings(
         string? Url,
         string? AuthMode,
@@ -102,13 +105,20 @@ public partial class SuwayomiController(
             return this.Fail(localizer, "error.suwayomi.usernameRequired");
         }
 
+        // A stored password belongs to the server it was saved for. A new URL without a new password
+        // clears it rather than sending the old one to another host, turning the integration off
+        // included, or off-then-on with a different URL would carry it across.
+        var previousUrl = await settings.GetAsync(SettingKeys.SuwayomiUrl, ct);
+        var password = request.Password is not null
+            ? request.Password.Length == 0 ? null : request.Password
+            : !string.Equals(previousUrl, url, StringComparison.Ordinal)
+                ? null
+                : await settings.GetAsync(SettingKeys.SuwayomiPassword, ct);
+
         await settings.SetAsync(SettingKeys.SuwayomiUrl, url, ct);
         await settings.SetAsync(SettingKeys.SuwayomiAuthMode, AuthModeName(mode), ct);
         await settings.SetAsync(SettingKeys.SuwayomiUsername, username, ct);
-        if (request.Password is not null)
-        {
-            await settings.SetAsync(SettingKeys.SuwayomiPassword, request.Password.Length == 0 ? null : request.Password, ct);
-        }
+        await settings.SetAsync(SettingKeys.SuwayomiPassword, password, ct);
 
         tokens.Clear();
         await sourceRegistry.ReloadAsync(ct);

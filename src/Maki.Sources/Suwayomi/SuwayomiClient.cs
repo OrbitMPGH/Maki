@@ -33,7 +33,7 @@ public sealed record SuwayomiChapter(
 
 /// <summary>
 /// What one refresh of a manga returned. <see cref="Chapters"/> is null when not asked for;
-/// <see cref="Manga"/> is null only when not asked for on a v2.1 server.
+/// <see cref="Manga"/> comes back either way, so a caller can check whose chapters these are.
 /// </summary>
 public sealed record SuwayomiRefresh(SuwayomiManga? Manga, IReadOnlyList<SuwayomiChapter>? Chapters);
 
@@ -82,7 +82,11 @@ public sealed class SuwayomiClient(IHttpClientFactory httpClientFactory, Suwayom
             SuwayomiGraphQl.String(about, "buildType"));
     }
 
-    public async Task<IReadOnlyList<SuwayomiSourceInfo>> ListSourcesAsync(CancellationToken ct = default)
+    /// <param name="probe">
+    /// Skip the queue every other API call waits in. For the health check, whose short timeout would
+    /// otherwise expire behind a busy sync and report a healthy server as down.
+    /// </param>
+    public async Task<IReadOnlyList<SuwayomiSourceInfo>> ListSourcesAsync(CancellationToken ct = default, bool probe = false)
     {
         JsonElement data;
         if (!_legacySourceFields)
@@ -90,7 +94,8 @@ public sealed class SuwayomiClient(IHttpClientFactory httpClientFactory, Suwayom
             try
             {
                 data = await PostAsync("Sources",
-                    "query Sources { sources { nodes { id name lang displayName isNsfw contentWarning } } }", null, ct);
+                    "query Sources { sources { nodes { id name lang displayName isNsfw contentWarning } } }", null, ct,
+                    skipLimit: probe);
                 return ParseSources(data);
             }
             catch (SuwayomiGraphQlException ex) when (ex.IsUndefinedField("contentWarning"))
@@ -99,7 +104,8 @@ public sealed class SuwayomiClient(IHttpClientFactory httpClientFactory, Suwayom
             }
         }
 
-        data = await PostAsync("Sources", "query Sources { sources { nodes { id name lang displayName isNsfw } } }", null, ct);
+        data = await PostAsync("Sources", "query Sources { sources { nodes { id name lang displayName isNsfw } } }", null, ct,
+            skipLimit: probe);
         return ParseSources(data);
     }
 
@@ -209,13 +215,24 @@ public sealed class SuwayomiClient(IHttpClientFactory httpClientFactory, Suwayom
             }
         }
 
-        SuwayomiManga? refreshedManga = null;
+        SuwayomiManga? refreshedManga;
         if (manga)
         {
             var data = await PostAsync("RefreshManga",
                 "mutation RefreshManga($id: Int!) { fetchManga(input: {id: $id}) { manga { " + MangaFields + " } } }",
                 new { id = mangaId }, ct);
             refreshedManga = ParseManga(data.GetProperty("fetchManga").GetProperty("manga"));
+        }
+        else
+        {
+            // Read from Suwayomi's database without touching the source. fetchChapters says nothing
+            // about which manga it listed, and without the url the caller cannot tell that a cached
+            // id outlived a recreated database and now names some other manga.
+            var data = await PostAsync("MangaById",
+                "query MangaById($id: Int!) { manga(id: $id) { " + MangaFields + " } }", new { id = mangaId }, ct);
+            refreshedManga = data.TryGetProperty("manga", out var stored) && stored.ValueKind == JsonValueKind.Object
+                ? ParseManga(stored)
+                : null;
         }
 
         IReadOnlyList<SuwayomiChapter>? refreshedChapters = null;
@@ -258,11 +275,12 @@ public sealed class SuwayomiClient(IHttpClientFactory httpClientFactory, Suwayom
     }
 
     private async Task<JsonElement> PostAsync(
-        string operation, string query, object? variables, CancellationToken ct, bool skipAuth = false)
+        string operation, string query, object? variables, CancellationToken ct, bool skipAuth = false, bool skipLimit = false)
     {
         var connection = await ConnectionAsync(ct);
         return await SuwayomiGraphQl.PostAsync(
-            httpClientFactory.CreateClient(HttpClientName), connection.GraphQlUri, operation, query, variables, ct, skipAuth);
+            httpClientFactory.CreateClient(HttpClientName), connection.GraphQlUri, operation, query, variables, ct,
+            skipAuth, skipLimit);
     }
 
     private static SourceErrorException NotInstalled(string sourceId) =>

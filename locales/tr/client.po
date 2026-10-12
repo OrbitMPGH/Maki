@@ -2315,6 +2315,10 @@ msgstr "Yerel bir gömme modeli, Keşfet'in benzerliklere göre öneri sunmasın
 msgid "A new system health problem was detected."
 msgstr "Yeni bir sistem sağlığı sorunu tespit edildi."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

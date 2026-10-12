@@ -2314,6 +2314,10 @@ msgstr "로컬 임베딩 모델을 사용하면 탐색에서 취향에 맞는 �
 msgid "A new system health problem was detected."
 msgstr "새 시스템 상태 문제가 감지되었습니다."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

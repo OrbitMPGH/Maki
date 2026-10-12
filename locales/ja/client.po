@@ -2314,6 +2314,10 @@ msgstr "ローカルの埋め込みモデルを使うと、「見つける」で
 msgid "A new system health problem was detected."
 msgstr "新しいシステムのヘルス問題を検出"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

@@ -296,9 +296,9 @@ public class SearchController(
         {
             s.Name,
             s.DisplayName,
-            s.BaseUrl,
-            // Where a source comes from when it is not built in. A Suwayomi source's BaseUrl is the
-            // Suwayomi server, so the UI shows this instead of a host that is the same for all of them.
+            // A Suwayomi source's BaseUrl is the Suwayomi server, usually a LAN address, and every
+            // signed-in user reads this list. The UI shows Provider for those instead of a host.
+            BaseUrl = s is SuwayomiSource ? "" : s.BaseUrl,
             Provider = s is SuwayomiSource ? "suwayomi" : null,
             NeedsFlareSolverr = s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr),
             // Whether ListChaptersAsync honours SourceMapping.LanguageFilter, so the mappings card
@@ -373,11 +373,13 @@ public class SearchController(
     // request is same-origin, so the browser attaches the session cookie by itself. The instance API
     // key used to be appended here, which put it in the JSON of an ordinary search response and from
     // there into browser history and any proxy log the image request passed through.
-    // Suwayomi's thumbnail relay is already a same-origin path and passes as is. Only that prefix:
-    // a scraper handing back some other relative URL must not point readers at arbitrary Maki paths.
+    // Suwayomi's thumbnail relay is already a same-origin path and passes as is, but only from a
+    // Suwayomi source and only in its exact shape: a scraper handing back some other relative URL,
+    // dot segments included, must not point readers at arbitrary Maki paths.
     private static string? ProxiedCoverUrl(string sourceName, string? coverUrl) =>
         coverUrl is null ? null
-        : coverUrl.StartsWith(SuwayomiSource.ThumbnailPrefix, StringComparison.Ordinal) ? coverUrl
+        : sourceName.StartsWith(SuwayomiSource.NamePrefix, StringComparison.OrdinalIgnoreCase) &&
+          SuwayomiSource.IsThumbnailPath(coverUrl) ? coverUrl
         : $"/api/v1/search/cover?sourceName={Uri.EscapeDataString(sourceName)}" +
           $"&url={Uri.EscapeDataString(coverUrl)}";
 }

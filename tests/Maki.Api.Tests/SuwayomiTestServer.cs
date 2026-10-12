@@ -43,6 +43,9 @@ internal sealed class FakeSuwayomiServer : HttpMessageHandler
 
     public static HttpResponseMessage Data(object data) => Json(new { data });
 
+    /// <summary>What Suwayomi really answers a wrong username or password with: no "Unauthorized" in it.</summary>
+    public const string LoginRefused = "Exception while fetching data (/login) : Incorrect username or password.";
+
     public static HttpResponseMessage Errors(params string[] messages) =>
         Json(new { data = (object?)null, errors = messages.Select(m => new { message = m }).ToArray() });
 

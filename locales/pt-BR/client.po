@@ -2315,6 +2315,10 @@ msgstr "Um modelo local de embeddings permite que Descobrir recomende por afinid
 msgid "A new system health problem was detected."
 msgstr "Um novo problema de integridade do sistema foi detectado."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

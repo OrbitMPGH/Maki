@@ -2315,6 +2315,10 @@ msgstr "Un modelo de incrustación local permite que Descubrir recomiende por af
 msgid "A new system health problem was detected."
 msgstr "Se detectó un nuevo problema de salud del sistema."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

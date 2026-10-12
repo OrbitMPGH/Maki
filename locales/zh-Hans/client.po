@@ -2314,6 +2314,10 @@ msgstr "本地嵌入模型可让“发现”按内容氛围推荐作品，也可
 msgid "A new system health problem was detected."
 msgstr "检测到新的系统健康问题。"
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

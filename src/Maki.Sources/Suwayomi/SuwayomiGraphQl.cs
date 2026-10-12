@@ -39,7 +39,7 @@ internal static class SuwayomiGraphQl
     /// POSTs <paramref name="query"/> and returns its <c>data</c> object. Throws:
     /// <list type="bullet">
     /// <item>an <see cref="HttpRequestException"/> carrying the status for a non-2xx answer, and with 401 for a GraphQL "Unauthorized";</item>
-    /// <item><see cref="RateLimitException"/> when the extension reports the site's own 429;</item>
+    /// <item><see cref="RateLimitException"/> when the extension reports the site's own 429, and a 404 <see cref="HttpRequestException"/> for its 404;</item>
     /// <item><see cref="SuwayomiGraphQlException"/> for any other GraphQL error, partial data included,
     /// since a source that failed halfway must not read as an empty chapter list;</item>
     /// <item><see cref="InvalidOperationException"/> when the answer has no <c>data</c>.</item>
@@ -52,7 +52,8 @@ internal static class SuwayomiGraphQl
         string query,
         object? variables,
         CancellationToken ct,
-        bool skipAuth = false)
+        bool skipAuth = false,
+        bool skipLimit = false)
     {
         var body = new JsonObject
         {
@@ -69,6 +70,11 @@ internal static class SuwayomiGraphQl
         if (skipAuth)
         {
             request.Options.Set(SkipAuth, true);
+        }
+
+        if (skipLimit)
+        {
+            request.Options.Set(RateLimitingHandler.Skip, true);
         }
 
         using var response = await client.SendAsync(request, ct);
@@ -100,10 +106,18 @@ internal static class SuwayomiGraphQl
                     $"Suwayomi refused the credentials for {operationName}", null, HttpStatusCode.Unauthorized);
             }
 
-            // Mihon's OkHttp layer reports a site's own status as "HTTP error 429".
+            // Mihon's OkHttp layer reports a site's own status as "HTTP error 429". A 404 is passed on as
+            // one too, so a chapter the site took down moves to the next source at once, as a
+            // built-in source's 404 does, instead of waiting for the third retry.
             if (errors.Any(m => m.Contains("HTTP error 429", StringComparison.OrdinalIgnoreCase)))
             {
                 throw new RateLimitException($"Rate limited by the site behind Suwayomi ({operationName})");
+            }
+
+            if (errors.Any(m => m.Contains("HTTP error 404", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new HttpRequestException(
+                    $"The site behind Suwayomi answered 404 to {operationName}", null, HttpStatusCode.NotFound);
             }
 
             throw new SuwayomiGraphQlException($"Suwayomi: {string.Join("; ", errors)}", errors);

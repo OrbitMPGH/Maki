@@ -62,20 +62,21 @@ public class SearchControllerSourceSwitchTests
         Assert.Equal("error.sourceMapping.sourceDisabled", Code(result));
     }
 
-    [Fact]
-    public async Task Only_suwayomis_thumbnail_relay_skips_the_cover_proxy()
+    [Theory]
+    [InlineData("suwayomi-100", "/api/v1/suwayomi/thumbnail/100/7", true)]
+    [InlineData("src", "/api/v1/suwayomi/thumbnail/100/7", false)]
+    [InlineData("suwayomi-100", "/api/v1/suwayomi/thumbnail/../../series/1/cover", false)]
+    [InlineData("suwayomi-100", "/api/v1/suwayomi/thumbnail/100/7?x=1", false)]
+    [InlineData("suwayomi-100", "https://cdn.src.test/b.jpg", false)]
+    public async Task Only_a_suwayomi_sources_exact_relay_path_skips_the_cover_proxy(
+        string sourceName, string cover, bool passesThrough)
     {
         var registry = new SourceRegistry(
         [
             new FakeSource
             {
-                Name = "src",
-                OnSearch = _ =>
-                [
-                    new SourceSeriesResult("a", "A", "https://src.test/a", "/api/v1/suwayomi/thumbnail/100/7"),
-                    new SourceSeriesResult("b", "B", "https://src.test/b", "https://cdn.src.test/b.jpg"),
-                    new SourceSeriesResult("c", "C", "https://src.test/c", "/api/v1/series/1/cover")
-                ]
+                Name = sourceName,
+                OnSearch = _ => [new SourceSeriesResult("a", "A", "https://src.test/a", cover)]
             }
         ]);
         var settings = new FakeAppSettings();
@@ -84,11 +85,16 @@ public class SearchControllerSourceSwitchTests
             new SourceAvailability(settings, registry), new TestCurrentUser(1), null!, settings,
             NullLogger<SearchController>.Instance);
 
-        var results = Assert.IsAssignableFrom<IEnumerable<SourceSeriesResult>>(
-            Assert.IsType<OkObjectResult>(await controller.SearchSource("src", "x", default)).Value).ToList();
+        var result = Assert.Single(Assert.IsAssignableFrom<IEnumerable<SourceSeriesResult>>(
+            Assert.IsType<OkObjectResult>(await controller.SearchSource(sourceName, "x", default)).Value));
 
-        Assert.Equal("/api/v1/suwayomi/thumbnail/100/7", results[0].CoverUrl);
-        Assert.StartsWith("/api/v1/search/cover?sourceName=src&url=", results[1].CoverUrl);
-        Assert.StartsWith("/api/v1/search/cover?sourceName=src&url=", results[2].CoverUrl);
+        if (passesThrough)
+        {
+            Assert.Equal(cover, result.CoverUrl);
+        }
+        else
+        {
+            Assert.StartsWith($"/api/v1/search/cover?sourceName={sourceName}&url=", result.CoverUrl);
+        }
     }
 }

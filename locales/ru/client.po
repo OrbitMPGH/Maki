@@ -2315,6 +2315,10 @@ msgstr "Локальная модель векторных представле�
 msgid "A new system health problem was detected."
 msgstr "Обнаружена новая проблема состояния системы."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

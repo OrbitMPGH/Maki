@@ -61,6 +61,12 @@ public sealed partial class SuwayomiSource(
 
     public const string ThumbnailPrefix = "/api/v1/suwayomi/thumbnail/";
 
+    /// <summary>Exactly <c>/api/v1/suwayomi/thumbnail/{sourceId}/{mangaId}</c>, nothing longer or looser.</summary>
+    public static bool IsThumbnailPath(string url) => ThumbnailPattern().IsMatch(url);
+
+    [GeneratedRegex(@"^/api/v1/suwayomi/thumbnail/\d{1,20}/\d{1,10}$")]
+    private static partial Regex ThumbnailPattern();
+
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
         await client.EnsureInstalledAsync(SourceId, ct);

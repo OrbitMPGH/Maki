@@ -56,6 +56,8 @@ export function SuwayomiCard() {
     password: password === '' ? null : password,
   })
 
+  // The server forgets the stored password when the URL changes, so the hint must not promise otherwise.
+  const keepsPassword = Boolean(saved?.passwordSet) && url.trim().replace(/\/+$/, '') === (saved?.url ?? '')
   const inUse = (sources ?? []).filter((s) => s.provider === 'suwayomi').length
   const connected = Boolean(saved?.url)
 
@@ -106,7 +108,10 @@ export function SuwayomiCard() {
             <PasswordInput
               autoComplete="new-password"
               label={t`Password`}
-              placeholder={saved?.passwordSet ? t`Saved. Leave empty to keep it.` : undefined}
+              placeholder={keepsPassword ? t`Saved. Leave empty to keep it.` : undefined}
+              description={
+                saved?.passwordSet && !keepsPassword && password === '' ? t`A new URL clears the saved password, so enter it again.` : undefined
+              }
               value={password}
               onChange={(e) => setPassword(e.currentTarget.value)}
               style={{ flex: 1, minWidth: 180 }}

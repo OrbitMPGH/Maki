@@ -2315,6 +2315,10 @@ msgstr "Ein lokales Embedding-Modell ermöglicht Empfehlungen nach Stimmung in E
 msgid "A new system health problem was detected."
 msgstr "Ein neues Systemgesundheitsproblem wurde erkannt."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

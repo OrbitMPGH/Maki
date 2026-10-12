@@ -93,6 +93,20 @@ public sealed class SuwayomiControllerTests : IDisposable
         Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiPassword));
     }
 
+    [Fact]
+    public async Task A_new_url_without_a_new_password_does_not_carry_the_old_one_over()
+    {
+        Configure("basic", "maki", "secret");
+
+        await Controller().SetConnection(new("http://192.168.1.99:4567", "basic", "maki", Password: null), default);
+        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiPassword));
+
+        await Controller().SetConnection(new("http://192.168.1.99:4567", "basic", "maki", Password: "other"), default);
+        await Controller().SetConnection(new("", "none", null), default);
+        await Controller().SetConnection(new("http://192.168.1.99:4567", "basic", "maki"), default);
+        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiPassword));
+    }
+
     [Theory]
     [InlineData("suwayomi:4567", "none", null, "error.settings.urlInvalid")]
     [InlineData(Base, "token", null, "error.suwayomi.authModeInvalid")]
@@ -122,7 +136,7 @@ public sealed class SuwayomiControllerTests : IDisposable
         _server.Ops["Login"] = vars =>
             vars.GetProperty("password").GetString() == "secret"
                 ? FakeSuwayomiServer.Data(new { login = new { accessToken = "a1", refreshToken = "r1" } })
-                : FakeSuwayomiServer.Errors("Unauthorized");
+                : FakeSuwayomiServer.Errors(FakeSuwayomiServer.LoginRefused);
 
         var result = await Controller().TestConnection(new(Base, "uilogin", "maki"), default);
 
@@ -147,7 +161,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     [Fact]
     public async Task A_refused_login_reads_as_a_login_failure_not_an_outage()
     {
-        _server.Ops["Login"] = _ => FakeSuwayomiServer.Errors("Unauthorized");
+        _server.Ops["Login"] = _ => FakeSuwayomiServer.Errors(FakeSuwayomiServer.LoginRefused);
 
         var result = await Controller().TestConnection(new(Base, "uilogin", "maki", "wrong"), default);
 
@@ -163,7 +177,7 @@ public sealed class SuwayomiControllerTests : IDisposable
         _server.Ops["Login"] = vars =>
         {
             sent = vars.GetProperty("password").GetString();
-            return FakeSuwayomiServer.Errors("Unauthorized");
+            return FakeSuwayomiServer.Errors(FakeSuwayomiServer.LoginRefused);
         };
 
         await Controller().TestConnection(new("http://192.168.1.99:4567", "uilogin", "maki"), default);

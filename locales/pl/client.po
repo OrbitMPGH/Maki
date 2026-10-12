@@ -2315,6 +2315,10 @@ msgstr "Lokalny model osadzeń pozwala Odkrywaniu polecać serie na podstawie na
 msgid "A new system health problem was detected."
 msgstr "Wykryto nowy problem z kondycją systemu."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A newer Maki release was published."

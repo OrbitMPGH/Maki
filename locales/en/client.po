@@ -1878,6 +1878,10 @@ msgstr "A local embedding model lets Discover recommend by feel and search by de
 msgid "A new system health problem was detected."
 msgstr "A new system health problem was detected."
 
+#: src/pages/settings/SuwayomiCards.tsx
+msgid "A new URL clears the saved password, so enter it again."
+msgstr "A new URL clears the saved password, so enter it again."
+
 #: src/components/NotificationsSection.tsx
 msgid "A newer Maki release was published."
 msgstr "A newer Maki release was published."

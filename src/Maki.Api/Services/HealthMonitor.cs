@@ -313,7 +313,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 HashSet<string> installed;
                 try
                 {
-                    installed = (await services.GetRequiredService<SuwayomiClient>().ListSourcesAsync(timeout.Token))
+                    installed = (await services.GetRequiredService<SuwayomiClient>().ListSourcesAsync(timeout.Token, probe: true))
                         .Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }

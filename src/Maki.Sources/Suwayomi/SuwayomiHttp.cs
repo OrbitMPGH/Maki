@@ -100,13 +100,24 @@ public sealed class SuwayomiAuthHandler(SuwayomiTokenStore tokens) : DelegatingH
 /// arrives after another caller already swapped in a newer token just uses it.
 /// </para>
 /// </summary>
-public sealed class SuwayomiTokenStore(SuwayomiSettings settings, IHttpClientFactory httpClientFactory)
+public sealed class SuwayomiTokenStore(
+    SuwayomiSettings settings, IHttpClientFactory httpClientFactory, TimeProvider? time = null)
 {
     private sealed record Tokens(SuwayomiConnection For, string Access, string? Refresh);
 
+    private sealed record Refusal(SuwayomiConnection For, DateTimeOffset Until);
+
+    /// <summary>
+    /// How long a refused login is answered from memory. Without it every request, each page of a
+    /// download included, would sign in again with the same wrong password.
+    /// </summary>
+    private static readonly TimeSpan RefusalHold = TimeSpan.FromSeconds(30);
+
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly SemaphoreSlim _gate = new(1, 1);
     // Written under _gate, read by every request without taking it.
     private volatile Tokens? _tokens;
+    private volatile Refusal? _refused;
 
     private const string LoginQuery =
         "mutation Login($username: String!, $password: String!) { login(input: {username: $username, password: $password}) { accessToken refreshToken } }";
@@ -176,8 +187,9 @@ public sealed class SuwayomiTokenStore(SuwayomiSettings settings, IHttpClientFac
                 }
             }
 
-            _tokens = await LoginAsync(connection, ct);
-            return Bearer(_tokens.Access);
+            var minted = await LoginAsync(connection, ct);
+            _tokens = minted;
+            return Bearer(minted.Access);
         }
         finally
         {
@@ -185,21 +197,58 @@ public sealed class SuwayomiTokenStore(SuwayomiSettings settings, IHttpClientFac
         }
     }
 
-    public void Clear() => _tokens = null;
+    public void Clear()
+    {
+        _tokens = null;
+        _refused = null;
+    }
 
+    /// <summary>
+    /// Suwayomi refuses a login by throwing ("Incorrect username or password."), which reaches the
+    /// client as an ordinary GraphQL error, not as "Unauthorized". It is turned into a 401 here so it
+    /// reads as refused credentials everywhere else, rather than as a server that did not answer.
+    /// </summary>
     private async Task<Tokens> LoginAsync(SuwayomiConnection connection, CancellationToken ct)
     {
-        var data = await PostAsync(connection, "Login", LoginQuery,
-            new { username = connection.Username ?? "", password = connection.Password ?? "" }, ct);
+        if (_refused is { } refused && refused.For == connection && _time.GetUtcNow() < refused.Until)
+        {
+            throw Refused();
+        }
+
+        System.Text.Json.JsonElement data;
+        try
+        {
+            data = await PostAsync(connection, "Login", LoginQuery,
+                new { username = connection.Username ?? "", password = connection.Password ?? "" }, ct);
+        }
+        catch (SuwayomiGraphQlException ex) when (!ex.IsUndefinedField("login"))
+        {
+            throw Refuse(connection);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            throw Refuse(connection);
+        }
+
         var login = data.TryGetProperty("login", out var l) ? l : default;
         var access = login.ValueKind == System.Text.Json.JsonValueKind.Object ? SuwayomiGraphQl.String(login, "accessToken") : null;
         if (string.IsNullOrEmpty(access))
         {
-            throw new HttpRequestException("Suwayomi refused the username or password", null, HttpStatusCode.Unauthorized);
+            throw Refuse(connection);
         }
 
+        _refused = null;
         return new Tokens(connection, access, SuwayomiGraphQl.String(login, "refreshToken"));
     }
+
+    private HttpRequestException Refuse(SuwayomiConnection connection)
+    {
+        _refused = new Refusal(connection, _time.GetUtcNow() + RefusalHold);
+        return Refused();
+    }
+
+    private static HttpRequestException Refused() =>
+        new("Suwayomi refused the username or password", null, HttpStatusCode.Unauthorized);
 
     private Task<System.Text.Json.JsonElement> PostAsync(
         SuwayomiConnection connection, string operation, string query, object variables, CancellationToken ct) =>
