@@ -11353,6 +11353,22 @@ msgstr "Reset two-factor for {editName}?"
 msgid "Reset zoom"
 msgstr "Reset zoom"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Chapter column"
+msgstr "Resize Chapter column"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Released column"
+msgstr "Resize Released column"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Source column"
+msgstr "Resize Source column"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Status column"
+msgstr "Resize Status column"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Resolution {resolution}, compression {compression} under this series' profile."
 msgstr "Resolution {resolution}, compression {compression} under this series' profile."

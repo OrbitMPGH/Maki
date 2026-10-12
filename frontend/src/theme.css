@@ -4510,6 +4510,10 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   cursor: col-resize;
   touch-action: none;
 }
+.column-resize-handle[data-edge='start'] {
+  inset-inline-end: auto;
+  inset-inline-start: -5px;
+}
 .column-resize-handle::after {
   content: '';
   position: absolute;

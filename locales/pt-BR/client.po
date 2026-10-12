@@ -13971,6 +13971,22 @@ msgstr "Redefinir a autenticação em dois fatores de {editName}?"
 msgid "Reset zoom"
 msgstr "Redefinir zoom"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Chapter column"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Released column"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Source column"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Status column"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Resolution {resolution}, compression {compression} under this series' profile."

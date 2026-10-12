@@ -164,6 +164,7 @@ import {
   statusColor,
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
+import { useColumnWidths } from '../lib/useColumnWidths'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
@@ -213,6 +214,22 @@ type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
 const CHAPTER_SORT_STORAGE_KEY = 'series-chapter-sort'
 const CHAPTER_SORTS = ['asc', 'desc'] as const
 type ChapterSort = (typeof CHAPTER_SORTS)[number]
+
+const CHAPTER_COLUMNS_STORAGE_KEY = 'series-chapter-columns'
+const CHAPTER_COLUMNS = {
+  chapter: { width: 200, min: 110 },
+  released: { width: 120, min: 90 },
+  source: { width: 190, min: 100 },
+  status: { width: 240, min: 140 },
+}
+// The Wanted and actions columns hold fixed-size controls, and Title takes whatever is left, down
+// to this much before the table scrolls sideways instead.
+const CHAPTER_WANTED_COLUMN_WIDTH = 80
+const CHAPTER_ACTIONS_COLUMN_WIDTH = 124
+const CHAPTER_FIXED_COLUMNS_WIDTH = CHAPTER_WANTED_COLUMN_WIDTH + CHAPTER_ACTIONS_COLUMN_WIDTH
+const CHAPTER_TITLE_MIN_WIDTH = 110
+const chapterTableMinWidthFor = (widths: Record<keyof typeof CHAPTER_COLUMNS, number>) =>
+  CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + Object.values(widths).reduce((sum, w) => sum + w, 0)
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -571,6 +588,20 @@ function SeriesDetailBody() {
     setChapterSortState(next)
     writeStored(CHAPTER_SORT_STORAGE_KEY, next)
   }
+  const { widths: chapterColumnWidths, handleProps: chapterColumnHandle } = useColumnWidths(
+      CHAPTER_COLUMNS_STORAGE_KEY,
+      CHAPTER_COLUMNS,
+      (widths, key, shift) => {
+        // Mid-drag nothing renders, so the table's min-width and the season lines are moved by
+        // hand. The lines sit at the Chapter cell's end, so they shift by exactly what it grew.
+        chapterTable
+            ?.querySelector<HTMLElement>('.mantine-TableScrollContainer-scrollContainer')
+            ?.style.setProperty('--table-min-width', `${chapterTableMinWidthFor(widths)}px`)
+        const overlay = chapterTable?.querySelector<HTMLElement>('.chapter-span-overlay')
+        if (overlay) overlay.style.transform = key === 'chapter' && shift ? `translateX(${shift}px)` : ''
+      },
+  )
+  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths)
   const [chapterSearch, setChapterSearch] = useState('')
   const [chapterPageSizePreference, setChapterPageSizePreference] = useState<ChapterPageSize>(() =>
       readStored(CHAPTER_PAGE_SIZE_STORAGE_KEY, CHAPTER_PAGE_SIZES, '50'),
@@ -1005,6 +1036,8 @@ function SeriesDetailBody() {
     if (!wrap) return
 
     const measure = () => {
+      // A column drag moves the lines itself and re-measures once it lets go.
+      if (document.body.classList.contains('column-resizing')) return
       const wrapRect = wrap.getBoundingClientRect()
       // Laid out but not yet painted (a hidden tab, a tab being restored). Every rect would read
       // zero and every span would fail the length test below, silently wiping the lines.
@@ -1105,7 +1138,7 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, pagedRows, markerSlot, chapterSort])
+  }, [chapterTable, animeSpans, foldedSpans, pagedRows, markerSlot, chapterSort, chapterColumnWidths])
 
   const setChaptersState = useSetChaptersState(seriesId)
 
@@ -1214,7 +1247,7 @@ function SeriesDetailBody() {
               >
                 {span.label}
               </Badge>
-              <Text size="sm" fw={600} className="tnum">
+              <Text size="sm" fw={600} className="tnum chapter-label">
                 {spanRangeLabel(span)}
               </Text>
             </Group>
@@ -2787,17 +2820,33 @@ function SeriesDetailBody() {
                         ref={setChapterTable}
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
-                      <Table.ScrollContainer minWidth={isMobile ? 0 : 700}>
+                      <Table.ScrollContainer minWidth={isMobile ? 0 : chapterTableMinWidth}>
                         <Table className="chapter-table" highlightOnHover verticalSpacing="xs">
                           <Table.Thead>
                             <Table.Tr>
-                              <Table.Th w={52}><Trans>Wanted</Trans></Table.Th>
-                              <Table.Th w={170}><Trans>Chapter</Trans></Table.Th>
-                              <Table.Th><Trans>Title</Trans></Table.Th>
-                              <Table.Th w={120}><Trans>Released</Trans></Table.Th>
-                              <Table.Th w={190}><Trans>Source</Trans></Table.Th>
-                              <Table.Th w={240}><Trans>Status</Trans></Table.Th>
-                              <Table.Th w={124} />
+                              <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}><Trans>Wanted</Trans></Table.Th>
+                              <Table.Th w={chapterColumnWidths.chapter}>
+                                <Trans>Chapter</Trans>
+                                <div {...chapterColumnHandle('chapter')} aria-label={t`Resize Chapter column`} />
+                              </Table.Th>
+                              <Table.Th>
+                                {/* Less the cell's padding. The table's min-width alone doesn't stop the
+                                    browser squeezing Title when the other columns grow. */}
+                                <Box miw={CHAPTER_TITLE_MIN_WIDTH - 32}><Trans>Title</Trans></Box>
+                              </Table.Th>
+                              <Table.Th w={chapterColumnWidths.released}>
+                                <Trans>Released</Trans>
+                                <div {...chapterColumnHandle('released', 'start')} aria-label={t`Resize Released column`} />
+                              </Table.Th>
+                              <Table.Th w={chapterColumnWidths.source}>
+                                <Trans>Source</Trans>
+                                <div {...chapterColumnHandle('source', 'start')} aria-label={t`Resize Source column`} />
+                              </Table.Th>
+                              <Table.Th w={chapterColumnWidths.status}>
+                                <Trans>Status</Trans>
+                                <div {...chapterColumnHandle('status', 'start')} aria-label={t`Resize Status column`} />
+                              </Table.Th>
+                              <Table.Th w={CHAPTER_ACTIONS_COLUMN_WIDTH} />
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
@@ -2862,12 +2911,12 @@ function SeriesDetailBody() {
                                       <Group gap={6} wrap="nowrap">
                                         {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                                             <Tooltip label={t`Contained in a volume/compilation file`} withArrow>
-                                              <Badge size="sm" color="var(--watched)" variant="light" className="tnum">
+                                              <Badge size="sm" color="var(--watched)" variant="light" className="tnum chapter-label">
                                                 <Trans>Vol. {fileVolume}</Trans>
                                               </Badge>
                                             </Tooltip>
                                         )}
-                                        <Text size="sm" fw={600} className="tnum">
+                                        <Text size="sm" fw={600} className="tnum chapter-label">
                                           {c.isOneShot || c.number === null
                                               ? chapterLabel(c)
                                               : c.fileVolume !== null
@@ -2935,7 +2984,7 @@ function SeriesDetailBody() {
                                       </Text>
                                     </Table.Td>
                                     <Table.Td>
-                                      <Text size="sm" c="var(--ink-3)" className="tnum">
+                                      <Text size="sm" c="var(--ink-3)" className="tnum chapter-label">
                                         {c.releaseDate ? formatCalendarDate(c.releaseDate) : '-'}
                                       </Text>
                                     </Table.Td>

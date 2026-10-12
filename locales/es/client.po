@@ -13971,6 +13971,22 @@ msgstr "¿Restablecer la autenticación en dos pasos de {editName}?"
 msgid "Reset zoom"
 msgstr "Restablecer zoom"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Chapter column"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Released column"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Source column"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Resize Status column"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Resolution {resolution}, compression {compression} under this series' profile."
