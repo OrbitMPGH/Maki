@@ -774,8 +774,9 @@ msgid "{failedCount, plural, one {# could not be deleted} other {# could not be 
 msgstr "{failedCount, plural, other {# 个无法删除}}"
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
-msgstr ""
+msgstr "{failedNames} 未响应，因此它们可能仍保留此系列。待其恢复后，请再次运行自动匹配。"
 
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
@@ -899,8 +900,9 @@ msgid "{inLibraryCount, plural, one {Show # series already in the library} other
 msgstr "{inLibraryCount, plural, other {显示资料库中已有的 # 个系列}}"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "{installed, plural, =0 {No Suwayomi sources yet.} one {# Suwayomi source, {inUse} switched on.} other {# Suwayomi sources, {inUse} switched on.}}"
-msgstr ""
+msgstr "{installed, plural, =0 {尚未安装 Suwayomi 来源。} other {共 # 个 Suwayomi 来源，其中 {inUse} 个已开启。}}"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -939,8 +941,9 @@ msgid "{label} already has a file. Compare the two before deciding: importing th
 msgstr "{label} 已经有一个文件。请先比较两者再决定：导入此归档会将它与现有文件并列关联，不会替换现有文件。要交换它们，请先删除不想要的文件。"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
-msgstr ""
+msgstr "{label} 包含多种语言，但 Suwayomi 不会说明每个章节属于哪种语言。其所有章节都会归入你在此选择的语言。"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -978,8 +981,9 @@ msgid "{languageCount, plural, one {Covers # language} other {Covers # languages
 msgstr "{languageCount, plural, other {涵盖 # 种语言}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{languagesOn, plural, =0 {No languages on} one {# language on} other {# languages on}}"
-msgstr ""
+msgstr "{languagesOn, plural, =0 {未开启任何语言} other {已开启 # 种语言}}"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -1554,8 +1558,9 @@ msgid "{shown, plural, one {Showing the first # result. Search to narrow it down
 msgstr "{shown, plural, other {显示前 # 条结果。搜索以缩小范围。}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{siteName} languages"
-msgstr ""
+msgstr "{siteName}的语言"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -1578,8 +1583,9 @@ msgid "{source} {tierLabel} {medianWidth}px ({score})"
 msgstr "{source} {tierLabel} {medianWidth}px（{score}）"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "{sourceCount, plural, one {Suwayomi {version} answered with # source installed.} other {Suwayomi {version} answered with # sources installed.}}"
-msgstr ""
+msgstr "{sourceCount, plural, other {Suwayomi {version} 返回了 # 个已安装的来源。}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2318,8 +2324,9 @@ msgid "A new system health problem was detected."
 msgstr "检测到新的系统健康问题。"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "A new URL clears the saved password, so enter it again."
-msgstr ""
+msgstr "更改网址会清除已保存的密码，请重新输入。"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3622,8 +3629,9 @@ msgid "Based on your recent activity"
 msgstr "根据你最近的活动"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Basic auth"
-msgstr ""
+msgstr "基本认证"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3808,8 +3816,9 @@ msgid "Building metadata search indexes"
 msgstr "正在建立元数据搜索索引"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Built in"
-msgstr ""
+msgstr "内置"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4211,8 +4220,9 @@ msgid "Change own content rating"
 msgstr "更改自己的内容分级"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Change the chapter language of {label}"
-msgstr ""
+msgstr "更改 {label} 的章节语言"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -4321,12 +4331,14 @@ msgid "Chapter file format"
 msgstr "章节文件格式"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Chapter language"
-msgstr ""
+msgstr "章节语言"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Chapter language for {label}"
-msgstr ""
+msgstr "{label} 的章节语言"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -8393,8 +8405,9 @@ msgid "Include subtags when adding"
 msgstr "添加时包含子标签"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Include the subpath if Suwayomi runs under one."
-msgstr ""
+msgstr "如果 Suwayomi 运行在子路径下，请包含该子路径。"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -8814,8 +8827,9 @@ msgid "Languages"
 msgstr "语言"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Languages of {siteName}"
-msgstr ""
+msgstr "{siteName}的语言"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9736,8 +9750,9 @@ msgid "Match mode for {label}"
 msgstr "{label} 的匹配模式"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Match Suwayomi's own auth mode setting."
-msgstr ""
+msgstr "与 Suwayomi 自身的认证模式设置保持一致。"
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -10715,8 +10730,9 @@ msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarr 中未配置索引器。"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "No language matches"
-msgstr ""
+msgstr "没有匹配的语言"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10724,12 +10740,14 @@ msgid "No library folder yet. Series need one to download into."
 msgstr "尚无资料库文件夹。作品需要一个文件夹来存放下载内容。"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "no longer in Suwayomi"
-msgstr ""
+msgstr "已不在 Suwayomi 中"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "No longer in Suwayomi"
-msgstr ""
+msgstr "已不在 Suwayomi 中"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -11121,8 +11139,9 @@ msgid "Not connected"
 msgstr "未连接"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Not connected."
-msgstr ""
+msgstr "未连接。"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -11948,8 +11967,9 @@ msgid "Optional, and yours to set. Maki never adds one for you."
 msgstr "可选，由你自行设置。Maki 不会替你添加。"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Optional. Point Maki at a Suwayomi server to use the sources of the extensions installed there, alongside Maki's own. Extensions are installed and configured in Suwayomi; Maki only reads from it."
-msgstr ""
+msgstr "可选。将 Maki 指向一个 Suwayomi 服务器，即可在 Maki 自带来源之外，同时使用其中已安装扩展的来源。扩展需要在 Suwayomi 中安装和配置，Maki 只会读取其内容。"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -12276,12 +12296,14 @@ msgid "Phone reader"
 msgstr "手机阅读器"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick a chapter language first"
-msgstr ""
+msgstr "请先选择章节语言"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick a language"
-msgstr ""
+msgstr "选择语言"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -12305,8 +12327,9 @@ msgid "Pick another default profile first"
 msgstr "请先选择另一个默认配置"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick languages"
-msgstr ""
+msgstr "选择语言"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -12609,8 +12632,9 @@ msgid "Protected from upgrades"
 msgstr "已受保护，不会被升级"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Provider"
-msgstr ""
+msgstr "提供方"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -13930,20 +13954,24 @@ msgid "Reset zoom"
 msgstr "重置缩放"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Chapter column"
-msgstr ""
+msgstr "调整章节列宽度"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Released column"
-msgstr ""
+msgstr "调整已发布列宽度"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Source column"
-msgstr ""
+msgstr "调整来源列宽度"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Status column"
-msgstr ""
+msgstr "调整状态列宽度"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -14474,8 +14502,9 @@ msgid "Saved filters"
 msgstr "已保存的筛选条件"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Saved. Leave empty to keep it."
-msgstr ""
+msgstr "已保存。留空则保留当前值。"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14776,8 +14805,9 @@ msgid "Search chapters"
 msgstr "搜索章节"
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "Search failed"
-msgstr ""
+msgstr "搜索失败"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15346,8 +15376,9 @@ msgid "Setup steps"
 msgstr "设置步骤"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Several languages, pick one"
-msgstr ""
+msgstr "有多种语言，请选择一种"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -15760,8 +15791,9 @@ msgid "So there is always something to look back at where you stopped."
 msgstr "这样你总能回到停下的地方继续回顾。"
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "Some sources could not be searched"
-msgstr ""
+msgstr "部分来源无法搜索"
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -16201,17 +16233,20 @@ msgid "Supernatural"
 msgstr "超自然"
 
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Suwayomi"
-msgstr ""
+msgstr "Suwayomi"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
-msgstr ""
+msgstr "Suwayomi 为本站的每种语言提供单独的来源，各自拥有独立的章节。你选择的每种语言都会在添加每个系列时被搜索，并在优先级列表中占有各自的位置。"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
-msgstr ""
+msgstr "suwayomi, tachidesk, mihon, tachiyomi, 扩展, 扩展来源, 更多来源, graphql, 4567"
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -16805,8 +16840,9 @@ msgid "The specific things that keep coming back in your library, each with more
 msgstr "资料库中反复出现的具体内容，每项旁边都有更多同类内容。"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "The Suwayomi sources below are the ones it listed last time."
-msgstr ""
+msgstr "以下 Suwayomi 来源是它上次列出的来源。"
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -17629,8 +17665,9 @@ msgid "Typical sitting"
 msgstr "单次阅读时长"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "UI login (v2.2 or later)"
-msgstr ""
+msgstr "UI 登录（v2.2 或更高版本）"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy

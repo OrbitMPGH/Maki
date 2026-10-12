@@ -2016,8 +2016,9 @@ msgstr "Unbekannter Suwayomi-Anmeldemodus. Verwende none, basic oder uilogin."
 #. {source} is a Suwayomi source's name and is never translated.
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: {source} publishes in one language, so its chapters are always filed under that one.
+#, fuzzy
 msgid "error.suwayomi.chapterLanguageFixed"
-msgstr ""
+msgstr "{source} veröffentlicht nur in einer Sprache, daher werden seine Kapitel immer unter dieser abgelegt."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: "{language}" is not a language code, such as en or pt-BR.
@@ -3500,25 +3501,29 @@ msgstr "{series}: Keine Quelle hat eine Übereinstimmung gefunden. Verknüpfe ei
 
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: Sources matched, some could not be searched
+#, fuzzy
 msgid "inbox.sourceMatch.matchedSomeFailed.title"
-msgstr ""
+msgstr "Quellen zugeordnet, einige konnten nicht durchsucht werden"
 
 #. {sources} and {failed} are comma-separated lists of site names, none of which are translated.
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: {series}: matched {sources}. Could not search {failed}; match again once they are back.
+#, fuzzy
 msgid "inbox.sourceMatch.matchedSomeFailed.body"
-msgstr ""
+msgstr "{series}: Zuordnung zu {sources} erfolgt. Bei {failed} konnte nicht gesucht werden. Starte die Zuordnung erneut, sobald die Quellen wieder antworten."
 
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: Sources could not be searched
+#, fuzzy
 msgid "inbox.sourceMatch.failed.title"
-msgstr ""
+msgstr "Quellen konnten nicht durchsucht werden"
 
 #. {failed} is a comma-separated list of site names, none of which are translated.
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: {series}: nothing matched, and {failed} could not be searched. Match again once they are back.
+#, fuzzy
 msgid "inbox.sourceMatch.failed.body"
-msgstr ""
+msgstr "{series}: Es wurde nichts zugeordnet, und bei {failed} konnte nicht gesucht werden. Starte die Zuordnung erneut, sobald die Quellen wieder antworten."
 
 #: src/Maki.Api/Services/ImportListService.cs
 #. English: Import list finished

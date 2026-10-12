@@ -774,8 +774,9 @@ msgid "{failedCount, plural, one {# could not be deleted} other {# could not be 
 msgstr "{failedCount, plural, other {삭제할 수 없음 #개}}"
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
-msgstr ""
+msgstr "{failedNames}이(가) 응답하지 않아 이 시리즈가 아직 해당 소스에 남아 있을 수 있습니다. 다시 응답하면 자동 매칭을 한 번 더 실행하세요."
 
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
@@ -899,8 +900,9 @@ msgid "{inLibraryCount, plural, one {Show # series already in the library} other
 msgstr "{inLibraryCount, plural, other {라이브러리에 이미 있는 시리즈 #개 표시}}"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "{installed, plural, =0 {No Suwayomi sources yet.} one {# Suwayomi source, {inUse} switched on.} other {# Suwayomi sources, {inUse} switched on.}}"
-msgstr ""
+msgstr "{installed, plural, =0 {아직 Suwayomi 소스가 없습니다.} other {Suwayomi 소스 #개 중 {inUse}개가 켜져 있습니다.}}"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -939,8 +941,9 @@ msgid "{label} already has a file. Compare the two before deciding: importing th
 msgstr "{label}에 이미 파일이 있습니다. 결정하기 전에 두 파일을 비교하세요. 이 보관 파일을 가져오면 기존 파일과 함께 연결되며, 기존 파일을 대체하지 않습니다. 교체하려면 원하지 않는 파일을 먼저 삭제하세요."
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
-msgstr ""
+msgstr "{label}은(는) 여러 언어를 섞어 제공하고, Suwayomi는 챕터가 어느 언어인지 알려주지 않습니다. 이 소스의 모든 챕터는 여기서 고른 언어로 분류됩니다."
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -978,8 +981,9 @@ msgid "{languageCount, plural, one {Covers # language} other {Covers # languages
 msgstr "{languageCount, plural, other {#개 언어 포함}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{languagesOn, plural, =0 {No languages on} one {# language on} other {# languages on}}"
-msgstr ""
+msgstr "{languagesOn, plural, =0 {켜진 언어 없음} other {켜진 언어 #개}}"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -1554,8 +1558,9 @@ msgid "{shown, plural, one {Showing the first # result. Search to narrow it down
 msgstr "{shown, plural, other {첫 결과 #개를 표시합니다. 검색으로 범위를 좁히세요.}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{siteName} languages"
-msgstr ""
+msgstr "{siteName} 언어"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -1578,8 +1583,9 @@ msgid "{source} {tierLabel} {medianWidth}px ({score})"
 msgstr "{source} {tierLabel} {medianWidth}px ({score})"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "{sourceCount, plural, one {Suwayomi {version} answered with # source installed.} other {Suwayomi {version} answered with # sources installed.}}"
-msgstr ""
+msgstr "{sourceCount, plural, other {Suwayomi {version}이(가) 설치된 소스 #개로 응답했습니다.}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2318,8 +2324,9 @@ msgid "A new system health problem was detected."
 msgstr "새 시스템 상태 문제가 감지되었습니다."
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "A new URL clears the saved password, so enter it again."
-msgstr ""
+msgstr "URL을 바꾸면 저장된 비밀번호가 지워지므로 다시 입력하세요."
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3622,8 +3629,9 @@ msgid "Based on your recent activity"
 msgstr "최근 활동 기반"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Basic auth"
-msgstr ""
+msgstr "Basic 인증"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3808,8 +3816,9 @@ msgid "Building metadata search indexes"
 msgstr "메타데이터 검색 인덱스 빌드 중"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Built in"
-msgstr ""
+msgstr "내장"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4211,8 +4220,9 @@ msgid "Change own content rating"
 msgstr "콘텐츠 등급 변경"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Change the chapter language of {label}"
-msgstr ""
+msgstr "{label}의 챕터 언어 변경"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -4321,12 +4331,14 @@ msgid "Chapter file format"
 msgstr "챕터 파일 형식"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Chapter language"
-msgstr ""
+msgstr "챕터 언어"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Chapter language for {label}"
-msgstr ""
+msgstr "{label}의 챕터 언어"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -8393,8 +8405,9 @@ msgid "Include subtags when adding"
 msgstr "추가할 때 하위 태그 포함"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Include the subpath if Suwayomi runs under one."
-msgstr ""
+msgstr "Suwayomi가 하위 경로에서 실행된다면 하위 경로를 포함하세요."
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -8814,8 +8827,9 @@ msgid "Languages"
 msgstr "언어"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Languages of {siteName}"
-msgstr ""
+msgstr "{siteName}의 언어"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9736,8 +9750,9 @@ msgid "Match mode for {label}"
 msgstr "{label}의 일치 방식"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Match Suwayomi's own auth mode setting."
-msgstr ""
+msgstr "Suwayomi의 인증 방식 설정과 같은 값을 고르세요."
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -10715,8 +10730,9 @@ msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarr에 설정된 인덱서가 없습니다."
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "No language matches"
-msgstr ""
+msgstr "일치하는 언어가 없습니다"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10724,12 +10740,14 @@ msgid "No library folder yet. Series need one to download into."
 msgstr "라이브러리 폴더가 없습니다. 시리즈를 다운로드하려면 폴더가 필요합니다."
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "no longer in Suwayomi"
-msgstr ""
+msgstr "Suwayomi에 더 이상 없음"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "No longer in Suwayomi"
-msgstr ""
+msgstr "Suwayomi에 더 이상 없음"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -11121,8 +11139,9 @@ msgid "Not connected"
 msgstr "연결되지 않음"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Not connected."
-msgstr ""
+msgstr "연결되지 않았습니다."
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -11948,8 +11967,9 @@ msgid "Optional, and yours to set. Maki never adds one for you."
 msgstr "선택 사항이며 직접 설정합니다. Maki가 대신 추가하지 않습니다."
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Optional. Point Maki at a Suwayomi server to use the sources of the extensions installed there, alongside Maki's own. Extensions are installed and configured in Suwayomi; Maki only reads from it."
-msgstr ""
+msgstr "선택 사항입니다. Maki가 Suwayomi 서버를 가리키면 그곳에 설치된 확장의 소스를 Maki 자체 소스와 함께 쓸 수 있습니다. 확장은 Suwayomi에서 설치하고 설정하며, Maki는 거기서 읽기만 합니다."
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -12276,12 +12296,14 @@ msgid "Phone reader"
 msgstr "휴대폰 리더"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick a chapter language first"
-msgstr ""
+msgstr "먼저 챕터 언어를 고르세요"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick a language"
-msgstr ""
+msgstr "언어 고르기"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -12305,8 +12327,9 @@ msgid "Pick another default profile first"
 msgstr "먼저 다른 기본 프로필을 고르세요"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick languages"
-msgstr ""
+msgstr "언어 고르기"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -12609,8 +12632,9 @@ msgid "Protected from upgrades"
 msgstr "업그레이드로부터 보호됨"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Provider"
-msgstr ""
+msgstr "제공자"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -13930,20 +13954,24 @@ msgid "Reset zoom"
 msgstr "확대/축소 초기화"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Chapter column"
-msgstr ""
+msgstr "챕터 열 크기 조정"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Released column"
-msgstr ""
+msgstr "공개일 열 크기 조정"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Source column"
-msgstr ""
+msgstr "소스 열 크기 조정"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Status column"
-msgstr ""
+msgstr "상태 열 크기 조정"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -14474,8 +14502,9 @@ msgid "Saved filters"
 msgstr "저장된 필터"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Saved. Leave empty to keep it."
-msgstr ""
+msgstr "저장됨. 비워 두면 기존 값을 유지합니다."
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14776,8 +14805,9 @@ msgid "Search chapters"
 msgstr "챕터 검색"
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "Search failed"
-msgstr ""
+msgstr "검색 실패"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15346,8 +15376,9 @@ msgid "Setup steps"
 msgstr "설정 단계"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Several languages, pick one"
-msgstr ""
+msgstr "여러 언어 중 하나를 고르세요"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -15760,8 +15791,9 @@ msgid "So there is always something to look back at where you stopped."
 msgstr "그래서 멈춘 곳을 언제든 다시 볼 수 있습니다."
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "Some sources could not be searched"
-msgstr ""
+msgstr "일부 소스를 검색하지 못했습니다"
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -16201,17 +16233,20 @@ msgid "Supernatural"
 msgstr "초자연"
 
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Suwayomi"
-msgstr ""
+msgstr "Suwayomi"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
-msgstr ""
+msgstr "Suwayomi는 이 사이트의 언어마다 별도의 소스를 두고, 각 소스는 자체 챕터를 가집니다. 추가하는 시리즈마다 고른 언어를 모두 검색하며, 각 언어는 우선순위 목록에서 자리를 따로 얻습니다."
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
-msgstr ""
+msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567, 확장, 확장 소스, 소스 추가"
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -16805,8 +16840,9 @@ msgid "The specific things that keep coming back in your library, each with more
 msgstr "라이브러리에서 계속 다시 나타나는 구체적인 항목이며, 각각 옆에 비슷한 항목이 더 표시됩니다."
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "The Suwayomi sources below are the ones it listed last time."
-msgstr ""
+msgstr "아래 Suwayomi 소스는 Suwayomi가 지난번에 목록으로 알려준 것입니다."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -17629,8 +17665,9 @@ msgid "Typical sitting"
 msgstr "일반적인 독서 시간"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "UI login (v2.2 or later)"
-msgstr ""
+msgstr "UI 로그인 (v2.2 이상)"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy

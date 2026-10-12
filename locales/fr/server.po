@@ -2009,59 +2009,70 @@ msgstr "utcOffsetMinutes est hors limites"
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: Unknown Suwayomi sign-in mode. Use none, basic or uilogin.
+#, fuzzy
 msgid "error.suwayomi.authModeInvalid"
-msgstr ""
+msgstr "Mode de connexion Suwayomi inconnu. Utilisez none, basic ou uilogin."
 
 #. {source} is a Suwayomi source's name and is never translated.
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: {source} publishes in one language, so its chapters are always filed under that one.
+#, fuzzy
 msgid "error.suwayomi.chapterLanguageFixed"
-msgstr ""
+msgstr "{source} publie dans une seule langue, ses chapitres sont donc toujours classés sous celle-ci."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: "{language}" is not a language code, such as en or pt-BR.
+#, fuzzy
 msgid "error.suwayomi.chapterLanguageInvalid"
-msgstr ""
+msgstr "« {language} » n'est pas un code de langue, comme en ou pt-BR."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: {source} publishes several languages. Pick the language its chapters are in.
+#, fuzzy
 msgid "error.suwayomi.chapterLanguageRequired"
-msgstr ""
+msgstr "{source} publie plusieurs langues. Choisissez la langue de ses chapitres."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: Suwayomi refused the username or password.
+#, fuzzy
 msgid "error.suwayomi.loginFailed"
-msgstr ""
+msgstr "Suwayomi a refusé le nom d'utilisateur ou le mot de passe."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: Suwayomi did not answer. Check the URL and that the server is running.
+#, fuzzy
 msgid "error.suwayomi.noResponse"
-msgstr ""
+msgstr "Suwayomi n'a pas répondu. Vérifiez l'URL et que le serveur est lancé."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: Suwayomi is not set up yet. Enter its URL first.
+#, fuzzy
 msgid "error.suwayomi.notConfigured"
-msgstr ""
+msgstr "Suwayomi n'est pas encore configuré. Saisissez d'abord son URL."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: Suwayomi answered with a redirect. If it runs under a subpath, include the subpath in the URL.
+#, fuzzy
 msgid "error.suwayomi.redirected"
-msgstr ""
+msgstr "Suwayomi a répondu par une redirection. S'il fonctionne sous un sous-chemin, incluez ce sous-chemin dans l'URL."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: Suwayomi has no source with id {id}.
+#, fuzzy
 msgid "error.suwayomi.unknownSource"
-msgstr ""
+msgstr "Suwayomi n'a aucune source avec l'identifiant {id}."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: This sign-in mode needs a username.
+#, fuzzy
 msgid "error.suwayomi.usernameRequired"
-msgstr ""
+msgstr "Ce mode de connexion nécessite un nom d'utilisateur."
 
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 #. English: Suwayomi {version} is too old for this sign-in mode. Maki needs {minimum} or later.
+#, fuzzy
 msgid "error.suwayomi.versionUnsupported"
-msgstr ""
+msgstr "Suwayomi {version} est trop ancien pour ce mode de connexion. Maki nécessite la version {minimum} ou ultérieure."
 
 #. {label} is the tag name the user typed in.
 #: src/Maki.Api/Controllers/TagsController.cs
@@ -3490,25 +3501,29 @@ msgstr "{series} : aucune source ne correspondait, associez-en une manuellement 
 
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: Sources matched, some could not be searched
+#, fuzzy
 msgid "inbox.sourceMatch.matchedSomeFailed.title"
-msgstr ""
+msgstr "Sources trouvées, certaines n'ont pas pu être recherchées"
 
 #. {sources} and {failed} are comma-separated lists of site names, none of which are translated.
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: {series}: matched {sources}. Could not search {failed}; match again once they are back.
+#, fuzzy
 msgid "inbox.sourceMatch.matchedSomeFailed.body"
-msgstr ""
+msgstr "{series} : correspondances trouvées sur {sources}. Impossible de rechercher {failed} ; relancez la correspondance dès qu'elles seront de nouveau disponibles."
 
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: Sources could not be searched
+#, fuzzy
 msgid "inbox.sourceMatch.failed.title"
-msgstr ""
+msgstr "Les sources n'ont pas pu être recherchées"
 
 #. {failed} is a comma-separated list of site names, none of which are translated.
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: {series}: nothing matched, and {failed} could not be searched. Match again once they are back.
+#, fuzzy
 msgid "inbox.sourceMatch.failed.body"
-msgstr ""
+msgstr "{series} : aucune correspondance, et {failed} n'ont pas pu être recherchées. Relancez la correspondance dès qu'elles seront de nouveau disponibles."
 
 #: src/Maki.Api/Services/ImportListService.cs
 #. English: Import list finished
@@ -4661,13 +4676,15 @@ msgstr "Les contrôles d'intégrité de la bibliothèque n'ont pas pu se termine
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {source} is installed in Suwayomi again.
+#, fuzzy
 msgid "health.check.suwayomiSourceInstalled"
-msgstr ""
+msgstr "La source {source} est de nouveau installée dans Suwayomi."
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {source} is no longer installed in Suwayomi. Reinstall its extension there, or remove the source in Maki's Suwayomi settings.
+#, fuzzy
 msgid "health.check.suwayomiSourceMissing"
-msgstr ""
+msgstr "La source {source} n'est plus installée dans Suwayomi. Réinstallez son extension là-bas, ou supprimez la source dans les paramètres Suwayomi de Maki."
 
 #. {path} is a directory on disk and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs

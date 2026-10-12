@@ -774,8 +774,9 @@ msgid "{failedCount, plural, one {# could not be deleted} other {# could not be 
 msgstr "{failedCount, plural, one {# tanesi silinemedi} other {# tanesi silinemedi}}"
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "{failedNames} did not answer, so they may still carry this series. Run Auto-match again once they are back."
-msgstr ""
+msgstr "{failedNames} yanıt vermedi, bu yüzden bu seriyi hâlâ listeliyor olabilirler. Geri döndüklerinde Otomatik eşleştir'i yeniden çalıştırın."
 
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ActivityPage.tsx
@@ -899,8 +900,9 @@ msgid "{inLibraryCount, plural, one {Show # series already in the library} other
 msgstr "{inLibraryCount, plural, one {Kitaplıktaki # seriyi göster} other {Kitaplıktaki # seriyi göster}}"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "{installed, plural, =0 {No Suwayomi sources yet.} one {# Suwayomi source, {inUse} switched on.} other {# Suwayomi sources, {inUse} switched on.}}"
-msgstr ""
+msgstr "{installed, plural, =0 {Henüz Suwayomi kaynağı yok.} one {# Suwayomi kaynağı, {inUse} etkin.} other {# Suwayomi kaynağı, {inUse} etkin.}}"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -939,8 +941,9 @@ msgid "{label} already has a file. Compare the two before deciding: importing th
 msgstr "{label} zaten bir dosyaya sahip. Karar vermeden önce ikisini karşılaştırın: bu arşivi içe aktarmak onu mevcut olanın yanına bağlar, yerini almaz. Bunları değiştirmek için önce istemediğiniz dosyayı silin."
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{label} mixes languages, and Suwayomi does not say which one a chapter is in. Every chapter from it is filed under the language you pick here."
-msgstr ""
+msgstr "{label} birden fazla dilde yayımlıyor, ama Suwayomi bir bölümün hangi dilde olduğunu söylemiyor. Ondan gelen her bölüm buradan seçtiğiniz dil altında kaydedilir."
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -978,8 +981,9 @@ msgid "{languageCount, plural, one {Covers # language} other {Covers # languages
 msgstr "{languageCount, plural, one {# dili kapsar} other {# dili kapsar}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{languagesOn, plural, =0 {No languages on} one {# language on} other {# languages on}}"
-msgstr ""
+msgstr "{languagesOn, plural, =0 {Hiçbir dil etkin değil} one {# dil etkin} other {# dil etkin}}"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -1555,8 +1559,9 @@ msgid "{shown, plural, one {Showing the first # result. Search to narrow it down
 msgstr "{shown, plural, one {İlk # sonuç gösteriliyor. Aramayı daralt.} other {İlk # sonuç gösteriliyor. Aramayı daralt.}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "{siteName} languages"
-msgstr ""
+msgstr "{siteName} dilleri"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -1579,8 +1584,9 @@ msgid "{source} {tierLabel} {medianWidth}px ({score})"
 msgstr "{source} {tierLabel} {medianWidth}px ({score})"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "{sourceCount, plural, one {Suwayomi {version} answered with # source installed.} other {Suwayomi {version} answered with # sources installed.}}"
-msgstr ""
+msgstr "{sourceCount, plural, one {Suwayomi {version}, yüklü # kaynakla yanıt verdi.} other {Suwayomi {version}, yüklü # kaynakla yanıt verdi.}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2319,8 +2325,9 @@ msgid "A new system health problem was detected."
 msgstr "Yeni bir sistem sağlığı sorunu tespit edildi."
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "A new URL clears the saved password, so enter it again."
-msgstr ""
+msgstr "Yeni bir URL kayıtlı parolayı siler, bu yüzden parolayı yeniden girin."
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3623,8 +3630,9 @@ msgid "Based on your recent activity"
 msgstr "Son etkinliğinize göre"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Basic auth"
-msgstr ""
+msgstr "Temel kimlik doğrulama"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3809,8 +3817,9 @@ msgid "Building metadata search indexes"
 msgstr "Meta veri arama dizinleri oluşturuluyor"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Built in"
-msgstr ""
+msgstr "Yerleşik"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -4212,8 +4221,9 @@ msgid "Change own content rating"
 msgstr "Kendi içerik derecelendirmesini değiştir"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Change the chapter language of {label}"
-msgstr ""
+msgstr "{label} bölüm dilini değiştir"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -4322,12 +4332,14 @@ msgid "Chapter file format"
 msgstr "Bölüm dosya biçimi"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Chapter language"
-msgstr ""
+msgstr "Bölüm dili"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Chapter language for {label}"
-msgstr ""
+msgstr "{label} için bölüm dili"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -8394,8 +8406,9 @@ msgid "Include subtags when adding"
 msgstr "Eklerken alt etiketleri de dahil et"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Include the subpath if Suwayomi runs under one."
-msgstr ""
+msgstr "Suwayomi bir alt yol altında çalışıyorsa alt yolu da ekleyin."
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -8815,8 +8828,9 @@ msgid "Languages"
 msgstr "Diller"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Languages of {siteName}"
-msgstr ""
+msgstr "{siteName} dilleri"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9737,8 +9751,9 @@ msgid "Match mode for {label}"
 msgstr "{label} için eşleştirme modu"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Match Suwayomi's own auth mode setting."
-msgstr ""
+msgstr "Suwayomi'nin kendi kimlik doğrulama modu ayarını kullan."
 
 #: src/theme-context.tsx
 #, fuzzy
@@ -10716,8 +10731,9 @@ msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarr'da yapılandırılmış dizinleyici yok."
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "No language matches"
-msgstr ""
+msgstr "Eşleşen dil yok"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10725,12 +10741,14 @@ msgid "No library folder yet. Series need one to download into."
 msgstr "Henüz kitaplık klasörü yok. Serilerin indirilebilmesi için bir klasör gerekir."
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "no longer in Suwayomi"
-msgstr ""
+msgstr "artık Suwayomi'de yok"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "No longer in Suwayomi"
-msgstr ""
+msgstr "Artık Suwayomi'de yok"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -11122,8 +11140,9 @@ msgid "Not connected"
 msgstr "Bağlı değil"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Not connected."
-msgstr ""
+msgstr "Bağlı değil."
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -11949,8 +11968,9 @@ msgid "Optional, and yours to set. Maki never adds one for you."
 msgstr "İsteğe bağlıdır ve ayarlamak size kalmış. Maki sizin için asla bir tane eklemez."
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Optional. Point Maki at a Suwayomi server to use the sources of the extensions installed there, alongside Maki's own. Extensions are installed and configured in Suwayomi; Maki only reads from it."
-msgstr ""
+msgstr "İsteğe bağlı. Maki'yi bir Suwayomi sunucusuna yönlendirin; orada yüklü eklentilerin kaynakları Maki'nin kendi kaynaklarının yanında kullanılır. Eklentiler Suwayomi'de yüklenir ve yapılandırılır; Maki yalnızca oradan okur."
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -12277,12 +12297,14 @@ msgid "Phone reader"
 msgstr "Telefon okuyucu"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick a chapter language first"
-msgstr ""
+msgstr "Önce bir bölüm dili seçin"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick a language"
-msgstr ""
+msgstr "Bir dil seçin"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -12306,8 +12328,9 @@ msgid "Pick another default profile first"
 msgstr "Önce başka bir varsayılan profil seçin"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Pick languages"
-msgstr ""
+msgstr "Diller seçin"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -12610,8 +12633,9 @@ msgid "Protected from upgrades"
 msgstr "Yükseltmelerden korunuyor"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Provider"
-msgstr ""
+msgstr "Sağlayıcı"
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -13931,20 +13955,24 @@ msgid "Reset zoom"
 msgstr "Yakınlaştırmayı sıfırla"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Chapter column"
-msgstr ""
+msgstr "Bölüm sütununu yeniden boyutlandır"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Released column"
-msgstr ""
+msgstr "Yayın durumu sütununu yeniden boyutlandır"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Source column"
-msgstr ""
+msgstr "Kaynak sütununu yeniden boyutlandır"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Resize Status column"
-msgstr ""
+msgstr "Durum sütununu yeniden boyutlandır"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -14475,8 +14503,9 @@ msgid "Saved filters"
 msgstr "Kaydedilen filtreler"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "Saved. Leave empty to keep it."
-msgstr ""
+msgstr "Kaydedildi. Mevcut değeri korumak için boş bırakın."
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14777,8 +14806,9 @@ msgid "Search chapters"
 msgstr "Bölümlerde ara"
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "Search failed"
-msgstr ""
+msgstr "Arama başarısız oldu"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15347,8 +15377,9 @@ msgid "Setup steps"
 msgstr "Kurulum adımları"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Several languages, pick one"
-msgstr ""
+msgstr "Birden çok dil var, birini seçin"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -15761,8 +15792,9 @@ msgid "So there is always something to look back at where you stopped."
 msgstr "Böylece bıraktığınız yere dönüp bakacak bir şey her zaman olur."
 
 #: src/components/SourceMappingsSection.tsx
+#, fuzzy
 msgid "Some sources could not be searched"
-msgstr ""
+msgstr "Bazı kaynaklarda arama yapılamadı"
 
 #: src/api/inbox.ts
 #, fuzzy
@@ -16202,17 +16234,20 @@ msgid "Supernatural"
 msgstr "Doğaüstü"
 
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "Suwayomi"
-msgstr ""
+msgstr "Suwayomi"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "Suwayomi has a separate source for each language of this site, with its own chapters. Every language you pick is searched for each series you add and gets its own place in the priority list."
-msgstr ""
+msgstr "Suwayomi'de bu sitenin her dili için ayrı bir kaynak vardır ve kendi bölümleri olur. Seçtiğiniz her dil, eklediğiniz her seride aranır ve öncelik listesinde kendi yerini alır."
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+#, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
-msgstr ""
+msgstr "suwayomi, tachidesk, mihon, tachiyomi, eklentiler, eklenti kaynakları, daha fazla kaynak, graphql, 4567"
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -16806,8 +16841,9 @@ msgid "The specific things that keep coming back in your library, each with more
 msgstr "Kitaplığınızda tekrar tekrar karşınıza çıkan belirli şeyler, her birinin yanında benzerlerinden daha fazlasıyla."
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#, fuzzy
 msgid "The Suwayomi sources below are the ones it listed last time."
-msgstr ""
+msgstr "Aşağıdaki Suwayomi kaynakları, Suwayomi'nin son seferde listelediği kaynaklardır."
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -17630,8 +17666,9 @@ msgid "Typical sitting"
 msgstr "Tipik oturum"
 
 #: src/pages/settings/SuwayomiCards.tsx
+#, fuzzy
 msgid "UI login (v2.2 or later)"
-msgstr ""
+msgstr "UI girişi (v2.2 veya sonrası)"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
