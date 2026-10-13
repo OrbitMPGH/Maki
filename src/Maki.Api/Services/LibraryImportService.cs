@@ -1000,6 +1000,9 @@ public class LibraryImportService(
                 FilesAdded: added, LinkPending: true);
         }
 
+        operations.PreviousFileRemovedAt = await db.Chapters
+            .Where(c => c.SeriesId == series.Id && c.FileRemovedAt != null)
+            .ToDictionaryAsync(c => c.Id, c => c.FileRemovedAt!.Value, ct);
         var (cbzFiles, unreadable, built) = MaterializeComics(targetDir);
         var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(

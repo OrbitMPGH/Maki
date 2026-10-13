@@ -750,6 +750,50 @@ public class LibraryImportUndoTests : IDisposable
         Assert.Equal(built, ImportBuiltFile.DigestOf(path));
     }
 
+    [Fact]
+    public async Task Undo_into_an_existing_series_marks_chapters_removed_again_that_were_removed_before()
+    {
+        var rootId = SeedRoot();
+        var removedAt = new DateTime(2026, 9, 1, 12, 0, 0, DateTimeKind.Utc);
+        await using (var db = _db.NewContext())
+        {
+            var series = new Series
+            {
+                Title = "Chainsaw Man", SortTitle = "Chainsaw Man", FolderName = "Chainsaw Man",
+                RootFolderId = rootId, MangaBakaId = 42,
+            };
+            db.Series.Add(series);
+            await db.SaveChangesAsync();
+            db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 1, Language = "en", FileRemovedAt = removedAt });
+            db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 2, Language = "en" });
+            await db.SaveChangesAsync();
+        }
+
+        Directory.CreateDirectory(At("Chainsaw Man"));
+        WriteZip(At("cm raws", "Chainsaw Man 001.cbz"));
+        WriteZip(At("cm raws", "Chainsaw Man 002.cbz"));
+        await using (var db = _db.NewContext())
+        {
+            var result = await ImportService(db).ImportAsync(
+                rootId, new ImportRequestItem("cm raws", "42"), updateComicInfo: false, operationId: "batch-1");
+            Assert.True(result.Success, result.Error);
+        }
+
+        await using (var db = _db.NewContext())
+        {
+            Assert.Null((await db.Chapters.SingleAsync(c => c.Number == 1)).FileRemovedAt);
+        }
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(outcome.Undone, outcome.Error);
+        await using var check = _db.NewContext();
+        var first = await check.Chapters.SingleAsync(c => c.Number == 1);
+        Assert.Null(first.ChapterFileId);
+        Assert.Equal(removedAt, DateTime.SpecifyKind(first.FileRemovedAt!.Value, DateTimeKind.Utc));
+        Assert.Null((await check.Chapters.SingleAsync(c => c.Number == 2)).FileRemovedAt);
+    }
+
     private async Task EditOperationsAsync(Action<ImportOperations> edit)
     {
         await using var db = _db.NewContext();

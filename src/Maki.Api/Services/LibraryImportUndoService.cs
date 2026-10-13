@@ -264,6 +264,10 @@ public class LibraryImportUndoService(
             foreach (var chapter in linked)
             {
                 chapter.ChapterFileId = null;
+                if (operations.PreviousFileRemovedAt.TryGetValue(chapter.Id, out var removedAt))
+                {
+                    chapter.FileRemovedAt = removedAt;
+                }
             }
 
             var files = await db.ChapterFiles

@@ -189,6 +189,13 @@ public sealed class ImportOperations
 
     public int? PreviousRootFolderId { get; set; }
 
+    /// <summary>
+    /// For an existing series, the chapters whose file had been removed on purpose before the
+    /// import linked one to them (linking clears <c>Chapter.FileRemovedAt</c>). Undo puts the date
+    /// back, so those chapters read as removed again instead of missing and nothing re-downloads them.
+    /// </summary>
+    public Dictionary<int, DateTime> PreviousFileRemovedAt { get; set; } = [];
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
