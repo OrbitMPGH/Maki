@@ -38,4 +38,20 @@ public class SourceFailureStreaksTests
 
         Assert.False(streaks.IsPersistent("weebcentral"));
     }
+
+    [Fact]
+    public void Persistent_failures_stop_blocking_the_alert_only_when_another_source_answered()
+    {
+        var streaks = new SourceFailureStreaks();
+        for (var i = 0; i < SourceFailureStreaks.Threshold; i++)
+        {
+            streaks.Record([], ["mangadex", "weebcentral"]);
+        }
+
+        // Everything failing at once (FlareSolverr down) says nothing about the series.
+        Assert.False(streaks.AllowsManualMatchAlert([], ["mangadex", "weebcentral"]));
+        Assert.True(streaks.AllowsManualMatchAlert(["comick"], ["mangadex", "weebcentral"]));
+        Assert.False(streaks.AllowsManualMatchAlert(["comick"], ["mangadex", "batoto"]));
+        Assert.True(streaks.AllowsManualMatchAlert(["comick"], []));
+    }
 }

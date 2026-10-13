@@ -279,7 +279,7 @@ public class SourceMatchWorkerHostedService(
         // "Link one by hand" would be wrong while sources that may carry it could not be asked, but a
         // source failing every search (an uninstalled extension, a site that needs FlareSolverr) would
         // then hold the alert back for every series, so one that keeps failing no longer counts.
-        if (mapped.Count == 0 && !failed && unsearched.All(failureStreaks.IsPersistent))
+        if (mapped.Count == 0 && !failed && failureStreaks.AllowsManualMatchAlert(progress.Answered, unsearched))
         {
             await NotifyManualMatchNeededAsync(
                 scope.ServiceProvider.GetRequiredService<NotificationService>(),
@@ -570,4 +570,12 @@ internal sealed class SourceFailureStreaks
     }
 
     public bool IsPersistent(string source) => _streaks.TryGetValue(source, out var n) && n >= Threshold;
+
+    /// <summary>
+    /// Whether a run that matched nothing may ask for a manual match: every source answered, or the
+    /// ones that did not are down for good and at least one other answered. With nothing answering at
+    /// all (FlareSolverr down during a big import) the run says nothing about the series.
+    /// </summary>
+    public bool AllowsManualMatchAlert(IEnumerable<string> answered, IReadOnlyCollection<string> unsearched) =>
+        unsearched.Count == 0 || (answered.Any() && unsearched.All(IsPersistent));
 }
