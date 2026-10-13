@@ -56,6 +56,15 @@ public class RefreshMonitoredSeriesJobTests : IDisposable
     }
 
     [Fact]
+    public async Task Library_import_still_owing_its_link_is_not_a_candidate()
+    {
+        var mapping = new SourceMapping { SourceName = "fake", SourceSeriesId = "s", Url = "u", Enabled = true };
+        var id = _db.SeedSeries(configure: s => s.PendingImportLink = PendingImportLink.LinkAndComicInfo, mappings: mapping);
+
+        Assert.DoesNotContain(id, await Refreshable());
+    }
+
+    [Fact]
     public async Task Completed_and_caught_up_is_skipped()
     {
         var id = SeedWithChapters(SeriesStatus.Completed, totalChapters: 100, enabledMapping: true, 99m, 100m);

@@ -170,13 +170,15 @@ public class SmartDownloadJob(
     /// <item>Someone has: due once the downloaded, unread chapters past the furthest reader number
     /// <paramref name="limit"/> or fewer, including none at all.</item>
     /// </list>
+    /// A library import still owing its link stage is never due: its files are on disk but no
+    /// chapter points at them yet, so it reads as an empty series and would download what it has.
     /// </summary>
     internal static async Task<List<TopUp>> SeriesNeedingTopUpAsync(
         MakiDbContext db, int limit, CancellationToken ct)
     {
         var smartSeries = await db.Series
             .AsNoTracking()
-            .Where(s => s.MonitorNewItems == NewChapterMonitorMode.Smart)
+            .Where(s => s.MonitorNewItems == NewChapterMonitorMode.Smart && s.PendingImportLink == PendingImportLink.None)
             .ToListAsync(ct);
         if (smartSeries.Count == 0)
         {

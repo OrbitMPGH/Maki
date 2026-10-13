@@ -81,6 +81,15 @@ public class SeriesNeedingTopUpTests : IDisposable
     }
 
     [Fact]
+    public async Task A_library_import_still_owing_its_link_is_not_due()
+    {
+        var id = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart,
+            configure: s => s.PendingImportLink = PendingImportLink.Link);
+
+        Assert.DoesNotContain(id, await Due());
+    }
+
+    [Fact]
     public async Task Due_with_reading_and_nothing_downloaded_starting_after_the_reader()
     {
         var id = _db.SeedSeries(monitor: NewChapterMonitorMode.Smart);

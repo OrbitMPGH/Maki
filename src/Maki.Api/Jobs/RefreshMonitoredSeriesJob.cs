@@ -208,12 +208,14 @@ public class RefreshMonitoredSeriesJob(
     /// list specials and one-shots MangaBaka doesn't count, so a count comparison reads as "ahead"
     /// (244 vs 240) on a series that is actually exactly in step.
     /// <paramref name="disabledSources"/> are the globally switched-off sources; their mappings
-    /// don't count as enabled, so a series left with none is not refreshed.
+    /// don't count as enabled, so a series left with none is not refreshed. A library import still
+    /// owing its link stage waits too: until it links, every chapter it already has reads as missing.
     /// </summary>
     internal static Task<List<int>> RefreshableSeriesIdsAsync(
         MakiDbContext db, List<string> disabledSources, CancellationToken ct = default) =>
         db.Series
             .Where(s => s.SourceMappings.Any(m => m.Enabled && !disabledSources.Contains(m.SourceName)))
+            .Where(s => s.PendingImportLink == PendingImportLink.None)
             .Where(s => s.Status != SeriesStatus.Completed
                         || s.TotalChapters == null
                         || !db.Chapters.Where(c => c.SeriesId == s.Id).Any(c => c.Number >= s.TotalChapters))
