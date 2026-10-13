@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, plural } from '@lingui/core/macro'
@@ -505,7 +505,8 @@ export function CatalogueFilters({
 /**
  * Reset/Apply pair, so the callers agree on wording and disabled state. "Save as default" only
  * appears where there is somewhere to save to: the rail modal's filters are scoped to the rail
- * that is open, so a default there would mean nothing.
+ * that is open, so a default there would mean nothing. Without `onApply` there is no Apply, for a
+ * panel that applies itself through {@link useLiveApply}.
  */
 export function CatalogueFilterActions({
   isCustomized,
@@ -517,7 +518,7 @@ export function CatalogueFilterActions({
 }: {
   isCustomized: boolean
   onReset: () => void
-  onApply: () => void
+  onApply?: () => void
   onSaveAsDefault?: () => void
   saving?: boolean
   /** Sits on the left: saved filters, the never-show list, the live count. */
@@ -548,10 +549,36 @@ export function CatalogueFilterActions({
         <Button variant="subtle" size="xs" onClick={onReset} disabled={!isCustomized}>
           {t`Reset`}
         </Button>
-        <Button size="xs" onClick={onApply}>
-          {t`Apply`}
-        </Button>
+        {onApply && (
+          <Button size="xs" onClick={onApply}>
+            {t`Apply`}
+          </Button>
+        )}
       </Group>
     </Group>
   )
+}
+
+/** Top-level keys sorted, so two builds of one filter compare equal whatever order set them. */
+function filterKey(f: RecommendationFilters): string {
+  return JSON.stringify(Object.fromEntries(Object.entries(f).sort(([a], [b]) => a.localeCompare(b))))
+}
+
+/**
+ * Applies the panel a beat after it stops changing. A slider drag would otherwise be one
+ * full-catalogue query per step. Reset, presets and the saved default still set `applied`
+ * themselves, at once, so a restored filter never runs one stale query first.
+ */
+export function useLiveApply(
+  build: () => RecommendationFilters,
+  setApplied: Dispatch<SetStateAction<RecommendationFilters>>,
+) {
+  const key = filterKey(build())
+  useEffect(() => {
+    const id = window.setTimeout(
+      () => setApplied((prev) => (filterKey(prev) === key ? prev : (JSON.parse(key) as RecommendationFilters))),
+      400,
+    )
+    return () => window.clearTimeout(id)
+  }, [key, setApplied])
 }

@@ -4356,7 +4356,6 @@ msgstr "변경됨"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "변경 사항은 이 패널 뒤의 그리드에 즉시 적용됩니다."
 
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Changes apply to this series only."
@@ -15791,7 +15790,6 @@ msgstr "읽기 연속 기록 표시"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "교체된 파일 표시"
-
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

@@ -3553,7 +3553,6 @@ msgstr "Changed"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "Changes apply straight to the grid behind this panel."
 
-
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Changes apply to this series only."
 msgstr "Changes apply to this series only."
@@ -12858,7 +12857,6 @@ msgstr "Show reading streaks"
 #: src/pages/ActivityPage.tsx
 msgid "Show replaced files"
 msgstr "Show replaced files"
-
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

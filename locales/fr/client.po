@@ -4357,7 +4357,6 @@ msgstr "Modifié"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "Les modifications s'appliquent directement à la grille derrière ce panneau."
 
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Changes apply to this series only."
@@ -15792,7 +15791,6 @@ msgstr "Afficher les séries de jours de lecture"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "Afficher les fichiers remplacés"
-
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

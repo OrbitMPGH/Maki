@@ -4356,7 +4356,6 @@ msgstr "変更済み"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "変更はこのパネルの背後にあるグリッドにすぐ反映されます。"
 
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Changes apply to this series only."
@@ -15791,7 +15790,6 @@ msgstr "読書連続記録を表示"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "置き換えたファイルを表示"
-
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

@@ -4356,7 +4356,6 @@ msgstr "已更改"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "更改会直接应用到此面板后面的网格。"
 
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Changes apply to this series only."
@@ -15791,7 +15790,6 @@ msgstr "显示阅读连续记录"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "显示被替换的文件"
-
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"
