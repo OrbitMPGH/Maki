@@ -106,7 +106,7 @@ public class CoverService(
 
         var target = CoverPathFor(seriesId);
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-        var temp = target + ".tmp";
+        var temp = $"{target}.{Guid.NewGuid():N}.tmp";
         try
         {
             await image.SaveAsync(temp, new JpegEncoder { Quality = 90 }, CancellationToken.None);

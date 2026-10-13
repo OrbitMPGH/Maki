@@ -61,4 +61,19 @@ public class CoverServiceStoreTests : IDisposable
         var pixel = poster[10, 10];
         Assert.True(pixel.G > 150 && pixel.R < 60, $"expected the green first frame, got {pixel}");
     }
+
+    [Fact]
+    public async Task Concurrent_uploads_for_one_series_do_not_collide_on_the_temp_file()
+    {
+        var uploads = Enumerable.Range(0, 8).Select(async i =>
+        {
+            await using var gif = AnimatedGif(1, new Rgba32((byte)(i * 30), 100, 100));
+            return await _covers.StoreUploadedCoverAsync(9, gif);
+        });
+
+        var paths = await Task.WhenAll(uploads);
+
+        Assert.All(paths, p => Assert.Equal(_covers.CoverPathFor(9), p));
+        Assert.Equal(["cover.jpg"], Directory.GetFiles(Path.GetDirectoryName(paths[0])!).Select(f => Path.GetFileName(f)));
+    }
 }
