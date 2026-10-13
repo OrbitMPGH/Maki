@@ -418,6 +418,38 @@ public static class EmbeddingMath
     }
 
     /// <summary>
+    /// One candidate's channel values, before <see cref="HybridScore"/> collapses them into a
+    /// number. Collected only when a caller asks for it, which in practice means
+    /// <c>distribution/fit-weights.cs</c>: fitting the coefficients needs the terms unblended, and
+    /// recomputing them outside the scorer would be a second copy of every channel.
+    /// </summary>
+    /// <param name="Avoid">
+    /// The BLENDED avoid score, which is what the scorer subtracts.
+    /// </param>
+    /// <param name="AvoidTag">
+    /// The contrastive tag half on its own, carried beside the blend so a fit can see which of the
+    /// two halves a coefficient it likes is really following.
+    /// </param>
+    /// <param name="Percentile">
+    /// Popularity percentile, 0 = most popular. Carried so a fit can see whether a coefficient it
+    /// likes is really just fame, which is the failure every table in this codebase is read against.
+    /// </param>
+    public readonly record struct CandidateFeatures(
+        long Id,
+        double Semantic,
+        double Genre,
+        double Tag,
+        double Author,
+        double Quality,
+        double Graph,
+        double CoRead,
+        double Taste,
+        double Distinct,
+        double Percentile,
+        double Avoid,
+        double AvoidTag = 0);
+
+    /// <summary>
     /// Weights for the hybrid score. Semantic similarity leads; genre/tag/author/quality
     /// refine and keep it grounded; obscurity biases toward mainstream or hidden gems. Tunable.
     /// <para>
@@ -463,38 +495,6 @@ public static class EmbeddingMath
     /// evidence, so a missing artifact costs nothing.
     /// </para>
     /// </summary>
-    /// <summary>
-    /// One candidate's channel values, before <see cref="HybridScore"/> collapses them into a
-    /// number. Collected only when a caller asks for it, which in practice means
-    /// <c>distribution/fit-weights.cs</c>: fitting the coefficients needs the terms unblended, and
-    /// recomputing them outside the scorer would be a second copy of every channel.
-    /// </summary>
-    /// <param name="Avoid">
-    /// The BLENDED avoid score, which is what the scorer subtracts.
-    /// </param>
-    /// <param name="AvoidTag">
-    /// The contrastive tag half on its own, carried beside the blend so a fit can see which of the
-    /// two halves a coefficient it likes is really following.
-    /// </param>
-    /// <param name="Percentile">
-    /// Popularity percentile, 0 = most popular. Carried so a fit can see whether a coefficient it
-    /// likes is really just fame, which is the failure every table in this codebase is read against.
-    /// </param>
-    public readonly record struct CandidateFeatures(
-        long Id,
-        double Semantic,
-        double Genre,
-        double Tag,
-        double Author,
-        double Quality,
-        double Graph,
-        double CoRead,
-        double Taste,
-        double Distinct,
-        double Percentile,
-        double Avoid,
-        double AvoidTag = 0);
-
     public sealed record Weights(
         double Semantic = 3.0,
         double Genre = 1.0,

@@ -334,6 +334,27 @@ public class OidcTests
     }
 
     [Fact]
+    public async Task ADisabledAccountMatchedByEmailIsRefusedWithoutBeingLinked()
+    {
+        using var fixture = new TestDb();
+        var existing = fixture.SeedUser("ada", configure: u =>
+        {
+            u.Email = "ada@example.com";
+            u.NormalizedEmail = "ADA@EXAMPLE.COM";
+            u.Disabled = true;
+        });
+
+        var service = await ServiceAsync(fixture);
+
+        var result = await service.SignInAsync(
+            "oidc", "sub-1", Claims(("email", "ada@example.com"), ("email_verified", "true")), default);
+
+        Assert.Null(result.User);
+        using var db = fixture.NewContext();
+        Assert.False(db.UserLogins.Any(l => l.UserId == existing));
+    }
+
+    [Fact]
     public async Task AnUnverifiedEmailLinksToNothing()
     {
         using var fixture = new TestDb();

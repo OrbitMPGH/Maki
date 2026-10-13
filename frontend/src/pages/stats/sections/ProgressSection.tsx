@@ -219,7 +219,15 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
           {summary.showStreaks && (
             <Text size="xs" c="var(--ink-3)" mt="sm" className="tnum">
               <Trans>
-                <b>{streak}</b> day streak, best <b>{best}</b>
+                Current streak:{' '}
+                <b>
+                  <Plural value={streak} one="# day" other="# days" />
+                </b>
+                . Best:{' '}
+                <b>
+                  <Plural value={best} one="# day" other="# days" />
+                </b>
+                .
               </Trans>
             </Text>
           )}
@@ -268,7 +276,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
                 <Table.Tbody>
                   {leaderboard.map((row) => (
                     <Table.Tr key={row.userId}>
-                      <Table.Td>{row.name}</Table.Td>
+                      <Table.Td>{row.name ?? t`Another user`}</Table.Td>
                       <Table.Td ta="right" className="tnum">
                         {row.level}
                       </Table.Td>

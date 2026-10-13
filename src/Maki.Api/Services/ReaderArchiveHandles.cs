@@ -56,6 +56,12 @@ public sealed class ReaderArchiveHandles(TimeProvider? time = null)
             var archive = handle.Attach(path, this);
             return archive is null ? null : read(archive);
         }
+        catch (IOException)
+        {
+            // Replaced or held by a writer between resolving the slice and opening it: the same
+            // "not readable" outcome as a bad entry, so the caller answers 404 rather than 500.
+            return null;
+        }
         finally
         {
             handle.Park();

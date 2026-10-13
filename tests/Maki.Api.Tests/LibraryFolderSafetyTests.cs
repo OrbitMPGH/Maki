@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using Maki.Api.Configuration;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
@@ -15,21 +16,35 @@ namespace Maki.Api.Tests;
 /// Import and rescan act on the user's own library, so none of them may be the reason a file
 /// disappears: not a folder merged into itself, not a name collision, not an unmounted share.
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public class LibraryFolderSafetyTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly FakeAppSettings _settings = new();
     private readonly string _root =
         Path.Combine(Path.GetTempPath(), "maki-folder-safety-" + Guid.NewGuid().ToString("N")[..8]);
+    private readonly string _configDir =
+        Path.Combine(Path.GetTempPath(), "maki-folder-safety-config-" + Guid.NewGuid().ToString("N")[..8]);
+    private readonly string? _priorConfigDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
+    private readonly AppPaths _paths;
 
-    public LibraryFolderSafetyTests() => Directory.CreateDirectory(_root);
+    public LibraryFolderSafetyTests()
+    {
+        Directory.CreateDirectory(_root);
+        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
+        _paths = new AppPaths();
+    }
 
     public void Dispose()
     {
         _db.Dispose();
-        if (Directory.Exists(_root))
+        Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _priorConfigDir);
+        foreach (var dir in new[] { _root, _configDir })
         {
-            Directory.Delete(_root, recursive: true);
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+            }
         }
     }
 
@@ -128,11 +143,10 @@ public class LibraryFolderSafetyTests : IDisposable
         await using (var db = _db.NewContext())
         {
             var service = new LibraryImportService(
-                db, [new FixedProvider(42)], null!, null!, null!, LinkService(db),
+                db, [new FixedProvider(42)], null!, LinkService(db), new SourceMatchQueue(),
                 new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
                 _settings, new NamingService(_settings), null!, null!, new TestLocalizer(),
-                new TestCurrentUser(1), new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
-                NullLogger<LibraryImportService>.Instance);
+                new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
             result = await service.ImportAsync(rootId, new ImportRequestItem("chainsaw man", "42"));
         }
 
@@ -248,7 +262,47 @@ public class LibraryFolderSafetyTests : IDisposable
         Assert.Equal("Berserk [mb-8]", SeriesCreationService.FreeFolderName("Berserk", 8, n => !taken.Contains(n)));
     }
 
-    private sealed class FixedProvider(int mangaBakaId) : IMetadataProvider
+    /// <summary>
+    /// Import is the one create path that bypasses the add form, so it has to apply the per-rating
+    /// incognito default itself. It did not, and an imported pornographic title started public.
+    /// </summary>
+    [Fact]
+    public async Task ImportAppliesTheIncognitoRatingRules()
+    {
+        int rootId;
+        await using (var db = _db.NewContext())
+        {
+            var root = new RootFolder { Path = _root };
+            db.RootFolders.Add(root);
+            db.SaveChanges();
+            rootId = root.Id;
+        }
+
+        WriteComic(Path.Combine(_root, "Chainsaw Man", "Chainsaw Man c001.cbz"));
+
+        ImportResult result;
+        await using (var db = _db.NewContext())
+        {
+            var service = new LibraryImportService(
+                db, [new FixedProvider(42, contentRating: "pornographic")],
+                new CoverService(null!, _paths, _settings, NullLogger<CoverService>.Instance),
+                LinkService(db), new SourceMatchQueue(),
+                new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
+                _settings, new NamingService(_settings), new StatsEventService(db),
+                new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance), new TestLocalizer(),
+                new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
+            result = await service.ImportAsync(rootId, new ImportRequestItem("Chainsaw Man", "42"));
+        }
+
+        // Source matching is stubbed null here, so the result may not read as a success. The row
+        // is committed before that and is what this test is about.
+        await using var check = _db.NewContext();
+        var series = await check.Series.IgnoreQueryFilters().SingleAsync(s => s.MangaBakaId == 42);
+        Assert.Equal(series.Id, result.SeriesId);
+        Assert.Equal(IncognitoMode.Full, series.Incognito);
+    }
+
+    private sealed class FixedProvider(int mangaBakaId, string? contentRating = null) : IMetadataProvider
     {
         public string Name => "fake";
 
@@ -259,7 +313,8 @@ public class LibraryFolderSafetyTests : IDisposable
         public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default) =>
             Task.FromResult<SeriesMetadata?>(new SeriesMetadata
             {
-                ProviderId = providerId, Title = "Chainsaw Man", MangaBakaId = mangaBakaId
+                ProviderId = providerId, Title = "Chainsaw Man", MangaBakaId = mangaBakaId,
+                ContentRating = contentRating,
             });
     }
 }

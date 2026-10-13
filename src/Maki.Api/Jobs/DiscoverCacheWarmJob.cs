@@ -1,8 +1,10 @@
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Data;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.Taste;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -27,11 +29,17 @@ public class DiscoverCacheWarmJob(
     DiscoverService discover,
     VectorIndexCache searchIndex,
     CatalogueIndexCache catalogueIndex,
+    MangaBakaDumpOptions dumpOptions,
+    EmbeddingOptions embeddingOptions,
+    TasteVectorOptions tasteOptions,
+    IAppSettings settings,
     IServiceScopeFactory scopeFactory,
     ArtifactBuildGate gate,
     ILogger<DiscoverCacheWarmJob> logger) : IJob
 {
     public static readonly JobKey Key = new("discover-cache-warm");
+
+    public const string ScheduledTriggerName = "discover-cache-warm-trigger";
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -46,16 +54,52 @@ public class DiscoverCacheWarmJob(
                 await discover.GetGenreFeedsAsync(refresh: true, ceiling, context.CancellationToken);
             }
 
+            // A run triggered after a dump install builds both indexes so the cost never lands on the
+            // first keystroke. Scheduled runs only refresh an index somebody already has loaded:
+            // building one for an instance nobody is browsing costs ~9s of CPU and ~145 MB, only for
+            // the idle unload to drop it again. The first scheduled run after startup also builds
+            // them, but only when their source files changed since the last warm (a dump, vector
+            // database or taste file installed while the process was down); otherwise a restart
+            // would hold both for an hour whether or not anyone searches.
+            var stamp = SourceStamp();
+            var everything = context.Trigger.Key.Name != ScheduledTriggerName
+                || (context.PreviousFireTimeUtc is null
+                    && stamp != await settings.GetAsync(SettingKeys.DiscoverWarmedStamp, context.CancellationToken));
+
             // Search's in-memory vector index takes ~8s to build over ~100k series; do it here so
             // the first natural-language query doesn't wear it.
-            await searchIndex.GetAsync(context.CancellationToken);
+            if (everything || searchIndex.IsLoaded)
+            {
+                if (!searchIndex.IsCurrent)
+                {
+                    build.MarkBuilt();
+                }
+
+                await searchIndex.GetAsync(context.CancellationToken);
+            }
+
             // Same reasoning for the credit and title-vocabulary indexes: about 9s of scanning the
             // dump, which would otherwise land on whichever keystroke arrived first.
-            await catalogueIndex.GetAsync(context.CancellationToken);
+            if (everything || catalogueIndex.IsLoaded)
+            {
+                if (!catalogueIndex.IsCurrent)
+                {
+                    build.MarkBuilt();
+                }
+
+                await catalogueIndex.GetAsync(context.CancellationToken);
+            }
+
+            // Saved after every successful run, not only a full one. The stamp exists to catch files that
+            // changed while the process was down; one replaced while it was up (the nightly vector and
+            // taste installs) is already in the process's hands, and any index built later reads it.
+            // Saving only after a full warm left the stamp behind every nightly install, so the first
+            // restart after each one rebuilt both indexes for nothing.
+            await settings.SetAsync(SettingKeys.DiscoverWarmedStamp, stamp, context.CancellationToken);
         }
-        catch (InvalidOperationException)
+        catch (LocalCatalogueUnavailableException)
         {
-            // No local MangaBaka database — nothing to warm.
+            // No local MangaBaka database - nothing to warm.
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {
@@ -65,8 +109,14 @@ public class DiscoverCacheWarmJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Discover cache warm-up failed");
+            context.ReportFailure(ex);
         }
     }
+
+    private string SourceStamp() =>
+        string.Join('|', new[] { dumpOptions.DatabasePath, embeddingOptions.VectorDbPath, tasteOptions.DatabasePath }
+            .Select(path => new FileInfo(path))
+            .Select(info => info.Exists ? $"{info.LastWriteTimeUtc.Ticks}:{info.Length}" : "-"));
 
     /// <summary>
     /// The distinct content-rating ceilings held by accounts that can sign in. Disabled and

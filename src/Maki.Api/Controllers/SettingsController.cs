@@ -8,6 +8,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Parsing;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Api.Localization;
@@ -75,7 +76,8 @@ public class SettingsController(
     KavitaLiveReadSync kavitaLive,
     ISchedulerFactory schedulerFactory,
     IServiceScopeFactory scopeFactory,
-    ILogger<SettingsController> logger) : ControllerBase
+    ILogger<SettingsController> logger,
+    AccountSecurityAlerts? alerts = null) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record ProwlarrSettings(string? Url, string? ApiKey);
@@ -83,7 +85,8 @@ public class SettingsController(
         string? Url, string? Username, string? Password, string? Category, string? PathMapFrom, string? PathMapTo);
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
-    public record MonitoringSettings(bool UnmonitorSpecials);
+    /// <summary>Both fields optional on PUT: a null leaves that setting as it is.</summary>
+    public record MonitoringSettings(bool? UnmonitorSpecials, string? DefaultMode = null);
     /// <param name="IncognitoByRating">
     /// Content rating → <see cref="IncognitoMode"/> name, the default a newly added series of that
     /// rating starts at. Null on a write leaves the stored rules alone, so a caller that predates
@@ -95,6 +98,10 @@ public class SettingsController(
     /// filled in, and a non-null default here would blank the format every time it did.
     /// </param>
     /// <param name="ChapterFormat">Naming format for a downloaded chapter's file, extension excluded.</param>
+    /// <param name="NewSeriesMonitorMode">
+    /// Read-only: the mode an add with monitoring left at its default starts with, so the add form can
+    /// show it to someone who cannot read the admin-only monitoring settings. Ignored on a write.
+    /// </param>
     /// <param name="WriteCoverToFolder">
     /// Null on a write leaves the stored switch alone. It used to default to false, so every setup
     /// wizard save (which sends only its two fields) silently switched cover.jpg off again.
@@ -106,16 +113,28 @@ public class SettingsController(
         bool? WriteCoverToFolder = null,
         string? SeriesFolderFormat = null,
         string? ChapterFormat = null,
-        bool? RenameImportedFiles = null);
+        bool? RenameImportedFiles = null,
+        string? NewSeriesMonitorMode = null);
 
     /// <param name="Example">The token rendered against the sample series and chapter.</param>
     public record NamingTokenDto(string Token, string Category, string Description, string Example);
 
     public record NamingPreviewRequest(string? SeriesFolderFormat, string? ChapterFormat);
 
-    /// <param name="Errors">Empty when both formats are saveable.</param>
+    /// <param name="SeriesFolderErrors">Localized reasons the series folder format would be refused.</param>
+    /// <param name="ChapterErrors">Same, for the chapter file format. Both empty when the formats are saveable.</param>
     public record NamingPreviewResponse(
-        string SeriesFolder, string ChapterFile, IReadOnlyList<string> Errors);
+        string SeriesFolder, string ChapterFile,
+        IReadOnlyList<string> SeriesFolderErrors, IReadOnlyList<string> ChapterErrors);
+    /// <param name="Languages">The marker languages to read besides English. Codes without marker words are refused.</param>
+    public record NameParsingSettings(IReadOnlyList<string> Languages);
+
+    /// <param name="VolumeWords">The words this language adds, as the settings card shows them.</param>
+    public record NameParsingLanguageDto(string Code, IReadOnlyList<string> VolumeWords, IReadOnlyList<string> ChapterWords);
+
+    /// <param name="Available">Every language that can be switched on, in picker order.</param>
+    public record NameParsingSettingsDto(IReadOnlyList<string> Languages, IReadOnlyList<NameParsingLanguageDto> Available);
+
     public record SetupStatus(bool Completed);
     /// <param name="ItemTimeoutMinutes">
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
@@ -154,13 +173,15 @@ public class SettingsController(
         int VolumeMissingTolerance = 3,
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30);
-    public record BackupSettings(int Retention);
+    public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
+    public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
     /// <param name="UserId">
     /// Which Maki user Kavita's reading belongs to. Null means "the lowest-numbered admin", which is
     /// what a single-user install wants and needs no configuration. See
-    /// <see cref="SettingKeys.KavitaUserId"/> for why this has to be exactly one user.
+    /// <see cref="SettingKeys.KavitaUserId"/> for why this has to be exactly one user. Read-only on
+    /// <c>PUT settings/kavita</c>; <c>PUT settings/kavita/user</c> writes it.
     /// </param>
     /// <param name="ResolvedUserId">
     /// Read-only: who the null default actually resolved to, so the UI can say whose reading is being
@@ -279,14 +300,30 @@ public class SettingsController(
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("monitoring")]
     public async Task<IActionResult> GetMonitoring(CancellationToken ct) => Ok(new MonitoringSettings(
-        await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true"));
+        await settings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true",
+        MonitorDefaults.Parse(await settings.GetAsync(SettingKeys.MonitoringDefaultMode, ct)).ToString()));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("monitoring")]
     public async Task<IActionResult> SetMonitoring([FromBody] MonitoringSettings request, CancellationToken ct)
     {
-        await settings.SetAsync(SettingKeys.MonitoringUnmonitorSpecials, request.UnmonitorSpecials ? "true" : "false", ct);
-        return Ok(request);
+        if (request.DefaultMode is { } defaultMode)
+        {
+            if (!Enum.TryParse<NewChapterMonitorMode>(defaultMode, true, out var mode) ||
+                !MonitorDefaults.Choosable.Contains(mode))
+            {
+                return this.Fail(localizer, "error.settings.invalidMonitorMode");
+            }
+
+            await settings.SetAsync(SettingKeys.MonitoringDefaultMode, mode.ToString(), ct);
+        }
+
+        if (request.UnmonitorSpecials is { } unmonitorSpecials)
+        {
+            await settings.SetAsync(SettingKeys.MonitoringUnmonitorSpecials, unmonitorSpecials ? "true" : "false", ct);
+        }
+
+        return await GetMonitoring(ct);
     }
 
     /// <summary>
@@ -310,7 +347,7 @@ public class SettingsController(
     /// The caller's own reader defaults. No admin policy: these land in their <c>UserSettings</c> rows.
     /// <para>
     /// <c>KavitaUserId</c> on the response is read-only here — it is an instance setting (Kavita is one
-    /// external account) and is set through <c>PUT settings/kavita</c>. It rides along because the
+    /// external account) and is set through <c>PUT settings/kavita/user</c>. It rides along because the
     /// reader card is where "push my reads to Kavita" lives, and that toggle only does anything for the
     /// bound user.
     /// </para>
@@ -438,9 +475,14 @@ public class SettingsController(
             return Unauthorized();
         }
 
-        return await AccountCredentials.ConfirmPasswordAsync(users, signIn, user, password) is { } key
-            ? this.Fail(localizer, key)
-            : null;
+        if (await AccountCredentials.ConfirmForMintAsync(users, signIn, user, password, TimeProvider.System) is { } key)
+        {
+            return key == AccountCredentials.RecentSignInRequiredKey
+                ? this.Forbidden(localizer, key)
+                : this.Fail(localizer, key);
+        }
+
+        return null;
     }
 
     private Task<UserApiKey?> CurrentOpdsKeyAsync(CancellationToken ct) =>
@@ -471,7 +513,7 @@ public class SettingsController(
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
-        await db.UserApiKeys
+        var replaced = await db.UserApiKeys
             .Where(k => k.UserId == currentUser.UserId
                         && k.Scope == UserApiKeyScope.Opds
                         && k.RevokedAt == null)
@@ -488,6 +530,12 @@ public class SettingsController(
         });
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+
+        if (alerts is not null)
+        {
+            await alerts.RaiseAsync(currentUser.UserId,
+                replaced > 0 ? AccountSecurityAlerts.OpdsTokenRotated : AccountSecurityAlerts.OpdsTokenCreated, ct: ct);
+        }
 
         // Root-relative on purpose. Building an absolute URL from Request.Scheme/Host hands out an
         // http:// link through any TLS-terminating proxy that doesn't rewrite it.
@@ -651,7 +699,8 @@ public class SettingsController(
             await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true",
             await naming.SeriesFolderFormatAsync(ct),
             await naming.ChapterFormatAsync(ct),
-            await settings.GetAsync(SettingKeys.LibraryRenameImportedFiles, ct) != "false"));
+            await settings.GetAsync(SettingKeys.LibraryRenameImportedFiles, ct) != "false",
+            (await MonitorDefaults.ForNewSeriesAsync(settings, ct)).ToString()));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -673,7 +722,7 @@ public class SettingsController(
                     return this.Fail(localizer, "error.settings.unknownContentRating", new { rating });
                 }
 
-                if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode))
+                if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode) || !Enum.IsDefined(parsedMode))
                 {
                     return this.Fail(localizer, "error.settings.unknownIncognitoMode", new { mode });
                 }
@@ -762,6 +811,34 @@ public class SettingsController(
         return await GetLibrary(ct);
     }
 
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("nameparsing")]
+    public IActionResult GetNameParsing() => Ok(new NameParsingSettingsDto(
+        NameParsingProfile.Current.Languages,
+        ReleaseMarkers.Languages
+            .Select(code => new NameParsingLanguageDto(code, ReleaseMarkers.VolumeWords(code), ReleaseMarkers.ChapterWords(code)))
+            .ToList()));
+
+    /// <summary>
+    /// Saves the marker languages and swaps the parsers over at once. Nothing already linked moves:
+    /// the new words apply to the next search, import or rescan.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("nameparsing")]
+    public async Task<IActionResult> SetNameParsing([FromBody] NameParsingSettings request, CancellationToken ct)
+    {
+        var languages = request.Languages ?? [];
+        if (languages.FirstOrDefault(l => ReleaseMarkers.Language(l) is null) is { } unknown)
+        {
+            return this.Fail(localizer, "error.nameParsing.unknownLanguage", new { language = unknown });
+        }
+
+        var profile = new NameParsingProfile(languages);
+        await settings.SetAsync(SettingKeys.ParsingLanguages, profile.Languages.Count > 0 ? profile.Fingerprint : null, ct);
+        NameParsingProfile.Current = profile;
+        return GetNameParsing();
+    }
+
     /// <summary>
     /// Every naming token, with an example rendered from the same sample the preview uses. Not
     /// admin-only: it is a read-only reference card, and the modal that shows it opens from a
@@ -791,19 +868,16 @@ public class SettingsController(
         var folderFormat = request.SeriesFolderFormat ?? await naming.SeriesFolderFormatAsync(ct);
         var chapterFormat = request.ChapterFormat ?? await naming.ChapterFormatAsync(ct);
 
-        var errors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat)
-            .Select(e => localizer.Get("error.naming.formatInvalid",
-                new { field = localizer.Get("error.naming.fieldSeriesFolder"), reason = localizer.Get(e.Key, e.Args) }))
-            .Concat(Maki.Core.Naming.NamingFormatter.Validate(chapterFormat)
-                .Select(e => localizer.Get("error.naming.formatInvalid",
-                    new { field = localizer.Get("error.naming.fieldChapterFormat"), reason = localizer.Get(e.Key, e.Args) })))
-            .ToList();
+        string Render(Maki.Core.Naming.NamingValidationError e) => localizer.Get(e.Key, e.Args);
+        var folderErrors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat).Select(Render).ToList();
+        var chapterErrors = Maki.Core.Naming.NamingFormatter.Validate(chapterFormat).Select(Render).ToList();
 
         return Ok(new NamingPreviewResponse(
             Maki.Core.Naming.NamingFormatter.Format(folderFormat, sample),
             Maki.Core.Naming.NamingFormatter.Format(chapterFormat, sample)
                 + Maki.Core.Naming.NamingDefaults.ChapterExtension,
-            errors));
+            folderErrors,
+            chapterErrors));
     }
 
     /// <summary>
@@ -869,7 +943,11 @@ public class SettingsController(
     /// </summary>
     [Authorize(Policy = Policies.ChangeContentRating)]
     [HttpPut("discover")]
-    public async Task<IActionResult> SetDiscover([FromBody] DiscoverSettings request, CancellationToken ct)
+    public async Task<IActionResult> SetDiscover(
+        [FromBody] DiscoverSettings request,
+        [FromServices] IUserSnapshotCache snapshots,
+        [FromServices] AuthEventLogger auditLog,
+        CancellationToken ct)
     {
         if (!ContentRating.IsValid(request.MaxContentRating))
         {
@@ -879,6 +957,10 @@ public class SettingsController(
         await db.Users
             .Where(u => u.Id == currentUser.UserId)
             .ExecuteUpdateAsync(u => u.SetProperty(x => x.MaxContentRating, request.MaxContentRating), ct);
+        snapshots.Evict(currentUser.UserId);
+
+        await auditLog.LogAsync(AuthEventType.UserUpdated, currentUser.UserName, currentUser.UserId,
+            HttpContext, detail: $"content rating set to \"{request.MaxContentRating}\"", ct: ct);
         return Ok(new DiscoverSettings(request.MaxContentRating));
     }
 
@@ -888,8 +970,10 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadConcurrentChapters, ct), out var n) ? n : 2,
         await settings.GetAsync(SettingKeys.DownloadRetryEnabled, ct) != "false",
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadRetryMaxAttempts, ct), out var r) ? r : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
-        int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
+        SmartDownloadJob.ClampChaptersLeft(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5),
+        SmartDownloadJob.ClampBatchSize(
+            int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10),
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
@@ -924,6 +1008,16 @@ public class SettingsController(
         if (request.BulkHoldThreshold is < 0 or > 1000)
         {
             return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
+        }
+
+        if (request.SmartDownloadChaptersLeft is < SmartDownloadJob.MinChapters or > SmartDownloadJob.MaxChaptersLeft)
+        {
+            return this.Fail(localizer, "error.settings.smartChaptersLeftRange", new { min = SmartDownloadJob.MinChapters, max = SmartDownloadJob.MaxChaptersLeft });
+        }
+
+        if (request.SmartDownloadChapters is < SmartDownloadJob.MinChapters or > SmartDownloadJob.MaxChaptersPerBatch)
+        {
+            return this.Fail(localizer, "error.settings.smartChaptersRange", new { min = SmartDownloadJob.MinChapters, max = SmartDownloadJob.MaxChaptersPerBatch });
         }
 
         var sourceOrder = SourceOrderService.Parse(request.SourceOrder);
@@ -970,6 +1064,32 @@ public class SettingsController(
             SourceOrder = await SourceOrderNameAsync(ct),
             ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"
         });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("readcleanup")]
+    public async Task<IActionResult> GetReadFileCleanup(
+        [FromServices] ReadFileCleanupService cleanup, CancellationToken ct)
+    {
+        var options = await cleanup.OptionsAsync(ct);
+        return Ok(new ReadFileCleanupSettings(options.Enabled, options.Days, options.KeepLast));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("readcleanup")]
+    public async Task<IActionResult> SetReadFileCleanup(
+        [FromBody] ReadFileCleanupSettings request, [FromServices] ReadFileCleanupService cleanup, CancellationToken ct)
+    {
+        if (request.Days is < 1 or > ReadFileCleanupService.MaxDays)
+        {
+            return this.Fail(localizer, "error.settings.readCleanupDaysRange",
+                new { min = 1, max = ReadFileCleanupService.MaxDays });
+        }
+
+        await settings.SetAsync(SettingKeys.ReadFileCleanupEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.ReadFileCleanupDays, request.Days.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.ReadFileCleanupKeepLast, request.KeepLast ? "true" : "false", ct);
+        return await GetReadFileCleanup(cleanup, ct);
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1070,7 +1190,8 @@ public class SettingsController(
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("backup")]
     public async Task<IActionResult> GetBackup(CancellationToken ct) => Ok(new BackupSettings(
-        int.TryParse(await settings.GetAsync(SettingKeys.BackupRetention, ct), out var n) ? n : 5));
+        int.TryParse(await settings.GetAsync(SettingKeys.BackupRetention, ct), out var n) ? n : 5,
+        await settings.GetAsync(SettingKeys.BackupScheduled, ct) == "true"));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("backup")]
@@ -1085,7 +1206,12 @@ public class SettingsController(
             SettingKeys.BackupRetention,
             request.Retention.ToString(CultureInfo.InvariantCulture),
             ct);
-        return Ok(request);
+        if (request.Scheduled is { } scheduled)
+        {
+            await settings.SetAsync(SettingKeys.BackupScheduled, scheduled ? "true" : "false", ct);
+        }
+
+        return await GetBackup(ct);
     }
 
     /// <summary>
@@ -1126,8 +1252,31 @@ public class SettingsController(
         // Switching a source off writes one setting and nothing else — per-series
         // SourceMapping.Enabled flags are deliberately left alone so that turning it back
         // on restores the layout the user had rather than a blanket "everything on".
-        await settings.SetAsync(SettingKeys.SourcePriorityOrder, string.Join(',', request.Order), ct);
-        await settings.SetAsync(SettingKeys.SourcesDisabled, string.Join(',', request.Disabled), ct);
+        // Names not registered right now (Suwayomi unconfigured, an extension uninstalled) never
+        // reach the client, so a blind overwrite would drop their choices and a later re-enable
+        // would find them undecided.
+        var order = request.Order.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var anchor = -1;
+        foreach (var name in SourceAvailability.Parse(await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct)))
+        {
+            var at = order.FindIndex(o => o.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (at >= 0)
+            {
+                anchor = at;
+            }
+            else if (sourceRegistry.Find(name) is null)
+            {
+                // Back in the slot it held, after whichever stored name precedes it.
+                order.Insert(++anchor, name);
+            }
+        }
+
+        var disabled = request.Disabled
+            .Concat(SourceAvailability.Parse(await settings.GetAsync(SettingKeys.SourcesDisabled, ct))
+                .Where(name => sourceRegistry.Find(name) is null))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        await settings.SetAsync(SettingKeys.SourcePriorityOrder, string.Join(',', order), ct);
+        await settings.SetAsync(SettingKeys.SourcesDisabled, string.Join(',', disabled), ct);
         return await GetSourcePriority(ct);
     }
 
@@ -1148,7 +1297,7 @@ public class SettingsController(
     [HttpGet("sources/languages")]
     public async Task<IActionResult> GetSourceLanguages(CancellationToken ct)
     {
-        var offered = SourceLanguagePreference.Offered(sourceRegistry.All);
+        var offered = SourceLanguagePreference.Offered(await LanguageSourcesAsync(ct));
         var stored = SourceLanguagePreference.Parse(
             await settings.GetAsync(SettingKeys.SourceLanguageOrder, ct),
             await settings.GetAsync(SettingKeys.SourceLanguagesDisabled, ct));
@@ -1172,12 +1321,23 @@ public class SettingsController(
         return Ok(new SourceLanguageSettings(order, disabled, [.. offered]));
     }
 
+    /// <summary>
+    /// The sources whose languages the ranking offers: every built-in one, but only the Suwayomi
+    /// sources switched on, or one Suwayomi install would bring every language it has an extension for.
+    /// </summary>
+    private async Task<List<ISource>> LanguageSourcesAsync(CancellationToken ct)
+    {
+        var disabled = await sourceAvailability.DisabledAsync(ct);
+        return [.. sourceRegistry.All.Where(s =>
+            s is not Maki.Sources.Suwayomi.SuwayomiSource || !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase))];
+    }
+
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("sources/languages")]
     public async Task<IActionResult> SetSourceLanguages(
         [FromBody] SourceLanguageSettings request, CancellationToken ct)
     {
-        var offered = SourceLanguagePreference.Offered(sourceRegistry.All);
+        var offered = SourceLanguagePreference.Offered(await LanguageSourcesAsync(ct));
         var unknown = request.Order.Concat(request.Disabled)
             .Where(code => !offered.Contains(code, StringComparer.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -1356,16 +1516,8 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.KavitaPathMapFrom, request.PathMapFrom, ct);
         await settings.SetAsync(SettingKeys.KavitaPathMapTo, request.PathMapTo, ct);
 
-        if (request.UserId is { } bound &&
-            !await db.Users.AnyAsync(u => u.Id == bound && !u.Disabled && !u.PendingSetup, ct))
-        {
-            return this.Fail(localizer, "error.settings.userCannotSignIn");
-        }
-
-        await settings.SetAsync(SettingKeys.KavitaUserId, request.UserId?.ToString(), ct);
-
-        // The resolver caches for a minute; without this the change appears not to have taken.
-        kavitaUser.Invalidate();
+        // The attributed user is not written here: the connection form never sends it, so a null
+        // would read as "clear". PUT kavita/user is its only writer.
         kavitaLive.Nudge();
         return await GetKavita(ct);
     }
@@ -1801,7 +1953,14 @@ public class SettingsController(
             "false",
             StringComparison.OrdinalIgnoreCase);
 
-        var layer = (await vectorIndexCache.GetAsync(ct))?.Taste;
+        // A status line must not build the whole index to render itself. When it is cold, start a
+        // background build (unless embeddings are off) and report what is loaded now.
+        var layer = vectorIndexCache.TryGetLoaded()?.Taste;
+        if (layer is null && modelSwitcher.CurrentModel != EmbeddingModelProfile.OffKind)
+        {
+            vectorIndexCache.WarmInBackground();
+        }
+
         var generatedAt =
             DateTime.TryParse(
                 await settings.GetAsync(SettingKeys.RecommendationsTasteVectorsGeneratedAt, ct),
@@ -1955,7 +2114,14 @@ public class SettingsController(
         /// Whether the caller may edit the instance half. The client uses it to disable those fields
         /// rather than showing a non-admin inputs whose writes will be dropped.
         /// </summary>
-        bool IsAdmin = false);
+        bool IsAdmin = false,
+        /// <summary>
+        /// Stands in for <c>KitsuPassword</c>, which is never sent back: a third-party password that
+        /// is often reused would otherwise be readable by any of the caller's API keys.
+        /// </summary>
+        bool KitsuPasswordSet = false,
+        /// <summary>Stands in for <c>MangaBakaToken</c>, which is never sent back, for the same reason.</summary>
+        bool MangaBakaTokenSet = false);
 
     /// <summary>
     /// Both halves of the scrobble configuration in one response, because one card in the UI shows
@@ -1988,17 +2154,19 @@ public class SettingsController(
             admin ? await settings.GetAsync(SettingKeys.ScrobbleAniListClientSecret, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleMalClientId, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleMalClientSecret, ct) : null,
-            mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken),
+            null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientId, ct) : null,
             admin ? await settings.GetAsync(SettingKeys.ScrobbleKitsuClientSecret, ct) : null,
             mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuEmail),
-            mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword),
+            null,
             int.TryParse(await settings.GetAsync(SettingKeys.ScrobbleIntervalMinutes, ct), out var m) && m >= 5
                 ? m
                 : Services.ScrobbleService.DefaultIntervalMinutes,
             mine.GetValueOrDefault(SettingKeys.ScrobblePlanToRead) == "true",
             admin ? await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct) : null,
-            IsAdmin: admin));
+            IsAdmin: admin,
+            KitsuPasswordSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleKitsuPassword)),
+            MangaBakaTokenSet: !string.IsNullOrEmpty(mine.GetValueOrDefault(SettingKeys.ScrobbleMangaBakaToken))));
     }
 
     [Authorize(Policy = Policies.UseTrackers)]
@@ -2006,9 +2174,19 @@ public class SettingsController(
     public async Task<IActionResult> SetScrobble([FromBody] ScrobbleSettings request, CancellationToken ct)
     {
         // The caller's own remote accounts, always writable.
-        await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        if (request.MangaBakaToken is not null)
+        {
+            await userSettings.SetAsync(SettingKeys.ScrobbleMangaBakaToken, request.MangaBakaToken, ct);
+        }
+
         await userSettings.SetAsync(SettingKeys.ScrobbleKitsuEmail, request.KitsuEmail, ct);
-        await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        // Null means "leave it" for the token and the password: GET never returns either, so a client
+        // that did not touch the field sends nothing back.
+        if (request.KitsuPassword is not null)
+        {
+            await userSettings.SetAsync(SettingKeys.ScrobbleKitsuPassword, request.KitsuPassword, ct);
+        }
+
         await userSettings.SetAsync(
             SettingKeys.ScrobblePlanToRead, request.PlanToRead ? "true" : "false", ct);
 
@@ -2076,7 +2254,9 @@ public class SettingsController(
         AuthRuntimeOptions.LockoutMinutesFrom(await settings.GetAsync(SettingKeys.AuthLockoutMinutes, ct)),
         AuthRuntimeOptions.SessionDaysFrom(await settings.GetAsync(SettingKeys.AuthSessionDays, ct))));
 
+    // Session cookie only: lockout and the trusted-proxy list outlive revoking a leaked admin key.
     [Authorize(Policy = Policies.Admin)]
+    [CookieSessionOnly]
     [HttpPut("security")]
     public async Task<IActionResult> SetSecurity([FromBody] SecuritySettings request, CancellationToken ct)
     {
@@ -2086,8 +2266,7 @@ public class SettingsController(
             // Validated on save rather than silently ignored at startup: a typo here means forwarded
             // headers are quietly dropped, which shows up much later as every audit-log entry and
             // every rate-limit bucket carrying the proxy's address instead of the client's.
-            var address = entry.Contains('/') ? entry.Split('/', 2)[0] : entry;
-            if (!System.Net.IPAddress.TryParse(address, out _))
+            if (!AuthRuntimeOptions.TryParseTrustedProxy(entry, out _, out _))
             {
                 return this.Fail(localizer, "error.settings.trustedProxyInvalid", new { entry });
             }

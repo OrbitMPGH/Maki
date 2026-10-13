@@ -14,6 +14,7 @@ import {
   Table,
   Text,
   TextInput,
+  Tooltip,
 } from '@mantine/core'
 import {
   IconBell,
@@ -48,11 +49,13 @@ import type {
   TagDto,
 } from '../api/types'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { msg, t as now } from '@lingui/core/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { EmptyState } from './ui/EmptyState'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 import { useLabel } from '../i18n-context'
+import { formatDateTime } from '../format'
 
 interface EventField {
   key: keyof NotificationRequest['events']
@@ -76,6 +79,7 @@ const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[] }[] = [
       { key: 'seriesAdded', label: msg`Series added`, description: msg`A series was added to the library, by hand or from an approved request.` },
       { key: 'seriesRemoved', label: msg`Series removed`, description: msg`A series was removed from the library.` },
       { key: 'manualMatchNeeded', label: msg`Manual match needed`, description: msg`Automatic source matching found nothing for a new series.` },
+      { key: 'seriesStatusChanged', label: msg`Series status changed`, description: msg`A series was completed, cancelled, put on hiatus or resumed.` },
     ],
   },
   {
@@ -199,10 +203,70 @@ const EMPTY_EVENTS: NotificationRequest['events'] = {
   requestSubmitted: false,
   requestResolved: false,
   manualMatchNeeded: false,
+  seriesStatusChanged: false,
 }
 
 function toRequest(n: NotificationDto): NotificationRequest {
   return { name: n.name, type: n.type, enabled: n.enabled, config: { ...n.config }, events: n.events, tagIds: n.tagIds }
+}
+
+/** The stored code to a sentence. Anything the server adds later reads as a generic failure. */
+function useDeliveryErrorText() {
+  const { t } = useLingui()
+  return (code: string | null) => {
+    if (code?.startsWith('status:')) {
+      const status = code.slice('status:'.length)
+      return t`The service answered with HTTP ${status}`
+    }
+    if (code === 'timeout') return t`The service did not answer in time`
+    if (code === 'network') return t`Could not reach the service`
+    return t`The send failed`
+  }
+}
+
+/** Failing after any miss, healthy after a delivery, and quiet until the connection has sent something. */
+function DeliveryChip({ n }: { n: NotificationDto }) {
+  const { t } = useLingui()
+  const errorText = useDeliveryErrorText()
+  const lastSuccess = n.lastSuccessAt ? formatDateTime(n.lastSuccessAt) : null
+
+  const misses = n.consecutiveFailures
+  if (misses > 0) {
+    const label = plural(misses, { one: 'Failing: # miss in a row', other: 'Failing: # misses in a row' })
+    return (
+      <Tooltip
+        multiline
+        maw={280}
+        label={
+          <>
+            {errorText(n.lastError)}
+            {' '}
+            {lastSuccess ? t`Last delivered ${lastSuccess}.` : t`Never delivered.`}
+          </>
+        }
+      >
+        <Badge size="sm" variant="light" color="var(--danger)" tabIndex={0}>
+          {label}
+        </Badge>
+      </Tooltip>
+    )
+  }
+
+  if (!lastSuccess) {
+    return (
+      <Badge size="sm" variant="light" color="var(--neutral)">
+        <Trans>Not used yet</Trans>
+      </Badge>
+    )
+  }
+
+  return (
+    <Tooltip label={t`Last delivered ${lastSuccess}.`}>
+      <Badge size="sm" variant="light" color="var(--ok)" tabIndex={0}>
+        <Trans>Healthy</Trans>
+      </Badge>
+    </Tooltip>
+  )
 }
 
 function TagDot({ color }: { color: string }) {
@@ -269,7 +333,7 @@ function ConfigField({
 
   switch (field.kind) {
     case 'Secret':
-      return <PasswordInput {...common} value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value)} />
+      return <PasswordInput {...common} autoComplete="new-password" value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value)} />
     case 'Number': {
       const { min, max } = field
       const rangeDescription =
@@ -302,7 +366,7 @@ function ConfigField({
         />
       )
     default:
-      return <TextInput {...common} value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value)} />
+      return <TextInput {...common} autoComplete="off" value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value)} />
   }
 }
 
@@ -336,6 +400,7 @@ export function NotificationsSection() {
   const update = useUpdateNotification()
   const remove = useDeleteNotification()
   const test = useTestNotification()
+  const [deleting, setDeleting] = useState<NotificationDto | null>(null)
 
   const [editing, setEditing] = useState<{ id: number | null; form: NotificationRequest } | null>(null)
   const typeOptions = useTypeOptions(providers, editing?.form.type)
@@ -377,7 +442,7 @@ export function NotificationsSection() {
 
   const runTest = () => {
     if (!editing) return
-    test.mutate(editing.form, {
+    test.mutate({ value: editing.form, id: editing.id }, {
       onSuccess: (r) =>
         toast.show({
           message: r.success ? now`Test notification sent` : now`Test failed`,
@@ -387,6 +452,7 @@ export function NotificationsSection() {
     })
   }
 
+  const deletingName = deleting?.name ?? ''
   const form = editing?.form
   const missingRequired =
     !form || isBlank(form.name) || (descriptor?.fields ?? []).some((f) => f.required && isBlank(form.config[f.key]))
@@ -394,7 +460,7 @@ export function NotificationsSection() {
   return (
     <SettingsSection
       id="notifications"
-      title={<Trans>Outbound notifications</Trans>}
+      title={<Trans>Notification connections</Trans>}
       description={
         <Trans>Send events to chat apps, push services or a webhook. Each connection picks its own events.</Trans>
       }
@@ -438,9 +504,12 @@ export function NotificationsSection() {
                   <TagScope tagIds={n.tagIds} tags={tags} />
                 </Table.Td>
                 <Table.Td>
-                  <Badge size="sm" variant="light" color={n.enabled ? 'var(--ok)' : 'var(--neutral)'}>
-                    {n.enabled ? <Trans>Enabled</Trans> : <Trans>Disabled</Trans>}
-                  </Badge>
+                  <Group gap={6} wrap="wrap">
+                    <Badge size="sm" variant="light" color={n.enabled ? 'var(--ok)' : 'var(--neutral)'}>
+                      {n.enabled ? <Trans>Enabled</Trans> : <Trans>Disabled</Trans>}
+                    </Badge>
+                    {n.enabled && <DeliveryChip n={n} />}
+                  </Group>
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs" justify="flex-end" wrap="nowrap">
@@ -450,7 +519,7 @@ export function NotificationsSection() {
                     <ActionIcon
                       variant="subtle"
                       color="var(--danger)"
-                      onClick={() => remove.mutate(n.id)}
+                      onClick={() => setDeleting(n)}
                       aria-label={t`Delete connection`}
                     >
                       <IconTrash size={16} />
@@ -462,10 +531,21 @@ export function NotificationsSection() {
           </Table.Tbody>
         </Table>
       ) : (
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>No notification connections yet.</Trans>
-        </Text>
+        <EmptyState compact mood="asleep" title={t`No notification connections yet.`} />
       )}
+
+      <ConfirmDialog
+        opened={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title={<Trans>Delete {deletingName}?</Trans>}
+        confirmLabel={<Trans>Delete connection</Trans>}
+        loading={remove.isPending}
+        onConfirm={() => {
+          if (deleting) remove.mutate(deleting.id, { onSettled: () => setDeleting(null) })
+        }}
+      >
+        <Trans>Nothing is sent to it any more. This can't be undone.</Trans>
+      </ConfirmDialog>
 
       <Modal
         opened={editing !== null}
@@ -509,7 +589,7 @@ export function NotificationsSection() {
 
             <MultiSelect
               label={t`Only for tagged series`}
-              description={t`Leave empty to send for every series. Instance events like health and updates ignore this.`}
+              description={t`Leave empty to send for every series. Events without a series, like health, updates and imports, ignore this.`}
               data={tagOptions}
               value={form.tagIds.map(String)}
               onChange={(values) => setForm({ tagIds: values.map(Number) })}

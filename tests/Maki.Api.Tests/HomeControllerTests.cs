@@ -185,6 +185,24 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task JumpBackIn_fills_past_finished_series_across_candidate_chunks()
+    {
+        // limit 1 resolves two candidates at a time; the newest two are fully read, the third is not.
+        var open = _db.SeedSeries("Open");
+        SeedProgress(open, SeedChapter(open, 1), pageIndex: 0, completed: true, updatedAt: Base);
+        SeedChapter(open, 2);
+        foreach (var (title, hours) in new[] { ("Done B", 1), ("Done A", 2) })
+        {
+            var done = _db.SeedSeries(title);
+            SeedProgress(done, SeedChapter(done, 1), pageIndex: 0, completed: true, updatedAt: Base.AddHours(hours));
+        }
+
+        var response = Reading(await Controller().Reading(limit: 1, ct: CancellationToken.None));
+
+        Assert.Equal(open, Assert.Single(response.JumpBackIn).SeriesId);
+    }
+
+    [Fact]
     public async Task JumpBackIn_ignores_watched_chapters()
     {
         var seriesId = _db.SeedSeries();
@@ -338,8 +356,7 @@ public class HomeControllerTests : IDisposable
                 new ContinueReadingService(db),
                 null!, // settings
                 null!, // import service
-                null!, // user metrics
-                null!, // achievements
+                null!, // achievement queue
                 null!, // app paths
                 null!, // logger
                 null!, // current user
@@ -426,7 +443,7 @@ public class HomeControllerTests : IDisposable
         (await FromAnimePage(userId, allRootFolders)).Items;
 
     private async Task<(IReadOnlyList<HomeAnimeResumeItem> Items, string? Total)> FromAnimePage(
-        int userId = 1, bool allRootFolders = true)
+        int userId = 1, bool allRootFolders = true, int limit = AnimeResumeService.RailLimit)
     {
         var context = _db.NewContext(userId, allRootFolders);
         var controller = new HomeController(context, new ContinueReadingService(context))
@@ -434,7 +451,7 @@ public class HomeControllerTests : IDisposable
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
         };
         var result = await controller.FromAnime(
-            AnimeResumeFixture.Service(_db, context, _gate), ct: CancellationToken.None);
+            AnimeResumeFixture.Service(_db, context, _gate), limit, CancellationToken.None);
         var page = Assert.IsType<AnimeResumeService.RailPage>(Assert.IsType<OkObjectResult>(result).Value);
         return (page.Items, page.Total.ToString());
     }
@@ -476,6 +493,21 @@ public class HomeControllerTests : IDisposable
         var (items, total) = await FromAnimePage();
 
         Assert.Equal(AnimeResumeService.RailLimit, items.Count);
+        Assert.Equal((AnimeResumeService.RailLimit + 3).ToString(), total);
+    }
+
+    [Fact]
+    public async Task From_anime_returns_past_the_rail_cap_when_asked()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        for (var i = 1; i <= AnimeResumeService.RailLimit + 3; i++)
+        {
+            SeedFromAnime($"Series {i:000}", i, 8);
+        }
+
+        var (items, total) = await FromAnimePage(limit: AnimeResumeService.MaxRailLimit);
+
+        Assert.Equal(AnimeResumeService.RailLimit + 3, items.Count);
         Assert.Equal((AnimeResumeService.RailLimit + 3).ToString(), total);
     }
 

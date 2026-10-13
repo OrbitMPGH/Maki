@@ -15,30 +15,49 @@ namespace Maki.Core.Parsing;
 /// </summary>
 public static partial class ReleaseTags
 {
-    [GeneratedRegex(@"^(\d{4})(?:-\d{4})?$")]
+    [GeneratedRegex(@"^([0-9]{4})(?:-[0-9]{4})?$")]
     private static partial Regex YearPattern();
 
-    [GeneratedRegex(@"^\d+x\d+$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^[0-9]+x[0-9]+$", RegexOptions.IgnoreCase)]
     private static partial Regex ResolutionPattern();
 
-    [GeneratedRegex(@"^(?:v|vol\.?|volumes?|c|ch\.?|chapters?)\s*\d+(?:[.-](?:v|c|ch\.?)?\d+)?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?:v|vol\.?|volumes?|c|ch\.?|chapters?)\s*[0-9]+(?:[.-](?:v|c|ch\.?)?[0-9]+)?$", RegexOptions.IgnoreCase)]
     private static partial Regex VersionMarkerPattern();
 
-    // Two or three lowercase letters, optionally with a lowercase region suffix, are Maki's own
-    // language-suffix tags ("es", "pt-br", "zh-hans"). Case-sensitive on purpose: an uppercase or
-    // capitalised group name like "TCB" or "Ao" doesn't match and still survives as a group.
-    [GeneratedRegex(@"^[a-z]{2,3}(?:-[a-z]{2,4})?$")]
+    // Two lowercase letters, optionally with a region ("pt-BR", "pt-br") or script ("zh-Hans",
+    // "zh-hans") suffix, are Maki's own language-suffix tags, in either the canonical or the older
+    // all-lowercase spelling. Case-sensitive on purpose: an uppercase or capitalised group name
+    // like "TCB" or "Ao" doesn't match and still survives as a group, and no source declares a
+    // three-letter code, so "lfp" is a group.
+    [GeneratedRegex(@"^[a-z]{2}(?:-(?:[a-z]{2,4}|[A-Z]{2}|[A-Z][a-z]{3}))?$")]
     private static partial Regex LanguageTagPattern();
 
-    // These describe the release, not who made it.
+    // These describe the release, not who made it. The uppercase language codes and "END"/"Fin" are
+    // matched exactly: ignoring case would also reject real groups spelled "End", "Fin" or "Tr".
+    private static readonly HashSet<string> CaseSensitiveNoiseTokens = new(StringComparer.Ordinal)
+    {
+        "END", "Fin",
+        "DE", "FR", "ES", "PT", "PT-BR", "BR", "PL", "RU", "TR", "JP", "KR", "CN"
+    };
+
+    // The three-letter codes are ISO 639-2 language tags, which the two-letter pattern above
+    // deliberately leaves alone. The language names cover what non-English releases write
+    // ("[Español]"), and the container formats are what a scene release puts in brackets ("[CBZ]");
+    // none of them names a group.
     private static readonly HashSet<string> NoiseTokens = new(StringComparer.OrdinalIgnoreCase)
     {
+        "CBZ", "CBR", "CB7", "PDF", "EPUB",
+        "German", "Deutsch", "French", "Français", "Francais", "VF", "VOSTFR", "Spanish", "Español",
+        "Espanol", "Portuguese", "Português", "Portugues", "Polish", "Polski", "Russian", "Русский",
+        "Turkish", "Türkçe", "Turkce", "Japanese", "日本語", "Korean", "한국어", "Chinese", "中文", "简体",
         "BW", "c2c", "Censored", "Chapter", "Chapters", "Color", "Colored", "Colour", "Coloured",
         "Compilation", "compilation", "Complete", "Completed", "Digital", "Digital-HD",
         "Digital-Compilation", "English", "Fan", "Fanmade", "Fixed", "HD", "Manga", "Manhua",
         "Manhwa", "Official", "Omnibus", "One-shot", "Oneshot", "Ongoing", "Raw", "Raws", "rip",
         "Remastered", "Scan", "scanned", "Scanlation", "Tankobon", "Tankoubon", "Uncensored",
-        "Volume", "Volumes", "web", "web-dl", "webdl", "webrip", "Webtoon"
+        "Volume", "Volumes", "web", "web-dl", "webdl", "webrip", "Webtoon",
+        "ara", "chi", "deu", "eng", "fra", "fre", "ger", "ind", "ita", "jp", "jpn", "kor", "pol",
+        "por", "rus", "spa", "tha", "tur", "vie", "zh", "zho"
     };
 
     public static bool IsDigital(IReadOnlyList<string> tags) =>
@@ -68,12 +87,22 @@ public static partial class ReleaseTags
             if (ResolutionPattern().IsMatch(tag)) continue;
             if (tag.Length == 1 && char.IsLetter(tag[0])) continue;
             if (VersionMarkerPattern().IsMatch(tag)) continue;
+            if (IsMarker(tag)) continue;
             if (tag.StartsWith("Digital", StringComparison.OrdinalIgnoreCase)) continue;
             if (LanguageTagPattern().IsMatch(tag)) continue;
-            if (NoiseTokens.Contains(tag)) continue;
+            if (NoiseTokens.Contains(tag) || CaseSensitiveNoiseTokens.Contains(tag)) continue;
             return tag;
         }
 
         return null;
     }
+
+    /// <summary>
+    /// A tag that is nothing but a volume or chapter marker in any language ("(Tome 3)", "(第3巻)").
+    /// Every language counts whatever the settings say: a marker is never a group's name.
+    /// </summary>
+    private static bool IsMarker(string tag) =>
+        NameParsingProfile.AllLanguages.VolumeMatches(tag)
+            .Concat(NameParsingProfile.AllLanguages.ChapterMatches(tag))
+            .Any(m => m.Index == 0 && m.Length == tag.Length);
 }

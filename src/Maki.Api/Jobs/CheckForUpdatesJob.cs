@@ -34,6 +34,7 @@ public class CheckForUpdatesJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Update check failed");
+            context.ReportFailure(ex);
         }
     }
 }

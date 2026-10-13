@@ -1,4 +1,4 @@
-import { Badge, Stack, Text, Tooltip } from '@mantine/core'
+import { Stack, Text } from '@mantine/core'
 import { IconLock } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -6,6 +6,8 @@ import type { MessageDescriptor } from '@lingui/core'
 import type { ChapterFileQualityDto } from '../../api/types'
 import { QUALITY_TIER_COLOR, QUALITY_TIER_LABELS } from '../../api/upgrades'
 import { useLabel } from '../../i18n-context'
+import { HoverTooltip } from './HoverTooltip'
+import { LightBadge } from './lightMantine'
 
 const TIER_COLOR = QUALITY_TIER_COLOR
 
@@ -57,7 +59,7 @@ export function FileQualityBadge({
   const formatLabel = imageFormat ? renderLabel(FORMAT_LABEL[imageFormat] ?? imageFormat.toUpperCase()) : null
 
   return (
-    <Tooltip
+    <HoverTooltip
       withArrow
       multiline
       label={
@@ -100,9 +102,7 @@ export function FileQualityBadge({
         </Stack>
       }
     >
-      <Badge
-        size="sm"
-        variant="light"
+      <LightBadge
         color={TIER_COLOR[tier]}
         rightSection={
           trusted ? (
@@ -122,7 +122,7 @@ export function FileQualityBadge({
         }
       >
         {label}
-      </Badge>
-    </Tooltip>
+      </LightBadge>
+    </HoverTooltip>
   )
 }

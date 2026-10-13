@@ -101,6 +101,31 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queueUpdated", queueItem);
 
     /// <summary>
+    /// The download pause changed, by a person or because a resume time passed. Goes to everyone
+    /// who may pause and resume (<see cref="MakiPermission.ManageDownloadQueue"/>), not just admins,
+    /// so their pause controls do not wait for the poll. Rare enough to resolve the audience each time.
+    /// </summary>
+    public async Task QueuePauseChanged(object pause)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        var users = await db.Users
+            .Where(u => !u.Disabled && !u.PendingSetup)
+            .Select(u => new { u.Id, u.Permissions })
+            .ToListAsync();
+        var groups = users
+            .Where(u => u.Permissions.Grants(MakiPermission.ManageDownloadQueue))
+            .Select(u => EventsHub.UserGroup(u.Id))
+            .ToList();
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        await hubContext.Clients.Groups(groups).SendAsync("queuePauseChanged", pause);
+    }
+
+    /// <summary>
     /// A chapter finished importing. Unlike the rest of this class the audience is not "admins" —
     /// a reader with a grant on the folder genuinely wants to know their series just gained a
     /// chapter — so it is resolved from the grants each time.
@@ -146,7 +171,9 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     /// <see cref="ChapterImported"/> and for the same reason: whoever can see the series is who is
     /// staring at its Sources card waiting for the spinner to go away.
     /// </summary>
-    public async Task SourceMatchFinished(int seriesId, int rootFolderId, int mappedCount)
+    /// <param name="failedSources">Names of the sources whose search failed, so the card can say so rather than "no match".</param>
+    public async Task SourceMatchFinished(
+        int seriesId, int rootFolderId, int mappedCount, IReadOnlyList<string>? failedSources = null)
     {
         var groups = await AudienceForAsync(rootFolderId);
         if (groups.Count == 0)
@@ -154,7 +181,23 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
             return;
         }
 
-        await hubContext.Clients.Groups(groups).SendAsync("sourceMatchFinished", new { seriesId, mappedCount });
+        await hubContext.Clients.Groups(groups).SendAsync("sourceMatchFinished", new { seriesId, mappedCount, failedSources = failedSources ?? [] });
+    }
+
+    /// <summary>
+    /// The files a library import registered for a series are linked to its chapters, after its
+    /// background source match. Same audience as <see cref="SourceMatchFinished"/>; the import page
+    /// counts these to show how far the background linking has got.
+    /// </summary>
+    public async Task SeriesFilesLinked(int seriesId, int rootFolderId, int linked, int total)
+    {
+        var groups = await AudienceForAsync(rootFolderId);
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        await hubContext.Clients.Groups(groups).SendAsync("seriesFilesLinked", new { seriesId, linked, total });
     }
 
     /// <summary>
@@ -193,7 +236,7 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     /// are set for per-file stages; done/success/error mark completion. <paramref name="operationId"/>
     /// is the id the client generated for this import run, so two admins importing at the same time
     /// can tell their own run's events apart from each other's on the shared broadcast.</summary>
-    public Task ImportProgress(
+    public virtual Task ImportProgress(
         string folderName, string stage, int? current = null, int? total = null,
         bool done = false, bool success = false, string? error = null, string? operationId = null) =>
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("importProgress",

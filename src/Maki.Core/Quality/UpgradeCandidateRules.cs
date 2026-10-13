@@ -21,4 +21,9 @@ public static class UpgradeCandidateRules
     public static bool SameCopy(ChapterFile file, string sourceName, string? sourceChapterId) =>
         string.Equals(sourceName, file.SourceName, StringComparison.OrdinalIgnoreCase) &&
         (file.SourceChapterId is null || file.SourceChapterId == sourceChapterId);
+
+    /// <summary>Failed downloads of one candidate copy after which the daily scan stops queuing it.</summary>
+    public const int FailedAttemptLimit = 3;
+
+    public static bool GivenUp(int failedAttempts) => failedAttempts >= FailedAttemptLimit;
 }

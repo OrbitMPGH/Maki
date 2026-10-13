@@ -1,3 +1,4 @@
+import { errorText } from '../api/errorText'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
@@ -110,7 +111,7 @@ export function RatingImportModal({
         <Alert color="var(--danger)" variant="light">
           <Stack gap="xs">
             <Text size="sm">
-              {start.error ? String(start.error) : queryError ? String(queryError) : <Trans>Couldn't reach {label}.</Trans>}
+              {start.error ? errorText(start.error) : queryError ? errorText(queryError) : <Trans>Couldn't reach {label}.</Trans>}
             </Text>
             <Group justify="flex-end">
               <Button size="xs" variant="light" color="var(--danger)" onClick={retry}>
@@ -173,6 +174,7 @@ export function RatingImportModal({
               <Group key={i.seriesId} justify="space-between" wrap="nowrap" gap="sm">
                 <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
                   <Checkbox
+                    aria-label={i.title}
                     size="xs"
                     checked={selected.has(i.seriesId)}
                     onChange={() => toggle(i.seriesId)}

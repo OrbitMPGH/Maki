@@ -59,6 +59,9 @@ public class Series
 
     /// <summary>Null means the instance default from <c>SettingKeys.UpgradesDefaultProfileId</c>, which may itself be unset.</summary>
     public int? UpgradeProfileId { get; set; }
+
+    /// <summary>Opts this series in or out of deleting read chapter files; see <c>ReadFileCleanupService</c>.</summary>
+    public ReadFileCleanup ReadFileCleanup { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
 
     /// <summary>Which source a download tries first. Null means the instance default from <c>SettingKeys.DownloadSourceOrder</c>.</summary>
@@ -116,6 +119,14 @@ public class Series
     public bool SourceMatchPending { get; set; }
 
     /// <summary>
+    /// A library import registered this series' files but could not link them yet: chapter rows
+    /// only exist once a source is matched and synced. The source match worker links them, and
+    /// rewrites ComicInfo.xml if the import asked for it, after the match. Persisted for the same
+    /// reason as <see cref="SourceMatchPending"/>: the work must survive a restart.
+    /// </summary>
+    public PendingImportLink PendingImportLink { get; set; }
+
+    /// <summary>
     /// <see cref="IncognitoMode.ScrobbleOnly"/> excludes this series from scrobbling. <see
     /// cref="IncognitoMode.Full"/> also excludes it from Rewind/reading-history <c>StatsEvent</c>s.
     /// Gated at write time (<c>StatsEventService</c>, <c>ReadingProgressService</c>,
@@ -125,6 +136,14 @@ public class Series
 
     public DateTime Added { get; set; }
     public DateTime? LastMetadataRefresh { get; set; }
+
+    /// <summary>
+    /// Fields a user set by hand. A metadata refresh, the poster download and the image-cache
+    /// rebuild all skip a locked field, so the user's value holds until someone resets it.
+    /// </summary>
+    public SeriesMetadataField LockedFields { get; set; }
+
+    public bool IsLocked(SeriesMetadataField field) => (LockedFields & field) == field;
 
     public List<Chapter> Chapters { get; set; } = [];
     public List<SourceMapping> SourceMappings { get; set; } = [];

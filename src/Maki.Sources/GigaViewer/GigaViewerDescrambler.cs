@@ -1,7 +1,6 @@
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 
 namespace Maki.Sources.GigaViewer;
 
@@ -26,43 +25,58 @@ public static class GigaViewerDescrambler
             return bytes;
         }
 
-        using var result = Transpose(source, blockWidth, blockHeight);
+        TransposeInPlace(source, blockWidth, blockHeight);
         using var stream = new MemoryStream();
-        result.SaveAsJpeg(stream, new JpegEncoder { Quality = 90 });
+        source.SaveAsJpeg(stream, new JpegEncoder { Quality = 90 });
         return stream.ToArray();
     }
 
     /// <summary>The pixel transform alone, for unit testing without a lossy JPEG round trip.</summary>
     public static Image<Rgba32> Descramble(Image<Rgba32> source)
     {
+        var result = source.Clone();
         var blockWidth = source.Width / 32 * 8;
         var blockHeight = source.Height / 32 * 8;
-        return Transpose(source, blockWidth, blockHeight);
-    }
-
-    private static Image<Rgba32> Transpose(Image<Rgba32> source, int blockWidth, int blockHeight)
-    {
-        var result = source.Clone();
-        if (blockWidth == 0 || blockHeight == 0)
+        if (blockWidth > 0 && blockHeight > 0)
         {
-            return result;
+            TransposeInPlace(result, blockWidth, blockHeight);
         }
 
-        result.Mutate(ctx =>
-        {
-            for (var i = 0; i < 16; i++)
-            {
-                var srcX = i % 4 * blockWidth;
-                var srcY = i / 4 * blockHeight;
-                var dstX = i / 4 * blockWidth;
-                var dstY = i % 4 * blockHeight;
+        return result;
+    }
 
-                // Crop from the original (source), never from the in-progress result, so
-                // reading block N doesn't pick up a block already written this pass.
-                ctx.DrawImage(source, new Point(dstX, dstY), new Rectangle(srcX, srcY, blockWidth, blockHeight), 1f);
+    /// <summary>
+    /// Swaps each block (row, col) with (col, row) through one block-sized buffer. The diagonal
+    /// stays put. Drawing into a clone held a second full page of pixels for every descramble.
+    /// </summary>
+    private static void TransposeInPlace(Image<Rgba32> image, int blockWidth, int blockHeight)
+    {
+        var block = new Rgba32[blockWidth * blockHeight];
+        image.ProcessPixelRows(rows =>
+        {
+            for (var row = 0; row < 4; row++)
+            {
+                for (var col = row + 1; col < 4; col++)
+                {
+                    for (var y = 0; y < blockHeight; y++)
+                    {
+                        rows.GetRowSpan(row * blockHeight + y).Slice(col * blockWidth, blockWidth)
+                            .CopyTo(block.AsSpan(y * blockWidth, blockWidth));
+                    }
+
+                    for (var y = 0; y < blockHeight; y++)
+                    {
+                        rows.GetRowSpan(col * blockHeight + y).Slice(row * blockWidth, blockWidth)
+                            .CopyTo(rows.GetRowSpan(row * blockHeight + y).Slice(col * blockWidth, blockWidth));
+                    }
+
+                    for (var y = 0; y < blockHeight; y++)
+                    {
+                        block.AsSpan(y * blockWidth, blockWidth)
+                            .CopyTo(rows.GetRowSpan(col * blockHeight + y).Slice(row * blockWidth, blockWidth));
+                    }
+                }
             }
         });
-
-        return result;
     }
 }

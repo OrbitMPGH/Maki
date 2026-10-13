@@ -69,7 +69,7 @@ export function AnimeCoverageBar({
    */
   hideResumeHint?: boolean
 }) {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const renderLabel = useLabel()
   const [rawOpen, setRawOpen] = useState(false)
 
@@ -152,7 +152,7 @@ export function AnimeCoverageBar({
     const observer = new ResizeObserver(measureLabels)
     observer.observe(track)
     return () => observer.disconnect()
-  })
+  }, [model, measureLabels, i18n.locale])
 
   const raw = (
       <>

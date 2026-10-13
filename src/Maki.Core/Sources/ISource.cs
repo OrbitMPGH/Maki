@@ -53,7 +53,10 @@ public interface ISource
 
     /// <summary>
     /// Resolves page image URLs for a chapter. Must be called at download time, not enqueue
-    /// time — some sources (MangaDex at-home) return short-lived URLs.
+    /// time, since some sources (MangaDex at-home) return short-lived URLs. A response that lacks the page
+    /// payload altogether throws <see cref="InvalidOperationException"/> naming the URL, and a
+    /// locked chapter throws <see cref="ChapterLockedException"/>; an empty list means the site
+    /// genuinely lists no pages.
     /// </summary>
     Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default);
 
@@ -243,9 +246,7 @@ public record ChapterPages(IReadOnlyList<PageRequest> Pages);
 /// <summary>
 /// A single page image fetch. Headers carry Referer/User-Agent/cookie requirements
 /// end-to-end to the downloader — never fetch a page URL without its headers.
-/// ScrambleOffset > 0 marks a MangaFire-style tile-scrambled image; the downloader
-/// descrambles it after fetching. XorKeyHex, when set, is a hex-encoded key the
-/// downloader XOR-decrypts the fetched bytes with (MangaPlus serves images this way).
+/// XorKeyHex, when set, is a hex-encoded key the downloader XOR-decrypts the fetched bytes with (MangaPlus serves images this way).
 /// Data, when set, is already-fetched bytes the downloader writes directly instead of
 /// issuing an HTTP request — for a source whose CDN only accepts a real browser's
 /// in-page image fetch (e.g. TopManhua, blocked when re-requested by a plain client),
@@ -254,6 +255,5 @@ public record ChapterPages(IReadOnlyList<PageRequest> Pages);
 public record PageRequest(
     string Url,
     IReadOnlyDictionary<string, string>? Headers = null,
-    int ScrambleOffset = 0,
     string? XorKeyHex = null,
     byte[]? Data = null);

@@ -91,6 +91,15 @@ public class TasteVectorInstallerTests : IDisposable
     }
 
     [Fact]
+    public void RefusesANullVector()
+    {
+        // length(NULL) != N is NULL, so the width count has to name the NULL case itself.
+        var path = Build(nullVectorRows: 2);
+        var ex = Assert.Throws<InvalidOperationException>(() => TasteVectorInstaller.ValidateStaged(path));
+        Assert.Contains("bytes wide", ex.Message);
+    }
+
+    [Fact]
     public void RefusesANullScale()
     {
         // SQLite has no NaN and stores one as NULL, so a scale that went wrong upstream arrives
@@ -134,12 +143,12 @@ public class TasteVectorInstallerTests : IDisposable
 
     private string Build(
         int rows = 1200, int? dimensions = 8, string trainingFold = "all", string? extraTable = null,
-        int vectorBytes = 8, int nullScaleRows = 0, int zeroScaleRows = 0)
+        int vectorBytes = 8, int nullScaleRows = 0, int zeroScaleRows = 0, int nullVectorRows = 0)
     {
         var path = Path.Combine(_dir, Guid.NewGuid().ToString("N") + ".db");
         using var conn = new SqliteConnection($"Data Source={path}");
         conn.Open();
-        Execute(conn, "CREATE TABLE item_vectors (id INTEGER PRIMARY KEY, scale REAL, vec BLOB NOT NULL)");
+        Execute(conn, "CREATE TABLE item_vectors (id INTEGER PRIMARY KEY, scale REAL, vec BLOB)");
         Execute(conn, "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
         if (extraTable is not null)
         {
@@ -160,7 +169,7 @@ public class TasteVectorInstallerTests : IDisposable
                 ps.Value = i < nullScaleRows
                     ? DBNull.Value
                     : i < nullScaleRows + zeroScaleRows ? 0.0 : 0.01;
-                pv.Value = new byte[vectorBytes];
+                pv.Value = i < nullVectorRows ? DBNull.Value : new byte[vectorBytes];
                 cmd.ExecuteNonQuery();
             }
 

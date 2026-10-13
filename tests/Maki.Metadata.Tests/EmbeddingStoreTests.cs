@@ -19,6 +19,36 @@ public class EmbeddingStoreTests : IDisposable
     }
 
     [Fact]
+    public void A_file_records_the_model_its_vectors_came_from()
+    {
+        // EnsureSchema adopts an unrecorded file as the running model's.
+        Assert.Equal(EmbeddingModelProfile.Base.Version, _store.GetModelVersion());
+
+        _store.SetModelVersion("older-model");
+        Assert.Equal("older-model", _store.GetModelVersion());
+
+        var other = Path.Combine(_dir, "other.db");
+        using (var conn = new SqliteConnection($"Data Source={other};Pooling=False"))
+        {
+            conn.Open();
+        }
+
+        EmbeddingStore.StampModelVersion(other, "artifact-model");
+        Assert.Equal("artifact-model", new EmbeddingStore(
+            new EmbeddingOptions(_dir, other, _dir, EmbeddingModelProfile.Base)).GetModelVersion());
+    }
+
+    [Fact]
+    public void ClearTagVectors_DropsEveryNameEmbedding()
+    {
+        _store.UpsertTagVectors([(1, [1f, 0f, 0f]), (2, [0f, 1f, 0f])]);
+
+        _store.ClearTagVectors();
+
+        Assert.Empty(_store.GetTagVectorIds());
+    }
+
+    [Fact]
     public void Upsert_ThenReadVector_RoundTripsWithinQuantizationError()
     {
         // Vectors are stored int8 with a per-row scale, so a round trip is close, not exact.

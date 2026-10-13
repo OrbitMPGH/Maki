@@ -1,3 +1,4 @@
+using System.Data;
 using Maki.Api.Localization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -38,6 +39,10 @@ public class DiscoverFiltersController(ILocalizer localizer, MakiDbContext db) :
             return this.Fail(localizer, "error.libraryFilters.nameRequired");
         }
 
+        // Serializable takes SQLite's write lock before the count is read, as custom rails do, so two
+        // concurrent creates cannot both read the same pre-insert count and pass the cap.
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+
         var count = await Presets().CountAsync(ct);
         if (count >= MaxPresets)
         {
@@ -54,6 +59,7 @@ public class DiscoverFiltersController(ILocalizer localizer, MakiDbContext db) :
         };
         db.SavedFilters.Add(filter);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return Ok(ToDto(filter));
     }
 

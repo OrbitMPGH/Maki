@@ -64,7 +64,14 @@ public sealed class InboxRenderer(ILocalizer localizer)
         {
             // Asked rather than pattern-matched on a prefix: a key the catalogue does not have comes
             // back as itself, which is exactly the right answer for text somebody else wrote.
-            args["error"] = localizer.GetFor(locale, errorKey, args);
+            args["error"] = localizer.GetForOrKey(locale, errorKey, args);
+        }
+
+        // An edited request's chapter range, stored as one of four keys plus its bounds. A row from
+        // before the range was keyed stores English, which is not a key and comes back as itself.
+        if (args.TryGetValue("range", out var range) && range is string { Length: > 0 } rangeKey)
+        {
+            args["range"] = localizer.GetForOrKey(locale, rangeKey, args);
         }
 
         // A health check's sentence, stored as its key with its values under a `detail.` prefix (see
@@ -75,7 +82,7 @@ public sealed class InboxRenderer(ILocalizer localizer)
             var detailArgs = args
                 .Where(a => a.Key.StartsWith("detail.", StringComparison.Ordinal))
                 .ToDictionary(a => a.Key["detail.".Length..], a => a.Value, StringComparer.Ordinal);
-            args["detail"] = localizer.GetFor(locale, detailKey, detailArgs);
+            args["detail"] = localizer.GetForOrKey(locale, detailKey, detailArgs);
         }
 
         // A size is stored as bytes and worded here, in the reader's number format.

@@ -116,9 +116,11 @@ export function DensityControl({
   onChange: (density: Density) => void
   size?: string
 }) {
+  const { t } = useLinguiMacro()
   const options = useDensityOptions()
   return (
     <SegmentedControl
+      aria-label={t`Density`}
       size={size}
       value={value}
       onChange={(v) => onChange(v as Density)}

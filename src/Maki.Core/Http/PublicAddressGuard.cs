@@ -145,6 +145,8 @@ public static class PublicAddressGuard
         (b[0] == 169 && b[1] == 254) ||               // link-local
         (b[0] == 172 && (b[1] & 0xF0) == 16) ||       // 172.16/12
         (b[0] == 192 && b[1] == 168) ||               // 192.168/16
+        (b[0] == 192 && b[1] == 0 && b[2] == 0) ||    // 192.0.0.0/24, IETF protocol assignments
+        (b[0] == 198 && (b[1] & 0xFE) == 18) ||       // 198.18/15, benchmarking
         b[0] >= 224);                                 // multicast, reserved, broadcast
 
     /// <summary>
@@ -152,6 +154,17 @@ public static class PublicAddressGuard
     /// configured HTTP proxy is let through, since the proxy (not this process) makes the real one.
     /// </summary>
     public static SocketsHttpHandler CreateHandler() => new() { ConnectCallback = ConnectAsync };
+
+    /// <summary>
+    /// <see cref="CreateHandler"/> with automatic redirects off, for clients whose
+    /// <see cref="ProxiedTargetGuardHandler"/> follows and re-checks them.
+    /// </summary>
+    public static SocketsHttpHandler CreateManualRedirectHandler()
+    {
+        var handler = CreateHandler();
+        handler.AllowAutoRedirect = false;
+        return handler;
+    }
 
     private static async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, CancellationToken ct)
     {
@@ -189,6 +202,18 @@ public static class PublicAddressGuard
             socket.Dispose();
             throw;
         }
+    }
+
+    /// <summary>The destination of a plain-http request that goes through a proxy, or null when it does not.</summary>
+    internal static Uri? ProxiedPlainHttpTarget(HttpRequestMessage request, IWebProxy proxy)
+    {
+        var target = request.RequestUri;
+        if (target is null || target.Scheme != Uri.UriSchemeHttp || proxy.IsBypassed(target))
+        {
+            return null;
+        }
+
+        return proxy.GetProxy(target) is { } via && via != target ? target : null;
     }
 
     internal static async ValueTask EnsureTargetPublicAsync(Uri? target, CancellationToken ct)
@@ -233,5 +258,83 @@ public static class PublicAddressGuard
         return proxy != null && proxy != target &&
                proxy.Port == context.DnsEndPoint.Port &&
                proxy.IdnHost.Equals(context.DnsEndPoint.Host, StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+/// <summary>
+/// Checks the target of every plain-http request that goes through a proxy. Such requests share one
+/// pooled connection to the proxy whatever their destination, so <see cref="PublicAddressGuard.CreateHandler"/>
+/// only sees the first one. Add it after the guarded primary handler on every client that uses it.
+/// <para>
+/// With <paramref name="followRedirects"/> the handler follows up to five redirects itself and checks
+/// each hop, which needs the primary handler built by
+/// <see cref="PublicAddressGuard.CreateManualRedirectHandler"/>. A redirect that
+/// <c>SocketsHttpHandler</c> follows on its own would reuse the proxy connection unchecked.
+/// </para>
+/// </summary>
+public sealed class ProxiedTargetGuardHandler(IWebProxy? proxy = null, bool followRedirects = false) : DelegatingHandler
+{
+    private const int MaxRedirects = 5;
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        for (var hop = 0; ; hop++)
+        {
+            await CheckAsync(request, ct);
+            var response = await base.SendAsync(request, ct);
+            if (!followRedirects || !IsRedirect(response.StatusCode) || response.Headers.Location is not { } location)
+            {
+                return response;
+            }
+
+            var next = location.IsAbsoluteUri ? location : new Uri(request.RequestUri!, location);
+            var keepsMethod = response.StatusCode is HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+            var downgrade = request.RequestUri!.Scheme == Uri.UriSchemeHttps && next.Scheme == Uri.UriSchemeHttp;
+            if (downgrade || (keepsMethod && request.Content is not null))
+            {
+                return response;
+            }
+
+            if (hop >= MaxRedirects)
+            {
+                response.Dispose();
+                throw new HttpRequestException($"Too many redirects from '{request.RequestUri}'");
+            }
+
+            response.Dispose();
+            PublicAddressGuard.EnsureAllowed(next);
+            request = Follow(request, next, keepsMethod);
+        }
+    }
+
+    private async ValueTask CheckAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        if (PublicAddressGuard.ProxiedPlainHttpTarget(request, proxy ?? HttpClient.DefaultProxy) is { } target)
+        {
+            await PublicAddressGuard.EnsureTargetPublicAsync(target, ct);
+        }
+    }
+
+    private static bool IsRedirect(HttpStatusCode status) => status is
+        HttpStatusCode.MovedPermanently or HttpStatusCode.Found or HttpStatusCode.SeeOther or
+        HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+
+    private static HttpRequestMessage Follow(HttpRequestMessage previous, Uri next, bool keepsMethod)
+    {
+        var method = keepsMethod || previous.Method == HttpMethod.Head ? previous.Method : HttpMethod.Get;
+        var request = new HttpRequestMessage(method, next) { Version = previous.Version, VersionPolicy = previous.VersionPolicy };
+        var sameHost = string.Equals(previous.RequestUri?.IdnHost, next.IdnHost, StringComparison.OrdinalIgnoreCase);
+        foreach (var header in previous.Headers)
+        {
+            if (header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) ||
+                (!sameHost && header.Key.Equals("Cookie", StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        return request;
     }
 }

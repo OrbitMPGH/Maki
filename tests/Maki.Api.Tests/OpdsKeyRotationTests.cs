@@ -48,10 +48,12 @@ public class OpdsKeyRotationTests : IDisposable
         db.Database.GetInfrastructure().GetRequiredService<IMigrator>().Migrate(target);
     }
 
+    /// <summary>Migrates, then marks the placeholder account as just signed in, which a passwordless account needs to mint.</summary>
     private void MigrateToHead()
     {
         using var db = NewContext();
         db.Database.Migrate();
+        db.Users.ExecuteUpdate(s => s.SetProperty(u => u.LastLoginAt, DateTime.UtcNow));
     }
 
     /// <summary>

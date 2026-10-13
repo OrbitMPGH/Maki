@@ -6,7 +6,6 @@ public class ConfigFile
 {
     public int Port { get; set; } = 8990;
     public string LogLevel { get; set; } = "Information";
-    public string UrlBase { get; set; } = string.Empty;
 
     /// <summary>
     /// <c>Off</c>, <c>Minimal</c> or <c>Full</c>. See <c>Maki.Api.Logging.HttpRequestLogMode</c>.
@@ -35,15 +34,24 @@ public class ConfigFile
 public class ConfigFileProvider
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions ReadOptions = new() { PropertyNameCaseInsensitive = true };
 
     public ConfigFileProvider(AppPaths paths)
     {
         this.paths = paths;
 
         var raw = File.Exists(paths.ConfigFile) ? File.ReadAllText(paths.ConfigFile) : null;
-        Config = raw is null
-            ? new ConfigFile()
-            : JsonSerializer.Deserialize<ConfigFile>(raw) ?? new ConfigFile();
+        try
+        {
+            Config = raw is null
+                ? new ConfigFile()
+                : JsonSerializer.Deserialize<ConfigFile>(raw, ReadOptions) ?? new ConfigFile();
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException(
+                $"{paths.ConfigFile} is not valid JSON: {ex.Message}", ex);
+        }
 
         // Rewrite whenever the file is missing or still carries the retired apiKey. Leaving a dead
         // secret behind in a config file is how someone later concludes it still works and treats a
@@ -56,7 +64,10 @@ public class ConfigFileProvider
         // ones already in effect, so this never changes behaviour.
         if (raw is null || raw.Contains("\"apiKey\"", StringComparison.OrdinalIgnoreCase) || IsMissingKeys(raw))
         {
-            File.WriteAllText(paths.ConfigFile, JsonSerializer.Serialize(Config, JsonOptions));
+            // Written beside the file and moved over it, so a crash mid-write cannot leave an empty config.json.
+            var temp = paths.ConfigFile + ".tmp";
+            File.WriteAllText(temp, JsonSerializer.Serialize(Config, JsonOptions));
+            File.Move(temp, paths.ConfigFile, overwrite: true);
         }
     }
 
@@ -68,8 +79,10 @@ public class ConfigFileProvider
             if (document.RootElement.ValueKind != JsonValueKind.Object)
                 return false;
 
-            return typeof(ConfigFile).GetProperties()
-                .Any(property => !document.RootElement.TryGetProperty(property.Name, out _));
+            var present = document.RootElement.EnumerateObject()
+                .Select(p => p.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return typeof(ConfigFile).GetProperties().Any(property => !present.Contains(property.Name));
         }
         catch (JsonException)
         {

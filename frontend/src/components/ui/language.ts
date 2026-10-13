@@ -6,7 +6,7 @@ import type { LocaleCode } from '../../i18n'
 
 /**
  * The picker's options: every shipped language by its endonym, plus the empty value that means
- * "follow the browser". "" is a real choice rather than a null — it deletes the stored row.
+ * "follow the browser". "" is a real choice rather than a null, it deletes the stored row.
  *
  * A hook rather than a table, because only the first entry is translated and a module-scope
  * constant would freeze it in whatever language was active when the module first evaluated.
@@ -27,7 +27,7 @@ export function useLanguageOptions(): { value: string; label: string }[] {
  * Shared by the Language card in settings and the one-off announcement modal. Every step below is
  * load-bearing and none of them is obvious, which is reason enough not to have two copies.
  *
- * Returns null while the settings are still loading — the caller's cue to stay read-only rather
+ * Returns null while the settings are still loading, the caller's cue to stay read-only rather
  * than save a half-known record, since the UI settings are one record with one PUT.
  */
 export function useApplyLanguage(): ((value: string) => void) | null {
@@ -57,8 +57,11 @@ export function useApplyLanguage(): ((value: string) => void) | null {
     void applied.then(() => {
       // Error messages, notification bodies and queue labels are all rendered server-side, so they
       // sit in the query cache in the language they were fetched in. Invalidating one key is not
-      // enough; almost every payload carries some.
-      void queryClient.clear()
+      // enough; almost every payload carries some. Invalidate rather than clear: clear() tears down
+      // every Query instance, including the one AuthProvider's useMe observer is attached to, and
+      // nothing re-renders AuthProvider after a language change, so a later sign-out or 401 wrote
+      // null into a Query nobody watched and the app stayed on screen as if signed in.
+      void queryClient.invalidateQueries()
     })
   }
 }

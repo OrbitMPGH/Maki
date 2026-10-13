@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json.Serialization;
 using Maki.Api.Dtos;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.Embedding;
@@ -220,8 +221,13 @@ public class TasteInsightsService(
     /// </param>
     private sealed record Facet(string Key, string Name, bool IsTag, double Specificity);
 
+    /// <param name="hidden">
+    /// The caller's never-show list. Passed in because it is a per-user setting this singleton cannot
+    /// read, and folded into each group's scan so a rail stays full rather than being cut short.
+    /// </param>
     public async Task<TasteInsights> GetAsync(
-        ICurrentUser scope, TasteView view, bool refresh, CancellationToken ct = default)
+        ICurrentUser scope, TasteView view, bool refresh, IReadOnlyList<CatalogueTerm>? hidden = null,
+        CancellationToken ct = default)
     {
         // One library read for both the key and the build behind a miss. Keying on a snapshot this
         // then throws away would read the library, the overrides and the read counts twice over on
@@ -248,7 +254,8 @@ public class TasteInsightsService(
             suppressed = await RecommendationFeedbackService.SuppressedAsync(inputDb, scope.UserId, ct);
         }
         var key = $"{scope.UserId}:{view}:{feedbackRevision}:{signalRevision}:{nextDismissalExpiry}:{scope.MaxContentRating}:" +
-            $"{scope.AllRootFolders}:{string.Join(',', scope.RootFolderIds.Order())}:{snapshot.Fingerprint()}";
+            $"{scope.AllRootFolders}:{string.Join(',', scope.RootFolderIds.Order())}:{snapshot.Fingerprint()}:" +
+            CatalogueRules.TermsKey(hidden);
         await _lock.WaitAsync(ct);
         try
         {
@@ -259,7 +266,7 @@ public class TasteInsightsService(
                 return hit.Insights;
             }
 
-            var insights = await BuildAsync(scope, snapshot, suppressed, view, ct);
+            var insights = await BuildAsync(scope, snapshot, suppressed, view, hidden, ct);
             _cache[key] = (insights, DateTime.UtcNow);
 
             foreach (var stale in _cache
@@ -289,7 +296,7 @@ public class TasteInsightsService(
 
     private async Task<TasteInsights> BuildAsync(
         ICurrentUser scope, SeedSnapshot snapshot, HashSet<long> suppressed, TasteView view,
-        CancellationToken ct)
+        IReadOnlyList<CatalogueTerm>? hidden, CancellationToken ct)
     {
         var index = await vectorIndex.GetAsync(ct);
         if (index is null || index.Count == 0)
@@ -377,7 +384,7 @@ public class TasteInsightsService(
         }
 
         var groups = await GroupsAsync(index, points, facets, mined, scope.MaxContentRating,
-            seeded.LibraryIds, seeded.EligibleIds.ToHashSet(), suppressed, ct);
+            seeded.LibraryIds, seeded.EligibleIds.ToHashSet(), suppressed, hidden, ct);
         var (oddOneOut, oddSimilarity) = OddOneOut(points, mined, groups.Centroids);
 
         logger.LogInformation(
@@ -569,6 +576,7 @@ public class TasteInsightsService(
         IReadOnlyList<long> libraryIds,
         IReadOnlySet<long> effectiveIds,
         HashSet<long> suppressed,
+        IReadOnlyList<CatalogueTerm>? hidden,
         CancellationToken ct)
     {
         var owned = points.Select(p => p.Row).ToHashSet();
@@ -594,7 +602,8 @@ public class TasteInsightsService(
                 Genres: names.Where(f => !f.IsTag).Select(f => f.Name).ToList() is { Count: > 0 } genres ? genres : null,
                 Tags: names.Where(f => f.IsTag).Select(f => f.Name).ToList() is { Count: > 0 } tags ? tags : null,
                 ContentRatings: allowed,
-                MinChapters: 5));
+                MinChapters: 5,
+                Hidden: hidden));
 
             scans.Add((group, observedCentroid, plan.Impossible || effectiveCentroid is null
                 ? [] : Scan(index, effectiveCentroid, plan, owned, suppressed, ct)));

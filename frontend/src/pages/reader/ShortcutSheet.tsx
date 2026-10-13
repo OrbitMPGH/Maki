@@ -1,6 +1,6 @@
-import { ActionIcon } from '@mantine/core'
+import { ActionIcon, FocusTrap } from '@mantine/core'
 import { IconX } from '@tabler/icons-react'
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 
 interface Shortcut {
@@ -14,8 +14,12 @@ interface Shortcut {
  */
 export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose: () => void }) {
   const { t } = useLingui()
-  const panelRef = useRef<HTMLDivElement>(null)
-  useEffect(() => panelRef.current?.focus(), [])
+  // The trap moves focus into the sheet and keeps Tab inside it; this hands focus back to whatever
+  // opened it, which is otherwise lost to the body.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    return () => opener?.focus?.()
+  }, [])
 
   // The arrows follow the reading direction, same as the handler that reads them.
   const forward = rtl ? '←' : '→'
@@ -55,43 +59,44 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
 
   return (
     <div className="reader-shortcuts" onClick={onClose}>
-      <div
-        ref={panelRef}
-        className="reader-shortcuts-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reader-shortcuts-title"
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="reader-shortcuts-head">
-          <h2 id="reader-shortcuts-title">
-            <Trans>Keyboard shortcuts</Trans>
-          </h2>
-          <ActionIcon variant="subtle" color="gray" className="reader-end-quiet" onClick={onClose} aria-label={t`Close`}>
-            <IconX size={16} />
-          </ActionIcon>
+      <FocusTrap>
+        <div
+          className="reader-shortcuts-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reader-shortcuts-title"
+          tabIndex={-1}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="reader-shortcuts-head">
+            <h2 id="reader-shortcuts-title">
+              <Trans>Keyboard shortcuts</Trans>
+            </h2>
+            <ActionIcon variant="subtle" color="gray" className="reader-end-quiet" onClick={onClose} aria-label={t`Close`}>
+              <IconX size={16} />
+            </ActionIcon>
+          </div>
+          <div className="reader-shortcuts-groups">
+            {groups.map((group) => (
+              <section key={group.title}>
+                <h3>{group.title}</h3>
+                <dl>
+                  {group.items.map((item) => (
+                    <div key={item.label} className="reader-shortcuts-row">
+                      <dt>{item.label}</dt>
+                      <dd>
+                        {item.keys.map((key) => (
+                          <kbd key={key}>{key}</kbd>
+                        ))}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ))}
+          </div>
         </div>
-        <div className="reader-shortcuts-groups">
-          {groups.map((group) => (
-            <section key={group.title}>
-              <h3>{group.title}</h3>
-              <dl>
-                {group.items.map((item) => (
-                  <div key={item.label} className="reader-shortcuts-row">
-                    <dt>{item.label}</dt>
-                    <dd>
-                      {item.keys.map((key) => (
-                        <kbd key={key}>{key}</kbd>
-                      ))}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          ))}
-        </div>
-      </div>
+      </FocusTrap>
     </div>
   )
 }

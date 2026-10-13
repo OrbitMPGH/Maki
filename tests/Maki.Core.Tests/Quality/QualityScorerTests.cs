@@ -126,6 +126,19 @@ public class QualityScorerTests
         Assert.False(QualityScorer.Matches(Format(5, Req(FormatConditionType.LanguageIs, "ja,ko")), Candidate()));
     }
 
+    [Theory]
+    [InlineData("zh", "zh-Hans")]
+    [InlineData("zh-Hans", "zh")]
+    [InlineData("pt-br", "pt-BR")]
+    [InlineData("pt-BR", "pt-br")]
+    public void Language_conditions_match_any_spelling_of_the_language(string condition, string chapterLanguage)
+    {
+        var format = Format(1, Req(FormatConditionType.LanguageIs, condition));
+
+        Assert.True(QualityScorer.Matches(format, Candidate(language: chapterLanguage)));
+        Assert.False(QualityScorer.Matches(format, Candidate(language: "ja")));
+    }
+
     [Fact]
     public void Regex_conditions_are_case_insensitive()
     {

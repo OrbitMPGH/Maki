@@ -138,6 +138,12 @@ public class OidcSignInService(
             return (null, false);
         }
 
+        // Handed back unlinked so the caller refuses it as disabled instead of provisioning around it.
+        if (user.Disabled)
+        {
+            return (user, false);
+        }
+
         var displayName = OidcClaimMapper.UserName(options, claims, subject);
         var result = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, displayName));
         if (!result.Succeeded)

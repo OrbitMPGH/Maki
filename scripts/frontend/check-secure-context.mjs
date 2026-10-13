@@ -11,6 +11,7 @@ const root = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..', 'fro
 const banned = [
   { pattern: /\bcrypto\.randomUUID\b/, use: "randomUUID() from 'lib/uuid'", home: 'lib/uuid.ts' },
   { pattern: /\bnavigator\.clipboard\b/, use: "copyText() from 'lib/clipboard'", home: 'lib/clipboard.ts' },
+  { pattern: /\bnavigator\.wakeLock\b/, use: "requestWakeLock() from 'lib/wakeLock'", home: 'lib/wakeLock.ts' },
   { pattern: /\bcrypto\.subtle\b/, use: 'a JS fallback, subtle is undefined outside secure contexts', home: null },
 ]
 

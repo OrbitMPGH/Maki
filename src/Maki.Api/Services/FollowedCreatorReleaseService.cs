@@ -216,7 +216,7 @@ public class FollowedCreatorReleaseService(
             // The name as the reader followed it, not the index's display spelling, which can change
             // between dumps and would title the notification with a name they never picked.
             var name = release.Credit.Name;
-            var role = release.Credit.Role is { } r ? $"&role={r}" : string.Empty;
+            var role = release.Credit.Role is { } r ? $"&role={Uri.EscapeDataString(r)}" : string.Empty;
             await inbox.RaiseOrThrowAsync(InboxEventType.FollowedCreatorRelease, new InboxMessage(
                 "inbox.followedRelease",
                 // A catalogue title, not a library series, so there is no per-user display title to

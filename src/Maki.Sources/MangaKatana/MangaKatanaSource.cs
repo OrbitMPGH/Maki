@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.MangaKatana;
 
@@ -21,6 +22,7 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
     public string DisplayName => "MangaKatana";
     public string BaseUrl => "https://mangakatana.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
@@ -95,9 +97,14 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
                 continue;
             }
 
-            var href = link.GetAttribute("href")!;
+            var href = link.GetAttribute("href");
             // Search results return full URLs — extract just "/manga/{slug}.{id}".
-            var path = new Uri(href).AbsolutePath.TrimStart('/');
+            if (UrlText.ResolveHref(BaseUrl, href) is not { } hrefUri)
+            {
+                continue;
+            }
+
+            var path = hrefUri.AbsolutePath.TrimStart('/');
             var seriesId = path.StartsWith("manga/", StringComparison.Ordinal)
                 ? path["manga/".Length..]
                 : path;
@@ -109,7 +116,7 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
             var titleText = link.HasChildNodes ? link.FirstChild!.TextContent.Trim() : link.TextContent.Trim();
             var cover = item.QuerySelector("img")?.GetAttribute("src");
 
-            results.Add(new SourceSeriesResult(seriesId, titleText, href, cover));
+            results.Add(new SourceSeriesResult(seriesId, titleText, hrefUri.AbsoluteUri, cover));
         }
 
         return results;
@@ -156,7 +163,11 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
                 continue;
             }
 
-            var href = link.GetAttribute("href")!;
+            var href = link.GetAttribute("href");
+            if (string.IsNullOrWhiteSpace(href))
+            {
+                continue;
+            }
 
             // Chapter id is the c{number} part of the URL.
             var beforeC = href.LastIndexOf("/c", StringComparison.Ordinal);
@@ -170,7 +181,9 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
             var dateText = row.QuerySelector(".update_time")?.TextContent.Trim();
             DateTime? releaseDate = null;
             if (dateText is not null
-                && DateTime.TryParseExact(dateText, DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+                && DateTime.TryParseExact(
+                    dateText, DateFormats, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var d))
             {
                 releaseDate = d;
             }
@@ -197,7 +210,8 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
         var seriesId = NormalizeSeriesId(chapter.SourceSeriesId);
-        var html = await Client.GetStringAsync($"manga/{seriesId}/{chapter.SourceChapterId}", ct);
+        var pageUrl = $"manga/{seriesId}/{chapter.SourceChapterId}";
+        var html = await Client.GetStringAsync(pageUrl, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
         var imageScript = doc.QuerySelectorAll("script")
@@ -206,7 +220,7 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
 
         if (imageScript is null)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException($"No image script on {pageUrl}");
         }
 
         // Find the JS array name that holds image URLs.
@@ -214,25 +228,25 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
         var arrayNameMatch = ArrayNameRegex().Match(imageScript);
         if (!arrayNameMatch.Success)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException($"No image array name in the script on {pageUrl}");
         }
 
         var arrayName = arrayNameMatch.Groups[1].Value;
 
         // Extract the array contents: var {name}=['url1','url2',...]
-        var arrayMatch = Regex.Match(imageScript,
-            $@"var\s+{Regex.Escape(arrayName)}\s*=\s*\[([^\]]*)]", RegexOptions.Singleline);
-        if (!arrayMatch.Success)
+        var arrayMatch = ArrayDeclarationRegex().Matches(imageScript)
+            .FirstOrDefault(m => m.Groups[1].Value == arrayName);
+        if (arrayMatch is null)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException($"No '{arrayName}' image array in the script on {pageUrl}");
         }
 
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
         var pages = ImageUrlRegex()
-            .Matches(arrayMatch.Groups[1].Value)
+            .Matches(arrayMatch.Groups[2].Value)
             .Select(m => m.Groups[1].Value)
             .Where(url => !string.IsNullOrEmpty(url))
-            .Select((url, i) => new PageRequest(url, headers))
+            .Select(url => new PageRequest(url, headers))
             .ToList();
 
         return new ChapterPages(pages);
@@ -240,6 +254,9 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
 
     [GeneratedRegex(@"data-src['""],\s*(\w+)")]
     private static partial Regex ArrayNameRegex();
+
+    [GeneratedRegex(@"var\s+(\w+)\s*=\s*\[([^\]]*)]", RegexOptions.Singleline)]
+    private static partial Regex ArrayDeclarationRegex();
 
     [GeneratedRegex(@"'([^']*)'")]
     private static partial Regex ImageUrlRegex();

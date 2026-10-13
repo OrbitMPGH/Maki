@@ -32,8 +32,7 @@ public class LibraryImportServiceMaterializeTests : IDisposable
     private static List<string> Materialize(string targetDir)
     {
         var service = new LibraryImportService(
-            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
-            null!, null!, null!,
+            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
             NullLogger<LibraryImportService>.Instance);
 
         return service.MaterializeComics(targetDir).Files;
@@ -53,5 +52,17 @@ public class LibraryImportServiceMaterializeTests : IDisposable
         Assert.Equal(nested, file);
         // Nothing was built at the top level from it.
         Assert.False(File.Exists(Path.Combine(_root, "Look Back.pdf")));
+    }
+
+    [Fact]
+    public void ARenameTargetIsFreeOnlyWhenNoOtherFolderHoldsTheName()
+    {
+        var source = Path.Combine(_root, "berserk");
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(Path.Combine(_root, "Taken"));
+
+        Assert.True(LibraryImportService.RenameTargetFree(_root, source, "Berserk [mb-1]"));
+        Assert.True(LibraryImportService.RenameTargetFree(_root, source, "berserk"));
+        Assert.False(LibraryImportService.RenameTargetFree(_root, source, "Taken"));
     }
 }

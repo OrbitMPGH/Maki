@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.BaoziManhua;
 
@@ -51,9 +52,6 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
     [GeneratedRegex(@"section_slot=(\d+).*chapter_slot=(\d+)")]
     private static partial Regex SlotRegex();
 
-    [GeneratedRegex(@"第(\d+(?:\.\d+)?)[话話]")]
-    private static partial Regex ChapterLabelNumberRegex();
-
     public string? ResolveSeriesIdFromUrl(Uri url) =>
         SourceUrl.PathTail(url, BaseUrl, "/comic/", firstSegmentOnly: true);
 
@@ -71,7 +69,9 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
         foreach (var link in doc.QuerySelectorAll("div.comics-card a.comics-card__poster"))
         {
             var href = link.GetAttribute("href");
-            var seriesId = href is null ? null : SourceUrl.PathTail(new Uri(BaseUrl + href), BaseUrl, "/comic/", firstSegmentOnly: true);
+            var seriesId = Uri.TryCreate(new Uri(BaseUrl), href, out var seriesUri)
+                ? SourceUrl.PathTail(seriesUri, BaseUrl, "/comic/", firstSegmentOnly: true)
+                : null;
             var title = link.GetAttribute("title");
             if (seriesId is null || string.IsNullOrEmpty(title) || !seen.Add(seriesId))
             {
@@ -80,6 +80,11 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
 
             var cover = link.QuerySelector("amp-img")?.GetAttribute("src");
             catalog.Add(new SourceSeriesResult(seriesId, title, $"{BaseUrl}/comic/{seriesId}", cover));
+        }
+
+        if (catalog.Count == 0)
+        {
+            throw new InvalidOperationException("Baozi Manhua's catalog page listed no series");
         }
 
         return catalog;
@@ -128,10 +133,7 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
 
             // chapter_slot is zero-based and one lower than the site's own displayed chapter
             // number, so the number has to come from the label ("第1186话 ...") instead.
-            var labelMatch = ChapterLabelNumberRegex().Match(label);
-            decimal? number = labelMatch.Success
-                ? decimal.Parse(labelMatch.Groups[1].Value, CultureInfo.InvariantCulture)
-                : null;
+            var number = CjkChapterNumber.Chapter(label);
 
             chapters.Add(new SourceChapter(
                 Name,
@@ -156,7 +158,7 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
         var parts = chapter.SourceChapterId.Split('_', 2);
         if (parts.Length != 2)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException($"Unrecognised Baozi chapter id '{chapter.SourceChapterId}'");
         }
 
         var html = await Client.GetStringAsync(

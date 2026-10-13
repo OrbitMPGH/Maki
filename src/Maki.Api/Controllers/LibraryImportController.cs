@@ -40,19 +40,20 @@ public class LibraryImportController(
         int RootFolderId, List<ImportRequestItem> Items, bool UpdateComicInfo = true, string? OperationId = null);
 
     /// <summary>
-    /// Ceiling on one request's batch. Each item can involve a metadata lookup, a source search
-    /// and rewriting every CBZ in the folder, so an unbounded list means an HTTP call that runs for
-    /// many minutes and dies to a proxy timeout with no usable response. The client sends batches
+    /// Ceiling on one request's batch. Each item can involve a metadata lookup, a cover download
+    /// and converting every archive in the folder, so an unbounded list means an HTTP call that runs
+    /// for many minutes and dies to a proxy timeout with no usable response. The client sends batches
     /// of this size; live progress still arrives over SignalR either way.
     /// </summary>
     public const int MaxItemsPerRequest = 50;
 
     /// <summary>
-    /// Folders imported at once. Most of an import is waiting on source sites, and each site's rate
-    /// limiter caps request starts rather than requests in flight, so a few folders overlap well.
-    /// Kept low because the ComicInfo rewrite is disk-bound and many libraries live on a NAS.
+    /// Folders imported at once. Source matching, linking and the ComicInfo rewrite run afterwards
+    /// in <see cref="SourceMatchWorkerHostedService"/>, so what is left here is a metadata lookup,
+    /// a cover and building CBZs. Not higher, because building CBZs is disk-bound and many
+    /// libraries live on a NAS.
     /// </summary>
-    public const int MaxConcurrentImports = 4;
+    public const int MaxConcurrentImports = 8;
 
     [HttpGet("scan")]
     public async Task<IActionResult> Scan([FromQuery] int rootFolderId, CancellationToken ct)
@@ -74,6 +75,103 @@ public class LibraryImportController(
             logger.LogWarning(ex, "Could not scan root folder {RootFolderId}", rootFolderId);
             return this.Fail(localizer, "error.libraryImport.rootUnavailable");
         }
+    }
+
+    public record IgnoreRequest(int RootFolderId, string FolderName);
+
+    public record IgnoredFolderDto(int Id, string FolderName, DateTime CreatedAt);
+
+    [HttpGet("ignored")]
+    public async Task<IActionResult> Ignored([FromQuery] int rootFolderId, CancellationToken ct) =>
+        Ok((await importService.IgnoredFoldersAsync(rootFolderId, ct))
+            .Select(x => new IgnoredFolderDto(x.Id, x.FolderName, x.CreatedAt)));
+
+    [HttpPost("ignored")]
+    public async Task<IActionResult> Ignore([FromBody] IgnoreRequest request, CancellationToken ct) =>
+        await importService.IgnoreFolderAsync(request.RootFolderId, request.FolderName, ct) is { } error
+            ? this.Fail(localizer, error)
+            : NoContent();
+
+    [HttpDelete("ignored/{id:int}")]
+    public async Task<IActionResult> Unignore(int id, CancellationToken ct) =>
+        await importService.UnignoreFolderAsync(id, ct) ? NoContent() : NotFound();
+
+    /// <summary>
+    /// A pasted MangaBaka id or link, or an AniList or MyAnimeList one, as the match for a folder the
+    /// title search could not place.
+    /// </summary>
+    [HttpGet("resolve")]
+    public async Task<IActionResult> Resolve(
+        [FromQuery] string? value, [FromServices] LibraryImportResolver resolver, CancellationToken ct)
+    {
+        ImportIdResolution resolution;
+        try
+        {
+            resolution = await resolver.ResolveAsync(value, ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning(ex, "Could not resolve {Value} for the import review", value);
+            return this.Fail(localizer, "error.libraryImport.metadataLookupFailed");
+        }
+
+        return resolution.Match is { } match ? Ok(match) : this.Fail(localizer, resolution.ErrorKey!);
+    }
+
+    /// <summary>Import runs from the last <see cref="LibraryImportUndoService.RetentionDays"/> days, newest first.</summary>
+    [HttpGet("batches")]
+    public async Task<IActionResult> Batches(
+        [FromQuery] int? rootFolderId, [FromServices] LibraryImportUndoService undo, CancellationToken ct) =>
+        Ok(await undo.RecentAsync(rootFolderId, ct));
+
+    /// <summary>
+    /// Undoes every folder of one import run that is not undone yet. Runs to the end once started:
+    /// a folder half put back is worse than one finished a moment after the caller gave up.
+    /// </summary>
+    [HttpPost("batches/{batchId}/undo")]
+    public async Task<IActionResult> UndoBatch(string batchId, [FromServices] LibraryImportUndoService undo) =>
+        await undo.UndoBatchAsync(batchId, CancellationToken.None) is { } outcomes ? Ok(outcomes) : NotFound();
+
+    [HttpPost("batches/folders/{id:int}/undo")]
+    public async Task<IActionResult> UndoFolder(int id, [FromServices] LibraryImportUndoService undo) =>
+        await undo.UndoFolderAsync(id, CancellationToken.None) is { } outcome ? Ok(outcome) : NotFound();
+
+    public record PlanRequest(int RootFolderId, List<ImportRequestItem> Items);
+
+    /// <summary>
+    /// What importing these folders would do, without writing anything. One folder at a time in this
+    /// request's scope: a preview reads archive listings, not page data, so it does not need the
+    /// import's fan-out.
+    /// </summary>
+    [HttpPost("plan")]
+    public async Task<IActionResult> Plan([FromBody] PlanRequest request, CancellationToken ct)
+    {
+        if (request.Items.Count == 0)
+        {
+            return this.Fail(localizer, "error.libraryImport.noItemsToImport");
+        }
+
+        if (request.Items.Count > MaxItemsPerRequest)
+        {
+            return this.Fail(localizer, "error.libraryImport.tooManyItems",
+                new { count = request.Items.Count, max = MaxItemsPerRequest });
+        }
+
+        var plans = new List<LibraryImportPlan>(request.Items.Count);
+        foreach (var item in request.Items)
+        {
+            try
+            {
+                plans.Add(await importService.PlanAsync(request.RootFolderId, item, ct));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or HttpRequestException)
+            {
+                logger.LogWarning(ex, "Could not preview the import of '{Folder}'", item.FolderName);
+                plans.Add(new LibraryImportPlan(item.FolderName, localizer.Get("error.libraryImport.previewFailed")));
+            }
+        }
+
+        return Ok(plans);
     }
 
     [HttpPost("import")]
@@ -129,13 +227,15 @@ public class LibraryImportController(
         inbox.Raise(InboxEventType.ImportFinished, new InboxMessage(
                 Key: failed == 0 ? "inbox.libraryImport.finished" : "inbox.libraryImport.finishedWithErrors",
                 Params: InboxMessage.Args(new { imported, failed }),
-                // An import that matched no source still succeeded, but nothing it adopted is linked yet.
+                // A merge that left files behind still succeeded, but somebody should look at it.
                 Level: failed == 0 ? results.Any(r => r.Warnings is { Count: > 0 }) ? NotificationLevel.Warning : NotificationLevel.Info :
                     imported > 0 ? NotificationLevel.Warning : NotificationLevel.Error,
                 Url: "/import"),
             InboxAudience.Admins);
 
-        if (imported > 0)
+        // Folders whose link waits on the background match are measured by the link stage, after
+        // their ComicInfo rewrite.
+        if (results.Any(r => r.Success && !r.LinkPending))
         {
             await ChapterFileMeasureJob.TriggerAsync(schedulerFactory, logger);
         }

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Card, Skeleton, Text } from '@mantine/core'
+import { formatPercent } from '../../format'
 
 /**
  * Compact metric tile: label, a big value and an optional delta. Values use tabular figures so a
@@ -47,7 +48,7 @@ export function StatTile({
         {loading ? (
           <Skeleton h={22} w={64} mt={10} mb={3} />
         ) : (
-          <Text fz={26} lh={1.1} mt={6} className="figure">
+          <Text fz="var(--type-figure)" lh={1.1} mt={6} className="figure">
             {value}
           </Text>
         )}
@@ -60,7 +61,7 @@ export function StatTile({
           <Text size="xs" fw={600} mt={4} className="tnum" style={{ color: deltaColor }} title={deltaLabel}>
             {delta === null
               ? '-'
-              : `${delta > 0 ? '+' : ''}${Math.round(delta * 100)}%`}
+              : `${delta > 0 ? '+' : ''}${formatPercent(delta)}`}
           </Text>
         )}
       </div>

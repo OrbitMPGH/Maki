@@ -5,6 +5,7 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.AnimeSama;
 
@@ -270,7 +271,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
     private async Task<Dictionary<int, int>?> TryFetchCountsAsync(string oeuvre, CancellationToken ct)
     {
         var countUrl = $"{BaseUrl}/s2/scans/get_nb_chap_et_img.php?oeuvre={Uri.EscapeDataString(oeuvre)}";
-        var countBody = UnwrapJson(await fetcher.GetHtmlAsync(countUrl, ct));
+        var countBody = PreUnwrap.Unwrap(await fetcher.GetHtmlAsync(countUrl, ct), countUrl);
 
         using var countsJson = System.Text.Json.JsonDocument.Parse(countBody);
         if (countsJson.RootElement.TryGetProperty("error", out _))
@@ -283,7 +284,9 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
         {
             if (int.TryParse(property.Name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var position))
             {
-                counts[position] = property.Value.GetInt32();
+                counts[position] = JsonRead.Int(property.Value)
+                    ?? throw new InvalidDataException(
+                        $"Anime-Sama page count for position {position} is not an integer: {BodyText.Snippet(property.Value.GetRawText())}");
             }
         }
 
@@ -435,19 +438,5 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
 
         var tail = path[(index + marker.Length)..].Trim('/');
         return tail.Length == 0 ? null : tail.Split('/')[0];
-    }
-
-    /// <summary>FlareSolverr wraps a JSON response body in a browser-rendered &lt;pre&gt;; a direct
-    /// (cached-clearance) fetch does not, so only unwrap when it looks like markup.</summary>
-    private static string UnwrapJson(string body)
-    {
-        var trimmed = body.TrimStart();
-        if (trimmed.Length == 0 || trimmed[0] != '<')
-        {
-            return body;
-        }
-
-        var doc = Parser.ParseDocument(trimmed);
-        return doc.QuerySelector("pre")?.TextContent ?? body;
     }
 }

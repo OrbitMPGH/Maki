@@ -6,7 +6,10 @@ using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Parsing;
+using Maki.Core.Security;
 using Maki.Core.Quality;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +24,8 @@ public class QueueController(
     MakiDbContext db,
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
+    DownloadPauseService pauses,
+    SourceRegistry sourceRegistry,
     TorrentImportService importer,
     EventBroadcaster events,
     ISchedulerFactory schedulerFactory,
@@ -29,18 +34,21 @@ public class QueueController(
 {
     /// <summary>
     /// The active queue, paginated like <see cref="History"/>. <c>Total</c> is the full count, so a
-    /// caller can tell a full page from a truncated one — the old fixed <c>.Take(200)</c> dropped
-    /// the rest silently and a big queue simply looked like exactly 200 items.
+    /// caller can tell a full page from a truncated one; the old fixed <c>.Take(200)</c> dropped
+    /// the rest silently and a big queue simply looked like exactly 200 items. <c>seriesId</c>
+    /// narrows it to one series, which is what a series page needs to see its own queued chapters.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> List(
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 200, CancellationToken ct = default)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 200, [FromQuery] int? seriesId = null,
+        CancellationToken ct = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 200);
 
         var query = db.DownloadQueue
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled);
+        if (seriesId is { } onlySeries) query = query.Where(q => q.SeriesId == onlySeries);
 
         var total = await query.CountAsync(ct);
         var rows = await Rows(query
@@ -120,6 +128,68 @@ public class QueueController(
             Active: counts.Where(kv => kv.Key is not (QueueStatus.Failed or QueueStatus.AwaitingImport)).Sum(kv => kv.Value),
             AwaitingImport: counts.GetValueOrDefault(QueueStatus.AwaitingImport),
             Failed: counts.GetValueOrDefault(QueueStatus.Failed)));
+    }
+
+    /// <summary>What is paused right now. Torrents already handed to qBittorrent are not part of it.</summary>
+    [HttpGet("pause")]
+    public async Task<IActionResult> GetPause(CancellationToken ct) =>
+        Ok(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+
+    /// <summary>
+    /// Stops workers claiming new scraper downloads, for every source or one, until resumed or until
+    /// <c>ResumeAt</c>. Items already downloading finish, and no row changes status.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpPut("pause")]
+    public async Task<IActionResult> Pause([FromBody] QueuePauseRequestDto request, CancellationToken ct)
+    {
+        string? source = null;
+        if (!string.IsNullOrWhiteSpace(request.Source))
+        {
+            source = sourceRegistry.Find(request.Source)?.Name;
+            if (source is null)
+            {
+                return this.Fail(localizer, "error.queue.pauseUnknownSource");
+            }
+        }
+
+        DateTime? until = request.ResumeAt is { } at
+            ? at.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(at, DateTimeKind.Utc) : at.ToUniversalTime()
+            : null;
+        if (until <= DateTime.UtcNow)
+        {
+            return this.Fail(localizer, "error.queue.pauseResumeInPast");
+        }
+
+        return Ok(await ChangePauseAsync(await pauses.PauseAsync(source, until, ct), ct));
+    }
+
+    /// <summary>Lifts the pause on one source, or the global one when <c>source</c> is omitted.</summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpDelete("pause")]
+    public async Task<IActionResult> Resume([FromQuery] string? source, CancellationToken ct)
+    {
+        // Canonicalised like the pause, so a differently cased name lifts it; a name no source answers
+        // to any more is taken as given, or a pause on a source since removed could never be lifted.
+        var name = string.IsNullOrWhiteSpace(source) ? null : sourceRegistry.Find(source)?.Name ?? source;
+        return Ok(await ChangePauseAsync(await pauses.ResumeAsync(name, ct), ct));
+    }
+
+    private async Task<QueuePauseDto> ChangePauseAsync(DownloadPauseState state, CancellationToken ct)
+    {
+        var dto = QueuePauseDto.From(state);
+        try
+        {
+            await events.QueuePauseChanged(dto);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The pause is already saved; open pages pick it up on their next poll.
+            logger.LogWarning(ex, "Could not broadcast the download pause change");
+        }
+
+        await queue.WakeWorkersAsync(ct);
+        return dto;
     }
 
     private sealed record QueueRow(DownloadQueueItem Item, Chapter? Chapter, Series? Series, string SourceName);
@@ -245,10 +315,12 @@ public class QueueController(
             return this.Conflict(localizer, "error.queue.onlyTorrentImportable");
         }
 
+        var parsingFingerprint = NameParsingProfile.Current.Fingerprint;
         var contentPath = await importer.ResolveContentPathAsync(item, ct);
         var plan = await importer.PlanAsync(item, item.Series, contentPath, ct);
         return Ok(new
         {
+            parsingFingerprint,
             plan.QueueItemId,
             plan.SeriesId,
             plan.SeriesTitle,
@@ -288,6 +360,12 @@ public class QueueController(
 
         try
         {
+            if (request.Mode != ImportDecision.Reject && request.ParsingFingerprint is { } reviewed &&
+                reviewed != NameParsingProfile.Current.Fingerprint)
+            {
+                return this.Conflict(localizer, "error.queue.planStale");
+            }
+
             // Conditional, so a second click or the poll job cannot take the same parked row: only
             // one caller moves it out of AwaitingImport.
             var claimed = await db.DownloadQueue
@@ -375,9 +453,9 @@ public class QueueController(
         {
             item.Status = QueueStatus.Failed;
             var rendered = outcome.ErrorKey is not null
-                ? localizer.Get(outcome.ErrorKey, outcome.ErrorArgs)
+                ? localizer.Get(outcome.ErrorKey, outcome.ErrorArgs) + (outcome.Error is null ? "" : $": {outcome.Error}")
                 : outcome.Error;
-            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs);
+            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs, outcome.Error);
             else item.SetRawError(outcome.Error);
             await db.SaveChangesAsync(ct);
             await Broadcast(item);
@@ -406,33 +484,159 @@ public class QueueController(
     private Task Broadcast(DownloadQueueItem item) =>
         events.QueueUpdated(QueueItemDto.FromEntity(item, chapter: null, item.Series!, "torrent"));
 
+    /// <param name="blockRelease">
+    /// For a torrent row: also record the release as turned down, so the volume search does not grab it
+    /// again. Removing the row otherwise leaves no trace of it.
+    /// </param>
     [Authorize(Policy = Policies.ManageDownloadQueue)]
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Remove(int id, CancellationToken ct)
+    public async Task<IActionResult> Remove(
+        int id, CancellationToken ct = default, [FromQuery] bool blockRelease = true, [FromServices] ICurrentUser? user = null)
     {
-        var item = await db.DownloadQueue.FindAsync([id], ct);
-        if (item is null)
+        var row = await db.DownloadQueue.AsNoTracking()
+            .Where(q => q.Id == id)
+            .Select(q => new { q.SeriesId, q.Protocol, q.ReleaseInfoJson })
+            .FirstOrDefaultAsync(ct);
+        if (row is null)
         {
             return NotFound();
         }
 
-        queue.CancelWork(item.Id);
+        if (await RemoveOrCancelAsync(id, ct))
+        {
+            if (blockRelease && row.Protocol == AcquisitionProtocol.Torrent)
+            {
+                await BlockReleasesAsync([(row.SeriesId, row.ReleaseInfoJson)], user, ct);
+            }
 
-        if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
-        {
-            db.DownloadQueue.Remove(item);
+            // The item will never report an outcome now, so let go of it, otherwise it holds its
+            // series' download batch open and the batch's summary never fires.
+            await batches.DiscardAsync(row.SeriesId, id);
         }
-        else
+
+        return NoContent();
+    }
+
+    private async Task BlockReleasesAsync(
+        IEnumerable<(int SeriesId, string? ReleaseInfoJson)> releases, ICurrentUser? user, CancellationToken ct)
+    {
+        int? userId = user is { IsAuthenticated: true } ? user.UserId : null;
+        var now = DateTime.UtcNow;
+        foreach (var (seriesId, json) in releases)
         {
-            item.Status = QueueStatus.Cancelled;
+            await TorrentUpgradeService.DeclineAsync(db, seriesId, json, userId, now, ct);
         }
 
         await db.SaveChangesAsync(ct);
+    }
 
-        // The item will never report an outcome now, so let go of it — otherwise it holds its
-        // series' download batch open and the batch's summary never fires.
-        await batches.DiscardAsync(item.SeriesId, item.Id);
-        return NoContent();
+    /// <summary>
+    /// Failed rows grouped by failure key and source, for choosing what a bulk retry or remove acts on.
+    /// Counts the whole queue, where the list endpoint is paged.
+    /// </summary>
+    [HttpGet("failed")]
+    public async Task<IActionResult> Failed(CancellationToken ct)
+    {
+        var groups = await db.DownloadQueue
+            .Where(q => q.Status == QueueStatus.Failed)
+            .GroupBy(q => new
+            {
+                q.ErrorKey,
+                Source = q.SourceMapping != null
+                    ? q.SourceMapping.SourceName
+                    : q.Protocol == AcquisitionProtocol.Torrent ? DownloadQueueService.TorrentSourceName : DownloadQueueService.UnknownSourceName
+            })
+            .Select(g => new QueueFailureGroupDto(g.Key.ErrorKey, g.Key.Source, g.Count()))
+            .ToListAsync(ct);
+        return Ok(groups.OrderByDescending(g => g.Count).ThenBy(g => g.SourceName, StringComparer.Ordinal).ToList());
+    }
+
+    /// <summary>
+    /// Retries every Failed scraper item, or the ones matching a failure key and/or a source. Like the
+    /// single retry it ignores the automatic attempt cap and the backoff.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpPost("retry-failed")]
+    public async Task<IActionResult> RetryFailed([FromBody] QueueFailedActionDto? request, CancellationToken ct)
+    {
+        var retried = await queue.RetryFailedAsync(request?.Reason, request?.Source, db.Scope, ct);
+        return Ok(new QueueBulkResultDto(retried));
+    }
+
+    /// <summary>Removes every Failed item, or the ones matching a failure key and/or a source.</summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpPost("remove-failed")]
+    public async Task<IActionResult> RemoveFailed(
+        [FromBody] QueueFailedActionDto? request, [FromServices] ICurrentUser? user, CancellationToken ct)
+    {
+        var rows = await DownloadQueueService.FailedWhere(db.DownloadQueue.AsNoTracking(), request?.Reason, request?.Source)
+            .Select(q => new { q.Id, q.SeriesId, q.Protocol, q.ReleaseInfoJson })
+            .ToListAsync(ct);
+
+        var removed = new List<(int Id, int SeriesId, string? ReleaseInfoJson, AcquisitionProtocol Protocol)>();
+        foreach (var chunk in rows.Chunk(500))
+        {
+            var ids = chunk.Select(r => r.Id).ToList();
+            // Conditional on Failed: a row retried or completed since the read is not this call's to delete.
+            await db.DownloadQueue.Where(q => ids.Contains(q.Id) && q.Status == QueueStatus.Failed).ExecuteDeleteAsync(ct);
+            var remaining = (await db.DownloadQueue.AsNoTracking()
+                    .Where(q => ids.Contains(q.Id))
+                    .Select(q => q.Id)
+                    .ToListAsync(ct))
+                .ToHashSet();
+            removed.AddRange(chunk
+                .Where(r => !remaining.Contains(r.Id))
+                .Select(r => (r.Id, r.SeriesId, r.ReleaseInfoJson, r.Protocol)));
+        }
+
+        if (request?.BlockReleases ?? true)
+        {
+            await BlockReleasesAsync(
+                removed.Where(r => r.Protocol == AcquisitionProtocol.Torrent).Select(r => (r.SeriesId, r.ReleaseInfoJson)),
+                user, ct);
+        }
+
+        foreach (var row in removed)
+        {
+            await batches.DiscardAsync(row.SeriesId, row.Id);
+        }
+
+        return Ok(new QueueBulkResultDto(removed.Count));
+    }
+
+    /// <summary>
+    /// Removes a pending row or cancels an in-flight one, but only while it is still in the status it
+    /// was read in. A worker finishing the row in between must keep its Completed (the file is
+    /// already in the library), and a worker that claimed a Queued row must not find it deleted under
+    /// it. A lost race re-reads and tries again; a row that has settled by itself is left as it is.
+    /// </summary>
+    /// <returns>True when this call removed or cancelled the row.</returns>
+    private async Task<bool> RemoveOrCancelAsync(int id, CancellationToken ct)
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var status = await db.DownloadQueue.AsNoTracking()
+                .Where(q => q.Id == id)
+                .Select(q => (QueueStatus?)q.Status)
+                .FirstOrDefaultAsync(ct);
+            if (status is null or QueueStatus.Completed or QueueStatus.Cancelled)
+            {
+                return false;
+            }
+
+            queue.CancelWork(id);
+
+            var row = db.DownloadQueue.Where(q => q.Id == id && q.Status == status);
+            var affected = status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving
+                ? await row.ExecuteDeleteAsync(ct)
+                : await row.ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Cancelled), ct);
+            if (affected > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -443,31 +647,64 @@ public class QueueController(
     [HttpDelete]
     public async Task<IActionResult> Clear(CancellationToken ct)
     {
-        var items = await db.DownloadQueue
+        var items = await db.DownloadQueue.AsNoTracking()
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
+            .Select(q => new { q.Id, q.SeriesId })
             .ToListAsync(ct);
 
-        foreach (var item in items)
+        // Two statements per chunk instead of three queries per row. Each is conditional on the status,
+        // so a worker that completed or claimed a row meanwhile is not overwritten; a row that moved
+        // from pending to in-flight between the statements is picked up by the next pass.
+        var pending = new[] { QueueStatus.Queued, QueueStatus.Failed, QueueStatus.RateLimited, QueueStatus.Resolving };
+        var terminal = new[] { QueueStatus.Completed, QueueStatus.Cancelled };
+        var ids = items.Select(i => i.Id).ToList();
+        for (var pass = 0; pass < 3; pass++)
         {
-            queue.CancelWork(item.Id);
+            var changed = 0;
+            foreach (var chunk in ids.Chunk(500))
+            {
+                foreach (var id in chunk)
+                {
+                    queue.CancelWork(id);
+                }
 
-            if (item.Status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving)
-            {
-                db.DownloadQueue.Remove(item);
+                var rows = db.DownloadQueue.Where(q => chunk.Contains(q.Id));
+                changed += await rows.Where(q => pending.Contains(q.Status)).ExecuteDeleteAsync(ct);
+                changed += await rows
+                    .Where(q => !pending.Contains(q.Status) && !terminal.Contains(q.Status))
+                    .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Cancelled), ct);
             }
-            else
+
+            if (changed == 0)
             {
-                item.Status = QueueStatus.Cancelled;
+                break;
             }
         }
 
-        await db.SaveChangesAsync(ct);
+        var statuses = new Dictionary<int, QueueStatus>();
+        foreach (var chunk in ids.Chunk(500))
+        {
+            foreach (var row in await db.DownloadQueue.AsNoTracking()
+                         .Where(q => chunk.Contains(q.Id))
+                         .Select(q => new { q.Id, q.Status })
+                         .ToListAsync(ct))
+            {
+                statuses[row.Id] = row.Status;
+            }
+        }
 
+        var cleared = 0;
         foreach (var item in items)
         {
+            if (statuses.TryGetValue(item.Id, out var status) && status != QueueStatus.Cancelled)
+            {
+                continue;
+            }
+
+            cleared++;
             await batches.DiscardAsync(item.SeriesId, item.Id);
         }
 
-        return Ok(new QueueClearDto(items.Count));
+        return Ok(new QueueClearDto(cleared));
     }
 }

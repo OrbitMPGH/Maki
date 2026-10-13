@@ -16,6 +16,7 @@ namespace Maki.Sources.Shinigami;
 public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
 {
     public const string HttpClientName = "source-shinigami";
+    private const int MaxListPages = 100;
 
     public string Name => "shinigami";
     public string DisplayName => "Shinigami";
@@ -98,8 +99,9 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
         var chapters = new List<SourceChapter>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         var page = 1;
-        while (true)
+        while (page <= MaxListPages)
         {
             var root = await GetAsync($"v1/chapter/{sourceSeriesId}/list?page={page}&page_size=3000", ct);
             if (!root.TryGetProperty("data", out var rows) ||
@@ -109,6 +111,8 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
                     $"Shinigami v1/chapter/{sourceSeriesId}/list has a missing or non-array 'data'");
             }
 
+            var parsedOnPage = 0;
+            var newOnPage = 0;
             if (rows.ValueKind == JsonValueKind.Array)
             {
                 foreach (var row in rows.EnumerateArray())
@@ -117,8 +121,18 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
                     if (chapter is not null)
                     {
                         chapters.Add(chapter);
+                        parsedOnPage++;
+                        if (seen.Add(chapter.SourceChapterId))
+                        {
+                            newOnPage++;
+                        }
                     }
                 }
+            }
+
+            if (parsedOnPage > 0 && newOnPage == 0)
+            {
+                break;
             }
 
             if (!root.TryGetProperty("meta", out var meta) ||

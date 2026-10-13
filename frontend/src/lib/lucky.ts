@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useAnimate } from 'motion/react'
 import { missingCount } from '../api/hooks'
+import { obtainedCount } from './chapterCounts'
 import type { SeriesDto } from '../api/types'
 
 /**
@@ -8,7 +9,8 @@ import type { SeriesDto } from '../api/types'
  * reading progress for counts as unread: Maki cannot tell it was finished, so it stays rollable.
  */
 export function isUnfinished(s: SeriesDto): boolean {
-  return missingCount(s) > 0 || (s.chapterFileCount > 0 && (s.readChapterCount ?? 0) < s.chapterFileCount)
+  const have = obtainedCount(s)
+  return missingCount(s) > 0 || (have > 0 && (s.readChapterCount ?? 0) < have)
 }
 
 /** Uniform pick. `exclude` is ignored when it would leave nothing to pick from. */

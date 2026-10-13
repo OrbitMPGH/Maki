@@ -129,4 +129,25 @@ public class SourceChapterListTests
     {
         Assert.Empty(SourceChapterList.Normalize([]));
     }
+
+    [Theory]
+    [InlineData("pt-BR", "pt-br", "pt-BR")]
+    [InlineData("zh", "zh-Hans", "zh-Hans")]
+    [InlineData("ZH-HANS", "zh", "zh-Hans")]
+    public void Spellings_Of_One_Language_Collapse_To_The_Canonical_One(string first, string second, string expected)
+    {
+        var result = SourceChapterList.Normalize([Ch(1, language: first, id: "a"), Ch(1, language: second, id: "b")]);
+
+        var only = Assert.Single(result);
+        Assert.Equal(expected, only.Language);
+        Assert.Equal("a", only.SourceChapterId);
+    }
+
+    [Fact]
+    public void Unknown_Codes_Are_Lowercased_And_Kept_Distinct()
+    {
+        var result = SourceChapterList.Normalize([Ch(1, language: "ES-LA"), Ch(1, language: "es")]);
+
+        Assert.Equal(["es", "es-la"], result.Select(c => c.Language).Order());
+    }
 }

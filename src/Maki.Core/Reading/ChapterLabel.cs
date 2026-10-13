@@ -1,3 +1,4 @@
+using System.Globalization;
 using Maki.Core.Entities;
 
 namespace Maki.Core.Reading;
@@ -27,7 +28,7 @@ public static class ChapterLabel
             return title ?? "One-shot";
         }
 
-        var formatted = number.Value.ToString("0.###");
+        var formatted = number.Value.ToString("0.###", CultureInfo.InvariantCulture);
         return volume is { } v ? $"Vol.{v} Ch.{formatted}" : $"Ch.{formatted}";
     }
 }

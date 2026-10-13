@@ -167,9 +167,13 @@ public class MangaBakaTracker(
                         $"MangaBaka {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
                 }
 
-                return body.Length == 0
-                    ? default
-                    : JsonDocument.Parse(body).RootElement.Clone();
+                if (body.Length == 0)
+                {
+                    return default;
+                }
+
+                using var doc = JsonDocument.Parse(body);
+                return doc.RootElement.Clone();
             }
             finally
             {
@@ -217,7 +221,8 @@ public class MangaBakaTracker(
 
     public async Task UpdateAsync(
         int userId,
-        string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default)
+        string remoteId, int chapter, int volume, ScrobbleStatus status, CancellationToken ct = default,
+        bool keepStatus = false)
     {
         object body = volume > 0
             ? new { state = InternalToState[status], progress_chapter = chapter, progress_volume = volume }

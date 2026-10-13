@@ -2,7 +2,8 @@ using Maki.Core.Security;
 
 namespace Maki.Core.Entities;
 
-public enum RecommendationSuppression { None, Hidden, Dismissed }
+/// <summary>Stored as an integer: append only, never renumber or reuse.</summary>
+public enum RecommendationSuppression { None = 0, Hidden = 1, Dismissed = 2 }
 
 [Flags]
 public enum RecommendationExposure { None = 0, Manga = 1, Anime = 2, Unspecified = 4 }
@@ -12,10 +13,11 @@ public enum RecommendationExposure { None = 0, Manga = 1, Anime = 2, Unspecified
 /// <para>
 /// Its own dimension rather than a value on one of those, because the three answer different
 /// questions: dismissing is "not now", marking seen is "I know this one", and this is "I liked it"
-/// or "I did not". A reader can have said all three about the same title.
+/// or "I did not". A reader can have said all three about the same title. Stored as an integer:
+/// append only, never renumber or reuse.
 /// </para>
 /// </summary>
-public enum RecommendationSentiment { None, Liked, Disliked }
+public enum RecommendationSentiment { None = 0, Liked = 1, Disliked = 2 }
 
 public class RecommendationFeedback : IUserOwned
 {

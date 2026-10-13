@@ -40,14 +40,14 @@ export function DiscoverSeedStrip({ seedIds, label }: { seedIds: number[]; label
       <span className="discover-seeds-label">{resolvedLabel}</span>
       <div className="discover-seeds-row">
         {seeds.map((s) => (
-          <Link key={s.id} to={`/series/${s.id}`} className="discover-seed" title={s.title}>
+          <Link key={s.id} to={`/series/${s.id}`} className="discover-seed" title={s.displayTitle}>
             {s.coverUrl ? (
               <img src={s.coverUrl} alt="" loading="lazy" decoding="async" />
             ) : (
               <span className="discover-seed-blank" aria-hidden />
             )}
             <span className="discover-seed-body">
-              <span className="discover-seed-title">{s.title}</span>
+              <span className="discover-seed-title">{s.displayTitle}</span>
               <span className="discover-seed-meta">{progressOf(s)}</span>
             </span>
           </Link>
@@ -71,7 +71,7 @@ function progressOf(s: { readChapterCount: number | null; chapterFileCount: numb
   const total = formatNumber(s.chapterFileCount)
   return (
     <Trans>
-      ch {read} of {total}
+      ch. {read} of {total}
     </Trans>
   )
 }

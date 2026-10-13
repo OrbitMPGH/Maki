@@ -123,6 +123,7 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
         var aggregateId = ReadAggregateId(doc, sourceSeriesId);
 
         var chapters = new List<SourceChapter>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         var offset = 0;
         var firstPageCount = -1;
 
@@ -144,13 +145,25 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
                 firstPageCount = count;
             }
 
+            var parsedOnPage = 0;
+            var newOnPage = 0;
             foreach (var item in items.EnumerateArray())
             {
                 var chapter = ParseChapterItem(item, sourceSeriesId);
                 if (chapter is not null)
                 {
                     chapters.Add(chapter);
+                    parsedOnPage++;
+                    if (seen.Add(chapter.SourceChapterId))
+                    {
+                        newOnPage++;
+                    }
                 }
+            }
+
+            if (parsedOnPage > 0 && newOnPage == 0)
+            {
+                break;
             }
 
             offset += count;

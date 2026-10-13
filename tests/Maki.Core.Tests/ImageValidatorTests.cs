@@ -85,6 +85,16 @@ public class ImageValidatorTests : IDisposable
     }
 
     [Fact]
+    public async Task A_cancelled_check_throws_instead_of_calling_the_file_invalid()
+    {
+        var path = WritePng("page.png", 200, 200);
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ImageValidator.IsValidImageAsync(path, cts.Token));
+    }
+
+    [Fact]
     public async Task Rejects_a_missing_file()
     {
         Assert.False(await ImageValidator.IsValidImageAsync(Path.Combine(dir, "absent.png")));
@@ -110,5 +120,60 @@ public class ImageValidatorTests : IDisposable
         header.CopyTo(file, 0);
 
         Assert.True(await ImageValidator.IsValidImageAsync(Write("ok.avif", file)));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 }, "image/jpeg")]
+    [InlineData(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }, "image/png")]
+    [InlineData(new byte[] { (byte)'G', (byte)'I', (byte)'F', (byte)'8', (byte)'9', (byte)'a' }, "image/gif")]
+    public void Sniffs_the_media_type_from_the_bytes(byte[] header, string expected)
+    {
+        Assert.Equal(expected, ImageValidator.SniffMediaType(header));
+    }
+
+    [Fact]
+    public void Sniffs_webp_only_when_the_riff_carries_it()
+    {
+        Assert.Equal("image/webp", ImageValidator.SniffMediaType("RIFF\0\0\0\0WEBPVP8 "u8));
+        Assert.Null(ImageValidator.SniffMediaType("RIFF\0\0\0\0WAVEfmt "u8));
+    }
+
+    [Fact]
+    public void Sniffs_avif_from_the_ftyp_brand()
+    {
+        byte[] avif = [0, 0, 0, 0x20, (byte)'f', (byte)'t', (byte)'y', (byte)'p', (byte)'a', (byte)'v', (byte)'i', (byte)'f'];
+        byte[] mp4 = [0, 0, 0, 0x20, (byte)'f', (byte)'t', (byte)'y', (byte)'p', (byte)'i', (byte)'s', (byte)'o', (byte)'m'];
+
+        Assert.Equal("image/avif", ImageValidator.SniffMediaType(avif));
+        Assert.Null(ImageValidator.SniffMediaType(mp4));
+    }
+
+    [Fact]
+    public void Sniffs_avif_under_a_generic_heif_major_brand_when_it_lists_avif()
+    {
+        static byte[] Ftyp(string major, params string[] compatible) =>
+        [
+            0, 0, 0, (byte)(16 + 4 * compatible.Length), .."ftyp"u8, ..System.Text.Encoding.ASCII.GetBytes(major), 0, 0, 0, 0,
+            ..compatible.SelectMany(System.Text.Encoding.ASCII.GetBytes),
+        ];
+
+        Assert.Equal("image/avif", ImageValidator.SniffMediaType(Ftyp("mif1", "mif1", "avif", "miaf")));
+        Assert.Equal("image/avif", ImageValidator.SniffMediaType(Ftyp("msf1", "msf1", "avis")));
+        Assert.Null(ImageValidator.SniffMediaType(Ftyp("mif1", "mif1", "heic")));
+        // A brand past the box's own size belongs to whatever follows it, not to this ftyp.
+        Assert.Null(ImageValidator.SniffMediaType([.. Ftyp("mif1", "mif1"), .."avif"u8]));
+    }
+
+    /// <summary>
+    /// The cover proxy serves what this returns from Maki's own origin, so anything that a browser
+    /// would render as a document must come back null no matter what the upstream claimed.
+    /// </summary>
+    [Fact]
+    public void Refuses_documents_and_empty_input()
+    {
+        Assert.Null(ImageValidator.SniffMediaType("<!doctype html><script>"u8));
+        Assert.Null(ImageValidator.SniffMediaType("<svg xmlns=\"http://www.w3.org/2000/svg\">"u8));
+        Assert.Null(ImageValidator.SniffMediaType(ReadOnlySpan<byte>.Empty));
+        Assert.Null(ImageValidator.SniffMediaType(new byte[] { 0xFF, 0xD8 }));
     }
 }

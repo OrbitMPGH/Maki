@@ -64,6 +64,18 @@ public class CreditIndexTests : IDisposable
         Assert.Equal(3, index.WorkCountOf(id));
     }
 
+    [Fact]
+    public void Placeholder_credits_are_not_creators()
+    {
+        _db.AddSeries(1, "One", authorsJson: """["Anthology","Junji Ito"]""");
+        _db.AddSeries(2, "Two", authorsJson: """["Anthology"]""");
+
+        var index = Build();
+
+        Assert.Equal(1, index.NameCount);
+        Assert.False(index.TryResolve("Anthology", CreditRole.Author, out _));
+    }
+
     /// <summary>
     /// "Junji Itou" and "Junji Ito" are one person in two romanizations, and the dump splits their
     /// bibliography across both. Opening Berserk and clicking "MIURA Kentaro" used to land on a
@@ -85,6 +97,17 @@ public class CreditIndexTests : IDisposable
         Assert.Equal(6, index.WorkCountOf(id));
         // The display name is the spelling the catalogue mostly uses, not whichever came first.
         Assert.Equal("Junji Itou", index.NameAt(id));
+    }
+
+    [Fact]
+    public void Korean_romanizations_that_differ_by_a_vowel_pair_stay_two_creators()
+    {
+        _db.AddSeries(1, "A", authorsJson: """["Kim Young"]""");
+        _db.AddSeries(2, "B", authorsJson: """["Kim Yong"]""");
+
+        var index = Build();
+
+        Assert.Equal(2, index.NameCount);
     }
 
     [Fact]
@@ -321,6 +344,21 @@ public class CreditIndexTests : IDisposable
         Assert.True(resolution.Impossible);
         Assert.NotNull(resolution.SeriesIds);
         Assert.Empty(resolution.SeriesIds!);
+    }
+
+    /// <summary>A misspelled name resolved by fuzzy match still keeps the most popular works under the id cap.</summary>
+    [Fact]
+    public void A_fuzzy_resolved_name_is_capped_in_popularity_order()
+    {
+        _db.AddSeries(1, "Obscure", authorsJson: """["Alice Smith"]""", popularity: 900);
+        _db.AddSeries(2, "Famous", authorsJson: """["Alice Smith"]""", popularity: 1);
+        _db.AddSeries(3, "Middling", authorsJson: """["Alice Smith"]""", popularity: 50);
+
+        var resolution = CreditResolver.Resolve(
+            CatalogueQuery.Parse("author:\"Alice Smyth\""), Build(),
+            CatalogueOptions.Default with { CreditSqlIdCap = 2 });
+
+        Assert.Equal([2L, 3L], resolution.SeriesIds!);
     }
 
     /// <summary>An unquoted value that overshoots gives the extra words back as search text.</summary>

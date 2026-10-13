@@ -1,6 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Data.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -342,7 +343,8 @@ public sealed class ActivityStatsTests : IDisposable
 
     // ---- aggregation ----
 
-    private ActivityStatsService Activity(DateTimeOffset? now = null, bool kavita = false)
+    private ActivityStatsService Activity(DateTimeOffset? now = null, bool kavita = false,
+        int caller = TestUser, bool allRootFolders = true)
     {
         var settings = new FakeAppSettings();
         if (kavita)
@@ -350,8 +352,12 @@ public sealed class ActivityStatsTests : IDisposable
             settings.Set(SettingKeys.KavitaUrl, "http://kavita").Set(SettingKeys.KavitaApiKey, "k");
         }
 
-        return new ActivityStatsService(_db.NewContext(), settings, _timeZones,
-            new StoppedClock(now ?? new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)));
+        var rootFolderIds = allRootFolders
+            ? new HashSet<int>()
+            : _db.NewContext().UserRootFolders.Where(g => g.UserId == caller).Select(g => g.RootFolderId).ToHashSet();
+        return new ActivityStatsService(_db.NewContext(caller, allRootFolders), settings, _timeZones,
+            new StoppedClock(now ?? new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)),
+            new TestCurrentUser(caller, allRootFolders: allRootFolders, rootFolderIds: rootFolderIds));
     }
 
     /// <summary>
@@ -621,6 +627,26 @@ public sealed class ActivityStatsTests : IDisposable
         Assert.Equal("Mine", dropped.Title);
     }
 
+    [Fact]
+    public async Task DroppedListLeavesOutFullyIncognitoSeries()
+    {
+        var shown = _db.SeedSeries("Shown");
+        var secret = _db.SeedSeries("Secret", configure: s => s.Incognito = IncognitoMode.Full);
+        using (var db = _db.NewContext())
+        {
+            var stale = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+            db.ReadingStates.AddRange(
+                new ReadingState { UserId = TestUser, SeriesId = shown, Title = "Shown", MaxChapter = 12, LastProgressAt = stale },
+                new ReadingState { UserId = TestUser, SeriesId = secret, Title = "Secret", MaxChapter = 12, LastProgressAt = stale });
+            db.SaveChanges();
+        }
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal("Shown", Assert.Single(stats.Dropped).Title);
+        Assert.Equal(1, stats.Totals.SeriesDropped);
+    }
+
     // ---- the new headline numbers ----
 
     [Fact]
@@ -678,7 +704,7 @@ public sealed class ActivityStatsTests : IDisposable
     }
     private void AddProgress(int seriesId, int pageIndex, int pageCount, bool completed, DateTime at,
         bool watched = false, DateTime? startedAt = null, DateTime? unreadAt = null, int userId = TestUser,
-        int readSeconds = 60)
+        int readSeconds = 60, bool bulkMarked = false)
     {
         using var db = _db.NewContext();
         var chapter = new Chapter { SeriesId = seriesId, Number = db.Chapters.Count() + 1 };
@@ -695,6 +721,7 @@ public sealed class ActivityStatsTests : IDisposable
             Watched = watched,
             UnreadAt = unreadAt,
             ReadSeconds = readSeconds,
+            BulkMarked = bulkMarked,
             StartedAt = startedAt ?? at,
             UpdatedAt = at
         });
@@ -751,6 +778,22 @@ public sealed class ActivityStatsTests : IDisposable
     }
 
     [Fact]
+    public async Task BulkMarkedChaptersDoNotCountAsASeriesStarted()
+    {
+        var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
+        var ticked = _db.SeedSeries("Ticked");
+        AddProgress(ticked, 19, 20, completed: true, may, readSeconds: 0, bulkMarked: true);
+        var read = _db.SeedSeries("Read");
+        AddProgress(read, 19, 20, completed: true, may);
+        var streamed = _db.SeedSeries("Streamed");
+        AddProgress(streamed, 19, 20, completed: true, may, readSeconds: 0);
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(2, stats.Totals.SeriesStarted);
+    }
+
+    [Fact]
     public async Task SeriesStartedCountsFirstReadsInsideTheWindowOnly()
     {
         var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
@@ -764,5 +807,105 @@ public sealed class ActivityStatsTests : IDisposable
         var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
 
         Assert.Equal(1, stats.Totals.SeriesStarted);
+    }
+
+    [Fact]
+    public async Task LibraryEventsFromRootFoldersTheCallerCannotSeeAreHidden()
+    {
+        var reader = _db.SeedUser("restricted", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        var hidden = _db.SeedSeries("Hidden", configure: s => s.Genres = ["Horror"]);
+        var granted = _db.SeedSeries("Granted", configure: s => s.Genres = ["Comedy"]);
+        int grantedRoot, hiddenRoot;
+        using (var db = _db.NewContext())
+        {
+            grantedRoot = db.Series.Single(s => s.Id == granted).RootFolderId;
+            hiddenRoot = db.Series.Single(s => s.Id == hidden).RootFolderId;
+            db.UserRootFolders.Add(new UserRootFolder { UserId = reader, RootFolderId = grantedRoot });
+            db.SaveChanges();
+        }
+
+        var at = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc);
+        AddEvent(StatsEventType.SeriesAdded, at, 1, hidden, "Hidden");
+        AddEvent(StatsEventType.SeriesAdded, at, 1, granted, "Granted");
+        AddEvent(StatsEventType.ChapterDownloaded, at, 9, hidden, "Hidden");
+        AddEvent(StatsEventType.ChapterDownloaded, at, 2, granted, "Granted");
+        AddEvent(StatsEventType.SeriesRemoved, at, 1, null, "Gone A",
+            payload: $$"""{"genres":["Horror"],"rootFolderId":{{hiddenRoot}}}""");
+        AddEvent(StatsEventType.SeriesRemoved, at, 1, null, "Gone B",
+            payload: $$"""{"genres":["Comedy"],"rootFolderId":{{grantedRoot}}}""");
+        AddEvent(StatsEventType.SeriesRemoved, at, 1, null, "Gone legacy", payload: """{"genres":["Drama"]}""");
+
+        var stats = await Activity(caller: reader, allRootFolders: false).StatsAsync(
+            reader, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+
+        Assert.Equal(["Granted"], stats.Added.Select(e => e.Title));
+        Assert.Equal(["Gone B", "Gone legacy"], stats.Removed.Select(e => e.Title).Order());
+        Assert.Equal(2, stats.Totals.ChaptersDownloaded);
+        Assert.DoesNotContain(stats.TopGenres, g => g.Name == "Horror");
+    }
+
+    [Fact]
+    public async Task AnAddedThenRemovedSeriesFollowsItsRemovalSnapshotForRestrictedCallers()
+    {
+        var reader = _db.SeedUser("restricted", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        var granted = _db.SeedSeries("Granted");
+        int grantedRoot;
+        using (var db = _db.NewContext())
+        {
+            grantedRoot = db.Series.Single(s => s.Id == granted).RootFolderId;
+            db.UserRootFolders.Add(new UserRootFolder { UserId = reader, RootFolderId = grantedRoot });
+            db.SaveChanges();
+        }
+
+        var at = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc);
+        using (var db = _db.NewContext())
+        {
+            db.StatsEvents.Add(new StatsEvent
+            {
+                Type = StatsEventType.SeriesAdded, Timestamp = at, SeriesKey = "mb:7", SeriesTitle = "Gone", Value = 1
+            });
+            db.StatsEvents.Add(new StatsEvent
+            {
+                Type = StatsEventType.SeriesRemoved, Timestamp = at.AddDays(1), SeriesKey = "mb:7",
+                SeriesTitle = "Gone", Value = 1, PayloadJson = $$"""{"rootFolderId":{{grantedRoot + 100}}}"""
+            });
+            db.SaveChanges();
+        }
+
+        var restricted = await Activity(caller: reader, allRootFolders: false).StatsAsync(
+            reader, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+        var open = await Activity().StatsAsync(
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
+
+        Assert.Empty(restricted.Added);
+        Assert.Empty(restricted.Removed);
+        Assert.Single(open.Added);
+        Assert.Single(open.Removed);
+    }
+
+    [Fact]
+    public async Task YearsOnlyHeldByHiddenFolderEventsAreNotOfferedToRestrictedCallers()
+    {
+        var reader = _db.SeedUser("restricted", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        var hidden = _db.SeedSeries("Hidden");
+        var granted = _db.SeedSeries("Granted");
+        using (var db = _db.NewContext())
+        {
+            db.UserRootFolders.Add(new UserRootFolder
+            {
+                UserId = reader, RootFolderId = db.Series.Single(s => s.Id == granted).RootFolderId
+            });
+            db.SaveChanges();
+        }
+
+        AddEvent(StatsEventType.SeriesAdded, new DateTime(2023, 5, 1, 0, 0, 0, DateTimeKind.Utc), 1, hidden, "Hidden");
+        AddEvent(StatsEventType.SeriesAdded, new DateTime(2024, 5, 1, 0, 0, 0, DateTimeKind.Utc), 1, granted, "Granted");
+
+        var restricted = await Activity(caller: reader, allRootFolders: false)
+            .YearsAsync(reader, 0, CancellationToken.None);
+        var open = await Activity().YearsAsync(TestUser, 0, CancellationToken.None);
+
+        Assert.Equal([2024], restricted);
+        Assert.Equal([2024, 2023], open);
     }
 }

@@ -14,4 +14,10 @@ public interface IMessageCatalog
 {
     /// <inheritdoc cref="ILocalizer.GetFor"/>
     string GetFor(string locale, string key, object? args = null);
+
+    /// <summary>
+    /// <see cref="GetFor"/> for text that may or may not be a key: a miss comes back as the input
+    /// without logging a missing-key warning.
+    /// </summary>
+    string GetForOrKey(string locale, string key, object? args = null) => GetFor(locale, key, args);
 }

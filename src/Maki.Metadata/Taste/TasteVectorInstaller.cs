@@ -77,6 +77,8 @@ public class TasteVectorInstaller(
 {
     public const string HttpClientName = "taste-vectors";
 
+    private readonly SemaphoreSlim _installGate = new(1, 1);
+
     /// <summary>
     /// The schema this build understands. Bumped only when <c>item_vectors</c> changes shape in a
     /// way <see cref="VectorIndexCache"/> could not read; a newer artifact is refused, not half-read.
@@ -170,6 +172,12 @@ public class TasteVectorInstaller(
 
         Directory.CreateDirectory(options.StagingDirectory);
         var staging = Path.Combine(options.StagingDirectory, "taste-vectors.db.partial");
+
+        if (!_installGate.Wait(0))
+        {
+            return new TasteVectorResult(false, "install.alreadyRunning");
+        }
+
         try
         {
             await DownloadAndDecompressAsync(client, manifest, staging, ct);
@@ -178,6 +186,12 @@ public class TasteVectorInstaller(
             // No SwapDatabaseAsync to call: the vectors live inside the index, so the file is moved
             // into place and the index dropped. The next request rebuilds it.
             Directory.CreateDirectory(Path.GetDirectoryName(options.DatabasePath)!);
+            SqliteConnection.ClearAllPools();
+            foreach (var sidecar in new[] { options.DatabasePath + "-wal", options.DatabasePath + "-shm" })
+            {
+                File.Delete(sidecar);
+            }
+
             File.Move(staging, options.DatabasePath, overwrite: true);
             index.Invalidate();
 
@@ -197,6 +211,7 @@ public class TasteVectorInstaller(
         finally
         {
             TryDelete(staging);
+            _installGate.Release();
         }
     }
 
@@ -266,17 +281,8 @@ public class TasteVectorInstaller(
         // the same folder on the machine that builds this and is the likeliest mispublish. Refusing
         // it here does not undo a publish, but it stops every install that would otherwise have
         // downloaded and kept a copy.
-        using (var personal = conn.CreateCommand())
-        {
-            personal.CommandText =
-                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('user_entry', 'user_state', 'pending_user')";
-            if (personal.ExecuteScalar() is long found && found > 0)
-            {
-                throw new InvalidOperationException(
-                    "downloaded file holds per-user reading tables; this is the trainer's working "
-                    + "database, not an export, and it must not be distributed");
-            }
-        }
+        ArtifactChecks.RefusePerUserTables(conn, "trainer's");
+        ArtifactChecks.RequireIntegrity(conn, "file");
 
         using (var shape = conn.CreateCommand())
         {
@@ -316,7 +322,7 @@ public class TasteVectorInstaller(
         stats.CommandText = $"""
             SELECT COUNT(*),
                    COALESCE(SUM(CASE WHEN scale IS NULL OR NOT (scale > 0) THEN 1 ELSE 0 END), 0),
-                   COALESCE(SUM(CASE WHEN length(vec) != {dimensions} THEN 1 ELSE 0 END), 0)
+                   COALESCE(SUM(CASE WHEN vec IS NULL OR length(vec) != {dimensions} THEN 1 ELSE 0 END), 0)
             FROM item_vectors
             """;
         stats.CommandTimeout = 600;

@@ -102,7 +102,6 @@ public class ChapterDownloadActionsTests : IDisposable
         mangaBakaStore: null!,
         similarSeries: null!,
         recommendationFeedback: null!,
-        archives: null!,
         readingProfiles: null!,
         readingTimeEstimates: null!,
         sourceAvailability: null!,
@@ -114,6 +113,7 @@ public class ChapterDownloadActionsTests : IDisposable
 
     private ChapterController ChapterController(DownloadQueueService queue) => new(
         new TestLocalizer(), _db.NewContext(), queue, null!, null!, new SourceRegistry([]),
+        new SourceAvailability(new FakeAppSettings(), new SourceRegistry([])),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         _batches, new TestCurrentUser(1), NullLogger<ChapterController>.Instance);
 

@@ -61,6 +61,22 @@ public class MangaFireSourceTests
     }
 
     [Fact]
+    public void EnsurePagerAdvanced_throws_when_the_next_page_cannot_be_reached()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => MangaFireBrowser.EnsurePagerAdvanced(advanced: false, pageNo: 3, expected: 5));
+
+        Assert.Contains("3", ex.Message);
+        Assert.Contains("5", ex.Message);
+    }
+
+    [Fact]
+    public void EnsurePagerAdvanced_does_not_throw_when_the_page_was_reached()
+    {
+        MangaFireBrowser.EnsurePagerAdvanced(advanced: true, pageNo: 3, expected: 5);
+    }
+
+    [Fact]
     public void BuildChapters_drops_unlabelled_items_when_several_languages_were_requested()
     {
         var chapters = MangaFireSource.BuildChapters(

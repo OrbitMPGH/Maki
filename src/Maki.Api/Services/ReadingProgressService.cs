@@ -1,6 +1,5 @@
 using Maki.Core.Entities;
 using Maki.Data;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -113,7 +112,7 @@ public class ReadingProgressService(
     /// 100, is one chapter read, not a hundred. A first native read baselines silently at the
     /// highest completed chapter below the new mark, as the Kavita path does, and emits one.
     /// </summary>
-    public async Task<Marks> TrackNativeAsync(int userId, int seriesId, string title,
+    public virtual async Task<Marks> TrackNativeAsync(int userId, int seriesId, string title,
         double maxChapter, double maxVolume, CancellationToken ct) =>
         await WithGateAsync(async () =>
         {
@@ -159,7 +158,7 @@ public class ReadingProgressService(
 
     /// <summary>
     /// The user's completed, numbered chapters of a series. Genuine means read in Maki's own reader:
-    /// not watched, not observed in Kavita, and not an import (those carry <c>PageCount = 0</c>).
+    /// not watched, not observed in Kavita, not bulk-ticked, and not an import (those carry <c>PageCount = 0</c>).
     /// </summary>
     private async Task<List<CompletedNumber>> CompletedNumbersAsync(int userId, int seriesId,
         CancellationToken ct)
@@ -168,13 +167,13 @@ public class ReadingProgressService(
                 from p in db.ChapterProgress.IgnoreQueryFilters()
                 join c in db.Chapters.IgnoreQueryFilters() on p.ChapterId equals c.Id
                 where p.UserId == userId && p.SeriesId == seriesId && p.Completed && c.Number != null
-                select new { c.Number, p.Watched, p.External, p.PageCount })
+                select new { c.Number, p.Watched, p.External, p.BulkMarked, p.PageCount })
             .AsNoTracking()
             .ToListAsync(ct);
 
         return rows
             .Select(r => new CompletedNumber((double)r.Number!.Value,
-                !r.Watched && !r.External && r.PageCount > 0))
+                !r.Watched && !r.External && !r.BulkMarked && r.PageCount > 0))
             .ToList();
     }
 
@@ -246,14 +245,15 @@ public class ReadingProgressService(
     /// would falsely mark numbered chapters read in the library's progress ring.
     /// </para>
     /// </summary>
-    public async Task RecordUnnumberedReadAsync(int userId, int seriesId, string title, CancellationToken ct) =>
+    public async Task<bool> RecordUnnumberedReadAsync(int userId, int seriesId, string title, CancellationToken ct) =>
         await WithGateAsync(async () =>
         {
             var now = DateTime.UtcNow;
             // Same stable pick as everywhere else — see PickAsync.
             var kavitaSeriesId = (await PickAsync(userId, seriesId, ct))?.KavitaSeriesId;
 
-            if (!await IsFullIncognitoAsync(seriesId, ct))
+            var emit = !await IsFullIncognitoAsync(seriesId, ct);
+            if (emit)
             {
                 db.StatsEvents.Add(new StatsEvent
                 {
@@ -268,7 +268,7 @@ public class ReadingProgressService(
                 });
             }
             await db.SaveChangesAsync(ct);
-            return true;
+            return emit;
         }, ct);
 
     /// <summary>
@@ -303,11 +303,12 @@ public class ReadingProgressService(
         // the built-in reader can all move the number backwards — never let that spike (or
         // negate) the stats.
         var chapterDelta = (int)Math.Floor(maxChapter) - (int)Math.Floor(state.MaxChapter);
-        // A native call is itself one completion, so it counts at least one even when the row that
-        // raised the mark is not visible here, and never more than the whole-chapter gap.
-        if (nativeCompletions is int native && chapterDelta > 0)
+        // A native call counts the genuine completions above the old mark, which the floored gap
+        // would hide for a decimal chapter (10.5 after 10). With none to count, the call is still
+        // one completion when the whole-chapter mark moved.
+        if (nativeCompletions is int native)
         {
-            chapterDelta = Math.Clamp(native, 1, chapterDelta);
+            chapterDelta = native > 0 ? native : Math.Min(chapterDelta, 1);
         }
         var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
         var fullIncognito = await IsFullIncognitoAsync(seriesId ?? state.SeriesId, ct);
@@ -460,7 +461,7 @@ public class ReadingProgressService(
             {
                 return await action();
             }
-            catch (DbUpdateException e) when (IsUniqueViolation(e))
+            catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
             {
                 logger.LogDebug("Reading-state merge lost a race, retrying: {Error}", e.Message);
                 db.ChangeTracker.Clear();
@@ -472,11 +473,4 @@ public class ReadingProgressService(
             gate.Lock.Release();
         }
     }
-
-    // 2067 = SQLITE_CONSTRAINT_UNIQUE, 1555 = SQLITE_CONSTRAINT_PRIMARYKEY. Matched on the
-    // *extended* code on purpose: the primary code (19, SQLITE_CONSTRAINT) also covers FK,
-    // NOT NULL and CHECK failures, none of which a retry can resolve — retrying those just runs
-    // the whole merge a second time before rethrowing the same error.
-    private static bool IsUniqueViolation(DbUpdateException e) =>
-        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
 }

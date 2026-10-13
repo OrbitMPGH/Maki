@@ -41,4 +41,7 @@ public interface ILocalizer
     /// </para>
     /// </summary>
     string GetFor(string locale, string key, object? args = null);
+
+    /// <inheritdoc cref="IMessageCatalog.GetForOrKey"/>
+    string GetForOrKey(string locale, string key, object? args = null) => GetFor(locale, key, args);
 }

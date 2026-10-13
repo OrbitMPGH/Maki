@@ -53,7 +53,7 @@ import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
-import { AnimeResumeRail } from '../components/home/AnimeResumeRail'
+import { AnimeResumeExpandModal, AnimeResumeRail } from '../components/home/AnimeResumeRail'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
@@ -64,6 +64,7 @@ import { SectionHeader } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
 import { formatNumber } from '../format'
+import { obtainedCount } from '../lib/chapterCounts'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -130,7 +131,7 @@ export default function HomePage() {
   } = useHomeReading(12, needsReading)
   const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(12, on('recent'))
   const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(on('fromanime'))
-  const { data: queue } = useQueue()
+  const { data: queue } = useQueue(1, 200, on('downloading'), true)
   const { data: rails, isLoading: railsLoading } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
@@ -139,6 +140,7 @@ export default function HomePage() {
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const [fromAnimeExpanded, setFromAnimeExpanded] = useState(false)
   const navigate = useNavigate()
 
   const continueReading = reading?.continueReading ?? []
@@ -154,9 +156,10 @@ export default function HomePage() {
     let started = 0
     let finished = 0
     for (const s of series ?? []) {
-      if (s.readChapterCount == null || s.chapterFileCount === 0) continue
-      unread += Math.max(0, s.chapterFileCount - s.readChapterCount)
-      if (s.readChapterCount >= s.chapterFileCount) finished++
+      const have = obtainedCount(s)
+      if (s.readChapterCount == null || have === 0) continue
+      unread += Math.max(0, have - s.readChapterCount)
+      if (s.readChapterCount >= have) finished++
       else if (s.readChapterCount > 0) started++
     }
     return { unread, started, finished }
@@ -175,7 +178,7 @@ export default function HomePage() {
               <Trans>Edit layout</Trans>
             </Button>
             <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
-              <Trans>Add series</Trans>
+              {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
             </Button>
           </>
         )
@@ -352,8 +355,23 @@ export default function HomePage() {
     ) : (
       fromAnime && fromAnime.items.length > 0 && (
         <>
-          <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.total} />
+          <SectionHeader
+            icon={IconDeviceTv}
+            title={t`Continue from the anime`}
+            count={fromAnime.total}
+            action={
+              <Button variant="subtle" size="xs" onClick={() => setFromAnimeExpanded(true)}>
+                <Trans>Show more</Trans>
+              </Button>
+            }
+            chevron
+          />
           <AnimeResumeRail items={fromAnime.items} onOpen={setDetailItem} />
+          <AnimeResumeExpandModal
+            opened={fromAnimeExpanded}
+            onClose={() => setFromAnimeExpanded(false)}
+            onOpen={setDetailItem}
+          />
         </>
       )
     ),

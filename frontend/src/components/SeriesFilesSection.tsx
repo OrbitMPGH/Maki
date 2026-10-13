@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActionIcon, Badge, Button, Checkbox, Group, Loader, Modal, Paper, Stack, Table, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Button, Checkbox, Group, Modal, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconFileTypePdf,
   IconFileZip,
@@ -13,6 +13,8 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
+import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
+import { PermanentDeleteFallback } from './PermanentDeleteFallback'
 import { useSetFileTrusted } from '../api/upgrades'
 import type { SeriesFileDto } from '../api/types'
 import { formatBytes } from '../format'
@@ -30,10 +32,12 @@ import { RelinkFilesModal } from './RelinkFilesModal'
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
   const { mappedChapters } = file
-  if (mappedChapters.length === 0) return '-'
+  if (mappedChapters.length === 0) return file.status === 'linked' ? now`One-shot` : '-'
   const chapters = mappedChapters.join(', ')
   return now`Ch. ${chapters}`
 }
+
+const hasLinks = (file: SeriesFileDto) => file.mappedChapters.length > 0 || file.status === 'linked'
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { t } = useLingui()
@@ -48,6 +52,39 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const { data: files, isLoading, isFetching, refetch } = useSeriesFiles(seriesId)
   const deleteFiles = useDeleteSeriesFiles(seriesId)
+  const binDays = useRecycleBinDays(confirmOpen)
+  const [binRefused, setBinRefused] = useState(false)
+  const closeConfirm = () => {
+    setConfirmOpen(false)
+    setBinRefused(false)
+  }
+
+  const deleteSelected = (permanent: boolean) =>
+    deleteFiles.mutate(
+      { relativePaths: [...selected], permanent },
+      {
+        onSuccess: (r) => {
+          const done = permanent
+            ? plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' })
+            : plural(r.deleted, { one: 'Moved # file to the recycle bin', other: 'Moved # files to the recycle bin' })
+          notifications.show({
+            color: r.failed > 0 ? 'var(--warn)' : 'var(--ok)',
+            message:
+              r.failed > 0
+                ? `${done}, ${plural(r.failed, {
+                    one: '# could not be moved (locked or permission denied)',
+                    other: '# could not be moved (locked or permission denied)',
+                  })}`
+                : done,
+          })
+          closeConfirm()
+          exitSelectMode()
+        },
+        onError: (error) => {
+          if (offersPermanentDelete(error)) setBinRefused(true)
+        },
+      },
+    )
   const setFileTrusted = useSetFileTrusted()
 
   const problems = files?.filter((f) => f.status !== 'linked').length ?? 0
@@ -65,6 +102,21 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       else next.add(path)
       return next
     })
+
+  const tableHead = (
+    <Table.Thead>
+      <Table.Tr>
+        {selectMode && <Table.Th w={40} />}
+        <Table.Th><Trans>File</Trans></Table.Th>
+        <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
+        <Table.Th w={160}><Trans>Status</Trans></Table.Th>
+        <Table.Th><Trans>Mapped to</Trans></Table.Th>
+        <Table.Th w={90}><Trans>Size</Trans></Table.Th>
+        <Table.Th w={180}><Trans>Quality</Trans></Table.Th>
+        {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)} />}
+      </Table.Tr>
+    </Table.Thead>
+  )
 
   return (
     <div>
@@ -91,7 +143,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               size="xs"
               variant="subtle"
               leftSection={<IconRefresh size={14} />}
-              loading={isFetching}
+              loading={isFetching && !isLoading}
               onClick={() => void refetch()}
             >
               <Trans>Refresh</Trans>
@@ -121,12 +173,19 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       </Group>
 
       {(isLoading ? (
-          <Group py="md" gap="xs">
-            <Loader size="sm" />
-            <Text size="sm" c="var(--ink-3)">
+          <Panel p={0} className="table-panel" mt="sm">
+            <VisuallyHidden role="status">
               <Trans>Scanning folder…</Trans>
-            </Text>
-          </Group>
+            </VisuallyHidden>
+            <Table.ScrollContainer minWidth={640}>
+              <Table className="panel-table ops-table" aria-busy>
+                {tableHead}
+                <Table.Tbody>
+                  <FileRowSkeletons />
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </Panel>
         ) : !files || files.length === 0 ? (
           <Text c="var(--ink-3)" size="sm" py="sm">
             <Trans>No files in the series folder.</Trans>
@@ -196,18 +255,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           <Panel p={0} className="table-panel" mt="sm">
             <Table.ScrollContainer minWidth={640}>
               <Table className="panel-table ops-table" highlightOnHover>
-                <Table.Thead>
-                  <Table.Tr>
-                    {selectMode && <Table.Th w={40} />}
-                    <Table.Th><Trans>File</Trans></Table.Th>
-                    <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
-                    <Table.Th w={160}><Trans>Status</Trans></Table.Th>
-                    <Table.Th><Trans>Mapped to</Trans></Table.Th>
-                    <Table.Th w={90}><Trans>Size</Trans></Table.Th>
-                    <Table.Th w={180}><Trans>Quality</Trans></Table.Th>
-                    {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)} />}
-                  </Table.Tr>
-                </Table.Thead>
+                {tableHead}
                 <Table.Tbody>
                   {files.map((f) => {
                     const v = fileStatusVisual(f.status)
@@ -275,7 +323,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 {mappedLabel(f)}
                               </Text>
                             </Tooltip>
-                          ) : f.mappedChapters.length === 0 && f.onDisk && canLink && !selectMode ? (
+                          ) : !hasLinks(f) && f.onDisk && canLink && !selectMode ? (
                             <Button
                               size="compact-xs"
                               variant="light"
@@ -285,7 +333,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                               <Trans>Link chapters</Trans>
                             </Button>
                           ) : (
-                            <Text size="sm" c={f.mappedChapters.length ? undefined : 'var(--ink-3)'} className="tnum">
+                            <Text size="sm" c={hasLinks(f) ? undefined : 'var(--ink-3)'} className="tnum">
                               {mappedLabel(f)}
                             </Text>
                           )}
@@ -303,12 +351,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             <Group gap={2} wrap="nowrap" justify="flex-end">
                             {canLink && (
                               <Tooltip
-                                label={f.mappedChapters.length > 0 ? t`Change linked chapters` : t`Link chapters to this file`}
+                                label={hasLinks(f) ? t`Change linked chapters` : t`Link chapters to this file`}
                                 withArrow
                               >
                                 <ActionIcon
                                   variant="subtle"
-                                  color={f.mappedChapters.length > 0 ? 'gray' : 'brand'}
+                                  color={hasLinks(f) ? 'gray' : 'brand'}
                                   disabled={!f.onDisk}
                                   onClick={() => setLinkFile(f)}
                                   aria-label={t`Link chapters to ${fileName}`}
@@ -324,7 +372,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                               >
                                 <ActionIcon
                                   variant="subtle"
-                                  color="gray"
+                                  color="var(--neutral)"
                                   onClick={() =>
                                     setFileTrusted.mutate({
                                       fileId: f.quality!.fileId,
@@ -369,8 +417,8 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
 
           <Modal
             opened={confirmOpen}
-            onClose={() => setConfirmOpen(false)}
-            title={t`Delete files from disk?`}
+            onClose={closeConfirm}
+            title={t`Delete files?`}
             centered
             attributes={{ content: { 'data-edge': 'danger' } }}
           >
@@ -378,47 +426,35 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               <Text size="sm" c="var(--ink-3)">
                 <Plural
                   value={selected.size}
-                  one="This will permanently delete # file from disk."
-                  other="This will permanently delete # files from disk."
+                  one="This moves # file to the recycle bin."
+                  other="This moves # files to the recycle bin."
                 />{' '}
                 <Trans>Chapters that share a volume archive will also lose their file.</Trans>
               </Text>
-              <Text size="sm" c="var(--danger)">
-                <Trans>This action cannot be undone.</Trans>
+              <Text size="sm" c="var(--ink-3)">
+                <Plural
+                  value={binDays}
+                  one="Files can be restored from Settings for # day, then they are deleted for good."
+                  other="Files can be restored from Settings for # days, then they are deleted for good."
+                />
               </Text>
               <Group justify="flex-end">
-                <Button variant="default" onClick={() => setConfirmOpen(false)}>
+                <Button variant="default" onClick={closeConfirm}>
                   <Trans>Cancel</Trans>
                 </Button>
                 <Button
                   color="var(--danger-fill)"
                   leftSection={<IconTrash size={16} />}
                   loading={deleteFiles.isPending}
-                  onClick={() =>
-                    deleteFiles.mutate([...selected], {
-                      onSuccess: (r) => {
-                        notifications.show({
-                          color: r.failed > 0 ? 'var(--warn)' : 'var(--ok)',
-                          message:
-                            r.failed > 0
-                              ? `${plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' })}, ${plural(
-                                  r.failed,
-                                  {
-                                    one: '# could not be deleted (locked or permission denied)',
-                                    other: '# could not be deleted (locked or permission denied)',
-                                  },
-                                )}`
-                              : plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' }),
-                        })
-                        setConfirmOpen(false)
-                        exitSelectMode()
-                      },
-                    })
-                  }
+                  disabled={binRefused}
+                  onClick={() => deleteSelected(false)}
                 >
                   <Trans>Delete</Trans>
                 </Button>
               </Group>
+              {binRefused && (
+                <PermanentDeleteFallback loading={deleteFiles.isPending} onConfirm={() => deleteSelected(true)} />
+              )}
             </Stack>
           </Modal>
         </>
@@ -428,4 +464,26 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       <RelinkFilesModal seriesId={seriesId} opened={relinkOpen} onClose={() => setRelinkOpen(false)} />
     </div>
   )
+}
+
+const SKELETON_NAME_WIDTHS = ['72%', '58%', '66%', '50%', '62%', '54%']
+
+/** Stand-in rows while the folder is scanned, one bar per real cell so the columns keep their widths. */
+function FileRowSkeletons() {
+  return SKELETON_NAME_WIDTHS.map((nameWidth, i) => (
+    <Table.Tr key={i} aria-hidden>
+      <Table.Td>
+        <Group gap={6} wrap="nowrap">
+          <Skeleton h={15} w={15} radius="xs" />
+          <Skeleton h={14} w={nameWidth} />
+        </Group>
+      </Table.Td>
+      <Table.Td><Skeleton h={18} w={44} radius="sm" /></Table.Td>
+      <Table.Td><Skeleton h={18} w={78} radius="sm" /></Table.Td>
+      <Table.Td><Skeleton h={14} w={64} /></Table.Td>
+      <Table.Td><Skeleton h={14} w={52} /></Table.Td>
+      <Table.Td><Skeleton h={18} w={110} radius="sm" /></Table.Td>
+      <Table.Td><Skeleton h={18} w={56} ml="auto" /></Table.Td>
+    </Table.Tr>
+  ))
 }

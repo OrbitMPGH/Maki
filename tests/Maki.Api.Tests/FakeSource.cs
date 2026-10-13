@@ -28,6 +28,11 @@ internal sealed class FakeSource : ISource
     /// <summary>Series detail by source series id; unset means the id resolves to nothing.</summary>
     public Func<string, SourceSeriesDetail>? OnGetSeries { get; init; }
 
+    /// <summary>Series id a pasted URL resolves to; unset means no URL is recognised.</summary>
+    public Func<Uri, string?>? OnResolveUrl { get; init; }
+
+    public string? ResolveSeriesIdFromUrl(Uri url) => OnResolveUrl?.Invoke(url);
+
     /// <summary>When set, <see cref="ListChaptersAsync"/> throws this instead of returning.</summary>
     public Exception? ListThrows { get; init; }
 

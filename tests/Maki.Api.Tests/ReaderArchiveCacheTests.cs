@@ -223,4 +223,15 @@ public sealed class ReaderArchiveCacheTests : IDisposable
         public override long GetTimestamp() => Interlocked.Read(ref _ticks);
         public void Advance(TimeSpan by) => Interlocked.Add(ref _ticks, by.Ticks);
     }
+
+    [Fact]
+    public async Task A_page_of_a_file_that_vanished_is_unreadable_not_an_error()
+    {
+        var cache = NewCache();
+        var path = Path.Combine(_root, "gone.cbz");
+
+        await using var stream = await cache.OpenPageAsync(path, "001.jpg", CancellationToken.None);
+
+        Assert.Null(stream);
+    }
 }

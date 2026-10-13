@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { errorText } from '../api/errorText'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -26,6 +27,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import {
+  IconAlertTriangle,
   IconCheck,
   IconColumns,
   IconRuler,
@@ -38,6 +40,7 @@ import {
   IconWand,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
+import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import {
   useAutoMatchSources,
@@ -47,6 +50,7 @@ import {
   useRemoveMapping,
   useResolveSourceUrl,
   useSourceMappings,
+  useSourceMatchFailures,
   useSourceMatchProgress,
   useSources,
   useSourceSearch,
@@ -69,10 +73,12 @@ import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { EmptyState } from './ui/EmptyState'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
+import { pressable } from '../lib/pressable'
 import { SOURCE_ICONS } from '../sourceIcons'
 import { useSourceLabel } from '../sourceLabels'
 
@@ -141,6 +147,8 @@ export function SourceMappingsSection({
   }, [mappings, byQuality, sourceOrder])
   const { data: sources } = useSources()
   const { data: progress } = useSourceMatchProgress(seriesId)
+  const { data: failedSources } = useSourceMatchFailures(seriesId)
+  const queryClient = useQueryClient()
   const updateMapping = useUpdateMapping()
   const deleteMapping = useDeleteMapping()
   const removeMapping = useRemoveMapping()
@@ -152,6 +160,7 @@ export function SourceMappingsSection({
   const { t } = useLingui()
   const renderLabel = useLabel()
   const sourceLabel = useSourceLabel()
+  const failedNames = failedSources.map(sourceLabel).join(', ')
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
@@ -399,7 +408,7 @@ export function SourceMappingsSection({
             const name = mappings?.find((m) => m.id === id)?.sourceName
             return sources?.find((s) => s.name === name)?.needsFlareSolverr ?? false
           }}
-          busy={setOrderMode.isPending || reorderMappings.isPending}
+          busy={setOrderMode.isPending ? 'quality' : reorderMappings.isPending ? 'reorder' : null}
           onUseQuality={() => setOrderMode.mutate('quality', { onSuccess: dismissScout })}
           onReorder={() => {
             const rest = sourceOrder.order.filter((id) => !sourceOrder.qualityOrder.includes(id))
@@ -412,11 +421,27 @@ export function SourceMappingsSection({
         />
       )}
 
+      {!matching && failedSources.length > 0 && (
+        <Alert
+          color="yellow"
+          variant="light"
+          mb="sm"
+          icon={<IconAlertTriangle size={16} />}
+          title={t`Some sources could not be searched`}
+          withCloseButton
+          closeButtonLabel={t`Dismiss`}
+          onClose={() => queryClient.setQueryData(['sourcematch-failed', seriesId], [])}
+        >
+          <Trans>
+            {failedNames} did not answer, so they may still carry this
+            series. Run Auto-match again once they are back.
+          </Trans>
+        </Alert>
+      )}
+
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
-          <Text c="var(--ink-3)" size="sm">
-            <Trans>No sources linked. Chapters cannot be synced or downloaded.</Trans>
-          </Text>
+          <EmptyState compact mood="asleep" title={t`No sources linked. Chapters cannot be synced or downloaded.`} />
         )
       ) : (
         // A persistent scrollbar, since a hover-to-reveal one gave no hint that Enabled/Refreshed were off the visible edge.
@@ -478,9 +503,15 @@ export function SourceMappingsSection({
                   </Group>
                 </Table.Td>
                 <Table.Td>
-                  <Anchor href={m.url} target="_blank" size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
-                    {m.sourceSeriesId}
-                  </Anchor>
+                  {m.url ? (
+                    <Anchor href={m.url} target="_blank" size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
+                      {m.sourceSeriesId}
+                    </Anchor>
+                  ) : (
+                    <Text size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
+                      {m.sourceSeriesId}
+                    </Text>
+                  )}
                 </Table.Td>
                 <Table.Td>
                   <MappingLanguages
@@ -500,18 +531,10 @@ export function SourceMappingsSection({
                     }
                     withArrow
                   >
-                    <NumberInput
-                      size="xs"
-                      w={70}
-                      min={1}
-                      max={99}
+                    <PriorityInput
                       value={m.priority}
-                      onChange={(v) => {
-                        const priority = typeof v === 'number' ? v : Number(v)
-                        if (Number.isFinite(priority) && priority !== m.priority) {
-                          updateMapping.mutate({ ...m, priority })
-                        }
-                      }}
+                      label={t`Priority for ${sourceName}`}
+                      onCommit={(priority, onError) => updateMapping.mutate({ ...m, priority }, { onError })}
                     />
                   </Tooltip>
                 </Table.Td>
@@ -533,7 +556,7 @@ export function SourceMappingsSection({
                 </Table.Td>
                 <Table.Td>
                   <Tooltip
-                    label={t`${sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on.`}
+                    label={t`${sourceName} is switched off in Settings → Downloads → Sources. This series' setting is kept and applies again once it's back on.`}
                     withArrow
                     multiline
                     w={260}
@@ -633,6 +656,15 @@ export function SourceMappingsSection({
                       ) : state === 'NoMatch' ? (
                         <Badge size="xs" color="var(--neutral)" variant="light">
                           <Trans>No match</Trans>
+                        </Badge>
+                      ) : state === 'Failed' ? (
+                        <Badge
+                          size="xs"
+                          color="var(--warn)"
+                          variant="light"
+                          leftSection={<IconAlertTriangle size={10} />}
+                        >
+                          <Trans>Search failed</Trans>
                         </Badge>
                       ) : (
                         <Loader size={12} />
@@ -853,7 +885,7 @@ export function SourceMappingsSection({
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                onClick={() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url)}
+                {...pressable(() => link(resolved.sourceName, resolved.sourceSeriesId, resolved.url), { role: false })}
               >
                 <Group wrap="nowrap">
                   {resolved.coverUrl && (
@@ -868,16 +900,18 @@ export function SourceMappingsSection({
                         {resolved.displayName}
                       </Badge>
                     </Group>
-                    <Text size="xs" c="var(--ink-3)" lineClamp={1}>
-                      {resolved.url}
-                    </Text>
+                    {resolved.url && (
+                      <Text size="xs" c="var(--ink-3)" lineClamp={1}>
+                        {resolved.url}
+                      </Text>
+                    )}
                   </div>
                 </Group>
               </Card>
             )}
             {pastedUrl && resolveError && (
               <Text c="var(--danger)" size="sm">
-                {String(resolveError)}
+                {errorText(resolveError)}
               </Text>
             )}
             {!pastedUrl && results?.map((r) => (
@@ -886,7 +920,7 @@ export function SourceMappingsSection({
                 withBorder
                 padding="xs"
                 style={{ cursor: 'pointer' }}
-                onClick={() => sourceName && link(sourceName, r.sourceSeriesId, r.url)}
+                {...pressable(() => sourceName && link(sourceName, r.sourceSeriesId, r.url), { role: false })}
               >
                 <Group wrap="nowrap">
                   {r.coverUrl && (
@@ -896,23 +930,27 @@ export function SourceMappingsSection({
                     <Text fw={600} size="sm">
                       {r.title}
                     </Text>
-                    <Text size="xs" c="var(--ink-3)" lineClamp={1}>
-                      {r.url}
-                    </Text>
+                    {r.url && (
+                      <Text size="xs" c="var(--ink-3)" lineClamp={1}>
+                        {r.url}
+                      </Text>
+                    )}
                   </div>
-                  <Tooltip label={t`Open the page to check it's the right series`} withArrow>
-                    <ActionIcon
-                      component="a"
-                      href={r.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      variant="subtle"
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={t`Open source page`}
-                    >
-                      <IconExternalLink size={16} />
-                    </ActionIcon>
-                  </Tooltip>
+                  {r.url && (
+                    <Tooltip label={t`Open the page to check it's the right series`} withArrow>
+                      <ActionIcon
+                        component="a"
+                        href={r.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        variant="subtle"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={t`Open source page`}
+                      >
+                        <IconExternalLink size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
                 </Group>
               </Card>
             ))}
@@ -1007,6 +1045,52 @@ function signedNumber(i18n: { number: (n: number) => string }, n: number) {
   return n > 0 ? `+${i18n.number(n)}` : i18n.number(n)
 }
 
+/** Holds a draft while typing and saves once, on blur or Enter, so a two-digit value is one write. */
+function PriorityInput({
+  value,
+  label,
+  onCommit,
+}: {
+  value: number
+  label: string
+  onCommit: (priority: number, onError: () => void) => void
+}) {
+  const [draft, setDraft] = useState<number | string>(value)
+  const lastSent = useRef(value)
+  useEffect(() => {
+    setDraft(value)
+    lastSent.current = value
+  }, [value])
+
+  const commit = () => {
+    const parsed = typeof draft === 'number' ? draft : draft === '' ? NaN : Number(draft)
+    const priority = Number.isFinite(parsed) ? Math.min(99, Math.max(1, Math.round(parsed))) : lastSent.current
+    setDraft(priority)
+    if (priority === lastSent.current) return
+    lastSent.current = priority
+    onCommit(priority, () => {
+      lastSent.current = value
+      setDraft(value)
+    })
+  }
+
+  return (
+    <NumberInput
+      size="xs"
+      w={70}
+      min={1}
+      max={99}
+      aria-label={label}
+      value={draft}
+      onChange={setDraft}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+      }}
+    />
+  )
+}
+
 /**
  * The languages one mapping lists chapters in.
  *
@@ -1053,6 +1137,7 @@ function MappingLanguages({
 
   return (
     <MultiSelect
+      aria-label={t`Chapter languages`}
       size="xs"
       w={150}
       data={languageOptions}
@@ -1087,7 +1172,7 @@ const LANGUAGE_LABELS: Record<string, MessageDescriptor> = {
   en: msg`English`,
   es: msg`Spanish`,
   'es-la': msg`Spanish (LATAM)`,
-  'pt-br': msg`Portuguese (Br)`,
+  'pt-br': msg`Portuguese (Brazil)`,
   fr: msg`French`,
   de: msg`German`,
   it: msg`Italian`,

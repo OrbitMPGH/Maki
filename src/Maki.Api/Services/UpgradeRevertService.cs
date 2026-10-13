@@ -393,6 +393,15 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
             .FirstOrDefaultAsync(CancellationToken.None);
         await TorrentUpgradeService.DeclineAsync(db, seriesId, releaseInfo, userId, now, CancellationToken.None);
 
+        // The restored files keep their original DateAdded, which the health worker's baseline may
+        // already be past, so they are queued here instead of waiting to be found.
+        if (!await db.HealthScans.AnyAsync(
+                s => s.SeriesId == seriesId && (s.Status == "pending" || s.Status == "running"),
+                CancellationToken.None))
+        {
+            db.HealthScans.Add(new() { SeriesId = seriesId, Verify = true });
+        }
+
         await db.SaveChangesAsync(CancellationToken.None);
         logger.LogInformation("Reverted torrent replacement {Group}: {Files} file(s) restored (user {User})",
             groupId, plans.Count, userId);

@@ -130,8 +130,10 @@ public sealed class MemoryDiagnostics(
         }
 
         var status = ReadKeyedFile("/proc/self/status", ':');
-        var v2Stat = ReadKeyedFile("/sys/fs/cgroup/memory.stat", ' ');
-        var stat = v2Stat.Count > 0 ? v2Stat : ReadKeyedFile("/sys/fs/cgroup/memory/memory.stat", ' ');
+        var v2 = CgroupDirectory("/sys/fs/cgroup", "0::");
+        var v1 = CgroupDirectory("/sys/fs/cgroup/memory", ":memory:");
+        var v2Stat = ReadKeyedFile($"{v2}/memory.stat", ' ');
+        var stat = v2Stat.Count > 0 ? v2Stat : ReadKeyedFile($"{v1}/memory.stat", ' ');
 
         return new
         {
@@ -140,14 +142,45 @@ public sealed class MemoryDiagnostics(
             rssFileBytes = Scale(status.GetValueOrDefault("RssFile"), 1024),
             rssShmemBytes = Scale(status.GetValueOrDefault("RssShmem"), 1024),
             vmRssBytes = Scale(status.GetValueOrDefault("VmRSS"), 1024),
-            cgroupCurrentBytes = ReadLong("/sys/fs/cgroup/memory.current")
-                ?? ReadLong("/sys/fs/cgroup/memory/memory.usage_in_bytes"),
-            cgroupLimitBytes = ReadLong("/sys/fs/cgroup/memory.max")
-                ?? ReadLong("/sys/fs/cgroup/memory/memory.limit_in_bytes"),
+            cgroupCurrentBytes = ReadLong($"{v2}/memory.current")
+                ?? ReadLong($"{v1}/memory.usage_in_bytes"),
+            cgroupLimitBytes = ReadLong($"{v2}/memory.max")
+                ?? ReadLong($"{v1}/memory.limit_in_bytes"),
             cgroupAnonBytes = Parse(stat.GetValueOrDefault("anon") ?? stat.GetValueOrDefault("rss")),
             cgroupFileBytes = Parse(stat.GetValueOrDefault("file") ?? stat.GetValueOrDefault("cache")),
             cgroupSlabBytes = Parse(stat.GetValueOrDefault("slab"))
         };
+    }
+
+    /// <summary>
+    /// The cgroup directory this process lives in. In a container with its own cgroup namespace
+    /// that is the mount root, but a systemd or bare-metal install sits under a slice and the root
+    /// files are the whole machine's. <paramref name="marker"/> picks the v2 (<c>0::</c>) or v1
+    /// (<c>:memory:</c>) line of <c>/proc/self/cgroup</c>.
+    /// </summary>
+    private static string CgroupDirectory(string root, string marker)
+    {
+        try
+        {
+            foreach (var line in File.ReadLines("/proc/self/cgroup"))
+            {
+                var at = line.IndexOf(marker, StringComparison.Ordinal);
+                if (at < 0 || (marker == "0::" && at != 0))
+                {
+                    continue;
+                }
+
+                var relative = line[(at + marker.Length)..].Trim().TrimEnd('/');
+                var directory = root + relative;
+                return Directory.Exists(directory) ? directory : root;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // No /proc/self/cgroup: fall back to the mount root below.
+        }
+
+        return root;
     }
 
     private static Dictionary<string, string> ReadKeyedFile(string path, char separator)

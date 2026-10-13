@@ -17,17 +17,17 @@ namespace Maki.Api.Jobs;
 ///
 /// <para>
 /// The price of being wrong is a relaunch on the next scrape: a couple of seconds for the driver
-/// and the shell, plus a fresh Cloudflare clearance through FlareSolverr, which is the slower half.
-/// That is why this is minutes rather than seconds, and why the window is per-browser idleness
-/// rather than a fixed timer - a download that walks a hundred chapters keeps stamping its browser
-/// and never meets it. <c>MAKI_BROWSER_IDLE_MINUTES=0</c> keeps them alive forever.
+/// and the shell. The Cloudflare clearance is not lost with it: <c>ChallengeAwareFetcher</c> caches
+/// it per host until a challenge or a 403/503 proves it stale, so a relaunch reuses it. The window
+/// is per-browser idleness rather than a fixed timer - a download that walks a hundred chapters
+/// keeps stamping its browser and never meets it. <c>MAKI_BROWSER_IDLE_MINUTES=0</c> keeps them
+/// alive forever.
 /// </para>
 ///
 /// <para>
-/// Ten minutes rather than the fifteen this started at, because a measurement showed the default
-/// too slow to matter: the first sync after a start launches a browser at the five-minute mark and
-/// a reading at sixteen minutes still found it up, holding 123 MB. Syncs are half an hour apart, so
-/// ten still never lands in the middle of one.
+/// Three minutes. It started at fifteen and went to ten after a reading at sixteen minutes still
+/// found a browser up holding 123 MB; with the clearance surviving a relaunch, the only cost of a
+/// shorter window is those couple of seconds, against ~160 MB held in the meantime.
 /// </para>
 /// </summary>
 [DisallowConcurrentExecution]
@@ -39,7 +39,7 @@ public class BrowserIdleShutdownJob(
 
     public const string IdleMinutesVariable = "MAKI_BROWSER_IDLE_MINUTES";
 
-    private const int DefaultIdleMinutes = 10;
+    private const int DefaultIdleMinutes = 3;
 
     public async Task Execute(IJobExecutionContext context)
     {

@@ -8,8 +8,8 @@ namespace Maki.Api.Localization;
 /// <see cref="RequestLocaleContext"/>. Nothing here touches the database, so it costs a couple of
 /// header reads on every request and nothing more.
 /// <para>
-/// Runs after <c>CurrentUserMiddleware</c>, which is what decides whether there is a user whose
-/// stored preference could be consulted when none of these is present.
+/// Runs before <c>CurrentUserMiddleware</c> so the 401 that middleware answers with is localized
+/// too. The stored preference, which does need a user, is resolved lazily on first read.
 /// </para>
 /// </summary>
 public class RequestLocaleMiddleware(RequestDelegate next)

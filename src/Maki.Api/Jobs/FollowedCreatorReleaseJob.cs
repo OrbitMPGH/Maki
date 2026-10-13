@@ -29,6 +29,7 @@ public class FollowedCreatorReleaseJob(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Follow release check failed");
+            context.ReportFailure(ex);
         }
     }
 }

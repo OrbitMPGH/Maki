@@ -17,7 +17,7 @@ import { IconFileZip, IconSearch, IconX } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
-import { useChapters, useLinkChapters } from '../api/hooks'
+import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'
 import type { ChapterDto, SeriesFileDto } from '../api/types'
 
 function chapterLabel(c: ChapterDto): string {
@@ -43,7 +43,9 @@ export function LinkFileToChaptersModal({
   const opened = file !== null
   const { data: chapters, isLoading } = useChapters(seriesId)
   const link = useLinkChapters()
+  const unlink = useUnlinkChapters()
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [initial, setInitial] = useState<Set<number>>(new Set())
   const [query, setQuery] = useState('')
   const anchor = useRef<number | null>(null)
   const seededFor = useRef<string | null>(null)
@@ -58,7 +60,9 @@ export function LinkFileToChaptersModal({
     }
     if (!chapters || seededFor.current === file.relativePath) return
     seededFor.current = file.relativePath
-    setSelected(new Set(chapters.filter((c) => c.filePath === file.relativePath).map((c) => c.id)))
+    const onFile = new Set(chapters.filter((c) => c.filePath === file.relativePath).map((c) => c.id))
+    setInitial(onFile)
+    setSelected(new Set(onFile))
     setQuery('')
     anchor.current = null
   }, [file, chapters])
@@ -104,23 +108,33 @@ export function LinkFileToChaptersModal({
     anchor.current = id
   }
 
-  const confirm = () => {
+  const removed = useMemo(() => [...initial].filter((id) => !selected.has(id)), [initial, selected])
+  const pending = link.isPending || unlink.isPending
+
+  const confirm = async () => {
     if (!file) return
     const { fileName } = file
-    const chapterIds = [...selected]
-    const chapterPhrase = plural(chapterIds.length, { one: '# chapter', other: '# chapters' })
-    link.mutate(
-      { chapterIds, relativePath: file.relativePath },
-      {
-        onSuccess: () => {
-          notifications.show({
-            message: now`Linked ${chapterPhrase} to ${fileName}`,
-            color: 'var(--ok)',
-          })
-          onClose()
-        },
-      },
-    )
+    const linkedPhrase = plural(selected.size, { one: '# chapter', other: '# chapters' })
+    const unlinkedPhrase = plural(removed.length, { one: '# chapter', other: '# chapters' })
+    try {
+      if (removed.length > 0) {
+        await unlink.mutateAsync(removed)
+        setInitial(new Set(selected))
+      }
+      if (selected.size > 0) await link.mutateAsync({ chapterIds: [...selected], relativePath: file.relativePath })
+    } catch {
+      return
+    }
+    notifications.show({
+      message:
+        selected.size === 0
+          ? now`Unlinked ${unlinkedPhrase} from ${fileName}`
+          : removed.length > 0
+            ? now`Linked ${linkedPhrase} to ${fileName} and unlinked ${unlinkedPhrase}`
+            : now`Linked ${linkedPhrase} to ${fileName}`,
+      color: 'var(--ok)',
+    })
+    onClose()
   }
 
   const missingCount = visible.filter((c) => !c.hasFile).length
@@ -169,7 +183,7 @@ export function LinkFileToChaptersModal({
                 leftSection={<IconSearch size={14} />}
                 rightSection={
                   query ? (
-                    <ActionIcon size="sm" variant="subtle" color="gray" aria-label={t`Clear search`} onClick={() => setQuery('')}>
+                    <ActionIcon size={24} variant="subtle" color="var(--neutral)" aria-label={t`Clear search`} onClick={() => setQuery('')}>
                       <IconX size={12} />
                     </ActionIcon>
                   ) : null
@@ -204,7 +218,7 @@ export function LinkFileToChaptersModal({
                     <UnstyledButton
                       key={c.id}
                       onClick={(e) => toggle(c.id, e.shiftKey)}
-                      disabled={link.isPending}
+                      disabled={pending}
                       px="xs"
                       py={6}
                       aria-pressed={checked}
@@ -227,11 +241,11 @@ export function LinkFileToChaptersModal({
                           )}
                         </Group>
                         {onOtherFile ? (
-                          <Badge size="sm" variant="outline" color="gray" style={{ flexShrink: 0 }}>
+                          <Badge size="sm" variant="outline" color="var(--neutral)" style={{ flexShrink: 0 }}>
                             <Trans>On another file</Trans>
                           </Badge>
                         ) : !c.hasFile ? (
-                          <Badge size="sm" variant="light" color="gray" style={{ flexShrink: 0 }}>
+                          <Badge size="sm" variant="light" color="var(--neutral)" style={{ flexShrink: 0 }}>
                             <Trans>Missing</Trans>
                           </Badge>
                         ) : null}
@@ -253,11 +267,11 @@ export function LinkFileToChaptersModal({
             {plural(selected.size, { one: '# chapter selected', other: '# chapters selected' })}
           </Text>
           <Group gap="xs">
-            <Button variant="default" onClick={onClose} disabled={link.isPending}>
+            <Button variant="default" onClick={onClose} disabled={pending}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button disabled={selected.size === 0} loading={link.isPending} onClick={confirm}>
-              <Trans>Link</Trans>
+            <Button disabled={selected.size === 0 && removed.length === 0} loading={pending} onClick={() => void confirm()}>
+              {selected.size === 0 ? <Trans>Unlink</Trans> : <Trans>Link</Trans>}
             </Button>
           </Group>
         </Group>

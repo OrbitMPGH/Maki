@@ -3,8 +3,9 @@ using System.Text.Json;
 namespace Maki.Core.Reading;
 
 /// <summary>
-/// How the built-in reader displays a series. Stored as opaque JSON in two places: one global
-/// default in AppConfig, and an optional per-series override on <c>Series.ReaderPrefsJson</c>.
+/// How the built-in reader displays a series. Stored as opaque JSON in two places: the user's
+/// default in the <c>reader.prefs</c> user setting, and an optional per-series override on
+/// <c>UserSeriesState.ReaderPrefsJson</c>.
 /// <para>
 /// Same discipline as <c>SavedFilter.Spec</c>: serialize only through <see cref="Json"/>, and
 /// never rename or reorder a property. A name mismatch does not throw — it silently yields the
@@ -20,7 +21,6 @@ public record ReaderPrefsSpec(
     int Preload = 3,
     bool TapZones = true,
     bool ShowPageNumber = true,
-    bool SplitWidePages = false,
     bool AutoNextChapter = true,
     string Background = "#0a0a0b",
     /// <summary>
@@ -36,7 +36,13 @@ public record ReaderPrefsSpec(
     /// credit pages and the first pages of the next chapter often look alike, so without a cue the
     /// only evidence a chapter turn happened is the page counter resetting.
     /// </summary>
-    bool ChapterBanner = true)
+    bool ChapterBanner = true,
+    /// <summary>Percent the page images are dimmed by, for reading in a dark room. 0 leaves them untouched.</summary>
+    int Dim = 0,
+    /// <summary>A colour filter applied to the page images: one of <c>none</c>, <c>grayscale</c>, <c>sepia</c>, <c>invert</c>.</summary>
+    string Filter = ReaderPrefsSpec.FilterNone,
+    /// <summary>Hold a screen wake lock while the reader is being read, where the browser offers one.</summary>
+    bool KeepAwake = true)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -45,11 +51,14 @@ public record ReaderPrefsSpec(
     public const string DirectionLtr = "ltr";
 
     /// <summary>
-    /// Right-to-left is the default: everything Maki packages is tagged
-    /// <c>Manga = "YesAndRightToLeft"</c> in its ComicInfo. Manhwa and manhua want vertical +
-    /// left-to-right, which is exactly what the per-series override is for.
+    /// Right-to-left is the default: manga, and a series with no type, is tagged
+    /// <c>Manga = "YesAndRightToLeft"</c> in its ComicInfo. Manhwa and manhua are tagged
+    /// <c>Yes</c> and want vertical + left-to-right, which is what the per-series override and the
+    /// type-matched reading profiles are for.
     /// </summary>
     public const string DirectionRtl = "rtl";
+
+    public const string FilterNone = "none";
 
     public const string FitWidth = "width";
     public const string FitHeight = "height";
@@ -65,6 +74,7 @@ public record ReaderPrefsSpec(
     private static readonly string[] Modes = [ModePaged, ModeDouble, ModeVertical];
     private static readonly string[] Directions = [DirectionLtr, DirectionRtl];
     private static readonly string[] Fits = [FitWidth, FitHeight, FitScreen, FitOriginal];
+    private static readonly string[] Filters = [FilterNone, "grayscale", "sepia", "invert"];
 
     /// <summary>Clamps free-text fields back onto known values so a bad write can't wedge the reader.</summary>
     public ReaderPrefsSpec Sanitized() => this with
@@ -75,6 +85,8 @@ public record ReaderPrefsSpec(
         PageGap = Math.Clamp(PageGap, 0, 64),
         Preload = Math.Clamp(Preload, 0, 10),
         Scale = Math.Clamp(Scale, 25, 400),
+        Dim = Math.Clamp(Dim, 0, 80),
+        Filter = Filters.Contains(Filter) ? Filter : FilterNone,
     };
 
     /// <summary>Reads a stored blob, falling back to defaults for null/blank/unparseable JSON.</summary>

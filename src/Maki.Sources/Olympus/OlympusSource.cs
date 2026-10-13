@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
-using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Sources.Olympus;
@@ -20,8 +20,6 @@ namespace Maki.Sources.Olympus;
 /// </summary>
 public class OlympusSource : ISource
 {
-    private static readonly HtmlParser Parser = new();
-
     /// <summary>Floor between catalog fetches that a URL-resolve miss may force, so a pasted URL
     /// nothing in the catalog carries can't make every attempt refetch the whole list.</summary>
     private static readonly TimeSpan ResolveRefreshInterval = TimeSpan.FromMinutes(1);
@@ -220,6 +218,12 @@ public class OlympusSource : ISource
             throw new InvalidOperationException($"Olympus chapter {chapter.SourceChapterId} response has no pages array");
         }
 
+        if (pagesEl.EnumerateArray().Any(p => p.ValueKind != JsonValueKind.String))
+        {
+            throw new InvalidOperationException(
+                $"Olympus chapter {chapter.SourceChapterId} has a page entry that is not a URL string");
+        }
+
         var pages = pagesEl.EnumerateArray()
             .Select(p => p.GetString())
             .Where(url => !string.IsNullOrEmpty(url))
@@ -383,12 +387,7 @@ public class OlympusSource : ISource
             return ErrorBody.RootElement;
         }
 
-        if (body.TrimStart().StartsWith('<'))
-        {
-            // FlareSolverr wraps a JSON response in a <pre> tag like a browser's raw-JSON viewer.
-            var doc = await Parser.ParseDocumentAsync(body, ct);
-            body = doc.QuerySelector("pre")?.TextContent ?? body;
-        }
+        body = await PreUnwrap.UnwrapAsync(body, url, ct);
 
         using var json = JsonDocument.Parse(body);
         return json.RootElement.Clone();

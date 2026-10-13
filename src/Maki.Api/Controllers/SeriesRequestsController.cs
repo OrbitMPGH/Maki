@@ -58,14 +58,17 @@ public class SeriesRequestsController(
 
         query = status.ToLowerInvariant() switch
         {
-            "pending" => query.Where(r => r.Status == SeriesRequestStatus.Pending),
-            "resolved" => query.Where(r => r.Status != SeriesRequestStatus.Pending),
+            "pending" => query.Where(r =>
+                r.Status == SeriesRequestStatus.Pending || r.Status == SeriesRequestStatus.Processing),
+            "resolved" => query.Where(r =>
+                r.Status != SeriesRequestStatus.Pending && r.Status != SeriesRequestStatus.Processing),
             _ => query,
         };
 
         var rows = await query
+            .AsNoTracking()
             // Pending first, then newest — the queue an admin works through, not a chronology.
-            .OrderBy(r => r.Status == SeriesRequestStatus.Pending ? 0 : 1)
+            .OrderBy(r => r.Status == SeriesRequestStatus.Pending || r.Status == SeriesRequestStatus.Processing ? 0 : 1)
             .ThenByDescending(r => r.Created)
             .Take(500)
             .ToListAsync(ct);
@@ -117,12 +120,23 @@ public class SeriesRequestsController(
                 return this.Fail(localizer, "error.requests.seriesRequired");
             }
 
-            if (await submitter.FillNewSeriesAsync(request, body.MetadataProviderId, ct) is { } failed)
+            if (await submitter.FillNewSeriesAsync(
+                    request, body.MetadataProviderId, ct, currentUser.MaxContentRating) is { } failed)
             {
                 if (failed.Error == SeriesRequestSubmitError.SeriesAlreadyExists)
                 {
                     const string key = "error.requests.seriesAlreadyExists";
-                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = failed.ExistingSeriesId });
+                    // The id is only worth handing back when this user can open that series.
+                    int? visibleId = failed.ExistingSeriesId is int existingId &&
+                                     await db.Series.AnyAsync(s => s.Id == existingId, ct)
+                        ? existingId
+                        : null;
+                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = visibleId });
+                }
+
+                if (failed.Error == SeriesRequestSubmitError.ContentRatingTooHigh)
+                {
+                    return this.Forbidden(localizer, "error.requests.contentRating");
                 }
 
                 return this.Fail(localizer, "error.requests.metadataNotFound");
@@ -223,7 +237,7 @@ public class SeriesRequestsController(
                     .SetProperty(r => r.EditedAt, editedAt)
                     .SetProperty(r => r.EditedByUserId, currentUser.UserId), ct);
         }
-        catch (Exception e) when (SeriesRequestSubmitter.IsUniqueViolation(e))
+        catch (Exception e) when (DbErrors.IsUniqueViolation(e))
         {
             // The new range matches another Pending request of this user's for the same series
             // (or the same provider id): the partial unique index refuses the row, same as a
@@ -246,7 +260,7 @@ public class SeriesRequestsController(
 
         inbox.Raise(InboxEventType.RequestEdited, new InboxMessage(
                 Key: "inbox.request.edited",
-                Params: InboxMessage.Args(new { title = edited.Title, range = RangeLabel(start, end) }),
+                Params: InboxMessage.Args(new { title = edited.Title, range = RangeKey(start, end), start = ChapterLabel(start), end = ChapterLabel(end) }),
                 Url: "/requests"),
             InboxAudience.User(edited.UserId));
 
@@ -357,10 +371,16 @@ public class SeriesRequestsController(
                 }
             }
 
-            queued = request.SeriesId is int seriesId
-                ? await QueueRangeAsync(
-                    seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct)
-                : 0;
+            if (request.SeriesId is not int seriesId)
+            {
+                // A chapters request whose series was deleted since: nothing to queue, so approving
+                // it would only tell the requester their chapters are on the way.
+                await ReleaseClaimAsync(request);
+                return this.Conflict(localizer, "error.requests.seriesGone");
+            }
+
+            queued = await QueueRangeAsync(
+                seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct);
 
             request.Status = SeriesRequestStatus.Approved;
             request.ApprovalClaimedAtUtc = null;
@@ -436,7 +456,7 @@ public class SeriesRequestsController(
                     .SetProperty(r => r.SeriesId, request.SeriesId)
                     .SetProperty(r => r.Title, request.Title), CancellationToken.None);
         }
-        catch (Exception ex) when (SeriesRequestSubmitter.IsUniqueViolation(ex))
+        catch (Exception ex) when (DbErrors.IsUniqueViolation(ex))
         {
             logger.LogWarning(ex,
                 "Request {Id} could not be released to Pending, a duplicate is already pending; rejecting it instead",
@@ -690,14 +710,17 @@ public class SeriesRequestsController(
         }
     }
 
-    /// <summary>Renders an edited chapter range the way the requests page labels it.</summary>
-    private static string RangeLabel(decimal? start, decimal? end) => (start, end) switch
+    /// <summary>The catalogue key for an edited chapter range, which <c>InboxRenderer</c> words at read time.</summary>
+    private static string RangeKey(decimal? start, decimal? end) => (start, end) switch
     {
-        (null, null) => "everything",
-        (not null, null) => $"chapter {start} onwards",
-        (null, not null) => $"up to chapter {end}",
-        _ => $"chapters {start}–{end}",
+        (null, null) => "inbox.request.range.all",
+        (not null, null) => "inbox.request.range.from",
+        (null, not null) => "inbox.request.range.upTo",
+        _ => "inbox.request.range.between",
     };
+
+    private static string ChapterLabel(decimal? number) =>
+        number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
 
     /// <summary>
     /// Resolves the requester, resolver and editor display names in one query for the whole page,
@@ -718,7 +741,7 @@ public class SeriesRequestsController(
 
         return [.. rows.Select(r => SeriesRequestDto.FromEntity(
             r,
-            names.GetValueOrDefault(r.UserId, "Unknown"),
+            names.GetValueOrDefault(r.UserId) ?? localizer.Get("error.requests.unknownUser"),
             r.ResolvedByUserId is int by ? names.GetValueOrDefault(by) : null,
             r.EditedByUserId is int editor ? names.GetValueOrDefault(editor) : null))];
     }

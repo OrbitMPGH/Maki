@@ -49,6 +49,49 @@ public class PageDownloaderRateLimitTests
         }
     }
 
+    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
+
+    [Fact]
+    public async Task RetryAfter_Date_Counts_From_The_Injected_Clock_And_Never_Goes_Negative()
+    {
+        var now = new DateTimeOffset(2026, 10, 9, 12, 0, 0, TimeSpan.Zero);
+        var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            foreach (var (date, expected) in new[] { (now.AddSeconds(30), TimeSpan.FromSeconds(30)), (now.AddMinutes(-5), TimeSpan.Zero) })
+            {
+                var downloader = new PageDownloader(
+                    new StubFactory(new StubHandler(() =>
+                    {
+                        var r = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+                        r.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(date);
+                        return r;
+                    })),
+                    new FakeCooldown(), new FixedClock(now), NullLogger<PageDownloader>.Instance);
+
+                var ex = await Assert.ThrowsAsync<RateLimitException>(
+                    () => downloader.DownloadAsync(OnePage(), "fake", dir));
+                Assert.Equal(expected, ex.RetryAfter);
+            }
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("https://cdn.test/a/001.png", ".png")]
+    [InlineData("https://cdn.test/a/001.WEBP?x=1", ".WEBP")]
+    [InlineData("https://cdn.test/image.php?id=7", ".jpg")]
+    [InlineData("https://cdn.test/page.aspx", ".jpg")]
+    [InlineData("https://cdn.test/a/001", ".jpg")]
+    public void Page_files_keep_only_image_extensions(string url, string expected) =>
+        Assert.Equal(expected, PageDownloader.ExtensionFor(url));
+
     [Fact]
     public async Task Throws_RateLimitException_On_503_Without_RetryAfter()
     {

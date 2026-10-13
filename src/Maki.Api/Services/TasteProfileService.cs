@@ -114,7 +114,7 @@ public class TasteProfileService(
     // Instance-wide, not per user, and behind its own lock: it is the same answer for everybody, and
     // building it must not block a request that already has one.
     private readonly SemaphoreSlim _catalogueLock = new(1, 1);
-    private (CatalogueBaseline Baseline, DateTime BuiltAt)? _catalogue;
+    private (CatalogueBaseline Baseline, DateTime BuiltAt, WeakReference<VectorIndex> Index)? _catalogue;
 
     /// <param name="scope">
     /// The caller, and the only reader this can describe. Applied to the child scope this opens: a
@@ -395,9 +395,14 @@ public class TasteProfileService(
             // Keyed on the cohort artifact's own stamp as well as on age. Installing the artifact
             // changes what this baseline MEANS, and a 24-hour TTL would otherwise keep serving the
             // popularity proxy for a day while the page claimed real readership.
+            // And on the index it was read from, held weakly so the baseline never keeps an unloaded
+            // index alive. An unloaded index says nothing about staleness, so the baseline stands
+            // until one is loaded again; a different one means a rebuild and a rebuilt baseline.
             if (_catalogue is { } cached
                 && DateTime.UtcNow - cached.BuiltAt < CatalogueBaselineFor
-                && cached.Baseline.CohortsAt == cohorts?.GeneratedAt)
+                && cached.Baseline.CohortsAt == cohorts?.GeneratedAt
+                && (vectorIndex.TryGetLoaded() is not { } live
+                    || cached.Index.TryGetTarget(out var source) && ReferenceEquals(source, live)))
             {
                 return cached.Baseline;
             }
@@ -410,7 +415,7 @@ public class TasteProfileService(
 
             var started = DateTime.UtcNow;
             var built = BuildCatalogueBaseline(index, cohorts);
-            _catalogue = (built, DateTime.UtcNow);
+            _catalogue = (built, DateTime.UtcNow, new WeakReference<VectorIndex>(index));
             logger.LogInformation(
                 "Built taste catalogue baseline over {Rows} rows from {Source} in {Elapsed:F1}s",
                 index.Count, built.Source, (DateTime.UtcNow - started).TotalSeconds);
@@ -452,8 +457,29 @@ public class TasteProfileService(
             }
         }
 
+        var genreShares = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, id) in index.GenreVocabulary)
+        {
+            if (genres.TryGetValue(id, out var weight))
+            {
+                genreShares[name] = weight / total;
+            }
+        }
+
+        // A name can be interned under several casing variants; a row carries one of them, so the
+        // name's share is their sum.
+        var tagShares = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, ids) in index.TagVocabulary)
+        {
+            var sum = ids.Sum(id => tags.GetValueOrDefault(id));
+            if (sum > 0)
+            {
+                tagShares[name] = sum / total;
+            }
+        }
+
         return new CatalogueBaseline(
-            index, genres, tags, total,
+            genreShares, tagShares,
             cohorts is null ? "popularity" : "readers",
             cohorts?.GeneratedAt);
     }
@@ -525,15 +551,13 @@ public class TasteProfileService(
     }
 
     /// <summary>
-    /// Catalogue shares, resolved by name on demand. Holds the index it was built against so a name
-    /// can be turned into that index's ids; a name the vocabulary never saw simply has no share, and
-    /// the facet goes out without a catalogue ratio.
+    /// Catalogue shares by name, materialized at build time so the baseline does not hold the index
+    /// it was read from. A name the vocabulary never saw simply has no share, and the facet goes out
+    /// without a catalogue ratio.
     /// </summary>
     private sealed class CatalogueBaseline(
-        VectorIndex index,
-        Dictionary<int, double> genres,
-        Dictionary<int, double> tags,
-        double total,
+        IReadOnlyDictionary<string, double> genreShare,
+        IReadOnlyDictionary<string, double> tagShare,
         string source,
         DateTime? cohortsAt)
     {
@@ -550,52 +574,8 @@ public class TasteProfileService(
         /// </summary>
         public DateTime? CohortsAt { get; } = cohortsAt;
 
-        public IReadOnlyDictionary<string, double> GenreShare { get; } =
-            new NameShares(name => index.TryGetGenreId(name, out var id) && genres.TryGetValue(id, out var w)
-                ? w / total
-                : null);
+        public IReadOnlyDictionary<string, double> GenreShare { get; } = genreShare;
 
-        // A name can be interned under several casing variants; a row carries one of them, so the
-        // name's share is their sum.
-        public IReadOnlyDictionary<string, double> TagShare { get; } =
-            new NameShares(name =>
-            {
-                if (!index.TryGetTagIds(name, out var ids))
-                {
-                    return null;
-                }
-
-                var sum = ids.Sum(id => tags.GetValueOrDefault(id));
-                return sum > 0 ? sum / total : null;
-            });
-    }
-
-    /// <summary>
-    /// A read-only lookup that resolves on access rather than materializing a share for every name
-    /// in the catalogue. Only the handful of names actually in a profile are ever asked for.
-    /// </summary>
-    private sealed class NameShares(Func<string, double?> resolve) : IReadOnlyDictionary<string, double>
-    {
-        public bool TryGetValue(string key, out double value)
-        {
-            var resolved = resolve(key);
-            value = resolved ?? 0;
-            return resolved is not null;
-        }
-
-        public bool ContainsKey(string key) => resolve(key) is not null;
-
-        public double this[string key] => resolve(key) ?? throw new KeyNotFoundException(key);
-
-        public IEnumerable<string> Keys => throw new NotSupportedException("Resolved on access only.");
-
-        public IEnumerable<double> Values => throw new NotSupportedException("Resolved on access only.");
-
-        public int Count => throw new NotSupportedException("Resolved on access only.");
-
-        public IEnumerator<KeyValuePair<string, double>> GetEnumerator() =>
-            throw new NotSupportedException("Resolved on access only.");
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        public IReadOnlyDictionary<string, double> TagShare { get; } = tagShare;
     }
 }

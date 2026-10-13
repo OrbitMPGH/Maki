@@ -18,6 +18,7 @@ public class MangaPillSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "MangaPill";
     public string BaseUrl => "https://mangapill.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua;
     public IReadOnlyList<string> CoverHosts => ["cdn.readdetectiveconan.com"];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
@@ -105,6 +106,11 @@ public class MangaPillSource(IHttpClientFactory httpClientFactory) : ISource
             .Where(src => !string.IsNullOrEmpty(src))
             .Select(src => new PageRequest(src!, headers))
             .ToList();
+
+        if (pages.Count == 0)
+        {
+            throw new InvalidOperationException($"No page images found for MangaPill chapter {chapter.SourceChapterId}");
+        }
 
         return new ChapterPages(pages);
     }

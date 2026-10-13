@@ -121,26 +121,69 @@ public class OpdsCatalogService(
         // Maki is merely tracking, so they would render as empty folders.
         var source = db.Series.AsNoTracking().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
 
+        List<SeriesRow> rows;
+        int total;
         if (query is { Length: > 0 })
         {
-            var needle = query.Trim().ToLowerInvariant();
-            source = source.Where(s =>
-                s.SortTitle.Contains(needle) ||
-                s.Title.ToLower().Contains(needle) ||
-                (s.OriginalTitle != null && s.OriginalTitle.ToLower().Contains(needle)));
-        }
-
-        var total = await source.CountAsync(ct);
-        var rows = await source
-            .OrderBy(s => s.SortTitle)
-            .ThenBy(s => s.Id)
-            .Skip(page * SeriesPageSize)
-            .Take(SeriesPageSize)
-            .Select(s => new
+            // AltTitles is a JSON text column behind a value converter, so SQL cannot match it
+            // exactly. The real match runs in memory over a narrow projection; SQL only narrows the
+            // rows it has to load, and only for a needle LIKE and the stored JSON agree on.
+            var needle = query.Trim();
+            var filtered = source;
+            if (SqlPrefilterable(needle))
             {
-                s.Id, s.Title, s.Overview, s.AuthorStory, s.Genres, s.CoverPath, s.Added, s.Year
-            })
-            .ToListAsync(ct);
+                var pattern = "%" + needle.Replace("%", @"\%").Replace("_", @"\_") + "%";
+                var altIds = db.Database.SqlQuery<int>(
+                    $"SELECT \"Id\" AS \"Value\" FROM \"Series\" WHERE \"AltTitles\" LIKE {pattern} ESCAPE '\\'");
+                filtered = source.Where(s =>
+                    EF.Functions.Like(s.SortTitle, pattern, @"\") ||
+                    EF.Functions.Like(s.Title, pattern, @"\") ||
+                    EF.Functions.Like(s.OriginalTitle, pattern, @"\") ||
+                    EF.Functions.Like(s.AuthorStory, pattern, @"\") ||
+                    EF.Functions.Like(s.AuthorArt, pattern, @"\") ||
+                    altIds.Contains(s.Id));
+            }
+
+            var candidates = await filtered
+                .Select(s => new
+                {
+                    s.Id, s.SortTitle, s.Title, s.OriginalTitle, s.AltTitles, s.AuthorStory, s.AuthorArt
+                })
+                .ToListAsync(ct);
+
+            var ids = candidates
+                .Where(s =>
+                    Contains(s.SortTitle, needle) ||
+                    Contains(s.Title, needle) ||
+                    Contains(s.OriginalTitle, needle) ||
+                    Contains(s.AuthorStory, needle) ||
+                    Contains(s.AuthorArt, needle) ||
+                    s.AltTitles.Any(a => Contains(a.Title, needle)))
+                .OrderBy(s => s.SortTitle, StringComparer.Ordinal)
+                .ThenBy(s => s.Id)
+                .Select(s => s.Id)
+                .ToList();
+
+            total = ids.Count;
+            var pageIds = ids.Skip(page * SeriesPageSize).Take(SeriesPageSize).ToList();
+            var byId = (await db.Series.AsNoTracking()
+                    .Where(s => pageIds.Contains(s.Id))
+                    .Select(s => new SeriesRow(s.Id, s.Title, s.Overview, s.AuthorStory, s.Genres, s.CoverPath, s.Added, s.Year))
+                    .ToListAsync(ct))
+                .ToDictionary(r => r.Id);
+            rows = [.. pageIds.Where(byId.ContainsKey).Select(id => byId[id])];
+        }
+        else
+        {
+            total = await source.CountAsync(ct);
+            rows = await source
+                .OrderBy(s => s.SortTitle)
+                .ThenBy(s => s.Id)
+                .Skip(page * SeriesPageSize)
+                .Take(SeriesPageSize)
+                .Select(s => new SeriesRow(s.Id, s.Title, s.Overview, s.AuthorStory, s.Genres, s.CoverPath, s.Added, s.Year))
+                .ToListAsync(ct);
+        }
 
         var entries = rows.Select(s =>
         {
@@ -182,6 +225,22 @@ public class OpdsCatalogService(
             SeriesPageSize,
             page * SeriesPageSize);
     }
+
+    private static bool Contains(string? haystack, string needle) =>
+        haystack is not null && haystack.Contains(needle, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Whether a SQL <c>LIKE</c> finds everything the in-memory match does. SQLite folds case for
+    /// ASCII only, and the alt titles are stored with the default JSON encoder, which writes
+    /// non-ASCII and <c>" \ &amp; ' + &lt; &gt; `</c> as escapes. Any other needle scans every row.
+    /// One gap is accepted: OrdinalIgnoreCase also reads a dotless i or a long s as i or s.
+    /// </summary>
+    internal static bool SqlPrefilterable(string needle) =>
+        needle.All(c => c is >= ' ' and <= '~' and not ('"' or '\\' or '&' or '\'' or '+' or '<' or '>' or '`'));
+
+    private record SeriesRow(
+        int Id, string Title, string? Overview, string? AuthorStory, List<string> Genres, string? CoverPath,
+        DateTime Added, int? Year);
 
     /// <summary>A series' downloaded chapters, in reading order.</summary>
     /// <returns>Null when the series does not exist.</returns>
@@ -377,7 +436,7 @@ public class OpdsCatalogService(
             }
 
             var name = includeSeriesTitle && seriesTitles.TryGetValue(row.SeriesId, out var seriesTitle)
-                ? $"{seriesTitle} — {label}"
+                ? $"{seriesTitle} - {label}"
                 : label;
 
             int? lastRead = null;

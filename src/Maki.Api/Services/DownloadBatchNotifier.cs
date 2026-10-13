@@ -1,4 +1,4 @@
-﻿using Maki.Core.Entities;
+using Maki.Core.Entities;
 using Maki.Api.Localization;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
@@ -36,8 +36,12 @@ public sealed class DownloadBatchNotifier : IDisposable
     private readonly IUserLocaleResolver _locales;
     private readonly TimeProvider _time;
     private readonly ILogger<DownloadBatchNotifier> _logger;
+    private readonly IDownloadQueueLiveness? _liveness;
     private readonly Lock _lock = new();
-    private readonly Dictionary<int, Batch> _batches = [];
+
+    // Keyed by series and by whether the batch is an upgrade run: the two summarize differently
+    // (upgrades never reach chat), so one series can have both open at once.
+    private readonly Dictionary<(int SeriesId, bool Upgrade), Batch> _batches = [];
     private readonly ITimer _sweeper;
 
     public DownloadBatchNotifier(
@@ -46,7 +50,8 @@ public sealed class DownloadBatchNotifier : IDisposable
         IMessageCatalog localizer,
         IUserLocaleResolver locales,
         TimeProvider time,
-        ILogger<DownloadBatchNotifier> logger)
+        ILogger<DownloadBatchNotifier> logger,
+        IDownloadQueueLiveness? liveness = null)
     {
         _notifications = notifications;
         _inbox = inbox;
@@ -54,19 +59,20 @@ public sealed class DownloadBatchNotifier : IDisposable
         _locales = locales;
         _time = time;
         _logger = logger;
+        _liveness = liveness;
         _sweeper = time.CreateTimer(_ => _ = SweepStaleAsync(), null, SweepInterval, SweepInterval);
     }
 
     /// <summary>
     /// Opens a batch over the queue items just enqueued for a series, announcing the count. If a
-    /// batch is already open for the series the items join it silently — a second "queued" ping for
-    /// the same download run is noise, and the summary counts everything either way.
+    /// batch of the same kind is already open for the series the items join it silently, since a second
+    /// "queued" ping for the same download run is noise, and the summary counts everything either way.
     /// </summary>
     /// <param name="origin">
     /// What queued these. Recorded on the batch so the summary knows whether an in-app notification
     /// is warranted: an automatic download is news, one somebody clicked is not. A batch that is
-    /// joined by items of a different origin keeps the origin it opened with — mixing the two is a
-    /// race that resolves either way, and the first one through is as good an answer as any.
+    /// joined by items of another non-upgrade origin keeps the origin it opened with. Upgrades are
+    /// never mixed in with downloads, because the two are summarized and routed differently.
     /// </param>
     /// <param name="announce">
     /// False when the caller already sent its own "queued" message (see
@@ -85,21 +91,46 @@ public sealed class DownloadBatchNotifier : IDisposable
             return;
         }
 
+        // Joining refreshes LastActivity, so a series that keeps queueing (Smart, every few minutes)
+        // would keep a batch whose pending ids stopped reporting open forever, its summary never sent,
+        // and the sweep never looks at it. Once nothing in it has reported for StaleAfter, close it
+        // and start over, but only on the sweep's own terms: a batch whose items are still waiting
+        // in the queue is alive, and closing it hands every one of them back to per-chapter pings.
+        var key = (seriesId, origin == DownloadOrigin.Upgrade);
+        Batch? quiet = null;
+        int[] quietPending = [];
+        lock (_lock)
+        {
+            if (_batches.TryGetValue(key, out var existing) && existing.LastReport <= _time.GetUtcNow() - StaleAfter)
+            {
+                quiet = existing;
+                quietPending = [.. existing.Pending];
+            }
+        }
+
+        var alive = quiet is null || _liveness is null || quietPending.Length == 0
+            ? null
+            : await _liveness.StillActiveAsync(quietPending);
+
         bool opened;
         Batch? rotated = null;
         lock (_lock)
         {
-            // Joining refreshes LastActivity, so a series that keeps queueing (Smart, every few
-            // minutes) would keep a batch whose pending ids stopped reporting open forever, its summary
-            // never sent. Once nothing in it has reported for StaleAfter, close it and start over.
-            if (_batches.TryGetValue(seriesId, out var existing) &&
-                existing.LastReport <= _time.GetUtcNow() - StaleAfter)
+            if (quiet is not null && ReferenceEquals(_batches.GetValueOrDefault(key), quiet) &&
+                quiet.LastReport <= _time.GetUtcNow() - StaleAfter)
             {
-                _batches.Remove(seriesId);
-                rotated = existing;
+                if (alive is { Count: > 0 })
+                {
+                    quiet.LastReport = _time.GetUtcNow();
+                }
+                else
+                {
+                    _batches.Remove(key);
+                    rotated = quiet;
+                }
             }
 
-            if (!_batches.TryGetValue(seriesId, out var batch))
+            if (!_batches.TryGetValue(key, out var batch))
             {
                 if (queueItemIds.Count < MinBatchSize)
                 {
@@ -107,7 +138,7 @@ public sealed class DownloadBatchNotifier : IDisposable
                 }
 
                 batch = new Batch { Title = seriesTitle, Origin = origin, LastReport = _time.GetUtcNow() };
-                _batches[seriesId] = batch;
+                _batches[key] = batch;
                 opened = true;
             }
             else
@@ -180,14 +211,15 @@ public sealed class DownloadBatchNotifier : IDisposable
         Batch? finished;
         lock (_lock)
         {
-            if (!_batches.TryGetValue(seriesId, out var batch) || !batch.Pending.Remove(queueItemId))
+            if (!Owner(seriesId, queueItemId, out var key, out var batch))
             {
                 return;
             }
 
+            batch.Pending.Remove(queueItemId);
             batch.Cancelled++;
             batch.LastActivity = batch.LastReport = _time.GetUtcNow();
-            finished = Close(seriesId, batch);
+            finished = Close(key, batch);
         }
 
         if (finished is not null)
@@ -201,11 +233,12 @@ public sealed class DownloadBatchNotifier : IDisposable
         Batch? finished;
         lock (_lock)
         {
-            if (!_batches.TryGetValue(seriesId, out var batch) || !batch.Pending.Remove(queueItemId))
+            if (!Owner(seriesId, queueItemId, out var key, out var batch))
             {
                 return false;
             }
 
+            batch.Pending.Remove(queueItemId);
             if (errorKey is null)
             {
                 batch.Completed++;
@@ -217,7 +250,7 @@ public sealed class DownloadBatchNotifier : IDisposable
             }
 
             batch.LastActivity = batch.LastReport = _time.GetUtcNow();
-            finished = Close(seriesId, batch);
+            finished = Close(key, batch);
         }
 
         if (finished is not null)
@@ -228,42 +261,83 @@ public sealed class DownloadBatchNotifier : IDisposable
         return true;
     }
 
+    /// <summary>The open batch of <paramref name="seriesId"/> that is waiting on this item, if any. Caller must hold the lock.</summary>
+    private bool Owner(int seriesId, int queueItemId, out (int SeriesId, bool Upgrade) key, out Batch batch)
+    {
+        foreach (var upgrade in (bool[])[false, true])
+        {
+            key = (seriesId, upgrade);
+            if (_batches.TryGetValue(key, out batch!) && batch.Pending.Contains(queueItemId))
+            {
+                return true;
+            }
+        }
+
+        key = default;
+        batch = null!;
+        return false;
+    }
+
     /// <summary>Removes the batch if nothing is left pending. Caller must hold the lock.</summary>
-    private Batch? Close(int seriesId, Batch batch)
+    private Batch? Close((int SeriesId, bool Upgrade) key, Batch batch)
     {
         if (batch.Pending.Count > 0)
         {
             return null;
         }
 
-        _batches.Remove(seriesId);
+        _batches.Remove(key);
         return batch;
     }
 
     /// <summary>
     /// Closes batches that stopped reporting outcomes. Every terminal state reports immediately
-    /// (a failure is reported when it fails, not when its retries run out) and the longest an item
-    /// can legitimately stall is a rate-limit cooldown, so an hour of silence means the batch leaked.
+    /// (a failure is reported when it fails, not when its retries run out), so an hour of silence
+    /// from a batch whose items are all settled means it leaked.
+    /// <para>
+    /// Silence alone is not enough, though: the queue is FIFO across series, so a series queued
+    /// behind a long backlog legitimately reports nothing for hours. Closing such a batch would
+    /// hand every one of its chapters back to per-chapter notifications, the flood this class
+    /// exists to stop. A quiet batch is therefore closed only once none of its pending ids is still
+    /// active in the queue; while any is, the batch counts as alive and its clocks move on, which
+    /// also keeps the rotation in <see cref="QueuedAsync"/> from cutting it.
+    /// </para>
     /// </summary>
     internal async Task SweepStaleAsync()
     {
-        List<(int SeriesId, Batch Batch)> stale;
+        List<((int SeriesId, bool Upgrade) Key, Batch Batch, int[] Pending)> quiet;
         lock (_lock)
         {
             var cutoff = _time.GetUtcNow() - StaleAfter;
-            stale = _batches
+            quiet = _batches
                 .Where(kv => kv.Value.LastActivity <= cutoff)
-                .Select(kv => (kv.Key, kv.Value))
+                .Select(kv => (kv.Key, kv.Value, kv.Value.Pending.ToArray()))
                 .ToList();
-
-            foreach (var (seriesId, _) in stale)
-            {
-                _batches.Remove(seriesId);
-            }
         }
 
-        foreach (var (seriesId, batch) in stale)
+        foreach (var (key, batch, pending) in quiet)
         {
+            var seriesId = key.SeriesId;
+            var alive = _liveness is null
+                ? new HashSet<int>()
+                : await _liveness.StillActiveAsync(pending);
+
+            lock (_lock)
+            {
+                if (!ReferenceEquals(_batches.GetValueOrDefault(key), batch))
+                {
+                    continue;
+                }
+
+                if (alive.Count > 0)
+                {
+                    batch.LastActivity = batch.LastReport = _time.GetUtcNow();
+                    continue;
+                }
+
+                _batches.Remove(key);
+            }
+
             _logger.LogWarning(
                 "Download batch for series {SeriesId} went quiet with {Pending} item(s) unfinished; closing it",
                 seriesId, batch.Pending.Count);

@@ -3,21 +3,24 @@ import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Button, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconArrowRight, IconCheck, IconEyeOff, IconFolder, IconPlus } from '@tabler/icons-react'
+import { IconArrowRight, IconBell, IconCheck, IconEyeOff, IconFolder, IconPlus } from '@tabler/icons-react'
 import {
   useAddSeries,
   useLibrarySettings,
   type MangaBakaDetail,
   type RecommendationItem,
 } from '../../api/hooks'
+import { ApiError } from '../../api/client'
 import { useUpgradeProfiles } from '../../api/upgrades'
-import { useCreateSeriesRequest } from '../../api/requests'
+import { useCreateSeriesRequest, useSeriesRequests, type SeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
 import { useAuth } from '../../auth/AuthProvider'
 import type { RootFolder } from '../../api/types'
 import { RequestForm } from '../RequestForm'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
+import { useLabel } from '../../i18n-context'
+import { MONITOR_OPTIONS } from '../series/SeriesActionsMenu'
 
 /**
  * What this modal can actually do with the series it is showing: add it, ask an admin for it, or
@@ -45,6 +48,7 @@ export function DiscoverLibraryRail({
   addedFrom?: 'recommendation' | 'library'
 }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const navigate = useNavigate()
   const { can } = useAuth()
   const incognitoOptions = useIncognitoOptions()
@@ -58,10 +62,15 @@ export function DiscoverLibraryRail({
   // Without AddSeries the same panel asks an admin for the title instead of adding it. The server
   // enforces both halves independently; this only decides which form to draw.
   const canAdd = can('AddSeries')
+  const { data: myRequests } = useSeriesRequests('all', !canAdd)
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [upgradeProfileId, setUpgradeProfileId] = useState<string | null>(null)
-  const [monitored, setMonitored] = useState(true)
+  /**
+   * Null until the reader picks a mode, and then nothing is sent, so the server applies the
+   * instance's default exactly as it did when this was a plain switch.
+   */
+  const [monitorMode, setMonitorMode] = useState<string | null>(null)
   /** On by default: the modal only offers it when the reader finished the anime. */
   const [markAnimeWatched, setMarkAnimeWatched] = useState(true)
   /**
@@ -74,7 +83,6 @@ export function DiscoverLibraryRail({
   const [chapterStart, setChapterStart] = useState<number | ''>('')
   const [chapterEnd, setChapterEnd] = useState<number | ''>('')
   const [note, setNote] = useState('')
-  const [requested, setRequested] = useState(false)
   /**
    * Series id from an add made here, so the button can flip to "Go to series" without navigating.
    * The ['series'] invalidation eventually feeds the same id back via inLibrarySeriesId; this
@@ -100,6 +108,12 @@ export function DiscoverLibraryRail({
   }, [ratingRule, incognitoPinned])
 
   const seriesId = inLibrarySeriesId ?? addedSeriesId
+  const shownMonitorMode = monitorMode ?? librarySettings?.newSeriesMonitorMode ?? 'All'
+  const myRequest = latestRequestFor(
+    [...(myRequests ?? []), ...(createRequest.data ? [createRequest.data] : [])],
+    item.providerId,
+  )
+  const resolutionNote = myRequest?.resolutionNote
   const title = detail?.title ?? item.title
   const animeResume = detail?.animeResume ?? null
 
@@ -117,8 +131,8 @@ export function DiscoverLibraryRail({
       {
         metadataProviderId: item.providerId,
         rootFolderId: Number(rootFolderId),
-        monitored,
-        monitorNewItems: monitored ? 'All' : 'None',
+        monitored: monitorMode !== 'None',
+        monitorNewItems: monitorMode ?? undefined,
         incognito: incognito ?? 'Off',
         addedFrom: addedFrom ?? 'library',
         clientMutationId: addMutationId.current,
@@ -150,7 +164,7 @@ export function DiscoverLibraryRail({
           // 410 means this mutation id belongs to an add that committed and was then deleted. The
           // id is sticky so a retry cannot double-add; keeping it after a 410 would make every
           // later press fail the same way, so adding again becomes a genuinely new operation.
-          if (error.message.startsWith('API 410')) addMutationId.current = null
+          if (error instanceof ApiError && error.status === 410) addMutationId.current = null
         },
       },
     )
@@ -167,7 +181,6 @@ export function DiscoverLibraryRail({
       },
       {
         onSuccess: () => {
-          setRequested(true)
           notifications.show({
             title: t`Requested ${title}`,
             message: t`An admin will see it on the Requests page.`,
@@ -187,7 +200,7 @@ export function DiscoverLibraryRail({
     >
       {seriesId != null ? (
         <>
-          <Title order={3} fz={16}>
+          <Title order={3} fz="var(--type-subhead)">
             <Trans>In your library</Trans>
           </Title>
           <Button
@@ -201,24 +214,24 @@ export function DiscoverLibraryRail({
             {addedSeriesId != null ? <Trans>Go to series</Trans> : <Trans>View in library</Trans>}
           </Button>
         </>
-      ) : canAdd && !can('Admin') && (rootFolders?.length ?? 0) === 0 ? (
-        // AddSeries lets someone create a series, but the root folder list is admin-only (it
-        // discloses the host's directory layout), so a non-admin has nothing to point the add at.
-        // Say so rather than leaving a dead Select and a disabled button.
+      ) : canAdd && !can('Admin') && rootFolders !== undefined && rootFolders.length === 0 ? (
+        // AddSeries lets someone create a series, but only into a root folder they were granted
+        // under Settings, Users. With no grant there is nothing to point the add at. Say so rather
+        // than leaving a dead Select and a disabled button.
         <>
-          <Title order={3} fz={16}>
+          <Title order={3} fz="var(--type-subhead)">
             <Trans>Add to library</Trans>
           </Title>
           <Alert color="var(--warn)" variant="light" mt="md">
             <Trans>
-              You can add series, but only an admin can choose a root folder. Ask one to add this
-              title, or to grant you admin.
+              You can add series, but no root folder has been granted to you yet. Ask an admin to
+              grant you one, or to add this title.
             </Trans>
           </Alert>
         </>
       ) : canAdd ? (
         // Every control here carries its own meaning, so none of them gets a field label: the path
-        // reads as a path, the switch says Monitor, and the incognito select spells its own state.
+        // reads as a path, and the monitor and incognito selects spell their own state.
         // This panel sits inside the band beside the title, and four labels' worth of height is
         // what pushed the band past the poster.
         <Stack gap={10}>
@@ -270,14 +283,19 @@ export function DiscoverLibraryRail({
               comboboxProps={{ zIndex: 1001 }}
             />
           </Tooltip>
-          <Tooltip label={t`Fetch new chapters as they land`} withArrow zIndex={1001}>
-            <Switch
-              label={t`Monitor`}
-              checked={monitored}
-              onChange={(e) => setMonitored(e.currentTarget.checked)}
-              labelPosition="left"
-              size="sm"
-              styles={{ body: { justifyContent: 'space-between' } }}
+          <Tooltip label={t`Which new chapters get fetched as they land`} withArrow zIndex={1001}>
+            <Select
+              aria-label={t`Monitor`}
+              leftSection={<IconBell size={15} />}
+              data={MONITOR_OPTIONS.map(({ value, label }) => {
+                const mode = renderLabel(label)
+                return { value, label: t`Monitor: ${mode}` }
+              })}
+              value={shownMonitorMode}
+              onChange={(value) => value && setMonitorMode(value)}
+              allowDeselect={false}
+              size="xs"
+              comboboxProps={{ zIndex: 1001 }}
             />
           </Tooltip>
           {animeResume && (
@@ -298,9 +316,9 @@ export function DiscoverLibraryRail({
             <Trans>Add</Trans>
           </Button>
         </Stack>
-      ) : requested ? (
+      ) : myRequest && (myRequest.status === 'Pending' || myRequest.status === 'Processing') ? (
         <>
-          <Title order={3} fz={16}>
+          <Title order={3} fz="var(--type-subhead)">
             <Trans>Requested</Trans>
           </Title>
           <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
@@ -309,7 +327,7 @@ export function DiscoverLibraryRail({
         </>
       ) : (
         <>
-          <Title order={3} fz={16}>
+          <Title order={3} fz="var(--type-subhead)">
             <Trans>Ask for this</Trans>
           </Title>
           <Text size="xs" c="var(--ink-4)" mt={6} style={{ lineHeight: 1.55 }}>
@@ -318,6 +336,15 @@ export function DiscoverLibraryRail({
               downloaded.
             </Trans>
           </Text>
+          {myRequest?.status === 'Rejected' && (
+            <Alert color="var(--warn)" variant="light" mt="sm">
+              {resolutionNote ? (
+                <Trans>Your last request was rejected: {resolutionNote}</Trans>
+              ) : (
+                <Trans>Your last request was rejected.</Trans>
+              )}
+            </Alert>
+          )}
           <RequestForm
             dense
             chapterStart={chapterStart}
@@ -332,23 +359,19 @@ export function DiscoverLibraryRail({
         </>
       )}
 
-      {addSeries.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(addSeries.error)}
-        </Alert>
-      )}
-      {applyAnimeResume.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(applyAnimeResume.error)}
-        </Alert>
-      )}
-      {createRequest.isError && (
-        <Alert color="var(--danger)" variant="light" mt="sm">
-          {String(createRequest.error)}
-        </Alert>
-      )}
     </Paper>
   )
+}
+
+/**
+ * The caller's newest new-series request for a title. One still awaiting an answer outranks a newer
+ * rejected one, since that is the row that blocks filing another.
+ */
+function latestRequestFor(requests: SeriesRequest[], providerId: string): SeriesRequest | undefined {
+  const mine = requests.filter((r) => r.kind === 'NewSeries' && r.metadataProviderId === providerId)
+  const newest = (rows: SeriesRequest[]) =>
+    rows.reduce<SeriesRequest | undefined>((best, r) => (best && best.id > r.id ? best : r), undefined)
+  return newest(mine.filter((r) => r.status === 'Pending' || r.status === 'Processing')) ?? newest(mine)
 }
 
 function AnimeWatchedSwitch({

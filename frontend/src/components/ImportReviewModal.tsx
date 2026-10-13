@@ -18,12 +18,9 @@ import { queueErrorMessage } from '../api/queue'
 import type { ImportDecision, ImportPlanFileDto } from '../api/types'
 import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
-
-function formatSize(bytes: number): string {
-  if (bytes <= 0) return '-'
-  const mb = bytes / 1024 / 1024
-  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`
-}
+import { formatBytes } from '../format'
+import { errorText } from '../api/errorText'
+import { PendingLabel } from './ui/PendingLabel'
 
 /** "Ch. 1, 2, 3" with a tail when the list runs long, so a 40-chapter volume stays one line. */
 function ChapterList({ chapters }: { chapters: string[] }) {
@@ -74,7 +71,7 @@ function PlanFile({
             </Badge>
           )}
           <Text size="xs" c="var(--ink-3)" className="tnum">
-            {formatSize(size)}
+            {formatBytes(size > 0 ? size : null)}
           </Text>
         </Group>
       </Group>
@@ -116,7 +113,7 @@ function PlanFile({
                   <Trans>replaces {replacedFileName}</Trans>
                 </Text>
                 <Text size="xs" className="tnum">
-                  {formatSize(existing.size)}
+                  {formatBytes(existing.size > 0 ? existing.size : null)}
                 </Text>
               </Group>
             )
@@ -141,7 +138,7 @@ export function ImportReviewModal({
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
-  const { data: plan, isLoading } = useImportPlan(queueItemId)
+  const { data: plan, isLoading, isError, error, refetch } = useImportPlan(queueItemId)
   const { data: queue } = useQueue()
   const settle = useSettleImport()
   const [skipped, setSkipped] = useState<Set<string>>(new Set())
@@ -153,7 +150,16 @@ export function ImportReviewModal({
   const decide = (mode: ImportDecision) => {
     if (queueItemId === null) return
     const skipFiles = plan?.isUpgrade && mode !== 'Reject' ? [...skipped] : undefined
-    settle.mutate({ id: queueItemId, mode, skipFiles }, { onSuccess: onClose })
+    settle.mutate(
+      { id: queueItemId, mode, skipFiles, parsingFingerprint: plan?.parsingFingerprint },
+      // A refusal can mean the plan went stale; the fresh one is what the next click should send.
+      { onSuccess: onClose, onError: () => void refetch() },
+    )
+  }
+  /** Only the button that was pressed shows pending; the others just go disabled. */
+  const pendingProps = (mode: ImportDecision) => {
+    const mine = settle.isPending && settle.variables?.mode === mode
+    return { loading: mine, disabled: settle.isPending && !mine }
   }
 
   const toggleSkip = (fileName: string, checked: boolean) =>
@@ -181,7 +187,21 @@ export function ImportReviewModal({
       title={t`Review import`}
       size="lg"
     >
-      {isLoading || !plan ? (
+      {isError ? (
+        <Stack gap="md">
+          <Alert color="var(--danger)" icon={<IconAlertTriangle size={16} />} title={t`Can't load this import`}>
+            {errorText(error)}
+          </Alert>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={onClose}>
+              <Trans>Close</Trans>
+            </Button>
+            <Button variant="light" onClick={() => void refetch()}>
+              <Trans>Retry</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      ) : isLoading || !plan ? (
         <Group justify="center" py="xl">
           <Loader size="sm" />
         </Group>
@@ -195,7 +215,9 @@ export function ImportReviewModal({
               <Trans>Close</Trans>
             </Button>
             <Button color="var(--danger)" variant="light" onClick={() => decide('Reject')} loading={settle.isPending}>
-              <Trans>Discard download</Trans>
+              <PendingLabel pending={<Trans>Discarding</Trans>}>
+                <Trans>Discard download</Trans>
+              </PendingLabel>
             </Button>
           </Group>
         </Stack>
@@ -248,25 +270,37 @@ export function ImportReviewModal({
             <Button
               color="var(--danger-fill)"
               onClick={() => decide('Replace')}
-              loading={settle.isPending}
+              {...pendingProps('Replace')}
               leftSection={<IconAlertTriangle size={16} />}
             >
-              <Trans>
-                Import everything, replace the{' '}
-                <Plural value={replacedFiles} one="# file" other="# files" /> it covers
-              </Trans>
+              <PendingLabel
+                pending={
+                  <Trans>
+                    Replacing <Plural value={replacedFiles} one="# file" other="# files" />
+                  </Trans>
+                }
+              >
+                <Trans>
+                  Import everything, replace the{' '}
+                  <Plural value={replacedFiles} one="# file" other="# files" /> it covers
+                </Trans>
+              </PendingLabel>
             </Button>
-            <Button variant="light" onClick={() => decide('SkipExisting')} loading={settle.isPending}>
-              <Trans>Import only what is missing, keep existing files</Trans>
+            <Button variant="light" onClick={() => decide('SkipExisting')} {...pendingProps('SkipExisting')}>
+              <PendingLabel pending={<Trans>Importing what is missing</Trans>}>
+                <Trans>Import only what is missing, keep existing files</Trans>
+              </PendingLabel>
             </Button>
             <Button
               variant="subtle"
               color="var(--neutral)"
               onClick={() => decide('Reject')}
-              loading={settle.isPending}
+              {...pendingProps('Reject')}
               leftSection={<IconBan size={16} />}
             >
-              <Trans>Ignore this download</Trans>
+              <PendingLabel pending={<Trans>Ignoring</Trans>}>
+                <Trans>Ignore this download</Trans>
+              </PendingLabel>
             </Button>
           </Stack>
 

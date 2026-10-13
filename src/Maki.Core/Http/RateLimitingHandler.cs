@@ -8,8 +8,19 @@ namespace Maki.Core.Http;
 /// </summary>
 public class RateLimitingHandler(RateLimiter limiter) : DelegatingHandler
 {
+    /// <summary>
+    /// Set on a request that must not wait behind bulk traffic, a health probe with a short timeout.
+    /// A probe stuck in the queue reads as the service being down.
+    /// </summary>
+    public static readonly HttpRequestOptionsKey<bool> Skip = new("Maki.RateLimit.Skip");
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        if (request.Options.TryGetValue(Skip, out var skip) && skip)
+        {
+            return await base.SendAsync(request, cancellationToken);
+        }
+
         using var lease = await limiter.AcquireAsync(1, cancellationToken);
         if (!lease.IsAcquired)
         {

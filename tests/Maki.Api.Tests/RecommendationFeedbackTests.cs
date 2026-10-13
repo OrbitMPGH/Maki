@@ -91,6 +91,57 @@ public class RecommendationFeedbackTests : IDisposable
     }
 
     [Fact]
+    public async Task A_clear_on_a_title_with_no_row_does_not_insert_one()
+    {
+        using var db = _fixture.NewContext(1);
+        var service = Catalogued(db, 1, dump => dump.AddSeries(100, "Nagatoro"));
+
+        var result = await service.MutateAsync(1, 100, new FeedbackCommand("clear-sentiment", Guid.NewGuid(), 0));
+
+        Assert.False(result.Changed);
+        Assert.False(await db.RecommendationFeedback.AnyAsync(x => x.ProviderId == 100));
+        Assert.Single(await db.RecommendationMutationReceipts.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Undo_of_an_event_whose_row_is_gone_is_not_found()
+    {
+        using var db = _fixture.NewContext(1);
+        var service = Service(db, 1);
+        db.RecommendationFeedback.Add(new RecommendationFeedback { UserId = 1, ProviderId = 456 });
+        await db.SaveChangesAsync();
+        var hidden = await service.MutateAsync(1, 456, new FeedbackCommand("hide", Guid.NewGuid(), 0));
+        await db.RecommendationFeedback.Where(x => x.ProviderId == 456).ExecuteDeleteAsync();
+
+        await Assert.ThrowsAsync<FeedbackNotFoundException>(() =>
+            service.UndoAsync(1, hidden.EventId!.Value, Guid.NewGuid(), 1));
+    }
+
+    [Fact]
+    public async Task Suppressed_ids_are_the_hidden_the_live_dismissed_and_the_exposed()
+    {
+        using var db = _fixture.NewContext(1);
+        db.RecommendationFeedback.AddRange(
+            new RecommendationFeedback { UserId = 1, ProviderId = 1, Suppression = RecommendationSuppression.Hidden },
+            new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 2, Suppression = RecommendationSuppression.Dismissed,
+                DismissedUntilUtc = DateTime.UtcNow.AddDays(1)
+            },
+            new RecommendationFeedback
+            {
+                UserId = 1, ProviderId = 3, Suppression = RecommendationSuppression.Dismissed,
+                DismissedUntilUtc = DateTime.UtcNow.AddDays(-1)
+            },
+            new RecommendationFeedback { UserId = 1, ProviderId = 4, Exposure = RecommendationExposure.Manga },
+            new RecommendationFeedback { UserId = 1, ProviderId = 5, Sentiment = RecommendationSentiment.Liked },
+            new RecommendationFeedback { UserId = 1, ProviderId = 6 });
+        await db.SaveChangesAsync();
+
+        Assert.Equal([1L, 2L, 4L], (await Service(db, 1).SuppressedAsync(1)).Order());
+    }
+
+    [Fact]
     public async Task Replayed_mutation_is_stable_and_a_new_identical_action_is_a_no_op()
     {
         using var db = _fixture.NewContext(1);
@@ -337,7 +388,7 @@ public class RecommendationFeedbackTests : IDisposable
             genresJson: """["Action","Comedy"]""", coverUrl: "https://covers.example/dandadan.jpg"));
 
         var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), new TestLocalizer(), db,
-            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new NotReadyRecommender(),
             new FakeAppSettings(),
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
@@ -371,7 +422,7 @@ public class RecommendationFeedbackTests : IDisposable
         var service = Catalogued(db, 1, dump => dump.AddSeries(5548, "Landmine"));
 
         var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), new TestLocalizer(), db,
-            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new NotReadyRecommender(),
             new FakeAppSettings(),
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
@@ -511,7 +562,7 @@ public class RecommendationFeedbackTests : IDisposable
     {
         using var db = _fixture.NewContext(1);
         var controller = new RecommendationFeedbackController(Service(db, 1), new TestCurrentUser(1), new TestLocalizer(), db,
-            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new NotReadyRecommender(),
             new FakeAppSettings(),
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),

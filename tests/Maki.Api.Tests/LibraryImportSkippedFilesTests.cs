@@ -29,9 +29,8 @@ public class LibraryImportSkippedFilesTests : IDisposable
     }
 
     private LibraryImportService Service(Maki.Data.MakiDbContext db) => new(
-        db, [], null!, null!, null!, null!, null!, null!, null!, null!, null!, new TestLocalizer(),
-        new TestCurrentUser(1), new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
-        NullLogger<LibraryImportService>.Instance);
+        db, [], null!, null!, new SourceMatchQueue(), null!, null!, null!, null!, null!, new TestLocalizer(),
+        new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
 
     private string WriteZip(string name)
     {
@@ -64,7 +63,7 @@ public class LibraryImportSkippedFilesTests : IDisposable
         await db.SaveChangesAsync();
 
         var service = Service(db);
-        var (files, unreadable) = service.MaterializeComics(_dir);
+        var (files, unreadable, _) = service.MaterializeComics(_dir);
         var skipped = await service.SkippedFilesAsync(series.Id, _dir, files, unreadable, CancellationToken.None);
 
         Assert.Contains(linkedFile, files);
@@ -84,7 +83,7 @@ public class LibraryImportSkippedFilesTests : IDisposable
         File.WriteAllText(Path.Combine(_dir, "Series Ch.1.cbr"), "not really a rar");
 
         using var db = _db.NewContext();
-        var (_, unreadable) = Service(db).MaterializeComics(_dir);
+        var (_, unreadable, _) = Service(db).MaterializeComics(_dir);
 
         Assert.Empty(unreadable);
     }

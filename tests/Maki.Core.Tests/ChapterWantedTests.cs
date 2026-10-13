@@ -41,6 +41,28 @@ public class ChapterWantedTests
         new() { Id = id, Number = number, Language = "en", Wanted = wanted, ChapterFileId = fileId };
 
     [Fact]
+    public void NextWanted_passes_over_chapters_whose_file_was_removed_on_purpose()
+    {
+        var removed = Ch(1, 1m);
+        removed.FileRemovedAt = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+        Chapter[] chapters = [removed, Ch(2, 2m), Ch(3, 3m)];
+
+        Assert.Equal([2, 3], Chapter.NextWanted(chapters, 2));
+        Assert.False(Chapter.IsMissing(removed));
+        Assert.True(Chapter.IsRemoved(removed));
+    }
+
+    [Fact]
+    public void A_stale_removal_stamp_does_not_hide_a_linked_file()
+    {
+        var relinked = Ch(1, 1m, fileId: 7);
+        relinked.FileRemovedAt = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        Assert.False(Chapter.IsRemoved(relinked));
+        Assert.False(Chapter.IsMissing(relinked));
+    }
+
+    [Fact]
     public void NextWanted_skipped_chapters_free_their_place_in_the_window()
     {
         Chapter[] chapters = [Ch(1, 1m), Ch(2, 2m), Ch(3, 3m), Ch(4, 4m)];

@@ -253,6 +253,14 @@ export function RelinkFilesModal({
             message: r.deleted > 0 ? `${moved}, ${deleted} (${freed})` : moved,
             color: r.failed > 0 ? 'var(--warn)' : 'var(--ok)',
           })
+          if (r.kept > 0) {
+            notifications.show({
+              message: plural(r.kept, {
+                one: '# file kept on disk because another series still uses it',
+                other: '# files kept on disk because another series still uses them',
+              }),
+            })
+          }
           if (r.failed > 0) {
             notifications.show({
               message: plural(r.failed, {

@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { useQueryClient } from '@tanstack/react-query'
@@ -162,7 +163,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
     try {
       await work()
     } catch (cause) {
-      setActionError(String(cause))
+      setActionError(errorText(cause))
     } finally {
       setPending((prev) => {
         const next = new Set(prev)
@@ -334,13 +335,14 @@ function AnimeSignalsPanel() {
     try {
       await sync.mutateAsync()
     } catch (cause) {
-      setSyncError(String(cause))
+      setSyncError(errorText(cause))
     }
   }
 
   if (isLoading || !data) {
+    const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
     ) : null
   }
 
@@ -523,9 +525,9 @@ function Pill({ color, label, clear, onClear }: {
 }) {
   return (
     <Badge
-      size="sm" variant="light" color={color} pr={3}
+      size="sm" variant="light" color={color} pr={3} style={{ overflow: 'visible' }}
       rightSection={
-        <ActionIcon size={14} variant="transparent" color={color} aria-label={clear} onClick={onClear}>
+        <ActionIcon size={24} m={-5} variant="transparent" color={color} aria-label={clear} onClick={onClear}>
           <IconX size={12} />
         </ActionIcon>
       }

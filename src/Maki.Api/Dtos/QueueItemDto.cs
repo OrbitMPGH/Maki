@@ -128,10 +128,47 @@ public enum ImportDecision
 }
 
 /// <param name="SkipFiles">Downloaded file names to leave out, for Replace and SkipExisting.</param>
-public record ImportDecisionDto(ImportDecision Mode, IReadOnlyList<string>? SkipFiles = null);
+/// <param name="ParsingFingerprint">
+/// The <c>parsingFingerprint</c> of the plan the user reviewed. When the name parsing settings have
+/// changed since, the files would be read differently from what the review showed, so the import is
+/// refused. Null skips the check.
+/// </param>
+public record ImportDecisionDto(
+    ImportDecision Mode, IReadOnlyList<string>? SkipFiles = null, string? ParsingFingerprint = null);
 
 public record ImportDecisionResultDto(int Imported, int Linked, int Skipped, int Deleted);
 
 public record QueueClearDto(int Cleared);
 
+/// <summary>One bucket of Failed rows: how many share a failure key and a source.</summary>
+/// <param name="ReasonKey">Null for a row whose reason is another program's own text.</param>
+public record QueueFailureGroupDto(string? ReasonKey, string SourceName, int Count);
+
+/// <summary>Which Failed rows a bulk retry or remove acts on; both filters null means all of them.</summary>
+/// <param name="BlockReleases">Remove only: also stop the volume search grabbing the removed torrent releases again.</param>
+public record QueueFailedActionDto(string? Reason = null, string? Source = null, bool BlockReleases = true);
+
+public record QueueBulkResultDto(int Affected);
+
 public record ReorderQueueDto(IReadOnlyList<int> OrderedIds);
+
+/// <param name="Until">When the pause lifts by itself, in UTC; null means until somebody resumes.</param>
+public record QueuePauseEntryDto(DateTime? Until);
+
+public record QueueSourcePauseDto(string SourceName, DateTime? Until);
+
+/// <param name="All">Set while every scraper download is paused.</param>
+/// <param name="Sources">Sources paused on their own, whether or not everything is.</param>
+public record QueuePauseDto(QueuePauseEntryDto? All, IReadOnlyList<QueueSourcePauseDto> Sources)
+{
+    public static QueuePauseDto From(Services.DownloadPauseState state) => new(
+        state.All is { } all ? new QueuePauseEntryDto(all.Until) : null,
+        state.Sources
+            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => new QueueSourcePauseDto(pair.Key, pair.Value.Until))
+            .ToList());
+}
+
+/// <param name="Source">The source to pause, or null for every scraper download.</param>
+/// <param name="ResumeAt">When to resume by itself; null pauses until somebody resumes.</param>
+public record QueuePauseRequestDto(string? Source = null, DateTime? ResumeAt = null);

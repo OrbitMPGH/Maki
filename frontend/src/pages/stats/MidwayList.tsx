@@ -1,6 +1,6 @@
 import { Trans, Plural } from '@lingui/react/macro'
 import type { MidwaySeriesDto } from '../../api/stats'
-import { formatReadingTime } from '../../format'
+import { formatNumber, formatReadingTime } from '../../format'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
 /** The right-hand small line: how much is left, and how long it would take at your own pace. */
@@ -47,7 +47,7 @@ export function MidwayList({ items, emptyText }: { items: MidwaySeriesDto[]; emp
               </div>
             </div>
             <div className="stats-row-value tnum">
-              {item.read} / {total}
+              {formatNumber(item.read)} / {formatNumber(total)}
               <small>
                 <MidwayHint held={item.held} etaSeconds={item.etaSeconds} />
               </small>

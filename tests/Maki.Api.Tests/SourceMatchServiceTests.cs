@@ -1,4 +1,5 @@
-﻿using Maki.Api.Services;
+﻿using System.Threading.Channels;
+using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
@@ -121,6 +122,13 @@ public class SourceMatchServiceTests : IDisposable
             series.AniListId = aniList;
         };
 
+    private static async Task<List<SourceCandidate>> Candidates(SourceMatchService service, Series series)
+    {
+        var found = Channel.CreateUnbounded<SourceCandidate>();
+        await service.FindCandidatesAsync(series, found.Writer);
+        return await found.Reader.ReadAllAsync().ToListAsync();
+    }
+
     private List<SourceMapping> MappingsOf(int seriesId)
     {
         using var db = _db.NewContext();
@@ -144,11 +152,45 @@ public class SourceMatchServiceTests : IDisposable
             new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
             NullLogger<SourceMatchService>.Instance);
 
-        var candidates = await service.FindCandidatesAsync(new Series { Id = seriesId, Title = "Hajime no Ippo" });
+        var candidates = (await Candidates(service, new Series { Id = seriesId, Title = "Hajime no Ippo" }))
+            .OrderBy(c => c.Priority)
+            .ToList();
 
         Assert.Equal(["second", "first"], candidates.Select(c => c.Source.Name));
         Assert.Equal(["c", "a"], candidates.Select(c => c.SourceSeriesId));
+        Assert.Equal([1, 3], candidates.Select(c => c.Priority));
         Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task FindCandidates_hands_over_each_source_as_soon_as_its_search_settles()
+    {
+        var release = new TaskCompletionSource();
+        var slow = new FakeSource
+        {
+            Name = "slow",
+            OnSearchAsync = async (_, ct) =>
+            {
+                await release.Task.WaitAsync(TimeSpan.FromSeconds(5), ct);
+                return [Hit("a", "Hajime no Ippo")];
+            }
+        };
+        var fast = new FakeSource { Name = "fast", OnSearch = _ => [Hit("b", "Hajime no Ippo")] };
+        var service = new SourceMatchService(
+            _db.NewContext(), new SourceRegistry([slow, fast]),
+            new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, "slow,fast"), Sources.AllEnabled,
+            new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
+            NullLogger<SourceMatchService>.Instance);
+
+        var found = Channel.CreateUnbounded<SourceCandidate>();
+        var run = service.FindCandidatesAsync(new Series { Title = "Hajime no Ippo" }, found.Writer);
+
+        var first = await found.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("fast", first.Source.Name);
+
+        release.SetResult();
+        await run;
+        Assert.Equal(["slow"], await found.Reader.ReadAllAsync().Select(c => c.Source.Name).ToListAsync());
     }
 
     [Fact]
@@ -182,8 +224,7 @@ public class SourceMatchServiceTests : IDisposable
             _db.NewContext(), sources, appSettings, Sources.AllEnabled,
             new SourceExternalIdCache(TimeProvider.System), searchCache, NullLogger<SourceMatchService>.Instance);
 
-        await NewService().FindCandidatesAsync(
-            new Series { Title = "Hajime no Ippo", MangaBakaId = 42 });
+        await Candidates(NewService(), new Series { Title = "Hajime no Ippo", MangaBakaId = 42 });
 
         var mapped = await NewService().AutoMatchAsync(await _db.NewContext().Series.FirstAsync(s => s.Id == seriesId));
 
@@ -456,7 +497,7 @@ public class SourceMatchServiceTests : IDisposable
 
         // The throwing source is tolerated; the healthy one still maps.
         Assert.Equal(["ok"], mapped);
-        Assert.Equal(["boom"], steps.Named(SourceMatchState.NoMatch));
+        Assert.Equal(["boom"], steps.Named(SourceMatchState.Failed));
     }
 
     [Fact]
@@ -1019,5 +1060,108 @@ public class SourceMatchServiceTests : IDisposable
         await matching;
 
         Assert.Equal(["nothing"], steps.Named(SourceMatchState.NoMatch));
+    }
+
+    private FakeAppSettings JapaneseFirst(params string[] order) => new FakeAppSettings()
+        .Set(SettingKeys.SourcePriorityOrder, string.Join(",", order))
+        .Set(SettingKeys.SourceLanguageOrder, "ja,en");
+
+    [Fact]
+    public async Task A_native_script_original_title_is_kept_and_searched_on_a_Japanese_source()
+    {
+        var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");
+        var queries = new List<string>();
+        var japanese = new FakeSource
+        {
+            Name = "senmanga",
+            SupportedLanguages = ["ja"],
+            OnSearch = q =>
+            {
+                lock (queries)
+                {
+                    queries.Add(q);
+                }
+
+                return q == "進撃の巨人" ? [Hit("jp1", "進撃の巨人")] : [];
+            }
+        };
+
+        var mapped = await RunAutoMatch(seriesId, Sources.AllEnabled, null, JapaneseFirst("senmanga"), japanese);
+
+        Assert.Equal(["senmanga"], mapped);
+        Assert.Equal(["Attack on Titan", "進撃の巨人"], queries);
+    }
+
+    [Fact]
+    public async Task The_alt_title_in_the_sources_language_is_searched_before_the_original_title()
+    {
+        var seriesId = _db.SeedSeries(
+            "Attack on Titan", originalTitle: "進撃の巨人",
+            configure: s => s.AltTitles = [new LocalizedTitle("Shingeki no Kyojin", "ja-Latn"), new LocalizedTitle("进击的巨人", "zh-Hans")]);
+        var queries = new List<string>();
+        var chinese = new FakeSource
+        {
+            Name = "baozi",
+            SupportedLanguages = ["zh-Hans"],
+            OnSearch = q =>
+            {
+                lock (queries)
+                {
+                    queries.Add(q);
+                }
+
+                return q == "进击的巨人" ? [Hit("zh1", "进击的巨人")] : [];
+            }
+        };
+        var appSettings = new FakeAppSettings()
+            .Set(SettingKeys.SourcePriorityOrder, "baozi")
+            .Set(SettingKeys.SourceLanguageOrder, "zh-Hans,en");
+
+        var mapped = await RunAutoMatch(seriesId, Sources.AllEnabled, null, appSettings, chinese);
+
+        Assert.Equal(["baozi"], mapped);
+        Assert.Equal(["Attack on Titan", "进击的巨人"], queries);
+    }
+
+    [Fact]
+    public async Task A_source_that_publishes_English_is_searched_once()
+    {
+        var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");
+        var english = new FakeSource { Name = "english", OnSearch = _ => [] };
+
+        await RunAutoMatch(seriesId, english);
+
+        Assert.Equal(1, english.SearchCalls);
+    }
+
+    [Fact]
+    public async Task A_Japanese_source_the_English_title_already_finds_is_searched_once()
+    {
+        var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");
+        var japanese = new FakeSource
+        {
+            Name = "senmanga",
+            SupportedLanguages = ["ja"],
+            OnSearch = _ => [Hit("jp1", "Attack on Titan")]
+        };
+
+        var mapped = await RunAutoMatch(seriesId, Sources.AllEnabled, null, JapaneseFirst("senmanga"), japanese);
+
+        Assert.Equal(["senmanga"], mapped);
+        Assert.Equal(1, japanese.SearchCalls);
+    }
+
+    [Fact]
+    public async Task A_Latin_script_source_is_not_searched_for_the_native_title()
+    {
+        var seriesId = _db.SeedSeries("Attack on Titan", originalTitle: "進撃の巨人");
+        var spanish = new FakeSource { Name = "olympus", SupportedLanguages = ["es"], OnSearch = _ => [] };
+        var appSettings = new FakeAppSettings()
+            .Set(SettingKeys.SourcePriorityOrder, "olympus")
+            .Set(SettingKeys.SourceLanguageOrder, "es,en");
+
+        await RunAutoMatch(seriesId, Sources.AllEnabled, null, appSettings, spanish);
+
+        Assert.Equal(1, spanish.SearchCalls);
     }
 }

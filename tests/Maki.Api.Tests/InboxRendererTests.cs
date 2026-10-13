@@ -60,6 +60,8 @@ public class InboxRendererTests
         { "inbox.upgrade.torrentProposal", new { replaced = 10, missing = 47, sizeBytes = 480L * 1024 * 1024 } },
         { "inbox.upgrade.volume", new { fileName = "Berserk v03.cbz", replaced = 9 } },
         { "inbox.account.ssoLinked", new { account = "alice@idp" } },
+        { "inbox.series.statusChanged", new { from = "ongoing", to = "completed" } },
+        { "inbox.series.statusChanged", new { from = "ongoing", to = "completed" } },
     };
 
     [Fact]
@@ -164,6 +166,19 @@ public class InboxRendererTests
         });
 
         Assert.Equal("Resolved: Kavita: not configured", body);
+    }
+
+    [Fact]
+    public void An_edited_request_words_its_range_and_passes_an_old_row_through()
+    {
+        var (_, keyed) = Render("inbox.request.edited", new
+        {
+            title = "Berserk", range = "inbox.request.range.between", start = "1", end = "12.5",
+        });
+        var (_, old) = Render("inbox.request.edited", new { title = "Berserk", range = "everything" });
+
+        Assert.Equal("Berserk: now chapters 1 to 12.5", keyed);
+        Assert.Equal("Berserk: now everything", old);
     }
 
     [Fact]

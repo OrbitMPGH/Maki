@@ -64,9 +64,8 @@ public static class ComicSourceConverter
     /// </summary>
     private static void RepackOverOwnName(ComicSource source, string targetPath)
     {
-        var extension = ComicExtensionOf(source.Path)
+        var aside = AsideFor(source.Path)
             ?? throw new InvalidDataException($"{Path.GetFileName(source.Path)} is not an archive that can be repacked");
-        var aside = Path.ChangeExtension(source.Path, extension);
         if (File.Exists(aside))
         {
             throw new IOException($"{Path.GetFileName(aside)} already exists");
@@ -87,6 +86,14 @@ public static class ComicSourceConverter
             throw;
         }
     }
+
+    /// <summary>
+    /// Where <see cref="Materialize"/> moves a mislabelled original before building the CBZ under its
+    /// name, or null when it is nothing that can be repacked. Read without touching the file, so an
+    /// import plan can name it in advance.
+    /// </summary>
+    public static string? AsideFor(string path) =>
+        ComicExtensionOf(path) is { } extension ? Path.ChangeExtension(path, extension) : null;
 
     /// <summary>
     /// Off the leading bytes where there are any; an old-style tar has none, so SharpCompress's

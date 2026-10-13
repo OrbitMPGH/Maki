@@ -88,9 +88,10 @@ public record InboxPrefsSpec(
         foreach (var type in InboxEventTypes.All)
         {
             var key = InboxEventTypes.Key(type);
-            merged[key] = Types is not null && Types.TryGetValue(key, out var stored)
-                ? stored
-                : !InboxEventTypes.DefaultsOff(type);
+            merged[key] = InboxEventTypes.IsMandatory(type)
+                || (Types is not null && Types.TryGetValue(key, out var stored)
+                    ? stored
+                    : !InboxEventTypes.DefaultsOff(type));
         }
 
         return this with { Types = merged, SeriesDefault = ResolvedSeriesDefault.ToString() };
@@ -101,9 +102,10 @@ public record InboxPrefsSpec(
     /// cannot accidentally read "absent" as "off".
     /// </summary>
     public bool Wants(InboxEventType type) =>
-        Types is not null && Types.TryGetValue(InboxEventTypes.Key(type), out var enabled)
+        InboxEventTypes.IsMandatory(type)
+        || (Types is not null && Types.TryGetValue(InboxEventTypes.Key(type), out var enabled)
             ? enabled
-            : !InboxEventTypes.DefaultsOff(type);
+            : !InboxEventTypes.DefaultsOff(type));
 
     /// <summary>Reads a stored blob; null, blank or unparseable falls back to defaults.</summary>
     public static InboxPrefsSpec Parse(string? json)

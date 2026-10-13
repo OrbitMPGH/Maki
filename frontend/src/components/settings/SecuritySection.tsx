@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import {
   Alert,
+  Button,
   Code,
   Group,
-  NumberInput,
   Stack,
   Switch,
+  Text,
   TextInput,
 } from '@mantine/core'
+import { IconCheck, IconCopy } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import {
   useOidcSettings,
@@ -20,6 +22,10 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { useCopyText } from '../ui/useCopyText'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { useSliceSync } from '../../pages/settings/sharedRecord'
+import { SettingsNumberInput } from './SettingsNumberInput'
 
 /**
  * Instance security settings. Admin-only.
@@ -28,96 +34,170 @@ import { SettingsSection } from '../../pages/settings/SettingsSection'
  * flag, HSTS, the trusted-proxy list, the lockout thresholds. A change needs a restart. The card
  * says so rather than pretending otherwise: silently requiring a restart is how someone concludes the
  * setting does nothing.
+ *
+ * One record backs two cards, Sign-in policy and Network. Each saves only its own fields, so saving
+ * one never reverts the other.
  */
-export function SecuritySection() {
-  const { t } = useLingui()
+type LockoutSlice = Pick<SecuritySettings, 'lockoutMaxAttempts' | 'lockoutMinutes' | 'sessionDays'>
+type NetworkSlice = Pick<SecuritySettings, 'requireHttps' | 'trustedProxies'>
+
+function useSecuritySlice<S extends object>(pick: (s: SecuritySettings) => S) {
   const { data } = useSecuritySettings()
   const save = useSaveSecuritySettings()
-  const [draft, setDraft] = useState<SecuritySettings | null>(null)
+  const [draft, setDraft] = useState<S | null>(null)
+  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+  const slice = data && pick(data)
 
-  useEffect(() => {
-    if (data) setDraft(data)
-  }, [data])
+  useSliceSync(slice, setDraft, discarded)
+
+  const dirty = slice !== undefined && draft !== null && JSON.stringify(draft) !== JSON.stringify(slice)
+  const commit = () => {
+    if (!draft) return
+    save.mutate(
+      draft,
+      {
+        onSuccess: () =>
+          notifications.show({
+            message: now`Security settings saved. Restart Maki to apply them.`,
+            color: 'var(--ok)',
+          }),
+      },
+    )
+  }
+  return { draft, saved: slice, setDraft, dirty, saving: save.isPending, discard, commit }
+}
+
+export function SecuritySection() {
+  const { t } = useLingui()
+  const { draft, setDraft, dirty, saving, discard, commit } = useSecuritySlice<LockoutSlice>((s) => ({
+    lockoutMaxAttempts: s.lockoutMaxAttempts,
+    lockoutMinutes: s.lockoutMinutes,
+    sessionDays: s.sessionDays,
+  }))
 
   if (!draft) return null
-
-  const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
 
   return (
     <SettingsSection
       id="security"
-      title={<Trans>Security</Trans>}
-      description={<Trans>Changes take effect after Maki restarts.</Trans>}
+      title={<Trans>Sign-in policy</Trans>}
+      description={<Trans>Lockout and session rules for password sign-in. Changes take effect after Maki restarts.</Trans>}
       dirty={dirty}
-      saving={save.isPending}
-      onDiscard={() => data && setDraft(data)}
-      onSave={() =>
-        save.mutate(draft, {
-          onSuccess: () =>
-            notifications.show({
-              message: now`Security settings saved. Restart Maki to apply them.`,
-              color: 'var(--ok)',
-            }),
-          onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-        })
-      }
-      panelProps={{ id: 'security' }}
+      saving={saving}
+      onDiscard={discard}
+      onSave={commit}
+    >
+      <Group grow align="flex-start">
+        <SettingsNumberInput
+          label={t`Failed sign-ins before lockout`}
+          description={<Trans>Set to <Code>0</Code> to disable lockout.</Trans>}
+          min={0}
+          max={1000}
+          value={draft.lockoutMaxAttempts}
+          onChange={(v) => setDraft({ ...draft, lockoutMaxAttempts: v })}
+        />
+        <SettingsNumberInput
+          label={t`Lockout duration (minutes)`}
+          description={t`Counted from the moment the limit is hit.`}
+          min={1}
+          max={10080}
+          value={draft.lockoutMinutes}
+          onChange={(v) => setDraft({ ...draft, lockoutMinutes: v })}
+        />
+        <SettingsNumberInput
+          label={t`Session lifetime (days)`}
+          description={t`Sliding: activity extends it.`}
+          min={1}
+          max={3650}
+          value={draft.sessionDays}
+          onChange={(v) => setDraft({ ...draft, sessionDays: v })}
+        />
+      </Group>
+    </SettingsSection>
+  )
+}
+
+const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+
+export function NetworkSection() {
+  const { t } = useLingui()
+  const { draft, saved, setDraft, dirty, saving, discard, commit } = useSecuritySlice<NetworkSlice>((s) => ({
+    requireHttps: s.requireHttps,
+    trustedProxies: s.trustedProxies,
+  }))
+  const [confirmingHttps, setConfirmingHttps] = useState(false)
+
+  if (!draft) return null
+
+  // Sign-in is refused over plain HTTP once this is on, so switching it on from an http page that
+  // is not loopback locks the admin out of this very address after the restart.
+  const onPlainHttp = window.location.protocol === 'http:' && !LOOPBACK_HOSTS.includes(window.location.hostname)
+  const turningOnHttps = onPlainHttp && draft.requireHttps && saved?.requireHttps === false
+
+  return (
+    <SettingsSection
+      id="network"
+      title={<Trans>Network</Trans>}
+      description={<Trans>How Maki is reached. Changes take effect after Maki restarts.</Trans>}
+      dirty={dirty}
+      saving={saving}
+      onDiscard={discard}
+      onSave={() => (turningOnHttps ? setConfirmingHttps(true) : commit())}
     >
       <Stack gap="md">
         <Switch
           label={t`Require HTTPS`}
-          description={t`Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS: over plain HTTP, sign-in fails without saying why.`}
+          description={t`Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS; over plain HTTP, sign-in is refused with a message saying so.`}
           checked={draft.requireHttps}
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
-
-        <TextInput
-          label={t`Trusted proxies`}
-          description={t`Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly.`}
-          placeholder="172.18.0.0/16, 10.0.0.5"
-          value={draft.trustedProxies}
-          onChange={(e) => setDraft({ ...draft, trustedProxies: e.currentTarget.value })}
-        />
-
-        {!draft.trustedProxies.trim() && (
-          <Alert color="var(--warn)" variant="light">
+        {onPlainHttp && draft.requireHttps && (
+          <Alert color="var(--danger)" variant="light">
             <Trans>
-              With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every
-              failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see
-              the real client.
+              You are on this page over plain HTTP. After a restart, signing in at this address will be
+              refused. Open Maki through its HTTPS address first, or make sure you can reach it that way.
             </Trans>
           </Alert>
         )}
 
-        <Group grow align="flex-start">
-          <NumberInput
-            label={t`Failed sign-ins before lockout`}
-            description={<Trans>Set to <Code>0</Code> to disable lockout.</Trans>}
-            min={0}
-            max={1000}
-            value={draft.lockoutMaxAttempts}
-            onChange={(v) => setDraft({ ...draft, lockoutMaxAttempts: Number(v) || 0 })}
-          />
-          <NumberInput
-            label={t`Lockout duration (minutes)`}
-            description={t`Sliding: a failed sign-in resets the timer.`}
-            min={1}
-            max={10080}
-            value={draft.lockoutMinutes}
-            onChange={(v) => setDraft({ ...draft, lockoutMinutes: Number(v) || 1 })}
-          />
-          <NumberInput
-            label={t`Session lifetime (days)`}
-            description={t`Sliding: activity extends it.`}
-            min={1}
-            max={3650}
-            value={draft.sessionDays}
-            onChange={(v) => setDraft({ ...draft, sessionDays: Number(v) || 1 })}
-          />
-        </Group>
+        <TextInput
+          label={t`Trusted proxies`}
+          description={t`Comma-separated IPs or CIDR networks allowed to set X-Forwarded-For. Needed behind a reverse proxy so lockout sees the real client. Leave empty if Maki is reached directly.`}
+          placeholder="172.18.0.0/16, 10.0.0.5"
+          value={draft.trustedProxies}
+          onChange={(e) => setDraft({ ...draft, trustedProxies: e.currentTarget.value })}
+        />
       </Stack>
+
+      <ConfirmDialog
+        opened={confirmingHttps}
+        onClose={() => setConfirmingHttps(false)}
+        title={<Trans>Require HTTPS from a plain HTTP address?</Trans>}
+        confirmLabel={<Trans>Save anyway</Trans>}
+        loading={saving}
+        onConfirm={() => {
+          setConfirmingHttps(false)
+          commit()
+        }}
+      >
+        <Trans>
+          You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address,
+          and getting back in needs a TLS proxy in front of Maki or an edit to the database.
+        </Trans>
+      </ConfirmDialog>
     </SettingsSection>
   )
+}
+
+/** Lowercases scheme and host and drops trailing slashes, the differences the server ignores. */
+function normalizeAuthority(value: string) {
+  const trimmed = value.trim()
+  try {
+    const url = new URL(trimmed)
+    return url.origin + url.pathname.replace(/\/+$/, '')
+  } catch {
+    return trimmed.replace(/\/+$/, '')
+  }
 }
 
 /**
@@ -129,7 +209,9 @@ export function OidcSection() {
   const { t } = useLingui()
   const { data } = useOidcSettings()
   const save = useSaveOidcSettings()
+  const redirectCopy = useCopyText()
   const [draft, setDraft] = useState<OidcSettings | null>(null)
+  const [confirmingIssuer, setConfirmingIssuer] = useState(false)
 
   useEffect(() => {
     if (data) setDraft(data)
@@ -140,6 +222,18 @@ export function OidcSection() {
   const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
   const mapsPermissions = Boolean(draft.adminClaim.trim() || draft.permissionClaim.trim())
   const redirectUrl = `${window.location.origin}${draft.redirectPath}`
+  // Linked logins are keyed to the issuer, so any change beyond case and a trailing slash
+  // unlinks them all.
+  const issuerChanged =
+    data !== undefined && data.authority.trim() !== '' && normalizeAuthority(draft.authority) !== normalizeAuthority(data.authority)
+  const saveOidc = () =>
+    save.mutate(draft, {
+      onSuccess: () =>
+        notifications.show({
+          message: now`Single sign-on saved. Restart Maki to apply it.`,
+          color: 'var(--ok)',
+        }),
+    })
 
   return (
     <SettingsSection
@@ -148,28 +242,35 @@ export function OidcSection() {
       description={
         <Trans>
           Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
-          take effect after Maki restarts. Register{' '}
-          <Code>{redirectUrl}</Code> as this client&apos;s redirect URI.
-          If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path),
-          register that host&apos;s variant as well.
+          take effect after Maki restarts.
         </Trans>
       }
       dirty={dirty}
       saving={save.isPending}
       onDiscard={() => data && setDraft(data)}
-      onSave={() =>
-        save.mutate(draft, {
-          onSuccess: () =>
-            notifications.show({
-              message: now`Single sign-on saved. Restart Maki to apply it.`,
-              color: 'var(--ok)',
-            }),
-          onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-        })
-      }
-      panelProps={{ id: 'oidc' }}
+      onSave={() => (issuerChanged ? setConfirmingIssuer(true) : saveOidc())}
     >
       <Stack gap="md">
+        <Stack gap={6}>
+          <Group gap="xs">
+            <Code>{redirectUrl}</Code>
+            <Button
+              size="xs"
+              variant="default"
+              onClick={() => void redirectCopy.copy(redirectUrl)}
+              leftSection={redirectCopy.copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+            >
+              {redirectCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
+            </Button>
+          </Group>
+          <Text size="xs" c="dimmed">
+            <Trans>
+              Register this as the client&apos;s redirect URI. If Maki is reached at another host too,
+              register that host&apos;s variant as well.
+            </Trans>
+          </Text>
+        </Stack>
+
         <Switch
           label={t`Enable single sign-on`}
           description={t`Adds a button to the login page. Local passwords keep working unless you restrict them below.`}
@@ -188,12 +289,14 @@ export function OidcSection() {
         <Group grow align="flex-start">
           <TextInput
             label={t`Client ID`}
+            autoComplete="off"
             value={draft.clientId}
             onChange={(e) => setDraft({ ...draft, clientId: e.currentTarget.value })}
           />
           <TextInput
             label={t`Client secret`}
             type="password"
+            autoComplete="new-password"
             value={draft.clientSecret}
             onChange={(e) => setDraft({ ...draft, clientSecret: e.currentTarget.value })}
           />
@@ -202,6 +305,7 @@ export function OidcSection() {
         <Group grow align="flex-start">
           <TextInput
             label={t`Scopes`}
+            description={t`Space-separated. openid is always added. Keep email so existing accounts can be matched by their verified address.`}
             placeholder="profile email"
             value={draft.scopes}
             onChange={(e) => setDraft({ ...draft, scopes: e.currentTarget.value })}
@@ -233,7 +337,7 @@ export function OidcSection() {
 
         <Switch
           label={t`Create accounts on first sign-in`}
-          description={t`Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder.`}
+          description={t`Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches.`}
           checked={draft.autoProvision}
           onChange={(e) => setDraft({ ...draft, autoProvision: e.currentTarget.checked })}
         />
@@ -273,6 +377,24 @@ export function OidcSection() {
           </Alert>
         )}
       </Stack>
+
+      <ConfirmDialog
+        opened={confirmingIssuer}
+        onClose={() => setConfirmingIssuer(false)}
+        title={<Trans>Change the issuer URL?</Trans>}
+        confirmLabel={<Trans>Save anyway</Trans>}
+        loading={save.isPending}
+        onConfirm={() => {
+          setConfirmingIssuer(false)
+          saveOidc()
+        }}
+      >
+        <Trans>
+          Single sign-on logins are tied to the issuer. After a restart, people who signed in through
+          the old one are matched again by their verified email where they have one, and otherwise
+          have to link single sign-on again.
+        </Trans>
+      </ConfirmDialog>
     </SettingsSection>
   )
 }

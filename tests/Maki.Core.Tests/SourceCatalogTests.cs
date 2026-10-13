@@ -1,4 +1,5 @@
 using Maki.Core.Sources;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Maki.Core.Tests;
 
@@ -75,11 +76,12 @@ public class SourceCatalogTests
     }
 
     [Fact]
-    public async Task An_empty_catalog_is_not_cached()
+    public async Task An_empty_catalog_is_held_for_a_minute_and_then_refetched()
     {
-        // A failed or half-served fetch must not pin an empty catalog for the whole TTL —
-        // every search against this source would come back empty until the process restarted.
-        var catalog = new SourceCatalog(TimeSpan.FromMinutes(10));
+        // A failed or half-served fetch must not pin an empty catalog for the whole TTL, but it
+        // must not be refetched on every search either.
+        var time = new FakeTimeProvider();
+        var catalog = new SourceCatalog(TimeSpan.FromMinutes(10), time);
         var fetches = 0;
         Task<List<SourceSeriesResult>> Fetch(CancellationToken ct)
         {
@@ -88,7 +90,34 @@ public class SourceCatalogTests
         }
 
         Assert.Empty(await catalog.SearchAsync("one piece", Fetch));
+        time.Advance(TimeSpan.FromSeconds(59));
+        Assert.Empty(await catalog.SearchAsync("one piece", Fetch));
+        Assert.Equal(1, fetches);
+
+        time.Advance(TimeSpan.FromSeconds(2));
         Assert.Single(await catalog.SearchAsync("one piece", Fetch));
+        Assert.Equal(2, fetches);
+    }
+
+    [Fact]
+    public async Task A_populated_catalog_is_refetched_after_its_ttl()
+    {
+        var time = new FakeTimeProvider();
+        var catalog = new SourceCatalog(TimeSpan.FromMinutes(10), time);
+        var fetches = 0;
+        Task<List<SourceSeriesResult>> Fetch(CancellationToken ct)
+        {
+            fetches++;
+            return Returning("One Piece")(ct);
+        }
+
+        await catalog.LoadAsync(Fetch);
+        time.Advance(TimeSpan.FromMinutes(9));
+        await catalog.LoadAsync(Fetch);
+        Assert.Equal(1, fetches);
+
+        time.Advance(TimeSpan.FromMinutes(2));
+        await catalog.LoadAsync(Fetch);
         Assert.Equal(2, fetches);
     }
 

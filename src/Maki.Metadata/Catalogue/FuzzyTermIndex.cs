@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -58,6 +59,8 @@ public sealed class FuzzyTermIndex
         _lengthStart = lengthStart;
     }
 
+    private readonly record struct Term(int Start, int Length, int Doc);
+
     public int TermCount => _offsets.Length - 1;
 
     public bool IsEmpty => TermCount == 0;
@@ -75,7 +78,13 @@ public sealed class FuzzyTermIndex
     public static FuzzyTermIndex Build(SqliteConnection conn, string searchTableName, ILogger logger, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
-        var terms = new List<(string Term, int Doc)>(700_000);
+
+        // Term bytes go straight into one buffer as they are read, and the sort moves 12-byte
+        // records over it. Holding each term as a string until the sort was ~684k objects and a
+        // tuple list, ~40 MB at the build's peak for an index that keeps 13.
+        var text = new byte[1024 * 1024];
+        var length = 0;
+        var terms = new List<Term>();
 
         try
         {
@@ -108,7 +117,15 @@ public sealed class FuzzyTermIndex
                     continue;
                 }
 
-                terms.Add((term, reader.IsDBNull(1) ? 0 : reader.GetInt32(1)));
+                if (length + term.Length > text.Length)
+                {
+                    Array.Resize(ref text, text.Length * 2);
+                }
+
+                // IsExpandable admits ASCII letters and digits only, so one char is one byte.
+                var written = Encoding.ASCII.GetBytes(term, text.AsSpan(length));
+                terms.Add(new Term(length, written, reader.IsDBNull(1) ? 0 : reader.GetInt32(1)));
+                length += written;
             }
         }
         catch (SqliteException ex)
@@ -122,49 +139,47 @@ public sealed class FuzzyTermIndex
             return Empty;
         }
 
-        terms.Sort(static (a, b) =>
+        // (length, ordinal); on ASCII a byte comparison is the ordinal one.
+        CollectionsMarshal.AsSpan(terms).Sort((a, b) =>
         {
-            var byLength = a.Term.Length.CompareTo(b.Term.Length);
-            return byLength != 0 ? byLength : string.CompareOrdinal(a.Term, b.Term);
+            var byLength = a.Length.CompareTo(b.Length);
+            return byLength != 0
+                ? byLength
+                : text.AsSpan(a.Start, a.Length).SequenceCompareTo(text.AsSpan(b.Start, b.Length));
         });
 
         var offsets = new int[terms.Count + 1];
         var docs = new int[terms.Count];
-        var totalBytes = 0;
-        for (var i = 0; i < terms.Count; i++)
-        {
-            totalBytes += terms[i].Term.Length;
-        }
-
-        var packed = new byte[totalBytes];
+        var packed = new byte[length];
         var masks = new uint[terms.Count];
         var cursor = 0;
         for (var i = 0; i < terms.Count; i++)
         {
+            var term = terms[i];
             offsets[i] = cursor;
-            docs[i] = terms[i].Doc;
-            var written = Encoding.ASCII.GetBytes(terms[i].Term, packed.AsSpan(cursor));
-            masks[i] = CatalogueText.LetterMask(packed.AsSpan(cursor, written));
-            cursor += written;
+            docs[i] = term.Doc;
+            text.AsSpan(term.Start, term.Length).CopyTo(packed.AsSpan(cursor));
+            masks[i] = CatalogueText.LetterMask(packed.AsSpan(cursor, term.Length));
+            cursor += term.Length;
         }
 
         offsets[terms.Count] = cursor;
 
         var lengthStart = new int[CatalogueText.MaxComparableLength + 2];
         var index = 0;
-        for (var length = 0; length <= CatalogueText.MaxComparableLength + 1; length++)
+        for (var size = 0; size <= CatalogueText.MaxComparableLength + 1; size++)
         {
-            while (index < terms.Count && terms[index].Term.Length < length)
+            while (index < terms.Count && terms[index].Length < size)
             {
                 index++;
             }
 
-            lengthStart[length] = index;
+            lengthStart[size] = index;
         }
 
         logger.LogInformation(
             "Built the fuzzy term index: {Terms} terms ({Kb:F0} KB) in {Elapsed:F1}s",
-            terms.Count, totalBytes / 1024.0, (DateTime.UtcNow - started).TotalSeconds);
+            terms.Count, length / 1024.0, (DateTime.UtcNow - started).TotalSeconds);
 
         return new FuzzyTermIndex(packed, offsets, docs, masks, lengthStart);
     }

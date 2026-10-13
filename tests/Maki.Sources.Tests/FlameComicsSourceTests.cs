@@ -123,4 +123,30 @@ public class FlameComicsSourceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("2"));
     }
+
+    [Fact]
+    public async Task A_browse_page_without_the_series_array_is_an_error_not_an_empty_catalog()
+    {
+        const string html = """
+            <html><body><script id="__NEXT_DATA__" type="application/json">
+            { "props": { "pageProps": { "other": [] } } }
+            </script></body></html>
+            """;
+        var source = SourceFor(new() { ["browse"] = html });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("orv"));
+    }
+
+    [Fact]
+    public async Task A_next_data_blob_without_props_names_the_page()
+    {
+        const string html = """
+            <html><body><script id="__NEXT_DATA__" type="application/json">{ "buildId": "x" }</script></body></html>
+            """;
+        var source = SourceFor(new() { ["series/2"] = html });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("2"));
+
+        Assert.Contains("series/2", ex.Message);
+    }
 }

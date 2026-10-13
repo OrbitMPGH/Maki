@@ -21,13 +21,15 @@ public class DownloadWorkerHostedService(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     IServiceScopeFactory scopeFactory,
-    ILogger<DownloadWorkerHostedService> logger) : BackgroundService
+    ILogger<DownloadWorkerHostedService> logger,
+    DownloadPauseService? pauses = null) : BackgroundService
 {
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
     private const int DefaultItemTimeoutMinutes = 120;
     private static readonly TimeSpan CooldownPollInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan WorkerRestartDelay = TimeSpan.FromSeconds(10);
+    private const int MaxRecoveryAttempts = 6;
 
     private volatile int _concurrency = DefaultConcurrentChapters;
 
@@ -39,7 +41,11 @@ public class DownloadWorkerHostedService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await RecoverAsync(stoppingToken);
+        // A transient database error here (another startup task holding the write lock) must not
+        // fault the service: the default host behaviour would stop the whole application. Bounded,
+        // because no worker starts until it returns, and SweepOrphanedAsync re-queues whatever
+        // recovery did not get to.
+        await SuperviseAsync("startup recovery", RecoverAsync, stoppingToken, maxAttempts: MaxRecoveryAttempts);
         await RefreshSettingsAsync(stoppingToken);
 
         var workers = Enumerable.Range(0, MaxConcurrentChapters)
@@ -58,9 +64,10 @@ public class DownloadWorkerHostedService(
     /// Everything here is retryable (a transient DB error, a bad row), so log it and start over
     /// after a pause rather than losing a worker permanently.
     /// </summary>
-    private async Task SuperviseAsync(string name, Func<CancellationToken, Task> loop, CancellationToken ct)
+    private async Task SuperviseAsync(
+        string name, Func<CancellationToken, Task> loop, CancellationToken ct, int? maxAttempts = null)
     {
-        while (!ct.IsCancellationRequested)
+        for (var attempt = 1; !ct.IsCancellationRequested; attempt++)
         {
             try
             {
@@ -73,6 +80,12 @@ public class DownloadWorkerHostedService(
             }
             catch (Exception ex)
             {
+                if (attempt >= maxAttempts)
+                {
+                    logger.LogError(ex, "Download {Name} failed {Attempts} times; giving up on it", name, attempt);
+                    return;
+                }
+
                 logger.LogError(ex, "Download {Name} loop faulted; restarting in {Delay}s",
                     name, WorkerRestartDelay.TotalSeconds);
                 try
@@ -98,7 +111,49 @@ public class DownloadWorkerHostedService(
         while (await timer.WaitForNextTickAsync(ct))
         {
             await RefreshSettingsAsync(ct);
+            await LiftElapsedPausesAsync(ct);
             await queue.SignalAsync(0, ct);
+        }
+    }
+
+    /// <summary>
+    /// A pause with a resume time lifts on the next poll tick, which is also the signal that wakes the
+    /// workers, so no timer of its own is needed. Claiming already ignores an elapsed pause; this
+    /// clears the stored copy and tells the open Activity pages.
+    /// </summary>
+    private async Task LiftElapsedPausesAsync(CancellationToken ct)
+    {
+        if (pauses is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await pauses.ExpireAsync(ct))
+            {
+                return;
+            }
+
+            logger.LogInformation("Download pause reached its resume time");
+            using var scope = scopeFactory.CreateScope();
+            if (scope.ServiceProvider.GetService<EventBroadcaster>() is { } events)
+            {
+                try
+                {
+                    await events.QueuePauseChanged(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex, "Could not broadcast the lifted download pause");
+                }
+            }
+
+            await queue.WakeWorkersAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not lift an elapsed download pause");
         }
     }
 
@@ -326,10 +381,7 @@ public class DownloadWorkerHostedService(
                     // happens next, and free the worker for the rest of the queue.
                     logger.LogError("Worker {Worker} abandoned queue item {Id} after {Minutes} min",
                         workerId, queueItemId, itemTimeout.TotalMinutes);
-                    await TryFailAsync(
-                        queueItemId,
-                        new TimeoutException($"Download gave up after {itemTimeout.TotalMinutes:0} minutes"),
-                        ct);
+                    await TryFailAsync(queueItemId, new TimeoutException(), ct, "error.download.itemTimedOut");
                 }
                 catch (Exception ex)
                 {
@@ -357,7 +409,7 @@ public class DownloadWorkerHostedService(
     /// Uses a fresh scope because the one that threw may hold a broken DbContext. Best-effort: if
     /// even this fails the DB is unreachable, and startup recovery re-queues the item.
     /// </summary>
-    private async Task TryFailAsync(int queueItemId, Exception cause, CancellationToken ct)
+    private async Task TryFailAsync(int queueItemId, Exception cause, CancellationToken ct, string? key = null)
     {
         try
         {
@@ -374,7 +426,8 @@ public class DownloadWorkerHostedService(
                 return;
             }
 
-            var (key, detail) = DownloadFailureReason.Classify(cause);
+            var (classified, detail) = key is null ? DownloadFailureReason.Classify(cause) : (key, null);
+            key = classified;
             item.Status = QueueStatus.Failed;
             item.SetError(key, detail: detail);
             item.RetryCount++;

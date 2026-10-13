@@ -127,7 +127,6 @@ export function PageLayoutEditor({
           notifications.show({ color: 'var(--ok)', message: now`Layout saved` })
           onExit()
         },
-        onError: (err) => notifications.show({ color: 'var(--danger)', message: String(err) }),
       },
     )
   }

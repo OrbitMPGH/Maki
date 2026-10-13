@@ -4,6 +4,7 @@ using Maki.Core.Recommendations;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.ReaderCohorts;
+using Maki.Metadata.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -45,7 +46,7 @@ public class TasteProfileServiceTests : IDisposable
         new MangaBakaDumpOptions("", ""),
         NullLogger<VectorIndexCache>.Instance);
 
-    private TasteProfileService Service(TasteTuning? tuning = null)
+    private TasteProfileService Service(TasteTuning? tuning = null, VectorIndexCache? index = null)
     {
         var effective = tuning ?? TasteTuning.Default;
         var settings = new FakeAppSettings();
@@ -54,7 +55,7 @@ public class TasteProfileServiceTests : IDisposable
             _db.ScopeFactory(),
             new SeedWeightService(behavioural, effective, settings),
             new FakeStore(_rows),
-            NoIndex(),
+            index ?? NoIndex(),
             // Same reasoning as NoIndex(): pointed at nothing, so GetAsync hands back null and the
             // catalogue baseline falls through to the popularity proxy, which is what an install
             // with no cohort artifact does.
@@ -264,6 +265,61 @@ public class TasteProfileServiceTests : IDisposable
         Assert.False(profile.CatalogueBaselineAvailable);
         Assert.All(profile.Genres, g => Assert.Null(g.OverIndexCatalogue));
         Assert.NotNull(profile.Genres.Single(g => g.Name == "Action").OverIndexShelf);
+    }
+
+    [Fact]
+    public async Task The_catalogue_baseline_follows_a_rebuilt_index()
+    {
+        using var dump = new DumpDbBuilder();
+        dump.AddSeries(1, "One", rating: 80, genresJson: """["Action"]""")
+            .AddSeries(2, "Two", rating: 80, genresJson: """["Romance"]""");
+        var dir = Path.Combine(Path.GetTempPath(), "maki-taste-baseline-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var embedding = new EmbeddingOptions(dir, Path.Combine(dir, "embeddings.db"), dir,
+                EmbeddingModelProfile.Base with { Dimensions = 4 });
+            var vectors = new EmbeddingStore(embedding);
+            vectors.EnsureSchema();
+            vectors.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (2L, "h", [0f, 1f, 0f, 0f])]);
+            var cache = new VectorIndexCache(
+                embedding, new MangaBakaDumpOptions(dump.Path, dir), NullLogger<VectorIndexCache>.Instance);
+            foreach (var id in new[] { 101, 102, 103 })
+            {
+                SeedFinished(SeedSeries(id, genres: ["Action"]));
+            }
+
+            var service = Service(index: cache);
+            var before = (await service.GetAsync(new TestCurrentUser(1), TasteView.Read, refresh: false))
+                .Genres.Single(g => g.Name == "Action").OverIndexCatalogue;
+
+            using (var conn = dump.Open())
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = """UPDATE series SET genres = '["Action"]' WHERE id = 2""";
+                cmd.ExecuteNonQuery();
+            }
+
+            cache.Invalidate();
+            Assert.NotNull(await cache.GetAsync());
+            var after = (await service.GetAsync(new TestCurrentUser(1), TasteView.Read, refresh: true))
+                .Genres.Single(g => g.Name == "Action").OverIndexCatalogue;
+
+            Assert.NotNull(before);
+            Assert.NotNull(after);
+            Assert.True(after < before);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+        }
     }
 
     [Fact]

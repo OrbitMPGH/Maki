@@ -45,6 +45,9 @@ public enum InboxEventType
 
     /// <summary>Something changed how the account signs in, such as a single sign-on login being linked.</summary>
     AccountSecurity = 22,
+
+    /// <summary>A series' publication status changed, for example from ongoing to completed.</summary>
+    SeriesStatusChanged = 23,
 }
 
 /// <summary>
@@ -84,6 +87,13 @@ public static class InboxEventTypes
     /// something the user is looking at.
     /// </summary>
     public static bool DefaultsOff(InboxEventType type) => type is InboxEventType.SourceMatchFinished;
+
+    /// <summary>
+    /// Events a stored preference can never switch off. An alert that a password, second factor or
+    /// key changed is only useful if it still arrives for the person whose session was hijacked, who
+    /// may be the one who opted out of everything else.
+    /// </summary>
+    public static bool IsMandatory(InboxEventType type) => type is InboxEventType.AccountSecurity;
 
     /// <summary>The camelCase name a preference spec and the API use for a type.</summary>
     public static string Key(InboxEventType type)

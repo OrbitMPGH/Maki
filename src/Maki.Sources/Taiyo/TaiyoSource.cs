@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using AngleSharp.Html.Parser;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Taiyo;
 
@@ -71,7 +72,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
             if (!response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(
-                    $"Meilisearch search at {url} failed with {(int)response.StatusCode}: {Truncate(body)}");
+                    $"Meilisearch search at {url} failed with {(int)response.StatusCode}: {BodyText.Snippet(body)}");
             }
 
             return ParseSearchResults(url, body);
@@ -106,9 +107,9 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
     };
 
     /// <summary>
-    /// Trackers come off the same medias.getById payload as GetSeriesAsync, not a separate
-    /// endpoint, so a candidate the caller is about to fetch series details for anyway costs
-    /// nothing extra here beyond the one call it would make regardless.
+    /// Trackers come off the same medias.getById procedure as GetSeriesAsync, not a separate
+    /// endpoint. It is still its own request: the two calls share no cache, so a candidate the
+    /// caller also fetches series details for costs two getById calls.
     /// </summary>
     public Task<IReadOnlyDictionary<string, string>?> GetExternalIdsAsync(
         string sourceSeriesId, CancellationToken ct = default) =>
@@ -362,7 +363,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
             }
         });
 
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json")
         };
@@ -479,12 +480,20 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
             }
 
             var urlMatch = MeilisearchUrlPattern().Match(js);
-            return new MeilisearchConfig(
-                keyMatch.Groups[1].Value, urlMatch.Success ? urlMatch.Groups[1].Value : DefaultMeilisearchUrl);
+            var searchUrl = urlMatch.Success && IsTaiyoUrl(urlMatch.Groups[1].Value)
+                ? urlMatch.Groups[1].Value
+                : DefaultMeilisearchUrl;
+            return new MeilisearchConfig(keyMatch.Groups[1].Value, searchUrl);
         }
 
         throw new InvalidOperationException($"Could not find the Meilisearch public key in {BaseUrl}'s bundle");
     }
+
+    /// <summary>The bundle is scraped, so its search host is only trusted under https on taiyo.moe.</summary>
+    private static bool IsTaiyoUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttps
+        && (uri.Host == "taiyo.moe" || uri.Host.EndsWith(".taiyo.moe", StringComparison.Ordinal));
 
     private async Task<JsonElement> TrpcGetAsync(string procedure, object arg, CancellationToken ct)
     {
@@ -502,7 +511,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
             var batch = root.Element;
             if (batch.ValueKind != JsonValueKind.Array || batch.GetArrayLength() == 0)
             {
-                throw new InvalidOperationException($"Unexpected tRPC response shape from {url}: {Truncate(body)}");
+                throw new InvalidOperationException($"Unexpected tRPC response shape from {url}: {BodyText.Snippet(body)}");
             }
 
             var entry = batch[0];
@@ -518,7 +527,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
                 !result.TryGetProperty("data", out var data2) ||
                 !data2.TryGetProperty("json", out var json))
             {
-                throw new InvalidOperationException($"Unexpected tRPC response shape from {url}: {Truncate(body)}");
+                throw new InvalidOperationException($"Unexpected tRPC response shape from {url}: {BodyText.Snippet(body)}");
             }
 
             return json.Clone();
@@ -534,11 +543,9 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvi
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
     }
-
-    private static string Truncate(string body) => body.Length <= 100 ? body : body[..100];
 
     [GeneratedRegex("NEXT_PUBLIC_MEILISEARCH_PUBLIC_KEY:\\s*\"([^\"]+)\"")]
     private static partial Regex MeilisearchKeyPattern();

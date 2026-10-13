@@ -26,7 +26,7 @@ public class BehavioralTasteServiceTests : IDisposable
         });
 
     /// <summary>Seeds a chapter, downloaded unless told otherwise, and returns its id.</summary>
-    private int SeedChapter(int seriesId, decimal number, bool downloaded = true)
+    private int SeedChapter(int seriesId, decimal number, bool downloaded = true, bool fileRemoved = false)
     {
         using var db = _db.NewContext();
         int? fileId = null;
@@ -43,7 +43,13 @@ public class BehavioralTasteServiceTests : IDisposable
             fileId = file.Id;
         }
 
-        var chapter = new Chapter { SeriesId = seriesId, Number = number, ChapterFileId = fileId };
+        var chapter = new Chapter
+        {
+            SeriesId = seriesId,
+            Number = number,
+            ChapterFileId = fileId,
+            FileRemovedAt = fileRemoved ? Now : null
+        };
         db.Chapters.Add(chapter);
         db.SaveChanges();
         return chapter.Id;
@@ -240,6 +246,24 @@ public class BehavioralTasteServiceTests : IDisposable
         }
 
         Assert.Empty(await WeightsAsync(1, [101L]));
+    }
+
+    [Fact]
+    public async Task A_finished_series_whose_files_were_removed_weighs_like_a_finished_one()
+    {
+        SeedFinished(userId: 1, SeedSeries(101));
+
+        var cleaned = SeedSeries(202);
+        for (var i = 1; i <= 40; i++)
+        {
+            SeedProgress(1, cleaned, SeedChapter(cleaned, i, downloaded: false, fileRemoved: true));
+        }
+
+        var signals = await SignalsAsync(1, [101L, 202L]);
+        var weights = await WeightsAsync(1, [101L, 202L]);
+
+        Assert.Equal(40, signals[202].Downloaded);
+        Assert.Equal(weights[101], weights[202], 6);
     }
 
     [Fact]

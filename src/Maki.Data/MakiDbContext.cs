@@ -85,23 +85,66 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
     public DbSet<ImportListSkip> ImportListSkips => Set<ImportListSkip>();
+    public DbSet<ImportIgnoredFolder> ImportIgnoredFolders => Set<ImportIgnoredFolder>();
+    public DbSet<ImportBatchFolder> ImportBatchFolders => Set<ImportBatchFolder>();
     public DbSet<UpgradeProfile> UpgradeProfiles => Set<UpgradeProfile>();
     public DbSet<QualityFormat> QualityFormats => Set<QualityFormat>();
     public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
     public DbSet<SourceQualitySample> SourceQualitySamples => Set<SourceQualitySample>();
     public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
+    public DbSet<RecycleBinEntry> RecycleBin => Set<RecycleBinEntry>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
+    public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();
 
     public override int SaveChanges()
     {
         StampOwner();
+        StampFileAndCompletion();
         return base.SaveChanges();
     }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
     {
         StampOwner();
+        StampFileAndCompletion();
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+    }
+
+    /// <summary>
+    /// Keeps <see cref="Chapter.FileRemovedAt"/> and <see cref="ChapterProgress.CompletedAt"/> in step
+    /// with the fields they describe, here rather than at each of the dozen-odd places that link a
+    /// file or complete a chapter. Bulk <c>ExecuteUpdate</c> bypasses this; none of those touch
+    /// either field today.
+    /// </summary>
+    private void StampFileAndCompletion()
+    {
+        foreach (var entry in ChangeTracker.Entries<Chapter>())
+        {
+            if (entry.State is EntityState.Added or EntityState.Modified &&
+                entry.Entity.FileRemovedAt != null &&
+                (entry.Entity.ChapterFileId != null || entry.Entity.ChapterFile != null))
+            {
+                entry.Entity.FileRemovedAt = null;
+            }
+        }
+
+        foreach (var entry in ChangeTracker.Entries<ChapterProgress>())
+        {
+            if (entry.State is not (EntityState.Added or EntityState.Modified))
+            {
+                continue;
+            }
+
+            var row = entry.Entity;
+            if (!row.Completed)
+            {
+                row.CompletedAt = null;
+            }
+            else if (row.CompletedAt == null)
+            {
+                row.CompletedAt = DateTime.UtcNow;
+            }
+        }
     }
 
     /// <summary>
@@ -169,8 +212,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // ChapterFile, forever.
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.ChapterFileId);
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.SeriesId);
+        // The workspace polls the default file order every few seconds. A partial index on the
+        // filtered column is what lets SQLite read it already sorted; a (Removed, RelativePath)
+        // index still sorts in a temp B-tree for WHERE NOT Removed ORDER BY RelativePath.
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.RelativePath).HasFilter("NOT \"Removed\"");
         modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
         modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
+        modelBuilder.Entity<HealthFinding>().HasIndex(x => x.State).HasFilter("\"State\" = 'open'");
         modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);
         modelBuilder.Entity<HealthOperation>().HasIndex(x => new { x.FileId, x.Status });
         modelBuilder.Entity<HealthHistory>().HasIndex(x => x.CreatedAt);
@@ -188,6 +236,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // so it must be unique and it must be indexed — every OPDS page image goes through it.
             e.HasIndex(k => k.KeyHash).IsUnique();
             e.HasIndex(k => k.UserId);
+            // One live OPDS key per user. A plain API key may have several, hence the Scope term. In the
+            // model so a table rebuild keeps it and EnsureCreated builds it (Scope = 1 is Opds).
+            e.HasIndex(k => new { k.UserId, k.Scope }, "IX_UserApiKeys_Opds_Live_UserId")
+                .IsUnique()
+                .HasFilter("RevokedAt IS NULL AND Scope = 1");
             e.HasOne<MakiUser>().WithMany().HasForeignKey(k => k.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -321,8 +374,6 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
         modelBuilder.Entity<AuthEvent>(e =>
         {
-            e.HasIndex(a => a.Timestamp);
-            e.HasIndex(a => a.UserId);
             // No FK to MakiUser: a failed login for a username that does not exist has no user to
             // point at, and the row must outlive a deleted account (UserName is denormalized for
             // exactly that).
@@ -343,14 +394,19 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasMany(s => s.UserTags).WithMany(t => t.Series).UsingEntity<SeriesTag>(
                 r => r.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId),
                 l => l.HasOne<Series>().WithMany().HasForeignKey(j => j.SeriesId),
-                j => j.ToTable("SeriesTags"));
+                j =>
+                {
+                    j.ToTable("SeriesTags");
+                    j.HasQueryFilter(t => _scope.Unrestricted || Series.Any(s => s.Id == t.SeriesId));
+                });
 
             // Library access, enforced once here instead of at each of the dozens of places that
             // query series. A correlated EXISTS rather than an `IN` over a captured id set: the
             // grants are read fresh on every query (a revoked folder applies immediately) and the
             // SQL carries only scalar parameters, which keeps one plan in SQLite's cache instead of
             // one per distinct grant list. The two bypass flags are evaluated left-to-right, so an
-            // admin's query never runs the subquery at all.
+            // unrestricted query or one for an all-folders account never runs the subquery. Admin does
+            // not bypass: only the AllRootFolders flag does.
             e.HasQueryFilter(s =>
                 _scope.Unrestricted ||
                 _scope.AllRootFolders ||
@@ -388,6 +444,9 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // ignores the owner.
             e.HasIndex(r => new { r.Status, r.Created });
             e.HasIndex(r => new { r.UserId, r.Created });
+            // IX_SeriesRequests_Pending_Identity (a unique partial index over COALESCE expressions) exists
+            // only in the SeriesRequestPendingUnique migration; EF cannot model it. Any migration that makes
+            // SQLite rebuild this table must re-create it.
 
             // REAL, for the same reason Chapter.Number is: a decimal lands in SQLite as TEXT, and
             // these two are compared against chapter numbers. Keeping both sides in one
@@ -408,19 +467,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(r => _scope.Unrestricted || r.UserId == _scope.UserId);
         });
 
-
-    /// <summary>
-    /// "The series this row hangs off is visible to the caller." Written as an EXISTS over
-    /// <see cref="Series"/> rather than by repeating the root-folder join, so it inherits the series
-    /// filter above and the two can never drift apart.
-    /// <para>
-    /// Every entity on the required end of a relationship to <c>Series</c> needs this, and not for
-    /// tidiness: without it EF warns at model build that the required navigation may be filtered out,
-    /// and — far worse — the child table is left <em>unfiltered</em>. A chapter, its file, its source
-    /// mappings and its queue rows would all be readable by id for a series the caller was never
-    /// granted, which is the whole access model bypassed one join short of the door.
-    /// </para>
-    /// </summary>
+        // The filters below read "the series this row hangs off is visible to the caller", written as
+        // an EXISTS over Series rather than by repeating the root-folder join, so they inherit the
+        // series filter above and the two can never drift apart.
+        //
+        // Every entity on the required end of a relationship to Series needs one, and not for
+        // tidiness: without it EF warns at model build that the required navigation may be filtered
+        // out, and, far worse, the child table is left unfiltered. A chapter, its file, its source
+        // mappings and its queue rows would all be readable by id for a series the caller was never
+        // granted, which is the whole access model bypassed one join short of the door.
         modelBuilder.Entity<Chapter>(e =>
         {
             e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
@@ -429,8 +484,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // Chapter numbers have at most 3 decimal places, well within double precision.
             e.Property(c => c.Number).HasConversion<double?>();
             e.HasIndex(c => new { c.SeriesId, c.Number, c.Volume, c.Language });
-            // Covers the library list's per-series tallies, so they never touch the table rows.
-            e.HasIndex(c => new { c.SeriesId, c.ChapterFileId, c.Wanted });
+            // Covers the library list's per-series tallies, which read only these columns.
+            e.HasIndex(c => new { c.SeriesId, c.ChapterFileId, c.Wanted, c.FileRemovedAt });
             e.HasOne(c => c.ChapterFile).WithMany().HasForeignKey(c => c.ChapterFileId).OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -468,11 +523,12 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne(l => l.SourceMapping).WithMany(m => m.ChapterLinks)
                 .HasForeignKey(l => l.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
 
-            // A link is visible exactly when its chapter's series is visible. Spell the series
-            // EXISTS out here so adding a join table cannot bypass root-folder grants.
+            // A link is visible exactly when its chapter is, and the chapter filter carries the series
+            // check. Correlating through Chapters keeps the lookup on the chapter primary key; an EXISTS
+            // over Series with the chapter inside it scans every series per link row.
             e.HasQueryFilter(l =>
                 _scope.Unrestricted ||
-                Series.Any(s => s.Chapters.Any(c => c.Id == l.ChapterId)));
+                Chapters.Any(c => c.Id == l.ChapterId));
         });
 
         modelBuilder.Entity<DownloadQueueItem>(e =>
@@ -535,6 +591,27 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // history has to outlive it so the group can be reverted.
         });
 
+        modelBuilder.Entity<SeriesMetadataChange>(e =>
+        {
+            e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
+            e.HasIndex(c => new { c.SeriesId, c.ChangedAtUtc });
+            e.HasOne<Series>().WithMany().HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            // The history outlives the account that made an edit; it then reads as an unknown user.
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<RecycleBinEntry>(e =>
+        {
+            e.ToTable("RecycleBin");
+            // By root folder rather than series: the series is often the thing that was deleted.
+            e.HasQueryFilter(r =>
+                _scope.Unrestricted ||
+                _scope.AllRootFolders ||
+                UserRootFolders.Any(g => g.UserId == _scope.UserId && g.RootFolderId == r.RootFolderId));
+            e.HasIndex(r => r.DeletedAtUtc);
+            e.HasIndex(r => r.SeriesId);
+        });
+
         modelBuilder.Entity<TorrentProposal>(e =>
         {
             e.HasQueryFilter(p => _scope.Unrestricted || Series.Any(s => s.Id == p.SeriesId));
@@ -578,6 +655,20 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(x => x.MangaBakaId);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ImportIgnoredFolder>(e =>
+        {
+            e.HasIndex(x => new { x.RootFolderId, x.FolderName }).IsUnique();
+            e.HasOne<RootFolder>().WithMany().HasForeignKey(x => x.RootFolderId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ImportBatchFolder>(e =>
+        {
+            e.HasIndex(x => x.BatchId);
+            e.HasIndex(x => x.CreatedAt);
+            e.HasOne<RootFolder>().WithMany().HasForeignKey(x => x.RootFolderId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<ScrobbleUnmatched>(e =>

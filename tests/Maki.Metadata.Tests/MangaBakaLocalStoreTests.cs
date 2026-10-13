@@ -16,15 +16,21 @@ public class MangaBakaLocalStoreTests : IDisposable
         _settings,
         NullLogger<MangaBakaLocalStore>.Instance);
 
-    /// <summary>A store wired to the catalogue indexes, so typo tolerance and credits are live.</summary>
+    /// <summary>
+    /// A store wired to built catalogue indexes, so typo tolerance and credits are live. Built up
+    /// front because a title rescue never waits for a cold build; seed the fixture first.
+    /// </summary>
     private MangaBakaLocalStore Catalogued(CatalogueOptions? options = null)
     {
         var dumpOptions = new MangaBakaDumpOptions(_db.Path, Path.GetTempPath());
+        var cache = new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance);
+        cache.GetAsync().GetAwaiter().GetResult();
+
         return new MangaBakaLocalStore(
             dumpOptions,
             _settings,
             NullLogger<MangaBakaLocalStore>.Instance,
-            new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance),
+            cache,
             options ?? CatalogueOptions.Default);
     }
 
@@ -37,6 +43,19 @@ public class MangaBakaLocalStoreTests : IDisposable
     }
 
     public void Dispose() => _db.Dispose();
+
+    [Fact]
+    public async Task GetRatingsAsync_returns_scores_for_known_ids_and_skips_unscored_and_missing()
+    {
+        _db.AddSeries(1, "Scored", rating: 82.5);
+        _db.AddSeries(2, "Unscored");
+
+        var ratings = await Store.GetRatingsAsync([1, 2, 3]);
+
+        Assert.Equal(82.5, ratings[1]);
+        Assert.False(ratings.ContainsKey(2));
+        Assert.False(ratings.ContainsKey(3));
+    }
 
     [Fact]
     public async Task Similar_hides_spoiler_tags_per_series_and_backfills_safe_matches()
@@ -54,6 +73,42 @@ public class MangaBakaLocalStoreTests : IDisposable
         var picks = await Store.GetSimilarAsync([1], [], 5);
         Assert.Equal(["Pirates"], picks.Single(p => p.ProviderId == "2").MatchedTags);
         Assert.Contains("Amnesia", picks.Single(p => p.ProviderId == "3").MatchedTags);
+    }
+
+    [Fact]
+    public async Task Related_keeps_unrated_series_only_when_the_ceiling_allows_every_rating()
+    {
+        _db.AddSeries(1, "Seed", sequels: "[2,3,4]")
+            .AddSeries(2, "Rated", rating: 70, contentRating: "safe")
+            .AddSeries(3, "Unrated", rating: 70, contentRating: null)
+            .AddSeries(4, "Explicit", rating: 70, contentRating: "pornographic");
+
+        var everything = await Store.GetRelatedAsync([1], [], [.. ContentRating.All]);
+        var capped = await Store.GetRelatedAsync([1], [], ContentRating.Allowed(ContentRating.Erotica));
+
+        Assert.Equal(["2", "3", "4"], everything.Select(r => r.ProviderId).Order());
+        Assert.Equal(["2"], capped.Select(r => r.ProviderId));
+    }
+
+    [Fact]
+    public async Task Similar_does_not_treat_a_placeholder_credit_as_a_shared_author()
+    {
+        _db.AddSeries(1, "Seed", genresJson: """["Action"]""", authorsJson: """["Anthology"]""")
+            .AddSeries(2, "Other anthology", rating: 80, genresJson: """["Action"]""", authorsJson: """["Anthology"]""");
+
+        Assert.Empty(await Store.GetSimilarAsync([1], [], 5));
+    }
+
+    [Fact]
+    public async Task Similar_scales_the_profile_by_the_seeds_the_dump_has()
+    {
+        _db.AddSeries(1, "Seed", genresJson: """["Action","Comedy"]""", authorsJson: """["Seed Author"]""")
+            .AddSeries(2, "Genre match", rating: 50, genresJson: """["Action","Comedy"]""")
+            .AddSeries(3, "Author match", rating: 50, genresJson: """["Action"]""", authorsJson: """["Seed Author"]""");
+
+        var picks = await Store.GetSimilarAsync([1, 999_999], [], 5);
+
+        Assert.Equal(["2", "3"], picks.Select(p => p.ProviderId));
     }
 
     [Fact]
@@ -172,6 +227,38 @@ public class MangaBakaLocalStoreTests : IDisposable
             .BuildSearchIndex();
 
         Assert.Empty(await Catalogued().GetNearTitleIdsAsync(query));
+    }
+
+    [Theory]
+    [InlineData("love", 1L)]
+    [InlineData("LOVE!", 1L)]
+    [InlineData("cafe latte", 4L)]
+    [InlineData("나 혼자만 레벨업", 5L)]
+    public async Task Exact_title_lookup_finds_the_equal_title_among_ones_that_share_its_words(string query, long id)
+    {
+        _db.AddSeries(1, "Love")
+            .AddSeries(2, "Lovely Love")
+            .AddSeries(3, "Love, Again")
+            .AddSeries(4, "Café Latte")
+            .AddSeries(5, "나 혼자만 레벨업")
+            .AddSeries(6, "나 혼자만 레벨업 외전")
+            .BuildSearchIndex();
+
+        Assert.Equal(id, Assert.Single(await Store.GetExactTitleIdsAsync(query)));
+    }
+
+    [Fact]
+    public async Task Near_title_lookup_still_reaches_a_title_through_the_last_tokens_prefix()
+    {
+        _db.AddSeries(1, "One Piece")
+            .AddSeries(2, "One Piece Party Special")
+            .AddSeries(3, "Lovely Pieces")
+            .BuildSearchIndex();
+
+        var match = Assert.Single(await Catalogued().GetNearTitleIdsAsync("one piec"));
+
+        Assert.Equal(1L, match.Key);
+        Assert.Equal(1, match.Value);
     }
 
     [Fact]
@@ -529,6 +616,30 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         Assert.Equal("1", Assert.Single(outcome.Items).ProviderId);
         Assert.Equal("berserk", outcome.CorrectedQuery);
+    }
+
+    /// <summary>
+    /// A cold catalogue costs seconds to build, so the rescue does not wait for it: this search
+    /// answers exactly and starts the build, and a later one gets the correction.
+    /// </summary>
+    [Fact]
+    public async Task Search_with_a_cold_catalogue_answers_exact_and_builds_it_in_the_background()
+    {
+        _db.AddSeries(1, "Berserk").BuildSearchIndex();
+        var dumpOptions = new MangaBakaDumpOptions(_db.Path, Path.GetTempPath());
+        var cache = new CatalogueIndexCache(dumpOptions, NullLogger<CatalogueIndexCache>.Instance);
+        var store = new MangaBakaLocalStore(
+            dumpOptions, _settings, NullLogger<MangaBakaLocalStore>.Instance, cache, CatalogueOptions.Default);
+
+        var cold = await store.SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
+
+        Assert.Empty(cold.Items);
+        Assert.Null(cold.CorrectedQuery);
+
+        await cache.GetAsync();
+        var warm = await store.SearchWithCorrectionAsync("berserck", ContentRating.Pornographic);
+
+        Assert.Equal("berserk", warm.CorrectedQuery);
     }
 
     [Fact]

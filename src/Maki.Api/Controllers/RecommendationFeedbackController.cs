@@ -16,7 +16,7 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/recommendations")]
 public class RecommendationFeedbackController(RecommendationFeedbackService feedback, ICurrentUser user,
     ILocalizer localizer,
-    MakiDbContext db, SemanticRecommender semantic, BehavioralTasteService behavioural,
+    MakiDbContext db, SemanticRecommender semantic,
     IAppSettings settings, SeedWeightService seedWeights,
     TasteAvoidanceService avoidance, AnimeSignalSources animeSources) : ControllerBase
 {
@@ -48,14 +48,15 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                     .Select(x => x.Rating).FirstOrDefault()
             }).ToListAsync(ct);
         var shelfIds = sources.Select(x => (long)x.MangaBakaId!.Value).Distinct().ToList();
-        var readIds = (await behavioural.ReadSignalsAsync(db, user.UserId, shelfIds, ct)).Keys.ToHashSet();
+        // The same snapshot the recommender steers with, so the chips describe the set that is
+        // actually being subtracted rather than a second count of the feedback rows. Its signals
+        // are read over the same visible shelf, so they stand in for a second read.
+        var snapshot = await seedWeights.SnapshotAsync(db, user, ct);
+        var readIds = snapshot.Signals.Keys.ToHashSet();
         var excludedIds = (await db.RecommendationSignalOverrides.AsNoTracking()
             .Where(x => x.UserId == user.UserId && x.IgnoreAsSeed)
             .Select(x => x.ProviderId).ToListAsync(ct)).ToHashSet();
         var entries = await feedback.VisibleTitlesAsync(shelfIds, ct);
-        // The same snapshot the recommender steers with, so the chips describe the set that is
-        // actually being subtracted rather than a second count of the feedback rows.
-        var snapshot = await seedWeights.SnapshotAsync(db, user, ct);
         var avoids = await avoidance.LabelsAsync(user, snapshot.Avoided, allowed, ct);
         var weightingEnabled = await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
         var labUiEnabled = await settings.GetAsync(SettingKeys.RecommendationsFeedbackLab, ct) != "false";
@@ -112,7 +113,7 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
     {
         if (state is not null and not ("hidden" or "dismissed" or "exposed"))
             return this.Fail(localizer, "error.feedback.unsupportedState");
-        if (sort is not null and not ("recent" or "title"))
+        if (sort is not null and not "recent")
             return this.Fail(localizer, "error.feedback.unsupportedSort");
         return Ok(await feedback.StatesAsync(user.UserId, cursor, limit <= 0 ? 40 : limit, ct, state, sort));
     }

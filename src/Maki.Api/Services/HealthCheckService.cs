@@ -101,7 +101,8 @@ public class HealthCheckService(
         if (await settings.GetAsync(SettingKeys.MangaBakaUseLocalDb, ct) != "false")
         {
             var dump = await mangaBakaDump.GetStatusAsync(ct);
-            var uptime = DateTime.UtcNow - System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime();
+            using var process = System.Diagnostics.Process.GetCurrentProcess();
+            var uptime = DateTime.UtcNow - process.StartTime.ToUniversalTime();
             if (!dump.Present && uptime > TimeSpan.FromHours(1))
             {
                 issues.Add(new HealthIssue("mangaBakaDump", "warning", "health.issue.dumpMissing"));

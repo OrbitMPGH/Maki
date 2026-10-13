@@ -26,14 +26,14 @@ public record AnimeSignalRow(
 /// </param>
 /// <param name="Services">Which trackers contributed, ordered, for the badges on the panel.</param>
 /// <param name="AnimeCount">Distinct anime behind this group after cross-tracker dedupe: the season count.</param>
-/// <param name="Score">The averaged score over the entries that carry one, or null when none does.</param>
+/// <param name="Score">The averaged score of the season entries. Every row that reaches a group carries one.</param>
 public record AnimeSignalGroup(
     string Key,
     long? MangaBakaId,
     string Title,
     IReadOnlyList<string> Services,
     int AnimeCount,
-    double? Score,
+    double Score,
     AnimeWatchStatus Status)
 {
     public AnimeSignalRole Role => AnimeSignalPolicy.RoleOf(Status, Score);
@@ -173,7 +173,7 @@ public static class AnimeSignalGrouping
             all.SelectMany(a => a.Services).Distinct(StringComparer.Ordinal)
                 .OrderBy(s => s, StringComparer.Ordinal).ToList(),
             all.Count,
-            Average(evidence.Select(a => a.Score)),
+            evidence.Average(a => a.Score!.Value),
             evidence.First(a => StatusRank(a.Status) == rank).Status);
     }
 

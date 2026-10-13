@@ -5,7 +5,7 @@ using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
 using Maki.Data;
-using Microsoft.Data.Sqlite;
+using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -15,6 +15,7 @@ public enum SeriesRequestSubmitError
     MetadataNotFound,
     SeriesAlreadyExists,
     AlreadyPending,
+    ContentRatingTooHigh,
 }
 
 public record SeriesRequestSubmitResult(
@@ -41,12 +42,17 @@ public class SeriesRequestSubmitter(
     /// has to see the title that provider id actually resolves to.
     /// </summary>
     public async Task<SeriesRequestSubmitResult?> FillNewSeriesAsync(
-        SeriesRequest request, string metadataProviderId, CancellationToken ct)
+        SeriesRequest request, string metadataProviderId, CancellationToken ct, string? maxContentRating = null)
     {
         var metadata = await metadataProviders.First().GetAsync(metadataProviderId, ct);
         if (metadata is null)
         {
             return new(null, SeriesRequestSubmitError.MetadataNotFound);
+        }
+
+        if (maxContentRating is not null && !ContentRating.Permits(metadata.ContentRating, maxContentRating))
+        {
+            return new(null, SeriesRequestSubmitError.ContentRatingTooHigh);
         }
 
         if (metadata.MangaBakaId is int mangaBakaId)
@@ -112,7 +118,7 @@ public class SeriesRequestSubmitter(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             db.Entry(request).State = EntityState.Detached;
             return new(null, SeriesRequestSubmitError.AlreadyPending);
@@ -157,20 +163,4 @@ public class SeriesRequestSubmitter(
 
     private static string ChapterLabel(decimal? number) =>
         number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
-
-    /// <summary>
-    /// Shared with the controller, whose Edit and release paths hit the same index.
-    /// <para>
-    /// Takes the base <see cref="Exception"/> type because the two call shapes don't wrap the same
-    /// way: <c>SaveChangesAsync</c> goes through the change tracker and wraps the provider's
-    /// exception in a <see cref="DbUpdateException"/>, but <c>ExecuteUpdateAsync</c> executes the
-    /// statement directly and lets the provider's own exception through unwrapped.
-    /// </para>
-    /// </summary>
-    internal static bool IsUniqueViolation(Exception e) => e switch
-    {
-        DbUpdateException { InnerException: SqliteException { SqliteExtendedErrorCode: 2067 or 1555 } } => true,
-        SqliteException { SqliteExtendedErrorCode: 2067 or 1555 } => true,
-        _ => false,
-    };
 }

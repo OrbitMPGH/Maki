@@ -123,7 +123,7 @@ public class BackupRestoreTests : IDisposable
         var ex = await Assert.ThrowsAsync<BackupRestoreException>(() =>
             Build().StagePendingRestoreFromUploadAsync(new MemoryStream(zip), CancellationToken.None));
 
-        Assert.Equal("error.system.backupTooNew", ex.Key);
+        Assert.Equal("error.system.backupTooOld", ex.Key);
         Assert.False(Directory.Exists(_paths.RestorePendingDir));
     }
 
@@ -204,6 +204,88 @@ public class BackupRestoreTests : IDisposable
         Assert.Equal(original, File.ReadAllBytes(_paths.DatabasePath + RestoreBootstrap.PreRestoreSuffix));
         Assert.NotEqual(original, File.ReadAllBytes(_paths.DatabasePath));
         Assert.False(Directory.Exists(_paths.RestorePendingDir));
+    }
+
+    [Fact]
+    public void Pre_restore_copies_are_purged_only_once_they_are_a_week_old()
+    {
+        var copy = _paths.DatabasePath + RestoreBootstrap.PreRestoreSuffix;
+        File.WriteAllText(copy, "old");
+
+        RestoreBootstrap.PurgeStalePreRestoreCopies(_paths, TimeSpan.FromDays(7), NullLogger.Instance);
+        Assert.True(File.Exists(copy));
+
+        File.SetLastWriteTimeUtc(copy, DateTime.UtcNow.AddDays(-8));
+        RestoreBootstrap.PurgeStalePreRestoreCopies(_paths, TimeSpan.FromDays(7), NullLogger.Instance);
+        Assert.False(File.Exists(copy));
+    }
+
+    [Fact]
+    public void Sidecar_copies_are_purged_with_the_database_copy_and_the_rename_restarts_the_clock()
+    {
+        ReleaseLiveDb();
+        File.SetLastWriteTimeUtc(_paths.DatabasePath, DateTime.UtcNow.AddDays(-30));
+        Directory.CreateDirectory(_paths.RestorePendingDir);
+        File.WriteAllBytes(Path.Combine(_paths.RestorePendingDir, "maki.db"), ValidDatabase(_configDir, LastKnownMigration));
+
+        RestoreBootstrap.ApplyPendingRestore(_paths, NullLogger.Instance);
+
+        var main = _paths.DatabasePath + RestoreBootstrap.PreRestoreSuffix;
+        Assert.True(File.GetLastWriteTimeUtc(main) > DateTime.UtcNow.AddMinutes(-5));
+
+        var wal = _paths.DatabasePath + "-wal" + RestoreBootstrap.PreRestoreSuffix;
+        File.WriteAllText(wal, "wal");
+        File.SetLastWriteTimeUtc(wal, DateTime.UtcNow);
+        File.SetLastWriteTimeUtc(main, DateTime.UtcNow.AddDays(-8));
+
+        RestoreBootstrap.PurgeStalePreRestoreCopies(_paths, TimeSpan.FromDays(7), NullLogger.Instance);
+
+        Assert.False(File.Exists(main));
+        Assert.False(File.Exists(wal));
+    }
+
+    [Fact]
+    public async Task A_key_revoked_after_the_backup_stays_revoked_after_the_restore()
+    {
+        var backupTaken = DateTime.UtcNow.AddDays(-2);
+        _db.Users.Add(new Maki.Data.Identity.MakiUser { Id = 5, UserName = "ada", NormalizedUserName = "ADA" });
+        _db.UserApiKeys.AddRange(
+            new Maki.Data.Identity.UserApiKey
+            {
+                UserId = 5, Name = "late", KeyHash = "hash-late", Prefix = "late",
+                CreatedAt = backupTaken.AddDays(-30), RevokedAt = DateTime.UtcNow.AddDays(-1)
+            },
+            new Maki.Data.Identity.UserApiKey
+            {
+                UserId = 5, Name = "early", KeyHash = "hash-early", Prefix = "early",
+                CreatedAt = backupTaken.AddDays(-30), RevokedAt = backupTaken.AddDays(-10)
+            });
+        await _db.SaveChangesAsync();
+
+        var backupDb = SqliteFile(_configDir, conn =>
+        {
+            Exec(conn, "PRAGMA journal_mode=WAL");
+            Exec(conn, "CREATE TABLE __EFMigrationsHistory (MigrationId TEXT PRIMARY KEY, ProductVersion TEXT NOT NULL)");
+            Exec(conn, $"INSERT INTO __EFMigrationsHistory VALUES ('{LastKnownMigration}', '10.0.0')");
+            Exec(conn, "CREATE TABLE UserApiKeys (KeyHash TEXT PRIMARY KEY, RevokedAt TEXT NULL)");
+            Exec(conn, "INSERT INTO UserApiKeys VALUES ('hash-late', NULL), ('hash-early', NULL)");
+        });
+        var manifest = JsonSerializer.Serialize(new BackupManifest("1.0.0", backupTaken, null, "manual"));
+
+        await Build().StagePendingRestoreFromUploadAsync(
+            new MemoryStream(Zip(backupDb, manifest)), CancellationToken.None);
+
+        using var staged = new SqliteConnection(
+            $"Data Source={Path.Combine(_paths.RestorePendingDir, "maki.db")};Mode=ReadOnly;Pooling=False");
+        staged.Open();
+        using var query = staged.CreateCommand();
+        query.CommandText = "SELECT KeyHash, RevokedAt IS NOT NULL FROM UserApiKeys ORDER BY KeyHash";
+        using var reader = query.ExecuteReader();
+        var rows = new Dictionary<string, bool>();
+        while (reader.Read()) rows[reader.GetString(0)] = reader.GetBoolean(1);
+
+        Assert.True(rows["hash-late"]);
+        Assert.False(rows["hash-early"]);
     }
 
     private void ReleaseLiveDb()

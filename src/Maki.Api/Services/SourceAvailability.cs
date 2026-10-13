@@ -1,6 +1,7 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
+using Maki.Sources.Suwayomi;
 
 namespace Maki.Api.Services;
 
@@ -20,7 +21,9 @@ namespace Maki.Api.Services;
 /// fresh install) doesn't quietly hand every reader a wall of Turkish results, while an instance
 /// that is itself Turkish gets it switched on. Once <c>SourcePriorityOrder</c> is saved with that
 /// source named in it, the explicit <see cref="SettingKeys.SourcesDisabled"/> entry takes over and
-/// this default never applies to it again.
+/// this default never applies to it again. A Suwayomi source always starts off, since a typical
+/// Suwayomi install brings hundreds, and one still waiting for a chapter language
+/// (<see cref="SuwayomiSource.NeedsSetup"/>) is off whatever the settings say.
 /// </para>
 /// <para>
 /// The answer is deliberately the same for every caller, and never keyed off the viewer's own
@@ -50,6 +53,16 @@ public class SourceAvailability(IAppSettings settings, SourceRegistry sourceRegi
 
         foreach (var source in sourceRegistry.All)
         {
+            if (source is SuwayomiSource { NeedsSetup: true })
+            {
+                if (!explicitlyDisabled.Contains(source.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    explicitlyDisabled.Add(source.Name);
+                }
+
+                continue;
+            }
+
             if (decided.Contains(source.Name, StringComparer.OrdinalIgnoreCase))
             {
                 continue; // Already has an explicit on/off choice — the setting above is authoritative.
@@ -72,6 +85,7 @@ public class SourceAvailability(IAppSettings settings, SourceRegistry sourceRegi
     public static bool DefaultsOn(ISource source, string instanceLanguage) =>
         // English always defaults on (today's behaviour for the thirteen English-only sources);
         // a non-English source also defaults on when it matches the instance's own language.
+        source is not SuwayomiSource &&
         source.SupportedLanguages.Any(lang =>
             LocalizedTitle.Matches(lang, "en") || LocalizedTitle.Matches(lang, instanceLanguage));
 

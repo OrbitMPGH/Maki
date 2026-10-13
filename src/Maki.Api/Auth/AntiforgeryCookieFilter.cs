@@ -130,7 +130,7 @@ public class AntiforgeryTokenMiddleware(RequestDelegate next, IAntiforgery antif
             // is the antiforgery system's own companion cookie, which stays HttpOnly.
             HttpOnly = false,
             SameSite = SameSiteMode.Lax,
-            Secure = context.Request.IsHttps,
+            Secure = AuthRuntimeOptions.UseSecureCookie(context),
             Path = "/"
         });
     }

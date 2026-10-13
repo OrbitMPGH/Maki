@@ -25,7 +25,7 @@ public class ReadingProfileServiceTests : IDisposable
         var resolved = await Service().ResolveAsync(seriesId, default);
 
         Assert.Equal(ReaderPrefsSource.Profile, resolved.Source);
-        Assert.Equal("Webtoon", resolved.ProfileName);
+        Assert.Equal(ProfileNamed("Webtoon").Id, resolved.ProfileId);
         Assert.Equal(ReaderPrefsSpec.ModeVertical, resolved.Prefs.Mode);
         Assert.Equal(ReaderPrefsSpec.DirectionLtr, resolved.Prefs.Direction);
         Assert.Equal(ReaderPrefsSpec.FitOriginal, resolved.Prefs.Fit);
@@ -43,7 +43,7 @@ public class ReadingProfileServiceTests : IDisposable
 
         var resolved = await Service().ResolveAsync(seriesId, default);
 
-        Assert.Equal("Manga", resolved.ProfileName);
+        Assert.Equal(ProfileNamed("Manga").Id, resolved.ProfileId);
         Assert.Equal(ReaderPrefsSpec.ModePaged, resolved.Prefs.Mode);
         Assert.Equal(ReaderPrefsSpec.DirectionRtl, resolved.Prefs.Direction);
         Assert.Equal(ReaderPrefsSpec.FitHeight, resolved.Prefs.Fit);
@@ -87,7 +87,7 @@ public class ReadingProfileServiceTests : IDisposable
 
         var resolved = await Service().ResolveAsync(seriesId, default);
 
-        Assert.Equal("Manga", resolved.ProfileName);
+        Assert.Equal(manga.Id, resolved.ProfileId);
         Assert.Equal(manga.Id, resolved.PinnedProfileId);
         // Still reports what the type *would* have picked, so the picker can label its Auto entry.
         Assert.Equal(webtoon.Id, resolved.AutoProfileId);

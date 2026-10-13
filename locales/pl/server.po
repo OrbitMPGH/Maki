@@ -26,6 +26,21 @@ msgstr "Wymagany jest kod z aplikacji uwierzytelniającej"
 msgid "error.account.incorrectPassword"
 msgstr "Nieprawidłowe hasło"
 
+#. Single sign-on accounts have no password to confirm, so minting a key or OPDS token needs a fresh sign-in.
+#: src/Maki.Api/Auth/AccountCredentials.cs
+#. English: Sign out and sign in again, then try this within 10 minutes. Creating a key or token needs a recent sign-in.
+#, fuzzy
+msgid "error.account.recentSignInRequired"
+msgstr "Wyloguj się, zaloguj ponownie, a potem spróbuj w ciągu 10 minut. Utworzenie klucza lub tokena wymaga niedawnego logowania."
+
+#. An authenticator code that was already used, so the next one is needed. Shown only after the
+#. password was verified, so it says nothing about which accounts exist.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: That code was already used. Wait for the next one and try again
+#, fuzzy
+msgid "error.account.totpReplayed"
+msgstr "Ten kod został już użyty. Poczekaj na następny i spróbuj ponownie"
+
 #. The two-factor enrolment code was rejected. Distinct from error.auth.invalidCode, which is the
 #. sign-in-time 2FA prompt.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -115,6 +130,12 @@ msgstr "Uwierzytelnianie dwuskładnikowe jest już włączone"
 #, fuzzy
 msgid "error.account.twoFactorDelegatedToSso"
 msgstr "To konto korzysta z logowania jednokrotnego, które samo obsługuje uwierzytelnianie dwuskładnikowe"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Two-factor authentication is not turned on
+#, fuzzy
+msgid "error.account.twoFactorNotEnabled"
+msgstr "Uwierzytelnianie dwuskładnikowe nie jest włączone"
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -278,15 +299,6 @@ msgstr "Do tego loginu nie jest przypisane żadne konto Maki."
 msgid "error.auth.ssoNoSubject"
 msgstr "Dostawca tożsamości nie zwrócił identyfikatora podmiotu."
 
-#. The generic fallback when a single sign-on failure has neither a catalogue key
-#. (OidcSignInResult.ErrorKey) nor text the identity provider library worded itself
-#. (OidcSignInResult.RawError, RemoteFailureContext.Failure.Message in AuthServiceCollectionExtensions).
-#: src/Maki.Api/Controllers/AuthController.cs
-#. English: Sign-in failed
-#, fuzzy
-msgid "error.auth.ssoSignInFailed"
-msgstr "Logowanie nie powiodło się."
-
 #. A provisioned account collides with an existing local username.
 #: src/Maki.Api/Auth/OidcSignInService.cs
 #. English: An account with that username already exists
@@ -331,6 +343,13 @@ msgstr "Rozdział jest już w kolejce"
 #, fuzzy
 msgid "error.chapter.differentSeries"
 msgstr "Rozdziały należą do różnych serii"
+
+#. The cause is in the server log.
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Could not queue the chapter. Details are in the server log.
+#, fuzzy
+msgid "error.chapter.enqueueFailed"
+msgstr "Nie udało się dodać rozdziału do kolejki. Szczegóły są w dzienniku serwera."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: File not found on disk
@@ -585,7 +604,7 @@ msgid "error.libraryImport.alreadyInLibrary"
 msgstr "Seria „{title}” jest już w bibliotece i ma pobrane pliki. Usuń ją, jeśli chcesz zaimportować ją od początku."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: Import failed. The server log has the details.
+#. English: Import failed. Details are in the server log.
 #, fuzzy
 msgid "error.libraryImport.failed"
 msgstr "Import nie powiódł się. Szczegóły są w logu serwera."
@@ -601,6 +620,24 @@ msgstr "Folder już nie istnieje."
 #, fuzzy
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "Ten folder należy już do innej serii w bibliotece"
+
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: AniList and MyAnimeList ids are looked up in the local MangaBaka database, which is not downloaded yet. Paste a MangaBaka id or link instead.
+#, fuzzy
+msgid "error.libraryImport.idNeedsDump"
+msgstr "Identyfikatory AniList i MyAnimeList są wyszukiwane w lokalnej bazie MangaBaka, która jeszcze nie jest pobrana. Wklej zamiast tego identyfikator lub link MangaBaka."
+
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: No MangaBaka series has that id
+#, fuzzy
+msgid "error.libraryImport.idNotFound"
+msgstr "W MangaBaka nie ma serii o tym identyfikatorze"
+
+#: src/Maki.Api/Services/LibraryImportResolver.cs
+#. English: Paste a MangaBaka id, or a MangaBaka, AniList or MyAnimeList link
+#, fuzzy
+msgid "error.libraryImport.idUnrecognized"
+msgstr "Wklej identyfikator MangaBaka albo link do MangaBaka, AniList lub MyAnimeList"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Invalid folder name
@@ -627,19 +664,18 @@ msgstr "Nie udało się pobrać metadanych."
 msgid "error.libraryImport.noItemsToImport"
 msgstr "Brak elementów do zaimportowania"
 
-#. A warning on a finished import.
-#: src/Maki.Api/Services/LibraryImportService.cs
-#. English: No source matched this series. Link one from the series page so the imported files can be matched to chapters.
-#, fuzzy
-msgid "error.libraryImport.noSourceMatch"
-msgstr "Żadne źródło nie pasuje do tej serii. Powiąż jedno na stronie serii, aby zaimportowane pliki dało się dopasować do rozdziałów."
-
 #. {title} is the series title, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: "{title}" was only partly imported. Open the series and run Rescan to pick up the rest.
 #, fuzzy
 msgid "error.libraryImport.partial"
 msgstr "Seria „{title}” została zaimportowana tylko częściowo. Otwórz ją i uruchom Przeskanuj ponownie, aby wczytać resztę."
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+#. English: Could not read the folder to preview it. Details are in the server log.
+#, fuzzy
+msgid "error.libraryImport.previewFailed"
+msgstr "Nie udało się odczytać folderu, aby go podejrzeć. Szczegóły są w dzienniku serwera."
 
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
@@ -660,6 +696,170 @@ msgstr "Nie udało się odczytać folderu głównego. Sprawdź, czy jest zamonto
 #, fuzzy
 msgid "error.libraryImport.tooManyItems"
 msgstr "Zbyt wiele elementów w jednym żądaniu ({count}); importuj partiami po {max} lub mniej"
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: This import was already undone
+#, fuzzy
+msgid "error.libraryImport.undoAlreadyDone"
+msgstr "Ten import został już cofnięty"
+
+#. {folder} is a folder name, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Not everything in "{folder}" could be put back. Undo it again once the folder is free to retry.
+#, fuzzy
+msgid "error.libraryImport.undoDiskPending"
+msgstr "Nie wszystko z „{folder}” udało się przywrócić. Cofnij ponownie, gdy folder będzie wolny."
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Chapters were downloaded into this series since the import. Delete those files first, or keep the import.
+#, fuzzy
+msgid "error.libraryImport.undoDownloadedSince"
+msgstr "Od importu pobrano rozdziały do tej serii. Najpierw usuń te pliki albo zachowaj import."
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: A download for this series is in progress. Try again once it finishes.
+#, fuzzy
+msgid "error.libraryImport.undoDownloading"
+msgstr "Dla tej serii trwa pobieranie. Spróbuj ponownie, gdy się skończy."
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Undo failed. Details are in the server log.
+#, fuzzy
+msgid "error.libraryImport.undoFailed"
+msgstr "Cofnięcie nie powiodło się. Szczegóły są w dzienniku serwera."
+
+#. {name} is a file name; {folder} is a folder name. Neither is translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: {name} could not be moved back and is still in "{folder}"
+#, fuzzy
+msgid "error.libraryImport.undoFileNotMoved"
+msgstr "Nie udało się przenieść {name} z powrotem, nadal jest w „{folder}”"
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Files of this series were renamed or moved since the import, so undo cannot tell where they are. Rename them back first, or keep the import.
+#, fuzzy
+msgid "error.libraryImport.undoFilesRenamed"
+msgstr "Od importu pliki tej serii zostały przemianowane lub przeniesione, więc cofnięcie nie wie, gdzie są. Najpierw zmień im nazwy z powrotem albo zachowaj import."
+
+#. {folder} is the folder the import left the files in, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: The folder "{folder}" is no longer there, so the import cannot be undone
+#, fuzzy
+msgid "error.libraryImport.undoFolderGone"
+msgstr "Folder „{folder}” już nie istnieje, więc import nie może zostać cofnięty"
+
+#. {name} is the folder's name before the import; {folder} is its name now. Neither is translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: The folder could not be renamed back to "{name}". Its files are safe in "{folder}".
+#, fuzzy
+msgid "error.libraryImport.undoFolderNotMoved"
+msgstr "Nie udało się przemianować folderu z powrotem na „{name}”. Jego pliki są bezpieczne w „{folder}”."
+
+#. {name} is the folder's name before the import, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Cannot rename the folder back: "{name}" already exists in the root folder
+#, fuzzy
+msgid "error.libraryImport.undoFolderTaken"
+msgstr "Nie można przemianować folderu z powrotem: „{name}” już istnieje w folderze głównym"
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Someone has read this series since the import. Undoing would remove the series and its reading progress, so remove it from the series page instead if that is what you want.
+#, fuzzy
+msgid "error.libraryImport.undoHasProgress"
+msgstr "Ktoś czytał tę serię od czasu importu. Cofnięcie usunęłoby serię wraz z postępem czytania, więc jeśli tego chcesz, usuń ją ze strony serii."
+
+#. {name} is a file name, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: {name} was kept: Maki built it, but the original it came from is no longer there
+#, fuzzy
+msgid "error.libraryImport.undoKeptBuilt"
+msgstr "{name} został zachowany: Maki go zbudował, ale oryginał, z którego powstał, już nie istnieje"
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: cover.jpg was kept: Maki could not confirm it is the one it wrote, so it may be yours
+#, fuzzy
+msgid "error.libraryImport.undoKeptCover"
+msgstr "cover.jpg został zachowany: Maki nie może potwierdzić, czy to ten plik, który zapisał, więc może być Twój."
+
+#. {name} is a file name, not translated.
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: {name} was kept: it changed after the import, so it is not the file Maki built
+#, fuzzy
+msgid "error.libraryImport.undoKeptReplaced"
+msgstr "{name} został zachowany: zmienił się po imporcie, więc nie jest plikiem, który zbudował Maki."
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Sources are still being searched for this series. Try again in a minute.
+#, fuzzy
+msgid "error.libraryImport.undoMatchRunning"
+msgstr "Wciąż szukamy źródeł dla tej serii. Spróbuj ponownie za minutę."
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: Undoing this import removes a series. That needs the Delete series permission, unless you ran the import yourself.
+#, fuzzy
+msgid "error.libraryImport.undoNeedsDeleteSeries"
+msgstr "Cofnięcie tego importu usuwa serię. Wymaga to uprawnienia Usuwanie serii, chyba że sam uruchomiłeś import."
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: The series was removed from the library since the import, so there is nothing to undo
+#, fuzzy
+msgid "error.libraryImport.undoSeriesGone"
+msgstr "Seria została usunięta z biblioteki od czasu importu, więc nie ma nic do cofnięcia"
+
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+#. English: That file is not an image Maki can use. Upload a JPEG, PNG, GIF or WebP no larger than {pixels} pixels on either side.
+#, fuzzy
+msgid "error.metadata.coverInvalid"
+msgstr "Ten plik nie jest obrazem, którego Maki może użyć. Prześlij JPEG, PNG, GIF lub WebP, nie większy niż {pixels} pikseli po każdym boku."
+
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+#. English: Choose an image to upload.
+#, fuzzy
+msgid "error.metadata.coverMissing"
+msgstr "Wybierz obraz do przesłania."
+
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+#. English: The image is larger than {megabytes} MB.
+#, fuzzy
+msgid "error.metadata.coverTooLarge"
+msgstr "Obraz jest większy niż {megabytes} MB."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#. English: Chapter and volume counts must be between 0 and {max}.
+#, fuzzy
+msgid "error.metadata.invalidCount"
+msgstr "Liczba rozdziałów i tomów musi mieścić się w zakresie od 0 do {max}."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#. English: Unknown status.
+#, fuzzy
+msgid "error.metadata.invalidStatus"
+msgstr "Nieznany status."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#. English: Choose at least one field.
+#, fuzzy
+msgid "error.metadata.noFields"
+msgstr "Wybierz przynajmniej jedno pole."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#. English: The title can't be empty.
+#, fuzzy
+msgid "error.metadata.titleRequired"
+msgstr "Tytuł nie może być pusty."
+
+#. Shared by the title, the synopsis and the genre list.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#. English: That value is too long.
+#, fuzzy
+msgid "error.metadata.tooLong"
+msgstr "Ta wartość jest za długa."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+#. English: Unknown metadata field.
+#, fuzzy
+msgid "error.metadata.unknownField"
+msgstr "Nieznane pole metadanych."
 
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 #. English: Set a config key or at least one notification URL.
@@ -818,6 +1018,12 @@ msgid "error.queue.notAwaitingImport"
 msgstr "To pobieranie nie oczekuje na decyzję dotyczącą importu"
 
 #: src/Maki.Api/Controllers/QueueController.cs
+#. English: The file name parsing settings changed after this review opened. Open it again to see what the import would do now.
+#, fuzzy
+msgid "error.queue.planStale"
+msgstr "Ustawienia rozpoznawania nazw plików zmieniły się po otwarciu tego przeglądu. Otwórz go ponownie, aby zobaczyć, co import zrobi teraz."
+
+#: src/Maki.Api/Controllers/QueueController.cs
 #. English: Only failed items can be retried
 #, fuzzy
 msgid "error.queue.onlyFailedCanRetry"
@@ -828,6 +1034,18 @@ msgstr "Tylko nieudane elementy można ponowić"
 #, fuzzy
 msgid "error.queue.onlyTorrentImportable"
 msgstr "Tylko pobrania torrent są importowane jako pliki"
+
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: The resume time has already passed
+#, fuzzy
+msgid "error.queue.pauseResumeInPast"
+msgstr "Czas wznowienia już minął"
+
+#: src/Maki.Api/Controllers/QueueController.cs
+#. English: That source is not known
+#, fuzzy
+msgid "error.queue.pauseUnknownSource"
+msgstr "Nie znam tego źródła"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Chapter has no readable file
@@ -859,15 +1077,15 @@ msgstr "Import z Kavita nie powiódł się. Administrator może sprawdzić szcze
 msgid "error.reader.kavitaImportForbidden"
 msgstr "Import z Kavita może uruchomić tylko użytkownik połączony z Kavita lub administrator"
 
-#. The Kavita read-status import found no user bound in Settings → Reader → Kavita user.
+#. The Kavita read-status import found no user bound in Settings → Integrations → Kavita.
 #: src/Maki.Api/Services/KavitaReadImportService.cs
-#. English: No Maki user is bound to Kavita (Settings → Reader → Kavita user)
+#. English: No Maki user is bound to Kavita (Settings → Integrations → Kavita)
 #, fuzzy
 msgid "error.reader.kavitaNoBoundUser"
 msgstr "Do Kavita nie przypisano użytkownika Maki (Ustawienia → Czytnik → użytkownik Kavita)."
 
 #: src/Maki.Api/Services/KavitaReadImportService.cs
-#. English: Kavita is not configured (Settings → Kavita)
+#. English: Kavita is not configured (Settings → Integrations → Kavita)
 #, fuzzy
 msgid "error.reader.kavitaNotConfigured"
 msgstr "Kavita nie jest skonfigurowana (Ustawienia → Kavita)."
@@ -877,6 +1095,12 @@ msgstr "Kavita nie jest skonfigurowana (Ustawienia → Kavita)."
 #, fuzzy
 msgid "error.reader.nothingToRead"
 msgstr "Nie zostało nic do przeczytania"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: Page is outside this chapter
+#, fuzzy
+msgid "error.reader.pageOutOfRange"
+msgstr "Strona jest poza tym rozdziałem"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: No such reading profile
@@ -930,7 +1154,7 @@ msgstr "Nie ma takiego twórcy"
 #. Thrown by DiscoverService.EnsureAvailableAsync, a singleton with no request locale of its own;
 #. see LocalCatalogueUnavailableException.
 #: src/Maki.Api/Services/DiscoverService.cs
-#. English: Discover needs the local MangaBaka database (Settings → Metadata → local DB)
+#. English: Discover needs the local MangaBaka database (Settings → Library → Metadata database)
 #, fuzzy
 msgid "error.recommendation.discoverNeedsLocalDb"
 msgstr "Odkrywanie wymaga lokalnej bazy MangaBaka (Ustawienia → Metadane → lokalna baza danych)."
@@ -950,24 +1174,158 @@ msgstr "Nazwa jest wymagana"
 #. Thrown by RecommendationService.GetAsync, a singleton with no request locale of its own; see
 #. LocalCatalogueUnavailableException.
 #: src/Maki.Api/Services/RecommendationService.cs
-#. English: Recommendations need the local MangaBaka database (Settings → Metadata → local DB)
+#. English: Recommendations need the local MangaBaka database (Settings → Library → Metadata database)
 #, fuzzy
 msgid "error.recommendation.needsLocalDb"
 msgstr "Rekomendacje wymagają lokalnej bazy MangaBaka (Ustawienia → Metadane → lokalna baza danych)."
 
+#. {feed} is the feed name the client sent; thrown by DiscoverService.GetFeedAsync.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: Unknown feed "{feed}"
+#, fuzzy
+msgid "error.recommendation.unknownFeed"
+msgstr "Nieznany kanał „{feed}”"
+
 #. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
 #. sections that still work with no local database.
 #: src/Maki.Api/Controllers/RecommendationController.cs
-#. English: Needs the local MangaBaka database (Settings → Metadata → local DB)
+#. English: Needs the local MangaBaka database (Settings → Library → Metadata database)
 #, fuzzy
 msgid "error.recommendation.tasteInsightsNeedsLocalDb"
 msgstr "Wymaga lokalnej bazy MangaBaka (Ustawienia → Metadane → lokalna baza danych)."
 
 #: src/Maki.Api/Controllers/RecommendationController.cs
-#. English: Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)
+#. English: Your taste profile needs the local MangaBaka database (Settings → Library → Metadata database)
 #, fuzzy
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr "Twój profil gustu wymaga lokalnej bazy danych MangaBaka (Ustawienia → Metadane → lokalna baza danych)"
+
+#. Binning is a rename within one volume. A file on another volume than its root folder (a mount
+#. inside the library) would have to be copied, so the delete is refused and nothing changes.
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: These files are on a different drive than the recycle bin, so they cannot be moved there. Nothing was deleted.
+#, fuzzy
+msgid "error.recycleBin.crossVolume"
+msgstr "Te pliki są na innym dysku niż kosz, więc nie mogą tam zostać przeniesione. Nic nie zostało usunięte."
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: Could not delete the file. Details are in the server log.
+#, fuzzy
+msgid "error.recycleBin.deleteFailed"
+msgstr "Nie udało się usunąć pliku. Szczegóły są w dzienniku serwera."
+
+#. The bin entry exists but its file is gone from the bin folder, removed outside Maki.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: The file is no longer in the recycle bin folder. Delete the entry to clear it.
+#, fuzzy
+msgid "error.recycleBin.fileMissing"
+msgstr "Pliku nie ma już w folderze kosza. Usuń wpis, aby go wyczyścić."
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: That file is no longer in the recycle bin
+#, fuzzy
+msgid "error.recycleBin.notFound"
+msgstr "Tego pliku nie ma już w koszu"
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: Could not move the file back. Details are in the server log.
+#, fuzzy
+msgid "error.recycleBin.restoreFailed"
+msgstr "Nie udało się przenieść pliku z powrotem. Szczegóły są w dzienniku serwera."
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: Recycle bin retention must be between {min} and {max} days
+#, fuzzy
+msgid "error.recycleBin.retentionRange"
+msgstr "Czas przechowywania w koszu musi wynosić od {min} do {max} dni"
+
+#. .maki-trash/bin could not be created under the root folder (read-only share, permissions). The
+#. client then offers to delete permanently instead.
+#: src/Maki.Api/Services/RecycleBinService.cs
+#. English: The recycle bin folder could not be created in this root folder. Nothing was deleted.
+#, fuzzy
+msgid "error.recycleBin.unavailable"
+msgstr "Nie udało się utworzyć folderu kosza w tym folderze głównym. Nic nie zostało usunięte."
+
+#. Restore never overwrites. Something, usually a new download of the same chapter, now sits where
+#. the deleted file used to be.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: Another file is already where this one was. Move or delete it, then restore again.
+#, fuzzy
+msgid "error.recycleBin.targetExists"
+msgstr "W miejscu, gdzie był ten plik, jest już inny plik. Przenieś lub usuń go, a potem przywróć ponownie."
+
+#. A delete saved this entry a moment ago and is still moving its file into the bin folder.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: This file is still being moved into the recycle bin. Try again in a moment.
+#, fuzzy
+msgid "error.recycleBin.stillMoving"
+msgstr "Ten plik jest wciąż przenoszony do kosza. Spróbuj ponownie za chwilę."
+
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: The original location is outside the root folder or behind a link, so the file cannot go back there.
+#, fuzzy
+msgid "error.recycleBin.targetInvalid"
+msgstr "Pierwotne miejsce jest poza folderem głównym albo za linkiem, więc plik nie może tam wrócić."
+
+#. The Prowlarr or qBittorrent call failed; the cause is in the server log.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: Could not send the release to qBittorrent. Details are in the server log.
+#, fuzzy
+msgid "error.release.grabFailed"
+msgstr "Nie udało się wysłać wydania do qBittorrent. Szczegóły są w dzienniku serwera."
+
+#: src/Maki.Api/Services/ReleaseService.cs
+#. English: This release has no download link
+#, fuzzy
+msgid "error.release.noDownloadLink"
+msgstr "To wydanie nie ma linku do pobrania"
+
+#: src/Maki.Api/Services/ReleaseService.cs
+#. English: Prowlarr is not configured (Settings → Downloads → Prowlarr)
+#, fuzzy
+msgid "error.release.prowlarrNotConfigured"
+msgstr "Prowlarr nie jest skonfigurowany (Ustawienia → Pobrania → Prowlarr)"
+
+#. qBittorrent rejected the username or password Maki has stored for it.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: qBittorrent rejected the login. Check the username and password in Settings → Downloads.
+#, fuzzy
+msgid "error.release.qbittorrentLoginFailed"
+msgstr "qBittorrent odrzucił logowanie. Sprawdź nazwę użytkownika i hasło w Ustawieniach → Pobrania."
+
+#: src/Maki.Api/Services/ReleaseService.cs
+#. English: qBittorrent is not configured (Settings → Downloads → qBittorrent)
+#, fuzzy
+msgid "error.release.qbittorrentNotConfigured"
+msgstr "qBittorrent nie jest skonfigurowany (Ustawienia → Pobrania → qBittorrent)"
+
+#. qBittorrent answered but refused to add the torrent.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: qBittorrent refused to add the torrent.
+#, fuzzy
+msgid "error.release.qbittorrentRejected"
+msgstr "qBittorrent nie chce dodać tego torrenta."
+
+#. The Prowlarr call failed; the cause is in the server log.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: The release search failed. Details are in the server log.
+#, fuzzy
+msgid "error.release.searchFailed"
+msgstr "Wyszukiwanie wydań nie powiodło się. Szczegóły są w dzienniku serwera."
+
+#: src/Maki.Api/Services/ReleaseService.cs
+#. English: Series not found
+#, fuzzy
+msgid "error.release.seriesNotFound"
+msgstr "Nie znaleziono serii"
+
+#. A grab names a release from an earlier search; the server no longer holds that search (it expired or was never run for this series).
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: This search result has expired. Search again, then grab the release.
+#, fuzzy
+msgid "error.release.searchExpired"
+msgstr "Ten wynik wyszukiwania wygasł. Wyszukaj ponownie, a potem pobierz wydanie."
 
 #. Auto-resolution note when an admin approves a request but somebody else already added the
 #. series first: stored on SeriesRequest.ResolutionNote and shown verbatim next to the admin's own
@@ -1018,6 +1376,12 @@ msgid "error.requests.chapterRangeInvalid"
 msgstr "Ostatni rozdział nie może być niższy niż pierwszy"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: This series is above your content rating limit
+#, fuzzy
+msgid "error.requests.contentRating"
+msgstr "Ta seria przekracza Twój limit klasyfikacji treści"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Series not found on metadata provider
 #, fuzzy
 msgid "error.requests.metadataNotFound"
@@ -1054,6 +1418,19 @@ msgstr "Wymagana jest seria"
 #, fuzzy
 msgid "error.requests.seriesRequired"
 msgstr "Wymagana jest seria do zgłoszenia"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: The series this request is for is no longer in the library. Reject the request instead.
+#, fuzzy
+msgid "error.requests.seriesGone"
+msgstr "Seria, której dotyczy ta prośba, nie jest już w bibliotece. Odrzuć prośbę zamiast tego."
+
+#. Shown as the requester's name when the account no longer exists.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: Unknown user
+#, fuzzy
+msgid "error.requests.unknownUser"
+msgstr "Nieznany użytkownik"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Unknown request kind
@@ -1125,6 +1502,12 @@ msgid "error.scrobble.unknownService"
 msgstr "nieznana usługa"
 
 #: src/Maki.Api/Controllers/SearchController.cs
+#. English: The source did not return the cover
+#, fuzzy
+msgid "error.search.coverUnavailable"
+msgstr "Źródło nie zwróciło okładki"
+
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: That host is not served by this source
 #, fuzzy
 msgid "error.search.hostNotServed"
@@ -1143,10 +1526,23 @@ msgid "error.search.noSourceRecognizesUrl"
 msgstr "Żadne źródło nie rozpoznaje tego URL-a"
 
 #: src/Maki.Api/Controllers/SearchController.cs
+#. English: The source answered with something that is not an image
+#, fuzzy
+msgid "error.search.notAnImage"
+msgstr "Źródło odpowiedziało czymś, co nie jest obrazem"
+
+#: src/Maki.Api/Controllers/SearchController.cs
 #. English: Search query is required
 #, fuzzy
 msgid "error.search.queryRequired"
 msgstr "Wymagane jest zapytanie wyszukiwania"
+
+#. {source} is the source's display name, never translated. The cause is in the server log.
+#: src/Maki.Api/Controllers/SearchController.cs
+#. English: The URL matched {source} but its series page could not be fetched. Details are in the server log.
+#, fuzzy
+msgid "error.search.seriesPageFailed"
+msgstr "Adres pasował do {source}, ale nie udało się pobrać strony serii. Szczegóły są w dzienniku serwera."
 
 #: src/Maki.Api/Controllers/SearchController.cs
 #. English: Too many redirects
@@ -1249,6 +1645,13 @@ msgstr "Nie znaleziono serii u dostawcy metadanych"
 msgid "error.series.metadataRefreshFailed"
 msgstr "Wyszukiwanie metadanych nie powiodło się - seria nie ma id dostawcy albo dostawca nic nie zwrócił"
 
+#. The cause is in the server log. Anything already moved was put back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not move the series folder. Details are in the server log.
+#, fuzzy
+msgid "error.series.moveFailed"
+msgstr "Nie udało się przenieść folderu serii. Szczegóły są w dzienniku serwera."
+
 #. {message} is an exception message and is never translated. The files already moved; only the
 #. database write failed, so the move is rolled back.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1270,6 +1673,12 @@ msgstr "Wymagany jest prawidłowy identyfikator mutacji"
 #, fuzzy
 msgid "error.series.mutationIdReused"
 msgstr "Ten identyfikator mutacji został już użyty do innego dodania"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Read file cleanup must be Default, On or Off
+#, fuzzy
+msgid "error.series.invalidReadCleanup"
+msgstr "Porządkowanie przeczytanych plików musi być ustawione na Domyślne, Włączone lub Wyłączone"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
@@ -1336,11 +1745,57 @@ msgstr "Nieobsługiwane źródło dodania"
 msgid "error.series.unknownTagIds"
 msgstr "Co najmniej jeden identyfikator tagu nie istnieje"
 
+#. Shown as warnings after the series row is already saved. The cause is in the server log.
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not finish cover setup. Details are in the server log.
+#, fuzzy
+msgid "error.seriesCreation.coverFailed"
+msgstr "Nie udało się dokończyć konfiguracji okładki. Szczegóły są w dzienniku serwera."
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not create the series folder. Details are in the server log.
+#, fuzzy
+msgid "error.seriesCreation.folderFailed"
+msgstr "Nie udało się utworzyć folderu serii. Szczegóły są w dzienniku serwera."
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not finish library history setup. Details are in the server log.
+#, fuzzy
+msgid "error.seriesCreation.historyFailed"
+msgstr "Nie udało się dokończyć konfiguracji historii biblioteki. Szczegóły są w dzienniku serwera."
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not match sources automatically. Link a source manually from the series page.
+#, fuzzy
+msgid "error.seriesCreation.sourceMatchFailed"
+msgstr "Nie udało się automatycznie dopasować źródeł. Połącz źródło ręcznie ze strony serii."
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Could not schedule source matching. Link a source manually from the series page.
+#, fuzzy
+msgid "error.seriesCreation.sourceMatchScheduleFailed"
+msgstr "Nie udało się zaplanować dopasowania źródeł. Połącz źródło ręcznie ze strony serii."
+
 #: src/Maki.Api/Services/SeriesRenameService.cs
 #. English: Series has an active download, wait for it to finish before renaming
 #, fuzzy
 msgid "error.seriesRename.activeDownload"
 msgstr "Seria jest aktualnie pobierana. Poczekaj na zakończenie pobierania przed zmianą nazwy."
+
+#. {file}, {first} and {second} are file names or paths, never translated. Two chapters would get
+#. the same file name; {first} is the one that claimed it and {second} the one that was refused.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: {file} is wanted by both {first} and {second}
+#, fuzzy
+msgid "error.seriesRename.conflict"
+msgstr "{file} jest potrzebny zarówno dla {first}, jak i dla {second}"
+
+#. {file} is a file name, never translated. The cause is in the server log.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: Could not rename {file}. Details are in the server log.
+#, fuzzy
+msgid "error.seriesRename.fileFailed"
+msgstr "Nie udało się zmienić nazwy {file}. Szczegóły są w dzienniku serwera."
 
 #. {file} is a filesystem path relative to the root folder, never translated.
 #: src/Maki.Api/Services/SeriesRenameService.cs
@@ -1355,6 +1810,13 @@ msgstr "Nie znaleziono pliku {file} na dysku, ale jego wpis został zaktualizowa
 #, fuzzy
 msgid "error.seriesRename.fileSkippedExists"
 msgstr "Pominięto {from}: plik {to} już istnieje."
+
+#. The cause is in the server log.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: Could not rename the series folder. Details are in the server log.
+#, fuzzy
+msgid "error.seriesRename.folderFailed"
+msgstr "Nie udało się zmienić nazwy folderu serii. Szczegóły są w dzienniku serwera."
 
 #: src/Maki.Api/Services/SeriesRenameService.cs
 #. English: The current chapter format gives two chapters the same file name
@@ -1374,6 +1836,13 @@ msgstr "Nie znaleziono serii."
 #, fuzzy
 msgid "error.seriesRename.planChanged"
 msgstr "Plan zmiany nazwy zmienił się od czasu wczytania podglądu. Sprawdź nowy plan i spróbuj ponownie."
+
+#. Shown when a request fails on a bug in Maki. The exception is in the server log.
+#: src/Maki.Api/Logging/UnhandledExceptionHandler.cs
+#. English: Something went wrong on the server. Details are in the server log.
+#, fuzzy
+msgid "error.server.unexpected"
+msgstr "Coś poszło nie tak po stronie serwera. Szczegóły są w dzienniku serwera."
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -1403,6 +1872,19 @@ msgid "error.settings.unknownSources"
 msgstr "Nieznane źródła: {sources}"
 
 #. Shown when a client asks for an interface language Maki ships no translation for.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The default monitoring for new series must be All, MainOnly or Smart
+#, fuzzy
+msgid "error.settings.invalidMonitorMode"
+msgstr "Domyślne monitorowanie nowych serii musi być ustawione na All, MainOnly lub Smart"
+
+#. {min} and {max} are whole numbers of days.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Days before read files are deleted must be between {min} and {max}
+#, fuzzy
+msgid "error.settings.readCleanupDaysRange"
+msgstr "Liczba dni przed usunięciem przeczytanych plików musi mieścić się w zakresie od {min} do {max}"
+
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unsupported language: {language}
 #, fuzzy
@@ -1515,7 +1997,7 @@ msgstr "Nie udało się odświeżyć niektórych migawek rozdziałów"
 
 #. {name} is a registered source's name (e.g. "MangaDex") and is never translated.
 #: src/Maki.Api/Controllers/SourceMappingController.cs
-#. English: {name} is switched off in Settings → Source priority
+#. English: {name} is switched off in Settings → Downloads → Sources
 #, fuzzy
 msgid "error.sourceMapping.sourceDisabled"
 msgstr "{name} jest wyłączone w Ustawieniach → Priorytet źródeł"
@@ -1545,6 +2027,73 @@ msgstr "Daty muszą mieścić się w zakresie od 1900 do 9998"
 msgid "error.stats.utcOffsetOutOfRange"
 msgstr "utcOffsetMinutes poza zakresem"
 
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Unknown Suwayomi sign-in mode. Use none, basic or uilogin.
+#, fuzzy
+msgid "error.suwayomi.authModeInvalid"
+msgstr "Nieznany tryb logowania Suwayomi. Użyj none, basic lub uilogin."
+
+#. {source} is a Suwayomi source's name and is never translated.
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: {source} publishes in one language, so its chapters are always filed under that one.
+#, fuzzy
+msgid "error.suwayomi.chapterLanguageFixed"
+msgstr "{source} publikuje w jednym języku, więc jego rozdziały zawsze trafiają pod ten język."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: "{language}" is not a language code, such as en or pt-BR.
+#, fuzzy
+msgid "error.suwayomi.chapterLanguageInvalid"
+msgstr "„{language}” nie jest kodem języka, na przykład en lub pt-BR."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: {source} publishes several languages. Pick the language its chapters are in.
+#, fuzzy
+msgid "error.suwayomi.chapterLanguageRequired"
+msgstr "{source} publikuje w kilku językach. Wybierz język, w jakim są jego rozdziały."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi refused the username or password.
+#, fuzzy
+msgid "error.suwayomi.loginFailed"
+msgstr "Logowanie do Suwayomi odrzucone. Nieprawidłowa nazwa użytkownika lub hasło."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi did not answer. Check the URL and that the server is running.
+#, fuzzy
+msgid "error.suwayomi.noResponse"
+msgstr "Brak odpowiedzi od Suwayomi. Sprawdź adres URL i to, czy serwer działa."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi is not set up yet. Enter its URL first.
+#, fuzzy
+msgid "error.suwayomi.notConfigured"
+msgstr "Nie skonfigurowano jeszcze Suwayomi. Najpierw wpisz jego adres URL."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi answered with a redirect. If it runs under a subpath, include the subpath in the URL.
+#, fuzzy
+msgid "error.suwayomi.redirected"
+msgstr "Serwer Suwayomi odpowiedział przekierowaniem. Jeśli działa pod podścieżką, dodaj ją do adresu URL."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi has no source with id {id}.
+#, fuzzy
+msgid "error.suwayomi.unknownSource"
+msgstr "Suwayomi nie ma źródła o id {id}."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: This sign-in mode needs a username.
+#, fuzzy
+msgid "error.suwayomi.usernameRequired"
+msgstr "Ten tryb logowania wymaga nazwy użytkownika."
+
+#: src/Maki.Api/Controllers/SuwayomiController.cs
+#. English: Suwayomi {version} is too old for this sign-in mode. Maki needs {minimum} or later.
+#, fuzzy
+msgid "error.suwayomi.versionUnsupported"
+msgstr "Wersja {version} Suwayomi jest za stara dla tego trybu logowania. Maki wymaga wersji {minimum} lub nowszej."
+
 #. {label} is the tag name the user typed in.
 #: src/Maki.Api/Controllers/TagsController.cs
 #. English: A tag called "{label}" already exists
@@ -1564,11 +2113,25 @@ msgstr "Etykieta jest wymagana"
 msgid "error.tags.unknownTagIds"
 msgstr "Co najmniej jeden identyfikator tagu nie istnieje"
 
+#. {file} is a file name and is never translated. The exception text follows it, untranslated.
 #: src/Maki.Api/Services/TorrentImportService.cs
-#. English: No comics found in the completed download ({detail})
+#. English: Could not import {file}
 #, fuzzy
-msgid "error.torrentImport.noComicsFound"
-msgstr "W zakończonym pobraniu nie znaleziono komiksów ({detail})."
+msgid "error.torrentImport.copyFailed"
+msgstr "Nie udało się zaimportować {file}"
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: No comics found in the completed download (it is empty)
+#, fuzzy
+msgid "error.torrentImport.noComicsEmpty"
+msgstr "W ukończonym pobieraniu nie znaleziono komiksów (folder jest pusty)"
+
+#. {census} lists the most common file types that were there with their counts, such as "2 .pdf, 1 .txt". The extensions are never translated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: No comics found in the completed download (found {census})
+#, fuzzy
+msgid "error.torrentImport.noComicsOfType"
+msgstr "W ukończonym pobieraniu nie znaleziono komiksów (znaleziono {census})"
 
 #: src/Maki.Api/Services/TorrentImportService.cs
 #. English: Series has no root folder
@@ -1917,6 +2480,18 @@ msgid "error.settings.bulkHoldRange"
 msgstr "Próg wstrzymywania musi być między 0 (wyłączony) a {max} rozdziałów"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Smart Download refill point must be between {min} and {max} chapters
+#, fuzzy
+msgid "error.settings.smartChaptersLeftRange"
+msgstr "Próg uzupełniania Smart Download musi mieścić się w zakresie od {min} do {max} rozdziałów"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Smart Download batch size must be between {min} and {max} chapters
+#, fuzzy
+msgid "error.settings.smartChaptersRange"
+msgstr "Rozmiar partii Smart Download musi mieścić się w zakresie od {min} do {max} rozdziałów"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The upgrade scan hour must be between {min} and {max}
 #, fuzzy
 msgid "error.settings.upgradesScanHourRange"
@@ -2064,6 +2639,13 @@ msgstr "Nie skonfigurowano URL-a FlareSolverr"
 msgid "error.settings.flaresolverrNoResponse"
 msgstr "FlareSolverr nie odpowiedział"
 
+#. {language} is the code the caller sent, e.g. "xx".
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Maki has no volume or chapter words for the language "{language}"
+#, fuzzy
+msgid "error.nameParsing.unknownLanguage"
+msgstr "Maki nie ma słów oznaczających tom ani rozdział dla języka „{language}”"
+
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #. English: Format has a "{" inside a token
@@ -2179,6 +2761,12 @@ msgstr "Identyfikator serii"
 #, fuzzy
 msgid "naming.token.anilistid.description"
 msgstr "Identyfikator AniList; pusty, jeśli brak dopasowania"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Scanlation group, e.g. Group Name. Blank when the file has none
+#, fuzzy
+msgid "naming.token.chaptergroup.description"
+msgstr "Grupa scanlation, np. Group Name. Puste, gdy plik jej nie ma"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
 #. English: BCP-47 language tag, e.g. en
@@ -2307,11 +2895,58 @@ msgstr "Baza danych w tej kopii zapasowej jest uszkodzona lub nie pochodzi z Mak
 msgid "error.system.backupTooNew"
 msgstr "Kopia zapasowa pochodzi z nowszej wersji (migracja „{migration}” nie jest znana tej kompilacji). Zaktualizuj Maki przed jej przywróceniem."
 
+#. {migration} is the EF migration name the backup carries, older than any this build knows.
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is from a version too old to restore directly (migration "{migration}" predates every migration this build knows). Restore it with the Maki release it came from, then upgrade.
+#, fuzzy
+msgid "error.system.backupTooOld"
+msgstr "Kopia pochodzi z wersji zbyt starej, by ją bezpośrednio przywrócić (migracja „{migration}” jest starsza niż wszystkie migracje znane tej wersji). Przywróć ją wydaniem Maki, z którego pochodzi, a potem zaktualizuj."
+
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
 #, fuzzy
 msgid "error.system.backupUnreadable"
 msgstr "Ten plik nie jest czytelną kopią zapasową Maki. Archiwum ZIP lub jego manifest jest uszkodzony. Nie wprowadzono żadnych zmian."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database inside this backup is larger than 8 GiB, which is more than a Maki database should be. Nothing was changed.
+#, fuzzy
+msgid "error.system.backupTooLarge"
+msgstr "Baza danych w tej kopii jest większa niż 8 GiB, czyli więcej, niż powinna mieć baza Maki. Niczego nie zmieniono."
+
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: That is not a valid backup name.
+#, fuzzy
+msgid "error.system.backupNameInvalid"
+msgstr "To nie jest prawidłowa nazwa kopii zapasowej."
+
+#. {name} is a backup file name, never translated.
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: Backup "{name}" was not found.
+#, fuzzy
+msgid "error.system.backupNotFound"
+msgstr "Nie znaleziono kopii „{name}”."
+
+#. Shown in the response to a successful restore request, not as an error.
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: Restore staged. Restarting to apply.
+#, fuzzy
+msgid "error.system.restoreStaged"
+msgstr "Przywracanie przygotowane. Trwa restart, aby je zastosować."
+
+#. The cause is in the server log.
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: Could not stage the restore. Details are in the server log.
+#, fuzzy
+msgid "error.system.restoreFailed"
+msgstr "Nie udało się przygotować przywracania. Szczegóły są w dzienniku serwera."
+
+#. Shown when an image cache rebuild is requested while one is already in progress.
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: A rebuild is already running
+#, fuzzy
+msgid "error.system.rebuildRunning"
+msgstr "Odbudowa jest już w toku"
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
@@ -2375,6 +3010,137 @@ msgstr "Powiązano logowanie jednokrotne"
 msgid "inbox.account.ssoLinked.body"
 msgstr "{account} może się teraz logować na Twoje konto. Jeśli to nie Ty, usuń to w ustawieniach konta i zmień hasło."
 
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Password changed
+#, fuzzy
+msgid "inbox.account.passwordChanged.title"
+msgstr "Zmieniono hasło"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Your password was changed on {when}. Every other session was signed out. If that was not you, change your password again and tell an administrator.
+#, fuzzy
+msgid "inbox.account.passwordChanged.body"
+msgstr "Twoje hasło zostało zmienione {when}. Wszystkie inne sesje zostały wylogowane. Jeśli to nie Ty, zmień hasło ponownie i powiadom administratora."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Password reset by an administrator
+#, fuzzy
+msgid "inbox.account.passwordReset.title"
+msgstr "Administrator zresetował hasło"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: An administrator reset your password on {when}. Every session was signed out. If you were not expecting this, ask an administrator why.
+#, fuzzy
+msgid "inbox.account.passwordReset.body"
+msgstr "Administrator zresetował Twoje hasło {when}. Wszystkie sesje zostały wylogowane. Jeśli się tego nie spodziewałeś, zapytaj administratora, dlaczego."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Two-factor authentication turned on
+#, fuzzy
+msgid "inbox.account.twoFactorEnabled.title"
+msgstr "Włączono uwierzytelnianie dwuskładnikowe"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Two-factor authentication was turned on for your account on {when}. If that was not you, change your password now.
+#, fuzzy
+msgid "inbox.account.twoFactorEnabled.body"
+msgstr "Uwierzytelnianie dwuskładnikowe zostało włączone na Twoim koncie {when}. Jeśli to nie Ty, zmień teraz hasło."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Two-factor authentication turned off
+#, fuzzy
+msgid "inbox.account.twoFactorDisabled.title"
+msgstr "Wyłączono uwierzytelnianie dwuskładnikowe"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Two-factor authentication was turned off for your account on {when}. If that was not you, change your password now and turn it back on.
+#, fuzzy
+msgid "inbox.account.twoFactorDisabled.body"
+msgstr "Uwierzytelnianie dwuskładnikowe na Twoim koncie zostało wyłączone {when}. Jeśli to nie Ty, zmień teraz hasło i włącz je z powrotem."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Two-factor authentication reset by an administrator
+#, fuzzy
+msgid "inbox.account.twoFactorReset.title"
+msgstr "Administrator zresetował uwierzytelnianie dwuskładnikowe"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: An administrator turned off two-factor authentication on your account on {when}. Set it up again in account settings.
+#, fuzzy
+msgid "inbox.account.twoFactorReset.body"
+msgstr "Administrator wyłączył uwierzytelnianie dwuskładnikowe na Twoim koncie {when}. Skonfiguruj je ponownie w ustawieniach konta."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: API key created
+#, fuzzy
+msgid "inbox.account.apiKeyCreated.title"
+msgstr "Utworzono klucz API"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#. {name} is the label the account owner gave the key, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: An API key named {name} was created on {when}. If that was not you, revoke it in account settings and change your password.
+#, fuzzy
+msgid "inbox.account.apiKeyCreated.body"
+msgstr "Klucz API o nazwie {name} został utworzony {when}. Jeśli to nie Ty, unieważnij go w ustawieniach konta i zmień hasło."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: OPDS feed token created
+#, fuzzy
+msgid "inbox.account.opdsTokenCreated.title"
+msgstr "Utworzono token kanału OPDS"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: An OPDS feed token was created on {when}. If that was not you, rotate it in account settings and change your password.
+#, fuzzy
+msgid "inbox.account.opdsTokenCreated.body"
+msgstr "Token kanału OPDS został utworzony {when}. Jeśli to nie Ty, wygeneruj go ponownie w ustawieniach konta i zmień hasło."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: OPDS feed token replaced
+#, fuzzy
+msgid "inbox.account.opdsTokenRotated.title"
+msgstr "Zastąpiono token kanału OPDS"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Your OPDS feed token was replaced on {when}. Feed URLs that used the old token stopped working. If that was not you, change your password.
+#, fuzzy
+msgid "inbox.account.opdsTokenRotated.body"
+msgstr "Twój token kanału OPDS został zastąpiony {when}. Adresy kanałów używające starego tokena przestały działać. Jeśli to nie Ty, zmień hasło."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Your permissions changed
+#, fuzzy
+msgid "inbox.account.permissionsChanged.title"
+msgstr "Zmieniły się Twoje uprawnienia"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: An administrator changed your permissions on {when}.
+#, fuzzy
+msgid "inbox.account.permissionsChanged.body"
+msgstr "Administrator zmienił Twoje uprawnienia {when}."
+
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: Your library folder access changed
+#, fuzzy
+msgid "inbox.account.folderAccessChanged.title"
+msgstr "Zmienił się dostęp do folderów biblioteki"
+
+#. {when} is a UTC date and time such as 2026-10-10 14:05 UTC, never translated.
+#: src/Maki.Api/Auth/AccountSecurityAlerts.cs
+#. English: An administrator changed which library folders you can see on {when}.
+#, fuzzy
+msgid "inbox.account.folderAccessChanged.body"
+msgstr "Administrator zmienił, które foldery biblioteki widzisz {when}."
+
 #. Seen by admins. {user} is a username and is never translated.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: New request
@@ -2394,12 +3160,38 @@ msgstr "Użytkownik {user} zgłosił prośbę o {title}"
 msgid "inbox.request.edited.title"
 msgstr "Twoja prośba została skorygowana"
 
-#. {range} is a chapter range such as "1-20" or "all chapters", built by the controller.
+#. {range} is one of the inbox.request.range.* messages below, worded when the row is read.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {title}: now {range}
 #, fuzzy
 msgid "inbox.request.edited.body"
 msgstr "{title}: teraz {range}"
+
+#. The four inbox.request.range.* messages fill {range} in inbox.request.edited.body. {start} and
+#. {end} are chapter numbers.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: everything
+#, fuzzy
+msgid "inbox.request.range.all"
+msgstr "wszystko"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: chapters {start} to {end}
+#, fuzzy
+msgid "inbox.request.range.between"
+msgstr "rozdziały od {start} do {end}"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: chapter {start} onwards
+#, fuzzy
+msgid "inbox.request.range.from"
+msgstr "od rozdziału {start}"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: up to chapter {end}
+#, fuzzy
+msgid "inbox.request.range.upTo"
+msgstr "do rozdziału {end}"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Your request was approved
@@ -2477,6 +3269,20 @@ msgstr "Nowe rozdziały wstrzymane"
 msgid "inbox.chapters.held.body"
 msgstr "{series}: znaleziono jednocześnie {count, plural, one {# nowy rozdział} few {# nowe rozdziały} many {# nowych rozdziałów} other {# nowego rozdziału}} i nie pobrano automatycznie. Pobierz je ze strony serii, jeśli są prawdziwe."
 
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+#, fuzzy
+msgid "inbox.series.statusChanged.title"
+msgstr "Zmieniono status serii"
+
+#. {series} is filled with the reader's own preferred title for the series. {from} and {to} are
+#. ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+#, fuzzy
+msgid "inbox.series.statusChanged.body"
+msgstr "{series} zmienił status z {from, select, ongoing {w toku} completed {ukończona} hiatus {wstrzymana} cancelled {anulowana} other {nieznany}} na {to, select, ongoing {w toku} completed {ukończona} hiatus {wstrzymana} cancelled {anulowana} other {nieznany}}"
+
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
 #, fuzzy
@@ -2546,6 +3352,19 @@ msgstr "{series}: rozdział {chapter} jest gotowy do przeczytania"
 #, fuzzy
 msgid "inbox.download.failed.title"
 msgstr "Pobieranie nie powiodło się"
+
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: Import waiting for a decision
+#, fuzzy
+msgid "inbox.import.awaiting.title"
+msgstr "Import czeka na decyzję"
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: {series}: {release} needs a Replace or Skip decision in Activity before it is imported
+#, fuzzy
+msgid "inbox.import.awaiting.body"
+msgstr "{series}: {release} wymaga decyzji Zastąp lub Pomiń w Aktywności, zanim zostanie zaimportowany"
 
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. placeholder for emptiness. {error} is the source's own wording and is never translated.
@@ -2699,6 +3518,32 @@ msgstr "Nie dopasowano żadnych źródeł"
 #, fuzzy
 msgid "inbox.sourceMatch.none.body"
 msgstr "{series}: żadne źródło nie pasowało, połącz jedno ręcznie, aby pobierać"
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+#. English: Sources matched, some could not be searched
+#, fuzzy
+msgid "inbox.sourceMatch.matchedSomeFailed.title"
+msgstr "Dopasowano źródła, a części nie udało się przeszukać"
+
+#. {sources} and {failed} are comma-separated lists of site names, none of which are translated.
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+#. English: {series}: matched {sources}. Could not search {failed}; match again once they are back.
+#, fuzzy
+msgid "inbox.sourceMatch.matchedSomeFailed.body"
+msgstr "{series}: dopasowano {sources}. Nie udało się przeszukać: {failed}. Dopasuj ponownie, gdy wrócą."
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+#. English: Sources could not be searched
+#, fuzzy
+msgid "inbox.sourceMatch.failed.title"
+msgstr "Nie udało się przeszukać źródeł"
+
+#. {failed} is a comma-separated list of site names, none of which are translated.
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+#. English: {series}: nothing matched, and {failed} could not be searched. Match again once they are back.
+#, fuzzy
+msgid "inbox.sourceMatch.failed.body"
+msgstr "{series}: nic nie pasowało, a nie udało się przeszukać: {failed}. Dopasuj ponownie, gdy wrócą."
 
 #: src/Maki.Api/Services/ImportListService.cs
 #. English: Import list finished
@@ -3065,6 +3910,14 @@ msgstr "Nie udało się zastąpić istniejącego pliku. Inny program może mieć
 msgid "error.download.unexpected"
 msgstr "Coś poszło nie tak, Maki spróbuje ponownie"
 
+#. The site served an anti-bot challenge and no FlareSolverr URL is set. The queue row shows the
+#. host after this, never translated.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)
+#, fuzzy
+msgid "error.download.challengeNotSolved"
+msgstr "Źródło wymaga FlareSolverr, aby przejść sprawdzenie anty-botowe (Ustawienia → Pobrania)"
+
 #. The site answered 401 or 403. The queue row shows the status after this.
 #: src/Maki.Api/Services/DownloadFailureReason.cs
 #. English: The source refused the request
@@ -3168,6 +4021,27 @@ msgstr "Torrent nigdy nie pojawił się w qBittorrent"
 msgid "error.download.torrentRemoved"
 msgstr "Torrenta nie ma już w qBittorrent"
 
+#. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
+#: src/Maki.Api/Services/DownloadWorkerHostedService.cs
+#. English: Gave up after the download time limit
+#, fuzzy
+msgid "error.download.itemTimedOut"
+msgstr "Przerwano po przekroczeniu limitu czasu pobierania"
+
+#. A repair was approved with a source that has since been disabled or removed.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The approved repair source is no longer available, request a new replacement
+#, fuzzy
+msgid "error.download.repairSourceGone"
+msgstr "Zatwierdzone źródło naprawy nie jest już dostępne, zgłoś prośbę o nowy zamiennik"
+
+#. The repair this download belonged to was closed or cancelled before the pages arrived.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The repair is no longer accepting candidates
+#, fuzzy
+msgid "error.download.repairNotAccepting"
+msgstr "Naprawa nie przyjmuje już kandydatów"
+
 #. The library folder is missing or empty, usually a network share that is not mounted. Maki retries
 #. on its own and does not count it as a failed attempt.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
@@ -3209,6 +4083,21 @@ msgstr "Rozdział"
 #, fuzzy
 msgid "notify.download.failed.title"
 msgstr "Pobieranie nie powiodło się"
+
+#. Sent outward when a finished torrent covers files the library already has and waits for a Replace
+#. or Skip decision. Renders in the instance's own language.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: Import waiting for a decision
+#, fuzzy
+msgid "notify.import.awaiting.title"
+msgstr "Import czeka na decyzję"
+
+#. {release} is the torrent's release name and is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: {series}: {release} needs a Replace or Skip decision in Activity before it is imported
+#, fuzzy
+msgid "notify.import.awaiting.body"
+msgstr "{series}: {release} wymaga decyzji Zastąp lub Pomiń w Aktywności, zanim zostanie zaimportowany"
 
 #. {hasChapter} is "yes" or "no": a select needs a real key to match, and ICU has no way to test a
 #. value for emptiness. {reason} is one of the error.download.* messages, already rendered.
@@ -3352,6 +4241,19 @@ msgstr "Usunięto serię"
 #, fuzzy
 msgid "notify.series.removed.body"
 msgstr "Seria {series} została usunięta z biblioteki{filesDeleted, select, yes {, pliki usunięto} other {, pliki pozostawiono na dysku}}"
+
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: Series status changed
+#, fuzzy
+msgid "notify.series.statusChanged.title"
+msgstr "Zmieniono status serii"
+
+#. {from} and {to} are ongoing, completed, hiatus or cancelled.
+#: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
+#. English: {series} went from {from, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}} to {to, select, ongoing {ongoing} completed {completed} hiatus {on hiatus} cancelled {cancelled} other {unknown}}
+#, fuzzy
+msgid "notify.series.statusChanged.body"
+msgstr "{series} zmienił status z {from, select, ongoing {w toku} completed {ukończona} hiatus {wstrzymana} cancelled {anulowana} other {nieznany}} na {to, select, ongoing {w toku} completed {ukończona} hiatus {wstrzymana} cancelled {anulowana} other {nieznany}}"
 
 #. Stored as the Note of a series request an import list files for a user who cannot add series.
 #. Rendered once in the instance default language, since admins read it on the Requests page.
@@ -3666,10 +4568,122 @@ msgid "error.health.selectUpTo100"
 msgstr "Wybierz od 1 do 100 plików."
 
 #: src/Maki.Api/Controllers/HealthController.cs
+#: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Explicit confirmation is required
 #, fuzzy
 msgid "error.health.confirmationRequired"
 msgstr "Wymagane jest jawne potwierdzenie."
+
+#. The messages below are the reasons a health review, repair or delete is refused. The cause of a
+#. failure not listed here is in the server log.
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: That file is no longer in the inventory. Rescan and try again.
+#, fuzzy
+msgid "error.health.fileGone"
+msgstr "Tego pliku nie ma już w inwentarzu. Przeskanuj ponownie i spróbuj jeszcze raz."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: This review is out of date. Rescan and review again.
+#, fuzzy
+msgid "error.health.reviewStale"
+msgstr "Ten przegląd jest nieaktualny. Przeskanuj ponownie i przejrzyj jeszcze raz."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The root folder no longer exists.
+#, fuzzy
+msgid "error.health.rootGone"
+msgstr "Folder główny już nie istnieje."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The root folder is not available.
+#, fuzzy
+msgid "error.health.rootUnavailable"
+msgstr "Folder główny jest niedostępny."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The file changed after the review. Rescan first.
+#, fuzzy
+msgid "error.health.fileChanged"
+msgstr "Plik zmienił się po przeglądzie. Najpierw przeskanuj."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The file's contents changed, or it was not fully scanned. Rescan first.
+#, fuzzy
+msgid "error.health.fileContentChanged"
+msgstr "Zawartość pliku się zmieniła albo nie został w pełni przeskanowany. Najpierw przeskanuj."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Another operation on this file is in progress.
+#, fuzzy
+msgid "error.health.operationActive"
+msgstr "Inna operacja na tym pliku jest w toku."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Downloads or imports for this series are in progress.
+#, fuzzy
+msgid "error.health.downloadsActive"
+msgstr "Pobierania lub importy dla tej serii są w toku."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Import and link this archive to one series before replacing it.
+#, fuzzy
+msgid "error.health.needsLinkedSeries"
+msgstr "Zaimportuj to archiwum i powiąż je z jedną serią, zanim je zastąpisz."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Select an enabled source mapped to this series.
+#, fuzzy
+msgid "error.health.mappingNotEnabled"
+msgstr "Wybierz włączone źródło przypisane do tej serii."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Operation not found.
+#, fuzzy
+msgid "error.health.operationNotFound"
+msgstr "Nie znaleziono operacji."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The operation is not ready, or its review is out of date.
+#, fuzzy
+msgid "error.health.operationNotReady"
+msgstr "Operacja nie jest gotowa albo jej przegląd jest nieaktualny."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The replacement must cover every linked chapter.
+#, fuzzy
+msgid "error.health.replacementIncomplete"
+msgstr "Zamiennik musi obejmować każdy powiązany rozdział."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The replacement file changed. Request a new one.
+#, fuzzy
+msgid "error.health.candidateChanged"
+msgstr "Plik zamienny się zmienił. Poproś o nowy."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The replacement file failed its checks, or its analysis is not finished.
+#, fuzzy
+msgid "error.health.candidateInvalid"
+msgstr "Plik zamienny nie przeszedł sprawdzeń albo jego analiza nie jest zakończona."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Confirm resetting the affected bookmarks and resume positions.
+#, fuzzy
+msgid "error.health.resetConfirmationRequired"
+msgstr "Potwierdź zresetowanie zakładek i pozycji wznowienia, których to dotyczy."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: The replacement destination already exists.
+#, fuzzy
+msgid "error.health.destinationExists"
+msgstr "Miejsce docelowe zamiennika już istnieje."
+
+#. A health action failed for a reason Maki does not name. The cause is in the server log.
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: The operation failed. Details are in the server log.
+#, fuzzy
+msgid "error.health.operationFailed"
+msgstr "Operacja nie powiodła się. Szczegóły są w dzienniku serwera."
 
 #. The health page's own checks. Admin-only. Each ran on a timer with nobody attached, so nothing
 #. here was worded at the moment it was found: the row stores a key and its values and is rendered
@@ -3679,6 +4693,18 @@ msgstr "Wymagane jest jawne potwierdzenie."
 #, fuzzy
 msgid "health.check.libraryUnavailable"
 msgstr "Kontrole stanu biblioteki nie mogły zostać ukończone"
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {source} is installed in Suwayomi again.
+#, fuzzy
+msgid "health.check.suwayomiSourceInstalled"
+msgstr "Ponownie zainstalowano {source} w Suwayomi."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {source} is no longer installed in Suwayomi. Reinstall its extension there, or remove the source in Maki's Suwayomi settings.
+#, fuzzy
+msgid "health.check.suwayomiSourceMissing"
+msgstr "Nie ma już {source} wśród zainstalowanych w Suwayomi. Zainstaluj tam ponownie jego rozszerzenie albo usuń to źródło z ustawień Suwayomi w Maki."
 
 #. {path} is a directory on disk and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
@@ -3725,6 +4751,12 @@ msgstr "Ostatnia kopia zapasowa: {at}"
 msgid "health.check.backupUnreadable"
 msgstr "Nie można sprawdzić katalogu kopii zapasowych"
 
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Scheduled backups are off, so Maki will not warn about an old backup
+#, fuzzy
+msgid "health.check.backupScheduleOff"
+msgstr "Zaplanowane kopie są wyłączone, więc Maki nie ostrzeże o starej kopii"
+
 #. {root} is a root folder's id, a number the admin sees elsewhere in the UI.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Root {root} repair staging: {mib} MiB
@@ -3760,18 +4792,20 @@ msgstr "{count, plural, one {# plik rozdziału czeka na pomiar} few {# pliki roz
 msgid "health.check.upgradeTrash"
 msgstr "Kosz ulepszeń: {files, plural, one {# zastąpiony plik} few {# zastąpione pliki} many {# zastąpionych plików} other {# zastąpionego pliku}}, {gib} GiB, przechowywane {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}"
 
+#. Files users deleted, kept for {days} days so they can be restored from Settings. A warning only
+#. when a library drive is already low on space.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Recycle bin: {files, plural, one {# deleted file} other {# deleted files}}, {gib} GiB, kept {days, plural, one {# day} other {# days}}
+#, fuzzy
+msgid "health.check.recycleBin"
+msgstr "Kosz: {files, plural, one {# usunięty plik} few {# usunięte pliki} many {# usuniętych plików} other {# usuniętego pliku}}, {gib} GiB, przechowywane przez {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}"
+
 #. {source} is a site name (MangaDex, Weeb Central) and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {source} is cooling down
 #, fuzzy
 msgid "health.check.coolingDown"
 msgstr "{source} ma aktywny cooldown"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {source} has no cooldown
-#, fuzzy
-msgid "health.check.noCooldown"
-msgstr "{source} nie ma aktywnego cooldownu"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Background scheduler is running
@@ -3786,12 +4820,6 @@ msgid "health.check.schedulerPaused"
 msgstr "Harmonogram w tle jest wstrzymany"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {count, plural, one {# database migration pending} other {# database migrations pending}}
-#, fuzzy
-msgid "health.check.migrationsPending"
-msgstr "{count, plural, one {# oczekująca migracja bazy danych} few {# oczekujące migracje bazy danych} many {# oczekujących migracji bazy danych} other {# oczekującej migracji bazy danych}}"
-
-#: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database is reachable and up to date
 #, fuzzy
 msgid "health.check.databaseCurrent"
@@ -3799,9 +4827,14 @@ msgstr "Baza danych jest dostępna i aktualna"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: A previous startup migration failed. Check the startup logs.
-#, fuzzy
 msgid "health.check.migrationFailed"
 msgstr "Poprzednia migracja przy uruchomieniu nie powiodła się. Sprawdź logi uruchomienia."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: A previous startup migration failed ({error}). Check the startup logs.
+#, fuzzy
+msgid "health.check.migrationFailedDetail"
+msgstr "Poprzednia migracja przy starcie nie powiodła się ({error}). Sprawdź dzienniki startu."
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Database or scheduler diagnostics could not complete
@@ -3833,6 +4866,20 @@ msgstr "{service}: połączono"
 #, fuzzy
 msgid "health.check.connectionFailed"
 msgstr "{service}: połączenie nie powiodło się"
+
+#. {name} is the label the admin gave the connection, never translated.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Notification connection {name} failed to deliver {count} times in a row
+#, fuzzy
+msgid "health.check.notificationFailing"
+msgstr "Połączenie powiadomień {name} nie dostarczyło wiadomości {count} razy z rzędu"
+
+#. {name} is the label the admin gave the connection, never translated.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Notification connection {name} is delivering again
+#, fuzzy
+msgid "health.check.notificationDelivering"
+msgstr "Połączenie powiadomień {name} znów dostarcza wiadomości"
 
 #. {job} is the scheduler's own name for the job and is not translated.
 #: src/Maki.Api/Services/HealthJobListener.cs
@@ -4279,22 +5326,20 @@ msgstr "Spycha w dół tytuły zbliżone do tego"
 msgid "feedback.taste.unchanged"
 msgstr "Gust bez zmian"
 
-#. {list} is titles joined in English regardless of locale (see RecentActivityRailService.Because);
-#. a title is a proper noun a translation would not touch, and there is no list-format primitive in
-#. this catalogue's ICU subset. Same key used for the single-seed grouped rail, where {list} is one
-#. title.
+#. The server sends the literal text {list} and the client replaces it with the titles joined by
+#. Intl.ListFormat in the reader's language, so keep {list} in the translation.
 #: src/Maki.Api/Services/RecentActivityRailService.cs
 #. English: Because you read {list}
 #, fuzzy
 msgid "discover.rail.becauseYouRead"
 msgstr "Na podstawie tego, że czytasz {list}"
 
-#. {list} as above; {count} is how many further seeds were not named.
-#: src/Maki.Api/Services/RecentActivityRailService.cs
-#. English: Because you read {list} and {count, plural, one {# more} other {# more}}
+#. One entry of the title list, shown last when more series seeded the rail than were named.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: {count, plural, one {# more} other {# more}}
 #, fuzzy
-msgid "discover.rail.becauseYouReadMore"
-msgstr "Na podstawie tego, że czytasz {list} i {count, plural, one {jeszcze # serię} few {jeszcze # serie} many {jeszcze # serii} other {jeszcze # serii}}"
+msgid "discover.rail.moreSeeds"
+msgstr "{count, plural, one {# więcej} few {# więcej} many {# więcej} other {# więcej}}"
 
 #: src/Maki.Api/Services/DiscoverService.cs
 #. English: Newly released
@@ -4352,7 +5397,8 @@ msgstr "Na podstawie Twojej ostatniej aktywności."
 msgid "discover.rail.sideInterest"
 msgstr "Inna część Twojej biblioteki: {name}"
 
-#. {titles} is up to two series titles joined in English, same trade as {list} above. {count} is
+#. The server sends the literal text {titles} and the client replaces it with up to two series titles
+#. joined by Intl.ListFormat, so keep {titles} in the translation. {count} is
 #. how many titles in total share the interest.
 #: src/Maki.Api/Services/SideInterestRailService.cs
 #. English: A smaller thread shared by {count, plural, one {# title} other {# titles}}, including {titles}
@@ -4435,6 +5481,13 @@ msgstr "Na razie żaden motyw nie powtarza się wystarczająco często w Twoich 
 msgid "discover.tasteInsights.notEnoughSeries"
 msgstr "Wymaga co najmniej {min} serii znanych katalogowi. Ta sekcja zawiera na razie {count}."
 
+#. Shared by the five artifact installers when a second install starts while one is running.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An install of this download is already running.
+#, fuzzy
+msgid "install.alreadyRunning"
+msgstr "Instalacja tego pobrania jest już w toku."
+
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: Already using this model.
 #, fuzzy
@@ -4464,6 +5517,12 @@ msgstr "Trwa indeksowanie. Spróbuj ponownie po jego zakończeniu."
 #, fuzzy
 msgid "install.embeddingModel.notAvailable"
 msgstr "Model osadzeń jest niedostępny."
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: The model switch failed. Check the server log for details.
+#, fuzzy
+msgid "install.embeddingModel.switchFailed"
+msgstr "Zmiana modelu nie powiodła się. Szczegóły są w dzienniku serwera."
 
 #: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
 #. English: A model switch is already in progress.

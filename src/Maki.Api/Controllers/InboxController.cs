@@ -101,6 +101,7 @@ public class InboxController(
 
         // One extra row, only to learn whether another page exists — cheaper than a second count.
         var rows = await query
+            .AsNoTracking()
             .OrderByDescending(n => n.Id)
             .Take(take + 1)
             .ToListAsync(ct);
@@ -134,6 +135,7 @@ public class InboxController(
         }
 
         var rows = await db.Series
+            .AsNoTracking()
             .Where(s => ids.Contains(s.Id))
             .ToListAsync(ct);
 

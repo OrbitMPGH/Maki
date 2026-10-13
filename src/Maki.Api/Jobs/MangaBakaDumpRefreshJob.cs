@@ -1,3 +1,4 @@
+using Maki.Api.Services;
 using Maki.Api.Hubs;
 using Maki.Metadata.MangaBaka;
 using Quartz;
@@ -38,7 +39,11 @@ public class MangaBakaDumpRefreshJob(
             // that is already on disk: the browse indexes did not exist before this release, and
             // RefreshAsync short-circuits on an unchanged SHA1, so an existing install would
             // otherwise keep full-scanning until MangaBaka published a new dump. No-ops once built.
-            await dumpService.EnsureBrowseIndexesAsync(context.CancellationToken);
+            var backfilled = await dumpService.EnsureBrowseIndexesAsync(context.CancellationToken);
+            if (installed || backfilled)
+            {
+                build.MarkBuilt();
+            }
 
             if (installed)
             {
@@ -57,6 +62,7 @@ public class MangaBakaDumpRefreshJob(
         {
             // Health check surfaces prolonged staleness; the next run retries.
             logger.LogWarning(ex, "MangaBaka dump refresh failed");
+            context.ReportFailure(ex);
         }
     }
 

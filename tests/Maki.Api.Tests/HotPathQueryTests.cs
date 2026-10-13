@@ -25,6 +25,8 @@ public sealed class HotPathQueryTests : IDisposable
         db: db,
         queue: null!,
         batches: null!,
+        pauses: null!,
+        sourceRegistry: null!,
         importer: null!,
         events: null!,
         schedulerFactory: null!,

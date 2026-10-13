@@ -129,6 +129,7 @@ export function useDismissAnimeResume(seriesId: number) {
       void queryClient.invalidateQueries({ queryKey: ['anime-resume'] })
       void queryClient.invalidateQueries({ queryKey: ['home', 'from-anime'] })
     },
+    meta: { silent: true },
   })
 }
 
@@ -146,6 +147,16 @@ export function useHomeFromAnime(enabled = true) {
   return useQuery({
     queryKey: ['home', 'from-anime'],
     queryFn: () => api<HomeAnimeResumePage>('/home/from-anime'),
+    enabled,
+    staleTime: 60_000,
+  })
+}
+
+/** The whole list behind the rail's "Show more", up to the server's own ceiling of 500. */
+export function useHomeFromAnimeAll(enabled: boolean) {
+  return useQuery({
+    queryKey: ['home', 'from-anime', 'all'],
+    queryFn: () => api<HomeAnimeResumePage>('/home/from-anime?limit=500'),
     enabled,
     staleTime: 60_000,
   })

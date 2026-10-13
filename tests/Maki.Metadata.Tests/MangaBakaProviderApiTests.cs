@@ -73,6 +73,18 @@ public class MangaBakaProviderApiTests
     }
 
     [Fact]
+    public async Task Explicit_null_lists_map_as_empty_rather_than_throwing()
+    {
+        var handler = new Handler().On("/v1/series/search",
+            """{"status":200,"data":[{"id":42,"title":"Frieren","state":"active","content_rating":"safe","authors":null,"artists":null,"genres":null,"tags":null}]}""");
+        var detail = new Handler().On("/v1/series/42",
+            """{"status":200,"data":{"id":42,"title":"Frieren","state":"active","authors":null,"artists":null,"genres":null,"tags":null}}""");
+
+        Assert.Single(await Provider(handler).SearchAsync("frieren", "pornographic"));
+        Assert.NotNull(await Provider(detail).GetAsync("42"));
+    }
+
+    [Fact]
     public async Task A_string_payload_maps_through_the_api_path()
     {
         var handler = new Handler().On("/v1/series/42",

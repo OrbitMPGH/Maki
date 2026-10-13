@@ -109,6 +109,35 @@ public class ScrobbleServiceTests
         Assert.DoesNotContain(tracker.Pushes, p => p.RemoteId == "200");
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task NativePassAsync_KeepsTheStatusOfARepeatingEntryOnly(bool repeating)
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("rereader", MakiPermission.None, allRootFolders: true);
+        var series = db.SeedSeries("Rereading", configure: s => s.MangaBakaId = 100);
+        using (var seed = db.NewContext())
+        {
+            seed.ReadingStates.Add(new ReadingState
+            {
+                UserId = user, SeriesId = series, Title = "Rereading",
+                MaxChapter = 5, LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+            });
+            seed.SaveChanges();
+        }
+
+        var tracker = new FakeScrobbleTracker
+        {
+            Entry = new RemoteEntry(ProgressChapter: 2, Status: ScrobbleStatus.Reading, Repeating: repeating),
+        };
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Equal([repeating], tracker.KeptStatus);
+    }
+
     /// <summary>
     /// Plan-to-read listing (no <see cref="ReadingState"/> at all yet) must respect root-folder grants
     /// too: a series in a folder the syncing user cannot see must never be listed on their tracker.
@@ -472,7 +501,7 @@ public class ScrobbleServiceTests
 
         public Task UpdateAsync(
             int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-            CancellationToken ct = default) => Task.CompletedTask;
+            CancellationToken ct = default, bool keepStatus = false) => Task.CompletedTask;
 
         public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
             Task.CompletedTask;
@@ -487,6 +516,7 @@ public class ScrobbleServiceTests
     private sealed class FakeScrobbleTracker : IScrobbleTracker
     {
         public List<(string RemoteId, int Chapter, int Volume, ScrobbleStatus Status)> Pushes { get; } = [];
+        public List<bool> KeptStatus { get; } = [];
         public RemoteEntry Entry { get; init; } = new();
 
         public string Name => "mangabaka";
@@ -503,9 +533,10 @@ public class ScrobbleServiceTests
 
         public Task UpdateAsync(
             int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-            CancellationToken ct = default)
+            CancellationToken ct = default, bool keepStatus = false)
         {
             Pushes.Add((remoteId, chapter, volume, status));
+            KeptStatus.Add(keepStatus);
             return Task.CompletedTask;
         }
 

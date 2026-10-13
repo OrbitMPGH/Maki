@@ -22,15 +22,6 @@ public static class MakiLogging
         "[{Timestamp:HH:mm:ss} {Level:u3}] {Component}: {Message:lj}{NewLine}{Exception}";
 
     /// <summary>
-    /// Brings the logger up on defaults, before <c>config.json</c> can be read.
-    /// <para>
-    /// A restore is applied ahead of anything reading config (see <see cref="RestoreBootstrap"/>),
-    /// and it can replace config.json itself, so the configured level is not knowable yet. Rather
-    /// than let that stretch of startup write to the console by hand and vanish from the file, it
-    /// runs against this logger and <see cref="Configure"/> rebuilds the pipeline immediately after.
-    /// </para>
-    /// </summary>
-    /// <summary>
     /// The logger <see cref="Bootstrap"/> created, held so <see cref="Configure"/> can dispose that
     /// one specifically rather than calling <c>Log.CloseAndFlush</c>. The static <c>Log.Logger</c>
     /// is process-wide, and the host is booted more than once per process under
@@ -39,6 +30,15 @@ public static class MakiLogging
     /// </summary>
     private static Logger? bootstrapLogger;
 
+    /// <summary>
+    /// Brings the logger up on defaults, before <c>config.json</c> can be read.
+    /// <para>
+    /// A restore is applied ahead of anything reading config (see <see cref="RestoreBootstrap"/>),
+    /// and it can replace config.json itself, so the configured level is not knowable yet. Rather
+    /// than let that stretch of startup write to the console by hand and vanish from the file, it
+    /// runs against this logger and <see cref="Configure"/> rebuilds the pipeline immediately after.
+    /// </para>
+    /// </summary>
     public static void Bootstrap(AppPaths paths)
     {
         var logger = Build(paths, LoggingOptions.Defaults);

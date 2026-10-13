@@ -2,6 +2,7 @@ using System.Text.Json;
 using Maki.Api.Dtos;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +18,8 @@ namespace Maki.Api.Services;
 /// </para>
 /// </summary>
 public class ActivityStatsService(
-    MakiDbContext db, IAppSettings appSettings, IUserSettingsStore userSettings, TimeProvider clock)
+    MakiDbContext db, IAppSettings appSettings, IUserSettingsStore userSettings, TimeProvider clock,
+    ICurrentUser currentUser)
 {
     /// <summary>A series counts as dropped when its reading mark stalled this long.</summary>
     internal static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
@@ -62,6 +64,20 @@ public class ActivityStatsService(
     public async Task<List<int>> YearsAsync(int userId, int utcOffsetMinutes, CancellationToken ct)
     {
         var zone = await ResolveZoneAsync(userId, utcOffsetMinutes, ct);
+        if (!currentUser.AllRootFolders)
+        {
+            var all = await EventsFor(userId).ToListAsync(ct);
+            var ids = all.Where(e => e.SeriesId != null).Select(e => e.SeriesId!.Value).Distinct().ToList();
+            var visibleIds = (await db.Series.AsNoTracking().Where(s => ids.Contains(s.Id)).Select(s => s.Id)
+                .ToListAsync(ct)).ToHashSet();
+            var visible = await HideUnseenFoldersAsync(all, visibleIds, ct);
+            return visible
+                .Select(e => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(e.Timestamp, DateTimeKind.Utc), zone).Year)
+                .Distinct()
+                .OrderByDescending(y => y)
+                .ToList();
+        }
+
         var utcYears = await EventsFor(userId).Select(e => e.Timestamp.Year).Distinct().ToListAsync(ct);
 
         var years = new HashSet<int>();
@@ -143,6 +159,8 @@ public class ActivityStatsService(
             .Where(s => seriesIds.Contains(s.Id))
             .Select(s => new { s.Id, s.Genres, s.Tags, s.CoverPath, s.LastMetadataRefresh })
             .ToDictionaryAsync(s => s.Id, ct);
+
+        events = await HideUnseenFoldersAsync(events, seriesMeta.Keys.ToHashSet(), ct);
 
         // Null for a removed series, which keeps its denormalized title but not its cover file.
         string? Cover(int? seriesId) =>
@@ -240,23 +258,6 @@ public class ActivityStatsService(
         // snapshot payload.
         var genreWeights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var tagWeights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        RemovedSeriesSnapshot? Snapshot(string? payloadJson)
-        {
-            if (payloadJson is null)
-            {
-                return null;
-            }
-
-            try
-            {
-                return JsonSerializer.Deserialize<RemovedSeriesSnapshot>(payloadJson);
-            }
-            catch (JsonException)
-            {
-                return null;
-            }
-        }
-
         void AddWeights(int? seriesId, string? payloadJson, int weight)
         {
             List<string>? genres = null, tags = null;
@@ -266,7 +267,7 @@ public class ActivityStatsService(
             }
             else if (payloadJson is not null)
             {
-                var snap = Snapshot(payloadJson);
+                var snap = ParseSnapshot(payloadJson);
                 (genres, tags) = (snap?.Genres, snap?.Tags);
             }
 
@@ -301,7 +302,7 @@ public class ActivityStatsService(
             .OrderByDescending(e => e.Timestamp)
             .Select(e =>
             {
-                var snapshot = Snapshot(e.PayloadJson);
+                var snapshot = ParseSnapshot(e.PayloadJson);
                 var providerId = snapshot?.ProviderId
                     ?? (e.SeriesKey?.StartsWith("mb:", StringComparison.Ordinal) == true
                         ? e.SeriesKey[3..]
@@ -320,6 +321,17 @@ public class ActivityStatsService(
                         r.LastProgressAt < staleBefore &&
                         r.LastProgressAt >= utcStart && r.LastProgressAt < utcEnd)
             .ToListAsync(ct);
+
+        var droppedSeriesIds = droppedRows.Where(r => r.SeriesId != null).Select(r => r.SeriesId!.Value).Distinct().ToList();
+        if (droppedSeriesIds.Count > 0)
+        {
+            var shown = (await db.Series.AsNoTracking()
+                    .Where(s => droppedSeriesIds.Contains(s.Id) && s.Incognito != IncognitoMode.Full)
+                    .Select(s => s.Id)
+                    .ToListAsync(ct))
+                .ToHashSet();
+            droppedRows = droppedRows.Where(r => r.SeriesId is not int sid || shown.Contains(sid)).ToList();
+        }
 
         // These come off ReadingState, not the event log, so their series are not necessarily in
         // seriesMeta — a series can stall in a window where it produced no events at all.
@@ -412,6 +424,7 @@ public class ActivityStatsService(
             .Sum(p => p.Completed ? p.PageCount : Math.Min(p.PageIndex + 1, p.PageCount));
 
         var firstReads = await own
+            .Where(p => !p.BulkMarked)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, First = g.Min(p => p.StartedAt) })
             .ToListAsync(ct);
@@ -421,9 +434,87 @@ public class ActivityStatsService(
         return (pages, started);
     }
 
+    private static RemovedSeriesSnapshot? ParseSnapshot(string? payloadJson)
+    {
+        if (payloadJson is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<RemovedSeriesSnapshot>(payloadJson);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Library events carry no user, so the query would otherwise hand every one of them to a caller
+    /// restricted to some root folders. A live series is kept only when the caller can see it; a
+    /// removed one has lost its row, so its root folder comes off the removal snapshot, found by the
+    /// durable series key. A legacy snapshot with no folder recorded stays visible, as in
+    /// <see cref="StatsInsightsService"/>.
+    /// </summary>
+    private async Task<List<StatsEvent>> HideUnseenFoldersAsync(
+        List<StatsEvent> events, HashSet<int> visibleSeriesIds, CancellationToken ct)
+    {
+        if (currentUser.AllRootFolders)
+        {
+            return events;
+        }
+
+        var orphanKeys = events
+            .Where(e => e.UserId == null && e.SeriesId == null && e.SeriesKey != null)
+            .Select(e => e.SeriesKey!)
+            .Distinct()
+            .ToList();
+        var folderByKey = new Dictionary<string, int>();
+        if (orphanKeys.Count > 0)
+        {
+            var removals = await db.StatsEvents.AsNoTracking().IgnoreQueryFilters()
+                .Where(e => e.Type == StatsEventType.SeriesRemoved && e.SeriesKey != null &&
+                            orphanKeys.Contains(e.SeriesKey) && e.PayloadJson != null)
+                .OrderBy(e => e.Timestamp)
+                .Select(e => new { e.SeriesKey, e.PayloadJson })
+                .ToListAsync(ct);
+            foreach (var r in removals)
+            {
+                if (ParseSnapshot(r.PayloadJson)?.RootFolderId is int folder)
+                {
+                    folderByKey[r.SeriesKey!] = folder;
+                }
+            }
+        }
+
+        return events.Where(e =>
+        {
+            if (e.UserId != null)
+            {
+                return true;
+            }
+
+            if (e.SeriesId is int id)
+            {
+                return visibleSeriesIds.Contains(id);
+            }
+
+            var folder = e.Type == StatsEventType.SeriesRemoved ? ParseSnapshot(e.PayloadJson)?.RootFolderId : null;
+            if (folder is null && e.SeriesKey != null && folderByKey.TryGetValue(e.SeriesKey, out var byKey))
+            {
+                folder = byKey;
+            }
+
+            return folder is not int f || currentUser.RootFolderIds.Contains(f);
+        }).ToList();
+    }
+
     private sealed record RemovedSeriesSnapshot(
         [property: System.Text.Json.Serialization.JsonPropertyName("genres")] List<string>? Genres,
         [property: System.Text.Json.Serialization.JsonPropertyName("tags")] List<string>? Tags,
         [property: System.Text.Json.Serialization.JsonPropertyName("providerId")] string? ProviderId,
-        [property: System.Text.Json.Serialization.JsonPropertyName("coverUrl")] string? CoverUrl);
+        [property: System.Text.Json.Serialization.JsonPropertyName("coverUrl")] string? CoverUrl,
+        [property: System.Text.Json.Serialization.JsonPropertyName("rootFolderId")] int? RootFolderId = null);
 }

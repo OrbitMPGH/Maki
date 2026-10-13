@@ -50,33 +50,33 @@ public class RefreshMonitoredSeriesJob(
         }
 
         var done = 0;
-        foreach (var seriesId in seriesIds.OrderBy(_ => Random.Shared.Next()))
+        try
         {
-            if (ct.IsCancellationRequested)
-            {
-                logger.LogInformation("Refresh cancelled after {Done} of {Total} series", done, seriesIds.Count);
-                return;
-            }
-
-            try
-            {
-                await RefreshSeriesAsync(seriesId, ct);
-                done++;
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                // Shutdown, not a broken series. The catch below would read it as a per-series
-                // failure and move straight on to the next one, which is why a Ctrl+C mid-refresh
-                // used to keep walking the entire library instead of ending the pass.
-                logger.LogInformation("Refresh cancelled after {Done} of {Total} series", done, seriesIds.Count);
-                return;
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Refresh failed for series {SeriesId}", seriesId);
-            }
+            // Each source has its own rate limiter, so a few series at once only overlap their waits.
+            await Parallel.ForEachAsync(
+                seriesIds.OrderBy(_ => Random.Shared.Next()),
+                new ParallelOptions { MaxDegreeOfParallelism = MaxParallelSeries, CancellationToken = ct },
+                async (seriesId, token) =>
+                {
+                    try
+                    {
+                        await RefreshSeriesAsync(seriesId, token);
+                        Interlocked.Increment(ref done);
+                    }
+                    catch (Exception ex) when (!token.IsCancellationRequested)
+                    {
+                        logger.LogWarning(ex, "Refresh failed for series {SeriesId}", seriesId);
+                    }
+                });
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Shutdown, not a broken series: end the pass rather than walking the rest of the library.
+            logger.LogInformation("Refresh cancelled after {Done} of {Total} series", done, seriesIds.Count);
         }
     }
+
+    private const int MaxParallelSeries = 3;
 
     /// <summary>
     /// One series, in its own DI scope. The scope is per-series and not per-job on purpose: a single
@@ -89,11 +89,19 @@ public class RefreshMonitoredSeriesJob(
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        // Checked here as well as in RefreshableSeriesIdsAsync, since health recovery calls this
+        // directly: until a library import links its files, every chapter it has reads as missing.
+        if (await db.Series.AnyAsync(s => s.Id == seriesId && s.PendingImportLink != PendingImportLink.None, ct))
+        {
+            return;
+        }
+
         var chapterSync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
 
         var newChapterIds = await chapterSync.SyncSeriesAsync(seriesId, ct);
         var wanted = await db.Chapters
-            .Where(c => newChapterIds.Contains(c.Id) && c.Wanted && c.ChapterFileId == null)
+            .Where(c => newChapterIds.Contains(c.Id) && c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null)
             .Select(c => c.Id)
             .ToListAsync(ct);
 
@@ -119,23 +127,24 @@ public class RefreshMonitoredSeriesJob(
         var held = threshold > 0 && wanted.Count > threshold;
 
         var queuedItemIds = new List<int>();
+        string? enqueueError = null;
         if (!smart && !held)
         {
             var result = await queue.EnqueueChaptersAsync(wanted, DownloadOrigin.MonitorRefresh, null, ct);
+            queuedItemIds.AddRange(result.Queued.Select(item => item.Id));
             if (result.Error is not null)
             {
-                if (result.Queued.Count > 0)
+                if (queuedItemIds.Count == 0)
                 {
-                    var queuedTitle = series?.Title ?? localizer.GetFor(await locales.DefaultAsync(), "inbox.unknownSeries");
-                    await batches.QueuedAsync(seriesId, queuedTitle, result.Queued.Select(item => item.Id).ToList(),
-                        DownloadOrigin.MonitorRefresh);
+                    throw new InvalidOperationException(result.Error);
                 }
 
-                throw new InvalidOperationException(result.Error);
+                enqueueError = result.Error;
             }
-
-            queuedItemIds.AddRange(result.Queued.Select(item => item.Id));
         }
+
+        // A partial enqueue announces only what actually went into the queue.
+        var announced = enqueueError is null ? wanted.Count : queuedItemIds.Count;
 
         if (held)
         {
@@ -148,7 +157,7 @@ public class RefreshMonitoredSeriesJob(
             logger.LogInformation(
                 smart ? "Series {SeriesId}: found {Count} new chapter(s), left to Smart Download"
                       : "Series {SeriesId}: queued {Count} new chapter(s)",
-                seriesId, wanted.Count);
+                seriesId, announced);
         }
 
         var locale = await locales.DefaultAsync();
@@ -162,7 +171,7 @@ public class RefreshMonitoredSeriesJob(
         notifications.Dispatch(NotificationEventType.NewChapterAvailable, new NotificationMessage(
             NotificationEventType.NewChapterAvailable,
             Title: localizer.GetFor(locale, "notify.chapters.available.title"),
-            Body: localizer.GetFor(locale, bodyKey, new { series = title, count = wanted.Count }),
+            Body: localizer.GetFor(locale, bodyKey, new { series = title, count = announced }),
             SeriesTitle: title,
             SeriesId: seriesId));
 
@@ -172,7 +181,7 @@ public class RefreshMonitoredSeriesJob(
             // whose ui.titlelanguage is Japanese reads the Japanese title in their bell.
             inbox.Raise(InboxEventType.NewChapterAvailable, new InboxMessage(
                     Key: held ? "inbox.chapters.held" : smart ? "inbox.chapters.available" : "inbox.chapters.queued",
-                    Params: InboxMessage.Args(new { count = wanted.Count }),
+                    Params: InboxMessage.Args(new { count = announced }),
                     SeriesId: seriesId,
                     Url: $"/series/{seriesId}"),
                 InboxAudience.SeriesTrackers(seriesId, series.RootFolderId));
@@ -183,6 +192,11 @@ public class RefreshMonitoredSeriesJob(
             // The message above already announced the count, so the batch only owes a
             // summary once every one of those chapters has finished (or failed).
             await batches.QueuedAsync(seriesId, title, queuedItemIds, DownloadOrigin.MonitorRefresh, announce: false);
+        }
+
+        if (enqueueError is not null)
+        {
+            throw new InvalidOperationException(enqueueError);
         }
     }
 
@@ -202,12 +216,14 @@ public class RefreshMonitoredSeriesJob(
     /// list specials and one-shots MangaBaka doesn't count, so a count comparison reads as "ahead"
     /// (244 vs 240) on a series that is actually exactly in step.
     /// <paramref name="disabledSources"/> are the globally switched-off sources; their mappings
-    /// don't count as enabled, so a series left with none is not refreshed.
+    /// don't count as enabled, so a series left with none is not refreshed. A library import still
+    /// owing its link stage waits too: until it links, every chapter it already has reads as missing.
     /// </summary>
     internal static Task<List<int>> RefreshableSeriesIdsAsync(
         MakiDbContext db, List<string> disabledSources, CancellationToken ct = default) =>
         db.Series
             .Where(s => s.SourceMappings.Any(m => m.Enabled && !disabledSources.Contains(m.SourceName)))
+            .Where(s => s.PendingImportLink == PendingImportLink.None)
             .Where(s => s.Status != SeriesStatus.Completed
                         || s.TotalChapters == null
                         || !db.Chapters.Where(c => c.SeriesId == s.Id).Any(c => c.Number >= s.TotalChapters))

@@ -239,6 +239,26 @@ public class CoReadInstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task ASecondInstall_WhileOneIsDownloading_IsTurnedAway()
+    {
+        // Both would write the same staging file; the loser's cleanup would unlink the winner's.
+        Publish(pairs: 2000);
+        var release = new TaskCompletionSource();
+        _handler.ArtifactStarted = new TaskCompletionSource();
+        _handler.ArtifactBlock = release.Task;
+        var installer = Installer();
+
+        var first = installer.InstallAsync(ct: CancellationToken.None);
+        await _handler.ArtifactStarted.Task;
+        var second = await installer.InstallAsync(force: true, ct: CancellationToken.None);
+        release.SetResult();
+
+        Assert.False(second.Installed);
+        Assert.Equal("install.alreadyRunning", second.Reason);
+        Assert.True((await first).Installed);
+    }
+
+    [Fact]
     public async Task Tolerates_AManifestWithAByteOrderMark()
     {
         Publish(pairs: 2000, withBom: true);
@@ -429,7 +449,11 @@ public class CoReadInstallerTests : IDisposable
 
         public HttpStatusCode ManifestStatus { get; set; } = HttpStatusCode.OK;
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        public TaskCompletionSource? ArtifactStarted { get; set; }
+
+        public Task? ArtifactBlock { get; set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var isManifest = request.RequestUri!.AbsoluteUri.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
@@ -437,18 +461,24 @@ public class CoReadInstallerTests : IDisposable
             {
                 if (ManifestStatus != HttpStatusCode.OK || Manifest is null)
                 {
-                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+                    return new HttpResponseMessage(HttpStatusCode.NotFound);
                 }
 
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                return new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new ByteArrayContent(Manifest),
-                });
+                };
             }
 
-            return Task.FromResult(Artifact is null
+            ArtifactStarted?.TrySetResult();
+            if (ArtifactBlock is not null)
+            {
+                await ArtifactBlock;
+            }
+
+            return Artifact is null
                 ? new HttpResponseMessage(HttpStatusCode.NotFound)
-                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Artifact) });
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Artifact) };
         }
     }
 }

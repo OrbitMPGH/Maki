@@ -13,6 +13,7 @@ import { useLocation, useNavigate, useNavigationType, type Location } from 'reac
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { pageTitle } from '../nav'
+import { SCROLL_PREFIX, onTabStateCleared } from './pageState'
 
 /**
  * One entry of the in-app history stack, mirroring what the browser is holding.
@@ -25,6 +26,12 @@ interface HistoryEntry {
   key: string
   pathname: string
   search: string
+  /**
+   * React Router's position of this entry in the browser's history (`history.state.idx`), or null
+   * when the browser did not report one. The stack can be a partial view of the real history (a
+   * reload starts it at one entry), so distances are measured in this, not in array positions.
+   */
+  idx: number | null
   /**
    * What a link pointing back here should read. Pages can override it, see {@link usePageLabel}.
    *
@@ -43,11 +50,17 @@ interface NavHistory {
 
 const NavHistoryContext = createContext<NavHistory>({ entries: [], setLabel: () => {} })
 
+function historyIndex(): number | null {
+  const idx = (window.history.state as { idx?: unknown } | null)?.idx
+  return typeof idx === 'number' ? idx : null
+}
+
 function entryFor(location: Location): HistoryEntry {
   return {
     key: location.key,
     pathname: location.pathname,
     search: location.search,
+    idx: historyIndex(),
     // `pageTitle` answers null for anything it does not recognise. Those pages either register a
     // real label of their own or get the generic word.
     label: pageTitle(location.pathname) ?? msg`Back`,
@@ -77,6 +90,15 @@ export function NavHistoryProvider({ children }: { children: ReactNode }) {
       const seen = prev.findIndex((e) => e.key === location.key)
       if (seen !== -1) return prev.slice(0, seen + 1) // back, by however many entries
 
+      // An unseen POP behind the top is a Back past the start of what this stack knows (a reload
+      // began it at one entry): the older entries are not known and the old top is now ahead of
+      // us, so the stack restarts here instead of pretending the old top is the origin.
+      const idx = historyIndex()
+      const topIdx = prev[prev.length - 1]?.idx ?? null
+      if (navigationType === 'POP' && idx !== null && topIdx !== null && idx < topIdx) {
+        return [entryFor(location)]
+      }
+
       // REPLACE overwrites the entry it landed on rather than adding one, or this stack would
       // outgrow the browser's and every distance computed from it would be too large. A forward
       // POP has no entry to find and is treated as a push, which is what it is as far as depth
@@ -85,6 +107,16 @@ export function NavHistoryProvider({ children }: { children: ReactNode }) {
       return [...prev, entryFor(location)]
     })
   }, [location, navigationType])
+
+  // Labels carry series titles, so the stack is the previous account's data too. It restarts at the
+  // current entry whenever the tab's remembered state is cleared (an explicit sign-out, or a
+  // different person signing in), as it would after a reload.
+  const locationRef = useRef(location)
+  locationRef.current = location
+  useEffect(
+    () => onTabStateCleared(() => setEntries([entryFor(locationRef.current)])),
+    [],
+  )
 
   const setLabel = useCallback((key: string, label: string) => {
     setEntries((prev) => {
@@ -153,7 +185,10 @@ export function useBackTarget(fallback: { to: string; label: string | MessageDes
     for (let i = entries.length - 1; i >= 0; i--) {
       const { pathname } = entries[i]
       if (pathname !== location.pathname && !pathname.startsWith('/read/')) {
-        return { entry: entries[i], distance: entries.length - 1 - i }
+        const topIdx = entries[entries.length - 1].idx
+        const entryIdx = entries[i].idx
+        const distance = topIdx !== null && entryIdx !== null ? topIdx - entryIdx : entries.length - 1 - i
+        return { entry: entries[i], distance }
       }
     }
     return null
@@ -179,7 +214,6 @@ export function useBackTarget(fallback: { to: string; label: string | MessageDes
   }
 }
 
-const SCROLL_PREFIX = 'maki-scroll:'
 /**
  * How long to keep re-applying a restored offset. Async pages render short and grow, and the
  * document is not tall enough to hold the offset until its queries land: on a cold cache the rails

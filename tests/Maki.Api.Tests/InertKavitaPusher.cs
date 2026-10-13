@@ -29,10 +29,11 @@ internal sealed class InertKavitaPusher : KavitaProgressPusher
     {
     }
 
-    public static KavitaProgressPusher For(IServiceScopeFactory scopeFactory) =>
-        new InertKavitaPusher(scopeFactory, new SettingsService(scopeFactory));
+    public static InertKavitaPusher For(IServiceScopeFactory scopeFactory) =>
+        new(scopeFactory, new SettingsService(scopeFactory));
 
-    public override void QueuePush(int userId, int seriesId, decimal? chapterNumber)
-    {
-    }
+    public List<(int SeriesId, decimal? Number)> Pushes { get; } = [];
+
+    public override void QueuePush(int userId, int seriesId, decimal? chapterNumber) =>
+        Pushes.Add((seriesId, chapterNumber));
 }

@@ -47,6 +47,26 @@ public class ReleaseNameParserTests
     }
 
     [Theory]
+    [InlineData("Title Vol. 3 - 10 Years After.cbz", 3, null)]
+    [InlineData("Title v05 - 2nd Season.cbz", 5, null)]
+    [InlineData("Title v05-02.cbz", 5, null)]
+    [InlineData("Title v01 - v03 (Digital).cbz", 1, 3)]
+    [InlineData("Berserk Vol. 1 - 3.cbz", 1, 3)]
+    [InlineData("Berserk Vol. 1 - 41 (Digital).cbz", 1, 41)]
+    [InlineData("Berserk Vol. 1 - 41 Complete.cbz", 1, 41)]
+    [InlineData("One Piece Vol. 1 - 100 END (Digital).cbz", 1, 100)]
+    [InlineData("Berserk Vol. 1 - 41, Extras.cbz", 1, 41)]
+    [InlineData("Berserk Vol. 1  - 3.cbz", 1, 3)]
+    [InlineData("Berserk Vol. 12 - 2020 (Digital).cbz", 12, null)]
+    [InlineData("Berserk Vol. 1 - 900 (Digital).cbz", 1, null)]
+    public void A_volume_range_needs_a_bare_hyphen_or_a_marked_end(string file, int volume, int? volumeEnd)
+    {
+        var parsed = ReleaseNameParser.ParseFileName(file);
+        Assert.Equal(volume, parsed.Volume);
+        Assert.Equal(volumeEnd, parsed.VolumeEnd);
+    }
+
+    [Theory]
     [InlineData("Berserk Vol.3 Ch.24.cbz", 24, 3)]
     [InlineData("One Punch Man Ch.10.5.cbz", 10.5, null)]
     public void Parses_maki_own_names(string file, double number, int? volume)
@@ -214,5 +234,65 @@ public class ReleaseNameParserTests
         var parsed = ReleaseNameParser.ParseFileName("A Prince of a Friend Chapter 0000.cbz");
 
         Assert.Empty(parsed.Tags);
+    }
+
+    [Theory]
+    [InlineData("My_Series_Ch.001-Special")]
+    [InlineData("My.Series.Vol.3-Extras")]
+    [InlineData("My_Series_v01-Omake")]
+    [InlineData("My.Series.v01-bonus")]
+    public void A_title_word_after_a_hyphen_is_not_a_group(string name)
+    {
+        Assert.Empty(ReleaseNameParser.ExtractTags(name));
+    }
+
+    [Theory]
+    [InlineData("Series.Name.T29.Author.FR.[CBZ]-GROUP", "GROUP")]
+    [InlineData("Series.Name.T29.Author.FR-GROUP", "GROUP")]
+    [InlineData("One.Piece.v01-v10.Digital-GRP", "GRP")]
+    [InlineData("Series_Name_c001-LuCaZ", "LuCaZ")]
+    [InlineData("Series.Name.v01.FR.[CBZ]-GROUP [2024]", "GROUP")]
+    [InlineData("Series.Name.v01.digital-HR", "HR")]
+    [InlineData("Series.Name.v01.Retail.Comic-Group", "Group")]
+    [InlineData("Series.Name.v01.Scans-Group", "Group")]
+    [InlineData("Series.Name.v01.eBook-GROUP", "GROUP")]
+    public void A_scene_name_ends_in_its_group(string name, string group)
+    {
+        Assert.Equal(group, ReleaseNameParser.ExtractTags(name)[^1]);
+    }
+
+    [Fact]
+    public void A_lone_surrogate_does_not_throw()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("Title \uD800 v01.cbz");
+        Assert.Equal(1, parsed.Volume);
+    }
+
+    [Fact]
+    public void Non_ascii_digits_are_unrecognized_rather_than_throwing()
+    {
+        Assert.False(ReleaseNameParser.ParseFileName("Title c\u0661\u0662.cbz").IsRecognized);
+    }
+
+    [Fact]
+    public void Fullwidth_digits_fold_to_ascii()
+    {
+        Assert.Equal(101m, ReleaseNameParser.ParseFileName("Title \uFF11\uFF10\uFF11.cbz").Number);
+        Assert.Equal(1, ReleaseNameParser.ParseFileName("Title v\uFF11.zip").Volume);
+    }
+
+    [Fact]
+    public void An_overflowing_volume_falls_through_instead_of_throwing()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("Title v99999999999.cbz");
+        Assert.Null(parsed.Volume);
+    }
+
+    [Fact]
+    public void An_overflowing_volume_beside_a_chapter_is_dropped()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("Title v99999999999 c12.cbz");
+        Assert.Equal(12m, parsed.Number);
+        Assert.Null(parsed.Volume);
     }
 }

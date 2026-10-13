@@ -171,4 +171,15 @@ public class AtsumaruSourceTests
             pages.Pages.Select(p => p.Url));
         Assert.All(pages.Pages, p => Assert.Equal("https://atsu.moe/", p.Headers!["Referer"]));
     }
+
+    [Fact]
+    public async Task GetPages_throws_when_the_response_has_no_page_list()
+    {
+        var source = SourceFor(new() { ["read/chapter"] = "{}" });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(
+            new SourceChapter("atsumaru", "94bKW", "alpha1", "1", 1m, null, null, "en", null)));
+
+        Assert.Contains("alpha1", ex.Message);
+    }
 }

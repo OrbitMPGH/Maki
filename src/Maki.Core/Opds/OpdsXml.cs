@@ -3,6 +3,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using Maki.Core.Reading;
+using Maki.Core.Xml;
 
 namespace Maki.Core.Opds;
 
@@ -186,6 +187,7 @@ public static class OpdsXml
 
     private static string Serialize(XDocument document)
     {
+        XmlChars.Strip(document);
         var builder = new StringBuilder();
 
         // The declaration is written by hand. XmlWriter over a StringBuilder is a UTF-16 sink, so

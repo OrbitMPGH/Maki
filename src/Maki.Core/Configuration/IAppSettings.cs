@@ -63,8 +63,35 @@ public static class SettingKeys
     /// </summary>
     public const string KavitaUserId = "kavita.userid";
 
+    /// <summary>Suwayomi base URL including any <c>server.webUISubpath</c>. Unset means the integration is off.</summary>
+    public const string SuwayomiUrl = "suwayomi.url";
+    /// <summary><c>none</c>, <c>basic</c> or <c>uilogin</c>; see <c>SuwayomiAuthMode</c>.</summary>
+    public const string SuwayomiAuthMode = "suwayomi.authmode";
+    public const string SuwayomiUsername = "suwayomi.username";
+    public const string SuwayomiPassword = "suwayomi.password";
+    /// <summary>
+    /// JSON array of every source installed in Suwayomi at the last refresh (<c>SuwayomiStoredSource</c>).
+    /// A snapshot, so the source registry is the same at startup whether Suwayomi is reachable or not.
+    /// </summary>
+    public const string SuwayomiSources = "suwayomi.sources";
+
     /// <summary>"true" → new series default to MonitorNewItems.MainOnly (specials unmonitored).</summary>
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
+
+    /// <summary>
+    /// The <see cref="Entities.NewChapterMonitorMode"/> a series added without an explicit mode starts
+    /// with: All (unset), MainOnly or Smart. Read through <c>MonitorDefaults</c>.
+    /// </summary>
+    public const string MonitoringDefaultMode = "monitoring.defaultmode";
+
+    /// <summary>"true" deletes read chapter files for every series left on Default. Off unless set.</summary>
+    public const string ReadFileCleanupEnabled = "cleanup.readfiles.enabled";
+
+    /// <summary>Days after the last reader finished a chapter before its file goes. Default 7.</summary>
+    public const string ReadFileCleanupDays = "cleanup.readfiles.days";
+
+    /// <summary>"false" lets each reader's most recently finished chapter go too. Kept unless set.</summary>
+    public const string ReadFileCleanupKeepLast = "cleanup.readfiles.keeplast";
 
     /// <summary>
     /// More new wanted chapters than this in one monitored refresh of a series are held back instead
@@ -134,8 +161,15 @@ public static class SettingKeys
     public const string LibraryWriteCoverToFolder = "library.writecovertofolder";
 
     /// <summary>
-    /// Global built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
-    /// blob. A series may override the whole spec through <c>Series.ReaderPrefsJson</c>.
+    /// Comma-separated languages whose volume and chapter words the file name and release parsers
+    /// read besides English ("fr,de"), see <see cref="Parsing.NameParsingProfile"/>. Unset reads
+    /// English only, which is what every install parsed before the setting existed.
+    /// </summary>
+    public const string ParsingLanguages = "parsing.languages";
+
+    /// <summary>
+    /// The user's built-in-reader display defaults, as a <see cref="Reading.ReaderPrefsSpec"/> JSON
+    /// blob. A series may override the whole spec through <c>UserSeriesState.ReaderPrefsJson</c>.
     /// </summary>
     public const string ReaderPrefs = "reader.prefs";
 
@@ -331,6 +365,13 @@ public static class SettingKeys
     public const string DownloadItemTimeoutMinutes = "download.itemtimeoutminutes";
 
     /// <summary>
+    /// JSON for the scraper download pause: an optional global pause and a set of paused source names,
+    /// each with an optional resume time. Absent means nothing is paused. Owned by
+    /// <c>DownloadPauseService</c>.
+    /// </summary>
+    public const string DownloadPause = "download.pause";
+
+    /// <summary>
     /// "false" → import completed torrents by copying the CBZ files into the library. Default on:
     /// hardlink first, copy when the link can't be made (download folder and library on different
     /// volumes, or a filesystem without hardlink support), so the library and the still-seeding
@@ -375,6 +416,9 @@ public static class SettingKeys
 
     /// <summary>Days a replaced file stays in <c>.maki-trash</c>. Default 14; 0 purges on the next housekeeping run.</summary>
     public const string UpgradesTrashRetentionDays = "upgrades.trashRetentionDays";
+
+    /// <summary>Days a file the user deleted stays in the recycle bin (<c>.maki-trash/bin</c>). Default 14; 0 purges on the next housekeeping run.</summary>
+    public const string RecycleBinRetentionDays = "library.recyclebindays";
 
     /// <summary>"false" leaves incognito series out of the upgrade scan. Default on.</summary>
     public const string UpgradesScanIncognito = "upgrades.scanIncognito";
@@ -622,6 +666,12 @@ public static class SettingKeys
     /// </summary>
     public const string DiscoverFollowingWatermark = "discover.following.watermark";
 
+    /// <summary>
+    /// Instance: write time and length of the dump, vector database and taste file the search
+    /// indexes were last warmed from. A restart with these unchanged skips the warm.
+    /// </summary>
+    public const string DiscoverWarmedStamp = "discover.warmedstamp";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";
@@ -662,6 +712,9 @@ public static class SettingKeys
 
     /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
     public const string BackupRetention = "backup.retention";
+
+    /// <summary>"true" when Maki takes its own backup whenever the newest one is older than the health freshness window. Off by default.</summary>
+    public const string BackupScheduled = "backup.scheduled";
 
     /// <summary>The health page's scan options, as a serialized <c>HealthOptions</c>.</summary>
     public const string HealthOptions = "health.options";

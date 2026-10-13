@@ -28,6 +28,7 @@ public class AnimeSignalJob(AnimeSignalSyncService signals, ILogger<AnimeSignalJ
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Anime signal sync failed");
+            context.ReportFailure(ex);
         }
     }
 }

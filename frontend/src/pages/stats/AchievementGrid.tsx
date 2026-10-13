@@ -145,9 +145,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
   const { t } = useLingui()
   const earned = achievement.tier > 0
   const next = achievement.nextThreshold
-  const floor = achievement.tier > 0 ? achievement.tiers[achievement.tier - 1] : 0
-  const progress =
-    next === null ? 1 : Math.min(1, Math.max(0, (achievement.value - floor) / (next - floor)))
+  const progress = achievementFraction(achievement)
   const nextValue = next === null ? '' : formatValue(achievement, next)
 
   return (

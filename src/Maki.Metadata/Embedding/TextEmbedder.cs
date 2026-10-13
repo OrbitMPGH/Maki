@@ -44,7 +44,7 @@ public sealed class TextEmbedder(
     private readonly ReaderWriterLockSlim _sessionLock = new();
 
     private long _lastUsedTicks = DateTime.UtcNow.Ticks;
-    private InferenceSession? _session;
+    private volatile InferenceSession? _session;
     private Tokenizer? _tokenizer;
     private bool _usesTokenTypeIds;
 
@@ -102,9 +102,10 @@ public sealed class TextEmbedder(
             await modelStore.EnsureAsync(ct);
             _tokenizer = await CreateTokenizerAsync();
             using var sessionOptions = CreateSessionOptions(out var provider);
+            InferenceSession session;
             try
             {
-                _session = new InferenceSession(options.ModelPath, sessionOptions);
+                session = new InferenceSession(options.ModelPath, sessionOptions);
             }
             catch (OnnxRuntimeException ex) when (IsCorruptModel(ex) &&
                                                   !DeletedCorruptModels.ContainsKey(options.ModelPath))
@@ -124,8 +125,11 @@ public sealed class TextEmbedder(
             // Read the graph rather than assume it. token_type_ids is a BERT-family input that the
             // Gemma export simply does not declare, and ONNX Runtime rejects a run that feeds an
             // input the graph never asked for just as hard as one that omits a required input.
-            _usesTokenTypeIds = _session.InputMetadata.ContainsKey(TokenTypeIdsInput);
+            // Published last: EmbedBatch and EnsureReadyAsync treat a non-null session as ready
+            // without taking the init lock, so everything they depend on has to be set by then.
+            _usesTokenTypeIds = session.InputMetadata.ContainsKey(TokenTypeIdsInput);
             ActiveProvider = provider;
+            _session = session;
             Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
             logger.LogInformation(
                 "Text embedder ready ({Dim}-dim, model {Version}, {Precision} on {Provider})",
@@ -190,6 +194,7 @@ public sealed class TextEmbedder(
                 _session?.Dispose();
                 _session = null;
                 _tokenizer = null;
+                ActiveProvider = null;
                 Interlocked.Exchange(ref _failedUntilTicks, 0);
                 logger.LogInformation("Text embedder reset; will reload on next use");
             }
@@ -284,7 +289,7 @@ public sealed class TextEmbedder(
         provider = EmbeddingProvider.Cpu;
         if (options.Provider != EmbeddingProvider.Cuda)
         {
-            return new SessionOptions();
+            return CpuSessionOptions();
         }
 
         if (options.Precision == EmbeddingPrecision.Int8)
@@ -323,8 +328,34 @@ public sealed class TextEmbedder(
                 : "the GPU build is loaded but no CUDA device was reached. Check that CUDA 13.x and " +
                   "cuDNN 9.x are on PATH and that the driver sees the card.";
             logger.LogWarning(ex, "CUDA execution provider unavailable; falling back to CPU: {Cause}", cause);
-            return new SessionOptions();
+            return CpuSessionOptions();
         }
+    }
+
+    /// <summary>
+    /// ONNX Runtime's intra-op threads spin between work items by default, which on an always-on
+    /// NAS reads as CPU burned while an indexing pass waits on the dump between batches.
+    /// </summary>
+    private static SessionOptions CpuSessionOptions()
+    {
+        var sessionOptions = new SessionOptions();
+        sessionOptions.AddSessionConfigEntry("session.intra_op.allow_spinning", "0");
+        return sessionOptions;
+    }
+
+    /// <summary>
+    /// The CPU arena otherwise keeps the high-water mark of the largest batch it has run (a full
+    /// batch of 512-token passages) until the session is disposed. Shrinking after each batch run hands
+    /// that back between batches and costs a fresh allocation per batch. A single query embed is
+    /// tiny and frequent, so it skips the shrink.
+    /// </summary>
+    private static readonly RunOptions CpuRunOptions = CreateCpuRunOptions();
+
+    private static RunOptions CreateCpuRunOptions()
+    {
+        var runOptions = new RunOptions();
+        runOptions.AddRunConfigEntry("memory.enable_memory_arena_shrinkage", "cpu:0");
+        return runOptions;
     }
 
     /// <summary>
@@ -397,10 +428,13 @@ public sealed class TextEmbedder(
         return buffer;
     }
 
-    public float[] Embed(string text) => EmbedBatch([text])[0];
+    /// <summary>Embeds one text, typically a search query. Leaves the CPU arena as it is rather than shrinking it.</summary>
+    public float[] Embed(string text) => EmbedBatch([text], shrinkArena: false)[0];
 
     /// <summary>Embeds a batch in one forward pass; sequences are padded to the batch's longest.</summary>
-    public float[][] EmbedBatch(IReadOnlyList<string> texts)
+    public float[][] EmbedBatch(IReadOnlyList<string> texts) => EmbedBatch(texts, shrinkArena: true);
+
+    private float[][] EmbedBatch(IReadOnlyList<string> texts, bool shrinkArena)
     {
         // The read lock is what makes ReleaseIfIdle safe: the session cannot be disposed while any
         // pass holds it. Stamping on the way out rather than the way in means a long indexing pass
@@ -417,7 +451,7 @@ public sealed class TextEmbedder(
             {
                 if (_session is not null && _tokenizer is not null)
                 {
-                    return EmbedBatchCore(texts);
+                    return EmbedBatchCore(texts, shrinkArena);
                 }
             }
             finally
@@ -433,7 +467,7 @@ public sealed class TextEmbedder(
         }
     }
 
-    private float[][] EmbedBatchCore(IReadOnlyList<string> texts)
+    private float[][] EmbedBatchCore(IReadOnlyList<string> texts, bool shrinkArena)
     {
         if (_session is null || _tokenizer is null)
         {
@@ -498,14 +532,24 @@ public sealed class TextEmbedder(
             inputs.Add(NamedOnnxValue.CreateFromTensor(TokenTypeIdsInput, types));
         }
 
-        using var results = _session.Run(inputs);
         var pooled = options.Model.Pooling == EmbeddingPooling.Pooled;
+        var outputName = pooled ? PooledOutput : HiddenStateOutput;
+        using var results = ActiveProvider == EmbeddingProvider.Cpu
+            ? (shrinkArena
+                ? _session.Run(inputs, [outputName], CpuRunOptions)
+                : _session.Run(inputs, [outputName]))
+            : _session.Run(inputs);
         // Both supported precisions emit a float tensor: int8 models are QDQ graphs that dequantize
         // before the output, and fp32 is float by definition. See EmbeddingPrecision for why there
         // is no half-precision case to handle here.
-        var output = results.First(r => r.Name == (pooled ? PooledOutput : HiddenStateOutput)).AsTensor<float>();
+        var output = results.First(r => r.Name == outputName).AsTensor<float>();
         var dim = output.Dimensions[^1];
         var mean = options.Model.Pooling == EmbeddingPooling.Mean;
+
+        // The multi-index indexer on Tensor<T> takes a params array, so reading element by element
+        // allocated once per float. A dense tensor is one row-major buffer; index it by hand.
+        ReadOnlySpan<float> data = output is DenseTensor<float> dense ? dense.Buffer.Span : output.ToArray();
+        var seq = output.Dimensions.Length > 2 ? output.Dimensions[1] : 1;
 
         if (pooled)
         {
@@ -518,7 +562,7 @@ public sealed class TextEmbedder(
                 var vec = new float[dim];
                 for (var h = 0; h < dim; h++)
                 {
-                    vec[h] = output[b, h];
+                    vec[h] = data[(b * dim) + h];
                 }
 
                 EmbeddingMath.NormalizeInPlace(vec);
@@ -541,7 +585,7 @@ public sealed class TextEmbedder(
                 var last = rows[b].Length - 1;
                 for (var h = 0; h < dim; h++)
                 {
-                    vec[h] = output[b, last, h];
+                    vec[h] = data[(((b * seq) + last) * dim) + h];
                 }
             }
             else if (mean)
@@ -554,7 +598,7 @@ public sealed class TextEmbedder(
                 {
                     for (var h = 0; h < dim; h++)
                     {
-                        vec[h] += output[b, t, h];
+                        vec[h] += data[(((b * seq) + t) * dim) + h];
                     }
                 }
 
@@ -567,7 +611,7 @@ public sealed class TextEmbedder(
             {
                 for (var h = 0; h < dim; h++)
                 {
-                    vec[h] = output[b, 0, h]; // CLS token = position 0
+                    vec[h] = data[b * seq * dim + h]; // CLS token = position 0
                 }
             }
 

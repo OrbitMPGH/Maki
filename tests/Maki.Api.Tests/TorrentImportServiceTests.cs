@@ -694,9 +694,9 @@ public class TorrentImportServiceTests : IDisposable
 
         var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
 
-        Assert.Equal("error.torrentImport.noComicsFound", plan.ErrorKey);
-        var detail = plan.ErrorArgs?.GetType().GetProperty("detail")?.GetValue(plan.ErrorArgs);
-        Assert.Equal("found 2 .pdf", detail);
+        Assert.Equal("error.torrentImport.noComicsOfType", plan.ErrorKey);
+        var census = plan.ErrorArgs?.GetType().GetProperty("census")?.GetValue(plan.ErrorArgs);
+        Assert.Equal("2 .pdf", census);
     }
 
     /// <summary>

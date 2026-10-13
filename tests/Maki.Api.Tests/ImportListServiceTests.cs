@@ -47,7 +47,7 @@ public class ImportListServiceTests : IDisposable
             sourceMatchQueue: new SourceMatchQueue(),
             stats: null!, identity: null!, appSettings: new FakeAppSettings(),
             naming: new NamingService(new FakeAppSettings()),
-            notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(),
+            notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(), localizer: new TestLocalizer(),
             logger: NullLogger<SeriesCreationService>.Instance));
         services.AddScoped(sp => new SeriesRequestSubmitter(
             sp.GetRequiredService<MakiDbContext>(), [_metadata], new SilentBroadcaster(), _inbox, _notifications,
@@ -202,6 +202,23 @@ public class ImportListServiceTests : IDisposable
         var lastRun = ImportListLastRun.Parse(await new UserSettingsStoreService(_scopes)
             .GetAsync(user, SettingKeys.ImportListLastRunKey(FakeTracker.ServiceName)));
         Assert.True(lastRun!.DumpUnavailable);
+    }
+
+    [Fact]
+    public async Task A_missing_dump_still_adds_entries_that_already_carry_a_MangaBaka_id()
+    {
+        var user = Adder();
+        _store.Available = false;
+        _tracker.Entries = [Entry("r1", mangaBaka: 101), Entry("r2", aniList: 5001)];
+
+        var result = await Service().RunUserAsync(user, null, full: false, default);
+
+        Assert.Equal(1, result!.Added);
+        Assert.Equal(0, result.Errors);
+        Assert.True(result.DumpUnavailable);
+        Assert.Equal(new int?[] { 101 }, LibraryIds());
+        using var db = _db.NewContext();
+        Assert.DoesNotContain(db.ImportListSkips, x => x.RemoteId == "r2");
     }
 
     [Fact]
@@ -403,8 +420,8 @@ public class ImportListServiceTests : IDisposable
 
         var again = await Controller(user).Run(new ImportListsController.RunRequest(null, Full: true), default);
         Assert.Equal(409, ((ObjectResult)again).StatusCode);
-        var inline = await Controller(user).Run(new ImportListsController.RunRequest(null), default);
-        Assert.Equal(409, ((ObjectResult)inline).StatusCode);
+        var partial = await Controller(user).Run(new ImportListsController.RunRequest(null), default);
+        Assert.Equal(409, ((ObjectResult)partial).StatusCode);
 
         _tracker.Hold.SetResult();
         var deadline = DateTime.UtcNow.AddSeconds(10);
@@ -416,7 +433,48 @@ public class ImportListServiceTests : IDisposable
 
         Assert.Equal(new int?[] { 101 }, LibraryIds());
         var after = await Controller(user).Run(new ImportListsController.RunRequest(null), default);
-        Assert.IsType<OkObjectResult>(after);
+        Assert.IsType<AcceptedResult>(after);
+    }
+
+    [Fact]
+    public async Task A_partial_manual_run_returns_at_once_and_reports_through_the_inbox()
+    {
+        var user = Adder();
+        _tracker.Entries = [Entry("r1", mangaBaka: 101), Entry("r2", mangaBaka: 102)];
+        _tracker.Hold = new TaskCompletionSource();
+        await Controller(user).SetPrefs(
+            new ImportListsController.PrefsRequest(FakeTracker.ServiceName, true, ["Reading"], null, MaxPerRun: 1), default);
+
+        using var cts = new CancellationTokenSource();
+        var started = await Controller(user).Run(new ImportListsController.RunRequest(null), cts.Token);
+        Assert.IsType<AcceptedResult>(started);
+        Assert.Empty(LibraryIds());
+
+        cts.Cancel();
+        _tracker.Hold.SetResult();
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (!_inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished))
+        {
+            Assert.True(DateTime.UtcNow < deadline, "the background run never finished");
+            await Task.Delay(20);
+        }
+
+        Assert.Equal(new int?[] { 101 }, LibraryIds());
+    }
+
+    [Fact]
+    public async Task A_partial_manual_run_with_nothing_to_add_still_raises_the_inbox_row()
+    {
+        var user = Adder();
+        _tracker.Entries = [];
+
+        Assert.IsType<AcceptedResult>(await Controller(user).Run(new ImportListsController.RunRequest(null), default));
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (!_inbox.Raised.Any(r => r.Type == Maki.Core.Inbox.InboxEventType.ImportListFinished))
+        {
+            Assert.True(DateTime.UtcNow < deadline, "the background run never finished");
+            await Task.Delay(20);
+        }
     }
 
     [Fact]
@@ -527,7 +585,7 @@ public class ImportListServiceTests : IDisposable
         public Task<RemoteEntry> GetEntryAsync(int userId, string remoteId, CancellationToken ct = default) =>
             throw new NotSupportedException();
         public Task UpdateAsync(int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
-            CancellationToken ct = default) => throw new NotSupportedException();
+            CancellationToken ct = default, bool keepStatus = false) => throw new NotSupportedException();
         public Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default) =>
             throw new NotSupportedException();
         public Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(int userId, string title, CancellationToken ct = default) =>

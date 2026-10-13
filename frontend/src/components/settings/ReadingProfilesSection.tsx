@@ -6,7 +6,6 @@ import {
   Card,
   Group,
   MultiSelect,
-  NumberInput,
   Select,
   Stack,
   Switch,
@@ -34,6 +33,8 @@ import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { SettingsNumberInput } from './SettingsNumberInput'
+import { useReportUnsaved } from './SaveButton'
 
 const MODE_LABELS: Record<ReaderPrefs['mode'], MessageDescriptor> = {
   paged: msg`Single page`,
@@ -76,13 +77,12 @@ export function ReadingProfilesSection() {
   return (
     <SettingsSection
       id="reader"
-      title={<Trans>Reader</Trans>}
+      title={<Trans>Reader profiles</Trans>}
       description={
         <Trans>
           How the built-in reader opens a series. A profile applies automatically to the series
-          types it covers; everything else uses Default, including series whose metadata hasn't
-          been refreshed since upgrading. You can pin a profile or override settings from inside
-          the reader.
+          types it covers; everything else uses Default. You can also pin a profile to a series, or
+          change settings from inside the reader.
         </Trans>
       }
       actions={
@@ -299,6 +299,10 @@ function ProfileEditor({
   const [types, setTypes] = useState<string[]>(initial.seriesTypes)
   const [prefs, setPrefs] = useState<ReaderPrefs>(initial.prefs)
   const set = (patch: Partial<ReaderPrefs>) => setPrefs((current) => ({ ...current, ...patch }))
+  useReportUnsaved(
+    JSON.stringify({ name, types, prefs }) !==
+      JSON.stringify({ name: initial.name, types: initial.seriesTypes, prefs: initial.prefs }),
+  )
 
   return (
     <Stack gap="sm" mt="sm">
@@ -313,7 +317,7 @@ function ProfileEditor({
 
           <MultiSelect
             label={t`Applies automatically to`}
-            description={t`Leave empty to use this profile only where you pin it to a series.`}
+            description={t`Leave empty to use this profile only on series you pin it to.`}
             value={types}
             onChange={setTypes}
             data={SERIES_TYPES.map((type) => {
@@ -363,14 +367,14 @@ function ProfileEditor({
           ]}
         />
         {prefs.fit === 'original' && (
-          <NumberInput
+          <SettingsNumberInput
             label={t`Scale`}
             suffix="%"
             min={25}
             max={400}
             step={5}
             value={prefs.scale}
-            onChange={(value) => set({ scale: Number(value) || 100 })}
+            onChange={(value) => set({ scale: value })}
           />
         )}
       </Group>
@@ -388,21 +392,43 @@ function ProfileEditor({
             { value: 'oled', label: t`OLED black` },
           ]}
         />
-        <NumberInput
+        <SettingsNumberInput
+          label={t`Dim`}
+          description={t`Darkens the pages, in percent.`}
+          suffix="%"
+          min={0}
+          max={80}
+          step={5}
+          value={prefs.dim}
+          onChange={(value) => set({ dim: value })}
+        />
+        <Select
+          label={t`Colour filter`}
+          allowDeselect={false}
+          value={prefs.filter}
+          onChange={(value) => value && set({ filter: value as ReaderPrefs['filter'] })}
+          data={[
+            { value: 'none', label: t`None` },
+            { value: 'grayscale', label: t`Grayscale` },
+            { value: 'sepia', label: t`Sepia` },
+            { value: 'invert', label: t`Invert` },
+          ]}
+        />
+        <SettingsNumberInput
           label={t`Page gap`}
           description={t`Continuous layout only, in pixels.`}
           min={0}
           max={64}
           value={prefs.pageGap}
-          onChange={(value) => set({ pageGap: typeof value === 'number' ? value : 0 })}
+          onChange={(value) => set({ pageGap: value })}
         />
-        <NumberInput
+        <SettingsNumberInput
           label={t`Preload`}
-          description={t`Pages fetched ahead.`}
+          description={t`Pages fetched ahead. Not used in Continuous layout.`}
           min={0}
           max={10}
           value={prefs.preload}
-          onChange={(value) => set({ preload: typeof value === 'number' ? value : 0 })}
+          onChange={(value) => set({ preload: value })}
         />
       </Group>
 
@@ -414,7 +440,7 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
-        label={t`Tap zones (click the page edges to turn)`}
+        label={t`Tap zones (click the page edges to turn), paged layouts only`}
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}
       />
@@ -426,16 +452,17 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
+        label={t`Keep the screen awake while reading`}
+        description={t`Only where the browser allows it, which needs HTTPS or localhost.`}
+        checked={prefs.keepAwake}
+        onChange={(e) => set({ keepAwake: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
         label={t`Flash the chapter name on chapter change`}
         description={t`Credit pages and the next chapter's first pages often look alike, so this marks the turn.`}
         checked={prefs.chapterBanner}
         onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
-      />
-      <Switch
-        size="sm"
-        label={t`Split double-width pages`}
-        checked={prefs.splitWidePages}
-        onChange={(e) => set({ splitWidePages: e.currentTarget.checked })}
       />
 
       <Group justify="flex-end" gap="xs">

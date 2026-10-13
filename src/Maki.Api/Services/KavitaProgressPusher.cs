@@ -82,7 +82,7 @@ public class KavitaProgressPusher(
             // duplicates per SeriesId are legal, and an unordered First would push into a
             // different Kavita series between calls — see ReadingProgressService.PickAsync.
             var matched = await db.ReadingStates
-                .Where(r => r.SeriesId == seriesId && r.KavitaSeriesId != null)
+                .Where(r => r.UserId == userId && r.SeriesId == seriesId && r.KavitaSeriesId != null)
                 .OrderByDescending(r => r.MaxChapter)
                 .ThenByDescending(r => r.Id)
                 .Select(r => r.KavitaSeriesId)

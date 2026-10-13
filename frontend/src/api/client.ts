@@ -3,7 +3,6 @@ import { t } from '@lingui/core/macro'
 
 interface InitializeInfo {
   apiRoot: string
-  version: string
   /** True while the account the multi-user migration created has never been claimed. */
   setupNeeded: boolean
   /**
@@ -18,22 +17,30 @@ interface InitializeInfo {
   }
 }
 
-let initialize: InitializeInfo | null = null
+let initialize: Promise<InitializeInfo> | null = null
 
 /**
  * Pre-authentication bootstrap. Carries no credential: it used to return the instance API key to
  * any anonymous caller, which made the key that guarded the API readable by anyone who could load
  * the page.
  */
-export async function getInitialize(): Promise<InitializeInfo> {
-  if (!initialize) {
+export function getInitialize(): Promise<InitializeInfo> {
+  if (initialize) return initialize
+  // The promise is cached, not the value, so concurrent first callers share one fetch. A failure
+  // is dropped so the next caller tries again instead of inheriting the rejection.
+  const pending = (async () => {
     const res = await fetch('/initialize.json', { cache: 'no-cache' })
     if (!res.ok) throw new Error(t`Failed to initialize`)
-    initialize = (await res.json()) as InitializeInfo
-  }
-  return initialize
+    return (await res.json()) as InitializeInfo
+  })()
+  initialize = pending
+  pending.catch(() => {
+    if (initialize === pending) initialize = null
+  })
+  return pending
 }
 
+/** Forgets the bootstrap payload so the next caller re-reads it, for state that can change under a signed-out tab (SSO setup). */
 export function invalidateInitialize(): void {
   initialize = null
 }
@@ -50,12 +57,15 @@ export class ApiError extends Error {
   readonly status: number
   /** The stable dotted key behind `message` (`error.upgrades.trashGone`), or null when the body carried none. */
   readonly code: string | null
+  /** A delete the recycle bin refused, which the same request with `permanent=true` may carry out instead. */
+  readonly permanentDeleteAvailable: boolean
 
-  constructor(status: number, message: string, code: string | null = null) {
+  constructor(status: number, message: string, code: string | null = null, permanentDeleteAvailable = false) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.permanentDeleteAvailable = permanentDeleteAvailable
   }
 }
 
@@ -69,6 +79,16 @@ let onUnauthorized: UnauthorizedHandler | null = null
  */
 export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): void {
   onUnauthorized = handler
+}
+
+let sessionGeneration = 0
+
+/**
+ * Marks a sign-in, sign-out or dropped session. A 401 answering a request sent before it belongs to
+ * the session that ended: still thrown, but it must not sign out the account that has signed in since.
+ */
+export function beginSession(): void {
+  sessionGeneration++
 }
 
 const XSRF_COOKIE = 'XSRF-TOKEN'
@@ -121,6 +141,7 @@ export function xsrfHeader(): Record<string, string> {
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const generation = sessionGeneration
   const init = await getInitialize()
   const res = await fetch(`${init.apiRoot}${path}`, {
     ...options,
@@ -129,6 +150,26 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     credentials: 'same-origin',
     headers: authHeaders(options.headers),
   })
+  return readResponse<T>(res, generation)
+}
+
+/**
+ * `api` for a multipart POST. The browser writes the Content-Type with its boundary, so only the
+ * language and antiforgery headers are sent; errors come back the same way as from `api`.
+ */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const generation = sessionGeneration
+  const init = await getInitialize()
+  const res = await fetch(`${init.apiRoot}${path}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { ...languageHeader(), ...xsrfHeader() },
+    body: form,
+  })
+  return readResponse<T>(res, generation)
+}
+
+async function readResponse<T>(res: Response, generation: number): Promise<T> {
   if (res.status === 401) {
     // A 401 body may be missing, non-JSON, or JSON without an `error` field; any of those falls
     // back to UnauthorizedError's own generic message.
@@ -137,22 +178,36 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       const body = await res.text()
       message = (JSON.parse(body) as { error?: string }).error
     } catch { /* no body, not JSON, or no error field */ }
-    onUnauthorized?.()
+    if (generation === sessionGeneration) onUnauthorized?.()
     throw new UnauthorizedError(message)
   }
   if (!res.ok) {
     const body = await res.text()
-    throw new ApiError(res.status, `API ${res.status}: ${errorMessage(body) ?? res.statusText}`, errorCode(body))
+    // The status stays on ApiError.status. A body that is not the server's own JSON (a reverse
+    // proxy's HTML error page, say) is never shown.
+    const status = res.status
+    throw new ApiError(
+      status,
+      errorMessage(body) ?? t`The server returned an error (${status}).`,
+      errorCode(body),
+      offersPermanentDelete(body),
+    )
   }
   // 204, and any 200 whose handler wrote no body, have nothing to parse.
   const body = await res.text()
   if (!body) return undefined as T
-  return JSON.parse(body) as T
+  try {
+    return JSON.parse(body) as T
+  } catch {
+    const status = res.status
+    throw new ApiError(status, t`The server sent a response Maki could not read (${status}).`)
+  }
 }
 
 /**
- * Controllers answer failures as `{ "error": "...", "code": "..." }`; fall back to the raw body when
- * they don't. `error` is already localized by the server, so it is displayed as-is. `code` is the
+ * Controllers answer failures as `{ "error": "...", "code": "..." }`. `error` is already localized by
+ * the server, so it is displayed as-is; a body that is not JSON, or carries none of the known
+ * fields, yields null and the caller words a generic message. `code` is the
  * stable dotted key behind it (see `errorCode`), for a caller that wants to branch on a specific
  * failure rather than show it.
  */
@@ -161,13 +216,22 @@ function errorMessage(body: string): string | null {
   try {
     // `detail`/`title` are ASP.NET ProblemDetails, which bare `NotFound()` and model binding produce.
     const parsed = JSON.parse(body) as { error?: string; message?: string; detail?: string; title?: string }
-    return parsed.error ?? parsed.message ?? parsed.detail ?? parsed.title ?? body
+    return parsed.error ?? parsed.message ?? parsed.detail ?? parsed.title ?? null
   } catch {
-    return body
+    return null
   }
 }
 
 /** The `code` field from a `{ "error": "...", "code": "..." }` body, or null when there isn't one. */
+function offersPermanentDelete(body: string): boolean {
+  if (!body) return false
+  try {
+    return (JSON.parse(body) as { permanentDeleteAvailable?: boolean }).permanentDeleteAvailable === true
+  } catch {
+    return false
+  }
+}
+
 function errorCode(body: string): string | null {
   if (!body) return null
   try {

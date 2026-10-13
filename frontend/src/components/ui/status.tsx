@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import {
   IconAlertTriangle,
   IconBan,
@@ -21,6 +22,7 @@ import {
 } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { obtainedCount } from '../../lib/chapterCounts'
 
 export interface StatusVisual {
   color: string
@@ -34,18 +36,8 @@ export interface StatusVisual {
   Icon: Icon
 }
 
-/**
- * Library badge fills, in the design tokens rather than Mantine's stock palette, so a cover's
- * "Completed" is the same green as every other "ok" in the app and follows the light theme.
- */
-export const BADGE_COLOR: Record<string, string> = {
-  blue: 'var(--info)',
-  teal: 'var(--ok)',
-  yellow: 'var(--warn)',
-  red: 'var(--danger)',
-  gray: 'var(--neutral)',
-  grape: 'var(--watched)',
-}
+/** `vars` for a filled `color="var(--ok)"` Button: autoContrast cannot read a var(), so its label would stay white. */
+export const okButtonVars = () => ({ root: { '--button-color': 'var(--ok-on)' } })
 
 /**
  * The hero bands speak in design tokens, `StatusVisual` speaks in Mantine palette names. One map,
@@ -74,6 +66,16 @@ export function statusToken(color: string): string {
 /** The same, as a colour value a Mantine `color` prop takes. */
 export function statusColor(color: string): string {
   return `var(--${statusToken(color)})`
+}
+
+/** The foreground that sits on a `statusColor` fill; it flips with the theme, a fixed white fails on the dark ones. */
+export function statusOnColor(color: string): string {
+  return `var(--${statusToken(color)}-on)`
+}
+
+/** Fill plus its own foreground; a fill alone leaves the label white, which fails on the dark themes. */
+export function badgeFill(color: string): CSSProperties {
+  return { background: statusColor(color), color: statusOnColor(color) }
 }
 
 /**
@@ -226,6 +228,7 @@ export function seriesProgressVisual(
     wantedChapterCount: number
     knownChapterCount: number
     chapterFileCount: number
+    removedChapterCount?: number
     readChapterCount: number | null
   },
   readTracking: boolean,
@@ -233,7 +236,7 @@ export function seriesProgressVisual(
   const wantedTotal = s.wantedChapterCount || 0
   const total = wantedTotal || s.knownChapterCount || 0
   const nothingWanted = wantedTotal === 0 && total > 0
-  const have = s.chapterFileCount
+  const have = obtainedCount(s)
   const tracked = readTracking && s.readChapterCount != null && have > 0
   return {
     total,

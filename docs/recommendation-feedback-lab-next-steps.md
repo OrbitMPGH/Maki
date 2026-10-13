@@ -1,6 +1,6 @@
 # Recommendation Feedback Lab: status and next steps
 
-Status snapshot: 2026-09-17. This tracks the working tree implementation of the [original plan](recommendation-feedback-lab-plan.md). The original document remains the product and architecture reference. The feature code is still uncommitted, so the statuses below describe local work, not a released version.
+Status snapshot: 2026-09-17, with later additions noted below. This tracks the implementation of the [original plan](recommendation-feedback-lab-plan.md). The original document remains the product and architecture reference. The feature shipped in #73 and has since gained like and dislike, the avoid channel, "hide this and its franchise", and anime signals; the rule file `.claude/rules/recommendations.md` is the current reference for those. The tables below are the 2026-09-17 snapshot and are kept for the "what remains" list.
 
 ## What is done
 
@@ -11,7 +11,7 @@ Status snapshot: 2026-09-17. This tracks the working tree implementation of the 
 | Feedback API | Implemented, contract refinements remain | Lab, current state, history, mutation, undo, and signal-override endpoints exist under `/api/v1/recommendations`. Writes check ownership, payloads, revisions, and mutation IDs. |
 | Recommendation suppression | Implemented, broader regression coverage remains | Exact catalogue IDs are suppressed in the main recommendation pool, Taste picks, cohort rails, related/similar responses, and Discover overlays. Dismissal expiry is checked when reading. Main-pool paging returns a version and restart signal. |
 | Personal add influence | Implemented, lifecycle hardening remains | Intentional completed adds record the attributable user and origin. Full-incognito adds do not create provenance. Seed weighting is bounded and respects explicit ratings; ignoring a source excludes it from inferred seeds without changing the shared library. Request approval credits the requester. |
-| Taste Lab and feedback controls | Implemented, browser coverage remains | Taste shows evidence counts, recent feedback, library activity, and management controls. Recommendation detail menus offer Hide, Dismiss, and read/seen actions. Client mutations remove affected cards optimistically and invalidate recommendation queries. |
+| Taste Lab and feedback controls | Implemented, browser coverage remains | Taste shows evidence counts, recent feedback, library activity, and management controls. Recommendation detail menus offer Hide, Dismiss, and read/seen actions (like, dislike and hide franchise were added later). Client mutations remove affected cards optimistically and invalidate recommendation queries. |
 | Retention and flags | Implemented | A background service prunes old feedback events and receipts. Lab visibility and personal-add weighting have separate settings; recorded suppression remains effective when weighting is disabled. |
 
 The last completed checks passed: 903 API tests, 512 Core tests, frontend production build, lint, and `git diff --check`. In the browser, Hide removed a Home recommendation, Undo restored it, and the Taste Lab's Feedback, Library activity, and Manage views rendered. Lint reported existing warnings. Browser testing used an isolated `.devconfig` instance.

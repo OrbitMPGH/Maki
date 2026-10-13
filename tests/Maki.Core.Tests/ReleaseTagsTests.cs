@@ -82,6 +82,33 @@ public class ReleaseTagsTests
     }
 
     [Theory]
+    [InlineData("End")]
+    [InlineData("fin")]
+    [InlineData("FIN")]
+    [InlineData("Tr")]
+    [InlineData("Br")]
+    [InlineData("Pl")]
+    [InlineData("Cn")]
+    [InlineData("Fr")]
+    public void Group_keeps_a_capitalised_name_that_only_looks_like_a_language_code(string tag)
+    {
+        Assert.Equal(tag, ReleaseTags.Group([tag]));
+    }
+
+    [Theory]
+    [InlineData("END")]
+    [InlineData("Fin")]
+    [InlineData("FR")]
+    [InlineData("DE")]
+    [InlineData("TR")]
+    [InlineData("JP")]
+    [InlineData("PT-BR")]
+    public void Group_is_null_for_the_exact_uppercase_codes(string tag)
+    {
+        Assert.Null(ReleaseTags.Group([tag]));
+    }
+
+    [Theory]
     [InlineData("Digital-HD")]
     [InlineData("c2c")]
     [InlineData("WEB-DL")]
@@ -89,9 +116,29 @@ public class ReleaseTagsTests
     [InlineData("Chapters 1-50")]
     [InlineData("es")]
     [InlineData("pt-br")]
+    [InlineData("pt-BR")]
+    [InlineData("zh-Hans")]
+    [InlineData("zh-hans")]
+    [InlineData("eng")]
+    [InlineData("ENG")]
+    [InlineData("jpn")]
     public void Group_is_null_for_release_and_language_noise(string tag)
     {
         Assert.Null(ReleaseTags.Group([tag]));
+    }
+
+    [Theory]
+    [InlineData("lfp")]
+    [InlineData("oak")]
+    public void Group_keeps_a_lowercase_three_letter_group(string tag)
+    {
+        Assert.Equal(tag, ReleaseTags.Group([tag]));
+    }
+
+    [Fact]
+    public void Group_skips_a_three_letter_language_tag_ahead_of_the_group()
+    {
+        Assert.Equal("1r0n", ReleaseTags.Group(["eng", "Digital", "1r0n"]));
     }
 
     [Fact]

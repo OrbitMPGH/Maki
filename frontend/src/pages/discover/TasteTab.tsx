@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -56,7 +57,7 @@ import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { Panel } from '../../components/ui/Panel'
 import { TagChip } from '../../components/ui/TagChip'
 import { SignalsCard } from './FeedbackLab'
-import { formatNumber, formatReadingTime } from '../../format'
+import { formatFixedDecimal, formatNumber, formatPercent, formatReadingTime } from '../../format'
 import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
 
@@ -79,11 +80,11 @@ const HEAD = 6
 const NOTEWORTHY = 1.25
 
 function percent(share: number): string {
-  return `${Math.round(share * 100)}%`
+  return formatPercent(share)
 }
 
 function ratio(value: number): string {
-  return `${value >= 10 ? Math.round(value) : value.toFixed(1)}x`
+  return `${value >= 10 ? formatNumber(Math.round(value)) : formatFixedDecimal(value, 1)}x`
 }
 
 function TasteSkeleton() {
@@ -191,11 +192,13 @@ function BehaviourList({
   title,
   items,
   emptyText,
+  format,
 }: {
   icon: typeof IconClock
   title: string
   items: BehaviourSeries[]
   emptyText: string
+  format: (item: BehaviourSeries) => string
 }) {
   return (
     <Card padding="md" radius="lg" withBorder>
@@ -216,7 +219,7 @@ function BehaviourList({
                 <SeriesLink id={item.seriesId} title={item.title} />
               </Text>
               <Text size="sm" fw={600} className="tnum" style={{ flexShrink: 0 }}>
-                {item.value}
+                {format(item)}
               </Text>
             </Group>
           ))}
@@ -286,18 +289,21 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
           title={t`You slow down for`}
           items={behaviour.savoured}
           emptyText={t`Not enough timed chapters yet.`}
+          format={(item) => formatReadingTime(item.measure)}
         />
         <BehaviourList
           icon={IconSparkles}
           title={t`You tear through`}
           items={behaviour.devoured}
           emptyText={t`Not enough timed chapters yet.`}
+          format={(item) => formatReadingTime(item.measure)}
         />
         <BehaviourList
           icon={IconArrowsShuffle}
           title={t`You put down`}
           items={behaviour.abandoned}
           emptyText={t`You finish what you start.`}
+          format={(item) => t`${percent(item.measure)} in`}
         />
       </SimpleGrid>
     </>
@@ -319,7 +325,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
         data={data}
         dataKey="bucket"
         series={[{ name: 'similarity', color: 'var(--brand)', label: t`Similarity to start` }]}
-        valueFormatter={(v) => v.toFixed(2)}
+        valueFormatter={(v) => formatFixedDecimal(v, 2)}
         yAxisProps={{ domain: [0, 1] }}
         withTooltip
         gridAxis="y"
@@ -563,7 +569,7 @@ export function TasteTab() {
   if (error) {
     return (
       <Alert color="var(--danger)" icon={<IconAlertCircle size={16} />} title={t`Could not read your profile`}>
-        {String(error)}
+        {errorText(error)}
       </Alert>
     )
   }
@@ -615,6 +621,7 @@ export function TasteTab() {
         count={insights?.groups.length ? insights.groups.length : undefined}
         action={
           <SegmentedControl
+            aria-label={t`View`}
             size="xs"
             value={view}
             onChange={(v) => setView(v as TasteView)}

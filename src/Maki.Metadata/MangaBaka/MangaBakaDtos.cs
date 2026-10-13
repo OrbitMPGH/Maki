@@ -10,7 +10,7 @@ namespace Maki.Metadata.MangaBaka;
 internal class MangaBakaSearchResponse
 {
     [JsonPropertyName("data")]
-    public List<MangaBakaSeries> Data { get; set; } = [];
+    public List<MangaBakaSeries> Data { get; set => field = value ?? []; } = [];
 }
 
 internal class MangaBakaGetResponse
@@ -64,20 +64,20 @@ internal class MangaBakaSeries
     public int? TotalChapters { get; set; }
 
     [JsonPropertyName("authors")]
-    public List<string> Authors { get; set; } = [];
+    public List<string> Authors { get; set => field = value ?? []; } = [];
 
     [JsonPropertyName("artists")]
-    public List<string> Artists { get; set; } = [];
+    public List<string> Artists { get; set => field = value ?? []; } = [];
 
     /// <summary>Objects (<c>{"name","note","type"}</c>) or occasionally bare strings; parsed by <see cref="MangaBakaProvider"/>.</summary>
     [JsonPropertyName("publishers")]
     public JsonElement Publishers { get; set; }
 
     [JsonPropertyName("genres")]
-    public List<string> Genres { get; set; } = [];
+    public List<string> Genres { get; set => field = value ?? []; } = [];
 
     [JsonPropertyName("tags")]
-    public List<string> Tags { get; set; } = [];
+    public List<string> Tags { get; set => field = value ?? []; } = [];
 
     [JsonPropertyName("cover")]
     public MangaBakaCover? Cover { get; set; }

@@ -151,9 +151,9 @@ public class AnimeResumeService(
     /// Series whose anime the reader finished and whose reading has not caught up with it: library
     /// series first, then manga nobody has added yet. Once they have read or watched past the
     /// frontier, Jump back in covers the series instead. The page is capped at
-    /// <see cref="RailLimit"/>; <see cref="RailPage.Total"/> is every match, so a count can stay honest.
+    /// <paramref name="limit"/>; <see cref="RailPage.Total"/> is every match, so a count can stay honest.
     /// </summary>
-    public async Task<RailPage> RailAsync(CancellationToken ct)
+    public async Task<RailPage> RailAsync(CancellationToken ct, int limit = RailLimit)
     {
         if (!await signals.EnabledForAsync(UserId, ct)) return RailPage.Empty;
 
@@ -179,10 +179,13 @@ public class AnimeResumeService(
         var fromCatalogue = await CatalogueRailAsync(rows, unowned, ct);
 
         var all = library.Concat(fromCatalogue).ToList();
-        return new RailPage(all.Take(RailLimit).ToList(), all.Count);
+        return new RailPage(all.Take(limit).ToList(), all.Count);
     }
 
     public const int RailLimit = 50;
+
+    /// <summary>The rail's "Show more" view asks for everything, up to this.</summary>
+    public const int MaxRailLimit = 500;
 
     public sealed record RailPage(IReadOnlyList<HomeAnimeResumeItem> Items, int Total)
     {

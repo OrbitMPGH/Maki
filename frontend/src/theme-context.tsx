@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { MantineProvider } from '@mantine/core'
 import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react'
 import type { MessageDescriptor } from '@lingui/core'
 import { accentSwatch, accents, createAppTheme, groundRamp, grounds } from './theme'
 
@@ -213,9 +214,11 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     if (bg && meta) meta.setAttribute('content', bg)
   }, [accent.id, background.ground, scheme])
 
+  const { _ } = useLingui()
+  const closeLabel = _(msg`Close`)
   const mantineTheme = useMemo(
-    () => createAppTheme(accents[accent.id], scheme, groundRamp(background.ground, accents[accent.id])),
-    [accent.id, background.ground, scheme],
+    () => createAppTheme(accents[accent.id], scheme, groundRamp(background.ground, accents[accent.id]), closeLabel),
+    [accent.id, background.ground, scheme, closeLabel],
   )
   const value = useMemo(
     () => ({

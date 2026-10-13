@@ -74,7 +74,7 @@ public class ReaderCohortRailService(
         }
 
         var allowed = ContentRating.Allowed(scope.MaxContentRating);
-        var accept = await BuildFilterAsync(filters, ct);
+        var accept = await BuildFilterAsync(WithCeiling(filters, scope.MaxContentRating), ct);
         var baseAccept = accept;
         accept = id => !suppressed.Contains(id) && (baseAccept?.Invoke(id) ?? true);
 
@@ -107,6 +107,25 @@ public class ReaderCohortRailService(
         GetAsync(scope, filters: null, RailSize, ct);
 
     /// <summary>
+    /// The request filters with the caller's content-rating ceiling folded in, so the draw skips
+    /// over-ceiling titles instead of spending slots on rows hydration then drops. Left alone for
+    /// an unrestricted ceiling, which would otherwise start excluding unrated titles.
+    /// </summary>
+    internal static RecommendationFilters? WithCeiling(RecommendationFilters? filters, string? max)
+    {
+        var allowed = ContentRating.Allowed(max);
+        if (allowed.Count == ContentRating.All.Length)
+        {
+            return filters;
+        }
+
+        return (filters ?? RecommendationFilters.None) with
+        {
+            ContentRatings = ContentRating.Clamp(filters?.ContentRatings, max) ?? allowed,
+        };
+    }
+
+    /// <summary>
     /// Turns the caller's filters into a per-candidate predicate through the vector index's own
     /// filter plan, so a genre or year narrows the ranking rather than deleting rows out of a page
     /// that was already cut. Duplicating <c>RecommendationFilters</c>' logic here would be a third
@@ -132,6 +151,11 @@ public class ReaderCohortRailService(
             return null;
         }
 
+        return AcceptFor(index, filters);
+    }
+
+    internal static Func<long, bool> AcceptFor(VectorIndex index, RecommendationFilters filters)
+    {
         var plan = index.Plan(filters);
         if (plan.Impossible)
         {

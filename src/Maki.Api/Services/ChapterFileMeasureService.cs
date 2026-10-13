@@ -32,8 +32,12 @@ public class ChapterFileMeasureService(
             var lastId = 0;
             while (true)
             {
+                // A series still owed its import link is skipped: the link stage rewrites its ComicInfo,
+                // which on Windows cannot replace an archive open here. Its link triggers a pass.
                 var batch = await db.ChapterFiles.IgnoreQueryFilters().AsNoTracking()
-                    .Where(f => f.MeasuredAtUtc == null && f.Id > lastId)
+                    .Where(f => f.MeasuredAtUtc == null && f.Id > lastId &&
+                                !db.Series.IgnoreQueryFilters().Any(s =>
+                                    s.Id == f.SeriesId && s.PendingImportLink != PendingImportLink.None))
                     .OrderBy(f => f.Id)
                     .Take(BatchSize)
                     .ToListAsync(ct);

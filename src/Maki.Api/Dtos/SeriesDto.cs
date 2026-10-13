@@ -1,4 +1,5 @@
-﻿using Maki.Core.Configuration;
+﻿using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Paths;
 
@@ -114,9 +115,9 @@ public record SeriesDto(
     string? AnimeStart,
     string? AnimeEnd,
     /// <summary>
-    /// Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
-    /// when nothing has reported reading progress for this series yet — distinct from 0 (tracked,
-    /// but nothing read).
+    /// Downloaded chapters the caller has finished, counted from their completed progress rows
+    /// (built-in reader and Kavita sync alike). Null when no progress exists for this series yet,
+    /// distinct from 0 (tracked, but nothing read).
     /// </summary>
     int? ReadChapterCount = null,
     /// <summary>
@@ -126,6 +127,11 @@ public record SeriesDto(
     /// says for the half-minute the search takes.
     /// </summary>
     bool SourceMatchPending = false,
+    /// <summary>
+    /// A library import's files are registered but not linked yet (<see cref="Series.PendingImportLink"/>).
+    /// The detail page keeps polling while this is set and refreshes the Files tab when it clears.
+    /// </summary>
+    bool ImportLinkPending = false,
     /// <summary>
     /// <see cref="IncognitoMode"/> as a string: "Off", "ScrobbleOnly" (excluded from tracker
     /// pushes only), or "Full" (also excluded from Rewind/reading-history stats).
@@ -173,6 +179,21 @@ public record SeriesDto(
     public IReadOnlyList<string> FileSources { get; init; } = [];
 
     /// <summary>
+    /// When the caller last touched a chapter of this series in the reader, or null if never. Filled
+    /// only by the Library list, for its "Recently read" sort.
+    /// </summary>
+    public DateTime? LastReadAt { get; init; }
+
+    /// <summary>When the newest chapter file landed in this series, or null with no files. Library list only.</summary>
+    public DateTime? LastDownloadedAt { get; init; }
+
+    /// <summary>
+    /// MangaBaka's aggregate score on a 0–10 scale, read from the local dump. Library list only; null
+    /// without a MangaBaka link, without the dump, or when MangaBaka has no score for the series.
+    /// </summary>
+    public double? CommunityRating { get; init; }
+
+    /// <summary>
     /// Personal time left, based on timed chapters from the built-in reader. Filled only by the
     /// detail endpoint; null when fewer than three comparable chapters have timing data.
     /// </summary>
@@ -181,11 +202,42 @@ public record SeriesDto(
     /// <summary>The series' own upgrade profile pin. Null means it follows the instance default.</summary>
     public int? UpgradeProfileId { get; init; }
 
+    /// <summary>"Default" | "On" | "Off": this series' choice about deleting read chapter files.</summary>
+    public string ReadFileCleanup { get; init; } = nameof(Core.Entities.ReadFileCleanup.Default);
+
+    /// <summary>Whether read files are actually being deleted, the series' choice and the instance switch combined. Detail endpoint only.</summary>
+    public bool ReadFileCleanupActive { get; init; }
+
     /// <summary>The last upgrade scan pass over this series, or null when it has never been scanned.</summary>
     public LastUpgradeScanDto? LastUpgradeScan { get; init; }
 
+    /// <summary>
+    /// Chapters whose file Maki deleted on purpose (<see cref="Chapter.FileRemovedAt"/>). Part of
+    /// <see cref="WantedChapterCount"/> and not missing, so the UI adds it to
+    /// <see cref="ChapterFileCount"/> wherever it means "chapters the user has had".
+    /// </summary>
+    public int RemovedChapterCount { get; init; }
+
     /// <summary>The series' pending torrent volume proposal, filled only by the detail endpoint.</summary>
     public int? PendingProposalId { get; init; }
+
+    /// <summary>
+    /// Metadata fields a user set by hand (<see cref="Series.LockedFields"/>), camelCased:
+    /// "title", "overview", "status", "totalChapters", "totalVolumes", "genres", "cover".
+    /// </summary>
+    public IReadOnlyList<string> LockedFields { get; init; } = [];
+
+    public static IReadOnlyList<string> LockedFieldNames(SeriesMetadataField locked) =>
+        Enum.GetValues<SeriesMetadataField>()
+            .Where(f => f != SeriesMetadataField.None && (locked & f) == f)
+            .Select(MetadataFieldName)
+            .ToList();
+
+    public static string MetadataFieldName(SeriesMetadataField field)
+    {
+        var name = field.ToString();
+        return char.ToLowerInvariant(name[0]) + name[1..];
+    }
 
     /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
@@ -197,13 +249,16 @@ public record SeriesDto(
     /// </summary>
     /// <param name="version">
     /// Stamped onto the URL as a cache-buster. The route itself never changes, so without this a
-    /// browser that already rendered the cover keeps showing those bytes after a metadata refresh
-    /// overwrites the file in place — same URL, no signal to refetch. <see cref="Series.LastMetadataRefresh"/>
-    /// changes on every refresh (and is set on add), so it doubles as a free version stamp.
+    /// browser that already rendered the cover keeps showing those bytes after a refresh overwrites
+    /// the file in place. The cover file's write time is used when the file is there (read once per series, then cached by
+    /// <see cref="CoverVersionCache"/>): it moves
+    /// only when the bytes are rewritten, whereas <see cref="Series.LastMetadataRefresh"/> moves on
+    /// every daily metadata refresh and would make browsers refetch every unchanged poster.
+    /// <paramref name="version"/> is the fallback for a path that cannot be read.
     /// </param>
     public static string? CoverUrlFor(int seriesId, string? coverPath, DateTime? version = null) =>
         coverPath != null
-            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={(version ?? DateTime.UtcNow).Ticks}"
+            ? $"/api/v1/mediacover/{seriesId}/cover.jpg?v={CoverVersionCache.Get(seriesId, coverPath) ?? (version ?? DateTime.UtcNow).Ticks}"
             : null;
 
     /// <param name="rating">
@@ -267,10 +322,13 @@ public record SeriesDto(
         s.AnimeEnd,
         readChapterCount,
         s.SourceMatchPending,
+        s.PendingImportLink != PendingImportLink.None,
         s.Incognito.ToString(),
         notificationMode.ToString())
     {
         UpgradeProfileId = s.UpgradeProfileId,
+        ReadFileCleanup = s.ReadFileCleanup.ToString(),
+        LockedFields = LockedFieldNames(s.LockedFields),
         LastUpgradeScan = s.LastUpgradeScanUtc is { } at
             ? new LastUpgradeScanDto(at, s.LastUpgradeScanProbed ?? 0, s.LastUpgradeScanQueued ?? 0,
                 s.LastUpgradeScanChecked, LastUpgradeScanDto.ParseSkips(s.LastUpgradeScanSkipsJson))
@@ -296,11 +354,6 @@ public record SeriesDto(
     }
 }
 
-/// <param name="Incognito">
-/// "Off" | "ScrobbleOnly" | "Full", or null to let the per-content-rating rules
-/// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
-/// to be the fallback rather than a hardcoded Off.
-/// </param>
 public record SeriesOperationDto(Guid Id, string State, int SeriesId, long SignalRevision);
 
 /// <param name="Checked">Null for scans recorded before it was kept.</param>
@@ -325,11 +378,17 @@ public record LastUpgradeScanDto(DateTime At, int Probed, int Queued, int? Check
     }
 }
 
+/// <param name="Incognito">
+/// "Off" | "ScrobbleOnly" | "Full", or null to let the per-content-rating rules
+/// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
+/// to be the fallback rather than a hardcoded Off.
+/// </param>
 public record AddSeriesRequest(
     string MetadataProviderId,
     int RootFolderId,
     bool Monitored = true,
-    string MonitorNewItems = "All",
+    // Null follows the "Default monitoring for new series" setting.
+    string? MonitorNewItems = null,
     string? Incognito = null,
     string? AddedFrom = null,
     Guid? ClientMutationId = null,

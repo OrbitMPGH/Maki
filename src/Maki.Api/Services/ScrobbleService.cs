@@ -36,6 +36,8 @@ public class ScrobbleService(
 {
     public const int DefaultIntervalMinutes = 30;
 
+    private static readonly TimeSpan ReadingToggleRefresh = TimeSpan.FromSeconds(30);
+
     /// <summary>Polite pacing between remote API calls.</summary>
     private static readonly TimeSpan Pace = TimeSpan.FromSeconds(1.2);
 
@@ -406,9 +408,24 @@ public class ScrobbleService(
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
 
+        // The toggles are read once and refreshed every 30 s, so switching one off mid-pass stops
+        // its pushes within that window without a settings read per series.
+        var readingEnabled = new Dictionary<string, bool>();
+        var readingReadAt = DateTime.MinValue;
+
         foreach (var series in seriesList)
         {
             ct.ThrowIfCancellationRequested();
+            if (DateTime.UtcNow - readingReadAt > ReadingToggleRefresh)
+            {
+                foreach (var tracker in trackers)
+                {
+                    readingEnabled[tracker.Name] = await SyncReadingEnabledAsync(userId, tracker.Name, ct);
+                }
+
+                readingReadAt = DateTime.UtcNow;
+            }
+
             if (libraryFilter.Count > 0 && !libraryFilter.Contains(series.LibraryId))
             {
                 continue;
@@ -539,7 +556,7 @@ public class ScrobbleService(
             {
                 // Per-tracker "scrobble reading" toggle — skip pushing progress to a tracker the
                 // user turned reading off for (local Rewind stats above are unaffected).
-                if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
+                if (!readingEnabled[tracker.Name])
                 {
                     continue;
                 }
@@ -831,7 +848,9 @@ public class ScrobbleService(
             await Task.Delay(AniListPace, ct);
         }
 
-        await tracker.UpdateAsync(userId, remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct);
+        // A re-read stays a re-read: only progress is written, not the Reading status it maps to.
+        var keepStatus = entry.Repeating && plan.PushStatus == ScrobbleStatus.Reading;
+        await tracker.UpdateAsync(userId, remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct, keepStatus);
         await SaveStateAsync(userId, target, tracker.Name, plan.Chapter, plan.Volume,
             StatusName(plan.RecordStatus), null, ct);
 
@@ -1146,39 +1165,16 @@ public class ScrobbleService(
 
         // Kavita parses its series name from file names (filesystem-illegal chars
         // stripped), so index by punctuation-normalized title AND folder name.
-        var index = new Dictionary<string, LibraryIds>();
-        var collisions = new HashSet<string>();
-        foreach (var row in rows)
-        {
-            var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId, row.KitsuId, row.Incognito);
-            foreach (var name in new[] { row.Title, row.FolderName })
-            {
-                var key = ScrobbleMatching.NormalizeTitle(name ?? "");
-                if (key.Length == 0)
-                {
-                    continue;
-                }
-
-                if (index.TryGetValue(key, out var existing))
-                {
-                    if (existing.Id != ids.Id)
-                    {
-                        collisions.Add(key);
-                    }
-                }
-                else
-                {
-                    index[key] = ids;
-                }
-            }
-        }
-
-        foreach (var key in collisions)
-        {
-            index.Remove(key);
-        }
-
-        return index;
+        return LibraryNameIndex.Build(
+                rows, r => r.Id, r => [r.Title, r.FolderName],
+                key => logger.LogDebug(
+                    "More than one library series is named '{Name}'; none will match a Kavita series of that name",
+                    key))
+            .ToDictionary(
+                kv => kv.Key,
+                kv => new LibraryIds(
+                    kv.Value.Id, kv.Value.MangaBakaId, kv.Value.AniListId, kv.Value.MalId, kv.Value.KitsuId,
+                    kv.Value.Incognito));
     }
 
     private static LibraryIds? MatchLocal(

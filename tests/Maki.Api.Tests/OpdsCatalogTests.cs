@@ -35,9 +35,10 @@ public sealed class OpdsCatalogTests : IDisposable
         }
     }
 
-    private OpdsCatalogService Catalog()
+    private OpdsCatalogService Catalog() => Catalog(_db.NewContext());
+
+    private OpdsCatalogService Catalog(Maki.Data.MakiDbContext context)
     {
-        var context = _db.NewContext();
         var scopeFactory = _db.ScopeFactory();
         var pusher = InertKavitaPusher.For(scopeFactory);
         var reader = new ReaderService(context, _archives,
@@ -292,6 +293,126 @@ public sealed class OpdsCatalogTests : IDisposable
         Assert.Equal("Hajime no Ippo", Assert.Single(feed.Entries).Title);
     }
 
+    [Fact]
+    public async Task SearchMatchesAlternateTitlesAndAuthors()
+    {
+        var (spy, _) = SeedSeriesWithChapters("Spy x Family", "s.cbz", ["001.jpg"], [1m]);
+        var (other, _) = SeedSeriesWithChapters("Vagabond", "v.cbz", ["001.jpg"], [1m]);
+        using (var db = _db.NewContext())
+        {
+            var series = db.Series.First(s => s.Id == spy);
+            series.AltTitles = [new LocalizedTitle("SPY×FAMILY", "ja-Latn"), new LocalizedTitle("Familia Espia", "es")];
+            db.Series.First(s => s.Id == other).AuthorArt = "Takehiko Inoue";
+            db.SaveChanges();
+        }
+
+        var catalog = Catalog();
+        var byAlt = await catalog.SearchFeedAsync(Ctx, "espia", 0, CancellationToken.None);
+        var byAuthor = await catalog.SearchFeedAsync(Ctx, "INOUE", 0, CancellationToken.None);
+
+        Assert.Equal("Spy x Family", Assert.Single(byAlt.Entries).Title);
+        Assert.Equal("Vagabond", Assert.Single(byAuthor.Entries).Title);
+    }
+
+    [Fact]
+    public async Task SearchFindsAlternateTitlesTheDatabaseStoresEscaped()
+    {
+        var (spy, _) = SeedSeriesWithChapters("Spy x Family", "s.cbz", ["001.jpg"], [1m]);
+        var (kaguya, _) = SeedSeriesWithChapters("Love Is War", "k.cbz", ["001.jpg"], [1m]);
+        SeedSeriesWithChapters("100% Pure_Love", "p.cbz", ["001.jpg"], [1m]);
+        SeedSeriesWithChapters("100 Percent", "q.cbz", ["001.jpg"], [1m]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.First(s => s.Id == spy).AltTitles = [new LocalizedTitle("SPY×FAMILY", "ja-Latn")];
+            db.Series.First(s => s.Id == kaguya).AltTitles = [new LocalizedTitle("Kaguya-sama's War", "en")];
+            db.SaveChanges();
+        }
+
+        var catalog = Catalog();
+
+        Assert.Equal("Spy x Family", Assert.Single((await catalog.SearchFeedAsync(Ctx, "y×f", 0, CancellationToken.None)).Entries).Title);
+        Assert.Equal("Love Is War", Assert.Single((await catalog.SearchFeedAsync(Ctx, "sama's", 0, CancellationToken.None)).Entries).Title);
+        Assert.Equal("100% Pure_Love", Assert.Single((await catalog.SearchFeedAsync(Ctx, "0% pure_", 0, CancellationToken.None)).Entries).Title);
+    }
+
+    [Fact]
+    public async Task SearchPrefilteredInSqlStillFindsATitleOnlyAnAlternateCarries()
+    {
+        var (berserk, _) = SeedSeriesWithChapters("Berserk", "b.cbz", ["001.jpg"], [1m]);
+        SeedSeriesWithChapters("Vagabond", "v.cbz", ["001.jpg"], [1m]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.First(s => s.Id == berserk).AltTitles = [new LocalizedTitle("Kenpuu Denki", "ja-Latn")];
+            db.SaveChanges();
+        }
+
+        Assert.True(OpdsCatalogService.SqlPrefilterable("puu den"));
+        var feed = await Catalog().SearchFeedAsync(Ctx, "puu den", 0, CancellationToken.None);
+
+        Assert.Equal("Berserk", Assert.Single(feed.Entries).Title);
+    }
+
+    [Fact]
+    public async Task SearchOnlyFindsSeriesInRootFoldersTheReaderMaySee()
+    {
+        var (granted, _) = SeedSeriesWithChapters("Granted Ippo", "g.cbz", ["001.jpg"], [1m]);
+        var (hidden, _) = SeedSeriesWithChapters("Hidden", "h.cbz", ["001.jpg"], [1m]);
+        var reader = _db.SeedUser("restricted", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        using (var db = _db.NewContext())
+        {
+            db.Series.First(s => s.Id == granted).AltTitles = [new LocalizedTitle("Granted Ippö", "de")];
+            db.Series.First(s => s.Id == hidden).AltTitles =
+                [new LocalizedTitle("Hidden Ippo", "en"), new LocalizedTitle("Hidden Ippö", "de")];
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder
+            {
+                UserId = reader, RootFolderId = db.Series.First(s => s.Id == granted).RootFolderId
+            });
+            db.SaveChanges();
+        }
+
+        var byPrefilter = await Catalog(_db.NewContext(reader, allRootFolders: false))
+            .SearchFeedAsync(Ctx, "ippo", 0, CancellationToken.None);
+        var byScan = await Catalog(_db.NewContext(reader, allRootFolders: false))
+            .SearchFeedAsync(Ctx, "ippö", 0, CancellationToken.None);
+
+        Assert.Equal("Granted Ippo", Assert.Single(byPrefilter.Entries).Title);
+        Assert.Equal("Granted Ippo", Assert.Single(byScan.Entries).Title);
+    }
+
+    [Theory]
+    [InlineData("ippo", true)]
+    [InlineData("100% pure_love!", true)]
+    [InlineData("sama's", false)]
+    [InlineData("a+b", false)]
+    [InlineData("ä", false)]
+    public void OnlyNeedlesLikeAgreesOnArePrefilteredInSql(string needle, bool prefiltered) =>
+        Assert.Equal(prefiltered, OpdsCatalogService.SqlPrefilterable(needle));
+
+    [Fact]
+    public async Task SearchPagesOverTheMatchesNotTheLibrary()
+    {
+        var total = OpdsCatalogService.SeriesPageSize + 1;
+        for (var i = 0; i < total + 5; i++)
+        {
+            var (id, _) = SeedSeriesWithChapters($"Series {i:D3}", $"s{i}.cbz", ["001.jpg"], [1m]);
+            if (i < total)
+            {
+                using var db = _db.NewContext();
+                db.Series.First(s => s.Id == id).AltTitles = [new LocalizedTitle("Shared Alias", "en")];
+                db.SaveChanges();
+            }
+        }
+
+        var catalog = Catalog();
+        var first = await catalog.SearchFeedAsync(Ctx, "shared alias", 0, CancellationToken.None);
+        var second = await catalog.SearchFeedAsync(Ctx, "shared alias", 1, CancellationToken.None);
+
+        Assert.Equal(OpdsCatalogService.SeriesPageSize, first.Entries.Count);
+        Assert.Contains(first.Links, l => l.Rel == "next");
+        Assert.Single(second.Entries);
+        Assert.DoesNotContain(second.Links, l => l.Rel == "next");
+    }
+
     // ---- shelves ----
 
     [Fact]
@@ -318,7 +439,7 @@ public sealed class OpdsCatalogTests : IDisposable
         var feed = await Catalog().OnDeckFeedAsync(Ctx, CancellationToken.None);
 
         // Mixed-series shelves prefix the series title — one bare "Ch.2" among many is useless.
-        Assert.Equal("Deck — Ch.2", Assert.Single(feed.Entries).Title);
+        Assert.Equal("Deck - Ch.2", Assert.Single(feed.Entries).Title);
     }
 
     [Fact]
@@ -329,7 +450,7 @@ public sealed class OpdsCatalogTests : IDisposable
 
         var feed = await Catalog().RecentFeedAsync(Ctx, CancellationToken.None);
 
-        Assert.Equal(["New — Ch.1", "Old — Ch.1"], feed.Entries.Select(e => e.Title));
+        Assert.Equal(["New - Ch.1", "Old - Ch.1"], feed.Entries.Select(e => e.Title));
     }
 
     // ---- seeding ----

@@ -162,13 +162,17 @@ public class SeriesRenameService(
             var existingExtension = Path.GetExtension(file.RelativePath);
             var to = Path.Combine(folderTo, ComicFile.IsPdf(existingExtension)
                 ? await naming.BuildChapterFileNameAsync(
-                    series, chapter, through, CoversWholeVolumes(ordered, span), existingExtension, ct)
+                    series, chapter, through, CoversWholeVolumes(ordered, span), existingExtension, ct,
+                    group: file.Group)
                 : await naming.BuildChapterFileNameAsync(
-                    series, chapter, through, CoversWholeVolumes(ordered, span), ct));
+                    series, chapter, through, CoversWholeVolumes(ordered, span), ct, group: file.Group));
 
             if (targets.TryGetValue(to, out var claimedBy))
             {
-                conflicts.Add($"{Path.GetFileName(to)} — wanted by both {claimedBy} and {file.RelativePath}");
+                conflicts.Add(localizer.Get("error.seriesRename.conflict", new
+                {
+                    file = Path.GetFileName(to), first = claimedBy, second = file.RelativePath,
+                }));
                 continue;
             }
 
@@ -267,9 +271,7 @@ public class SeriesRenameService(
             return new SeriesRenameResult(plan, true, null, []);
         }
 
-        var active = await db.DownloadQueue.AnyAsync(q => q.SeriesId == series.Id &&
-            q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
-            q.Status != QueueStatus.Cancelled, ct);
+        var active = await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.SeriesId == series.Id, ct);
         if (active)
         {
             return new SeriesRenameResult(plan, false,
@@ -300,7 +302,7 @@ public class SeriesRenameService(
             {
                 logger.LogWarning(ex, "Could not rename series folder for {Title}", series.Title);
                 return new SeriesRenameResult(plan, false,
-                    $"Could not rename the series folder: {ex.Message}", []);
+                    localizer.Get("error.seriesRename.folderFailed"), []);
             }
         }
 
@@ -381,7 +383,7 @@ public class SeriesRenameService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Could not rename {From} for {Title}", file.From, series.Title);
-                warnings.Add($"Could not rename {Path.GetFileName(file.From)}: {ex.Message}");
+                warnings.Add(localizer.Get("error.seriesRename.fileFailed", new { file = Path.GetFileName(file.From) }));
                 renamed.Add(file with { To = StayPut(root, from, original, occupied, moves) });
             }
         }

@@ -1,5 +1,6 @@
 import { Button, Group } from '@mantine/core'
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Plural, Trans } from '@lingui/react/macro'
 import type { ReaderManifest } from '../../api/reader'
@@ -41,6 +42,10 @@ export default function ChapterEnd({
   const [gapFrom, gapTo] = gap ?? [0, 0]
   const hasNext = manifest.nextChapterId != null
   const forwardKey = rtl ? '←' : '→'
+  // Focus lands on the heading, not a button: Space activates a button on key-up, so a button focused
+  // by the very page turn that opened this screen would take that key-up as a click.
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => heading.current?.focus(), [])
 
   return (
     <div className="reader-end">
@@ -67,7 +72,9 @@ export default function ChapterEnd({
                 <Trans>Last chapter on disk</Trans>
               )}
             </span>
-            <h1 className="reader-end-title">{chapterLabel}</h1>
+            <h1 ref={heading} tabIndex={-1} className="reader-end-title" style={{ outline: 'none' }}>
+              {chapterLabel}
+            </h1>
             <span className="reader-end-series">{manifest.seriesTitle}</span>
             {seriesChapterCount > 0 && (
               <div className="reader-end-meter">

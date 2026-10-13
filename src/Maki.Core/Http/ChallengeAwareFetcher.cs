@@ -6,6 +6,16 @@ using Microsoft.Extensions.Logging;
 namespace Maki.Core.Http;
 
 /// <summary>
+/// A host answered with an anti-bot challenge and no FlareSolverr URL is configured to solve it.
+/// The message is English for logs and stored source errors; callers that word it for a reader use
+/// the type and <see cref="Host"/>.
+/// </summary>
+public sealed class ChallengeNotSolvedException(string host, string message) : InvalidOperationException(message)
+{
+    public string Host { get; } = host;
+}
+
+/// <summary>
 /// HTML fetcher for anti-bot-protected sites. Tries a direct request with any
 /// cached clearance cookies first; when a challenge is detected it solves it via
 /// FlareSolverr, caches the cookies + user agent per host, and retries.
@@ -61,8 +71,8 @@ public class ChallengeAwareFetcher(
             var flareUrl = await settings.GetAsync(SettingKeys.FlareSolverrUrl, ct);
             if (string.IsNullOrWhiteSpace(flareUrl))
             {
-                throw new InvalidOperationException(
-                    $"{host} requires solving an anti-bot challenge; configure a FlareSolverr URL in Settings");
+                throw new ChallengeNotSolvedException(
+                    host, $"{host} requires solving an anti-bot challenge; configure a FlareSolverr URL in Settings");
             }
 
             logger.LogInformation("Solving challenge for {Host} via FlareSolverr", host);
@@ -113,8 +123,8 @@ public class ChallengeAwareFetcher(
             var flareUrl = await settings.GetAsync(SettingKeys.FlareSolverrUrl, ct);
             if (string.IsNullOrWhiteSpace(flareUrl))
             {
-                throw new InvalidOperationException(
-                    $"{host} requires a browser session; configure a FlareSolverr URL in Settings");
+                throw new ChallengeNotSolvedException(
+                    host, $"{host} requires a browser session; configure a FlareSolverr URL in Settings");
             }
 
             logger.LogInformation("Solving challenge for {Host} via FlareSolverr (browser session)", host);

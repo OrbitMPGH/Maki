@@ -201,4 +201,13 @@ public class DynastySourceTests
             "https://dynasty-scans.com/system/releases/000/005/265/citrus_ch01_02-03.webp", pages.Pages[1].Url);
         Assert.All(pages.Pages, p => Assert.Equal("https://dynasty-scans.com/", p.Headers!["Referer"]));
     }
+
+    [Fact]
+    public async Task GetPages_throws_when_the_response_has_no_page_list()
+    {
+        var source = SourceFor(new() { ["chapters/citrus_ch01.json"] = "{\"title\":\"x\"}" });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(
+            new SourceChapter("dynasty", "citrus", "citrus_ch01", "Chapter 1", 1m, 1, null, "en", null)));
+    }
 }

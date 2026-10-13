@@ -55,6 +55,23 @@ public class SeriesIdentityService(MakiDbContext db, ILogger<SeriesIdentityServi
     }
 
     /// <summary>
+    /// Moves this series' own activity rows from <paramref name="oldKey"/> to the key it resolves to
+    /// now. Needed when a hand edit renames a series with no provider ids, whose key is its title:
+    /// without it, events written after the rename aggregate as a second series. Scoped to the series
+    /// id, so another series that shares the old title keeps its rows, and the same narrow rule as
+    /// <see cref="SeriesIdentityRepairService"/>. Run it in the transaction that saves the rename.
+    /// </summary>
+    public Task<int> RekeyAsync(Series series, string oldKey, CancellationToken ct)
+    {
+        var key = SeriesIdentity.For(series);
+        return key == oldKey
+            ? Task.FromResult(0)
+            : db.StatsEvents.IgnoreQueryFilters()
+                .Where(e => e.SeriesId == series.Id && e.SeriesKey == oldKey)
+                .ExecuteUpdateAsync(u => u.SetProperty(e => e.SeriesKey, key), ct);
+    }
+
+    /// <summary>
     /// Re-points tombstoned reading marks (both keys null — the shape a hard delete leaves) at the
     /// new series.
     /// <para>

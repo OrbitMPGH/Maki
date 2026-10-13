@@ -53,8 +53,12 @@ public static class ComicSourceScanner
     /// the second would find the first already there and link the same bytes twice. Dropping it
     /// here is what keeps the plan honest about that.
     /// </para>
+    /// <para>
+    /// <paramref name="rootName"/> names loose pages lying directly in <paramref name="contentPath"/>
+    /// as if the folder had that name, for a preview of a folder that is renamed before it is built.
+    /// </para>
     /// </summary>
-    public static IReadOnlyList<ComicSource> Scan(string contentPath)
+    public static IReadOnlyList<ComicSource> Scan(string contentPath, string? rootName = null)
     {
         List<ComicSource> found = [];
         if (File.Exists(contentPath))
@@ -70,7 +74,7 @@ public static class ComicSourceScanner
                 found.AddRange(FromArchive(file));
             }
 
-            found.AddRange(LooseImageFolders(contentPath));
+            found.AddRange(LooseImageFolders(contentPath, rootName));
         }
 
         return found
@@ -80,31 +84,38 @@ public static class ComicSourceScanner
             // A folder holding both "X.cbr" and the "X.cbz" a previous import made of it wants the
             // finished one, whichever way round the two sort. Ready-to-place kinds (Cbz/Zip/Pdf)
             // outrank one that still needs repacking, and Cbz outranks the other ready kinds.
-            .Select(g => g.OrderBy(s => !s.IsReadyToPlace ? 2 : s.Kind == ComicSourceKind.Cbz ? 0 : 1).First())
+            .Select(g => g.OrderBy(Preference).First())
             .ToList();
     }
 
     /// <summary>
-    /// What the path actually held, for an error message when none of it was a comic. "No comics
-    /// found" on its own reads exactly like a download that arrived empty.
+    /// Which of two comics producing one name is used, lowest first: a CBZ, then another kind that
+    /// is placed as it is (zip, PDF), then one that has to be repacked. Shared with the import
+    /// preview, which has to pick the way a scan of the merged folder will.
     /// </summary>
-    public static string Describe(string contentPath)
+    public static int Preference(ComicSource source) =>
+        !source.IsReadyToPlace ? 2 : source.Kind == ComicSourceKind.Cbz ? 0 : 1;
+
+    /// <summary>
+    /// What the path actually held, for an error message when none of it was a comic: the three most
+    /// common file extensions with their counts, empty when there was nothing. "No comics found" on
+    /// its own reads exactly like a download that arrived empty.
+    /// </summary>
+    public static IReadOnlyList<(string Extension, int Count)> Census(string contentPath)
     {
         string[] files = File.Exists(contentPath) ? [contentPath]
             : Directory.Exists(contentPath) ? LibraryPaths.EnumerateFilesNoLinks(contentPath).ToArray()
             : [];
 
-        var census = files
+        return files
             .Select(f => System.IO.Path.GetExtension(f).ToLowerInvariant())
             .Where(e => e.Length > 0)
             .GroupBy(e => e, StringComparer.Ordinal)
             .OrderByDescending(g => g.Count())
             .ThenBy(g => g.Key, StringComparer.Ordinal)
             .Take(3)
-            .Select(g => $"{g.Count()} {g.Key}")
+            .Select(g => (g.Key, g.Count()))
             .ToList();
-
-        return census.Count == 0 ? "it is empty" : $"found {string.Join(", ", census)}";
     }
 
     private static IEnumerable<ComicSource> FromArchive(string path)
@@ -148,13 +159,13 @@ public static class ComicSourceScanner
         // No pages of its own: an archive of archives, one per chapter. Each inner one is its own
         // comic, and its entries stay unlisted because reaching them means extracting it.
         return entries
-            .Where(e => IsArchive(e.Name))
+            .Where(e => IsArchive(e.Name) && !CbzReader.IsMacMetadata(e.Name))
             .Select(e => new ComicSource(
                 CbzName(e.Name), ComicSourceKind.Repack, path, e.Size, [], e.Name))
             .ToList();
     }
 
-    private static IEnumerable<ComicSource> LooseImageFolders(string root) =>
+    private static IEnumerable<ComicSource> LooseImageFolders(string root, string? rootName) =>
         LibraryPaths.EnumerateDirectoriesNoLinks(root)
             .Append(root)
             .OrderBy(d => d, StringComparer.Ordinal)
@@ -168,7 +179,8 @@ public static class ComicSourceScanner
             // packed.
             .Where(x => x.Files.Any(f => CbzReader.IsImage(f)) && !x.Files.Any(IsArchiveOrPdf))
             .Select(x => new ComicSource(
-                new DirectoryInfo(x.Directory).Name + ".cbz",
+                (rootName is not null && string.Equals(x.Directory, root, StringComparison.Ordinal) ? rootName : new DirectoryInfo(x.Directory).Name) +
+                ".cbz",
                 ComicSourceKind.LooseImages,
                 x.Directory,
                 x.Files.Where(CbzReader.IsImage).Sum(f => new FileInfo(f).Length),

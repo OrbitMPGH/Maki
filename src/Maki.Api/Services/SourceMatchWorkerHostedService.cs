@@ -1,25 +1,32 @@
 ﻿using Maki.Api.Hubs;
+using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
+using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 namespace Maki.Api.Services;
 
 /// <summary>
-/// Runs auto source matching off the request thread.
+/// Runs auto source matching off the request thread, and links the files a library import
+/// registered once their series has chapters to link them to.
 /// <para>
 /// Adding a series used to await a title search against every registered source plus the first
 /// chapter sync, which is tens of seconds of network on a button click. The row, its folder and its
 /// cover are all that <c>Add</c> waits for now; this picks the series up afterwards, and the series
-/// page shows a spinner where the sources table will be until it finishes.
+/// page shows a spinner where the sources table will be until it finishes. A library import does
+/// the same for every folder, so a hundred-folder import is no longer paced by the source sites.
 /// </para>
 /// <para>
-/// Deliberately single-reader: matching one series already searches several sources at once, so a
-/// second reader would multiply that fan-out at the same sites for no wall-clock win on the series
-/// somebody is actually looking at.
+/// <see cref="MatchReaders"/> series match at once. Matching one series already searches several
+/// sources in parallel, so more readers would multiply that fan-out at the same sites and invite
+/// rate limiting on a big import. Linking is a separate single reader because it is disk work (the
+/// ComicInfo rewrite of every archive): a big series rewriting on a NAS must not hold up the match
+/// of a series somebody just added.
 /// </para>
 /// </summary>
 public class SourceMatchWorkerHostedService(
@@ -27,17 +34,48 @@ public class SourceMatchWorkerHostedService(
     IServiceScopeFactory scopeFactory,
     ILogger<SourceMatchWorkerHostedService> logger) : BackgroundService
 {
+    internal const int MatchReaders = 2;
+
+    /// <summary>First wait before linking again into a root folder that was not reachable; doubles each time.</summary>
+    internal static TimeSpan UnreachableRetry { get; set; } = TimeSpan.FromSeconds(30);
+
+    internal static readonly TimeSpan UnreachableRetryMax = TimeSpan.FromMinutes(30);
+
+    private readonly SourceFailureStreaks failureStreaks = new();
+
+    // Per series: how many times in a row its root was unreachable, and whether a retry is waiting.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> unreachableAttempts = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, byte> retryScheduled = new();
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await RecoverAsync(stoppingToken);
 
-        await foreach (var seriesId in queue.Reader.ReadAllAsync(stoppingToken))
+        var loops = Enumerable.Range(0, MatchReaders)
+            .Select(_ => MatchLoopAsync(stoppingToken))
+            .Append(LinkLoopAsync(stoppingToken));
+        await Task.WhenAll(loops);
+    }
+
+    private async Task MatchLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
         {
+            int seriesId;
             try
             {
-                await MatchAsync(seriesId, stoppingToken);
+                seriesId = await queue.ReadMatchAsync(ct);
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            try
+            {
+                await RunExclusiveAsync(seriesId, ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 return;
             }
@@ -51,8 +89,61 @@ public class SourceMatchWorkerHostedService(
     }
 
     /// <summary>
-    /// Re-queues anything still flagged from a previous run. A match that was in flight when the
-    /// process stopped never cleared its flag, and the channel itself does not survive a restart.
+    /// A series read twice (a re-flag while its match ran) waits for the run in progress rather
+    /// than matching beside it; the second run then finds nothing left to do or routes the link.
+    /// </summary>
+    private async Task RunExclusiveAsync(int seriesId, CancellationToken ct)
+    {
+        while (true)
+        {
+            var run = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (queue.TryBeginMatch(seriesId, run.Task))
+            {
+                try
+                {
+                    await MatchAsync(seriesId, ct);
+                }
+                finally
+                {
+                    queue.EndMatch(seriesId);
+                    run.SetResult();
+                }
+
+                return;
+            }
+
+            await queue.MatchInProgress(seriesId).WaitAsync(ct);
+        }
+    }
+
+    private async Task LinkLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            await foreach (var seriesId in queue.LinkReader.ReadAllAsync(ct))
+            {
+                try
+                {
+                    await LinkAsync(seriesId, ct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Linking imported files crashed for series {Id}", seriesId);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Re-queues anything still flagged from a previous run. A match or link that was in flight
+    /// when the process stopped never cleared its flag, and the channels do not survive a restart.
     /// </summary>
     private async Task RecoverAsync(CancellationToken ct)
     {
@@ -62,13 +153,22 @@ public class SourceMatchWorkerHostedService(
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
             var pending = await db.Series
-                .Where(s => s.SourceMatchPending)
-                .Select(s => s.Id)
+                .Where(s => s.SourceMatchPending || s.PendingImportLink != PendingImportLink.None)
+                .Select(s => new { s.Id, s.SourceMatchPending, s.PendingImportLink })
                 .ToListAsync(ct);
 
-            foreach (var id in pending)
+            foreach (var s in pending)
             {
-                queue.Enqueue(id);
+                if (!s.SourceMatchPending)
+                {
+                    queue.EnqueueLink(s.Id);
+                }
+                else
+                {
+                    queue.Enqueue(s.Id, s.PendingImportLink == PendingImportLink.None
+                        ? SourceMatchLane.Interactive
+                        : SourceMatchLane.Background);
+                }
             }
 
             if (pending.Count > 0)
@@ -82,20 +182,31 @@ public class SourceMatchWorkerHostedService(
         }
     }
 
-    private async Task MatchAsync(int seriesId, CancellationToken ct)
+    internal async Task MatchAsync(int seriesId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
-        if (series is null || !series.SourceMatchPending)
+        if (series is null)
         {
-            // Deleted, or already matched by a duplicate enqueue.
+            return;
+        }
+
+        if (!series.SourceMatchPending)
+        {
+            // Already matched by a duplicate enqueue, or an import whose match finished before a
+            // restart and still owes its link.
+            if (series.PendingImportLink != PendingImportLink.None)
+            {
+                queue.EnqueueLink(series.Id);
+            }
+
             return;
         }
 
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
-        var progress = new HubProgress(events, series.Id, series.RootFolderId);
+        var progress = new FailureCollector(new HubProgress(events, series.Id, series.RootFolderId));
 
         var mapped = new List<string>();
         var failed = false;
@@ -120,9 +231,21 @@ public class SourceMatchWorkerHostedService(
             failed = true;
         }
 
-        series.SourceMatchPending = false;
         try
         {
+            if (failed)
+            {
+                // Rows the failed save left tracked would be retried by the save below and fail again.
+                db.ChangeTracker.Clear();
+                series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+                if (series is null)
+                {
+                    logger.LogInformation("Series {Id} was deleted during source matching", seriesId);
+                    return;
+                }
+            }
+
+            series.SourceMatchPending = false;
             await db.SaveChangesAsync(ct);
         }
         catch (DbUpdateConcurrencyException)
@@ -133,9 +256,30 @@ public class SourceMatchWorkerHostedService(
             return;
         }
 
-        await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count);
+        // Read fresh rather than off the entity: an import can register files into this series
+        // while its match runs, and those still need the link stage.
+        var linkOwed = await db.Series
+            .Where(s => s.Id == seriesId)
+            .Select(s => s.PendingImportLink)
+            .FirstOrDefaultAsync(ct) != PendingImportLink.None;
 
-        if (mapped.Count == 0 && !failed)
+        // A source whose search failed can still be mapped from a neighbour's cross-reference.
+        var unsearched = progress.Failed.Except(mapped, StringComparer.OrdinalIgnoreCase).ToList();
+        failureStreaks.Record(progress.Answered, unsearched);
+        await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count, unsearched);
+
+        var registry = scope.ServiceProvider.GetRequiredService<Maki.Core.Sources.SourceRegistry>();
+        if (unsearched.Any(name => registry.Find(name) is Maki.Sources.Suwayomi.SuwayomiSource) &&
+            scope.ServiceProvider.GetService<ISchedulerFactory>() is { } schedulers)
+        {
+            // The health check would otherwise notice Suwayomi is down at its next quarter hour.
+            await HealthCheckJob.RequestSoonAsync(schedulers, logger);
+        }
+
+        // "Link one by hand" would be wrong while sources that may carry it could not be asked, but a
+        // source failing every search (an uninstalled extension, a site that needs FlareSolverr) would
+        // then hold the alert back for every series, so one that keeps failing no longer counts.
+        if (mapped.Count == 0 && !failed && failureStreaks.AllowsManualMatchAlert(progress.Answered, unsearched))
         {
             await NotifyManualMatchNeededAsync(
                 scope.ServiceProvider.GetRequiredService<NotificationService>(),
@@ -144,18 +288,182 @@ public class SourceMatchWorkerHostedService(
                 series, logger, ct);
         }
 
+        if (linkOwed)
+        {
+            // No inbox row per imported series: the import already raised one for the whole batch,
+            // and a hundred rows saying the same thing is a flood, not a notification.
+            queue.EnqueueLink(series.Id);
+            return;
+        }
+
         // Off by default: the SignalR event above already redraws the Sources card while the user is
         // looking at it. This is for people who add a series and walk away.
+        string Names(IEnumerable<string> names) =>
+            string.Join(", ", names.Select(name => registry.Find(name)?.DisplayName ?? name));
         var inbox = scope.ServiceProvider.GetRequiredService<InboxService>();
         inbox.Raise(InboxEventType.SourceMatchFinished, new InboxMessage(
-                Key: mapped.Count > 0 ? "inbox.sourceMatch.matched" : "inbox.sourceMatch.none",
+                Key: (mapped.Count > 0, unsearched.Count > 0) switch
+                {
+                    (true, true) => "inbox.sourceMatch.matchedSomeFailed",
+                    (true, false) => "inbox.sourceMatch.matched",
+                    (false, true) => "inbox.sourceMatch.failed",
+                    _ => "inbox.sourceMatch.none"
+                },
                 // Source names are product names and are never translated, so joining them here
                 // rather than in the message is safe.
-                Params: InboxMessage.Args(new { sources = string.Join(", ", mapped) }),
-                Level: mapped.Count > 0 ? NotificationLevel.Info : NotificationLevel.Warning,
+                Params: InboxMessage.Args(new { sources = Names(mapped), failed = Names(unsearched) }),
+                Level: mapped.Count > 0 && unsearched.Count == 0 ? NotificationLevel.Info : NotificationLevel.Warning,
                 SeriesId: series.Id,
                 Url: $"/series/{series.Id}"),
             InboxAudience.SeriesTrackers(series.Id, series.RootFolderId));
+    }
+
+    /// <summary>
+    /// Links the files a library import registered, now that the match has synced chapters, and
+    /// rewrites their ComicInfo.xml in the same pass when the import asked for it. Runs whether or
+    /// not a source matched: the rewrite is still owed, and a series with no chapters gets the same
+    /// result an import with no sources always got.
+    /// <para>
+    /// Goes through <see cref="CbzLinkService.LinkFilesAsync"/> again rather than a rescan: that is
+    /// what the import itself ran before matching moved here, and only it has the lone-file rule,
+    /// the hardlink guard on the rewrite and the volume backfill together.
+    /// </para>
+    /// </summary>
+    internal async Task LinkAsync(int seriesId, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        int linked = 0, total = 0, rootFolderId;
+        using (await SeriesLocks.SeriesAsync(seriesId, ct))
+        {
+            var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+            // Still matching means an import re-flagged it; the match stage routes it back here.
+            if (series is null || series.PendingImportLink == PendingImportLink.None || series.SourceMatchPending)
+            {
+                if (series is null || series.PendingImportLink == PendingImportLink.None)
+                {
+                    // Deleted, undone or linked some other way: no retry is owed any more.
+                    unreachableAttempts.TryRemove(seriesId, out _);
+                }
+
+                return;
+            }
+
+            rootFolderId = series.RootFolderId;
+            var rootPath = series.RootFolder?.Path;
+            if (rootPath is null || !Directory.Exists(rootPath))
+            {
+                // An unmounted share. Not attempted, so the marker stays and the link is tried again
+                // later, waiting longer each time the share is still gone.
+                var delay = RetryUnreachableLater(seriesId, ct);
+                logger.LogWarning(
+                    "Not linking the imported files of {Title} yet: root folder {Root} is not reachable. Trying again in {Delay}",
+                    series.Title, rootPath, delay);
+                return;
+            }
+
+            unreachableAttempts.TryRemove(seriesId, out _);
+
+            try
+            {
+                var cbz = scope.ServiceProvider.GetRequiredService<CbzLinkService>();
+                var updateComicInfo = series.PendingImportLink == PendingImportLink.LinkAndComicInfo;
+                var paths = await db.ChapterFiles
+                    .Where(f => f.SeriesId == seriesId)
+                    .Select(f => f.RelativePath)
+                    .ToListAsync(ct);
+                foreach (var folder in paths.GroupBy(p => LibraryPaths.TopFolder(p) ?? "", LibraryPaths.FolderComparer))
+                {
+                    var dir = folder.Key.Length == 0 ? null : LibraryPaths.ResolveNoLinks(rootPath, folder.Key);
+                    if (dir is null || !Directory.Exists(dir))
+                    {
+                        continue;
+                    }
+
+                    // A file deleted since the import would throw inside the link and take the whole
+                    // pass with it. Its row stays for the next rescan to remove, as it always has.
+                    var files = folder
+                        .Select(p => LibraryPaths.ResolveNoLinks(rootPath, p))
+                        .OfType<string>()
+                        .Where(File.Exists)
+                        .ToList();
+                    await cbz.LinkFilesAsync(series, dir, files, "import", updateComicInfo: updateComicInfo, ct: ct);
+                }
+
+                // Read back rather than summed from the link: its count includes chapters the volume
+                // fill and the lone-file rule link, which can exceed the files.
+                total = await db.ChapterFiles.CountAsync(f => f.SeriesId == seriesId, ct);
+                linked = await db.Chapters
+                    .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+                    .Select(c => c.ChapterFileId!.Value)
+                    .Distinct()
+                    .CountAsync(ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Something bigger than one bad archive, which the link logs and skips by itself.
+                // Retrying at every start would fail the same way, so the marker is cleared.
+                logger.LogWarning(ex,
+                    "Linking the imported files of {Title} failed. A rescan from the series page links what it can, but does not rewrite ComicInfo for files it already knows",
+                    series.Title);
+                db.ChangeTracker.Clear();
+                series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+                if (series is null)
+                {
+                    return;
+                }
+            }
+
+            series.PendingImportLink = PendingImportLink.None;
+            await db.SaveChangesAsync(ct);
+        }
+
+        var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
+        await events.SeriesFilesLinked(seriesId, rootFolderId, linked, total);
+
+        // Measured after the rewrite rather than at the end of the import request: on Windows the
+        // ComicInfo rewrite cannot replace an archive the measure job has open.
+        if (scope.ServiceProvider.GetService<ISchedulerFactory>() is { } scheduler)
+        {
+            await ChapterFileMeasureJob.TriggerAsync(scheduler, logger);
+        }
+    }
+
+    private TimeSpan RetryUnreachableLater(int seriesId, CancellationToken ct)
+    {
+        // A link read again while its retry is still waiting (a duplicate enqueue) neither schedules
+        // another one nor counts as another failed attempt.
+        var scheduling = retryScheduled.TryAdd(seriesId, 0);
+        var attempt = scheduling
+            ? unreachableAttempts.AddOrUpdate(seriesId, 0, (_, n) => n + 1)
+            : unreachableAttempts.GetValueOrDefault(seriesId);
+        var delay = TimeSpan.FromTicks(Math.Min(
+            UnreachableRetry.Ticks * (1L << Math.Min(attempt, 16)), UnreachableRetryMax.Ticks));
+        if (scheduling)
+        {
+            _ = RetryAsync();
+        }
+
+        return delay;
+
+        async Task RetryAsync()
+        {
+            try
+            {
+                await Task.Delay(delay, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            finally
+            {
+                retryScheduled.TryRemove(seriesId, out _);
+            }
+
+            queue.EnqueueLink(seriesId);
+        }
     }
 
     /// <summary>
@@ -199,6 +507,34 @@ public class SourceMatchWorkerHostedService(
     /// the finished table, and a hub push is not worth failing a match over.
     /// </para>
     /// </summary>
+    /// <summary>Passes every step on and remembers which sources answered and which failed.</summary>
+    private sealed class FailureCollector(IProgress<SourceMatchStep> inner) : IProgress<SourceMatchStep>
+    {
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _failed =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _answered =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        public IEnumerable<string> Failed => _failed.Keys;
+
+        public IEnumerable<string> Answered => _answered.Keys;
+
+        public void Report(SourceMatchStep step)
+        {
+            if (step.State == SourceMatchState.Failed)
+            {
+                _failed.TryAdd(step.SourceName, 0);
+            }
+            else if (step.State is SourceMatchState.Matched or SourceMatchState.NoMatch)
+            {
+                _answered.TryAdd(step.SourceName, 0);
+            }
+
+            inner.Report(step);
+        }
+    }
+
     private sealed class HubProgress(EventBroadcaster events, int seriesId, int rootFolderId)
         : IProgress<SourceMatchStep>
     {
@@ -216,4 +552,41 @@ public class SourceMatchWorkerHostedService(
             }
         }
     }
+}
+
+/// <summary>
+/// How many searches in a row each source has failed, across every series matched since the start.
+/// One that failed <see cref="Threshold"/> times running without answering once is taken to be down
+/// for good, until it answers again: a single timeout says nothing, an uninstalled extension fails
+/// every time.
+/// </summary>
+internal sealed class SourceFailureStreaks
+{
+    internal const int Threshold = 3;
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _streaks =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public void Record(IEnumerable<string> answered, IEnumerable<string> failed)
+    {
+        foreach (var name in answered)
+        {
+            _streaks.TryRemove(name, out _);
+        }
+
+        foreach (var name in failed)
+        {
+            _streaks.AddOrUpdate(name, 1, (_, n) => n + 1);
+        }
+    }
+
+    public bool IsPersistent(string source) => _streaks.TryGetValue(source, out var n) && n >= Threshold;
+
+    /// <summary>
+    /// Whether a run that matched nothing may ask for a manual match: every source answered, or the
+    /// ones that did not are down for good and at least one other answered. With nothing answering at
+    /// all (FlareSolverr down during a big import) the run says nothing about the series.
+    /// </summary>
+    public bool AllowsManualMatchAlert(IEnumerable<string> answered, IReadOnlyCollection<string> unsearched) =>
+        unsearched.Count == 0 || (answered.Any() && unsearched.All(IsPersistent));
 }

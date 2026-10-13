@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { UnstyledButton } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
+import { scrollBehavior } from '../../lib/scrollBehavior'
 import {
   STATS_SECTIONS,
   isStatsSectionKey,
@@ -103,7 +104,7 @@ export function StatsRail({ end }: { end?: ReactNode }) {
             onClick={() => {
               document
                 .getElementById(sectionElementId(s.key))
-                ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+                ?.scrollIntoView({ block: 'start', behavior: scrollBehavior() })
               setActive(s.key)
               setSearchParams(
                 (prev) => {

@@ -98,6 +98,22 @@ public class LibraryFiltersControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Create_round_trips_the_rating_window()
+    {
+        var spec = new LibraryFilterSpec(
+            RatingState: "rated", RatingMin: 7, RatingMax: 10, CommunityRatingMin: 7.5, CommunityRatingMax: 9);
+
+        await Controller().Create(new SaveFilterRequest("Favourites", spec), CancellationToken.None);
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
+
+        Assert.Equal("rated", listed.Spec.RatingState);
+        Assert.Equal(7, listed.Spec.RatingMin);
+        Assert.Equal(10, listed.Spec.RatingMax);
+        Assert.Equal(7.5, listed.Spec.CommunityRatingMin);
+        Assert.Equal(9, listed.Spec.CommunityRatingMax);
+    }
+
+    [Fact]
     public async Task Create_round_trips_the_series_types()
     {
         var spec = new LibraryFilterSpec(Types: [SeriesTypes.Manhwa, SeriesTypes.Manhua]);
@@ -128,6 +144,8 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Null(listed.Spec.Genres);
         Assert.Equal("any", listed.Spec.GenreMatch);
         Assert.Equal(0, listed.Spec.ReadMin);
+        Assert.Equal("all", listed.Spec.RatingState);
+        Assert.Equal(10, listed.Spec.CommunityRatingMax);
         Assert.Equal(100, listed.Spec.ReadMax);
         // Absent source filters have to read as "unfiltered", not as an empty list — the grid
         // treats an empty selection as "don't filter" but a present-and-empty one is the same
@@ -142,6 +160,35 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Null(listed.Spec.ChapterMin);
         Assert.Null(listed.Spec.ChapterMax);
         Assert.Equal("downloaded", listed.Spec.ChapterMode);
+        Assert.Equal("", listed.Spec.SortDir);
+        Assert.Null(listed.Spec.ExcludeTagIds);
+        Assert.Null(listed.Spec.ExcludeGenres);
+        Assert.False(listed.Spec.UntaggedOnly);
+    }
+
+    [Fact]
+    public async Task Create_round_trips_the_exclude_filters()
+    {
+        var spec = new LibraryFilterSpec(ExcludeTagIds: [4, 5], ExcludeGenres: ["Horror"], UntaggedOnly: true);
+
+        await Controller().Create(new SaveFilterRequest("Clean", spec), CancellationToken.None);
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
+
+        Assert.Equal([4, 5], listed.Spec.ExcludeTagIds);
+        Assert.Equal(["Horror"], listed.Spec.ExcludeGenres);
+        Assert.True(listed.Spec.UntaggedOnly);
+    }
+
+    [Fact]
+    public async Task Create_round_trips_the_sort_direction()
+    {
+        var spec = new LibraryFilterSpec(Sort: "read", SortDir: "asc");
+
+        await Controller().Create(new SaveFilterRequest("Oldest read first", spec), CancellationToken.None);
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
+
+        Assert.Equal("read", listed.Spec.Sort);
+        Assert.Equal("asc", listed.Spec.SortDir);
     }
 
     [Fact]

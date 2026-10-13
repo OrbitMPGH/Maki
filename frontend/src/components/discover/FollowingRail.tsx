@@ -137,7 +137,7 @@ function FollowingManager({
               </Anchor>
               <ActionIcon
                 variant="subtle"
-                color="gray"
+                color="var(--neutral)"
                 aria-label={t`Unfollow ${name}`}
                 title={t`Unfollow`}
                 disabled={save.isPending}

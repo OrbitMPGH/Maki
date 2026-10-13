@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text.Json;
 using Maki.Api.Hubs;
 using Maki.Core.Reading;
+using Maki.Core.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -130,10 +131,10 @@ public class HealthWorkspaceTests : IDisposable
     {
         using var db=fixture.NewContext(); var file=await Seed(db,true); var service=Operations(db);
         // Automatic is not a way past having nothing mapped; it only means "you pick which".
-        var automatic=await Assert.ThrowsAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,null,1,default));
-        Assert.Equal("This series has no enabled source mappings",automatic.Message);
-        var named=await Assert.ThrowsAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,999,1,default));
-        Assert.Equal("Select an enabled source mapped to this series",named.Message);
+        var automatic=await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,null,1,default));
+        Assert.Equal("error.download.noEnabledMapping",Assert.IsType<HealthRefusedException>(automatic).Key);
+        var named=await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.RequestAsync(file.Id,file.Version,999,1,default));
+        Assert.Equal("error.health.mappingNotEnabled",Assert.IsType<HealthRefusedException>(named).Key);
     }
     [Fact] public async Task A_scan_does_not_accumulate_tracked_entities()
     {
@@ -145,6 +146,59 @@ public class HealthWorkspaceTests : IDisposable
         // Every analysis is tens of KB of page fingerprints; holding them for the length of a scan
         // is what made a real library climb for the whole run.
         Assert.True(db.ChangeTracker.Entries().Count() <= 4, $"{db.ChangeTracker.Entries().Count()} entities still tracked");
+    }
+    [Fact] public async Task A_scan_counts_files_it_skips_for_an_active_download()
+    {
+        using var db=fixture.NewContext(); var file=await Seed(db,true);
+        var chapter=db.Chapters.First(c=>c.SeriesId==file.SeriesId);
+        db.DownloadQueue.Add(new DownloadQueueItem { SeriesId=file.SeriesId!.Value, ChapterId=chapter.Id, Status=QueueStatus.Queued });
+        var scan=new HealthScan(); db.HealthScans.Add(scan); await db.SaveChangesAsync();
+        var analysedAt=file.AnalyzedAt;
+        await new HealthScanService(db).RunAsync(scan,default);
+        Assert.Equal("completed",scan.Status);
+        Assert.True(scan.Total > 0);
+        Assert.Equal(scan.Total,scan.Completed);
+        Assert.Equal(analysedAt,db.HealthFiles.AsNoTracking().Single(f=>f.Id==file.Id).AnalyzedAt);
+    }
+    [Fact] public async Task The_incremental_baseline_stops_at_the_oldest_unanalysed_file_then_follows_the_newest()
+    {
+        using var db=fixture.NewContext(); var file=await Seed(db,true);
+        var settings=new FakeAppSettings();
+        var start=new DateTime(2026,1,1,0,0,0,DateTimeKind.Utc);
+        var analysed=db.ChapterFiles.Single(f=>f.Id==file.ChapterFileId);
+        analysed.DateAdded=start.AddDays(1);
+        file.AnalyzedAt=start.AddDays(2);
+        var waiting=new ChapterFile { SeriesId=analysed.SeriesId,RelativePath="two.cbz",Size=1,DateAdded=start.AddDays(3) };
+        db.ChapterFiles.Add(waiting); await db.SaveChangesAsync();
+
+        var first=await HealthWorker.AdvanceBaselineAsync(db,settings,start,start.AddDays(30),default);
+        Assert.Equal(start.AddDays(3),first);
+        Assert.Equal(start.AddDays(3).ToString("O"),await settings.GetAsync(Maki.Core.Configuration.SettingKeys.HealthIncrementalSince));
+
+        db.HealthFiles.Add(new HealthFile { RootFolderId=file.RootFolderId,RelativePath="two.cbz",ChapterFileId=waiting.Id,AnalyzedAt=start.AddDays(4) });
+        await db.SaveChangesAsync();
+        Assert.Equal(first,await HealthWorker.AdvanceBaselineAsync(db,settings,first,start.AddDays(30),default));
+        var older=await HealthWorker.AdvanceBaselineAsync(db,settings,start,start.AddDays(30),default);
+        Assert.Equal(start.AddDays(3),older);
+    }
+    [Fact] public async Task The_incremental_baseline_never_passes_the_margin_behind_now()
+    {
+        using var db=fixture.NewContext(); var file=await Seed(db,true);
+        var settings=new FakeAppSettings();
+        var start=new DateTime(2026,1,1,0,0,0,DateTimeKind.Utc);
+        var now=start.AddDays(10);
+        db.ChapterFiles.Single(f=>f.Id==file.ChapterFileId).DateAdded=now.AddMinutes(-10);
+        file.AnalyzedAt=now;
+        await db.SaveChangesAsync();
+
+        var moved=await HealthWorker.AdvanceBaselineAsync(db,settings,start,now,default);
+        Assert.Equal(now-HealthWorker.BaselineMargin,moved);
+        Assert.Equal(moved.ToString("O"),await settings.GetAsync(Maki.Core.Configuration.SettingKeys.HealthIncrementalSince));
+
+        db.ChapterFiles.Add(new ChapterFile { SeriesId=file.SeriesId!.Value,RelativePath="late.cbz",Size=1,DateAdded=now.AddMinutes(-30) });
+        await db.SaveChangesAsync();
+        Assert.Equal(moved,await HealthWorker.AdvanceBaselineAsync(db,settings,moved,now,default));
+        Assert.Contains("late.cbz",await HealthWorker.UnanalysedSince(db,moved).Select(f=>f.RelativePath).ToListAsync());
     }
     [Fact] public async Task A_verified_file_is_not_downgraded_by_a_later_index_pass()
     {
@@ -169,10 +223,11 @@ public class HealthWorkspaceTests : IDisposable
         var file=await SeedPages(db,4,2);
         Assert.False(HealthScanService.Analysis(file).Verified);
         Assert.Equal(0,file.VerifiedVersion);
-        var analyzed=file.AnalyzedAt;
+        var analysis=file.AnalysisJson;
         // A file nobody asked to read is current at the index version, whatever the verify one is.
         await new HealthScanService(db).AnalyzeAsync(file,root,false,default);
-        Assert.Equal(analyzed,file.AnalyzedAt);
+        Assert.Equal(analysis,file.AnalysisJson);
+        Assert.Equal(0,file.VerifiedVersion);
     }
     [Fact] public void Every_health_action_and_preview_is_admin_only()
     {
@@ -220,14 +275,35 @@ public class HealthWorkspaceTests : IDisposable
         using var db=fixture.NewContext(); var file=await Seed(db);
         var service=Operations(db);var op=await service.PreviewDeleteAsync(file.Id,file.Version,1,default);
         await File.AppendAllTextAsync(Path.Combine(root,"one.cbz"),"changed");
-        await Assert.ThrowsAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default)); Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default)); Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
     }
     [Fact] public async Task Confirmation_is_required_and_path_escape_is_rejected()
     {
         using var db=fixture.NewContext();var file=await Seed(db);var service=Operations(db);
         var op=await service.PreviewDeleteAsync(file.Id,file.Version,1,default);
-        await Assert.ThrowsAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,false,false,default));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,false,false,default));
         Assert.Throws<InvalidOperationException>(()=>HealthPaths.Resolve(root,"../outside.cbz"));
+    }
+    [Fact] public void A_library_root_that_is_itself_a_link_resolves_but_links_inside_it_do_not()
+    {
+        var real=Directory.CreateTempSubdirectory("maki-health-real-").FullName;
+        var outside=Directory.CreateTempSubdirectory("maki-health-outside-").FullName;
+        var linkedRoot=Path.Combine(root,"library");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(real,"Series"));
+            if(!TestLinks.TryLinkDirectory(linkedRoot,real)) return;
+            Assert.Equal(Path.Combine(linkedRoot,"one.cbz"),HealthPaths.Resolve(linkedRoot,"one.cbz"));
+            var inner=Path.Combine(real,"escape");
+            if(!TestLinks.TryLinkDirectory(inner,outside)) return;
+            Assert.Throws<InvalidOperationException>(()=>HealthPaths.Resolve(linkedRoot,"escape/one.cbz"));
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(Path.Combine(real,"escape"));
+            TestLinks.UnlinkDirectory(linkedRoot);
+            Directory.Delete(real,true);Directory.Delete(outside,true);
+        }
     }
     [Fact] public async Task Interrupted_deletion_finishes_links_only_when_file_is_gone()
     {
@@ -258,6 +334,31 @@ public class HealthWorkspaceTests : IDisposable
         db.ChangeTracker.Clear();
         Assert.False((await db.HealthFiles.SingleAsync()).Removed);
         Assert.Contains(db.HealthFindings,f=>f.Kind=="missing"&&f.State=="open");
+    }
+    [Fact] public async Task A_scan_that_only_skipped_series_with_active_downloads_leaves_no_history_row()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        db.DownloadQueue.Add(new DownloadQueueItem{SeriesId=file.SeriesId!.Value,Status=QueueStatus.Queued});
+        var scan=new HealthScan{Verify=true};db.HealthScans.Add(scan);await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        Assert.Equal("completed",scan.Status);
+        Assert.DoesNotContain(db.HealthHistory,h=>h.Kind=="scan");
+    }
+    [Fact] public async Task A_verify_of_a_file_that_cannot_be_opened_records_a_finding_and_stamps_it_analysed()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        file.AnalyzedAt=null;await db.SaveChangesAsync();
+        await using(new FileStream(Path.Combine(root,"one.cbz"),FileMode.Open,FileAccess.Read,FileShare.None))
+            await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,true);
+        Assert.NotNull(file.AnalyzedAt);
+        Assert.Contains(db.HealthFindings.Local,f=>f.Kind=="unreadable"&&f.State=="open");
+    }
+    [Fact] public async Task An_unchanged_verified_file_is_still_stamped_analysed()
+    {
+        using var db=fixture.NewContext();var file=await Seed(db,true);
+        file.AnalyzedAt=null;await db.SaveChangesAsync();
+        await new HealthScanService(db).AnalyzeAsync(file,root,false,default,0,true);
+        Assert.NotNull(file.AnalyzedAt);
     }
     [Fact] public async Task Unavailable_root_does_not_resolve_prior_findings()
     {
@@ -292,7 +393,7 @@ public class HealthWorkspaceTests : IDisposable
             db.ChapterProgress.Add(new(){UserId=userId,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4,PageCount=5,Completed=true,ReadSeconds=120});
         }
         await db.SaveChangesAsync();var op=await Stage(db,file);var service=Operations(db);
-        await Assert.ThrowsAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default));
         Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
         await service.ApplyAsync(op.Id,file.Version,true,true,default);
         Assert.Equal("completed",op.Status);Assert.Equal(2,await db.ChapterFiles.CountAsync());Assert.Empty(db.ReaderBookmarks);
@@ -303,7 +404,7 @@ public class HealthWorkspaceTests : IDisposable
     {
         using var db=fixture.NewContext();var file=await Seed(db,true);var op=await Stage(db,file);
         await File.AppendAllTextAsync(Path.Combine(root,HealthOperationService.Candidates(op)[0].RelativePath),"changed");
-        await Assert.ThrowsAsync<InvalidOperationException>(()=>Operations(db).ApplyAsync(op.Id,file.Version,true,true,default));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>Operations(db).ApplyAsync(op.Id,file.Version,true,true,default));
         Assert.True(File.Exists(Path.Combine(root,"one.cbz")));Assert.Single(db.ChapterFiles);
     }
     [Fact] public async Task Interrupted_replacement_restores_original_and_keeps_links()

@@ -6,9 +6,11 @@ using Maki.Core.Http;
 using Maki.Core.Images;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -89,7 +91,11 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
         var results = new List<SourceSeriesResult>();
         foreach (var item in data.EnumerateArray())
         {
-            var id = item.GetProperty("id").GetInt64().ToString(CultureInfo.InvariantCulture);
+            if (!item.TryGetProperty("id", out var idEl) || JsonRead.Text(idEl) is not { Length: > 0 } id)
+            {
+                continue;
+            }
+
             var name = item.TryGetProperty("name", out var n) ? n.GetString() : null;
             var cover = item.TryGetProperty("cover_url", out var c) ? RewriteHost(c.GetString()) : null;
 
@@ -207,13 +213,12 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
 
     private SourceChapter? ToChapter(string sourceSeriesId, JsonElement entry)
     {
-        if (!entry.TryGetProperty("id", out var idEl))
+        if (!entry.TryGetProperty("id", out var idEl) || JsonRead.Text(idEl) is not { Length: > 0 } id)
         {
             return null;
         }
 
-        var id = idEl.GetInt64().ToString(CultureInfo.InvariantCulture);
-        var numberRaw = entry.TryGetProperty("number", out var num) ? num.GetString() : null;
+        var numberRaw = entry.TryGetProperty("number", out var num) ? JsonRead.Text(num) : null;
         var parsed = ChapterNumberParser.Parse(numberRaw);
         var name = entry.TryGetProperty("name", out var nm) ? nm.GetString() : null;
 
@@ -254,7 +259,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
         }
 
         var entries = pagesEl.EnumerateArray()
-            .OrderBy(p => p.TryGetProperty("order", out var o) ? o.GetInt32() : 0)
+            .OrderBy(p => p.TryGetProperty("order", out var o) ? JsonRead.Int(o) ?? 0 : 0)
             .ToList();
 
         if (entries.Count == 0)
@@ -262,7 +267,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
             throw new ChapterLockedException($"CuuTruyen chapter {chapter.SourceChapterId} has no pages");
         }
 
-        var headers = new Dictionary<string, string> { ["Referer"] = "https://cuutruyen.net/" };
+        var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
         var pages = new List<PageRequest>(entries.Count);
 
         foreach (var page in entries)
@@ -334,6 +339,11 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
             .Select(t =>
             {
                 var dash = t.IndexOf('-');
+                if (dash < 0)
+                {
+                    throw new InvalidDataException($"malformed CuuTruyen DRM strip '{t}'");
+                }
+
                 return (
                     Dy: int.Parse(t[..dash], CultureInfo.InvariantCulture),
                     H: int.Parse(t[(dash + 1)..], CultureInfo.InvariantCulture));
@@ -355,9 +365,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
                 }
             });
 
-            IImageEncoder encoder = source.Metadata.DecodedImageFormat is { } format
-                ? source.Configuration.ImageFormatsManager.GetEncoder(format)
-                : new JpegEncoder { Quality = 90 };
+            var encoder = EncoderFor(source);
 
             using var buffer = new MemoryStream();
             await destination.SaveAsync(buffer, encoder, ct);
@@ -365,12 +373,27 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
         }, ct);
     }
 
+    private const int ReencodeQuality = 90;
+
+    /// <summary>
+    /// The registered encoder for a format carries ImageSharp's default quality of 75, so the formats
+    /// that take a quality are given one explicitly. Anything else keeps its own encoder.
+    /// </summary>
+    private static IImageEncoder EncoderFor(Image source) => source.Metadata.DecodedImageFormat switch
+    {
+        null or JpegFormat => new JpegEncoder { Quality = ReencodeQuality },
+        WebpFormat => source.Metadata.GetWebpMetadata().FileFormat == WebpFileFormatType.Lossless
+            ? new WebpEncoder { FileFormat = WebpFileFormatType.Lossless }
+            : new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = ReencodeQuality },
+        { } format => source.Configuration.ImageFormatsManager.GetEncoder(format),
+    };
+
     // ── Plumbing ──────────────────────────────────────────────────────
 
     private async Task<JsonDocument> FetchJsonAsync(string url, CancellationToken ct)
     {
         var body = await fetcher.GetHtmlAsync(url, ct);
-        var unwrapped = await CuuTruyenPreUnwrap.UnwrapAsync(body, url, ct);
+        var unwrapped = await PreUnwrap.UnwrapAsync(body, url, ct);
         return JsonDocument.Parse(unwrapped);
     }
 

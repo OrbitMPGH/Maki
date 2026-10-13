@@ -34,9 +34,8 @@ public class LibraryImportScanTests : IDisposable
     {
         await using var db = _db.NewContext();
         var service = new LibraryImportService(
-            db, [_provider], null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
+            db, [_provider], null!, null!, new SourceMatchQueue(), null!, null!, null!, null!, null!, null!,
             currentUser ?? new TestCurrentUser(1),
-            new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
             NullLogger<LibraryImportService>.Instance);
         return await service.ScanAsync(rootFolderId);
     }
@@ -46,9 +45,8 @@ public class LibraryImportScanTests : IDisposable
     {
         await using var db = _db.NewContext();
         var service = new LibraryImportService(
-            db, [_provider], null!, null!, null!, null!, null!, null!, null!, null!, null!, new TestLocalizer(),
+            db, [_provider], null!, null!, new SourceMatchQueue(), null!, null!, null!, null!, null!, new TestLocalizer(),
             currentUser ?? new TestCurrentUser(1),
-            new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
             NullLogger<LibraryImportService>.Instance);
         return await service.ImportAsync(rootFolderId, new ImportRequestItem(folderName, "1"));
     }
@@ -136,6 +134,155 @@ public class LibraryImportScanTests : IDisposable
         var fresh = Assert.Single(candidates, c => c.FolderName == "Monster");
         Assert.Null(fresh.ExistingSeriesId);
         // Only the new folder needed a provider search.
+        Assert.Equal(["Monster"], _provider.Queries);
+    }
+
+    private LibraryImportService IgnoreService(Maki.Data.MakiDbContext db, ICurrentUser? currentUser = null) => new(
+        db, [_provider], null!, null!, new SourceMatchQueue(), null!, null!, null!, null!, null!, null!,
+        currentUser ?? new TestCurrentUser(1), NullLogger<LibraryImportService>.Instance);
+
+    [Fact]
+    public async Task AnIgnoredFolderIsSkippedBeforeAnySearchUntilItIsUnignored()
+    {
+        var root = SeedRoot();
+        WriteComic("Extras", "art book.cbz");
+        WriteComic("Monster", "Monster v01.cbz");
+
+        await using (var db = _db.NewContext())
+        {
+            Assert.Null(await IgnoreService(db).IgnoreFolderAsync(root, "Extras", CancellationToken.None));
+            // Twice is not an error, and does not add a second row.
+            Assert.Null(await IgnoreService(db).IgnoreFolderAsync(root, "extras", CancellationToken.None));
+        }
+
+        var candidates = await ScanAsync(root);
+
+        Assert.Equal(["Monster"], candidates.Select(c => c.FolderName));
+        Assert.Equal(["Monster"], _provider.Queries);
+
+        await using (var db = _db.NewContext())
+        {
+            var ignored = Assert.Single(await IgnoreService(db).IgnoredFoldersAsync(root, CancellationToken.None));
+            Assert.Equal("Extras", ignored.FolderName);
+            Assert.True(await IgnoreService(db).UnignoreFolderAsync(ignored.Id, CancellationToken.None));
+        }
+
+        Assert.Contains(await ScanAsync(root), c => c.FolderName == "Extras");
+    }
+
+    [Fact]
+    public async Task IgnoringOneFolderInTwoCasesAtOnceKeepsOneRowAndUnignoringClearsEveryCase()
+    {
+        var root = SeedRoot();
+        WriteComic("Extras", "art book.cbz");
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(async i =>
+        {
+            await using var db = _db.NewContext();
+            await IgnoreService(db).IgnoreFolderAsync(root, i % 2 == 0 ? "Extras" : "extras", CancellationToken.None);
+        }));
+
+        await using (var check = _db.NewContext())
+        {
+            var kept = Assert.Single(check.ImportIgnoredFolders);
+            // A row from before ignoring was serialized, in the other case.
+            check.ImportIgnoredFolders.Add(new ImportIgnoredFolder
+            {
+                RootFolderId = root,
+                FolderName = kept.FolderName == "Extras" ? "extras" : "Extras",
+                CreatedAt = DateTime.UtcNow,
+            });
+            await check.SaveChangesAsync();
+            Assert.True(await IgnoreService(check).UnignoreFolderAsync(kept.Id, CancellationToken.None));
+        }
+
+        await using (var check = _db.NewContext())
+        {
+            Assert.Empty(check.ImportIgnoredFolders);
+        }
+
+        Assert.Contains(await ScanAsync(root), c => c.FolderName == "Extras");
+    }
+
+    [Fact]
+    public async Task IgnoringAFolderSomebodyIgnoredAMomentAgoIsNotAnError()
+    {
+        var root = SeedRoot();
+        await using (var first = _db.NewContext())
+        {
+            await IgnoreService(first).InsertIgnoredFolderAsync(root, "Extras", CancellationToken.None);
+        }
+
+        // The second of two ignores that both passed the existence check: the unique index refuses it.
+        await using (var second = _db.NewContext())
+        {
+            await IgnoreService(second).InsertIgnoredFolderAsync(root, "Extras", CancellationToken.None);
+        }
+
+        await using var check = _db.NewContext();
+        Assert.Single(check.ImportIgnoredFolders);
+    }
+
+    [Fact]
+    public async Task TheIgnoreListIsPerRootFolder()
+    {
+        var root = SeedRoot();
+        var other = SeedRoot();
+        WriteComic("Extras", "art book.cbz");
+
+        await using (var db = _db.NewContext())
+        {
+            Assert.Null(await IgnoreService(db).IgnoreFolderAsync(other, "Extras", CancellationToken.None));
+        }
+
+        Assert.Contains(await ScanAsync(root), c => c.FolderName == "Extras");
+    }
+
+    [Theory]
+    [InlineData("../outside")]
+    [InlineData("..")]
+    [InlineData("")]
+    public async Task IgnoringRefusesAnythingButAPlainFolderName(string folderName)
+    {
+        var root = SeedRoot();
+        await using var db = _db.NewContext();
+
+        Assert.Equal("error.libraryImport.invalidFolderName",
+            await IgnoreService(db).IgnoreFolderAsync(root, folderName, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task TheIgnoreListOfARootTheCallerHasNoGrantOnIsOutOfReach()
+    {
+        var root = SeedRoot();
+        var restricted = new RestrictedCurrentUser([root + 1]);
+        int id;
+        await using (var db = _db.NewContext())
+        {
+            await IgnoreService(db).IgnoreFolderAsync(root, "Extras", CancellationToken.None);
+            id = Assert.Single(await IgnoreService(db).IgnoredFoldersAsync(root, CancellationToken.None)).Id;
+        }
+
+        await using (var db = _db.NewContext())
+        {
+            var service = IgnoreService(db, restricted);
+            Assert.Empty(await service.IgnoredFoldersAsync(root, CancellationToken.None));
+            Assert.Equal("error.series.rootFolderNotFound",
+                await service.IgnoreFolderAsync(root, "Art", CancellationToken.None));
+            Assert.False(await service.UnignoreFolderAsync(id, CancellationToken.None));
+        }
+    }
+
+    [Fact]
+    public async Task AFolderWithNoComicsIsNotOfferedOrSearched()
+    {
+        var root = SeedRoot();
+        Directory.CreateDirectory(Path.Combine(_root, "Notes"));
+        File.WriteAllText(Path.Combine(_root, "Notes", "readme.txt"), "not a comic");
+        WriteComic("Monster", "Monster v01.cbz");
+
+        var candidates = await ScanAsync(root);
+
+        Assert.Equal(["Monster"], candidates.Select(c => c.FolderName));
         Assert.Equal(["Monster"], _provider.Queries);
     }
 

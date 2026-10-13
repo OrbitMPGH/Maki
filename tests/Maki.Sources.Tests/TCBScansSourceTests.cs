@@ -44,4 +44,12 @@ public class TCBScansSourceTests
         Assert.Contains(chapters, c => c.Title == "Extra");
         Assert.All(chapters, c => Assert.Null(c.Number));
     }
+
+    [Fact]
+    public async Task Search_throws_when_the_catalog_page_lists_no_series()
+    {
+        var source = SourceFor(new() { ["projects"] = "<html><body>Just a moment...</body></html>" });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("one piece"));
+    }
 }

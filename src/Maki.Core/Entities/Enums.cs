@@ -41,6 +41,17 @@ public static class SeriesTypes
     }
 }
 
+/// <summary>
+/// Whether a series' read chapter files are deleted after the configured number of days. Default
+/// follows the instance switch, which is off unless an admin turns it on; On and Off override it.
+/// </summary>
+public enum ReadFileCleanup
+{
+    Default = 0,
+    On = 1,
+    Off = 2
+}
+
 public enum NewChapterMonitorMode
 {
     All = 0,
@@ -95,6 +106,21 @@ public enum SeriesNotificationMode
     /// muting is a reading preference and somebody has to hear that downloads are failing.
     /// </summary>
     Muted = 3
+}
+
+/// <summary>
+/// What a library import still owes a series once its sources are found
+/// (<see cref="Series.PendingImportLink"/>). Persisted as an int, so append only.
+/// </summary>
+public enum PendingImportLink
+{
+    None = 0,
+
+    /// <summary>Link the registered files to chapters and leave their ComicInfo.xml alone.</summary>
+    Link = 1,
+
+    /// <summary>Link the registered files and standardize their ComicInfo.xml in the same pass.</summary>
+    LinkAndComicInfo = 2
 }
 
 public enum AcquisitionProtocol

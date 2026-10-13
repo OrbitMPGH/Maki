@@ -1,8 +1,11 @@
 using Maki.Api.Configuration;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Core.Notifications;
+using System.Security.Cryptography;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 
@@ -14,6 +17,8 @@ public class CoverService(
     : INotificationCoverStore
 {
     private const int PosterWidth = 400;
+
+    private static readonly DecoderOptions FirstFrameOnly = new() { MaxFrames = 1 };
 
     public string CoverPathFor(int seriesId) => Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
 
@@ -27,9 +32,17 @@ public class CoverService(
     public void DeleteCover(int seriesId)
     {
         var dir = Path.GetDirectoryName(CoverPathFor(seriesId))!;
-        if (Directory.Exists(dir))
+        CoverVersionCache.Remove(seriesId);
+        try
         {
-            Directory.Delete(dir, recursive: true);
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not remove the cover folder {Folder} for series {SeriesId}", dir, seriesId);
         }
     }
 
@@ -43,23 +56,27 @@ public class CoverService(
         return File.Exists(path) ? path : null;
     }
 
+    private static bool SameBytes(string a, string b)
+    {
+        var first = new FileInfo(a);
+        var second = new FileInfo(b);
+        return second.Exists && first.Length == second.Length && File.ReadAllBytes(a).AsSpan().SequenceEqual(File.ReadAllBytes(b));
+    }
+
     public async Task<string?> DownloadCoverAsync(int seriesId, string coverUrl, CancellationToken ct = default)
     {
         try
         {
             var client = httpClientFactory.CreateClient("covers");
             await using var stream = await client.GetStreamAsync(coverUrl, ct);
-            using var image = await Image.LoadAsync(stream, ct);
-
-            if (image.Width > PosterWidth)
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            buffer.Position = 0;
+            return await ImageWorkGate.RunAsync(async () =>
             {
-                image.Mutate(x => x.Resize(PosterWidth, 0));
-            }
-
-            var target = CoverPathFor(seriesId);
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            await image.SaveAsync(target, new JpegEncoder { Quality = 90 }, ct);
-            return target;
+                using var image = await Image.LoadAsync(FirstFrameOnly, buffer, ct);
+                return await SavePosterAsync(seriesId, image);
+            }, ct);
         }
         catch (Exception ex)
         {
@@ -69,14 +86,120 @@ public class CoverService(
     }
 
     /// <summary>
+    /// Stores an image a user uploaded as the series' poster, through the same resize and encode as a
+    /// downloaded one. The caller has already checked the bytes are a raster image of sane size.
+    /// Orientation is applied and every metadata profile dropped, so a phone photo's EXIF location
+    /// never reaches the poster other users can fetch.
+    /// </summary>
+    public Task<string> StoreUploadedCoverAsync(int seriesId, Stream content, CancellationToken ct = default) =>
+        ImageWorkGate.RunAsync(async () =>
+        {
+            using var image = await Image.LoadAsync(FirstFrameOnly, content, ct);
+            image.Mutate(x => x.AutoOrient());
+            image.Metadata.ExifProfile = null;
+            image.Metadata.IptcProfile = null;
+            image.Metadata.XmpProfile = null;
+            image.Metadata.IccProfile = null;
+            return await SavePosterAsync(seriesId, image);
+        }, ct);
+
+    private async Task<string> SavePosterAsync(int seriesId, Image image)
+    {
+        if (image.Width > PosterWidth)
+        {
+            image.Mutate(x => x.Resize(PosterWidth, 0));
+        }
+
+        var target = CoverPathFor(seriesId);
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        var temp = $"{target}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await image.SaveAsync(temp, new JpegEncoder { Quality = 90 }, CancellationToken.None);
+            if (SameBytes(temp, target))
+            {
+                // Keeps the write time, which is what the cover URL's cache-buster follows.
+                File.Delete(temp);
+            }
+            else
+            {
+                File.Move(temp, target, overwrite: true);
+                CoverVersionCache.Set(seriesId, File.GetLastWriteTimeUtc(target).Ticks);
+            }
+        }
+        catch
+        {
+            try
+            {
+                File.Delete(temp);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+
+            throw;
+        }
+
+        return target;
+    }
+
+    /// <summary>
     /// Copies the cached poster into the series' own library folder as "cover.jpg", for readers
     /// (Komga, Kavita) that pick up a poster placed directly next to the series' files rather than
-    /// through Maki. Gated on <see cref="SettingKeys.LibraryWriteCoverToFolder"/>, default off.
+    /// through Maki. Gated on <see cref="SettingKeys.LibraryWriteCoverToFolder"/>, default off. A cover.jpg
+    /// the user placed there is left alone; only one Maki wrote is refreshed.
     /// </summary>
     public Task WriteLibraryCoverAsync(Series series, CancellationToken ct = default) =>
         series.RootFolder is null
             ? Task.CompletedTask
             : WriteLibraryCoverAsync(series.Id, Path.Combine(series.RootFolder.Path, series.FolderName), ct);
+
+    /// <summary>
+    /// Hash of the last cover.jpg Maki wrote into the series folder. A cover.jpg that matches neither it
+    /// nor the current poster was put there by the user and is never overwritten.
+    /// </summary>
+    private string LibraryCoverRecordFor(int seriesId) =>
+        Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "library-cover.sha256");
+
+    private static bool WrittenByMaki(string cover, string record) =>
+        File.Exists(record) && File.ReadAllText(record).Trim() == Sha256Of(cover);
+
+    /// <summary>
+    /// True for a cover.jpg Maki wrote: it matches the hash record or is the current poster. Anything
+    /// else in a series folder is the user's.
+    /// </summary>
+    public bool IsMakiLibraryCover(int seriesId, string cover)
+    {
+        try
+        {
+            return File.Exists(cover)
+                   && (WrittenByMaki(cover, LibraryCoverRecordFor(seriesId)) || SameBytes(cover, CoverPathFor(seriesId)));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The SHA-256 of the cover.jpg Maki last wrote into the series folder, or null.</summary>
+    public string? LibraryCoverHash(int seriesId)
+    {
+        var record = LibraryCoverRecordFor(seriesId);
+        try
+        {
+            return File.Exists(record) ? File.ReadAllText(record).Trim() : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    internal static string Sha256Of(string path)
+    {
+        using var stream = File.OpenRead(path);
+        return Convert.ToHexString(SHA256.HashData(stream));
+    }
 
     /// <inheritdoc cref="WriteLibraryCoverAsync(Series, CancellationToken)"/>
     public async Task WriteLibraryCoverAsync(int seriesId, string seriesFolder, CancellationToken ct = default)
@@ -94,8 +217,16 @@ public class CoverService(
 
         try
         {
+            var target = Path.Combine(seriesFolder, "cover.jpg");
+            var record = LibraryCoverRecordFor(seriesId);
+            if (File.Exists(target) && !SameBytes(source, target) && !WrittenByMaki(target, record))
+            {
+                return;
+            }
+
             Directory.CreateDirectory(seriesFolder);
-            File.Copy(source, Path.Combine(seriesFolder, "cover.jpg"), overwrite: true);
+            File.Copy(source, target, overwrite: true);
+            File.WriteAllText(record, Sha256Of(target));
         }
         catch (Exception ex)
         {

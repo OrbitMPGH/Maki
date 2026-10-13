@@ -74,6 +74,7 @@ public class UpgradeScanJob(
         catch (Exception ex)
         {
             logger.LogError(ex, "Upgrade scan failed");
+            context.ReportFailure(ex);
         }
 
         // Written even when the scan threw, so a scan that crashes is retried tomorrow rather than

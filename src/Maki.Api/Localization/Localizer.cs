@@ -13,7 +13,11 @@ public sealed class MessageCatalog(
     IMessageFormatter formatter,
     ILogger<MessageCatalog> logger) : IMessageCatalog
 {
-    public string GetFor(string locale, string key, object? args = null)
+    public string GetFor(string locale, string key, object? args = null) => Render(locale, key, args, logMissing: true);
+
+    public string GetForOrKey(string locale, string key, object? args = null) => Render(locale, key, args, logMissing: false);
+
+    private string Render(string locale, string key, object? args, bool logMissing)
     {
         var resolved = SupportedLanguages.Resolve(locale);
 
@@ -27,7 +31,8 @@ public sealed class MessageCatalog(
             // Deliberately not an exception. Most of these calls are on the way to reporting some
             // other failure to a user, and throwing there replaces a wrong message with a 500.
             // LocalizationCatalogTests is what actually catches this, at build time.
-            logger.LogWarning("No message for key {Key} in {Locale} or English", key, resolved);
+            if (logMissing)
+                logger.LogWarning("No message for key {Key} in {Locale} or English", key, resolved);
             return key;
         }
 
@@ -66,4 +71,6 @@ public sealed class Localizer(IMessageCatalog catalog, IRequestLocale requestLoc
     public string Get(string key, object? args = null) => catalog.GetFor(requestLocale.Locale, key, args);
 
     public string GetFor(string locale, string key, object? args = null) => catalog.GetFor(locale, key, args);
+
+    public string GetForOrKey(string locale, string key, object? args = null) => catalog.GetForOrKey(locale, key, args);
 }

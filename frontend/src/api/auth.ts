@@ -1,5 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from './client'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { stopConnection } from './signalr'
+import { api, beginSession, invalidateInitialize } from './client'
+import { noteSignedInUser, noteSignedOut } from '../lib/pageState'
+import { useSaveSettingsRecord } from './settingsRecord'
 
 type SetupDoneHandler = () => void
 let onSetupDone: SetupDoneHandler | null = null
@@ -39,7 +42,8 @@ export interface Me {
   id: number
   userName: string
   displayName: string | null
-  permissions: number
+  /** The flags enum as the server serialises it, e.g. "AddSeries, UseOpds"; read `permissionNames` instead. */
+  permissions: string
   permissionNames: Permission[]
   isAdmin: boolean
   maxContentRating: string
@@ -50,7 +54,7 @@ export interface Me {
   oidcUserName: string | null
 }
 
-export interface UserSummary extends Me {
+export interface UserSummary extends Omit<Me, 'oidcUserName'> {
   disabled: boolean
   pendingSetup: boolean
   createdAt: string
@@ -91,6 +95,32 @@ export interface AuthEvent {
 
 export const ME_QUERY_KEY = ['auth', 'me'] as const
 
+/**
+ * Drops every cached query except the identity one, so nothing one account fetched is shown to the
+ * next. Runs on logout, on any 401 and on every sign-in.
+ * The tab's own memory (filters, scroll, back links) is handled separately, by who signed in.
+ *
+ * Not qc.clear(): that tears down every Query instance, including the one the mounted useMe
+ * observer is attached to, so a setQueryData right after builds a fresh instance the observer was
+ * never subscribed to. Data updates in the cache, but nothing re-renders and AuthGate never swaps
+ * screens. Keeping ME_QUERY_KEY's instance alive lets the caller's setQueryData notify it directly.
+ */
+export function dropAccountData(qc: QueryClient): void {
+  // Every caller is a session boundary, so a late 401 from a request the old session sent is ignored.
+  beginSession()
+  // The live socket is account data too: it is in the old account's hub groups and would keep
+  // delivering that account's inbox and admin events to whoever signs in next on this tab.
+  stopConnection()
+  // The sign-in page reads SSO state from the bootstrap payload, which an admin may have changed
+  // since this tab loaded it.
+  invalidateInitialize()
+  qc.removeQueries({
+    predicate: (query) =>
+      query.queryKey.length !== ME_QUERY_KEY.length ||
+      !ME_QUERY_KEY.every((k, i) => query.queryKey[i] === k),
+  })
+}
+
 // The server stores this as the user's zone when none is set yet, so streaks use local days
 // before anybody opens Progress settings.
 function browserTimeZoneHeader(): Record<string, string> {
@@ -105,7 +135,13 @@ function browserTimeZoneHeader(): Record<string, string> {
 export function useMe(enabled = true) {
   return useQuery({
     queryKey: ME_QUERY_KEY,
-    queryFn: () => api<Me>('/auth/me', { headers: browserTimeZoneHeader() }),
+    // Noted before the data reaches any page, so a different user's first render never reads the
+    // previous one's remembered filters.
+    queryFn: async () => {
+      const me = await api<Me>('/auth/me', { headers: browserTimeZoneHeader() })
+      noteSignedInUser(me.id)
+      return me
+    },
     enabled,
     // A 401 here is the normal signed-out state, not a transient failure, so retrying it just delays
     // the login screen.
@@ -119,9 +155,14 @@ export function useLogin() {
   return useMutation({
     mutationFn: (body: { username: string; password: string }) =>
       api<Me & LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+    // The form shows the failure inline.
+    meta: { silent: true },
     onSuccess: (result) => {
       // Two-factor is still pending, so there is no session yet and nothing to cache.
-      if (!result.requiresTwoFactor) qc.setQueryData(ME_QUERY_KEY, result)
+      if (result.requiresTwoFactor) return
+      noteSignedInUser(result.id)
+      dropAccountData(qc)
+      qc.setQueryData(ME_QUERY_KEY, result)
     },
   })
 }
@@ -131,7 +172,13 @@ export function useVerifyTwoFactor() {
   return useMutation({
     mutationFn: (body: { code: string; rememberMachine: boolean }) =>
       api<Me>('/auth/2fa', { method: 'POST', body: JSON.stringify(body) }),
-    onSuccess: (me) => qc.setQueryData(ME_QUERY_KEY, me),
+    // The form shows the failure inline.
+    meta: { silent: true },
+    onSuccess: (me) => {
+      noteSignedInUser(me.id)
+      dropAccountData(qc)
+      qc.setQueryData(ME_QUERY_KEY, me)
+    },
   })
 }
 
@@ -140,7 +187,11 @@ export function useSetup() {
   return useMutation({
     mutationFn: (body: { username: string; password: string; displayName?: string }) =>
       api<Me>('/auth/setup', { method: 'POST', body: JSON.stringify(body) }),
+    // The form shows the failure inline.
+    meta: { silent: true },
     onSuccess: (me) => {
+      noteSignedInUser(me.id)
+      dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, me)
       setSetupDone()
     },
@@ -152,16 +203,8 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
     onSuccess: () => {
-      // Clear everything except the identity query itself: qc.clear() tears down every Query
-      // instance, including the one the mounted useMe observer is attached to, so a setQueryData
-      // right after builds a fresh instance the observer was never subscribed to: data updates
-      // in the cache, but nothing re-renders and AuthGate never swaps to the login screen. Keeping
-      // ME_QUERY_KEY's instance alive lets setData below notify that same observer directly.
-      qc.removeQueries({
-        predicate: (query) =>
-          query.queryKey.length !== ME_QUERY_KEY.length ||
-          !ME_QUERY_KEY.every((k, i) => query.queryKey[i] === k),
-      })
+      noteSignedOut()
+      dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, null)
     },
   })
@@ -183,6 +226,7 @@ export function useTwoFactorStatus() {
         hasAuthenticator: boolean
         recoveryCodesLeft: number
         available: boolean
+        hasPassword: boolean
         ssoDelegated: boolean
       }>('/account/2fa'),
   })
@@ -207,6 +251,18 @@ export function useEnableTwoFactor() {
       void qc.invalidateQueries({ queryKey: ['account', '2fa'] })
       void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
     },
+  })
+}
+
+export function useRegenerateRecoveryCodes() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { code: string; password: string }) =>
+      api<{ recoveryCodes: string[] }>('/account/2fa/recovery-codes', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['account', '2fa'] }),
   })
 }
 
@@ -304,7 +360,7 @@ export function useSetKavitaUser() {
 
 /**
  * The account list. Admin-only server-side, so `enabled` exists for the callers that render for
- * everybody and only need it when the viewer is an admin — without it a normal user fires a request
+ * everybody and only need it when the viewer is an admin, without it a normal user fires a request
  * that can only ever 403.
  */
 export function useUsers(enabled = true) {
@@ -395,12 +451,7 @@ export function useSecuritySettings() {
 }
 
 export function useSaveSecuritySettings() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (body: SecuritySettings) =>
-      api<SecuritySettings>('/settings/security', { method: 'PUT', body: JSON.stringify(body) }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['settings', 'security'] }),
-  })
+  return useSaveSettingsRecord<SecuritySettings>(['settings', 'security'], '/settings/security')
 }
 
 export interface OidcSettings {

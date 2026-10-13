@@ -3,6 +3,7 @@ using System.Text.Json;
 using AngleSharp.Html.Parser;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.FlameComics;
 
@@ -60,11 +61,11 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
 
         return new SourceSeriesDetail(
             sourceSeriesId,
-            String(series, "title") ?? sourceSeriesId,
+            JsonRead.Property(series, "title") ?? sourceSeriesId,
             $"{BaseUrl}/series/{sourceSeriesId}",
             CoverUrl(sourceSeriesId, series),
-            PlainText(String(series, "description")),
-            String(series, "status"));
+            BodyText.Plain(JsonRead.Property(series, "description")),
+            JsonRead.Property(series, "status"));
     }
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
@@ -82,14 +83,14 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
         foreach (var row in rows.EnumerateArray())
         {
             // The token is the chapter's whole address; without one it can't be fetched.
-            var token = String(row, "token");
-            var numberRaw = String(row, "chapter");
+            var token = JsonRead.Property(row, "token");
+            var numberRaw = JsonRead.Property(row, "chapter");
             if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(numberRaw))
             {
                 continue;
             }
 
-            var chapterTitle = String(row, "title");
+            var chapterTitle = JsonRead.Property(row, "title");
             chapters.Add(new SourceChapter(
                 Name,
                 sourceSeriesId,
@@ -115,15 +116,16 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
             !data.TryGetProperty("images", out var images) ||
             images.ValueKind != JsonValueKind.Object)
         {
-            return new ChapterPages([]);
+            throw new InvalidOperationException(
+                $"No image list in the page data for series/{chapter.SourceSeriesId}/{chapter.SourceChapterId}");
         }
 
         // "images" is an object keyed by page index as a string, so it has to be ordered
         // numerically — sorted as text, page 10 lands between 1 and 2. The rendered page also
         // carries the site's own "read on Flame" banners, which is why the list is built from
         // this payload rather than from the <img> tags.
-        var seriesId = String(data, "series_id") ?? chapter.SourceSeriesId;
-        var stamp = String(data, "edit_time");
+        var seriesId = JsonRead.Property(data, "series_id") ?? chapter.SourceSeriesId;
+        var stamp = JsonRead.Property(data, "edit_time");
         var query = string.IsNullOrEmpty(stamp) ? string.Empty : $"?{stamp}";
 
         var pages = images.EnumerateObject()
@@ -131,7 +133,7 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
                 Index: int.TryParse(page.Name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i)
                     ? i
                     : int.MaxValue,
-                Name: String(page.Value, "name")))
+                Name: JsonRead.Property(page.Value, "name")))
             .Where(page => !string.IsNullOrEmpty(page.Name))
             .OrderBy(page => page.Index)
             .Select(page => new PageRequest(
@@ -146,7 +148,7 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
         var props = await GetPagePropsAsync("browse", ct);
         if (!props.TryGetProperty("series", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException("Flame Comics browse page data has no series array");
         }
 
         var catalog = new List<SourceSeriesResult>();
@@ -158,15 +160,15 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
             // and live under /novels/ with no page images at all. Requiring series_id is what
             // keeps them out — "Omniscient Reader's Viewpoint" is listed both ways, so without
             // it a search returns a twin that can be linked but never downloaded.
-            var id = String(row, "series_id");
-            var title = String(row, "title");
+            var id = JsonRead.Property(row, "series_id");
+            var title = JsonRead.Property(row, "title");
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(title) || !seen.Add(id))
             {
                 continue;
             }
 
             catalog.Add(new SourceSeriesResult(
-                id, title, $"{BaseUrl}/series/{id}", CoverUrl(id, row), PlainText(String(row, "description"))));
+                id, title, $"{BaseUrl}/series/{id}", CoverUrl(id, row), BodyText.Plain(JsonRead.Property(row, "description"))));
         }
 
         return catalog;
@@ -185,10 +187,13 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
         }
 
         using var json = JsonDocument.Parse(payload);
-        return json.RootElement.TryGetProperty("props", out var props) &&
-               props.TryGetProperty("pageProps", out var pageProps)
-            ? pageProps.Clone()
-            : default;
+        if (json.RootElement.TryGetProperty("props", out var props) &&
+            props.TryGetProperty("pageProps", out var pageProps))
+        {
+            return pageProps.Clone();
+        }
+
+        throw new InvalidOperationException($"Flame Comics __NEXT_DATA__ for /{path} has no props.pageProps");
     }
 
     /// <summary>
@@ -197,31 +202,16 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
     /// </summary>
     private static string? CoverUrl(string seriesId, JsonElement series)
     {
-        var cover = String(series, "cover");
+        var cover = JsonRead.Property(series, "cover");
         if (string.IsNullOrEmpty(cover))
         {
             return null;
         }
 
-        var stamp = String(series, "last_edit");
+        var stamp = JsonRead.Property(series, "last_edit");
         var query = string.IsNullOrEmpty(stamp) ? string.Empty : $"?{stamp}";
         return $"{CdnUrl}/uploads/images/series/{seriesId}/{Uri.EscapeDataString(cover)}{query}";
     }
-
-    /// <summary>Descriptions are stored as rendered HTML, tags and all.</summary>
-    private static string? PlainText(string? html) =>
-        string.IsNullOrWhiteSpace(html) ? null : Parser.ParseDocument(html).Body?.TextContent.Trim();
-
-    /// <summary>Reads a property as a string whether the site stored it as one or as a number.</summary>
-    private static string? String(JsonElement element, string name) =>
-        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value)
-            ? value.ValueKind switch
-            {
-                JsonValueKind.String => value.GetString(),
-                JsonValueKind.Number => value.GetRawText(),
-                _ => null
-            }
-            : null;
 
     private static DateTime? UnixTime(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number

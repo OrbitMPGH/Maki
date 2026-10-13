@@ -20,7 +20,8 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/health")]
 public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOperationService operations,
     HealthMatchService matches, ICurrentUser user, IAppSettings settings,
-    ILocalizer localizer, SourceRegistry sources, HealthSourceRecovery recovery) : ControllerBase
+    ILocalizer localizer, SourceRegistry sources, HealthSourceRecovery recovery,
+    ILogger<HealthController> logger) : ControllerBase
 {
     /// <summary>
     /// The row as the page reads it: same fields, with <c>message</c> worded in the caller's own
@@ -117,11 +118,11 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpGet]
     public async Task<IActionResult> Overview(CancellationToken ct) => Ok(new
     {
-        checks = (await db.HealthChecks.OrderBy(c => c.Category).ThenBy(c => c.Id).ToListAsync(ct))
+        checks = (await db.HealthChecks.AsNoTracking().OrderBy(c => c.Category).ThenBy(c => c.Id).ToListAsync(ct))
             .Select(Rendered),
         openFindings = await db.HealthFindings.CountAsync(f => f.State == "open", ct),
         files = await db.HealthFiles.CountAsync(f => !f.Removed, ct),
-        scans = await db.HealthScans.OrderByDescending(s => s.Id).Take(10).ToListAsync(ct),
+        scans = await db.HealthScans.AsNoTracking().OrderByDescending(s => s.Id).Take(10).ToListAsync(ct),
         roots = await db.RootFolders.Select(r => new { r.Id, r.Path }).ToListAsync(ct)
     });
 
@@ -141,7 +142,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     };
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh(CancellationToken ct) { await monitor.RefreshAsync(ct); return Ok(new { refreshed = true }); }
+    public async Task<IActionResult> Refresh(CancellationToken ct) => Ok(new { refreshed = await monitor.RefreshAsync(ct) });
 
     [HttpGet("options")]
     public async Task<IActionResult> Options(CancellationToken ct) => Ok(JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync(SettingKeys.HealthOptions, ct) ?? "{}", HealthScanService.Json) ?? new());
@@ -199,9 +200,11 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         if (rootId != null) query = query.Where(f => f.RootFolderId == rootId);
         if (kind != null || state != null) query = query.Where(f => db.HealthFindings.Any(i => i.FileId == f.Id && i.Version == f.Version && (kind == null || i.Kind == kind) && (state == null || i.State == state)));
         var total = await query.CountAsync(ct);
-        var files = await query.OrderBy(f => f.RelativePath).Skip((Math.Max(page, 1) - 1) * 30).Take(30).ToListAsync(ct);
+        var files = await query.AsNoTracking().OrderBy(f => f.RelativePath).Skip((Math.Max(page, 1) - 1) * 30).Take(30)
+            .Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt })
+            .ToListAsync(ct);
         var ids = files.Select(f => f.Id).ToArray();
-        var findings = await db.HealthFindings.Where(f => ids.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct);
+        var findings = await db.HealthFindings.AsNoTracking().Where(f => ids.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct);
         return Ok(new { total, items = files.Select(f => new { f.Id, f.RelativePath, f.Version, f.RootFolderId, f.SeriesId, f.ChapterFileId, f.Size, f.ContentHash, f.Status, f.AnalyzedAt, findings = findings.Where(i => i.FileId == f.Id && i.Version == f.Version).Select(Rendered) }) });
     }
 
@@ -221,7 +224,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             chapters,
             mappings,
             match = await matches.MatchAsync(file, ct),
-            findings = (await db.HealthFindings.Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct))
+            findings = (await db.HealthFindings.AsNoTracking().Where(f => f.FileId == id && f.Version == file.Version).ToListAsync(ct))
                 .Select(Rendered),
         });
     }
@@ -308,7 +311,8 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     /// instead of sitting open until the nightly run.
     /// </remarks>
     [HttpPost("imports")]
-    public Task<IActionResult> Import(ImportRequest request, [FromServices] CbzLinkService cbz, CancellationToken ct) => ConflictGuard(async () =>
+    public Task<IActionResult> Import(ImportRequest request, [FromServices] CbzLinkService cbz, CancellationToken ct) =>
+        ConflictGuard($"{request.FileIds?.Length ?? 0} files", async () =>
     {
         if (request.FileIds is not { Length: > 0 and <= 500 }) return this.Fail(localizer, "error.health.selectUpTo500");
         var files = await db.HealthFiles.Where(f => request.FileIds.Contains(f.Id) && !f.Removed && f.ChapterFileId == null).ToListAsync(ct);
@@ -374,7 +378,8 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     public record FileReview(int FileId, string Version, int? SourceMappingId = null);
     public record ApplyReview(string Version, bool Confirmed, bool ResetPositions = false);
     [HttpPost("repairs")]
-    public Task<IActionResult> Repair(FileReview request, CancellationToken ct) => ConflictGuard(async () =>
+    public Task<IActionResult> Repair(FileReview request, CancellationToken ct) =>
+        ConflictGuard($"file {request.FileId}", async () =>
     {
         try
         {
@@ -421,7 +426,17 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
             {
-                failures.Add(new { Id = item.FileId, RelativePath = paths.GetValueOrDefault(item.FileId), message = ex.Message });
+                if (ex is not HealthRefusedException)
+                {
+                    logger.LogWarning(ex, "Could not delete health file {FileId}", item.FileId);
+                }
+
+                failures.Add(new
+                {
+                    Id = item.FileId,
+                    RelativePath = paths.GetValueOrDefault(item.FileId),
+                    message = localizer.Get(ex is HealthRefusedException refused ? refused.Key : "error.health.operationFailed"),
+                });
             }
         }
         db.HealthHistory.Add(new()
@@ -436,10 +451,12 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     }
 
     [HttpPost("deletions/preview")]
-    public Task<IActionResult> DeletePreview(FileReview request, CancellationToken ct) => ConflictGuard(async () =>
+    public Task<IActionResult> DeletePreview(FileReview request, CancellationToken ct) =>
+        ConflictGuard($"file {request.FileId}", async () =>
         Ok(Rendered(await operations.PreviewDeleteAsync(request.FileId, request.Version, user.UserId, ct))));
     [HttpPost("operations/{id:int}/apply")]
-    public Task<IActionResult> Apply(int id, ApplyReview request, CancellationToken ct) => ConflictGuard(async () =>
+    public Task<IActionResult> Apply(int id, ApplyReview request, CancellationToken ct) =>
+        ConflictGuard($"operation {id}", async () =>
     { await operations.ApplyAsync(id, request.Version, request.Confirmed, request.ResetPositions, ct); return Ok(new { applied = true }); });
 
     [HttpGet("operations")]
@@ -510,11 +527,16 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         items = (await db.HealthHistory.OrderByDescending(h => h.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct))
             .Select(Rendered)
     });
-    private async Task<IActionResult> ConflictGuard(Func<Task<IActionResult>> action)
+    private async Task<IActionResult> ConflictGuard(string target, Func<Task<IActionResult>> action)
     {
         try { return await action(); }
+        catch (HealthRefusedException ex)
+        { return this.Conflict(localizer, ex.Key); }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
-        { return Conflict(new { message = ex.Message }); }
+        {
+            logger.LogWarning(ex, "{Method} {Path} failed for {Target}", Request.Method, Request.Path, target);
+            return this.Conflict(localizer, "error.health.operationFailed");
+        }
     }
 
     private async Task<IActionResult> VerifiedPreview(string path, string? hash, PageFingerprint page, CancellationToken ct)

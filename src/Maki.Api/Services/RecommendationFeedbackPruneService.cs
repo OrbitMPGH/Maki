@@ -1,3 +1,4 @@
+using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,15 @@ public sealed class RecommendationFeedbackPruneService(
                 var now = DateTime.UtcNow;
                 await db.RecommendationFeedbackEvents.IgnoreQueryFilters()
                     .Where(x => x.OccurredAtUtc < now.AddDays(-90)).ExecuteDeleteAsync(stoppingToken);
+                // A row with nothing left in force, untouched for as long as its events are kept, so no
+                // Undo can still point at it.
+                await db.RecommendationFeedback.IgnoreQueryFilters()
+                    .Where(x => x.UpdatedAtUtc < now.AddDays(-90) &&
+                        x.Exposure == RecommendationExposure.None &&
+                        x.Sentiment == RecommendationSentiment.None &&
+                        (x.Suppression == RecommendationSuppression.None ||
+                         x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc <= now))
+                    .ExecuteDeleteAsync(stoppingToken);
                 await db.RecommendationMutationReceipts.IgnoreQueryFilters()
                     .Where(x => x.ExpiresAtUtc < now).ExecuteDeleteAsync(stoppingToken);
             }

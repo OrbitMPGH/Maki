@@ -5,7 +5,8 @@ import { useActivityStats, useProgressSummary, useReadingHeatmap } from '../../.
 import { useStatsInsights, useStatsStanding } from '../../../api/stats'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
-import { formatHour, formatNumber, formatPercent, formatReadingTime, weekdayName } from '../../../format'
+import { formatDecimal, formatHour, formatNumber, formatPercent, formatReadingTime, weekdayName } from '../../../format'
+import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
 import { ChartSkeleton } from '../ChartSkeleton'
 import { HourMatrix } from '../charts/HourMatrix'
 import { ReadingHeatmap } from '../ReadingHeatmap'
@@ -65,11 +66,7 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
 
   if (activity && !activity.readTrackingAvailable) {
     return (
-      <EmptyState
-        compact
-        title={t`Reading stats need Kavita`}
-        description={t`Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way.`}
-      />
+      <ReadTrackingEmpty />
     )
   }
 
@@ -114,6 +111,7 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
   const longestSitting = sittings ? formatReadingTime(sittings.longestSeconds) : null
   const minutesPerChapter = medianSecondsPerChapter !== null ? Math.round(medianSecondsPerChapter / 60) : null
   const perSittingMedian = sittings ? sittings.chaptersPerSittingMedian : null
+  const perSitting = perSittingMedian === null ? '' : formatDecimal(perSittingMedian)
 
   const bookmarksPanel = (
     <Panel p="md">
@@ -177,7 +175,7 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
             <div className="stats-fact">
               <span className="stats-fact-label">{t`Pace`}</span>
               <span className="stats-fact-value">
-                {minutesPerChapter !== null ? t`${minutesPerChapter} min / ch` : '-'}
+                {minutesPerChapter !== null ? t`${minutesPerChapter} min / ch.` : '-'}
               </span>
               <span className="stats-fact-hint">{medianSecondsPerChapter !== null ? t`median` : '-'}</span>
             </div>
@@ -193,11 +191,11 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
             <div className="stats-fact">
               <span className="stats-fact-label">{t`Sittings per week`}</span>
               <span className="stats-fact-value">
-                {sittings ? sittings.perWeek.toFixed(1) : '-'}
+                {sittings ? formatDecimal(sittings.perWeek) : '-'}
               </span>
               <span className="stats-fact-hint">
                 {perSittingMedian !== null && perSittingMedian > 0
-                  ? t`${perSittingMedian} ch per sitting`
+                  ? t`${perSitting} ch. per sitting`
                   : '-'}
               </span>
             </div>

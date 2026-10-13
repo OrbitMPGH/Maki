@@ -83,6 +83,29 @@ public class ScrobbleMatchingTests
         Assert.Equal(expected, ScrobbleMatching.NormalizeTitle(input));
     }
 
+    [Theory]
+    [InlineData("T\u014dky\u014d Revengers", "tokyo revengers")]
+    [InlineData("Pok\u00e9mon", "pokemon")]
+    [InlineData("\u30d0\u30ab", "\u30d0\u30ab")]
+    public void NormalizeTitleDropsLatinAccentsOnly(string input, string expected)
+    {
+        Assert.Equal(expected, ScrobbleMatching.NormalizeTitle(input));
+    }
+
+    [Fact]
+    public void AccentedAndPlainRomanizationsScoreOne()
+    {
+        Assert.Equal(1.0, ScrobbleMatching.TitleSimilarity("T\u014dky\u014d Revengers", "Tokyo Revengers"));
+    }
+
+    [Fact]
+    public void KanaVoicingMarksStillSeparateTitles()
+    {
+        Assert.NotEqual(
+            ScrobbleMatching.NormalizeTitle("\u30d0\u30ab"),
+            ScrobbleMatching.NormalizeTitle("\u30cf\u30ab"));
+    }
+
     [Fact]
     public void IdenticalTitlesScoreOne()
     {

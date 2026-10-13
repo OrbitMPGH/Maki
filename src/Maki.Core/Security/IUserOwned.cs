@@ -1,9 +1,9 @@
 namespace Maki.Core.Security;
 
 /// <summary>
-/// A row that belongs to exactly one user. Implementing this does two things: the DbContext gives the
-/// table a global query filter on <see cref="UserId"/>, and it stamps the field on insert when the
-/// caller left it at 0 and a user is in scope.
+/// A row that belongs to exactly one user. Implementing this means the DbContext stamps the field on
+/// insert when the caller left it at 0 and a user is in scope, and that the entity must declare its own
+/// query filter on <see cref="UserId"/> in <c>OnModelCreating</c>; <c>DataModelTests</c> fails when one is missing.
 /// <para>
 /// The stamp is a backstop, not the mechanism — every write path should still say whose row it is,
 /// because a background job runs unrestricted and gets no stamp. What it buys is the failure mode: a

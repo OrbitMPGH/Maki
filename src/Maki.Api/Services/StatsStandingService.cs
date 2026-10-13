@@ -63,6 +63,10 @@ public class StatsStandingService(
             return hit;
         }
 
+        // Behaviour counts what the target can see. For somebody else, that is their own folder
+        // grants, read off their account rather than borrowed from the admin asking, so the
+        // aggregate numbers are scoped to the target's own folders; only the named lists are
+        // trimmed to the caller's.
         var readingBehaviour = await behaviour.GetAsync(userId, targetAllRootFolders, refresh: false, ct);
         var pace = readingBehaviour.MedianSecondsPerChapter;
 
@@ -84,7 +88,7 @@ public class StatsStandingService(
         }
 
         var held = await db.Chapters.AsNoTracking().IgnoreQueryFilters()
-            .Where(c => c.ChapterFileId != null)
+            .Where(c => c.ChapterFileId != null || c.FileRemovedAt != null)
             .GroupBy(c => c.SeriesId)
             .Select(g => new { SeriesId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
@@ -93,7 +97,8 @@ public class StatsStandingService(
         // included, because a watched run is not left to read.
         var progress = (await db.ChapterProgress.AsNoTracking().IgnoreQueryFilters()
                 .Where(p => p.UserId == userId && p.Completed && p.UnreadAt == null &&
-                            db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
+                            db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId &&
+                                (c.ChapterFileId != null || c.FileRemovedAt != null)))
                 .Select(p => new ProgressRow(p.SeriesId, p.ChapterId, p.Watched, p.UpdatedAt))
                 .ToListAsync(ct))
             .Where(p => series.ContainsKey(p.SeriesId))
@@ -169,11 +174,6 @@ public class StatsStandingService(
         return dto;
     }
 
-    /// <summary>
-    /// Behaviour counts what the target can see. For somebody else, that is their own folder grants,
-    /// read off their account rather than borrowed from the admin asking, so the aggregate numbers
-    /// are scoped to the target's own folders; only the named lists are trimmed to the caller's.
-    /// </summary>
     /// <summary>
     /// Credits are comma-joined strings. Somebody credited for both story and art on one series
     /// counts that series once.

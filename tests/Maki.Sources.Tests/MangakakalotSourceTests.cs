@@ -97,6 +97,24 @@ public class MangakakalotSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_unwraps_a_flaresolverr_pre_wrapped_response()
+    {
+        var wrapped = "<html><head></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">" +
+            System.Net.WebUtility.HtmlEncode(FakeHttpClientFactory.Fixture("mangakakalot-chapters.json")) +
+            "</pre></body></html>";
+        var source = new MangakakalotSource(new FakeHtmlFetcher(new()
+        {
+            ["offset=0&"] = wrapped,
+            ["offset=100&"] = EmptyLastPage
+        }));
+
+        var chapters = await source.ListChaptersAsync("tower-of-god");
+
+        Assert.Equal(100, chapters.Count);
+        Assert.Equal(553m, chapters[0].Number);
+    }
+
+    [Fact]
     public async Task ListChapters_walks_offsets_until_has_more_is_false()
     {
         var fetcher = new FakeHtmlFetcher(new()

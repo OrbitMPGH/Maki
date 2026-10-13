@@ -103,6 +103,7 @@ public class ExternalReadSyncService(IServiceScopeFactory scopeFactory)
                     PageIndex = 0,
                     PageCount = 0,
                     Completed = true,
+                    BulkMarked = true,
                     External = true,
                     StartedAt = now,
                     UpdatedAt = now,

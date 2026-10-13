@@ -137,6 +137,15 @@ in Maki's built-in reader or over OPDS.
 
 Sources are built into Maki, so there are no extensions to install.
 
+If you already run [Suwayomi](https://github.com/Suwayomi/Suwayomi-Server), or want more sites than
+the list below, Maki can also use the sources of the extensions installed there. This is optional:
+set Suwayomi's URL under **Settings → Integrations → Suwayomi**, and its sources show up next to
+the built-in ones in **Manage sources**, marked Suwayomi and switched off until you turn them on.
+A source that mixes languages asks which one to file its chapters under first. Extensions
+are installed and configured in Suwayomi itself. Maki reads search results, chapter lists and
+pages through Suwayomi's API, so a source that works in Suwayomi works here. Without a Suwayomi URL
+set, nothing changes. Suwayomi v2.1 or later is supported, v2.2 or later for its UI login mode.
+
 | Source | Notes |
 |---|---|
 | MangaDex | Official API, language filter |
@@ -148,7 +157,7 @@ Sources are built into Maki, so there are no extensions to install.
 | MangaPill | |
 | Weeb Central | |
 | MangaFire | Language filter, requires [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) |
-| TCB Scans | |
+| TCB Scans | Domain override via `MAKI_SOURCE_TCBSCANS_BASEURL` |
 | Asura Scans | Manhwa/manhua |
 | Flame Comics | Manhwa/manhua |
 | TopManhua | Manhwa/manhua, requires FlareSolverr |
@@ -210,12 +219,24 @@ services:
     ports:
       - "8191:8191"
     restart: unless-stopped
+
+  # Optional. Extension sources through Suwayomi (see Sources). Install extensions in its own UI.
+  suwayomi:
+    image: ghcr.io/suwayomi/suwayomi-server:stable
+    container_name: suwayomi
+    volumes:
+      - ./suwayomi-data:/home/suwayomi/.local/share/Tachidesk
+    ports:
+      - "4567:4567"
+    restart: unless-stopped
 ```
 
 1. Open `http://localhost:8990` and create the administrator account.
 2. Under **Settings**, add `/library` as a root folder.
 3. If you use FlareSolverr, set its URL under **Settings → FlareSolverr** to
-   `http://flaresolverr:8191` and hit **Test**.
+   `http://flaresolverr:8191` and hit **Test**. If you use Suwayomi, set
+   `http://suwayomi:4567` under **Settings → Integrations → Suwayomi**, hit **Test**, then
+   **Manage sources** to turn on the ones you want.
 4. Click **Add Series**, search for a title, and pick it. Maki links sources and syncs chapters
    in the background.
 5. Download a chapter or click **Search all missing**, then follow progress under **Activity**.
@@ -257,7 +278,8 @@ is shared: one copy of the files, one set of series and chapters, so a second re
   priority, metadata and recommendation settings, notifications, backups, and tracker app
   registrations. The client ID and secret are shared, but each person connects their own account.
 - **Library access** is granted per root folder under **Settings → Users**. An account with no
-  grants sees an empty library. Series, chapters, covers, search, and OPDS all respect it.
+  grants sees an empty library. Series, chapters, covers, search, and OPDS all respect it. The
+  same grants decide where someone with the **Add series** permission may add a title.
 - **Kavita is one server with one API key**, so everything it reports is a single person's
   reading. **Settings → Kavita** chooses which Maki account Kavita's reading belongs to (unset
   means the first admin). Only that account can sync read status with Kavita.

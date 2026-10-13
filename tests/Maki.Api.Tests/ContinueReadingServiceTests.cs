@@ -75,4 +75,40 @@ public class ContinueReadingServiceTests : IDisposable
 
         Assert.Equal(six, await Next(seriesId));
     }
+
+    [Fact]
+    public async Task A_series_read_through_in_one_language_is_finished_whatever_else_is_downloaded()
+    {
+        var seriesId = _db.SeedSeries();
+        for (var n = 1; n <= 3; n++)
+        {
+            Read(seriesId, Seed(seriesId, n, null));
+            Seed(seriesId, n, null, language: "es");
+        }
+
+        Assert.Null(await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task Another_languages_copies_do_not_count_as_unread()
+    {
+        var seriesId = _db.SeedSeries();
+        Read(seriesId, Seed(seriesId, 1, null));
+        Seed(seriesId, 1, null, language: "es");
+        Seed(seriesId, 2, null);
+
+        var next = await new ContinueReadingService(_db.NewContext()).NextForAsync(seriesId, CancellationToken.None);
+
+        Assert.Equal(1, next!.UnreadChapters);
+    }
+
+    [Fact]
+    public async Task Another_languages_copy_with_a_different_volume_still_counts_as_read()
+    {
+        var seriesId = _db.SeedSeries();
+        Read(seriesId, Seed(seriesId, 5, 1));
+        Seed(seriesId, 5, null, language: "es");
+
+        Assert.Null(await Next(seriesId));
+    }
 }

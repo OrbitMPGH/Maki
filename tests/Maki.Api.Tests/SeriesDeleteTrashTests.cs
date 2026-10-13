@@ -59,7 +59,6 @@ public class SeriesDeleteTrashTests : IDisposable
         mangaBakaStore: null!,
         similarSeries: null!,
         recommendationFeedback: null!,
-        archives: null!,
         readingProfiles: null!,
         readingTimeEstimates: null!,
         sourceAvailability: null!,
@@ -101,7 +100,7 @@ public class SeriesDeleteTrashTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<NoContentResult>(await Controller(db).Delete(seriesId, deleteFiles: false, default));
+            Assert.IsType<NoContentResult>(await Controller(db).Delete(seriesId, deleteFiles: false, TestDeletion.For(db), default));
         }
 
         Assert.True(File.Exists(trashed));
@@ -115,7 +114,7 @@ public class SeriesDeleteTrashTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            Assert.IsType<NoContentResult>(await Controller(db).Delete(seriesId, deleteFiles: true, default));
+            Assert.IsType<NoContentResult>(await Controller(db).Delete(seriesId, deleteFiles: true, TestDeletion.For(db), default));
         }
 
         Assert.False(File.Exists(trashed));

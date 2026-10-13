@@ -17,6 +17,7 @@ export interface ConnectionField {
   key: string
   label: string
   placeholder?: string
+  description?: string
   secret?: boolean
 }
 
@@ -142,7 +143,9 @@ function ConnectionFields({
         f.secret ? (
           <PasswordInput
             key={f.key}
+            autoComplete="new-password"
             label={f.label}
+            description={f.description}
             placeholder={f.placeholder}
             value={form.values[f.key] ?? ''}
             onChange={(e) => form.setValue(f.key, e.currentTarget.value)}
@@ -151,7 +154,9 @@ function ConnectionFields({
         ) : (
           <TextInput
             key={f.key}
+            autoComplete="off"
             label={f.label}
+            description={f.description}
             placeholder={f.placeholder}
             value={form.values[f.key] ?? ''}
             onChange={(e) => form.setValue(f.key, e.currentTarget.value)}

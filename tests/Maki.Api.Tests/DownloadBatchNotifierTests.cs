@@ -1,4 +1,4 @@
-﻿using Maki.Api.Services;
+using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
@@ -17,6 +17,7 @@ public class DownloadBatchNotifierTests : IDisposable
     private readonly RecordingNotifications _notifications = new();
     private readonly RecordingInbox _inbox = new();
     private readonly StoppedClock _clock = new(T0);
+    private readonly QueueLiveness _queue = new();
     private readonly DownloadBatchNotifier _batches;
 
     public DownloadBatchNotifierTests() =>
@@ -26,11 +27,39 @@ public class DownloadBatchNotifierTests : IDisposable
             new TestLocalizer(),
             new TestUserLocaleResolver(),
             _clock,
-            NullLogger<DownloadBatchNotifier>.Instance);
+            NullLogger<DownloadBatchNotifier>.Instance,
+            _queue);
+
+    /// <summary>Which queue item ids the sweep is told are still active. Empty means all settled.</summary>
+    private sealed class QueueLiveness : IDownloadQueueLiveness
+    {
+        public HashSet<int> Active { get; } = [];
+
+        public Task<IReadOnlySet<int>> StillActiveAsync(IReadOnlyCollection<int> queueItemIds, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlySet<int>>(queueItemIds.Where(Active.Contains).ToHashSet());
+    }
 
     public void Dispose() => _batches.Dispose();
 
     private List<(NotificationEventType Type, NotificationMessage Message)> Sent => _notifications.Sent;
+
+    [Fact]
+    public async Task Upgrades_and_downloads_of_one_series_are_summarized_apart()
+    {
+        await _batches.QueuedAsync(1, "Berserk", [1, 2], DownloadOrigin.Upgrade);
+        await _batches.QueuedAsync(1, "Berserk", [3, 4], DownloadOrigin.SmartDownload);
+        var queuedPings = Sent.Count;
+
+        Assert.True(await _batches.CompletedAsync(1, 3));
+        Assert.True(await _batches.CompletedAsync(1, 4));
+        Assert.Equal(queuedPings + 1, Sent.Count);
+        Assert.Contains("notify.downloads.complete.title", Sent[^1].Message.Title);
+
+        Assert.True(await _batches.CompletedAsync(1, 1));
+        Assert.True(await _batches.CompletedAsync(1, 2));
+        Assert.Equal(queuedPings + 1, Sent.Count);
+        Assert.Contains(_inbox.RaisedForSeries, r => r.Message.Key == "inbox.upgrade.batch");
+    }
 
     [Fact]
     public async Task A_batch_announces_once_at_the_start_and_once_when_every_chapter_is_done()
@@ -238,6 +267,60 @@ public class DownloadBatchNotifierTests : IDisposable
         Assert.False(await _batches.CompletedAsync(1, 11));
     }
 
+    /// <summary>
+    /// The queue is FIFO across series: a second series queued behind a long backlog reports
+    /// nothing for hours without anything being wrong. Closing it would send one ping per chapter
+    /// once its turn came, which is the flood the batch exists to prevent.
+    /// </summary>
+    [Fact]
+    public async Task A_batch_still_waiting_in_the_queue_survives_the_sweep()
+    {
+        await _batches.QueuedAsync(1, "Berserk", [10, 11, 12]);
+        Sent.Clear();
+        _queue.Active.UnionWith([10, 11, 12]);
+
+        _clock.Now = T0.AddHours(3);
+        await _batches.SweepStaleAsync();
+        Assert.Empty(Sent);
+
+        // Its turn comes much later; the batch still owns the items and summarizes once.
+        _clock.Now = T0.AddHours(6);
+        Assert.True(await _batches.CompletedAsync(1, 10));
+        Assert.True(await _batches.CompletedAsync(1, 11));
+        Assert.True(await _batches.CompletedAsync(1, 12));
+        Assert.Contains("count=3", Assert.Single(Sent).Message.Body);
+    }
+
+    [Fact]
+    public async Task A_waiting_batch_is_not_rotated_by_a_later_join_either()
+    {
+        await _batches.QueuedAsync(1, "Berserk", [10, 11]);
+        Sent.Clear();
+        _queue.Active.UnionWith([10, 11]);
+
+        // The sweep refreshes a live batch, so a Smart top-up two hours in joins it instead of
+        // closing it as quiet.
+        _clock.Now = T0.AddMinutes(90);
+        await _batches.SweepStaleAsync();
+        _clock.Now = T0.AddHours(2);
+        await _batches.QueuedAsync(1, "Berserk", [12]);
+        Assert.Empty(Sent);
+        Assert.True(await _batches.CompletedAsync(1, 12));
+    }
+
+    [Fact]
+    public async Task A_quiet_batch_whose_items_all_settled_is_still_closed()
+    {
+        await _batches.QueuedAsync(1, "Berserk", [10, 11]);
+        await _batches.CompletedAsync(1, 10);
+        Sent.Clear();
+        // Item 11 settled in the queue without reporting back: a leak, not a wait.
+
+        _clock.Now = T0.AddHours(2);
+        await _batches.SweepStaleAsync();
+        Assert.Contains("unfinished=1", Assert.Single(Sent).Message.Body);
+    }
+
     [Fact]
     public async Task Joining_a_batch_whose_items_went_quiet_closes_it_instead_of_keeping_it_alive()
     {
@@ -255,6 +338,27 @@ public class DownloadBatchNotifierTests : IDisposable
 
         Assert.Contains(Sent, s => s.Message.Body.Contains("unfinished=4"));
         Assert.False(await _batches.CompletedAsync(1, 10));
+        Assert.True(await _batches.CompletedAsync(1, 14));
+    }
+
+    [Fact]
+    public async Task A_batch_kept_alive_by_joins_is_not_rotated_while_its_items_wait()
+    {
+        await _batches.QueuedAsync(1, "Berserk", [10, 11]);
+        Sent.Clear();
+        _queue.Active.UnionWith([10, 11]);
+
+        // Each join refreshes the batch's activity, so the sweep never looks at it and never
+        // refreshes its last report; the join itself has to ask whether the items are still waiting.
+        _clock.Now = T0.AddMinutes(50);
+        await _batches.QueuedAsync(1, "Berserk", [12, 13]);
+        _queue.Active.UnionWith([12, 13]);
+        _clock.Now = T0.AddMinutes(100);
+        await _batches.SweepStaleAsync();
+        await _batches.QueuedAsync(1, "Berserk", [14, 15]);
+
+        Assert.Empty(Sent);
+        Assert.True(await _batches.CompletedAsync(1, 10));
         Assert.True(await _batches.CompletedAsync(1, 14));
     }
 }

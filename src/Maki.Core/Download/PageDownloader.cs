@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Maki.Core.Http;
+using Maki.Core.Reading;
 using Maki.Core.Sources;
 using Microsoft.Extensions.Logging;
 
@@ -23,16 +24,22 @@ public class PageDownloader(
     // otherwise hold the page, and the worker, until the per-item deadline.
     private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
+    /// <param name="sourceName">The cooldown key.</param>
+    /// <param name="pageClient">
+    /// The source, when it fetches pages from an admin-configured origin (see
+    /// <see cref="IPageClientSource"/>). Callers pass <c>source as IPageClientSource</c>.
+    /// </param>
     /// <returns>Ordered list of downloaded page file paths.</returns>
     public async Task<List<string>> DownloadAsync(
         ChapterPages pages,
         string sourceName,
         string workingDir,
         Func<int, int, Task>? onProgress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IPageClientSource? pageClient = null)
     {
         Directory.CreateDirectory(workingDir);
-        var client = httpClientFactory.CreateClient(HttpClientName);
+        var client = httpClientFactory.CreateClient(pageClient?.PageHttpClientName ?? HttpClientName);
 
         var results = new string[pages.Pages.Count];
         var done = 0;
@@ -48,7 +55,7 @@ public class PageDownloader(
 
                 if (!File.Exists(target))
                 {
-                    await DownloadPageAsync(client, page, sourceName, target, token);
+                    await DownloadPageAsync(client, pageClient, page, sourceName, target, token);
                 }
 
                 var current = Interlocked.Increment(ref done);
@@ -61,7 +68,8 @@ public class PageDownloader(
         return [.. results];
     }
 
-    private async Task DownloadPageAsync(HttpClient client, PageRequest page, string sourceName, string target, CancellationToken ct)
+    private async Task DownloadPageAsync(
+        HttpClient client, IPageClientSource? pageClient, PageRequest page, string sourceName, string target, CancellationToken ct)
     {
         var temp = target + ".tmp";
 
@@ -78,7 +86,7 @@ public class PageDownloader(
             // the cooldown, so honor it per page — not only when a worker picks up its next item.
             await cooldown.WaitAsync(sourceName, ct);
 
-            PublicAddressGuard.EnsureAllowed(page.Url);
+            EnsureAllowed(pageClient, page.Url);
             using var request = new HttpRequestMessage(HttpMethod.Get, page.Url);
             if (page.Headers != null)
             {
@@ -91,8 +99,12 @@ public class PageDownloader(
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             if (response.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable)
             {
-                var retryAfter = response.Headers.RetryAfter?.Delta
-                    ?? (response.Headers.RetryAfter?.Date is { } date ? date - DateTimeOffset.UtcNow : null);
+                var retryAfter = response.Headers.RetryAfter?.Delta;
+                if (retryAfter is null && response.Headers.RetryAfter?.Date is { } date)
+                {
+                    retryAfter = TimeSpan.FromTicks(Math.Max(0, (date - time.GetUtcNow()).Ticks));
+                }
+
                 throw new RateLimitException(
                     $"Rate limited by {request.RequestUri?.Host} (HTTP {(int)response.StatusCode})", retryAfter);
             }
@@ -103,13 +115,6 @@ public class PageDownloader(
             {
                 await CopyWithStallTimeoutAsync(response.Content, file, page.Url, StallTimeout, time, ct);
             }
-        }
-
-        if (page.ScrambleOffset > 0)
-        {
-            await MangaFireDescrambler.DescrambleFileAsync(temp, page.ScrambleOffset, ct);
-            logger.LogDebug("Descrambled page {Target} (offset {Offset})",
-                Path.GetFileName(target), page.ScrambleOffset);
         }
 
         if (!string.IsNullOrEmpty(page.XorKeyHex))
@@ -179,10 +184,25 @@ public class PageDownloader(
         await File.WriteAllBytesAsync(path, data, ct);
     }
 
-    private static string ExtensionFor(string url)
+    private static void EnsureAllowed(IPageClientSource? pageClient, string url)
     {
-        var path = new Uri(url).AbsolutePath;
-        var extension = Path.GetExtension(path);
-        return string.IsNullOrEmpty(extension) ? ".jpg" : extension;
+        if (pageClient is null)
+        {
+            PublicAddressGuard.EnsureAllowed(url);
+            return;
+        }
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !pageClient.IsPageUrlAllowed(uri))
+        {
+            throw new BlockedDestinationException($"Refusing to fetch '{url}': outside the source's configured origin");
+        }
+    }
+
+    // An image proxy URL like "/image.php?id=1" would otherwise name the page "001.php", which readers
+    // that filter entries by image extension then skip.
+    internal static string ExtensionFor(string url)
+    {
+        var extension = Path.GetExtension(new Uri(url).AbsolutePath);
+        return CbzReader.IsImage("page" + extension) ? extension : ".jpg";
     }
 }

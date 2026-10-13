@@ -46,7 +46,7 @@ public class MangaPlusSourceTests
         // English first: SourceCatalog's ranking sort is stable, so an auto-match scoring the two
         // identically still takes the English edition, exactly as it did before.
         Assert.Equal(["100237", "200108"], results.Select(r => r.SourceSeriesId));
-        Assert.StartsWith("[English]", results[0].Description);
+        Assert.DoesNotContain("[English]", results[0].Description);
         Assert.StartsWith("[Spanish]", results[1].Description);
     }
 
@@ -81,9 +81,8 @@ public class MangaPlusSourceTests
         var detail = await WithDetail().GetSeriesAsync("100020");
 
         Assert.Equal("One Piece", detail.Title);
-        // The language is prefixed onto the description: several editions of a title share a name,
-        // so the picker needs something on the card to tell them apart.
-        Assert.StartsWith("[English] As a child, Monkey D. Luffy", detail.Description);
+        // Only the non-English editions are labelled in the description; English stays unmarked.
+        Assert.StartsWith("As a child, Monkey D. Luffy", detail.Description);
         Assert.StartsWith("https://jumpg-assets.tokyo-cdn.com/secure/title/100020/", detail.CoverUrl);
     }
 

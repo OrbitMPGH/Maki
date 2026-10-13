@@ -56,6 +56,15 @@ public class RefreshMonitoredSeriesJobTests : IDisposable
     }
 
     [Fact]
+    public async Task Library_import_still_owing_its_link_is_not_a_candidate()
+    {
+        var mapping = new SourceMapping { SourceName = "fake", SourceSeriesId = "s", Url = "u", Enabled = true };
+        var id = _db.SeedSeries(configure: s => s.PendingImportLink = PendingImportLink.LinkAndComicInfo, mappings: mapping);
+
+        Assert.DoesNotContain(id, await Refreshable());
+    }
+
+    [Fact]
     public async Task Completed_and_caught_up_is_skipped()
     {
         var id = SeedWithChapters(SeriesStatus.Completed, totalChapters: 100, enabledMapping: true, 99m, 100m);
@@ -120,8 +129,9 @@ public class RefreshSmartGateTests : IDisposable
         _db.Dispose();
     }
 
-    private int Seed(NewChapterMonitorMode mode) => _db.SeedSeries(
+    private int Seed(NewChapterMonitorMode mode, Action<Series>? configure = null) => _db.SeedSeries(
         monitor: mode,
+        configure: configure,
         mappings: new SourceMapping { SourceName = "fake", SourceSeriesId = "series", Url = "u", Enabled = true });
 
     /// <summary>The job resolves ChapterSyncService per series, so the scope has to supply one.</summary>
@@ -143,9 +153,9 @@ public class RefreshSmartGateTests : IDisposable
 
     private async Task<(List<Chapter> Chapters, int Queued)> RefreshAsync(
         NewChapterMonitorMode mode, int chapterCount = 2, IAppSettings? settings = null,
-        RecordingNotifications? notifications = null)
+        RecordingNotifications? notifications = null, Action<Series>? configure = null)
     {
-        var seriesId = Seed(mode);
+        var seriesId = Seed(mode, configure);
         var fake = new FakeSource { Name = "fake" };
         var source = new FakeSource
         {
@@ -178,6 +188,17 @@ public class RefreshSmartGateTests : IDisposable
 
         Assert.Equal(2, chapters.Count);
         Assert.All(chapters, c => Assert.True(c.Wanted));
+        Assert.Equal(0, queued);
+    }
+
+    /// <summary>Health recovery calls RefreshSeriesAsync directly, past the candidate filter.</summary>
+    [Fact]
+    public async Task A_library_import_still_owing_its_link_is_neither_synced_nor_queued()
+    {
+        var (chapters, queued) = await RefreshAsync(NewChapterMonitorMode.All,
+            configure: s => s.PendingImportLink = PendingImportLink.Link);
+
+        Assert.Empty(chapters);
         Assert.Equal(0, queued);
     }
 

@@ -65,5 +65,5 @@ public static class CatalogueCredits
     public static string Key(IReadOnlyList<CatalogueCredit>? credits) =>
         credits is null
             ? string.Empty
-            : string.Join(',', credits.Select(c => $"{c.Role}/{c.Name.ToLowerInvariant()}"));
+            : string.Join(',', credits.Select(c => $"{c.Role}/{KeyPart.Of(c.Name.ToLowerInvariant())}"));
 }

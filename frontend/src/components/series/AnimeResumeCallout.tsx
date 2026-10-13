@@ -29,7 +29,8 @@ export function AnimeResumeCallout({
   onMarkWatched?: (coveredTo: number) => void
   onRead?: () => void
   onDismiss?: () => void
-  pending?: boolean
+  /** Which action is running, so only its button shows pending and the rest go disabled. */
+  pending?: 'mark' | 'read' | 'dismiss' | null
   inLibrarySeriesId?: number | null
 }) {
   const { t } = useLingui()
@@ -80,14 +81,14 @@ export function AnimeResumeCallout({
           {variant === 'library' && (
             <Group gap="xs" wrap="wrap">
               {unmarkedCount !== 0 && (
-                <Button size="xs" onClick={openConfirm} loading={pending}>
+                <Button size="xs" onClick={openConfirm} loading={pending === 'mark'} disabled={!!pending && pending !== 'mark'}>
                   <Trans>Mark ch. 1 to {coveredTo} watched</Trans>
                 </Button>
               )}
-              <Button size="xs" variant="default" onClick={onRead} loading={pending}>
+              <Button size="xs" variant="default" onClick={onRead} loading={pending === 'read'} disabled={!!pending && pending !== 'read'}>
                 <Trans>Read ch. {resumeAt}</Trans>
               </Button>
-              <Button size="xs" variant="subtle" c="var(--ink-3)" onClick={onDismiss} disabled={pending}>
+              <Button size="xs" variant="subtle" c="var(--ink-3)" onClick={onDismiss} disabled={!!pending}>
                 <Trans>Not this anime?</Trans>
               </Button>
             </Group>
@@ -107,7 +108,7 @@ export function AnimeResumeCallout({
           onClose={() => setConfirmOpen(false)}
           title={t`Mark chapters watched`}
           confirmLabel={t`Mark watched`}
-          loading={pending}
+          loading={pending === 'mark'}
           onConfirm={confirmMark}
         >
           <Stack gap="sm">

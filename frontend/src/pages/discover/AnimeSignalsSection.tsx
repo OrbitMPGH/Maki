@@ -1,3 +1,4 @@
+import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
@@ -11,7 +12,7 @@ import type {
 } from '../../api/animeSignals'
 import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength } from '../../api/animeSignals'
 import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommendationFeedback'
-import { formatDateTime } from '../../format'
+import { formatDateTime, formatDecimal, formatFixedDecimal } from '../../format'
 import { SeriesThumb } from '../stats/SeriesLink'
 
 export type RoleFilter = AnimeSignalRole | 'all'
@@ -104,7 +105,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
 
   async function toggle(next: boolean) {
     setToggleError('')
-    try { await setEnabled.mutateAsync(next) } catch (cause) { setToggleError(String(cause)) }
+    try { await setEnabled.mutateAsync(next) } catch (cause) { setToggleError(errorText(cause)) }
   }
 
   async function changeStrength(strength: AnimeSignalStrength) {
@@ -112,7 +113,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
     try {
       await setStrength.mutateAsync({ enabled: true, strength })
     } catch (cause) {
-      setToggleError(String(cause))
+      setToggleError(errorText(cause))
     }
   }
 
@@ -128,8 +129,9 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   const total = data?.entries.length ?? 0
 
   if (isLoading || !data) {
+    const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
     ) : null
   }
 
@@ -234,7 +236,7 @@ function AnimeSignalStrengthControl({
     }
   })()
 
-  const topSeed = topSeedWeight !== undefined ? topSeedWeight.toFixed(2) : ''
+  const topSeed = topSeedWeight !== undefined ? formatFixedDecimal(topSeedWeight, 2) : ''
 
   const tooltipLabel = (
     <>
@@ -253,6 +255,7 @@ function AnimeSignalStrengthControl({
       <Text size="xs" fw={500}><Trans>How much they count</Trans></Text>
       <Tooltip label={tooltipLabel} multiline w={300}>
         <SegmentedControl
+          aria-label={t`How much they count`}
           size="xs"
           value={value}
           disabled={pending}
@@ -311,7 +314,7 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
   // One decimal only when averaging produced one: a show watched once still reads "★ 8".
   const score = entry.score === null
     ? null
-    : Number.isInteger(entry.score) ? String(entry.score) : entry.score.toFixed(1)
+    : formatDecimal(entry.score)
 
   const signal = useMutateSignalOverride()
   const { data: overrides } = useSignalOverrides()
@@ -327,7 +330,7 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
         expectedRevision: overrides?.find((item) => item.mangaBakaId === mangaBakaId)?.revision ?? 0,
       })
     } catch (cause) {
-      setActionError(String(cause))
+      setActionError(errorText(cause))
     }
   }
 

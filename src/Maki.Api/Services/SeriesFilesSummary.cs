@@ -56,9 +56,9 @@ public static class SeriesFilesSummary
             .Where(f => f.SeriesId == seriesId)
             .Select(f => new FileRecord(f.Id, f.RelativePath))
             .ToListAsync(ct);
-        // Same rule as the full listing, which only counts a file as linked by a numbered chapter.
+        // Same rule as the full listing: any chapter pointing at the file links it, numbered or not.
         var linked = (await db.Chapters
-                .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null && c.Number != null)
+                .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
                 .Select(c => c.ChapterFileId!.Value)
                 .Distinct()
                 .ToListAsync(ct))

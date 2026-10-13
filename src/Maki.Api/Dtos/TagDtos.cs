@@ -78,7 +78,28 @@ public record LibraryFilterSpec(
     /// </summary>
     string QualityProfile = "all",
     /// <summary><see cref="Maki.Core.Entities.SeriesTypes"/> values to include, empty for "any".</summary>
-    List<string>? Types = null);
+    List<string>? Types = null,
+    /// <summary>User tag ids a series must not carry. Absent on presets saved before this existed.</summary>
+    List<int>? ExcludeTagIds = null,
+    /// <summary>Genres a series must not carry.</summary>
+    List<string>? ExcludeGenres = null,
+    /// <summary>Only series with none of the user's own tags.</summary>
+    bool UntaggedOnly = false,
+    /// <summary>"asc" or "desc" to override <see cref="Sort"/>'s natural direction; empty keeps it.</summary>
+    string SortDir = "",
+    /// <summary>
+    /// "all" | "rated" | "unrated", on the user's own 1 to 10 rating. <see cref="RatingMin"/> and
+    /// <see cref="RatingMax"/> only apply with "rated".
+    /// </summary>
+    string RatingState = "all",
+    int RatingMin = 1,
+    int RatingMax = 10,
+    /// <summary>
+    /// MangaBaka score window, 0–10 inclusive. The full range means "don't filter"; any narrower
+    /// window drops series without a score.
+    /// </summary>
+    double CommunityRatingMin = 0,
+    double CommunityRatingMax = 10);
 
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
 

@@ -5,6 +5,7 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Rawkuma;
 
@@ -59,7 +60,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         var root = ParseJson(body, url);
         if (root.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
 
         var results = new List<SourceSeriesResult>();
@@ -177,7 +178,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         var root = ParseJson(body, url);
         if (root.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
 
         foreach (var item in root.EnumerateArray())
@@ -292,9 +293,9 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         host.Equals("rawkuma.net", StringComparison.OrdinalIgnoreCase) ||
         host.Equals("www.rawkuma.net", StringComparison.OrdinalIgnoreCase);
 
-    private static string? LastPathSegment(string? href)
+    private string? LastPathSegment(string? href)
     {
-        if (string.IsNullOrEmpty(href) || !Uri.TryCreate(href, UriKind.Absolute, out var uri))
+        if (UrlText.ResolveHref(BaseUrl, href, requireSiteHost: false) is not { } uri)
         {
             return null;
         }
@@ -317,8 +318,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
     /// </summary>
     private static JsonElement ParseJson(string body, string url)
     {
-        var trimmed = body.TrimStart();
-        var json = trimmed.StartsWith('<') ? UnwrapPre(trimmed, url) : body;
+        var json = PreUnwrap.Unwrap(body, url);
         try
         {
             using var doc = JsonDocument.Parse(json);
@@ -326,20 +326,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
         }
         catch (JsonException)
         {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(body)}");
+            throw new InvalidOperationException($"Unexpected response from {url}: {BodyText.Snippet(body)}");
         }
     }
-
-    private static string UnwrapPre(string html, string url)
-    {
-        var pre = Parser.ParseDocument(html).QuerySelector("pre");
-        if (pre is null)
-        {
-            throw new InvalidOperationException($"Unexpected response from {url}: {Truncate(html)}");
-        }
-
-        return pre.TextContent;
-    }
-
-    private static string Truncate(string body) => body.Length <= 100 ? body : body[..100];
 }

@@ -233,7 +233,8 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
         }
 
         return DateTime.TryParseExact(
-            text, "dd MMMM yyyy", ItalianCulture, DateTimeStyles.None, out var date)
+            text, "dd MMMM yyyy", ItalianCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var date)
             ? date
             : null;
     }

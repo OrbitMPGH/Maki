@@ -37,9 +37,11 @@ public sealed record CreditResolution(
 /// </para>
 ///
 /// <para>
-/// A term that resolves to nobody makes the whole query impossible rather than being dropped.
-/// Silently ignoring a misspelled name would answer a search for one author's work with the entire
-/// catalogue, which reads as the filter having been ignored, because it was.
+/// A role group in which no term resolves makes the whole query impossible rather than being
+/// dropped. Silently ignoring a misspelled name would answer a search for one author's work with the
+/// entire catalogue, which reads as the filter having been ignored, because it was. Inside a group
+/// that does resolve something, a term that finds nobody is skipped, since the group only ever
+/// widens.
 /// </para>
 /// </summary>
 public static class CreditResolver
@@ -59,6 +61,7 @@ public static class CreditResolver
         {
             var union = new HashSet<long>();
             var resolvedAny = false;
+            var firstNameId = -1;
 
             foreach (var term in group)
             {
@@ -68,6 +71,11 @@ public static class CreditResolver
                 }
 
                 resolvedAny = true;
+                if (firstNameId < 0)
+                {
+                    firstNameId = nameId;
+                }
+
                 credits.Add(new ResolvedCredit(
                     index.NameAt(nameId), index.RoleLabelsAt(nameId), index.WorkCountOf(nameId, group.Key)));
                 union.UnionWith(index.WorksOf(nameId, group.Key));
@@ -82,7 +90,7 @@ public static class CreditResolver
             {
                 // Keep the first group's order, which is popularity, so a truncated set keeps the
                 // works anyone has heard of.
-                intersection = [.. Order(index, query.Credits[0], union)];
+                intersection = [.. Order(index, firstNameId, group.Key, union)];
             }
             else
             {
@@ -150,16 +158,11 @@ public static class CreditResolver
     /// which <see cref="CreditIndex"/> already stores that way, then appending anything the other
     /// terms contributed.
     /// </summary>
-    private static IEnumerable<long> Order(CreditIndex index, CreditTerm first, HashSet<long> union)
+    private static IEnumerable<long> Order(CreditIndex index, int nameId, CreditRole roles, HashSet<long> union)
     {
-        if (!index.TryResolve(first.Name, first.Roles, out var nameId))
-        {
-            return union;
-        }
-
         var ordered = new List<long>(union.Count);
         var seen = new HashSet<long>(union.Count);
-        foreach (var id in index.WorksOf(nameId, first.Roles))
+        foreach (var id in index.WorksOf(nameId, roles))
         {
             if (union.Contains(id) && seen.Add(id))
             {

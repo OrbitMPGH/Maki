@@ -32,7 +32,7 @@ public class SourceMappingController(
     ICurrentUser currentUser) : ControllerBase
 {
     public record CreateMappingRequest(
-        int SeriesId, string SourceName, string SourceSeriesId, string Url,
+        int SeriesId, string SourceName, string SourceSeriesId, string? Url,
         string? LanguageFilter = null, int? Priority = null);
 
     public record AutoMatchRequest(int[] SeriesIds);
@@ -48,7 +48,7 @@ public class SourceMappingController(
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
     {
-        var mappings = await db.SourceMappings.Where(m => m.SeriesId == seriesId).ToListAsync(ct);
+        var mappings = await db.SourceMappings.AsNoTracking().Where(m => m.SeriesId == seriesId).ToListAsync(ct);
         return Ok(mappings);
     }
 
@@ -89,7 +89,7 @@ public class SourceMappingController(
             SeriesId = request.SeriesId,
             SourceName = sourceName,
             SourceSeriesId = request.SourceSeriesId,
-            Url = request.Url,
+            Url = request.Url ?? string.Empty,
             LanguageFilter = string.IsNullOrWhiteSpace(request.LanguageFilter)
                 ? SourceLanguagePreference.SeedFilter(
                     source,
@@ -137,9 +137,11 @@ public class SourceMappingController(
         // enqueueing first can race the save and silently do nothing.
         await db.SaveChangesAsync(ct);
 
+        // One series is somebody waiting on its Sources card; a bulk re-match waits its turn.
+        var lane = pending.Count == 1 ? SourceMatchLane.Interactive : SourceMatchLane.Background;
         foreach (var series in pending)
         {
-            sourceMatchQueue.Enqueue(series.Id);
+            sourceMatchQueue.Enqueue(series.Id, lane);
         }
 
         return Ok(new { queued = pending.Count });

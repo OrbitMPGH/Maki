@@ -36,7 +36,7 @@ public class SourceMappingControllerTests : IDisposable
     private List<int> Queued()
     {
         var ids = new List<int>();
-        while (_queue.Reader.TryRead(out var id))
+        while (_queue.TryReadMatch(out var id))
         {
             ids.Add(id);
         }
@@ -84,6 +84,18 @@ public class SourceMappingControllerTests : IDisposable
         var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(first).Value);
         Assert.Equal("MangaDex", mapping.SourceName);
         Assert.IsType<ConflictObjectResult>(second);
+    }
+
+    [Fact]
+    public async Task A_mapping_can_be_linked_with_no_source_url()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var controller = BuildController(null, new FakeSource { Name = "MangaDex" });
+
+        var result = await controller.Create(new(seriesId, "MangaDex", "sid", Url: null), default);
+
+        var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(string.Empty, mapping.Url);
     }
 
     [Fact]

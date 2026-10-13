@@ -3,6 +3,7 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.TopManhua;
 
@@ -45,8 +46,13 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             {
                 continue;
             }
-            var href = link.GetAttribute("href")!;
-            var path = new Uri(href).AbsolutePath.TrimStart('/');
+            var href = link.GetAttribute("href");
+            if (UrlText.ResolveHref(BaseUrl, href) is not { } hrefUri)
+            {
+                continue;
+            }
+
+            var path = hrefUri.AbsolutePath.TrimStart('/');
             var seriesId = path.StartsWith("manhua/", StringComparison.Ordinal)
                 ? path["manhua/".Length..]
                 : path;
@@ -57,7 +63,7 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             var titleText = link.HasChildNodes ? link.FirstChild!.TextContent.Trim() : link.TextContent.Trim();
             var cover = item.QuerySelector("img")?.GetAttribute("src");
             
-            results.Add(new SourceSeriesResult(seriesId, titleText, href, cover));
+            results.Add(new SourceSeriesResult(seriesId, titleText, hrefUri.AbsoluteUri, cover));
         }
         
         return results;
@@ -97,7 +103,12 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
                 continue;
             }
 
-            var href = link.GetAttribute("href")!;
+            var href = link.GetAttribute("href");
+            if (string.IsNullOrWhiteSpace(href))
+            {
+                continue;
+            }
+
             var beforeC = href.LastIndexOf("/chapter-", StringComparison.Ordinal);
             var chapterId = beforeC >= 0 ? href[(beforeC + 1)..] : href;
             
@@ -109,7 +120,9 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             var dateText = row.QuerySelector(".chapter-release-date")?.TextContent.Trim();
             DateTime? releaseDate = null;
             if (dateText is not null
-                && DateTime.TryParse(dateText, null, DateTimeStyles.AdjustToUniversal, out var d))
+                && DateTime.TryParse(
+                    dateText, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var d))
             {
                 releaseDate = d;
             }
@@ -146,10 +159,16 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
             ["Priority"] = "u=5, i"
         };
         var urls = doc.QuerySelectorAll(".reading-content > div > img")
-            .Select(img => img.GetAttribute("data-src"))
+            .Select(img => img.GetAttribute("data-src")?.Trim())
             .Where(url => !string.IsNullOrEmpty(url))
             .Select(url => url!)
             .ToList();
+
+        if (urls.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"No page images found for TopManhua chapter {chapter.SourceChapterId}");
+        }
 
         // Plain requests to the image CDN (img-r2.2xstorage.com) get a Cloudflare bot-management
         // block even with matching headers — it tracks the client's TLS/HTTP2 fingerprint, which a

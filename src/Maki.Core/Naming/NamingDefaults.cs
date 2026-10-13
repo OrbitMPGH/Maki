@@ -51,5 +51,6 @@ public static class NamingDefaults
             Volume = 3,
             Title = "The Chapter Title",
             Language = "en"
-        });
+        },
+        Group: "Group Name");
 }

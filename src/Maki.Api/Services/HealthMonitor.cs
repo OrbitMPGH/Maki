@@ -8,6 +8,7 @@ using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Sources.Suwayomi;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -28,9 +29,26 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     private static readonly SemaphoreSlim Gate = new(1);
     private const string UnmeasuredFilesId = "unmeasured-files";
     private const string UpgradeTrashId = "upgrade-trash";
-    public async Task RefreshAsync(CancellationToken ct)
+    private const string RecycleBinId = "recycle-bin";
+    private const string NotificationCheckPrefix = "notification:";
+    private const string SuwayomiCheckId = "Suwayomi";
+    private const string SuwayomiMissingPrefix = "suwayomi:missing:";
+    private const string SuwayomiLink = "/settings?tab=integrations&s=suwayomi";
+    /// <summary>
+    /// With the schedule off nothing keeps a backup fresh, so a stale or missing one is reported as
+    /// disabled rather than warned about forever; a fresh one still reads as healthy.
+    /// </summary>
+    public static (string Status, string Key) BackupCheck(DateTime latestUtc, DateTime nowUtc, int backupDays, bool scheduled)
     {
-        if (!await Gate.WaitAsync(0, ct)) return;
+        var key = latestUtc == DateTime.MinValue ? "health.check.noBackup" : "health.check.lastBackup";
+        if (latestUtc >= nowUtc.AddDays(-backupDays)) return ("healthy", key);
+        return scheduled ? ("warning", key) : ("disabled", "health.check.backupScheduleOff");
+    }
+
+    /// <summary>Runs the checks, or returns false at once when another run already holds the gate.</summary>
+    public async Task<bool> RefreshAsync(CancellationToken ct)
+    {
+        if (!await Gate.WaitAsync(0, ct)) return false;
         try
         {
             var options = System.Text.Json.JsonSerializer.Deserialize<HealthOptions>(await settings.GetAsync(SettingKeys.HealthOptions, ct) ?? "{}", HealthScanService.Json) ?? new();
@@ -77,8 +95,10 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 try
                 {
                     var full = Path.GetFullPath(directory);
-                    var drive = DriveInfo.GetDrives().Where(d => full.StartsWith(d.Name, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-                        .OrderByDescending(d => d.Name.Length).FirstOrDefault();
+                    var allDrives = DriveInfo.GetDrives();
+                    var mount = Maki.Core.Storage.DiskSpace.LongestMount(full, allDrives.Select(d => d.Name),
+                        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    var drive = allDrives.FirstOrDefault(d => d.Name == mount);
                     if (drive == null || !drives.Add(drive.Name)) continue;
                     var gib = drive.AvailableFreeSpace / Math.Pow(1024, 3);
                     var percent = 100.0 * drive.AvailableFreeSpace / drive.TotalSize;
@@ -106,15 +126,17 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                     await settings.GetAsync(SettingKeys.QBittorrentUsername, token) ?? "", await settings.GetAsync(SettingKeys.QBittorrentPassword, token) ?? "", token));
             try
             {
-                var latest = Directory.EnumerateFiles(paths.BackupDir, "*.zip").Select(File.GetLastWriteTimeUtc).DefaultIfEmpty(DateTime.MinValue).Max();
-                Add("backup", "system",
-                    latest < DateTime.UtcNow.AddDays(-options.BackupDays) ? "warning" : "healthy",
-                    latest == DateTime.MinValue ? "health.check.noBackup" : "health.check.lastBackup",
-                    latest == DateTime.MinValue ? null : new { at = latest },
-                    "/settings?tab=system&s=backups");
+                var latest = BackupService.NewestBackupUtc(paths);
+                var scheduled = await settings.GetAsync(SettingKeys.BackupScheduled, ct) == "true";
+                var (status, key) = BackupCheck(latest, DateTime.UtcNow, options.BackupDays, scheduled);
+                Add("backup", "system", status, key,
+                    key == "health.check.lastBackup" ? new { at = latest } : null,
+                    "/settings?tab=system&s=backup");
             }
             catch { Add("backup", "system", "unavailable", "health.check.backupUnreadable"); }
-            var failed = await db.DownloadQueue.CountAsync(q => q.Status == QueueStatus.Failed, ct);
+            var failedNow = DateTime.UtcNow;
+            var failed = await Maki.Api.Jobs.HousekeepingJob
+                .RecentFailures(db.DownloadQueue, failedNow, failedNow.AddDays(-30)).CountAsync(ct);
             foreach (var root in roots)
             {
                 try
@@ -159,34 +181,75 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                         days = upgradeOptions.TrashRetentionDays,
                     }, "/activity?tab=upgrades");
                 }
+
+                var (binBytes, binFiles) = await RecycleBinService.SizeAsync(db, ct);
+                if (binFiles > 0)
+                {
+                    Add(RecycleBinId, "storage", rootDiskLow ? "warning" : "healthy", "health.check.recycleBin", new
+                    {
+                        gib = Math.Round(binBytes / Math.Pow(1024, 3), 2),
+                        files = binFiles,
+                        days = await RecycleBin.RetentionDaysAsync(settings, ct),
+                    }, "/settings?tab=library&s=recycle-bin");
+                }
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch { }
             var queue = services.GetRequiredService<DownloadQueueService>();
+            // Pending, not a warning: a cooldown is the app throttling itself and ends on its own,
+            // so it must not announce or count toward the badge. Sources not cooling down get no row.
             foreach (var source in sources.All)
-                Add($"cooldown:{source.Name}", "downloads",
-                    queue.CooldownRemaining(source.Name) > TimeSpan.Zero ? "warning" : "healthy",
-                    queue.CooldownRemaining(source.Name) > TimeSpan.Zero
-                        ? "health.check.coolingDown"
-                        : "health.check.noCooldown",
-                    new { source = source.Name }, "/activity");
+                if (queue.CooldownRemaining(source.Name) > TimeSpan.Zero)
+                    Add($"cooldown:{source.Name}", "downloads", "pending", "health.check.coolingDown",
+                        new { source = source.Name }, "/activity");
             try
             {
                 var scheduler = await schedulerFactory.GetScheduler(ct);
                 var running = scheduler.IsStarted && !scheduler.InStandbyMode;
                 Add("scheduler", "system", running ? "healthy" : "warning",
                     running ? "health.check.schedulerRunning" : "health.check.schedulerPaused");
-                var pending = (await db.Database.GetPendingMigrationsAsync(ct)).Count();
-                Add("database", "system", pending > 0 ? "warning" : "healthy",
-                    pending > 0 ? "health.check.migrationsPending" : "health.check.databaseCurrent",
-                    pending > 0 ? new { count = pending } : null);
-                if (File.Exists(Path.Combine(paths.ConfigDir, "health-migration-error.txt")))
+                var reachable = await db.Database.CanConnectAsync(ct);
+                Add("database", "system", reachable ? "healthy" : "unavailable",
+                    reachable ? "health.check.databaseCurrent" : "health.check.diagnosticsUnavailable");
+                if (MigrationErrorMarker.Exists(paths.ConfigDir, DateTime.UtcNow))
                 {
-                    Add("migration-history", "system", "warning", "health.check.migrationFailed");
+                    if (MigrationErrorMarker.Read(paths.ConfigDir, DateTime.UtcNow) is { } migrationError)
+                        Add("migration-history", "system", "warning", "health.check.migrationFailedDetail",
+                            new { error = migrationError });
+                    else
+                        Add("migration-history", "system", "warning", "health.check.migrationFailed");
                 }
             }
             catch { Add("database", "system", "unavailable", "health.check.diagnosticsUnavailable"); }
             var old = await db.HealthChecks.Where(c => c.Category != "job").ToListAsync(ct);
+            var knownConnections = old.Where(r => r.Id.StartsWith(NotificationCheckPrefix, StringComparison.Ordinal))
+                .Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+            try
+            {
+                var connections = await db.Notifications.AsNoTracking()
+                    .Where(n => n.Enabled)
+                    .Select(n => new { n.Id, n.Name, n.ConsecutiveFailures })
+                    .ToListAsync(ct);
+                foreach (var connection in connections)
+                {
+                    var id = $"{NotificationCheckPrefix}{connection.Id}";
+                    var failing = connection.ConsecutiveFailures >= NotificationDeliveryHealth.FailingThreshold;
+                    if (!failing && !knownConnections.Contains(id)) continue;
+                    Add(id, "connections", failing ? "warning" : "healthy",
+                        failing ? "health.check.notificationFailing" : "health.check.notificationDelivering",
+                        new { name = connection.Name, count = connection.ConsecutiveFailures }, "/settings?tab=integrations&s=notifications");
+                }
+
+                var current = connections.Select(c => $"{NotificationCheckPrefix}{c.Id}").ToHashSet(StringComparer.Ordinal);
+                foreach (var gone in old.Where(r => knownConnections.Contains(r.Id) && !current.Contains(r.Id)).ToList())
+                {
+                    db.HealthChecks.Remove(gone);
+                    old.Remove(gone);
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch { }
+            await CheckSuwayomiAsync();
             foreach (var check in checks)
             {
                 var row = old.FirstOrDefault(r => r.Id == check.Id);
@@ -199,10 +262,16 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
                     await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
             }
+            foreach (var cooled in old.Where(r => r.Id.StartsWith("cooldown:", StringComparison.Ordinal) && !checks.Any(c => c.Id == r.Id)).ToList())
+                db.HealthChecks.Remove(cooled);
+            if (!checks.Any(c => c.Id == "migration-history") && old.FirstOrDefault(r => r.Id == "migration-history") is { } migrationRow)
+                db.HealthChecks.Remove(migrationRow);
             if (!checks.Any(c => c.Id == UnmeasuredFilesId) && old.FirstOrDefault(r => r.Id == UnmeasuredFilesId) is { } measuredRow)
                 db.HealthChecks.Remove(measuredRow);
             if (!checks.Any(c => c.Id == UpgradeTrashId) && old.FirstOrDefault(r => r.Id == UpgradeTrashId) is { } trashRow)
                 db.HealthChecks.Remove(trashRow);
+            if (!checks.Any(c => c.Id == RecycleBinId) && old.FirstOrDefault(r => r.Id == RecycleBinId) is { } binRow)
+                db.HealthChecks.Remove(binRow);
             if (!checks.Any(c => c.Id == "library-check"))
                 foreach (var row in old.Where(r => r.Id.StartsWith("legacy:") && !checks.Any(c => c.Id == r.Id) && r.Status != "healthy"))
                 {
@@ -217,20 +286,83 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 }
             await db.SaveChangesAsync(ct);
 
+            // Only while a Suwayomi source is in use: an add-on nobody switched on gets no rows at all,
+            // and one switched off again takes its rows with it. One call answers both questions, since
+            // listing the sources needs the server up and the credentials accepted. A source whose
+            // extension is gone warns here; sync writes the mapping's own LastError, never this.
+            async Task CheckSuwayomiAsync()
+            {
+                var inUse = sources.All.OfType<SuwayomiSource>()
+                    .Where(s => !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+                var knownMissing = old.Where(r => r.Id.StartsWith(SuwayomiMissingPrefix, StringComparison.Ordinal))
+                    .Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+                if (inUse.Count == 0)
+                {
+                    foreach (var stale in old.Where(r => r.Id == SuwayomiCheckId || knownMissing.Contains(r.Id)).ToList())
+                    {
+                        db.HealthChecks.Remove(stale);
+                        old.Remove(stale);
+                    }
+
+                    return;
+                }
+
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(TimeSpan.FromSeconds(10));
+                HashSet<string> installed;
+                try
+                {
+                    installed = (await services.GetRequiredService<SuwayomiClient>().ListSourcesAsync(timeout.Token, probe: true))
+                        .Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+                catch
+                {
+                    // Unknown is not missing: the rows from the last answer stay as they were.
+                    Add(SuwayomiCheckId, "connections", "error", "health.check.connectionFailed",
+                        new { service = SuwayomiCheckId }, SuwayomiLink, true);
+                    return;
+                }
+
+                Add(SuwayomiCheckId, "connections", "healthy", "health.check.connected",
+                    new { service = SuwayomiCheckId }, SuwayomiLink, true);
+                var current = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var source in inUse)
+                {
+                    var id = SuwayomiMissingPrefix + source.SourceId;
+                    current.Add(id);
+                    var missing = !installed.Contains(source.SourceId);
+                    if (!missing && !knownMissing.Contains(id)) continue;
+                    Add(id, "connections", missing ? "warning" : "healthy",
+                        missing ? "health.check.suwayomiSourceMissing" : "health.check.suwayomiSourceInstalled",
+                        new { source = source.DisplayName }, SuwayomiLink);
+                }
+
+                foreach (var gone in old.Where(r => knownMissing.Contains(r.Id) && !current.Contains(r.Id)).ToList())
+                {
+                    db.HealthChecks.Remove(gone);
+                    old.Remove(gone);
+                }
+            }
+
             async Task Probe(string name, string urlKey, string? secretKey, bool required, Func<string, string?, CancellationToken, Task<bool>> ping)
             {
+                var link = name == "Kavita"
+                    ? "/settings?tab=integrations&s=kavita"
+                    : $"/settings?tab=downloads&s={name.ToLowerInvariant()}";
                 var url = await settings.GetAsync(urlKey, ct);
                 var secret = secretKey == null ? null : await settings.GetAsync(secretKey, ct);
                 if (string.IsNullOrWhiteSpace(url))
                 {
                     Add(name, "connections", required || !string.IsNullOrWhiteSpace(secret) ? "warning" : "disabled",
-                        "health.check.notConfigured", new { service = name }, "/settings?tab=connections");
+                        "health.check.notConfigured", new { service = name }, link);
                     return;
                 }
                 if (secretKey != null && string.IsNullOrWhiteSpace(secret))
                 {
                     Add(name, "connections", "warning", "health.check.incompleteConfig",
-                        new { service = name }, "/settings?tab=connections");
+                        new { service = name }, link);
                     return;
                 }
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -239,10 +371,11 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 try { ok = await ping(url, secret, timeout.Token).WaitAsync(timeout.Token); } catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } catch { }
                 Add(name, "connections", ok ? "healthy" : "error",
                     ok ? "health.check.connected" : "health.check.connectionFailed",
-                    new { service = name }, "/settings?tab=connections", true);
+                    new { service = name }, link, true);
             }
         }
         finally { Gate.Release(); }
+        return true;
     }
 
     /// <summary>
@@ -257,11 +390,11 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
 
         // A row written before the checks were keyed still has its English, and a check whose key
         // this build does not know still has an id worth naming.
+        var locale = await locales.DefaultAsync(ct);
         var detail = row.MessageKey is { Length: > 0 } key
-            ? localizer.GetFor(await locales.DefaultAsync(ct), key, HealthParams(row.ParamsJson))
+            ? localizer.GetFor(locale, key, HealthParams(row.ParamsJson))
             : row.Message;
 
-        var locale = await locales.DefaultAsync(ct);
         var title = localizer.GetFor(locale, recovered ? "notify.health.recovered.title" : "notify.health.issue.title");
         var body = recovered
             ? localizer.GetFor(locale, "notify.health.recovered.body", new { detail })

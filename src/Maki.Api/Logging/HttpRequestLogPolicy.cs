@@ -27,7 +27,7 @@ public static class HttpRequestLogPolicy
     /// directory from becoming credential material; <c>OpdsController</c> logs its own redacted
     /// line for the case worth debugging. Do not fold this into the tiers below.
     /// </summary>
-    private const string OpdsPrefix = "/api/v1/opds";
+    internal const string OpdsPrefix = "/api/v1/opds";
 
     /// <summary>
     /// Successful reads whose volume tracks the number of images on screen rather than anything the

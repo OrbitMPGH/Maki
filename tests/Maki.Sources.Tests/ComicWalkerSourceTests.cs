@@ -238,6 +238,20 @@ public class ComicWalkerSourceTests
         Assert.Equal(12m, ComicWalkerChapterNumber.Parse("Chapter 12"));
     }
 
+    [Theory]
+    [InlineData("第٣話")]
+    [InlineData("第३話")]
+    public void ChapterNumber_does_not_throw_on_non_ascii_digits(string title)
+    {
+        Assert.Null(ComicWalkerChapterNumber.Parse(title));
+    }
+
+    [Fact]
+    public void ChapterNumber_folds_fullwidth_digits()
+    {
+        Assert.Equal(12m, ComicWalkerChapterNumber.Parse("第１２話"));
+    }
+
     [Fact]
     public void ChapterNumber_returns_null_for_unparseable_text()
     {

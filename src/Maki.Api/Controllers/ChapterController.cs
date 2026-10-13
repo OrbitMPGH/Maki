@@ -35,6 +35,7 @@ public class ChapterController(
     StatsEventService stats,
     ReaderArchiveCache archives,
     SourceRegistry sourceRegistry,
+    SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
     DownloadBatchNotifier downloadBatches,
     ICurrentUser currentUser,
@@ -42,11 +43,11 @@ public class ChapterController(
 {
     [HttpGet]
     public async Task<IActionResult> List(
-        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
+        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades,
+        [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct)
     {
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
-            .Include(c => c.ChapterFile)
             .Select(c => new
             {
                 c.Id,
@@ -60,6 +61,7 @@ public class ChapterController(
                 c.ReleaseDate,
                 c.Wanted,
                 HasFile = c.ChapterFileId != null,
+                FileRemovedAt = c.ChapterFileId == null ? c.FileRemovedAt : null,
                 FilePath = c.ChapterFile != null ? c.ChapterFile.RelativePath : null,
                 // Where the file came from: a registered source's name, the literal "import" for a
                 // file the user brought in from disk, or "torrent:{indexer}" for a grabbed release.
@@ -87,6 +89,13 @@ public class ChapterController(
             .ToListAsync(ct);
         var evaluator = await upgrades.ForSeriesAsync(seriesId, ct);
 
+        // When each file is due to be cleaned up, so the table can say so ahead of time.
+        var cleanupOptions = await readFileCleanup.OptionsAsync(ct);
+        var cleanupMode = await db.Series.Where(s => s.Id == seriesId).Select(s => s.ReadFileCleanup).FirstOrDefaultAsync(ct);
+        var deleteDue = rows.Count > 0 && ReadFileCleanupService.AppliesTo(cleanupMode, cleanupOptions)
+            ? await readFileCleanup.ScheduleAsync(seriesId, cleanupOptions, ct)
+            : [];
+
         // When a chapter's backing file is a volume/compilation CBZ, surface that
         // volume so the UI can show "Vol.x Ch.y" even for scrape-source chapters that
         // carry no volume metadata (parsing can't run inside the EF query, so it's
@@ -104,6 +113,8 @@ public class ChapterController(
             c.ReleaseDate,
             c.Wanted,
             c.HasFile,
+            c.FileRemovedAt,
+            FileDeleteDueAt = deleteDue.TryGetValue(c.Id, out var dueAt) ? dueAt : (DateTime?)null,
             c.FilePath,
             c.FileSourceName,
             c.FileReleaseName,
@@ -165,17 +176,10 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
-        var chapters = await db.Chapters
+        var updated = await db.Chapters
             .Where(c => request.ChapterIds.Contains(c.Id))
-            .ToListAsync(ct);
-
-        foreach (var chapter in chapters)
-        {
-            chapter.Wanted = request.Wanted;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { updated = chapters.Count });
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.Wanted, request.Wanted), ct);
+        return Ok(new { updated });
     }
 
     /// <summary>
@@ -244,6 +248,9 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.differentSeries");
         }
 
+        // Held so a rescan cannot insert the same file's row between the lookup below and the save.
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId, ct);
+
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series?.RootFolder is null)
         {
@@ -310,7 +317,6 @@ public class ChapterController(
             };
             ChapterFileQualityService.StampTierOnly(file, sourceRegistry.Find(file.SourceName)?.Kind, null);
             db.ChapterFiles.Add(file);
-            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             await db.SaveChangesAsync(ct);
         }
 
@@ -329,25 +335,41 @@ public class ChapterController(
     public async Task<IActionResult> Unlink([FromBody] int[] chapterIds, CancellationToken ct)
     {
         var chapters = await db.Chapters.Where(c => chapterIds.Contains(c.Id)).ToListAsync(ct);
-        foreach (var chapter in chapters)
+        var locks = new List<IDisposable>();
+        try
         {
-            chapter.ChapterFileId = null;
+            foreach (var seriesId in chapters.Select(c => c.SeriesId).Distinct().Order())
+            {
+                locks.Add(await SeriesLocks.SeriesAsync(seriesId, ct));
+            }
+
+            foreach (var chapter in chapters)
+            {
+                chapter.ChapterFileId = null;
+            }
+
+            await db.SaveChangesAsync(ct);
+        }
+        finally
+        {
+            locks.ForEach(l => l.Dispose());
         }
 
-        await db.SaveChangesAsync(ct);
         return Ok(new { unlinked = chapters.Count });
     }
 
     /// <summary>
-    /// Permanently removes chapter rows — not just their file link — for cases like a
+    /// "Remove chapters": permanently removes chapter rows, not just their file, for cases like a
     /// broken auto-match that pulled in the wrong show: chapter data is otherwise
-    /// additive-only, so bad rows would sit in the library forever. Also deletes the
-    /// backing CBZ from disk when this batch drops the last chapter referencing it
+    /// additive-only, so bad rows would sit in the library forever. Also moves the
+    /// backing CBZ to the recycle bin when this batch drops the last chapter referencing it
     /// (a volume CBZ can back several chapters).
     /// </summary>
     [Authorize(Policy = Policies.DeleteSeries)]
     [HttpDelete]
-    public async Task<IActionResult> Delete([FromBody] int[] chapterIds, CancellationToken ct)
+    public async Task<IActionResult> Delete(
+        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct,
+        [FromQuery] bool permanent = false)
     {
         if (chapterIds.Length == 0)
         {
@@ -410,25 +432,24 @@ public class ChapterController(
         var batchFiles = await db.ChapterFiles.Where(f => fileIdList.Contains(f.Id)).ToListAsync(ct);
 
         // A manual link (see Link above) can point a second row, in this series or another, at the
-        // same physical file, so ChapterFileId alone can't tell if the file is still claimed elsewhere.
-        var filesInRoot = series?.RootFolderId is int rootFolderId
-            ? await (from f in db.ChapterFiles
-                     join s in db.Series on f.SeriesId equals s.Id
-                     where s.RootFolderId == rootFolderId
-                     select new { f.Id, f.RelativePath }).ToListAsync(ct)
-            : [];
+        // same physical file, and nested root folders can name it twice, so ChapterFileId alone
+        // can't tell if the file is still claimed elsewhere. A row removed in this batch doesn't count
+        // as a claim, or two rows pointing at one file that are both removed would each see the other
+        // as still holding it and the file would never be deleted. A row kept because another chapter
+        // still uses it does count.
+        var resolved = batchFiles.ToDictionary(f => f.Id, f => series?.RootFolder is null
+            ? null
+            : LibraryPaths.ResolveForDelete(series.RootFolder.Path, f.RelativePath));
+        var claimedPaths = await deletion.ClaimedAsync(
+            resolved.Values.OfType<string>().ToList(),
+            fileIds.Where(id => !stillReferenced.Contains(id)).ToHashSet(),
+            ct);
 
-        // A row removed in this batch doesn't count as a claim, or two rows pointing at one file that
-        // are both removed would each see the other as still holding it and the file would never be
-        // deleted. A row kept because another chapter still uses it does count.
-        var claimedPaths = filesInRoot
-            .Where(f => !fileIds.Contains(f.Id) || stillReferenced.Contains(f.Id))
-            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
-            .ToHashSet(LibraryPaths.FolderComparer);
-
-        // Collected here instead of deleted in place: rows are saved first, and only a successful
-        // save unlocks touching the filesystem.
-        var toDeleteFromDisk = new List<(string AbsPath, string RelativePath)>();
+        // Collected here instead of binned in place: the bin entries are saved with the row removal,
+        // and only a successful save unlocks touching the filesystem.
+        var toBin = new List<(ChapterFile File, string AbsPath, List<Chapter> Chapters)>();
+        // Before any row is removed: EF nulls the chapters' file ids as soon as their file is.
+        var onFile = chapters.Where(c => c.ChapterFileId != null).ToLookup(c => c.ChapterFileId!.Value);
         foreach (var file in batchFiles)
         {
             if (stillReferenced.Contains(file.Id))
@@ -436,22 +457,20 @@ public class ChapterController(
                 continue;
             }
 
-            if (!claimedPaths.Contains(LibraryPaths.ComparisonKey(file.RelativePath)))
+            // Never move a bare Combine: a row written before the check in Link, or by any future
+            // path that skips it, would move whatever it points at outside the library.
+            var absPath = resolved[file.Id];
+            if (absPath is null || !claimedPaths.Contains(absPath))
             {
-                // Never File.Delete a bare Combine: a row written before the check in Link, or by any
-                // future path that skips it, would delete whatever it points at outside the library.
-                var absPath = series?.RootFolder is null
-                    ? null
-                    : LibraryPaths.ResolveForDelete(series.RootFolder.Path, file.RelativePath);
                 if (series?.RootFolder is not null && absPath is null)
                 {
                     logger.LogWarning("Refusing to delete {File}: resolves outside {Root} or through a linked folder",
                         file.RelativePath, series.RootFolder.Path);
                 }
 
-                if (absPath is not null)
+                if (absPath is not null && (System.IO.File.Exists(absPath) || new FileInfo(absPath).LinkTarget is not null))
                 {
-                    toDeleteFromDisk.Add((absPath, file.RelativePath));
+                    toBin.Add((file, absPath, onFile[file.Id].ToList()));
                 }
             }
 
@@ -459,28 +478,115 @@ public class ChapterController(
             db.ChapterFiles.Remove(file);
         }
 
+        if (!permanent && toBin.Count > 0 &&
+            deletion.Bin.Refusal(series!.RootFolder!.Path, toBin.Select(f => f.AbsPath)) is { } refusal)
+        {
+            return this.BinRefused(localizer, refusal);
+        }
+
+        var entries = (permanent ? [] : toBin)
+            .Select(f => deletion.Bin.Record(series!, series!.RootFolder!.Path, f.File.RelativePath, f.AbsPath, f.File,
+                f.Chapters, RecycleReason.RemoveChapter))
+            .ToList();
         db.Chapters.RemoveRange(chapters);
         await db.SaveChangesAsync(ct);
 
-        // Rows are already committed, so a failure here just orphans a file for Health's "unlinked"
-        // detection to pick up. Runs without the request's own cancellation token for that reason.
-        foreach (var (absPath, relativePath) in toDeleteFromDisk)
+        // Rows are already committed, so a file that will not move stays where it is, an orphan for
+        // Health's "unlinked" detection to pick up, and its entry goes. Runs without the request's
+        // own cancellation token for that reason.
+        var stuck = new List<RecycleBinEntry>();
+        foreach (var entry in entries)
         {
-            try
+            if (!await deletion.Bin.MoveInAsync(entry, CancellationToken.None))
             {
-                System.IO.File.Delete(absPath);
+                stuck.Add(entry);
             }
-            catch (DirectoryNotFoundException)
+        }
+
+        await deletion.Bin.ForgetAsync(stuck);
+        if (permanent)
+        {
+            foreach (var (_, absPath, _) in toBin)
             {
-                // Containing directory is already gone, so the file is effectively deleted.
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                logger.LogWarning(ex, "Could not delete {File}, removing records anyway", relativePath);
+                deletion.DeleteFromDisk(absPath);
             }
         }
 
         return Ok(new { deleted = chapters.Count });
+    }
+
+    /// <summary>
+    /// "Delete file": moves the files behind these chapters to the recycle bin and keeps the chapters, with everyone's
+    /// reads, marked removed so nothing downloads them again. A volume file backs several chapters,
+    /// so every chapter on it loses it, not only the ones named; the dialog says so before sending.
+    /// </summary>
+    [Authorize(Policy = Policies.DeleteSeries)]
+    [HttpPost("deletefiles")]
+    public async Task<IActionResult> DeleteFiles(
+        [FromBody] int[] chapterIds, [FromServices] ChapterFileDeletion deletion, CancellationToken ct,
+        [FromQuery] bool permanent = false)
+    {
+        if (chapterIds.Length == 0)
+        {
+            return this.Fail(localizer, "error.chapter.noChaptersSelected");
+        }
+
+        var seriesIds = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id))
+            .Select(c => c.SeriesId)
+            .Distinct()
+            .ToListAsync(ct);
+        if (seriesIds.Count == 0)
+        {
+            return Ok(new ChapterFileDeletion.Result(0, 0, 0, 0));
+        }
+
+        if (seriesIds.Count > 1)
+        {
+            return this.Fail(localizer, "error.chapter.differentSeries");
+        }
+
+        var seriesId = seriesIds[0];
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId, ct);
+        var fileIds = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id) && c.SeriesId == seriesId && c.ChapterFileId != null)
+            .Select(c => c.ChapterFileId!.Value)
+            .Distinct()
+            .ToListAsync(ct);
+        if (fileIds.Count == 0)
+        {
+            return Ok(new ChapterFileDeletion.Result(0, 0, 0, 0));
+        }
+
+        // Every chapter on these files, not just the named ones: a worker packaging any of them would
+        // write into a file this is about to delete.
+        if (await SeriesLocks.InFlight(db.DownloadQueue)
+                .AnyAsync(q => q.ChapterId != null &&
+                               db.Chapters.Any(c => c.Id == q.ChapterId && c.ChapterFileId != null &&
+                                                    fileIds.Contains(c.ChapterFileId.Value)), ct))
+        {
+            return this.Conflict(localizer, "error.chapter.activeDownloadDelete");
+        }
+
+        var series = await db.Series.Include(s => s.RootFolder).FirstAsync(s => s.Id == seriesId, ct);
+        if (series.RootFolder is null)
+        {
+            return this.Fail(localizer, "error.series.noRootFolder");
+        }
+
+        var files = await db.ChapterFiles.Where(f => fileIds.Contains(f.Id)).ToListAsync(ct);
+        if (permanent)
+        {
+            return Ok(await deletion.DeleteAsync(series, files, ct));
+        }
+
+        var paths = files.Select(f => LibraryPaths.ResolveForDelete(series.RootFolder.Path, f.RelativePath)).OfType<string>();
+        if (deletion.Bin.Refusal(series.RootFolder.Path, paths) is { } refusal)
+        {
+            return this.BinRefused(localizer, refusal);
+        }
+
+        return Ok(await deletion.DeleteAsync(series, files, ct, RecycleReason.DeleteFile));
     }
 
     [Authorize(Policy = Policies.DownloadChapters)]
@@ -498,9 +604,14 @@ public class ChapterController(
         {
             return this.Fail(localizer, ex.Key);
         }
+        catch (ChapterUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            logger.LogWarning(ex, "Could not queue chapter {ChapterId}", id);
+            return this.Fail(localizer, "error.chapter.enqueueFailed");
         }
     }
 
@@ -540,6 +651,11 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.mappingDisabled");
         }
 
+        if (!await sourceAvailability.IsEnabledAsync(mapping.SourceName, ct))
+        {
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = mapping.SourceName });
+        }
+
         try
         {
             var replaceInfo = await ReplaceInfoAsync(id, mapping.SourceName,
@@ -560,9 +676,14 @@ public class ChapterController(
         {
             return this.Fail(localizer, ex.Key);
         }
+        catch (ChapterUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            logger.LogWarning(ex, "Could not queue chapter {ChapterId}", id);
+            return this.Fail(localizer, "error.chapter.enqueueFailed");
         }
     }
 
@@ -600,6 +721,16 @@ public class ChapterController(
             return NotFound();
         }
 
+        if (!mapping.Enabled)
+        {
+            return this.Fail(localizer, "error.chapter.mappingDisabled");
+        }
+
+        if (!await sourceAvailability.IsEnabledAsync(source.Name, ct))
+        {
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = source.Name });
+        }
+
         var candidates = (await db.Chapters
                 .Where(c => c.SeriesId == request.SeriesId &&
                             c.ChapterFile != null &&
@@ -625,6 +756,7 @@ public class ChapterController(
         var evaluator = await upgrades.ForSeriesAsync(request.SeriesId, ct);
         var queued = 0;
         var unavailable = 0;
+        var queuedItemIds = new List<int>();
         foreach (var chapter in candidates)
         {
             if (chapter.Number is null || !listed.Contains(chapter.Number.Value))
@@ -637,9 +769,10 @@ public class ChapterController(
             {
                 var replaceInfo = await ReplaceInfoAsync(chapter.Id, request.SourceName, evaluator, ct);
                 if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId,
-                        replaceInfo: replaceInfo) is not null)
+                        replaceInfo: replaceInfo) is { } item)
                 {
                     queued++;
+                    queuedItemIds.Add(item.Id);
                 }
             }
             catch (InvalidOperationException ex)
@@ -647,6 +780,11 @@ public class ChapterController(
                 logger.LogWarning(ex, "Could not queue chapter {ChapterId} for re-download", chapter.Id);
             }
         }
+
+        // One summary for the run instead of a "chapter downloaded" message for each file that does
+        // not go through the upgrade gate (shared or PDF files).
+        var seriesTitle = await db.Series.Where(s => s.Id == request.SeriesId).Select(s => s.Title).FirstOrDefaultAsync(ct);
+        await downloadBatches.QueuedAsync(request.SeriesId, seriesTitle ?? string.Empty, queuedItemIds, DownloadOrigin.Manual);
 
         return Ok(new { queued, unavailable });
     }

@@ -1,4 +1,5 @@
 using Maki.Api.Services;
+using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -75,19 +76,30 @@ public class MetadataRefreshJob(
         }
     }
 
-    private async Task<bool> RefreshSeriesAsync(int seriesId, CancellationToken ct)
+    internal async Task<bool> RefreshSeriesAsync(int seriesId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var metadataRefresh = scope.ServiceProvider.GetRequiredService<SeriesMetadataRefreshService>();
 
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
-        if (series is null || !await metadataRefresh.RefreshAsync(series, includeCover: false, ct))
+        if (series is null || await metadataRefresh.LookupAsync(series, ct) is not { } metadata)
         {
             return false;
         }
 
+        // The lookup is the slow part. A hand edit and its lock saved while it ran must be seen
+        // before applying, or the refresh would write over a field it loaded as unlocked.
+        await db.Entry(series).ReloadAsync(ct);
+        if (db.Entry(series).State == EntityState.Detached)
+        {
+            return false;
+        }
+
+        await metadataRefresh.ApplyAsync(series, metadata, includeCover: false, SeriesMetadataField.None, ct);
+
         await db.SaveChangesAsync(ct);
+        await metadataRefresh.PublishChangesAsync(ct);
         return true;
     }
 }

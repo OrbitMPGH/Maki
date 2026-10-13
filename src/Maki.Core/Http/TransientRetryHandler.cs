@@ -74,11 +74,27 @@ public class TransientRetryHandler(int maxAttempts = 3, TimeSpan? baseDelay = nu
         // The caller gave up, or a rate limit was already detected upstream — neither is ours to retry.
         OperationCanceledException when ct.IsCancellationRequested => false,
         RateLimitException => false,
+        HttpRequestException when IsBlockedDestination(ex) => false,
         HttpRequestException => true,
         // A per-attempt timeout surfaces as a cancellation that isn't the caller's token.
         TaskCanceledException or OperationCanceledException => true,
         _ => false,
     };
+
+    // PublicAddressGuard refuses at connect time, and the handler wraps that in another
+    // HttpRequestException. The address will not become public on a second try.
+    private static bool IsBlockedDestination(Exception? ex)
+    {
+        for (; ex is not null; ex = ex.InnerException)
+        {
+            if (ex is BlockedDestinationException)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>Exponential backoff with jitter, so parallel callers don't retry in lockstep.</summary>
     private TimeSpan DelayFor(int attempt)

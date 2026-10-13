@@ -41,28 +41,33 @@ public static partial class ReleaseTitleParser
 
     // A number or range with no marker. Only a span when it follows "+" or a volume span; the
     // lookarounds keep it off the digits of a resolution ("1920x1080") or a longer word.
-    [GeneratedRegex(@"(?<![\w.])(\d+(?:\.\d+)?)(?:-(\d+(?:\.\d+)?))?(?![\w.])")]
+    [GeneratedRegex(@"(?<![\w.])([0-9]+(?:\.[0-9]+)?)(?:-([0-9]+(?:\.[0-9]+)?))?(?![\w.])")]
     private static partial Regex BareNumber();
 
-    [GeneratedRegex(@"^(?:19|20)\d{2}$")]
+    [GeneratedRegex(@"^(?:19|20)[0-9]{2}$")]
     private static partial Regex YearLike();
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();
 
-    private static readonly char[] EdgePunctuation = [' ', '-', (char)0x2013, (char)0x2014, '_', '.', ',', ':', ';', '+', '~', '|', '/'];
+    private static readonly char[] EdgePunctuation =
+        [' ', '-', (char)0x2013, (char)0x2014, '_', '.', ',', ':', ';', '+', '~', '|', '/', '「', '」', '『', '』', '、', '。'];
 
     private enum TokenKind { Volume, Chapter }
 
     private sealed record Token(int Start, int End, TokenKind Kind, NumberRange Range);
 
-    public static ParsedReleaseTitle Parse(string title)
+    /// <param name="profile">The marker languages to read; null means <see cref="NameParsingProfile.Current"/>.</param>
+    public static ParsedReleaseTitle Parse(string title, NameParsingProfile? profile = null)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
             return new ParsedReleaseTitle([], new ReleaseSpan(null, []), [], false, null, null);
         }
 
+        profile ??= NameParsingProfile.Current;
+        title = ReleaseNameParser.Normalize(title);
+        var scene = ReleaseNameParser.IsSceneStyle(title);
         var tags = ReleaseNameParser.ExtractTags(title);
         var remainder = ReleaseNameParser.TagGroups().Replace(title, " ").Replace('_', ' ');
 
@@ -75,7 +80,7 @@ public static partial class ReleaseTitleParser
         for (var i = 0; i < halves.Length; i++)
         {
             var half = halves[i];
-            var tokens = SpanTokens(half);
+            var tokens = SpanTokens(half, profile);
             if (i == halves.Length - 1 && TrailingBareNumber(half, tokens) is { } trailing)
             {
                 // A trailing range is a chapter span only when the title names no other span: after
@@ -106,6 +111,17 @@ public static partial class ReleaseTitleParser
             if (candidate.Length > 0 && !candidates.Contains(candidate, StringComparer.OrdinalIgnoreCase))
             {
                 candidates.Add(candidate);
+            }
+
+            // A scene name carries the author, language and group after the volume, and they drag the
+            // whole candidate under the match threshold. The title is what comes before the volume.
+            if (scene && tokens.Count > 0)
+            {
+                var leading = Clean(half[..tokens[0].Start].Replace('.', ' '));
+                if (leading.Length > 0 && !candidates.Contains(leading, StringComparer.OrdinalIgnoreCase))
+                {
+                    candidates.Add(leading);
+                }
             }
         }
 
@@ -157,28 +173,26 @@ public static partial class ReleaseTitleParser
         var last = bare.Groups[2].Value;
         if (YearLike().IsMatch(first) || YearLike().IsMatch(last)) return null;
 
-        var start = decimal.Parse(first, CultureInfo.InvariantCulture);
-        var end = decimal.Parse(last, CultureInfo.InvariantCulture);
+        if (ReleaseNameParser.TryDecimal(first) is not { } start ||
+            ReleaseNameParser.TryDecimal(last) is not { } end) return null;
         return end >= start ? new NumberRange(start, end) : null;
     }
 
     private static bool IsChapterLike(string number) =>
         number.Split('.')[0].Length <= 4 && !YearLike().IsMatch(number);
 
-    private static List<Token> SpanTokens(string half)
+    private static List<Token> SpanTokens(string half, NameParsingProfile profile)
     {
-        var marked = ReleaseNameParser.VolumePattern().Matches(half)
-            .Select(m =>
-            {
-                var (start, end) = ReleaseNameParser.VolumeRange(m);
-                return new Token(m.Index, m.Index + m.Length, TokenKind.Volume,
-                    new NumberRange(start, end is { } e && e > start ? e : start));
-            })
-            .Concat(ReleaseNameParser.ChapterPattern().Matches(half).Select(m =>
-            {
-                var (start, end) = ReleaseNameParser.ChapterRange(m);
-                return new Token(m.Index, m.Index + m.Length, TokenKind.Chapter, new NumberRange(start, end ?? start));
-            }))
+        var marked = profile.VolumeMatches(half)
+            .Select(m => ReleaseNameParser.VolumeRange(m) is var (start, end)
+                ? new Token(m.Index, m.Index + m.Length, TokenKind.Volume,
+                    new NumberRange(start, end is { } e && e > start ? e : start))
+                : null)
+            .Concat(profile.ChapterMatches(half).Select(m =>
+                ReleaseNameParser.ChapterRange(m) is var (start, end)
+                    ? new Token(m.Index, m.Index + m.Length, TokenKind.Chapter, new NumberRange(start, end ?? start))
+                    : null))
+            .OfType<Token>()
             .OrderBy(t => t.Start);
 
         var tokens = new List<Token>();
@@ -199,9 +213,9 @@ public static partial class ReleaseTitleParser
             var gap = half[previous.End..start].Trim();
             if (gap != "+" && !(gap.Length == 0 && previous.Kind == TokenKind.Volume)) continue;
 
-            var first = decimal.Parse(bare.Groups[1].Value, CultureInfo.InvariantCulture);
+            if (ReleaseNameParser.TryDecimal(bare.Groups[1].Value) is not { } first) continue;
             var last = bare.Groups[2].Success
-                ? decimal.Parse(bare.Groups[2].Value, CultureInfo.InvariantCulture)
+                ? ReleaseNameParser.TryDecimal(bare.Groups[2].Value) ?? first
                 : first;
             tokens.Add(new Token(start, end, TokenKind.Chapter, new NumberRange(first, last > first ? last : first)));
             tokens.Sort((a, b) => a.Start.CompareTo(b.Start));

@@ -191,6 +191,27 @@ public class SeriesRenameServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Rename_goes_ahead_when_downloads_are_only_queued()
+    {
+        var id = SeedSeries("Berserk", "Berserk", chapters: (24m, 3, "en"));
+
+        using (var db = _db.NewContext())
+        {
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = id,
+                ChapterId = db.Chapters.First(c => c.SeriesId == id).Id,
+                Status = QueueStatus.Queued
+            });
+            db.SaveChanges();
+        }
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+    }
+
+    [Fact]
     public async Task Rename_keeps_the_two_languages_of_one_chapter_apart()
     {
         // The same chapter in two languages, under a format with no {Chapter Language} in it.

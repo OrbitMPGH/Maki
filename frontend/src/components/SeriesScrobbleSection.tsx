@@ -87,6 +87,7 @@ function ReviewControls({
         }}
       >
         <TextInput
+          aria-label={t`Paste id or URL`}
           className="scrobble-review-input"
           size="xs"
           placeholder={t`Paste id or URL`}
@@ -105,7 +106,7 @@ function ReviewControls({
         <Button
           size="compact-xs"
           variant="subtle"
-          color="gray"
+          color="var(--neutral)"
           loading={ignore.isPending}
           onClick={() =>
             ignore.mutate(
@@ -214,7 +215,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                       </Table.Td>
                     ) : s.method === 'ignored' ? (
                       <Table.Td colSpan={3}>
-                        <Badge size="sm" color="gray" variant="light">
+                        <Badge size="sm" color="var(--neutral)" variant="light">
                           <Trans>Ignored</Trans>
                         </Badge>
                       </Table.Td>

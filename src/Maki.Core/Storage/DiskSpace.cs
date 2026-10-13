@@ -29,13 +29,20 @@ public static class DiskSpace
         {
             var full = Path.GetFullPath(path);
 
-            if (OperatingSystem.IsWindows() && IsUnc(full))
+            if (OperatingSystem.IsWindows())
             {
-                return UncAvailableFor(full);
+                // Takes any directory, so it answers for UNC shares and for volumes mounted into a
+                // folder, both of which the drive letter would get wrong.
+                if (WindowsAvailableFor(full) is { } free) return free;
+                if (IsUnc(full)) return null;
+                var root = Path.GetPathRoot(full);
+                return root is null ? null : new DriveInfo(root).AvailableFreeSpace;
             }
 
-            var root = Path.GetPathRoot(full);
-            return root is null ? null : new DriveInfo(root).AvailableFreeSpace;
+            // GetPathRoot is "/" for every path here, which in Docker is the container's overlay
+            // filesystem rather than the bind-mounted library volume.
+            var mount = LongestMount(full, DriveInfo.GetDrives().Select(d => d.Name), StringComparison.Ordinal);
+            return mount is null ? null : new DriveInfo(mount).AvailableFreeSpace;
         }
         catch (Exception)
         {
@@ -43,6 +50,26 @@ public static class DiskSpace
             return null;
         }
     }
+
+    /// <summary>
+    /// The mount point holding <paramref name="fullPath"/>: the longest one that is the path itself or
+    /// a whole-segment prefix of it, so "/manga2" is not read as living on "/manga".
+    /// </summary>
+    public static string? LongestMount(string fullPath, IEnumerable<string> mounts, StringComparison comparison) =>
+        mounts
+            .Where(mount => Contains(mount, fullPath, comparison))
+            .OrderByDescending(mount => mount.TrimEnd(Separators).Length)
+            .FirstOrDefault();
+
+    private static bool Contains(string mount, string fullPath, StringComparison comparison)
+    {
+        var trimmed = mount.TrimEnd(Separators);
+        if (trimmed.Length == 0) return fullPath.StartsWith(mount, comparison);
+        if (!fullPath.StartsWith(trimmed, comparison)) return false;
+        return fullPath.Length == trimmed.Length || Separators.Contains(fullPath[trimmed.Length]);
+    }
+
+    private static readonly char[] Separators = ['/', '\\'];
 
     private static bool IsUnc(string fullPath)
     {
@@ -57,7 +84,7 @@ public static class DiskSpace
     }
 
     [SupportedOSPlatform("windows")]
-    private static long? UncAvailableFor(string fullPath)
+    private static long? WindowsAvailableFor(string fullPath)
     {
         // The API wants a directory that exists; an offline share fails here rather than lying.
         return GetDiskFreeSpaceEx(fullPath, out var freeForUser, out _, out _) && freeForUser <= long.MaxValue

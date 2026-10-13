@@ -16,7 +16,7 @@ export interface LocalizedTitle {
 export interface SeriesDto {
   id: number
   /**
-   * The canonical title — what the folder on disk, the file names and `sortTitle` are built from.
+   * The canonical title, what the folder on disk, the file names and `sortTitle` are built from.
    * Always the provider's English title when there is one. Render `displayTitle` instead.
    */
   title: string
@@ -75,6 +75,12 @@ export interface SeriesDto {
   /** Chapters the user asked for, plus any already downloaded. The progress denominator. */
   wantedChapterCount: number
   chapterFileCount: number
+  /** Chapters whose file Maki deleted on purpose. Counted in `wantedChapterCount`, never missing. */
+  removedChapterCount: number
+  /** "Default" | "On" | "Off": this series' choice about deleting read chapter files. */
+  readFileCleanup: string
+  /** Whether read files are actually being deleted, the choice and the instance switch combined. Detail endpoint only. */
+  readFileCleanupActive: boolean
   /** Every chapter known to exist, wanted or not. Denominator fallback when nothing is wanted. */
   knownChapterCount: number
   /** Chapters queued but not yet actively downloading (Queued / RateLimited). */
@@ -86,9 +92,9 @@ export interface SeriesDto {
   animeStart: string | null
   animeEnd: string | null
   /**
-   * Downloaded chapters at or below the Rewind read high-water mark (Kavita/scrobble). Null
-   * when nothing has reported reading progress for this series yet, distinct from 0 (tracked,
-   * but nothing read).
+   * Downloaded chapters the caller has finished, counted from their completed progress rows
+   * (built-in reader and Kavita sync alike). Null when no progress exists for this series yet,
+   * distinct from 0 (tracked, but nothing read).
    */
   readChapterCount: number | null
   /**
@@ -96,13 +102,15 @@ export interface SeriesDto {
    * card shows a spinner off this rather than claiming the series has no sources.
    */
   sourceMatchPending: boolean
+  /** A library import's files are registered but wait for the background match to be linked. */
+  importLinkPending: boolean
   /**
    * "Off" | "ScrobbleOnly" | "Full". ScrobbleOnly withholds tracker pushes only; Full also
    * withholds it from Rewind/reading-history stats.
    */
   incognito: string
   /**
-   * "Default" | "All" | "Reading" | "Muted" — how loudly *you* want to hear about this series.
+   * "Default" | "All" | "Reading" | "Muted", how loudly *you* want to hear about this series.
    * Per-user like `rating`, so two readers see different values for the same series, and "Default"
    * defers to the `seriesDefault` on your inbox prefs.
    */
@@ -117,13 +125,19 @@ export interface SeriesDto {
   } | null
   /**
    * Source keys linked to this series, enabled or not. Only the library list endpoint fills these
-   * three in — elsewhere they come back empty, which means "not loaded", not "none linked".
+   * three in, elsewhere they come back empty, which means "not loaded", not "none linked".
    */
   sources?: string[]
   /** The subset of `sources` that actually runs: mapping enabled and source not globally off. */
   enabledSources?: string[]
   /** Sources the downloaded files came from. Survives the mapping being removed or switched off. */
   fileSources?: string[]
+  /** When you last read a chapter of this series, or null if never. Library list endpoint only. */
+  lastReadAt?: string | null
+  /** When the newest chapter file landed, or null with no files. Library list endpoint only. */
+  lastDownloadedAt?: string | null
+  /** MangaBaka's aggregate score, 0–10, from the local dump. Library list endpoint only. */
+  communityRating?: number | null
   /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.
@@ -131,8 +145,10 @@ export interface SeriesDto {
   warnings?: string[] | null
   /** Upgrade profile pinned to this series, or null to fall back to the instance default. */
   upgradeProfileId: number | null
-  /** Null when this series has never been scanned for upgrades, by any of the three entry points. */
-  /** `checked` is null for scans recorded before it was kept; `skipped` maps a reason code to a count. */
+  /**
+   * Null when this series has never been scanned for upgrades, by any of the three entry points.
+   * `checked` is null for scans recorded before it was kept; `skipped` maps a reason code to a count.
+   */
   lastUpgradeScan: {
     at: string
     probed: number
@@ -142,7 +158,12 @@ export interface SeriesDto {
   } | null
   /** Id of the series' pending torrent volume proposal, if any. */
   pendingProposalId: number | null
+  /** Metadata fields set by hand, which a refresh leaves alone. See `MetadataField`. */
+  lockedFields: MetadataField[]
 }
+
+/** The camelCase names of `SeriesMetadataField` on the server. */
+export type MetadataField = 'title' | 'overview' | 'status' | 'totalChapters' | 'totalVolumes' | 'genres' | 'cover'
 
 /** A user-assigned library label. `color` is a Mantine colour name. */
 export interface TagDto {
@@ -169,6 +190,14 @@ export interface LibraryFilterSpec {
   /** "all" | "behind" | "complete" */
   completeness: string
   sort: string
+  /** User tag ids a series must not carry. */
+  excludeTagIds?: number[] | null
+  /** Genres a series must not carry. */
+  excludeGenres?: string[] | null
+  /** Only series with none of the user's own tags. */
+  untaggedOnly?: boolean
+  /** "asc" | "desc" to override the sort key's natural direction; empty or absent keeps it. */
+  sortDir?: string
   genres?: string[] | null
   /** "any" | "all" */
   genreMatch: string
@@ -186,7 +215,7 @@ export interface LibraryFilterSpec {
   chapterMode: string
   /**
    * `ContentRating` vocabulary values to include, gated by the signed-in user's ceiling. Empty/null
-   * means "don't filter" — including series that haven't been refreshed yet (`contentRating: null`).
+   * means "don't filter", including series that haven't been refreshed yet (`contentRating: null`).
    */
   contentRatings?: string[] | null
   /** Source keys the series must be linked to (`SeriesDto.sources`). */
@@ -204,6 +233,14 @@ export interface LibraryFilterSpec {
   fileSourceMatch: string
   /** "all", "default" (no pin of its own), or a quality profile id as a string. Absent on older presets. */
   qualityProfile?: string
+  /** "all" | "rated" | "unrated" on the user's own rating. Absent on older presets. */
+  ratingState?: string
+  /** 1–10 window on the user's own rating, only applied when `ratingState` is "rated". */
+  ratingMin?: number
+  ratingMax?: number
+  /** 0–10 window on the MangaBaka score. Full range means "don't filter"; narrower drops unscored series. */
+  communityRatingMin?: number
+  communityRatingMax?: number
 }
 
 export interface SavedFilterDto {
@@ -264,6 +301,10 @@ export interface ChapterDto {
   /** Whether the user wants this chapter. Nothing in the download pipeline writes it. */
   wanted: boolean
   hasFile: boolean
+  /** When Maki deleted this chapter's file on purpose; null while it has a file. Not missing, never re-queued on its own. */
+  fileRemovedAt: string | null
+  /** When read file cleanup will delete this chapter's file, or null when it isn't scheduled. */
+  fileDeleteDueAt: string | null
   filePath: string | null
   /**
    * Where the file came from: a registered source's name, the literal "import" for a file brought
@@ -391,6 +432,38 @@ export interface QueueSummaryDto {
   failed: number
 }
 
+/** Failed queue rows sharing a failure key and a source. `reasonKey` is null when the reason is another program's own text. */
+export interface QueueFailureGroupDto {
+  reasonKey: string | null
+  sourceName: string
+  count: number
+}
+
+/** `until` is when the pause lifts by itself (UTC), or null for "until somebody resumes". */
+export interface QueuePauseEntry {
+  until: string | null
+}
+
+/** What is paused on scraper downloads. Torrents already handed to qBittorrent are never part of it. */
+export interface QueuePauseDto {
+  all: QueuePauseEntry | null
+  sources: { sourceName: string; until: string | null }[]
+}
+
+/** `source` unset pauses every scraper download; `resumeAt` unset pauses until resumed. */
+export interface QueuePauseRequest {
+  source?: string
+  resumeAt?: string
+}
+
+/** Which Failed rows a bulk retry or remove acts on; both filters unset means all of them. */
+export interface QueueFailedAction {
+  reason?: string
+  source?: string
+  /** Remove only: also stop the volume search grabbing the removed torrent releases again. */
+  blockReleases?: boolean
+}
+
 /** An existing library file a downloaded file would leave backing nothing. */
 export interface ImportPlanExistingDto {
   chapterFileId: number
@@ -412,6 +485,8 @@ export interface ImportPlanFileDto {
 }
 
 export interface TorrentImportPlanDto {
+  /** Sent back with the decision, so an import reviewed under other name parsing settings is refused. */
+  parsingFingerprint: string
   queueItemId: number
   seriesId: number
   seriesTitle: string
@@ -537,7 +612,8 @@ export interface AddSeriesRequest {
   metadataProviderId: string
   rootFolderId: number
   monitored: boolean
-  monitorNewItems: string
+  /** Omitted follows the "Default monitoring for new series" setting. */
+  monitorNewItems?: string
   /**
    * "Off" | "ScrobbleOnly" | "Full". Omitted means "let the server pick from the content rating"
    * (Settings → Library incognito rules), which is what happens on any add form that doesn't ask.
@@ -592,6 +668,7 @@ export interface NotificationEvents {
   requestSubmitted: boolean
   requestResolved: boolean
   manualMatchNeeded: boolean
+  seriesStatusChanged: boolean
 }
 
 export interface UpdateStatusDto {
@@ -618,6 +695,11 @@ export interface NotificationDto {
   events: NotificationEvents
   /** Series-scoped events only fire for series carrying one of these tags. Empty means every series. */
   tagIds: number[]
+  lastAttemptAt: string | null
+  lastSuccessAt: string | null
+  /** A short code, never provider text: `status:404`, `timeout`, `network` or `error`. */
+  lastError: string | null
+  consecutiveFailures: number
 }
 
 export interface NotificationRequest {
@@ -678,18 +760,8 @@ export interface ImportListsStatusDto {
   skipped: ImportListSkipDto[]
 }
 
-export interface ImportListRunResult {
-  added: number
-  requested: number
-  skipped: number
-  alreadyPresent: number
-  errors: number
-  dumpUnavailable: boolean
-}
-
 /**
- * `POST /importlists/run` reply. A `full` run kicks off in the background and answers 202 with
+ * `POST /importlists/run` reply. Every manual run kicks off in the background and answers 202 with
  * `started: true`; the outcome arrives later via the inbox and `ImportListTrackerDto.lastRun`.
- * A partial run still answers inline with the counts.
  */
-export type ImportListRunResponse = ImportListRunResult | { started: true }
+export type ImportListRunResponse = { started: true }

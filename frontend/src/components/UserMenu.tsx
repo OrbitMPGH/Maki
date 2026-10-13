@@ -64,7 +64,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
           leftSection={<IconSettings size={16} />}
           onClick={() => {
             onNavigate?.()
-            navigate('/settings#account')
+            navigate('/settings?tab=account&s=sign-in')
           }}
         >
           <Trans>My account</Trans>

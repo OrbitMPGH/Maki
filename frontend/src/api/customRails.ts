@@ -140,6 +140,7 @@ export function useCreateCustomRail() {
       )
       invalidate()
     },
+    meta: { silent: true },
   })
 }
 
@@ -149,6 +150,7 @@ export function useUpdateCustomRail() {
     mutationFn: ({ id, ...body }: Partial<SaveCustomRail> & { id: number }) =>
       api<CustomRail>(`/rails/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     onSuccess: invalidate,
+    meta: { silent: true },
   })
 }
 

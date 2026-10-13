@@ -29,7 +29,7 @@ const SERIES_NOTIFICATION_MODES: { value: SeriesNotificationMode; label: Message
  */
 const SERIES_DEFAULT_MODES: { value: SeriesNotificationMode; label: MessageDescriptor }[] = [
   { value: 'All', label: msg`Every series` },
-  { value: 'Reading', label: msg`Series I'm reading` },
+  { value: 'Reading', label: msg`Only series I'm reading` },
 ]
 
 /** Longer copy for the bulk modal, where there is room to say what each one actually does. */

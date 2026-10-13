@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Anchor,
   Button,
@@ -15,6 +16,17 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { AuthError, AuthFrame } from '../components/auth/AuthFrame'
 import { useLogin, useVerifyTwoFactor } from '../api/auth'
 import { getInitialize } from '../api/client'
+import { ssoErrorLabel } from '../api/ssoErrors'
+import { useLabel } from '../i18n-context'
+
+/** Where to land after SSO: the page that asked for sign-in, or the start page from /login itself. */
+function ssoReturnUrl() {
+  const { pathname, search } = window.location
+  const params = new URLSearchParams(search)
+  params.delete('ssoError')
+  const query = params.toString()
+  return (pathname === '/login' ? '/' : pathname) + (query ? `?${query}` : '')
+}
 
 /**
  * Sign-in, outside the AppShell: there is no navigation to show before there is a session.
@@ -25,6 +37,7 @@ import { getInitialize } from '../api/client'
  */
 export function LoginPage() {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
@@ -41,7 +54,22 @@ export function LoginPage() {
   // Whether the identity provider redirected back with a failure. Read once on mount: the server
   // puts it in the query string because the browser arrives here by a top-level navigation from
   // another origin, with no fetch waiting for a response body.
-  const [ssoError] = useState(() => new URLSearchParams(window.location.search).get('ssoError'))
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [ssoError] = useState(() => searchParams.get('ssoError'))
+
+  // Dropped once read so a reload does not show an old failure, and so the page the user wanted
+  // can be handed to the provider as the place to land after sign-in.
+  useEffect(() => {
+    if (ssoError === null) return
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('ssoError')
+        return next
+      },
+      { replace: true },
+    )
+  }, [ssoError, setSearchParams])
 
   // Shown only after the user asks for it when password login is provider-restricted: admins still
   // need the form, and everyone else needs to be told why it will not work for them.
@@ -169,7 +197,7 @@ export function LoginPage() {
         </form>
       ) : (
         <Stack>
-          {ssoError && <AuthError>{ssoError}</AuthError>}
+          {ssoError && <AuthError>{renderLabel(ssoErrorLabel(ssoError))}</AuthError>}
 
           {sso.enabled && (
             <>
@@ -178,7 +206,7 @@ export function LoginPage() {
                   and land back here with nothing to show for it. */}
               <Button
                 component="a"
-                href={`/api/v1/auth/oidc/challenge?returnUrl=${encodeURIComponent('/')}`}
+                href={`/api/v1/auth/oidc/challenge?returnUrl=${encodeURIComponent(ssoReturnUrl())}`}
                 variant="default"
                 fullWidth
               >

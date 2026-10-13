@@ -24,9 +24,9 @@ public sealed class TestLocalizer : ILocalizer, IMessageCatalog
     {
         if (args is null) return key;
 
-        var parts = args.GetType().GetProperties()
-            .Select(p => $"{p.Name}={p.GetValue(args)}")
-            .ToArray();
+        var parts = args is IReadOnlyDictionary<string, object?> map
+            ? map.Select(p => $"{p.Key}={p.Value}").ToArray()
+            : args.GetType().GetProperties().Select(p => $"{p.Name}={p.GetValue(args)}").ToArray();
         return parts.Length == 0 ? key : $"{key}({string.Join(", ", parts)})";
     }
 }

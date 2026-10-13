@@ -16,7 +16,8 @@ internal static class PairGraphBuilder
     public static PairGraphIndex Build(
         List<(long A, long B, float Weight)> pairs, DateTime? generatedAt)
     {
-        var idSet = new HashSet<long>(pairs.Count);
+        // Unsized: a capacity of pairs.Count was ~24 MB of slots for some 41k distinct ids.
+        var idSet = new HashSet<long>();
         foreach (var (a, b, _) in pairs)
         {
             idSet.Add(a);

@@ -3,6 +3,7 @@ import { i18n } from '@lingui/core'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api } from './client'
+import { useSaveSettingsRecord } from './settingsRecord'
 import type { ChapterFileQualityDto } from './types'
 import type { SourceOrderMode } from './hooks'
 
@@ -307,6 +308,7 @@ export type UpgradeReasonCode =
   | 'enqueued'
   | 'upgrade_rejected'
   | 'reverted_by_user'
+  | 'repeated_failure'
 
 /** Bucket codes only `UpgradeScanResultDto.skipped` carries, never an attempt/queue-row reason. */
 export type UpgradeSkipReasonCode =
@@ -343,6 +345,7 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
   enqueued: msg`Queued for download`,
   upgrade_rejected: msg`Rejected after downloading the full chapter`,
   reverted_by_user: msg`Reverted by a user`,
+  repeated_failure: msg`Its download failed too many times`,
   unmeasured: msg`Not measured yet`,
   trusted: msg`Protected from upgrades`,
   cutoff_met: msg`Already meets the cutoff`,
@@ -450,6 +453,7 @@ export const PROPOSAL_REASON_LABELS: Record<string, MessageDescriptor> = {
   whole_series_pack: msg`Whole-series pack, needs your call`,
   trailing_number: msg`Release number may be a sequel, not a chapter`,
   upgrades_disabled: msg`Automatic upgrades are off, needs your call`,
+  markers_off: msg`Uses volume or chapter words from a language that is off in Settings > Library > File name parsing`,
 }
 
 /** `LABELS[x] ?? x`, same as `upgradeReasonLabel`. */
@@ -624,6 +628,7 @@ export function useSeriesUpgradeScanStatus(seriesId: number) {
     queryKey: ['upgrade-scan-status', seriesId],
     queryFn: async () =>
       (await api<SeriesScanStatus | undefined>(`/upgrades/scan/status?seriesId=${seriesId}`)) ?? null,
+    meta: { inlineNotFound: true },
     refetchInterval: (query) => {
       const state = query.state.data?.state
       return state === 'queued' || state === 'running' ? 2000 : false
@@ -751,9 +756,10 @@ export function useDeleteQualityFormat() {
 export function useCutoffUnmet(page: number, pageSize = 50, seriesId?: number, enabled = true) {
   return useQuery({
     queryKey: ['upgrades', 'cutoff-unmet', { page, pageSize, seriesId }],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<CutoffUnmetPageDto>(
         `/upgrades/cutoff-unmet?page=${page}&pageSize=${pageSize}${seriesId != null ? `&seriesId=${seriesId}` : ''}`,
+        { signal },
       ),
     placeholderData: keepPreviousData,
     enabled,
@@ -778,18 +784,13 @@ export function useUpgradeSettings(enabled = true) {
 
 export function useSaveUpgradeSettings() {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (value: UpgradeSettings) =>
-      api<UpgradeSettings>('/settings/upgrades', { method: 'PUT', body: JSON.stringify(value) }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'upgrades'] })
-      // The default profile applies to every series that has no profile of its own, so changing it
-      // can flip cutoffMet/score for most of the library, not just one series.
-      void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
-      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
-      void queryClient.invalidateQueries({ queryKey: ['series-files'] })
-      void queryClient.invalidateQueries({ queryKey: ['source-order'] })
-    },
+  return useSaveSettingsRecord<UpgradeSettings>(['settings', 'upgrades'], '/settings/upgrades', () => {
+    // The default profile applies to every series that has no profile of its own, so changing it
+    // can flip cutoffMet/score for most of the library, not just one series.
+    void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+    void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    void queryClient.invalidateQueries({ queryKey: ['series-files'] })
+    void queryClient.invalidateQueries({ queryKey: ['source-order'] })
   })
 }
 
@@ -800,9 +801,10 @@ export function useSaveUpgradeSettings() {
 export function useUpgradeHistory(page: number, pageSize = 25, seriesId?: number, enabled = true) {
   return useQuery({
     queryKey: ['upgrades', 'history', { page, pageSize, seriesId }],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       api<UpgradeHistoryPageDto>(
         `/upgrades/history?page=${page}&pageSize=${pageSize}${seriesId != null ? `&seriesId=${seriesId}` : ''}`,
+        { signal },
       ),
     placeholderData: keepPreviousData,
     enabled,
@@ -814,10 +816,11 @@ export function useUpgradeHistory(page: number, pageSize = 25, seriesId?: number
  * are cutoff-unmet (`upgrades`), the chapter and Files-tab quality columns (`chapters`,
  * `series-files`), and a revert also re-touches the live queue row and its history entry.
  */
-function useUpgradeMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) {
+function useUpgradeMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>, silent = false) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: fn,
+    meta: { silent },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
@@ -832,12 +835,14 @@ function useUpgradeMutation<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult
 export function useRevertUpgrade() {
   return useUpgradeMutation((historyId: number) =>
     api<UpgradeHistoryRowDto>(`/upgrades/history/${historyId}/revert`, { method: 'POST' }),
+    true,
   )
 }
 
 export function useRevertUpgradeGroup() {
   return useUpgradeMutation((groupId: string) =>
     api<unknown>(`/upgrades/history/group/${groupId}/revert`, { method: 'POST' }),
+    true,
   )
 }
 
@@ -889,6 +894,7 @@ export function useVolumeSearch() {
       void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
+    meta: { silent: true },
   })
 }
 
@@ -930,6 +936,7 @@ export function useRunUpgradeScan() {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['upgrade-scan-status'] })
     },
+    meta: { silent: true },
   })
 }
 
@@ -954,5 +961,6 @@ export function useUpgradeChapterNow() {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
+    meta: { silent: true },
   })
 }

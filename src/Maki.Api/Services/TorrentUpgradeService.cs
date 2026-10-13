@@ -75,7 +75,7 @@ public static class TorrentUpgradeRules
     {
         if (file is null)
         {
-            return chapter.Wanted ? ChapterSpanState.Missing : ChapterSpanState.Skipped;
+            return chapter.Wanted && chapter.FileRemovedAt == null ? ChapterSpanState.Missing : ChapterSpanState.Skipped;
         }
 
         if (file.Trusted || evaluator.Evaluate(file, chapter.Language) is not { } current)
@@ -122,6 +122,9 @@ public class TorrentUpgradeService(
     ILogger<TorrentUpgradeService> logger)
 {
     public static readonly TimeSpan SearchInterval = TimeSpan.FromDays(7);
+
+    /// <summary>How soon a series whose search or grab failed is tried again, instead of waiting out the interval.</summary>
+    public static readonly TimeSpan RetryAfterFailure = TimeSpan.FromDays(1);
     private const int MaxPlaceholders = 2000;
 
     public async Task<IReadOnlyList<TorrentCandidateView>> EvaluateAsync(
@@ -143,12 +146,15 @@ public class TorrentUpgradeService(
             var (parsed, trailing) = WithTrailingChapter(ReleaseTitleParser.Parse(release.Title), series);
             var matched = ReleaseTitleMatcher.Matches(parsed, series.Title, series.OriginalTitle, series.AltTitles);
             var wholeSeries = parsed.Span.IsEmpty && parsed.IsDigital && matched;
+            var markersOff = parsed.Span.IsEmpty &&
+                             !ReleaseTitleParser.Parse(release.Title, NameParsingProfile.AllLanguages).Span.IsEmpty;
             var candidate = TorrentUpgradeRules.Candidate(release.Title, release.Indexer, parsed.Group,
                 parsed.Span.Volumes is not null || wholeSeries);
             if (evaluator is null || library is null)
             {
                 views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, 0,
-                    new SpanVerdict(SpanOutcome.Ignore, [SpanVerdictReasons.NoProfile], 0, 0, 0, 0, 0, []), wholeSeries));
+                    WithMarkersOff(new SpanVerdict(SpanOutcome.Ignore, [SpanVerdictReasons.NoProfile], 0, 0, 0, 0, 0, []), markersOff),
+                    wholeSeries));
                 continue;
             }
 
@@ -163,12 +169,18 @@ public class TorrentUpgradeService(
                 verdict = verdict.AtMostProposal(SpanVerdictReasons.TrailingNumber);
             }
 
+            verdict = WithMarkersOff(verdict, markersOff);
+
             views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, score.Score, verdict, wholeSeries,
                 library.Language));
         }
 
         return views;
     }
+
+    /// <summary>Tells the results page a release would read with a marker language that is switched off.</summary>
+    private static SpanVerdict WithMarkersOff(SpanVerdict verdict, bool markersOff) =>
+        markersOff ? verdict with { Reasons = [.. verdict.Reasons, SpanVerdictReasons.MarkersOff] } : verdict;
 
     /// <summary>
     /// A number ending the release title is a chapter unless the series' own title ends in it
@@ -305,6 +317,7 @@ public class TorrentUpgradeService(
         // A manual search with the instance switches off may look and propose, never grab on its own.
         var switchesOff = !options.Enabled || !options.VolumeSearch;
 
+        var failed = false;
         try
         {
             ReleaseSearchResult result;
@@ -316,6 +329,7 @@ public class TorrentUpgradeService(
                                            && !ct.IsCancellationRequested)
             {
                 logger.LogWarning(ex, "Volume search for '{Title}' failed", series.Title);
+                failed = true;
                 return new SeriesVolumeSearchResult(true, 0, null, null, VolumeSearchReasons.SearchFailed);
             }
 
@@ -340,6 +354,7 @@ public class TorrentUpgradeService(
                                                && !ct.IsCancellationRequested)
                 {
                     logger.LogWarning(ex, "Could not grab '{Release}' for '{Title}'", grab.Release.Title, series.Title);
+                    failed = true;
                     return new SeriesVolumeSearchResult(true, result.Releases.Count, null, null, VolumeSearchReasons.GrabFailed);
                 }
             }
@@ -356,7 +371,8 @@ public class TorrentUpgradeService(
         }
         finally
         {
-            await StampSearchedAsync(seriesId);
+            // A Prowlarr or qBittorrent outage must not push the series out by the whole interval.
+            await StampSearchedAsync(seriesId, failed ? RetryAfterFailure - SearchInterval : TimeSpan.Zero);
         }
     }
 
@@ -365,10 +381,13 @@ public class TorrentUpgradeService(
         !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrUrl, ct)) &&
         !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct)));
 
-    private Task StampSearchedAsync(int seriesId) =>
-        db.Series.Where(s => s.Id == seriesId)
-            .ExecuteUpdateAsync(u => u.SetProperty(s => s.LastVolumeSearchUtc, time.GetUtcNow().UtcDateTime),
-                CancellationToken.None);
+    /// <param name="offset">Added to now; negative values make the series eligible again sooner.</param>
+    private Task StampSearchedAsync(int seriesId, TimeSpan offset = default)
+    {
+        var stamp = time.GetUtcNow().UtcDateTime + offset;
+        return db.Series.Where(s => s.Id == seriesId)
+            .ExecuteUpdateAsync(u => u.SetProperty(s => s.LastVolumeSearchUtc, stamp), CancellationToken.None);
+    }
 
     /// <summary>Queues the proposal's release with the verdict as it reads against the library now.</summary>
     public async Task<(int? QueueItemId, ProposalActionError Error)> GrabProposalAsync(int proposalId, int? userId, CancellationToken ct)

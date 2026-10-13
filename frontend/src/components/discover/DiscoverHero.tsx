@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconPlus, IconStar } from '@tabler/icons-react'
+import { IconArrowRight, IconPlus, IconStar } from '@tabler/icons-react'
+import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
@@ -16,6 +17,7 @@ import {
 } from '../ui/status'
 import { relationPhrase } from '../ui/DiscoverRail'
 import { useLabel } from '../../i18n-context'
+import { formatFixedDecimal } from '../../format'
 
 /** How long one pick holds the band before the next takes it. */
 const ROTATE_MS = 7000
@@ -50,6 +52,7 @@ export function DiscoverHero({
   items,
   onOpen,
   onRecommend,
+  seriesIdFor,
 }: {
   /** The picks to rotate through. Rendered from the first; anything past {@link PICKS} is ignored. */
   items: RecommendationItem[]
@@ -57,7 +60,10 @@ export function DiscoverHero({
   onOpen: (item: RecommendationItem) => void
   /** Opens Recommended with this title as its only seed. */
   onRecommend: (item: RecommendationItem) => void
+  /** Library series id when the pick is already owned; the primary action then opens the series. */
+  seriesIdFor?: (item: RecommendationItem) => number | null
 }) {
+  const navigate = useNavigate()
   const shortViewport = useMediaQuery('(max-height: 860px)')
   const stacked = useMediaQuery('(max-width: 820px)')
   const picks = items.slice(0, stacked ? PICKS_NARROW : shortViewport ? PICKS_SHORT : PICKS)
@@ -96,6 +102,7 @@ export function DiscoverHero({
   // the first frame and the detail request fills in behind it rather than rearranging it.
   const cover = item.thumbUrlHiDpi ?? item.coverUrl ?? null
   const { title, becauseOfTitle, relationKind, relatedToTitle } = item
+  const ownedSeriesId = seriesIdFor?.(item) ?? null
   const status = seriesStatusVisual(detail?.status ?? item.status)
   const contentRating = contentRatingVisual(detail?.contentRating ?? null)
   const ratingToken = contentRatingToken(detail?.contentRating)
@@ -217,7 +224,7 @@ export function DiscoverHero({
                     style={{ '--band': `var(--${band.token})` } as CSSProperties}
                   >
                     <IconStar size={18} />
-                    <span className="hero-score-n figure">{(score / 10).toFixed(1)}</span>
+                    <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
                   </span>
                 )}
                 {score != null && figures.length > 0 && (
@@ -245,7 +252,7 @@ export function DiscoverHero({
                     <Badge
                       size="sm"
                       variant="outline"
-                      color="gray"
+                      color="var(--neutral)"
                       leftSection={
                         <MetadataSiteIcon
                           site={r.source.toLowerCase()}
@@ -254,7 +261,7 @@ export function DiscoverHero({
                         />
                       }
                     >
-                      {(r.rating / 10).toFixed(1)}
+                      {formatFixedDecimal(r.rating / 10, 1)}
                     </Badge>
                   </Tooltip>
                 ))}
@@ -273,13 +280,25 @@ export function DiscoverHero({
               <Group gap="xs" className="discover-hero-actions">
                 {/* Adding needs a root folder, the caller's permissions and the request path for
                     non-admins, all of which `DiscoverLibraryRail` handles inside the detail card. */}
-                <Button
-                  leftSection={<IconPlus size={16} />}
-                  onClick={() => onOpen(item)}
-                  aria-label={t`Add ${title} to library`}
-                >
-                  <Trans>Add to library</Trans>
-                </Button>
+                {ownedSeriesId != null ? (
+                  <Button
+                    color="var(--ok)"
+                    variant="light"
+                    rightSection={<IconArrowRight size={16} />}
+                    onClick={() => navigate(`/series/${ownedSeriesId}`)}
+                    aria-label={t`View ${title} in library`}
+                  >
+                    <Trans>View in library</Trans>
+                  </Button>
+                ) : (
+                  <Button
+                    leftSection={<IconPlus size={16} />}
+                    onClick={() => onOpen(item)}
+                    aria-label={t`Add ${title} to library`}
+                  >
+                    <Trans>Add to library</Trans>
+                  </Button>
+                )}
                 <Button variant="default" onClick={() => onRecommend(item)}>
                   <Trans>More like this</Trans>
                 </Button>
@@ -338,7 +357,7 @@ export function DiscoverHero({
                         {p.rating != null && (
                           <span className="discover-hero-strip-rating tnum">
                             <IconStar size={11} />
-                            {(p.rating / 10).toFixed(1)}
+                            {formatFixedDecimal(p.rating / 10, 1)}
                           </span>
                         )}
                       </span>

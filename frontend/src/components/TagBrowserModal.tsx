@@ -21,6 +21,7 @@ import { IconChevronRight, IconSearch } from '@tabler/icons-react'
 import { useRecommendationTags, type CatalogueTerm } from '../api/hooks'
 import { buildTagTree, PATH_SEPARATOR, rankTagMatches, tagKey, type TagNode } from '../lib/tagTree'
 import { useGenreOptions } from './CatalogueFilters'
+import { formatNumber } from '../format'
 
 const SEARCH_LIMIT = 100
 const BROWSE_LIMIT = 300
@@ -343,7 +344,7 @@ function BrowseRow({
           )}
           {row.count != null && (
             <Text size="xs" c="var(--ink-3)" fw={500}>
-              {row.count.toLocaleString()}
+              {formatNumber(row.count)}
             </Text>
           )}
         </Group>

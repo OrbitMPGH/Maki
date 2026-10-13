@@ -43,7 +43,7 @@ export function SeriesTagsEditor({ seriesId, tagIds }: { seriesId: number; tagId
     // labels are what tells them apart. The dot keeps carrying the colour the user picked.
     return (
       <div>
-        <Title order={4} fz={14} mb={10}>
+        <Title order={4} fz="var(--type-body)" mb={10}>
           <Trans>Your tags</Trans>
         </Title>
         <div className="tag-chips">

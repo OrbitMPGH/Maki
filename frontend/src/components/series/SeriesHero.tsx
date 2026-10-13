@@ -1,4 +1,4 @@
-﻿import {type ReactNode, useMemo} from 'react'
+import {type ReactNode, useMemo} from 'react'
 import {
     ActionIcon,
     Alert,
@@ -25,13 +25,14 @@ import {
     seriesStatusVisual,
     statusToken,
 } from '../ui/status'
-import {useReadTracking} from "../../api/reader.ts";
-import {useChapters} from "../../api/hooks.ts";
+import { useReadTracking } from '../../api/reader'
+import { useChapters } from '../../api/hooks'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import { useBackTarget } from '../../lib/navHistory'
 import {HeroBackdrop} from './HeroBackdrop'
+import { MetadataLock } from './EditMetadataModal'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
@@ -102,10 +103,9 @@ export function SeriesHero({
         return { highest, total, missing }
     }, [series, chapters])
 
-    // What "Download all wanted" would actually queue, so the button can say so rather than making
-    // the user open the Chapters tab to find out.
+    // Wanted chapters with no file yet, queued or not; the page's download button excludes the queued ones.
     const missingWanted = useMemo(
-        () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile).length,
+        () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt).length,
         [chapters],
     )
 
@@ -185,6 +185,7 @@ export function SeriesHero({
                         <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                             <Title order={1} className="series-hero-title" title={series.title}>
                                 {series.displayTitle}
+                                {series.lockedFields.includes('title') && <>{' '}<MetadataLock size={18} /></>}
                             </Title>
 
                             {altTitles.length > 0 && (
@@ -260,7 +261,7 @@ export function SeriesHero({
                                                 <ActionIcon
                                                     size="sm"
                                                     variant="subtle"
-                                                    color="gray"
+                                                    color="var(--neutral)"
                                                     onClick={() => onRate(null)}
                                                     aria-label={t`Clear rating`}
                                                 >
@@ -290,7 +291,7 @@ export function SeriesHero({
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
-                        <Title order={3} fz={17}>
+                        <Title order={2} size="h3" fz="var(--type-section)">
                             <Trans>Progress</Trans>
                         </Title>
 
@@ -379,20 +380,37 @@ export function SeriesHero({
                                 icon={<IconAlertTriangle size={16} />}
                             >
                                 <Text size="xs" c="var(--ink-3)" style={{ lineHeight: 1.55 }}>
-                                    <Trans>
-                                        Your sources only reach chapter{' '}
-                                        <Text span fw={600} c="var(--ink)" className="tnum">
-                                            {highest}
-                                        </Text>
-                                        , but MangaBaka lists{' '}
-                                        <Text span fw={600} c="var(--ink)" className="tnum">
-                                            {listed}
-                                        </Text>
-                                        . Roughly{' '}
-                                        <Plural value={missing} one="# chapter" other="# chapters" /> can't be
-                                        downloaded from the sources linked here. Link another source to close
-                                        the gap.
-                                    </Trans>
+                                    {series.lockedFields.includes('totalChapters') ? (
+                                        <Trans>
+                                            Your sources only reach chapter{' '}
+                                            <Text span fw={600} c="var(--ink)" className="tnum">
+                                                {highest}
+                                            </Text>
+                                            , but the total you set is{' '}
+                                            <Text span fw={600} c="var(--ink)" className="tnum">
+                                                {listed}
+                                            </Text>
+                                            . Roughly{' '}
+                                            <Plural value={missing} one="# chapter" other="# chapters" /> can't be
+                                            downloaded from the sources linked here. Link another source to close
+                                            the gap.
+                                        </Trans>
+                                    ) : (
+                                        <Trans>
+                                            Your sources only reach chapter{' '}
+                                            <Text span fw={600} c="var(--ink)" className="tnum">
+                                                {highest}
+                                            </Text>
+                                            , but MangaBaka lists{' '}
+                                            <Text span fw={600} c="var(--ink)" className="tnum">
+                                                {listed}
+                                            </Text>
+                                            . Roughly{' '}
+                                            <Plural value={missing} one="# chapter" other="# chapters" /> can't be
+                                            downloaded from the sources linked here. Link another source to close
+                                            the gap.
+                                        </Trans>
+                                    )}
                                 </Text>
                             </Alert>
                         )}

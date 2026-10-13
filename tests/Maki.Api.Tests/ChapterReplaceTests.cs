@@ -1,5 +1,6 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Quality;
 using Maki.Core.Security;
@@ -27,6 +28,7 @@ public class ChapterReplaceTests : IDisposable
 
     private ChapterController Controller(MakiDbContext db, MakiPermission permissions) => new(
         new TestLocalizer(), db, _world.Queue, new StatsEventService(db), _world.Archives, _world.Registry,
+        _world.Availability,
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         _world.Batches(), new TestCurrentUser(1, permissions: permissions), NullLogger<ChapterController>.Instance);
 
@@ -63,6 +65,21 @@ public class ChapterReplaceTests : IDisposable
         Assert.Equal(UpgradeWorld.Official, info.Predicted.SourceName);
         Assert.Equal("official", info.Predicted.Tier);
         Assert.Equal(UpgradeOutcomes.Pending, info.Outcome);
+    }
+
+    [Fact]
+    public async Task Download_from_a_globally_switched_off_source_is_refused()
+    {
+        var (chapterId, _) = _world.Chapter(1, withFile: false);
+        _world.Settings.Set(SettingKeys.SourcesDisabled, UpgradeWorld.Official);
+        using var db = _world.Db.NewContext();
+
+        var result = await Controller(db, MakiPermission.Admin).DownloadFrom(
+            chapterId, new DownloadChapterFromRequest(_world.OfficialMappingId), Evaluation(db), CancellationToken.None);
+
+        var refused = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("error.sourceMapping.sourceDisabled", refused.Value!.GetType().GetProperty("code")!.GetValue(refused.Value));
+        Assert.False(_world.Db.NewContext().DownloadQueue.Any());
     }
 
     [Fact]
@@ -158,6 +175,7 @@ public class ChapterReplaceTests : IDisposable
         using var db = _world.Db.NewContext();
         var controller = new ChapterController(
             new TestLocalizer(), db, _world.Queue, new StatsEventService(db), _world.Archives, _world.Registry,
+            _world.Availability,
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             _world.Batches(), new TestCurrentUser(7, permissions: MakiPermission.DownloadChapters),
             NullLogger<ChapterController>.Instance);

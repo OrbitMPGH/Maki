@@ -12,6 +12,8 @@ public class HealthScanService(MakiDbContext db)
 {
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<int, CancellationTokenSource> Running = new();
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    private static readonly TimeSpan BusyCacheFor = TimeSpan.FromSeconds(5);
+    private const int ProgressFlushEvery = 25;
     /// <summary>
     /// The stored analysis, with every list guaranteed present. Rows written by an older analyzer
     /// deserialize with nulls where its shape differed, and they stay readable until the next scan
@@ -146,45 +148,113 @@ public class HealthScanService(MakiDbContext db)
         db.ChangeTracker.Clear();
 
         HealthScan? current = null;
-        foreach (var id in pending)
+        var skippedForQueue = 0;
+        // Which series have a download in flight and which files have an open operation is the same
+        // answer for every file of a series, so ask when the series changes or after a few seconds
+        // instead of once per file. A download or operation that starts after the read and before the
+        // series' last file is checked is missed by that file: it is analysed, and the next scan of
+        // the file is the repair.
+        var busySeries = new HashSet<int?>();
+        var busyFiles = new HashSet<int>();
+        var busyReadAt = DateTime.MinValue;
+        int? busySeriesOf = null;
+        var unwritten = 0;
+        try
         {
-            current = await db.HealthScans.FindAsync([scanId], ct);
-            if (current == null || current.Status == "cancelled") return;
-            var file = await db.HealthFiles.FindAsync([id], ct);
-            if (file != null)
+            for (var position = 0; position < pending.Count; position++)
             {
-                try
+                var id = pending[position];
+                current = await db.HealthScans.FindAsync([scanId], ct);
+                if (current == null || current.Status == "cancelled") return;
+                var file = await db.HealthFiles.FindAsync([id], ct);
+                var errored = false;
+                if (file != null)
                 {
-                    if (!await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct) &&
-                        !await db.HealthOperations.AnyAsync(o => o.FileId == file.Id && o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed", ct))
-                        await AnalyzeAsync(file, rootPaths[file.RootFolderId], force, ct, workers, verify);
+                    try
+                    {
+                        if (DateTime.UtcNow - busyReadAt > BusyCacheFor || file.SeriesId != busySeriesOf)
+                        {
+                            busySeries = (await db.DownloadQueue
+                                .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+                                .Select(q => q.SeriesId)
+                                .Distinct()
+                                .ToListAsync(ct)).Select(seriesId => (int?)seriesId).ToHashSet();
+                            busyFiles = (await db.HealthOperations
+                                .Where(o => o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed")
+                                .Select(o => o.FileId)
+                                .Distinct()
+                                .ToListAsync(ct)).ToHashSet();
+                            busyReadAt = DateTime.UtcNow;
+                            busySeriesOf = file.SeriesId;
+                        }
+
+                        // The sets only say who might be busy; a hit is confirmed against the row before
+                        // a file is skipped, so an operation or download that ended inside the window does
+                        // not cost the file its analysis.
+                        var busy = busySeries.Contains(file.SeriesId) && await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct)
+                            || busyFiles.Contains(file.Id) && await db.HealthOperations.AnyAsync(o => o.FileId == file.Id && o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed", ct);
+                        if (!busy)
+                            await AnalyzeAsync(file, rootPaths[file.RootFolderId], force, ct, workers, verify);
+                        else
+                            skippedForQueue++;
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+                    {
+                        current.Error = $"{current.Error} File {file.Id}: {ex.Message}".Trim();
+                        errored = true;
+                    }
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+
+                // A file that was only looked at and skipped changed nothing, so its count rides along
+                // with the next write instead of taking a commit of its own.
+                unwritten++;
+                var touched = errored || db.ChangeTracker.Entries().Any(e => e.Entity is not HealthScan && e.State != EntityState.Unchanged);
+                if (touched || unwritten >= ProgressFlushEvery || position == pending.Count - 1)
                 {
-                    current.Error = $"{current.Error} File {file.Id}: {ex.Message}".Trim();
+                    current.Completed += unwritten;
+                    await db.SaveChangesAsync(ct);
+                    unwritten = 0;
+                }
+
+                db.ChangeTracker.Clear();
+            }
+
+        }
+        finally
+        {
+            // A cancel or an uncaught error leaves up to ProgressFlushEvery looked-at files uncounted.
+            if (unwritten > 0)
+            {
+                db.ChangeTracker.Clear();
+                var row = await db.HealthScans.FindAsync([scanId], CancellationToken.None);
+                if (row != null)
+                {
+                    row.Completed += unwritten;
+                    await db.SaveChangesAsync(CancellationToken.None);
                 }
             }
-            current.Completed++;
-            await db.SaveChangesAsync(ct);
-            db.ChangeTracker.Clear();
         }
 
         current = await db.HealthScans.FindAsync([scanId], ct);
         if (current == null) return;
         current.Status = current.Error == null ? "completed" : "partial";
         current.FinishedAt = DateTime.UtcNow;
-        db.HealthHistory.Add(new()
+        var analysedNothing = current.Error == null && pending.Count > 0 && skippedForQueue == pending.Count;
+        if (!analysedNothing)
         {
-            Kind = "scan",
-            MessageKey = "health.history.scan",
-            ParamsJson = JsonSerializer.Serialize(new
+            db.HealthHistory.Add(new()
             {
-                scan = scanId,
-                completed = current.Completed,
-                total = current.Total,
-                status = current.Status,
-            }),
-        });
+                Kind = "scan",
+                MessageKey = "health.history.scan",
+                ParamsJson = JsonSerializer.Serialize(new
+                {
+                    scan = scanId,
+                    completed = current.Completed,
+                    total = current.Total,
+                    status = current.Status,
+                }),
+            });
+        }
         await db.SaveChangesAsync(ct);
         // The caller was handed a HealthScan and reads it after this returns; it detached with the
         // first Clear, so hand back what was actually written.
@@ -215,17 +285,34 @@ public class HealthScanService(MakiDbContext db)
         // not going to be read anyway.
         var stale = file.AnalyzerVersion != ArchiveHealthAnalyzer.IndexVersion ||
                     (verify && file.VerifiedVersion != ArchiveHealthAnalyzer.VerifyVersion);
-        if (!force && !stale && file.Status == "complete" && file.Size == size && file.ModifiedAt == modified) return;
+        if (!force && !stale && file.Status == "complete" && file.Size == size && file.ModifiedAt == modified)
+        {
+            // Nothing to redo, but the worker re-queues a series whose files were added after they were
+            // last analysed, so say they have been looked at.
+            file.AnalyzedAt = DateTime.UtcNow;
+            return;
+        }
         ArchiveAnalysis? analysis = null;
         string? hash = null;
         // Only a verify has a content hash to look the cache up by, and only a verify is expensive
         // enough to be worth caching. Indexing is cheaper than the lookup would be.
         if (verify && before.Exists)
         {
-            await using var stream = File.OpenRead(path);
-            hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
-            var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.VerifyVersion}"], ct);
-            if (cached != null) analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
+            try
+            {
+                await using var stream = File.OpenRead(path);
+                hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
+                var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.VerifyVersion}"], ct);
+                if (cached != null) analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Recorded as a finding with a timestamp rather than thrown: an unthrown failure
+                // is analysed once, where a thrown one leaves AnalyzedAt behind and is retried forever.
+                var denied = ex is UnauthorizedAccessException;
+                analysis = new ArchiveAnalysis("partial", null, [],
+                    [new("unreadable", "warning", denied ? "health.finding.accessDenied" : "health.finding.unreadable")]);
+            }
         }
         // Hand the hash on: checking the cache already read the whole archive, and the analyzer
         // would otherwise read and hash every file in the library a second time.

@@ -50,6 +50,14 @@ public static class ContentRating
     }
 
     /// <summary>
+    /// Whether a rating list names every rating, which as a filter constrains nothing. It has to read
+    /// as no filter rather than as <c>IN (all four)</c>, because that never matches an unrated series
+    /// and <see cref="Permits"/> says one passes when the ceiling allows everything.
+    /// </summary>
+    public static bool CoversAll(IReadOnlyCollection<string>? ratings) =>
+        ratings is not null && All.All(all => ratings.Contains(all, StringComparer.OrdinalIgnoreCase));
+
+    /// <summary>
     /// Whether one series rated <paramref name="rating"/> may be shown under the ceiling
     /// <paramref name="max"/>, matching the list queries' <c>content_rating IN (...)</c>: an unrated
     /// series passes only when the ceiling allows every rating, since SQL never matches a null there.

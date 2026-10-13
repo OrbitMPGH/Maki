@@ -24,6 +24,7 @@ public class ImportListJob(ImportListService importLists, ILogger<ImportListJob>
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Import list pass failed");
+            context.ReportFailure(ex);
         }
     }
 }

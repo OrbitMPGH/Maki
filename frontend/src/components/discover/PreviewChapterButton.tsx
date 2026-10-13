@@ -4,6 +4,7 @@ import { Button, Loader, Stack, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconBook, IconCircleCheckFilled, IconRefresh } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { releaseSeriesPreview, useSeriesPreview, useStartSeriesPreview } from '../../api/preview'
 
 /**
@@ -101,9 +102,12 @@ export function PreviewChapterButton({
     caption = source ? <Trans>Downloaded from {source}</Trans> : null
   } else if (status === 'fetching' && pageCount > 0) {
     label = (
-      <Trans>
-        Downloading, {donePages} of {pageCount} pages
-      </Trans>
+      <>
+        {plural(pageCount, {
+          one: `Downloading, ${donePages} of # page`,
+          other: `Downloading, ${donePages} of # pages`,
+        })}
+      </>
     )
     caption = source ? <Trans>From {source}. You can keep browsing while it downloads.</Trans> : null
     progress = donePages / pageCount

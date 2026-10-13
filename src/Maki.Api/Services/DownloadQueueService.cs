@@ -5,7 +5,6 @@ using Maki.Api.Hubs;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Data;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -18,9 +17,13 @@ public class DownloadQueueService(
     IServiceScopeFactory scopeFactory,
     TimeProvider time,
     ChapterSourceResolver sourceResolver,
-    ILogger<DownloadQueueService> logger) : IDownloadCooldown
+    ILogger<DownloadQueueService> logger,
+    DownloadPauseService? pauses = null) : IDownloadCooldown
 {
-    private readonly Channel<int> _channel = Channel.CreateUnbounded<int>();
+    // A write is only a wake-up, so a full channel drops the extra rather than letting the five-second
+    // poll pile signals up behind busy workers.
+    private readonly Channel<int> _channel = Channel.CreateBounded<int>(
+        new BoundedChannelOptions(64) { FullMode = BoundedChannelFullMode.DropWrite });
 
     // Ids currently owned by a worker (claimed, not yet settled) and ids currently being resolved by
     // a detached ResolveAndActivateAsync. An in-flight *status* on a row whose id is in neither set
@@ -215,6 +218,22 @@ public class DownloadQueueService(
     }
 
     /// <summary>
+    /// Sources no new work may start on right now: paused, or cooling down after a rate limit.
+    /// <see cref="ClaimNextAsync"/> skips rows already on one, and a resolve or a failover in the
+    /// processor must not move a row onto one either.
+    /// </summary>
+    public async Task<HashSet<string>> HeldSourcesAsync(CancellationToken ct = default)
+    {
+        var held = CoolingDownSources().ToHashSet();
+        if (pauses is not null)
+        {
+            held.UnionWith((await pauses.ActiveAsync(ct)).Sources.Keys);
+        }
+
+        return held;
+    }
+
+    /// <summary>
     /// Snapshot of the sources currently cooling down, for <see cref="ClaimNextAsync"/> to exclude in
     /// SQL. Usually empty, which is the case the query is optimized for.
     /// </summary>
@@ -240,21 +259,9 @@ public class DownloadQueueService(
     }
 
     /// <summary>
-    /// Queues a chapter for download. Returns as soon as the row exists — finding which mapping
-    /// actually has this chapter means listing each source's catalog over the network, too slow to
-    /// make "Download this chapter" or "Search missing" wait on. The item shows up immediately as
-    /// <see cref="QueueStatus.Resolving"/>; <see cref="ResolveAndActivateAsync"/> fills in the real
-    /// source in the background and flips it to Queued (or RateLimited) once found.
+    /// Queues a health repair's approved replacement for a chapter. Already resolved, so it goes
+    /// straight to Queued with the approved mapping and source chapter.
     /// </summary>
-    /// <param name="origin">
-    /// What triggered this. Recorded on the row because every path funnels through here and is
-    /// otherwise indistinguishable afterwards, and because the in-app inbox notifies on automatic
-    /// downloads only — somebody who clicked Download watched it happen.
-    /// </param>
-    /// <param name="queuedByUserId">
-    /// Who the download is for, when that is one person. For a request approval that is the
-    /// <em>requester</em>, not the admin who approved it.
-    /// </param>
     public async Task EnqueueRepairAsync(MakiDbContext db, int operationId, Chapter chapter,
         ResolvedChapterSource source, int userId, CancellationToken ct)
     {
@@ -270,7 +277,7 @@ public class DownloadQueueService(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             db.Entry(item).State = EntityState.Detached;
             throw new InvalidOperationException("A download is already queued for this chapter");
@@ -371,7 +378,7 @@ public class DownloadQueueService(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             // Something else queued one of these between the check and the insert. Rare enough that
             // falling back to the per-chapter path, which settles each race on its own, is fine.
@@ -407,10 +414,22 @@ public class DownloadQueueService(
         return new BulkEnqueueResult(items, error);
     }
 
-    // On a queue insert only the unique index on ActiveChapterId can raise this.
-    private static bool IsUniqueViolation(DbUpdateException e) =>
-        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
-
+    /// <summary>
+    /// Queues a chapter for download. Returns as soon as the row exists, because finding which mapping
+    /// actually has this chapter means listing each source's catalog over the network, too slow to
+    /// make "Download this chapter" or "Search missing" wait on. The item shows up immediately as
+    /// <see cref="QueueStatus.Resolving"/>; <see cref="ResolveAndActivateAsync"/> fills in the real
+    /// source in the background and flips it to Queued (or RateLimited) once found.
+    /// </summary>
+    /// <param name="origin">
+    /// What triggered this. Recorded on the row because every path funnels through here and is
+    /// otherwise indistinguishable afterwards, and because the in-app inbox notifies on automatic
+    /// downloads only: somebody who clicked Download watched it happen.
+    /// </param>
+    /// <param name="queuedByUserId">
+    /// Who the download is for, when that is one person. For a request approval that is the
+    /// <em>requester</em>, not the admin who approved it.
+    /// </param>
     /// <param name="preferMappingId">
     /// Pins the download to one of the series' enabled source mappings, e.g. a user picking a
     /// specific source copy of the chapter from the compare view. Tried first regardless of priority
@@ -479,7 +498,7 @@ public class DownloadQueueService(
         {
             await db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             // Lost a race with another enqueue (a double click, or a manual download against
             // SmartDownloadJob) between the check above and this insert.
@@ -732,6 +751,11 @@ public class DownloadQueueService(
             item.Status = QueueStatus.Failed;
             item.SetError("error.download.repairNeedsReview");
             await db.SaveChangesAsync(ct);
+            if (item.Series is { } repairSeries)
+            {
+                await events.QueueUpdated(QueueItemDto.FromEntity(item, null, repairSeries, "?"));
+            }
+
             return;
         }
 
@@ -887,13 +911,28 @@ public class DownloadQueueService(
     public ValueTask SignalAsync(int queueItemId, CancellationToken ct = default) =>
         _channel.Writer.WriteAsync(queueItemId, ct);
 
+    private const int WorkerWakeCount = 8;
+
+    /// <summary>
+    /// Wakes every worker, for a pause lifting: nothing else signals the channel when work that has
+    /// been claimable all along is suddenly allowed. A full channel drops the extras.
+    /// </summary>
+    public async Task WakeWorkersAsync(CancellationToken ct = default)
+    {
+        for (var i = 0; i < WorkerWakeCount; i++)
+        {
+            await SignalAsync(0, ct);
+        }
+    }
+
     /// <summary>
     /// Claims the highest-priority claimable scraper item (lowest <see cref="DownloadQueueItem.SortOrder"/>,
     /// ties broken by <see cref="DownloadQueueItem.QueuedAt"/>) whose source isn't currently cooling down.
     /// Claimable status means <c>Queued</c> (never attempted) or <c>RateLimited</c> (a previous attempt was
     /// throttled — its own tracker's cooldown may have lifted since). Skipping past a cooling-down tracker
     /// to the next-highest-priority item on a different one is the whole point of a per-tracker cooldown:
-    /// one rate-limited source shouldn't stall everything else in the queue. The status flip is a
+    /// one rate-limited source shouldn't stall everything else in the queue. A paused source is skipped
+    /// the same way, and a global pause claims nothing; items already in flight are never touched. The status flip is a
     /// conditional update so two workers racing on the same candidate can't both grab it.
     /// <para>
     /// A claimable item can legitimately have no mapping: resolution failing leaves the row Failed with
@@ -906,6 +945,12 @@ public class DownloadQueueService(
     /// </summary>
     public async Task<int?> ClaimNextAsync(CancellationToken ct = default)
     {
+        var pause = pauses is null ? DownloadPauseState.None : await pauses.ActiveAsync(ct);
+        if (pause.All is not null)
+        {
+            return null;
+        }
+
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
@@ -920,6 +965,7 @@ public class DownloadQueueService(
             // restart, and a row parked RateLimited must still wait out its own time.
             var now = time.GetUtcNow().UtcDateTime;
             var cooling = CoolingDownSources();
+            cooling.AddRange(pause.Sources.Keys);
             var candidate = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
                             (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited) &&
@@ -1145,29 +1191,78 @@ public class DownloadQueueService(
     /// <summary>Failures no retry can change, which <see cref="RequeueEligibleFailuresAsync"/> never picks up.</summary>
     public static readonly string[] PermanentErrorKeys = ["error.download.upgradeTargetGone"];
 
+    /// <summary>The source name <see cref="QueueItemDto"/> shows for a torrent grab, which has no mapping.</summary>
+    public const string TorrentSourceName = "torrent";
+
+    /// <summary>The source name shown for a scraper row whose mapping is gone or was never resolved.</summary>
+    public const string UnknownSourceName = "?";
+
+    /// <summary>
+    /// Failed rows, optionally narrowed to one failure key and/or one source as the queue lists it
+    /// (a source name, <see cref="TorrentSourceName"/> or <see cref="UnknownSourceName"/>).
+    /// </summary>
+    public static IQueryable<DownloadQueueItem> FailedWhere(
+        IQueryable<DownloadQueueItem> query, string? reasonKey, string? source)
+    {
+        query = query.Where(q => q.Status == QueueStatus.Failed);
+        if (!string.IsNullOrEmpty(reasonKey))
+        {
+            query = query.Where(q => q.ErrorKey == reasonKey);
+        }
+
+        if (string.IsNullOrEmpty(source))
+        {
+            return query;
+        }
+
+        return source switch
+        {
+            TorrentSourceName => query.Where(q => q.Protocol == AcquisitionProtocol.Torrent),
+            UnknownSourceName => query.Where(q => q.Protocol != AcquisitionProtocol.Torrent && q.SourceMapping == null),
+            _ => query.Where(q => q.SourceMapping != null && q.SourceMapping.SourceName == source),
+        };
+    }
+
     /// <summary>
     /// Re-queues Failed scraper items whose backoff has elapsed and whose attempt count is still
     /// under <paramref name="maxAttempts"/>. Torrent items are excluded — they're tracked
     /// externally by <c>CompletedDownloadJob</c> against qBittorrent, and re-signalling one
     /// wouldn't resubmit the grab. Returns the number re-queued.
     /// </summary>
-    public async Task<int> RequeueEligibleFailuresAsync(int maxAttempts, CancellationToken ct = default)
+    public Task<int> RequeueEligibleFailuresAsync(int maxAttempts, CancellationToken ct = default) =>
+        RequeueFailuresAsync(maxAttempts, null, null, manual: false, callerScope: null, ct);
+
+    /// <summary>
+    /// A retry somebody asked for: every Failed scraper item, narrowed by failure key and/or source,
+    /// whatever its attempt count or backoff, the way the single-item retry ignores both.
+    /// <paramref name="callerScope"/> is the request's, so a caller limited to some root folders
+    /// retries only the rows they can see.
+    /// </summary>
+    public Task<int> RetryFailedAsync(
+        string? reasonKey, string? source, DataScope callerScope, CancellationToken ct = default) =>
+        RequeueFailuresAsync(int.MaxValue, reasonKey, source, manual: true, callerScope, ct);
+
+    private async Task<int> RequeueFailuresAsync(
+        int maxAttempts, string? reasonKey, string? source, bool manual, DataScope? callerScope, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        if (callerScope is { Unrestricted: false })
+        {
+            db.Scope.SetUser(callerScope.UserId, callerScope.AllRootFolders);
+        }
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
 
         var now = time.GetUtcNow().UtcDateTime;
-        var eligible = await db.DownloadQueue
+        var eligible = await FailedWhere(db.DownloadQueue, reasonKey, source)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
             .Include(q => q.SourceMapping)
             .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
-                        q.Status == QueueStatus.Failed &&
                         q.HealthOperationId == null &&
                         q.RetryCount < maxAttempts &&
                         (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
-                        (q.NextAttempt == null || q.NextAttempt <= now) &&
+                        (manual || q.NextAttempt == null || q.NextAttempt <= now) &&
                         (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)))
             .ToListAsync(ct);
 

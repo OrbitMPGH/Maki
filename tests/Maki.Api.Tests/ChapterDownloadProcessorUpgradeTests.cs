@@ -65,7 +65,7 @@ public class ChapterDownloadProcessorUpgradeTests : IDisposable
         Assert.Equal(UpgradeReasons.FewerPages, info.Reason);
         Assert.Equal(2, info.After!.PageCount);
         var attempt = db.UpgradeAttempts.Single();
-        Assert.Equal(UpgradeReasons.UpgradeRejected, attempt.Reason);
+        Assert.Equal(UpgradeReasons.FewerPages, attempt.Reason);
         Assert.Equal("o1", attempt.SourceChapterId);
         Assert.Empty(db.UpgradeHistory);
         var file = db.ChapterFiles.Single(f => f.Id == _fileId);
@@ -209,6 +209,31 @@ public class ChapterDownloadProcessorUpgradeTests : IDisposable
         File.SetLastWriteTimeUtc(trashed, DateTime.UtcNow.AddDays(-20));
         await PurgeAsync();
         Assert.False(File.Exists(trashed));
+    }
+
+    [Fact]
+    public async Task A_file_another_chapter_was_linked_to_since_the_scan_is_not_replaced()
+    {
+        _world.OfficialPages = UpgradeWorld.InlinePages(4, 160);
+        var itemId = QueueUpgrade();
+        using (var db = _world.Db.NewContext())
+        {
+            db.Chapters.Add(new Maki.Core.Entities.Chapter
+            {
+                SeriesId = _world.SeriesId, Number = 2, ChapterFileId = _fileId,
+            });
+            db.SaveChanges();
+        }
+
+        await RunAsync(itemId);
+
+        Assert.Equal(_original, File.ReadAllBytes(_path));
+        Assert.False(File.Exists(TmpPath(itemId)));
+        using var check = _world.Db.NewContext();
+        var info = UpgradeInfo.Parse(check.DownloadQueue.Single(q => q.Id == itemId).UpgradeInfoJson)!;
+        Assert.Equal(UpgradeOutcomes.Rejected, info.Outcome);
+        Assert.Equal(UpgradeReasons.SharedFile, info.Reason);
+        Assert.Empty(check.UpgradeHistory);
     }
 
     [Fact]

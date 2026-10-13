@@ -191,7 +191,7 @@ public class ChallengeAwareFetcherTests
         var (fetcher, handler) = Build(flareUrl: null);
         handler.OnTarget = _ => new HttpResponseMessage(HttpStatusCode.Forbidden);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
             fetcher.FetchAsync(new HtmlFetchRequest(Target, Mature, "a=b")));
     }
 

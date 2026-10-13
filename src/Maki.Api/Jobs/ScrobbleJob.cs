@@ -29,6 +29,7 @@ public class ScrobbleJob(ScrobbleService scrobbler, ILogger<ScrobbleJob> logger)
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Scrobble sync failed");
+            context.ReportFailure(ex);
         }
     }
 }

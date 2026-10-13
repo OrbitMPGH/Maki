@@ -11,6 +11,7 @@ using Maki.Core.Http;
 using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
+using Maki.Core.Parsing;
 using Maki.Core.Recommendations;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -33,6 +34,7 @@ using Maki.Sources.Manhwa18Net;
 using Maki.Sources.NaverWebtoon;
 using Maki.Sources.SenManga;
 using Maki.Sources.Shinigami;
+using Maki.Sources.Suwayomi;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
@@ -67,21 +69,37 @@ using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
 
-var paths = new AppPaths();
+AppPaths paths;
+ConfigFileProvider configFile;
+LoggingOptions loggingOptions;
+Microsoft.Extensions.Logging.ILogger startupLog;
 
-// Bring logging up on defaults first, so the restore below and anything else that runs before the
-// host lands in the log file rather than on the console alone. The configured options are not
-// knowable yet: a staged restore can replace config.json itself.
-MakiLogging.Bootstrap(paths);
+try
+{
+    paths = new AppPaths();
 
-// Apply a restore staged by a previous run before anything reads config.json or opens the DB.
-RestoreBootstrap.ApplyPendingRestore(paths, MakiLogging.CreateLogger("Restore"));
+    // Bring logging up on defaults first, so the restore below and anything else that runs before the
+    // host lands in the log file rather than on the console alone. The configured options are not
+    // knowable yet: a staged restore can replace config.json itself.
+    MakiLogging.Bootstrap(paths);
 
-var configFile = new ConfigFileProvider(paths);
-var loggingOptions = LoggingOptions.From(configFile.Config);
-MakiLogging.Configure(paths, loggingOptions);
+    // Apply a restore staged by a previous run before anything reads config.json or opens the DB.
+    RestoreBootstrap.ApplyPendingRestore(paths, MakiLogging.CreateLogger("Restore"));
 
-var startupLog = MakiLogging.CreateLogger("Startup");
+    configFile = new ConfigFileProvider(paths);
+    loggingOptions = LoggingOptions.From(configFile.Config);
+    MakiLogging.Configure(paths, loggingOptions);
+
+    startupLog = MakiLogging.CreateLogger("Startup");
+}
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Console.Error.WriteLine($"Maki could not start: {ex.Message}");
+    try { MakiLogging.CreateLogger("Startup").LogCritical(ex, "Maki terminated unexpectedly"); } catch { }
+    Log.CloseAndFlush();
+    Environment.ExitCode = 1;
+    return;
+}
 
 // ImageSharp's default allocator pools every buffer it hands out and never gives one back to the
 // OS, so RSS ratcheted to the high-water mark of whatever burst of concurrent decodes happened
@@ -123,8 +141,9 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(3);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter))
-        .AddHttpMessageHandler(() => new TransientRetryHandler());
+        // Retry outside the limiter, so every attempt takes its own token.
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaBakaLimiter));
 
     builder.Services.AddHttpClient("covers", client =>
         {
@@ -135,8 +154,15 @@ try
         // caller-supplied URL and validates its host against the source's allowlist; an automatic
         // redirect would sidestep that check entirely, so the proxy follows hops itself and re-checks
         // each one. CoverService only ever fetches URLs a source produced, so losing auto-redirect
-        // there is a non-event.
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false })
+        // there is a non-event. The allowlist checks host names only, so connections are also held
+        // to public addresses: a source domain that resolves to the LAN must not be readable.
+        .ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            var handler = PublicAddressGuard.CreateHandler();
+            handler.AllowAutoRedirect = false;
+            return handler;
+        })
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler())
         .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     // Bulk dump downloads (~350 MB nightly snapshot) bypass the rate limiter — a single
@@ -159,8 +185,8 @@ try
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36");
             client.Timeout = TimeSpan.FromSeconds(20);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter))
-        .AddHttpMessageHandler(() => new TransientRetryHandler());
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter));
     builder.Services.AddSingleton<MalReviewClient>();
 
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
@@ -169,7 +195,7 @@ try
     builder.Services.AddSingleton<MangaBakaLocalStore>();
     // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
     // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
-    // DiscoverCacheWarmJob builds them so the cost never lands on a keystroke.
+    // DiscoverCacheWarmJob builds them after a dump install so the cost never lands on a keystroke.
     builder.Services.AddSingleton<CatalogueIndexCache>();
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
@@ -339,11 +365,15 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
             client.Timeout = TimeSpan.FromMinutes(2);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+        // One 5xx or reset on a page of a 200-page chapter should cost a second try, not the chapter.
+        // It leaves 429 and 503 alone, which PageDownloader turns into the source's cooldown.
+        .AddHttpMessageHandler(() => new TransientRetryHandler());
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
-    const string browserUa = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+    const string browserUa = BrowserUserAgent.Value;
     foreach (var (name, baseUrl) in new[]
              {
                  (MangaPillSource.HttpClientName, "https://mangapill.com/"),
@@ -380,9 +410,18 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
-    // MangaDenizi fetches its own page images through this client.
-    builder.Services.AddHttpClient(MangaDeniziSource.HttpClientName)
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
+    // MangaDenizi fetches its scrambled page images through this client (absolute URLs, so no
+    // BaseAddress), at the same 1 req/s as its API client.
+    var mangaDeniziImageLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(MangaDeniziSource.ImageHttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDeniziImageLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
     // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
@@ -392,7 +431,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -442,12 +482,14 @@ try
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // TCB Scans — plain HTML, English-only; wants a Referer on every request.
+    // The domain rotates on DMCA takedowns, so MAKI_SOURCE_TCBSCANS_BASEURL overrides it.
     var tcbLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    var tcbBaseUrl = TCBScansSource.DefaultBaseUrl(Environment.GetEnvironmentVariable("MAKI_SOURCE_TCBSCANS_BASEURL")) + "/";
     builder.Services.AddHttpClient(TCBScansSource.HttpClientName, client =>
         {
-            client.BaseAddress = new Uri("https://tcbonepiecechapters.com/");
+            client.BaseAddress = new Uri(tcbBaseUrl);
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
-            client.DefaultRequestHeaders.Referrer = new Uri("https://tcbonepiecechapters.com/");
+            client.DefaultRequestHeaders.Referrer = new Uri(tcbBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(tcbLimiter))
@@ -490,7 +532,7 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(baoziLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    // Manga Livre — Brazilian Portuguese, standard Madara/WordPress theme, no Cloudflare.
+    // Manga Livre, Brazilian Portuguese, WordPress/Madara search with a customised chapter markup, no Cloudflare.
     var mangaLivreLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
     builder.Services.AddHttpClient(MangaLivreSource.HttpClientName, client =>
         {
@@ -575,11 +617,8 @@ try
     builder.Services.AddHttpClient(ManhuaguiSource.HttpClientName, client =>
         {
             client.BaseAddress = new Uri(manhuaguiBaseUrl);
-            // The plan pins this exact UA string (tested live); the shared browserUa const is a
-            // slightly older Chrome build number.
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36");
-            client.DefaultRequestHeaders.Referrer = new Uri("https://www.manhuagui.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri(manhuaguiBaseUrl);
             client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("zh-CN,zh;q=0.9");
             client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
             client.Timeout = TimeSpan.FromSeconds(30);
@@ -607,13 +646,13 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaTubeLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    var challengeLimiters = new HostRateLimiters(() => RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2));
     builder.Services.AddHttpClient(ChallengeAwareFetcher.HttpClientName, client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(challengeLimiter))
+        .AddHttpMessageHandler(() => new PerHostRateLimitingHandler(challengeLimiters))
         // 429 only: Cloudflare answers challenges with 503, and ChallengeAwareFetcher must still
         // see that itself to hand off to FlareSolverr.
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
@@ -631,7 +670,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(60);
         })
-        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -643,6 +683,8 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler)
+        .AddHttpMessageHandler(() => new ProxiedTargetGuardHandler(followRedirects: true))
         .AddHttpMessageHandler(() => new RateLimitingHandler(taiyoLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -681,6 +723,7 @@ try
     // stay testable without FlareSolverr and settings in the way.
     builder.Services.AddSingleton<IHtmlFetcher>(sp => sp.GetRequiredService<ChallengeAwareFetcher>());
 
+    builder.Services.AddSingleton<SharedPlaywright>();
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
     // Both of the above, again, as the seam BrowserIdleShutdownJob closes them through. Resolved
@@ -729,7 +772,54 @@ try
     builder.Services.AddSingleton<ISource, ComicWalkerSource>();
     builder.Services.AddSingleton<ISource, RawkumaSource>();
     builder.Services.AddSingleton<ISource, TeamXSource>();
-    
+
+    // Suwayomi: optional, inert until a URL is set. Its clients skip PublicAddressGuard because the
+    // server is on the LAN; SuwayomiOriginHandler pins them to the configured origin instead, and
+    // redirects are refused rather than followed so that check holds past the first hop. API and
+    // images get separate limits so a chapter download never queues a search or the health probe.
+    builder.Services.AddSingleton<SuwayomiSettings>();
+    builder.Services.AddSingleton<SuwayomiTokenStore>();
+    builder.Services.AddSingleton<SuwayomiClient>();
+    builder.Services.AddSingleton<SuwayomiMangaIdCache>();
+    builder.Services.AddSingleton(_ => new SuwayomiConnectionTester());
+    builder.Services.AddSingleton<ISourceProvider, SuwayomiSourceProvider>();
+    AddSuwayomiClient(SuwayomiClient.HttpClientName, TimeSpan.FromSeconds(60), perRequest: true);
+    AddSuwayomiClient(SuwayomiClient.PagesHttpClientName, TimeSpan.FromMinutes(2), perRequest: false);
+
+    // The API client times the request itself, not its wait in the concurrency queue: a bulk refresh
+    // queues dozens of calls behind four permits, and the client-wide timeout would fail the tail of
+    // them as "Search failed" without Suwayomi ever being slow. The outer bound only caps the queue.
+    void AddSuwayomiClient(string name, TimeSpan timeout, bool perRequest)
+    {
+        var limiter = new System.Threading.RateLimiting.ConcurrencyLimiter(
+            new System.Threading.RateLimiting.ConcurrencyLimiterOptions
+            {
+                PermitLimit = 4,
+                QueueLimit = int.MaxValue,
+                QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst
+            });
+        var http = builder.Services.AddHttpClient(name, client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+                client.Timeout = perRequest ? Timeout.InfiniteTimeSpan : timeout;
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+        if (perRequest)
+        {
+            http.AddHttpMessageHandler(() => new RequestTimeoutHandler(TimeSpan.FromMinutes(10)));
+        }
+
+        http.AddHttpMessageHandler(sp => new SuwayomiOriginHandler(sp.GetRequiredService<SuwayomiSettings>()))
+            .AddHttpMessageHandler(sp => new SuwayomiAuthHandler(sp.GetRequiredService<SuwayomiTokenStore>()))
+            .AddHttpMessageHandler(() => new TransientRetryHandler())
+            .AddHttpMessageHandler(() => new RateLimitDetectingHandler())
+            .AddHttpMessageHandler(() => new RateLimitingHandler(limiter));
+        if (perRequest)
+        {
+            http.AddHttpMessageHandler(() => new RequestTimeoutHandler(timeout));
+        }
+    }
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
@@ -758,6 +848,7 @@ try
     // NotificationService is one — the raise sites are jobs, hosted services and other singletons.
     builder.Services.AddSingleton<InboxAudienceResolver>();
     builder.Services.AddSingleton<InboxService>();
+    builder.Services.AddSingleton<AccountSecurityAlerts>();
     builder.Services.AddSingleton<FollowedCreatorReleaseService>();
 
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
@@ -776,6 +867,10 @@ try
     builder.Services.AddScoped<HealthScanService>();
     builder.Services.AddScoped<HealthMatchService>();
     builder.Services.AddScoped<HealthOperationService>();
+    builder.Services.AddScoped<ChapterFileDeletion>();
+    builder.Services.AddScoped<RecycleBinService>();
+    builder.Services.AddSingleton<RecycleBinMover>();
+    builder.Services.AddScoped<ReadFileCleanupService>();
     builder.Services.AddHostedService<HealthWorker>();
 
     builder.Services.AddSingleton(TimeProvider.System);
@@ -788,7 +883,9 @@ try
     builder.Services.AddSingleton<SourceScoutService>();
     builder.Services.AddSingleton<UpgradeScanTracker>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
+    builder.Services.AddSingleton<DownloadPauseService>();
     builder.Services.AddSingleton<DownloadQueueService>();
+    builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
@@ -801,6 +898,8 @@ try
     builder.Services.AddHostedService<SourceMatchWorkerHostedService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
+    builder.Services.AddScoped<LibraryImportResolver>();
+    builder.Services.AddScoped<LibraryImportUndoService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<FileRelinkPlanner>();
     builder.Services.AddSingleton<ChapterFileQualityService>();
@@ -818,11 +917,13 @@ try
     builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddScoped<TorrentImportService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
+    builder.Services.AddScoped<SeriesMetadataChangeLog>();
     builder.Services.AddScoped<ImageCacheRebuildService>();
     // Singleton: it is the single-flight claim and the live progress a rebuild reports through,
     // so it has to outlive both the request that starts one and the job scope that runs it.
     builder.Services.AddSingleton<ImageCacheRebuildStatus>();
     builder.Services.AddScoped<ReleaseService>();
+    builder.Services.AddSingleton<ReleaseSearchCache>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
     builder.Services.AddScoped<SeriesIdentityService>();
@@ -844,6 +945,8 @@ try
     builder.Services.AddSingleton<IUserSnapshotCache, UserSnapshotCache>();
     builder.Services.AddScoped<UserMetricsService>();
     builder.Services.AddScoped<AchievementService>();
+    builder.Services.AddSingleton<AchievementEvaluationQueue>()
+        .AddHostedService(sp => sp.GetRequiredService<AchievementEvaluationQueue>());
     builder.Services.AddSingleton<ReadingProgressGate>();
     builder.Services.AddScoped<ReadingProgressService>();
     builder.Services.AddSingleton<ReaderArchiveCache>();
@@ -935,13 +1038,11 @@ try
                 noContentFormatter.TreatNullValueAsNoContent = false;
             }
         })
-        .AddJsonOptions(o =>
-        {
-            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-            o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcDateTimeConverter());
-            o.JsonSerializerOptions.Converters.Add(new Maki.Api.Json.UtcNullableDateTimeConverter());
-        });
-    builder.Services.AddSignalR();
+        .AddJsonOptions(o => Maki.Api.Json.MakiJson.ApplyConverters(o.JsonSerializerOptions));
+    builder.Services.AddSignalR()
+        .AddJsonProtocol(o => Maki.Api.Json.MakiJson.ApplyConverters(o.PayloadSerializerOptions));
+    builder.Services.AddExceptionHandler<UnhandledExceptionHandler>();
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
@@ -951,6 +1052,9 @@ try
         // download workers and the fifteen-second completed-download poll must not be behind them.
         q.UseDefaultThreadPool(tp => tp.MaxConcurrency = 20);
         q.AddJobListener<HealthJobListener>();
+        // Start offsets are fixed at registration, before migrations run. Triggers of an hour or
+        // more fire once on a late start (FireNow) instead of skipping a whole interval; the short
+        // polls keep the default so a long stall cannot cause a catch-up burst.
         // Twenty minutes rather than five, to keep the first source sync out of the window where
         // every index is being built. It is the one startup job that launches a headless browser
         // (MangaFire), so it used to add ~120 MB of native memory at exactly the minute the builds
@@ -963,14 +1067,23 @@ try
         q.ScheduleJob<Maki.Api.Jobs.MetadataRefreshJob>(t => t
             .WithIdentity("metadata-refresh")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         q.ScheduleJob<Maki.Api.Jobs.HousekeepingJob>(t => t
             .WithIdentity("housekeeping")
             .StartAt(DateTimeOffset.UtcNow.AddHours(1))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
-        q.ScheduleJob<Maki.Api.Jobs.HealthCheckJob>(t => t
+        // Off unless an admin or a series opts in; the job finds nothing to do until then.
+        q.ScheduleJob<Maki.Api.Jobs.ReadFileCleanupJob>(t => t
+            .WithIdentity("read-file-cleanup")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(30))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Stable job key so a failed Suwayomi search can run it early (HealthCheckJob.RequestSoonAsync).
+        q.AddJob<Maki.Api.Jobs.HealthCheckJob>(j => j.WithIdentity(Maki.Api.Jobs.HealthCheckJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.HealthCheckJob.Key)
             .WithIdentity("health-check")
             .StartAt(DateTimeOffset.UtcNow.AddSeconds(10))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));
@@ -1028,7 +1141,7 @@ try
             .ForJob(Maki.Api.Jobs.AnimeSignalJob.Key)
             .WithIdentity("anime-signal-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Stable job key so the settings endpoint can trigger a refresh on demand.
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
@@ -1037,7 +1150,7 @@ try
             .ForJob(Maki.Api.Jobs.MangaBakaDumpRefreshJob.Key)
             .WithIdentity("mangabaka-dump-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Prebuilt embedding index. Runs before the local indexer's trigger so a fresh install
         // downloads the vectors instead of spending an hour deriving them; no-ops when the
@@ -1048,7 +1161,7 @@ try
             .ForJob(Maki.Api.Jobs.PrebuiltIndexJob.Key)
             .WithIdentity("prebuilt-index-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Co-recommendation graph. Last of the three staggered artifact downloads so it is not
         // competing with the dump or the index for bandwidth on a fresh install - it is the
@@ -1059,7 +1172,7 @@ try
             .ForJob(Maki.Api.Jobs.RecoGraphJob.Key)
             .WithIdentity("reco-graph-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(4))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Co-read graph, last of the staggered artifact downloads: it is by far the largest of them
         // and the one recommendations least need, so it goes behind the dump, the index and the
@@ -1070,7 +1183,7 @@ try
             .ForJob(Maki.Api.Jobs.CoReadJob.Key)
             .WithIdentity("coread-graph-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Behavioural vectors, behind every other artifact. Installing them invalidates the vector
         // index rather than swapping a file in, so running this while the index is still building
@@ -1081,7 +1194,7 @@ try
             .ForJob(Maki.Api.Jobs.TasteVectorJob.Key)
             .WithIdentity("taste-vectors-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Reader cohorts, behind everything else. Unlike the behavioural vectors this one swaps a
         // file in rather than invalidating the index, so it is last for bandwidth rather than for
@@ -1092,7 +1205,7 @@ try
             .ForJob(Maki.Api.Jobs.ReaderCohortJob.Key)
             .WithIdentity("reader-cohorts-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // New series from followed creators. Triggered after a dump install too; this daily run only
         // covers an install whose trigger a restart swallowed.
@@ -1102,7 +1215,7 @@ try
             .ForJob(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key)
             .WithIdentity("followed-creator-releases-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
         // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
@@ -1110,13 +1223,13 @@ try
             .WithIdentity(Maki.Api.Jobs.DiscoverCacheWarmJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.DiscoverCacheWarmJob.Key)
-            .WithIdentity("discover-cache-warm-trigger")
+            .WithIdentity(Maki.Api.Jobs.DiscoverCacheWarmJob.ScheduledTriggerName)
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
             // Twelve hours, matching DiscoverService's rail cache rather than doubling it. At
             // twenty-four one of every two expiries landed on whoever opened Discover next, and
             // they paid for a cold rebuild of every rail. It is gated behind ArtifactBuildGate, so
             // a second one cannot overlap an index build.
-            .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Frees the embedding session when nothing has used it. Five minutes is the tick, not the
         // idle window - the job reads that itself - so the window can change without rescheduling.
@@ -1141,14 +1254,25 @@ try
 
         // And the headless browsers, which are ~160 MB of native memory between the Playwright
         // driver and the shell's processes. Nothing launches one at startup, so this can start
-        // early; it does nothing until a scrape has actually happened.
+        // early; it does nothing until a scrape has actually happened. Every minute, since the idle
+        // window is three: a five-minute tick held a browser up to eight. The check is in memory.
         q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
             .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.BrowserIdleShutdownJob.Key)
             .WithIdentity("browser-idle-shutdown-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
+        // Opt-in scheduled backup (backup.scheduled). The job itself decides whether the newest
+        // backup is stale, so the hourly tick is cheap when nothing is due.
+        q.AddJob<Maki.Api.Jobs.ScheduledBackupJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ScheduledBackupJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ScheduledBackupJob.Key)
+            .WithIdentity("scheduled-backup-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per
         // series, so it only ever runs when an admin asks for it from System settings.
@@ -1171,7 +1295,7 @@ try
             .ForJob(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
             .WithIdentity("chapter-file-measure-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
         // hour (UpgradeScanJob checks the marker), so changing the hour needs no reschedule. First
@@ -1203,7 +1327,7 @@ try
             .ForJob(Maki.Api.Jobs.CheckForUpdatesJob.Key)
             .WithIdentity("check-for-updates-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(1))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
     });
     // WaitForJobsToComplete so an in-flight download finishes rather than being torn in half.
     // QuartzShutdownInterrupter is what keeps that from meaning "wait forever" - see its remarks.
@@ -1240,6 +1364,7 @@ try
     builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
     var app = builder.Build();
+    DataDiagnostics.Logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Maki.Data");
 
     // Apply migrations + enable WAL on startup. Migrations are forward-only with no down path, so
     // snapshot the current DB *before* applying any pending migration — the recovery net for a bad
@@ -1252,7 +1377,16 @@ try
 
         // A fresh install has nothing to protect yet, and the backup would query tables that no
         // migration has created, logging an error on every first boot.
-        var freshDatabase = !db.Database.GetAppliedMigrations().Any();
+        var applied = db.Database.GetAppliedMigrations().ToList();
+        var freshDatabase = applied.Count == 0;
+        var newerThanBuild = applied.Except(db.Database.GetMigrations()).ToList();
+        if (newerThanBuild.Count > 0)
+        {
+            startupLog.LogError(
+                "The database has {Count} migration(s) this build does not know (latest {Latest}). It was written by a newer version, "
+                + "and running this older one against it can corrupt data. Restore the pre-upgrade backup from the backups folder, or upgrade again",
+                newerThanBuild.Count, newerThanBuild[^1]);
+        }
         if (pending.Count > 0 && !freshDatabase)
         {
             startupLog.LogInformation("{Count} pending migration(s); taking pre-migration backup", pending.Count);
@@ -1260,9 +1394,9 @@ try
                 .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
         }
         try { db.Database.Migrate(); }
-        catch
+        catch (Exception ex)
         {
-            try { File.WriteAllText(Path.Combine(scope.ServiceProvider.GetRequiredService<AppPaths>().ConfigDir, "health-migration-error.txt"), DateTime.UtcNow.ToString("O")); } catch { }
+            MigrationErrorMarker.Write(scope.ServiceProvider.GetRequiredService<AppPaths>().ConfigDir, ex);
             throw;
         }
         scope.ServiceProvider.GetRequiredService<HealthOperationService>().RecoverAsync(CancellationToken.None).GetAwaiter().GetResult();
@@ -1332,6 +1466,20 @@ try
         // Anything read before the migration and the marker-gated repairs above may have changed
         // under the settings cache.
         app.Services.GetRequiredService<SettingsService>().Invalidate();
+
+        // Providers build their sources from settings, so after the invalidate, and before Kestrel and
+        // Quartz so a sync or a priority save never asks for one of them by name before it exists.
+        app.Services.GetRequiredService<SourceRegistry>()
+            .ReloadAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Left alone when nothing is stored, so a test host booting beside another test does not
+        // reset a profile that test set.
+        var parsingProfile = NameParsingProfile.FromSetting(app.Services.GetRequiredService<SettingsService>()
+            .GetAsync(SettingKeys.ParsingLanguages, CancellationToken.None).GetAwaiter().GetResult());
+        if (parsingProfile.Languages.Count > 0)
+        {
+            NameParsingProfile.Current = parsingProfile;
+        }
     }
 
     var authOptions = app.Services.GetRequiredService<AuthRuntimeOptions>();
@@ -1373,29 +1521,32 @@ try
         forwarded.KnownIPNetworks.Clear();
         foreach (var entry in authOptions.TrustedProxies)
         {
-            if (entry.Contains('/'))
+            if (!AuthRuntimeOptions.TryParseTrustedProxy(entry, out var proxy, out var network))
             {
-                var parts = entry.Split('/', 2);
-                if (IPAddress.TryParse(parts[0], out var network) && int.TryParse(parts[1], out var prefix) && prefix >= 0)
-                {
-                    // System.Net.IPNetwork rejects host bits and oversized prefixes that the old
-                    // HttpOverrides type tolerated, so normalise rather than fail startup.
-                    var bytes = network.GetAddressBytes();
-                    prefix = Math.Min(prefix, bytes.Length * 8);
-                    for (var bit = prefix; bit < bytes.Length * 8; bit++)
-                    {
-                        bytes[bit / 8] &= (byte)~(0x80 >> (bit % 8));
-                    }
-                    forwarded.KnownIPNetworks.Add(new System.Net.IPNetwork(new IPAddress(bytes), prefix));
-                }
+                startupLog.LogWarning("Ignoring trusted proxy entry {Entry}: not an address or CIDR network", entry);
             }
-            else if (IPAddress.TryParse(entry, out var proxy))
+            else if (network is { } known)
             {
-                forwarded.KnownProxies.Add(proxy);
+                forwarded.KnownIPNetworks.Add(known);
+            }
+            else
+            {
+                forwarded.KnownProxies.Add(proxy!);
             }
         }
-        app.UseForwardedHeaders(forwarded);
+
+        // With both lists empty the middleware skips its source check and trusts every client.
+        if (forwarded.KnownProxies.Count > 0 || forwarded.KnownIPNetworks.Count > 0)
+        {
+            app.UseForwardedHeaders(forwarded);
+        }
+        else
+        {
+            startupLog.LogWarning("No usable trusted proxy entry; forwarded headers are ignored");
+        }
     }
+
+    app.UseMiddleware<UntrustedForwardedForWarning>();
 
     // What each request is worth a line for lives in HttpRequestLogPolicy, including the rule that
     // keeps OPDS out of the log entirely: its authentication token is in the path, and request
@@ -1409,6 +1560,37 @@ try
         o.MessageTemplate = "{RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0} ms";
     });
 
+    if (authOptions.RequireHttps)
+    {
+        // No UseHttpsRedirection: Kestrel binds plain http only and TLS is the proxy's job, so the
+        // middleware could never find an https port to redirect to.
+        app.UseHsts();
+    }
+
+    app.UseMiddleware<SecurityHeadersMiddleware>();
+
+    // ExceptionHandlerMiddleware clears the response headers when it handles an exception, which would
+    // take Strict-Transport-Security and the security headers set above with it. Restored on the way out.
+    app.Use(async (context, next) =>
+    {
+        var kept = context.Response.Headers.ToList();
+        context.Response.OnStarting(() =>
+        {
+            foreach (var (name, value) in kept)
+                context.Response.Headers.TryAdd(name, value);
+            return Task.CompletedTask;
+        });
+        await next();
+    });
+
+    // Inside request logging so the 500 line still carries the status, and the handler leaves the
+    // exception handled so neither the logger nor Kestrel reports it a second time.
+    app.UseExceptionHandler(errorApp => errorApp.Run(context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        return Task.CompletedTask;
+    }));
+
     // A browser that navigates away mid-request cancels RequestAborted, and the query awaiting it
     // throws. Left alone that reaches request logging and Kestrel as an unhandled 500.
     app.Use(async (context, next) =>
@@ -1420,14 +1602,6 @@ try
                 context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
         }
     });
-
-    app.UseMiddleware<SecurityHeadersMiddleware>();
-
-    if (authOptions.RequireHttps)
-    {
-        app.UseHsts();
-        app.UseHttpsRedirection();
-    }
 
     // Before authentication, and that ordering is load-bearing.
     //
@@ -1447,14 +1621,22 @@ try
     // lazy chunks point at hashes that no longer exist.
     var spaFiles = new StaticFileOptions
     {
-        OnPrepareResponse = c => c.Context.Response.Headers.CacheControl =
-            c.Context.Request.Path.StartsWithSegments("/assets")
-                ? "public, max-age=31536000, immutable"
-                : "no-cache"
+        FileProvider = new PrecompressedFileProvider(
+            app.Environment.WebRootFileProvider, app.Services.GetRequiredService<IHttpContextAccessor>()),
+        OnPrepareResponse = c =>
+        {
+            c.Context.Response.Headers.CacheControl =
+                c.Context.Request.Path.StartsWithSegments("/assets")
+                    ? "public, max-age=31536000, immutable"
+                    : "no-cache";
+            PrecompressedFileProvider.Apply(c);
+        }
     };
-    app.UseResponseCompression();
     app.UseDefaultFiles();
     app.UseStaticFiles(spaFiles);
+    // After the static files on purpose: they answer from the Vite build's precompressed siblings and
+    // never reach it, so runtime compression is left to API responses.
+    app.UseResponseCompression();
 
     app.UseRateLimiter();
 
@@ -1489,7 +1671,6 @@ try
     app.MapGet("/initialize.json", async (MakiDbContext db, CancellationToken ct) => Results.Json(new
     {
         apiRoot = "/api/v1",
-        version = VersionInfo.Version,
         // True while the placeholder account the migration created is unclaimed, which is what sends
         // both a fresh install and an upgraded single-user one through first-run setup.
         setupNeeded = await db.Users.AnyAsync(u => u.PendingSetup, ct),
@@ -1515,9 +1696,10 @@ try
 
     app.Run();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex is not HostAbortedException)
 {
     startupLog.LogCritical(ex, "Maki terminated unexpectedly");
+    Environment.ExitCode = 1;
 }
 finally
 {

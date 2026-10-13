@@ -75,6 +75,16 @@ public sealed class ReaderPdfPageTests : IDisposable
         return chapter.Id;
     }
 
+    private readonly RecordingAchievementQueue _queue = new();
+
+    private sealed class RecordingAchievementQueue()
+        : AchievementEvaluationQueue(null!, NullLogger<AchievementEvaluationQueue>.Instance)
+    {
+        public List<int> Enqueued { get; } = [];
+
+        public override void Enqueue(int userId) => Enqueued.Add(userId);
+    }
+
     private ReaderController Controller(Maki.Data.MakiDbContext db) => new(
         new TestLocalizer(),
         db,
@@ -82,8 +92,7 @@ public sealed class ReaderPdfPageTests : IDisposable
         null!, // continue reading
         null!, // profiles
         null!, // read import
-        null!, // metrics
-        null!, // achievements
+        _queue,
         _paths,
         NullLogger<ReaderController>.Instance,
         null!, // current user
@@ -106,6 +115,49 @@ public sealed class ReaderPdfPageTests : IDisposable
 
         var file = Assert.IsAssignableFrom<FileResult>(result);
         Assert.Equal("image/jpeg", file.ContentType);
+    }
+
+    [Fact]
+    public async Task ACompletingSaveFromAStaleManifestEchoesThePageThatWasStored()
+    {
+        var chapterId = SeedPdfChapter();
+        using var db = _db.NewContext(1);
+
+        var result = await Controller(db).SaveProgress(
+            chapterId, new SaveProgressRequest(PageIndex: 99, Completed: true, Seconds: null, Final: null),
+            CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var echoed = ok.Value!.GetType().GetProperty("pageIndex")!.GetValue(ok.Value);
+        Assert.Equal(2, echoed);
+    }
+
+    [Fact]
+    public async Task ACompletingSaveQueuesTheAchievementCheckInsteadOfRunningItInline()
+    {
+        var chapterId = SeedPdfChapter();
+        using var db = _db.NewContext(1);
+
+        var result = await Controller(db).SaveProgress(
+            chapterId, new SaveProgressRequest(PageIndex: 2, Completed: true, Seconds: null, Final: null),
+            CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Null(ok.Value!.GetType().GetProperty("unlocked"));
+        Assert.Equal([1], _queue.Enqueued);
+    }
+
+    [Fact]
+    public async Task APositionSaveThatDoesNotFinishTheChapterQueuesNothing()
+    {
+        var chapterId = SeedPdfChapter();
+        using var db = _db.NewContext(1);
+
+        await Controller(db).SaveProgress(
+            chapterId, new SaveProgressRequest(PageIndex: 0, Completed: null, Seconds: null, Final: null),
+            CancellationToken.None);
+
+        Assert.Empty(_queue.Enqueued);
     }
 
     [Fact]

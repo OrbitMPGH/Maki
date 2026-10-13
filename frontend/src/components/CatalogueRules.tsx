@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
   ActionIcon,
@@ -34,6 +34,7 @@ import {
 import { useGenreOptions } from './CatalogueFilters'
 import { TagBrowserModal } from './TagBrowserModal'
 import { rankTagMatches } from '../lib/tagTree'
+import { formatNumber } from '../format'
 
 type GenreState = 'include' | 'exclude'
 
@@ -182,6 +183,7 @@ export function TermFilters({ controls }: { controls: TermFilterControls }) {
           withArrow
         >
           <SegmentedControl
+            aria-label={t`Rule editor view`}
             size="xs"
             value={state.view}
             onChange={switchView}
@@ -265,6 +267,7 @@ function SimpleTerms({ state, setState }: TermFilterControls) {
               <Trans>Tags to include</Trans>
             </span>
             <SegmentedControl
+              aria-label={t`Tags to include`}
               size="xs"
               value={state.tagMode}
               onChange={(v) => setState({ ...state, tagMode: v as 'all' | 'any' })}
@@ -303,6 +306,13 @@ function RuleBuilder({
   const update = (i: number, rule: CatalogueRule) =>
     onChange(rules.map((r, j) => (j === i ? rule : r)))
 
+  // Rows have no id of their own; these keep a TermPicker's local state with its rule when an
+  // earlier row is removed.
+  const rowKeys = useRef<number[]>([])
+  const nextKey = useRef(0)
+  while (rowKeys.current.length < rules.length) rowKeys.current.push(nextKey.current++)
+  rowKeys.current.length = rules.length
+
   return (
     <Stack gap="xs">
       {rules.length === 0 && (
@@ -311,7 +321,7 @@ function RuleBuilder({
         </Text>
       )}
       {rules.map((rule, i) => (
-        <Group key={i} gap="xs" align="flex-start" wrap="nowrap" className="rule-row">
+        <Group key={rowKeys.current[i]} gap="xs" align="flex-start" wrap="nowrap" className="rule-row">
           <Select
             size="sm"
             w={140}
@@ -334,7 +344,10 @@ function RuleBuilder({
             color="var(--neutral)"
             size="lg"
             aria-label={t`Remove rule`}
-            onClick={() => onChange(rules.filter((_, j) => j !== i))}
+            onClick={() => {
+              rowKeys.current.splice(i, 1)
+              onChange(rules.filter((_, j) => j !== i))
+            }}
           >
             <IconTrash size={16} />
           </ActionIcon>
@@ -527,7 +540,7 @@ export function TermPicker({
                         )}
                       </div>
                       <Text size="xs" c="var(--ink-4)">
-                        {option.count.toLocaleString()}
+                        {formatNumber(option.count)}
                       </Text>
                     </Group>
                   </Combobox.Option>
@@ -660,6 +673,7 @@ function TermPill({
               color="var(--danger)"
               leftSection={<IconEyeOff size={14} />}
               loading={hideEverywhere.isPending}
+              disabled={!hideEverywhere.ready}
               onClick={() => {
                 hideEverywhere.hide({ kind: 'tag', name: term.name })
                 setOpened(false)
@@ -688,8 +702,10 @@ export function useHideEverywhere() {
   const save = useSaveHiddenContent()
   return {
     isPending: save.isPending,
+    ready: data !== undefined,
     hide: (term: CatalogueTerm) => {
-      const current = data?.terms ?? []
+      if (!data) return
+      const current = data.terms ?? []
       if (current.some((c) => c.kind === term.kind && c.name.toLowerCase() === term.name.toLowerCase())) return
       save.mutate({ terms: [...current, term] })
     },

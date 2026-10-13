@@ -15,15 +15,13 @@ public class AnimeSignalPolicyTests
     [InlineData(AnimeWatchStatus.Completed, 7, AnimeSignalRole.Positive)]
     [InlineData(AnimeWatchStatus.Watching, 8, AnimeSignalRole.Positive)]
     [InlineData(AnimeWatchStatus.OnHold, 10, AnimeSignalRole.Positive)]
-    [InlineData(AnimeWatchStatus.Completed, null, AnimeSignalRole.Positive)]
-    [InlineData(AnimeWatchStatus.Watching, null, AnimeSignalRole.Neutral)]
     [InlineData(AnimeWatchStatus.Completed, 6, AnimeSignalRole.Neutral)]
     [InlineData(AnimeWatchStatus.Completed, 5, AnimeSignalRole.Neutral)]
     [InlineData(AnimeWatchStatus.Completed, 4, AnimeSignalRole.Avoided)]
     [InlineData(AnimeWatchStatus.Completed, 1, AnimeSignalRole.Avoided)]
-    [InlineData(AnimeWatchStatus.Dropped, null, AnimeSignalRole.Avoided)]
+    [InlineData(AnimeWatchStatus.Dropped, 6, AnimeSignalRole.Avoided)]
     [InlineData(AnimeWatchStatus.Dropped, 8, AnimeSignalRole.Avoided)]
-    public void Status_and_score_decide_the_role(AnimeWatchStatus status, int? score, AnimeSignalRole expected) =>
+    public void Status_and_score_decide_the_role(AnimeWatchStatus status, int score, AnimeSignalRole expected) =>
         Assert.Equal(expected, AnimeSignalPolicy.RoleOf(status, score));
 
     /// <summary>
@@ -31,10 +29,9 @@ public class AnimeSignalPolicyTests
     /// score box before watching it.
     /// </summary>
     [Theory]
-    [InlineData(null)]
     [InlineData(2)]
     [InlineData(10)]
-    public void Planning_is_always_ignored(int? score)
+    public void Planning_is_always_ignored(int score)
     {
         Assert.Equal(AnimeSignalRole.Neutral, AnimeSignalPolicy.RoleOf(AnimeWatchStatus.Planning, score));
         foreach (var level in Enum.GetValues<AnimeSignalStrength>())
@@ -50,7 +47,6 @@ public class AnimeSignalPolicyTests
         const AnimeSignalStrength subtle = AnimeSignalStrength.Subtle;
         Assert.Equal(0.7, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 10, subtle), 8);
         Assert.Equal(0.49, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 7, subtle), 8);
-        Assert.Equal(0.56, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, null, subtle), 8);
         Assert.True(AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 10, subtle) < 1.0);
     }
 
@@ -108,7 +104,7 @@ public class AnimeSignalPolicyTests
         // A thumbs down is 1.0, so a 1/10 anime is exactly `share` of one.
         Assert.Equal(share, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Completed, 1, level), 8);
         Assert.Equal(AnimeSignalPolicy.DroppedStrength * share,
-            AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, null, level), 8);
+            AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, 6, level), 8);
         Assert.True(AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Completed, 1, level) <= 1.0);
     }
 
@@ -120,9 +116,9 @@ public class AnimeSignalPolicyTests
     [InlineData(AnimeWatchStatus.Completed, 9, AnimeSignalRole.Positive)]
     [InlineData(AnimeWatchStatus.Completed, 2, AnimeSignalRole.Avoided)]
     [InlineData(AnimeWatchStatus.Completed, 6, AnimeSignalRole.Neutral)]
-    [InlineData(AnimeWatchStatus.Dropped, null, AnimeSignalRole.Avoided)]
+    [InlineData(AnimeWatchStatus.Dropped, 6, AnimeSignalRole.Avoided)]
     public void The_level_never_changes_which_way_a_signal_points(
-        AnimeWatchStatus status, int? score, AnimeSignalRole expected)
+        AnimeWatchStatus status, int score, AnimeSignalRole expected)
     {
         Assert.Equal(expected, AnimeSignalPolicy.RoleOf(status, score));
 
@@ -203,7 +199,7 @@ public class AnimeSignalPolicyTests
     public void A_drop_pushes_below_a_thumbs_down_but_never_below_its_own_score()
     {
         const AnimeSignalStrength full = AnimeSignalStrength.Full;
-        Assert.Equal(0.75, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, null, full), 8);
+        Assert.Equal(0.75, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, 6, full), 8);
         Assert.Equal(1.0, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, 1, full), 8);
         Assert.Equal(0.75, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, 4, full), 8);
     }

@@ -157,8 +157,13 @@ public class UserMetricsService(
     /// calendar, so "today" ends when their day does and a week starts on Monday rather than on
     /// whatever the host's culture happens to say.
     /// </summary>
+    /// <param name="snapshot">
+    /// A snapshot the caller already holds. A zone-less snapshot is never cached, so looping over
+    /// several goals without passing one recomputes the whole history for each.
+    /// </param>
     public async Task<long> GoalProgressAsync(
-        int userId, GoalPeriod period, GoalMetric metric, CancellationToken ct = default)
+        int userId, GoalPeriod period, GoalMetric metric, CancellationToken ct = default,
+        UserMetrics? snapshot = null)
     {
         var tz = await TimeZoneForAsync(userId, ct);
         var from = PeriodStart(Today(tz), period);
@@ -167,13 +172,13 @@ public class UserMetricsService(
         {
             // Not derivable from the day buckets: those carry chapters and seconds, and a finish is
             // neither.
-            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(from.ToDateTime(TimeOnly.MinValue), tz);
+            var fromUtc = StatsInsightsService.ToUtc(from.ToDateTime(TimeOnly.MinValue), tz);
             return await db.StatsEvents.IgnoreQueryFilters()
                 .Where(e => e.UserId == userId && e.Type == StatsEventType.SeriesFinished && e.Timestamp >= fromUtc)
                 .LongCountAsync(ct);
         }
 
-        var snapshot = await GetAsync(userId, ct);
+        snapshot ??= await GetAsync(userId, ct);
         var days = snapshot.Days.Where(d => d.Date >= from).ToList();
 
         return metric == GoalMetric.Chapters
@@ -273,10 +278,11 @@ public class UserMetricsService(
             longest = Math.Max(longest, run);
         }
 
-        // The run is only "current" if it reaches today or yesterday. Anything older ended.
+        // The run is only "current" if it reaches today or yesterday, or if it stops a day short
+        // and reading today would still be forgiven. Anything older ended.
         var last = ordered[^1];
         var since = today.DayNumber - last.DayNumber;
-        var current = since <= 1 ? run : 0;
+        var current = since <= 1 || (since == 2 && CanUseGrace(graceUsed, today)) ? run : 0;
 
         return (current, longest);
     }
@@ -383,10 +389,11 @@ public class UserMetricsService(
     }
 
     /// <summary>
-    /// Series where every downloaded chapter is read. Fully-incognito series are excluded explicitly:
-    /// this is the one metric read from <c>ChapterProgress</c> rather than from the event log, and
-    /// those rows exist for incognito reading, so the gate that comes free everywhere else has to be
-    /// written out here.
+    /// Series where every chapter Maki has held a file for is read, counting chapters whose file was
+    /// removed on purpose on both sides so cleaning up read files cannot make a half-read series look
+    /// finished. Fully-incognito series are excluded explicitly: this is the one metric read from
+    /// <c>ChapterProgress</c> rather than from the event log, and those rows exist for incognito
+    /// reading, so the gate that comes free everywhere else has to be written out here.
     /// </summary>
     private async Task<long> FullyReadAsync(int userId, CancellationToken ct)
     {
@@ -403,7 +410,7 @@ public class UserMetricsService(
         var candidates = read.Select(r => r.SeriesId).ToList();
 
         var downloaded = await db.Chapters.IgnoreQueryFilters()
-            .Where(c => candidates.Contains(c.SeriesId) && c.ChapterFileId != null)
+            .Where(c => candidates.Contains(c.SeriesId) && (c.ChapterFileId != null || c.FileRemovedAt != null))
             .GroupBy(c => c.SeriesId)
             .Select(g => new { SeriesId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);

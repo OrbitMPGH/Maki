@@ -1,3 +1,4 @@
+using Maki.Core.Recommendations;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -85,6 +86,35 @@ public class RecommendationFiltersTests
 
         Assert.Equal([new Maki.Core.Recommendations.CatalogueCredit("Junji Ito", "author")], filters.Credits!);
         Assert.Null(filters.CreditIds);
+    }
+
+    [Fact]
+    public void MatchesNames_applies_all_any_and_none_rules_to_plain_name_lists()
+    {
+        static CatalogueTerm Genre(string name) => new(CatalogueRules.Genre, name);
+        static CatalogueTerm Tag(string name) => new(CatalogueRules.Tag, name);
+        var filters = new RecommendationFilters(Rules:
+        [
+            new CatalogueRule(CatalogueRules.All, [Genre("Action")]),
+            new CatalogueRule(CatalogueRules.Any, [Tag("Isekai"), Tag("Revenge")]),
+            new CatalogueRule(CatalogueRules.None, [Tag("Harem")]),
+        ]);
+
+        Assert.True(filters.MatchesNames(["action", "Comedy"], ["REVENGE"]));
+        Assert.False(filters.MatchesNames(["Comedy"], ["Isekai"]));
+        Assert.False(filters.MatchesNames(["Action"], ["Slice of Life"]));
+        Assert.False(filters.MatchesNames(["Action"], ["Isekai", "Harem"]));
+    }
+
+    [Fact]
+    public void MatchesNames_rejects_anything_on_the_hidden_list()
+    {
+        var filters = new RecommendationFilters(
+            Hidden: [new CatalogueTerm(CatalogueRules.Genre, "Horror"), new CatalogueTerm(CatalogueRules.Tag, "Gore")]);
+
+        Assert.True(filters.MatchesNames(["Action"], ["Isekai"]));
+        Assert.False(filters.MatchesNames(["horror"], []));
+        Assert.False(filters.MatchesNames([], ["gore"]));
     }
 
     /// <summary>Executes the clause over a four-row table, so the SQL itself is under test.</summary>

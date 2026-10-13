@@ -11,6 +11,7 @@ namespace Maki.Api.Services;
 public class SideInterestRailService(
     IServiceScopeFactory scopeFactory,
     RecommendationService recommendations,
+    SeedWeightService seedWeights,
     VectorIndexCache vectorIndex,
     EmbeddingStore embeddings)
 {
@@ -31,7 +32,9 @@ public class SideInterestRailService(
                 && !db.UserSeriesStates.Any(u => u.SeriesId == s.Id && u.Rating < 5))
             .Select(s => new { s.MangaBakaId, s.Title, s.Genres, s.Tags })
             .ToListAsync(ct);
-        return rows.Select(s => new Seed(s.MangaBakaId!.Value, s.Title, s.Genres, s.Tags))
+        var eligible = (await seedWeights.SnapshotAsync(db, scope, ct)).Effective.EligibleIds.ToHashSet();
+        return rows.Where(s => eligible.Contains(s.MangaBakaId!.Value))
+            .Select(s => new Seed(s.MangaBakaId!.Value, s.Title, s.Genres, s.Tags))
             .OrderBy(s => s.Id).DistinctBy(s => s.Id).ToList();
     }
 
@@ -121,11 +124,8 @@ public class SideInterestRailService(
                 Subtitle: "discover.rail.sideInterestSubtitle",
                 SeedIds: ids, Filters: filters,
                 TitleArgs: new { name = interest.Name },
-                SubtitleArgs: new
-                {
-                    count = interest.Seeds.Count,
-                    titles = string.Join(" and ", interest.Seeds.Take(2).Select(s => s.Title)),
-                }));
+                SubtitleArgs: new { count = interest.Seeds.Count, titles = "{titles}" },
+                SubtitleTitles: [.. interest.Seeds.Take(2).Select(s => s.Title)]));
         }
         return rails;
     }

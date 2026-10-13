@@ -321,6 +321,14 @@ public class UpgradeScanService(
                 .ToListAsync(ct))
             .DistinctBy(a => (a.ChapterId, a.SourceMappingId, a.SourceChapterId))
             .ToDictionary(a => (a.ChapterId, a.SourceMappingId, a.SourceChapterId));
+        // Downloads of each candidate copy that failed. A copy that keeps failing is not queued again by the daily scan.
+        var failedCopies = (await db.DownloadQueue.AsNoTracking()
+                .Where(q => q.SeriesId == seriesId && q.ChapterId != null && q.Origin == DownloadOrigin.Upgrade &&
+                            q.Status == QueueStatus.Failed && q.SourceMappingId != null && q.SourceChapterId != null)
+                .Select(q => new { ChapterId = q.ChapterId!.Value, MappingId = q.SourceMappingId!.Value, q.SourceChapterId })
+                .ToListAsync(ct))
+            .GroupBy(q => (q.ChapterId, q.MappingId, SourceChapterId: q.SourceChapterId!))
+            .ToDictionary(g => g.Key, g => g.Count());
         var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
 
         var survivors = new List<Survivor>();
@@ -401,6 +409,20 @@ public class UpgradeScanService(
                     run.Skip("memoised");
                     run.Outcome(mapping, link.SourceChapterId, UpgradeReasons.RevertedByUser, undone.Probed,
                         undone.CandidatePageCount, undone.CandidateWidth, undone.CandidateScore);
+                    continue;
+                }
+
+                if (!run.Targeted && memo.TryGetValue((chapter.Id, mapping.Id, link.SourceChapterId), out var tried) &&
+                    tried.Reason == UpgradeReasons.Enqueued &&
+                    lastUpgrade.GetValueOrDefault(chapter.Id) is QueueStatus.Failed or QueueStatus.Cancelled &&
+                    UpgradeCandidateRules.GivenUp(failedCopies.GetValueOrDefault((chapter.Id, mapping.Id, link.SourceChapterId))))
+                {
+                    UpgradeAttempts.Upsert(db, memo, chapter.Id, seriesId, mapping.Id, link.SourceChapterId, profile.Id,
+                        profile.Version, UpgradeReasons.RepeatedFailure, tried.Probed, tried.CandidatePageCount,
+                        tried.CandidateWidth, tried.CandidateScore);
+                    run.Skip("memoised");
+                    run.Outcome(mapping, link.SourceChapterId, UpgradeReasons.RepeatedFailure, tried.Probed,
+                        tried.CandidatePageCount, tried.CandidateWidth, tried.CandidateScore);
                     continue;
                 }
 

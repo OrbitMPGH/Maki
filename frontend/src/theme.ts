@@ -2,6 +2,7 @@ import {
   Badge,
   Button,
   Card,
+  Drawer,
   type MantineColorScheme,
   type MantineColorsTuple,
   type MantineThemeOverride,
@@ -22,7 +23,7 @@ const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
  * Content-first, cinematic dark UI for a self-hosted collection manager. The
  * dark scale is overridden to a cohesive near-black elevation ramp so every
  * Mantine surface picks up the look for free; `brand` (indigo/periwinkle by default) is
- * the single accent. Semantic status hues live in ./status.ts.
+ * the single accent. Semantic status hues live in ./components/ui/status.tsx.
  */
 
 const brand: MantineColorsTuple = [
@@ -94,8 +95,8 @@ const amber: MantineColorsTuple = [
 export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, emerald, amber }
 
 // Near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
-// 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the default; the others are
-// selectable grounds whose CSS side lives in theme.css under [data-ground].
+// 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the base ramp (`tinted` is the
+// default ground, see theme-context.tsx); the others are selectable grounds whose CSS side lives in theme.css under [data-ground].
 const dark: MantineColorsTuple = [
   '#c7cad4',
   '#a9adba',
@@ -208,10 +209,38 @@ export function createAppTheme(
   accent: MantineColorsTuple = brand,
   scheme: MantineColorScheme = 'dark',
   ground: MantineColorsTuple = dark,
+  /** Mantine's own close button is English-only, so the caller passes the translated label. */
+  closeLabel?: string,
 ) {
   const shades = primaryShades.get(accent) ?? (themeBase.primaryShade as { light: number; dark: number })
   const primaryShade = (scheme === 'light' ? shades.light : shades.dark) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-  return createTheme({ ...themeBase, primaryShade, variantColorResolver, colors: { brand: accent, dark: ground } })
+  const closeButtonProps = closeLabel ? { 'aria-label': closeLabel } : undefined
+  return createTheme({
+    ...themeBase,
+    primaryShade,
+    variantColorResolver,
+    colors: { brand: accent, dark: ground },
+    components: {
+      ...themeBase.components,
+      Modal: Modal.extend({ defaultProps: { ...modalDefaults, closeButtonProps } }),
+      Drawer: Drawer.extend({ defaultProps: { closeButtonProps } }),
+    },
+  })
+}
+
+const modalDefaults = {
+  radius: 'lg',
+  padding: 'lg',
+  centered: true,
+  scrollAreaComponent: ModalPassthrough,
+  overlayProps: { blur: 3, backgroundOpacity: 0.55 },
+  classNames: {
+    content: 'utility-modal-content',
+    header: 'utility-modal-header',
+    title: 'utility-modal-title',
+    close: 'utility-modal-close',
+    body: 'utility-modal-body',
+  },
 }
 
 const themeBase: MantineThemeOverride = {
@@ -270,27 +299,9 @@ const themeBase: MantineThemeOverride = {
      * past the title and the content box could overflow on top of it. The content is a flex column
      * instead and only `.utility-modal-body` scrolls (theme.css).
      */
-    Modal: Modal.extend({
-      defaultProps: {
-        radius: 'lg',
-        padding: 'lg',
-        centered: true,
-        scrollAreaComponent: ModalPassthrough,
-        overlayProps: { blur: 3, backgroundOpacity: 0.55 },
-        classNames: {
-          content: 'utility-modal-content',
-          header: 'utility-modal-header',
-          title: 'utility-modal-title',
-          close: 'utility-modal-close',
-          body: 'utility-modal-body',
-        },
-      },
-    }),
+    Modal: Modal.extend({ defaultProps: modalDefaults }),
     Table: Table.extend({
       defaultProps: { verticalSpacing: 'sm', horizontalSpacing: 'md' },
     }),
   },
 }
-
-/** Default (indigo) theme, kept as a named export for any non-dynamic consumers. */
-export const theme = createAppTheme()

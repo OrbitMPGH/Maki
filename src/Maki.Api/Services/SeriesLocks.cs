@@ -4,7 +4,8 @@ namespace Maki.Api.Services;
 
 /// <summary>
 /// In-process locks for work that reads a series' files on disk and rewrites its ChapterFile rows
-/// from what it saw: rescan, import linking, download placement, rename, move and delete. Each is
+/// from what it saw: rescan, import linking (in the request and in the source match worker's link
+/// stage), download placement, rename, move and delete. Each is
 /// check-then-act over the folder and the rows, and two of them interleaving on one series
 /// duplicated rows or lost them. Not reentrant: never call into another locked entry point while
 /// holding the same series.
@@ -17,6 +18,9 @@ public static class SeriesLocks
 
     public static Task<IDisposable> SeriesAsync(int seriesId, CancellationToken ct) =>
         Series.AcquireAsync(seriesId, ct);
+
+    /// <summary>The holder of a series lock plus everyone waiting for it, for tests that need a race to line up.</summary>
+    internal static int SeriesUsers(int seriesId) => Series.Users(seriesId);
 
     /// <summary>
     /// Held from "is this MangaBaka id already in the library?" through inserting the row, so an add,
@@ -86,6 +90,14 @@ internal sealed class KeyedAsyncLock<TKey> where TKey : notnull
         }
 
         return new Releaser(this, key, entry);
+    }
+
+    public int Users(TKey key)
+    {
+        lock (_entries)
+        {
+            return _entries.TryGetValue(key, out var entry) ? entry.Users : 0;
+        }
     }
 
     private void Leave(TKey key, Entry entry)

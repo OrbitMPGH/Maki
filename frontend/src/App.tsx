@@ -46,11 +46,13 @@ import AppearanceAnnouncementModal from './components/AppearanceAnnouncementModa
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { EmptyState } from './components/ui/EmptyState'
+import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { useLanguageSync } from './i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
 import { ShellTitleProvider, useShellTitleValue } from './lib/shellTitle'
+import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
@@ -186,14 +188,14 @@ function HealthButton() {
         </Group>
         <Stack gap="xs">
           {health.map((issue, i) => (
-            <Group key={i} gap="xs" wrap="nowrap" align="flex-start">
+            <Group key={`${issue.type}-${i}`} gap="xs" wrap="nowrap" align="flex-start">
               <Badge
                 size="xs"
                 color={issue.severity === 'error' ? 'var(--danger)' : 'var(--warn)'}
                 variant="light"
                 mt={2}
               >
-                {issue.severity}
+                {issue.severity === 'error' ? <Trans>Error</Trans> : <Trans>Warning</Trans>}
               </Badge>
               <Text size="xs" c="var(--ink-3)">
                 {issue.message}
@@ -232,7 +234,7 @@ function ActivityButton() {
         component={Link}
         to="/activity"
         variant="subtle"
-        color="gray"
+        color="var(--neutral)"
         aria-label={t`Activity`}
         pos="relative"
         style={{ overflow: 'visible' }}
@@ -243,6 +245,7 @@ function ActivityButton() {
             size="xs"
             variant="filled"
             color={review > 0 ? 'var(--warn)' : 'brand'}
+            c={review > 0 ? 'var(--warn-on)' : undefined}
             // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
             // horizontally (with a floor width so single digits still read as a dot) doesn't.
             style={{
@@ -301,17 +304,32 @@ function AuthGate() {
 
   // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
   // <AppShell.Main>. Kept out of NAV_SECTIONS too, which also keeps it out of the ⌘K palette.
-  if (location.pathname.startsWith('/read/')) {
-    return (
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route path="/read/:chapterId" element={<ReaderPage />} />
-        </Routes>
-      </Suspense>
-    )
-  }
+  const inReader = location.pathname.startsWith('/read/')
 
-  return <AppShellRoutes />
+  // Mounted above the reader/shell split so entering the reader neither drops the live
+  // subscriptions nor leaves it without inbox toasts and cache updates.
+  return (
+    <DocumentTitleProvider>
+      <LiveEvents />
+      <DocumentTitle />
+      {inReader ? (
+        <RouteErrorBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/read/:chapterId" element={<ReaderPage />} />
+            </Routes>
+          </Suspense>
+        </RouteErrorBoundary>
+      ) : (
+        <AppShellRoutes />
+      )}
+    </DocumentTitleProvider>
+  )
+}
+
+function LiveEvents() {
+  useLiveEvents()
+  return null
 }
 
 function AppShellRoutes() {
@@ -319,25 +337,30 @@ function AppShellRoutes() {
   const navigate = useNavigate()
   const [opened, { toggle, close }] = useDisclosure()
   const { data: setup } = useSetupStatus()
-  const { data: metadata } = useMetadataSettings()
+  const { data: metadata, isError: metadataFailed } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
   const { t } = useLingui()
-  useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
 
   // Both default to "available" while their settings load, so a tab doesn't flash away and back
   // on every visit. HomePage takes the opposite default for its own data, see the note there.
-  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : true
+  // A failed settings request counts as unavailable, so the start page falls through to Home or the
+  // library instead of waiting on an answer that is not coming.
+  const discoverAvailable = metadata ? metadata.useLocalDb && metadata.dumpPresent : !metadataFailed
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
+  const canImport = can('ImportLibrary')
+  const canTrack = can('UseTrackers')
   const sections = navSections({
     isAdmin,
     discoverAvailable,
     homeEnabled,
     canAdd,
+    canImport,
+    canTrack,
     // An admin works the queue; anyone who has to ask for a series or a download wants to see what
     // happened to what they asked for. Someone holding both permissions never files one.
     requestsVisible: isAdmin || !canAdd || !can('DownloadChapters'),
@@ -366,7 +389,14 @@ function AppShellRoutes() {
       <AppShell.Header className="app-header">
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="sm"
+              size="sm"
+              aria-label={t`Menu`}
+              aria-expanded={opened}
+            />
             <Group gap="sm" wrap="nowrap" hiddenFrom="sm">
               <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
                 <IconBrandMark />
@@ -394,7 +424,7 @@ function AppShellRoutes() {
           <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />
           </span>
-          <Text fz="1.125rem" lh={1} c="var(--ink-hi)" className="brand-wordmark">
+          <Text fz="var(--type-section)" lh={1} c="var(--ink-hi)" className="brand-wordmark">
             Maki
           </Text>
         </Group>
@@ -411,7 +441,7 @@ function AppShellRoutes() {
       </AppShell.Navbar>
 
       {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
-          series page, Home, and Discover's browse tab. Written as "Discover, but not its other two tabs"
+          series page and Discover's browse tab. Written as "Discover, but not its other two tabs"
           rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
           unrecognised :tab: a stale /discover/genres link lands on the band and has to bleed like
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
@@ -424,7 +454,10 @@ function AppShellRoutes() {
         }
       >
         {/* One boundary around the whole switch rather than one per lazy route: only a single
-            route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}
+            route is ever resolving, and a shared fallback keeps the loader identical everywhere.
+            The error boundary sits inside the shell on purpose, so a page that throws leaves the
+            nav and header standing. */}
+        <RouteErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route
@@ -432,7 +465,7 @@ function AppShellRoutes() {
               element={
                 <StartPageRedirect
                   discoverAvailable={discoverAvailable}
-                  discoverKnown={metadata !== undefined}
+                  discoverKnown={metadata !== undefined || metadataFailed}
                 />
               }
             />
@@ -447,10 +480,16 @@ function AppShellRoutes() {
             <Route path="/add" element={<AddSeriesPage />} />
             <Route path="/creator/:name" element={<CreatorPage />} />
             <Route path="/discover/:tab?" element={<DiscoverPage />} />
-            <Route path="/import" element={<ImportPage />} />
+            <Route
+              path="/import"
+              element={canImport ? <ImportPage /> : <Navigate to="/" replace />}
+            />
             <Route path="/activity" element={<ActivityPage />} />
             <Route path="/requests" element={<RequestsPage />} />
-            <Route path="/scrobble" element={<ScrobblePage />} />
+            <Route
+              path="/scrobble"
+              element={canTrack ? <ScrobblePage /> : <Navigate to="/" replace />}
+            />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             {/* The page was called Rewind until the all-time tab arrived. Bookmarks and any link
@@ -461,6 +500,7 @@ function AppShellRoutes() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
+        </RouteErrorBoundary>
       </AppShell.Main>
 
       {/* Opens itself off the setup flag, latched so a language pick's cache clear can't close it. */}
