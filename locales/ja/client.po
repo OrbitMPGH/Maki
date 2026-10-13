@@ -3168,6 +3168,10 @@ msgstr "視聴済みのアニメ"
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
 msgstr "別のアップグレードスキャンがすでに実行中だったため、今回は実行されませんでした。完了してからもう一度お試しください。"
 
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Another user"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

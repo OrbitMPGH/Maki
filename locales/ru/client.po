@@ -3169,6 +3169,10 @@ msgstr "Просмотренное аниме"
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
 msgstr "Другая проверка улучшений уже шла, поэтому эта не запустилась. Повторите, когда она завершится."
 
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Another user"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

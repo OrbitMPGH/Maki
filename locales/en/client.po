@@ -2566,6 +2566,10 @@ msgstr "Anime you've watched"
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
 msgstr "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
 
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Another user"
+msgstr "Another user"
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "any"

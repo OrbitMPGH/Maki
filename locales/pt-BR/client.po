@@ -3169,6 +3169,10 @@ msgstr "Animes que você assistiu"
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
 msgstr "Outra verificação de upgrades já estava em andamento, então esta não foi executada. Tente de novo quando ela terminar."
 
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Another user"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

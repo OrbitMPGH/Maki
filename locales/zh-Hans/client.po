@@ -3168,6 +3168,10 @@ msgstr "你看过的动画"
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
 msgstr "已有另一个升级扫描正在运行，因此这次没有运行。请等它完成后再试。"
 
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Another user"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
