@@ -255,6 +255,13 @@ public class ReleaseNameParserTests
     }
 
     [Fact]
+    public void A_lone_surrogate_does_not_throw()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("Title \uD800 v01.cbz");
+        Assert.Equal(1, parsed.Volume);
+    }
+
+    [Fact]
     public void Non_ascii_digits_are_unrecognized_rather_than_throwing()
     {
         Assert.False(ReleaseNameParser.ParseFileName("Title c\u0661\u0662.cbz").IsRecognized);

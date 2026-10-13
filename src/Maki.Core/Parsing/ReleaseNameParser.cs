@@ -120,8 +120,17 @@ public static partial class ReleaseNameParser
     /// freely. Done once on the way in, never on a copy: the title parser cuts the name by match
     /// positions, and NFKC can change a string's length.
     /// </summary>
-    internal static string Normalize(string name) =>
-        name.IsNormalized(NormalizationForm.FormKC) ? name : name.Normalize(NormalizationForm.FormKC);
+    internal static string Normalize(string name)
+    {
+        try
+        {
+            return name.IsNormalized(NormalizationForm.FormKC) ? name : name.Normalize(NormalizationForm.FormKC);
+        }
+        catch (ArgumentException)
+        {
+            return name;
+        }
+    }
 
     /// <summary>
     /// The trimmed inner text of every "(...)"/"[...]" group <see cref="TagGroups"/> matches, in order,
