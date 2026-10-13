@@ -148,6 +148,22 @@ public class ImageValidatorTests : IDisposable
         Assert.Null(ImageValidator.SniffMediaType(mp4));
     }
 
+    [Fact]
+    public void Sniffs_avif_under_a_generic_heif_major_brand_when_it_lists_avif()
+    {
+        static byte[] Ftyp(string major, params string[] compatible) =>
+        [
+            0, 0, 0, (byte)(16 + 4 * compatible.Length), .."ftyp"u8, ..System.Text.Encoding.ASCII.GetBytes(major), 0, 0, 0, 0,
+            ..compatible.SelectMany(System.Text.Encoding.ASCII.GetBytes),
+        ];
+
+        Assert.Equal("image/avif", ImageValidator.SniffMediaType(Ftyp("mif1", "mif1", "avif", "miaf")));
+        Assert.Equal("image/avif", ImageValidator.SniffMediaType(Ftyp("msf1", "msf1", "avis")));
+        Assert.Null(ImageValidator.SniffMediaType(Ftyp("mif1", "mif1", "heic")));
+        // A brand past the box's own size belongs to whatever follows it, not to this ftyp.
+        Assert.Null(ImageValidator.SniffMediaType([.. Ftyp("mif1", "mif1"), .."avif"u8]));
+    }
+
     /// <summary>
     /// The cover proxy serves what this returns from Maki's own origin, so anything that a browser
     /// would render as a document must come back null no matter what the upstream claimed.

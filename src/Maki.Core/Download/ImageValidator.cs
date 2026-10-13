@@ -80,10 +80,30 @@ public static class ImageValidator
         if (header.Slice(4, 4).SequenceEqual("ftyp"u8))
         {
             var brand = header.Slice(8, 4);
-            if (brand.SequenceEqual("avif"u8) || brand.SequenceEqual("avis"u8)) return "image/avif";
+            if (IsAvifBrand(brand)) return "image/avif";
+            if ((brand.SequenceEqual("mif1"u8) || brand.SequenceEqual("msf1"u8)) && ListsAvifBrand(header)) return "image/avif";
         }
 
         return null;
+    }
+
+    private static bool IsAvifBrand(ReadOnlySpan<byte> brand) => brand.SequenceEqual("avif"u8) || brand.SequenceEqual("avis"u8);
+
+    /// <summary>
+    /// Whether the ftyp box names avif or avis among its compatible brands, which follow the major
+    /// brand and minor version. Encoders that pick the generic HEIF brand (mif1/msf1) as major put
+    /// avif there instead; a plain HEIC carries heic and stays out.
+    /// </summary>
+    private static bool ListsAvifBrand(ReadOnlySpan<byte> header)
+    {
+        var boxSize = (int)Math.Min(System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(header), int.MaxValue);
+        var end = Math.Min(boxSize, header.Length);
+        for (var offset = 16; offset + 4 <= end; offset += 4)
+        {
+            if (IsAvifBrand(header.Slice(offset, 4))) return true;
+        }
+
+        return false;
     }
 
     private static bool HasKnownMagic(byte[] header) =>
