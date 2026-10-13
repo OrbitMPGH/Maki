@@ -163,6 +163,12 @@ export function useUndoImport() {
             method: 'POST',
           })
         : [await api<ImportUndoOutcome>(`/libraryimport/batches/folders/${target.folderId}/undo`, { method: 'POST' })],
-    onSettled: () => queryClient.invalidateQueries({ queryKey: batchesKey }),
+    // An undo can take a series and its files out of the library, not only the batch off this list.
+    onSettled: () =>
+      Promise.all(
+        [batchesKey, ['series'], ['chapters'], ['series-files']].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ),
   })
 }

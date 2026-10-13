@@ -109,14 +109,15 @@ public class LibraryImportUndoService(
 
     /// <summary>
     /// Every folder of the batch not undone yet, plus any whose disk half is still pending, or null
-    /// when the caller can see none of it. One folder failing does not stop the rest.
+    /// when the caller can see none of it. One folder failing does not stop the rest. A folder whose
+    /// series was removed since has nothing to undo and is left out, as the list shows it.
     /// </summary>
     public async Task<List<ImportUndoOutcome>?> UndoBatchAsync(string batchId, CancellationToken ct)
     {
         var rows = (await db.ImportBatchFolders
                 .AsNoTracking()
                 .Where(r => r.BatchId == batchId)
-                .Select(r => new { r.Id, r.RootFolderId, r.UndoneAt, r.OriginalFolderName, r.OperationsJson })
+                .Select(r => new { r.Id, r.RootFolderId, r.SeriesId, r.UndoneAt, r.OriginalFolderName, r.OperationsJson })
                 .ToListAsync(ct))
             .Where(r => CanSeeRoot(r.RootFolderId))
             .ToList();
@@ -125,8 +126,18 @@ public class LibraryImportUndoService(
             return null;
         }
 
+        var seriesIds = rows.Select(r => r.SeriesId).OfType<int>().Distinct().ToList();
+        var existing = (await db.Series.IgnoreQueryFilters()
+                .Where(s => seriesIds.Contains(s.Id))
+                .Select(s => s.Id)
+                .ToListAsync(ct))
+            .ToHashSet();
+
         var outcomes = new List<ImportUndoOutcome>();
-        foreach (var row in rows.Where(r => r.UndoneAt is null || ImportOperations.Parse(r.OperationsJson).DiskPending))
+        foreach (var row in rows.Where(r =>
+                     r.UndoneAt is null
+                         ? r.SeriesId is { } id && existing.Contains(id)
+                         : ImportOperations.Parse(r.OperationsJson).DiskPending))
         {
             try
             {

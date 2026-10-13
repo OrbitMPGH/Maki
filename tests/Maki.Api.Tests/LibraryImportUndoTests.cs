@@ -831,6 +831,27 @@ public class LibraryImportUndoTests : IDisposable
         Assert.Equal(seriesId, requeued);
     }
 
+    [Fact]
+    public async Task Undoing_a_batch_leaves_out_folders_whose_series_was_removed_since()
+    {
+        var rootId = SeedRoot();
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        WriteZip(At("monster raws", "Monster 001.cbz"));
+        await ImportAsync(rootId, "chainsaw raws");
+        var monster = await ImportAsync(rootId, "monster raws", providerId: "43");
+        await using (var db = _db.NewContext())
+        {
+            await db.Series.Where(s => s.Id == monster.SeriesId).ExecuteDeleteAsync();
+        }
+
+        await using var undo = _db.NewContext();
+        var outcomes = await UndoService(undo).UndoBatchAsync("batch-1", CancellationToken.None);
+
+        var only = Assert.Single(outcomes!);
+        Assert.Equal("chainsaw raws", only.FolderName);
+        Assert.True(only.Undone, only.Error);
+    }
+
     private async Task EditOperationsAsync(Action<ImportOperations> edit)
     {
         await using var db = _db.NewContext();
