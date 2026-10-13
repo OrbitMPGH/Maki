@@ -71,6 +71,7 @@ function ensureConnection(): Promise<HubConnection> {
         return conn
       } catch (err) {
         if (err instanceof ConnectionStopped) throw err
+        if (mine !== generation) throw new ConnectionStopped()
         // A rejected start used to be cached in connectionPromise for good, so a hiccup at page
         // load (API still starting, proxy not ready) meant no live updates until a reload.
         checkSession()
