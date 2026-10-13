@@ -1252,8 +1252,19 @@ public class SettingsController(
         // Switching a source off writes one setting and nothing else — per-series
         // SourceMapping.Enabled flags are deliberately left alone so that turning it back
         // on restores the layout the user had rather than a blanket "everything on".
-        await settings.SetAsync(SettingKeys.SourcePriorityOrder, string.Join(',', request.Order), ct);
-        await settings.SetAsync(SettingKeys.SourcesDisabled, string.Join(',', request.Disabled), ct);
+        // Names not registered right now (Suwayomi unconfigured, an extension uninstalled) never
+        // reach the client, so a blind overwrite would drop their choices and a later re-enable
+        // would find them undecided.
+        var order = request.Order
+            .Concat(SourceAvailability.Parse(await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct))
+                .Where(name => sourceRegistry.Find(name) is null))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        var disabled = request.Disabled
+            .Concat(SourceAvailability.Parse(await settings.GetAsync(SettingKeys.SourcesDisabled, ct))
+                .Where(name => sourceRegistry.Find(name) is null))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        await settings.SetAsync(SettingKeys.SourcePriorityOrder, string.Join(',', order), ct);
+        await settings.SetAsync(SettingKeys.SourcesDisabled, string.Join(',', disabled), ct);
         return await GetSourcePriority(ct);
     }
 
