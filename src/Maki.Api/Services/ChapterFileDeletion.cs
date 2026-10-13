@@ -1,3 +1,4 @@
+using System.Text;
 using Maki.Core.Entities;
 using Maki.Core.Paths;
 using Maki.Data;
@@ -40,10 +41,12 @@ public class ChapterFileDeletion(
 
         var wanted = absolutePaths.ToHashSet(LibraryPaths.FolderComparer);
         var names = absolutePaths.Select(Path.GetFileName).OfType<string>().ToHashSet(LibraryPaths.FolderComparer);
+        var patterns = names.Select(NamePattern).Distinct().ToList();
         var roots = await db.RootFolders.IgnoreQueryFilters().AsNoTracking()
             .ToDictionaryAsync(r => r.Id, r => r.Path, ct);
         var rows = await (from f in db.ChapterFiles.IgnoreQueryFilters()
                           join s in db.Series.IgnoreQueryFilters() on f.SeriesId equals s.Id
+                          where patterns.Any(p => EF.Functions.Like(f.RelativePath, p, @"\"))
                           select new { f.Id, f.RelativePath, s.RootFolderId })
             .AsNoTracking()
             .ToListAsync(ct);
@@ -65,6 +68,33 @@ public class ChapterFileDeletion(
         }
 
         return claimed;
+    }
+
+    /// <summary>
+    /// A LIKE pattern for every stored path that may end in <paramref name="name"/>, so only those rows
+    /// are read. SQLite folds case for ASCII only, so any other character is a wildcard here and the
+    /// exact comparison stays in <see cref="ClaimedAsync"/>.
+    /// </summary>
+    private static string NamePattern(string name)
+    {
+        var pattern = new StringBuilder("%");
+        foreach (var rune in name.EnumerateRunes())
+        {
+            if (!rune.IsAscii)
+            {
+                pattern.Append('_');
+                continue;
+            }
+
+            if (rune.Value is '%' or '_' or '\\')
+            {
+                pattern.Append('\\');
+            }
+
+            pattern.Append((char)rune.Value);
+        }
+
+        return pattern.ToString();
     }
 
     /// <summary>A file about to lose its row. <see cref="AbsolutePath"/> is null when it resolves outside the root or through a linked folder.</summary>
