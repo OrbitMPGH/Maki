@@ -2,6 +2,7 @@ import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/s
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
+import { api } from './client'
 import { inboxPrefsQuery, type InboxPush } from './inbox'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import type { QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
@@ -24,6 +25,13 @@ function retryDelay(attempt: number): number {
   return base + Math.floor(Math.random() * 1000)
 }
 
+// The negotiate request is made by the SignalR client, not api(), so a 401 on it never reaches the
+// unauthorized handler and an expired session retried forever. Every failed start or reconnect
+// asks the API who the caller is instead; a 401 there signs the tab out, which stops the socket.
+function checkSession(): void {
+  void api('/auth/me').catch(() => {})
+}
+
 function build(): HubConnection {
   // No credential in the URL: the handshake is same-origin, so the browser sends the session
   // cookie with it. The hub requires an authenticated user and puts the connection in that user's
@@ -31,7 +39,10 @@ function build(): HubConnection {
   const conn = new HubConnectionBuilder()
     .withUrl('/signalr/events')
     .withAutomaticReconnect({
-      nextRetryDelayInMilliseconds: (ctx) => retryDelay(ctx.previousRetryCount),
+      nextRetryDelayInMilliseconds: (ctx) => {
+        checkSession()
+        return retryDelay(ctx.previousRetryCount)
+      },
     })
     .configureLogging(LogLevel.Warning)
     .build()
@@ -62,6 +73,7 @@ function ensureConnection(): Promise<HubConnection> {
         if (err instanceof ConnectionStopped) throw err
         // A rejected start used to be cached in connectionPromise for good, so a hiccup at page
         // load (API still starting, proxy not ready) meant no live updates until a reload.
+        checkSession()
         await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt)))
         if (mine !== generation) throw new ConnectionStopped()
       }
