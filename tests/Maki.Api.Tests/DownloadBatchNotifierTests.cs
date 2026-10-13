@@ -340,4 +340,25 @@ public class DownloadBatchNotifierTests : IDisposable
         Assert.False(await _batches.CompletedAsync(1, 10));
         Assert.True(await _batches.CompletedAsync(1, 14));
     }
+
+    [Fact]
+    public async Task A_batch_kept_alive_by_joins_is_not_rotated_while_its_items_wait()
+    {
+        await _batches.QueuedAsync(1, "Berserk", [10, 11]);
+        Sent.Clear();
+        _queue.Active.UnionWith([10, 11]);
+
+        // Each join refreshes the batch's activity, so the sweep never looks at it and never
+        // refreshes its last report; the join itself has to ask whether the items are still waiting.
+        _clock.Now = T0.AddMinutes(50);
+        await _batches.QueuedAsync(1, "Berserk", [12, 13]);
+        _queue.Active.UnionWith([12, 13]);
+        _clock.Now = T0.AddMinutes(100);
+        await _batches.SweepStaleAsync();
+        await _batches.QueuedAsync(1, "Berserk", [14, 15]);
+
+        Assert.Empty(Sent);
+        Assert.True(await _batches.CompletedAsync(1, 10));
+        Assert.True(await _batches.CompletedAsync(1, 14));
+    }
 }

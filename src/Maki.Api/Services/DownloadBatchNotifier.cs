@@ -91,19 +91,43 @@ public sealed class DownloadBatchNotifier : IDisposable
             return;
         }
 
+        // Joining refreshes LastActivity, so a series that keeps queueing (Smart, every few minutes)
+        // would keep a batch whose pending ids stopped reporting open forever, its summary never sent,
+        // and the sweep never looks at it. Once nothing in it has reported for StaleAfter, close it
+        // and start over, but only on the sweep's own terms: a batch whose items are still waiting
+        // in the queue is alive, and closing it hands every one of them back to per-chapter pings.
+        var key = (seriesId, origin == DownloadOrigin.Upgrade);
+        Batch? quiet = null;
+        int[] quietPending = [];
+        lock (_lock)
+        {
+            if (_batches.TryGetValue(key, out var existing) && existing.LastReport <= _time.GetUtcNow() - StaleAfter)
+            {
+                quiet = existing;
+                quietPending = [.. existing.Pending];
+            }
+        }
+
+        var alive = quiet is null || _liveness is null || quietPending.Length == 0
+            ? null
+            : await _liveness.StillActiveAsync(quietPending);
+
         bool opened;
         Batch? rotated = null;
         lock (_lock)
         {
-            // Joining refreshes LastActivity, so a series that keeps queueing (Smart, every few
-            // minutes) would keep a batch whose pending ids stopped reporting open forever, its summary
-            // never sent. Once nothing in it has reported for StaleAfter, close it and start over.
-            var key = (seriesId, origin == DownloadOrigin.Upgrade);
-            if (_batches.TryGetValue(key, out var existing) &&
-                existing.LastReport <= _time.GetUtcNow() - StaleAfter)
+            if (quiet is not null && ReferenceEquals(_batches.GetValueOrDefault(key), quiet) &&
+                quiet.LastReport <= _time.GetUtcNow() - StaleAfter)
             {
-                _batches.Remove(key);
-                rotated = existing;
+                if (alive is { Count: > 0 })
+                {
+                    quiet.LastReport = _time.GetUtcNow();
+                }
+                else
+                {
+                    _batches.Remove(key);
+                    rotated = quiet;
+                }
             }
 
             if (!_batches.TryGetValue(key, out var batch))
