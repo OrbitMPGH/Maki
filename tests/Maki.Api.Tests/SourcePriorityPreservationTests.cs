@@ -46,6 +46,22 @@ public sealed class SourcePriorityPreservationTests : IDisposable
         Assert.Equal("beta,suwayomi-2", await settings.GetAsync(SettingKeys.SourcesDisabled));
     }
 
+    [Theory]
+    [InlineData("alpha,suwayomi-1,beta", "alpha,suwayomi-1,beta")]
+    [InlineData("suwayomi-1,alpha,beta", "suwayomi-1,alpha,beta")]
+    [InlineData("beta,alpha,suwayomi-1", "beta,alpha,suwayomi-1")]
+    public async Task A_preserved_source_keeps_its_place_among_the_others(string stored, string expected)
+    {
+        _db.SetConfig((SettingKeys.SourcePriorityOrder, stored));
+        var settings = new SettingsService(_db.ScopeFactory());
+        var registry = new SourceRegistry([new FakeSource { Name = "alpha" }, new FakeSource { Name = "beta" }]);
+        var order = stored.Replace(",suwayomi-1", "").Replace("suwayomi-1,", "").Split(',').ToList();
+
+        await Controller(settings, registry).SetSourcePriority(new SettingsController.SourcePrioritySettings(order, []), default);
+
+        Assert.Equal(expected, await settings.GetAsync(SettingKeys.SourcePriorityOrder));
+    }
+
     [Fact]
     public async Task Saving_still_rejects_names_nobody_has_stored()
     {

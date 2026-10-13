@@ -1255,10 +1255,22 @@ public class SettingsController(
         // Names not registered right now (Suwayomi unconfigured, an extension uninstalled) never
         // reach the client, so a blind overwrite would drop their choices and a later re-enable
         // would find them undecided.
-        var order = request.Order
-            .Concat(SourceAvailability.Parse(await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct))
-                .Where(name => sourceRegistry.Find(name) is null))
-            .Distinct(StringComparer.OrdinalIgnoreCase);
+        var order = request.Order.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var anchor = -1;
+        foreach (var name in SourceAvailability.Parse(await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct)))
+        {
+            var at = order.FindIndex(o => o.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (at >= 0)
+            {
+                anchor = at;
+            }
+            else if (sourceRegistry.Find(name) is null)
+            {
+                // Back in the slot it held, after whichever stored name precedes it.
+                order.Insert(++anchor, name);
+            }
+        }
+
         var disabled = request.Disabled
             .Concat(SourceAvailability.Parse(await settings.GetAsync(SettingKeys.SourcesDisabled, ct))
                 .Where(name => sourceRegistry.Find(name) is null))
