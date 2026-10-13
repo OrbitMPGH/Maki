@@ -553,6 +553,7 @@ export function NamingSection() {
                 onSuccess: (results) => {
                   const renamed = results.filter((r) => r.applied).length
                   const failed = results.filter((r) => r.error).length
+                  const failedCount = formatNumber(failed)
                   notifications.show({
                     // A plural even though "series" does not inflect in English: the count still
                     // drives the verb in Polish and Russian, and only an ICU plural gives them the
@@ -560,8 +561,8 @@ export function NamingSection() {
                     message:
                       failed > 0
                         ? plural(renamed, {
-                            one: `Renamed # series, ${formatNumber(failed)} failed`,
-                            other: `Renamed # series, ${formatNumber(failed)} failed`,
+                            one: `Renamed # series, ${failedCount} failed`,
+                            other: `Renamed # series, ${failedCount} failed`,
                           })
                         : plural(renamed, { one: 'Renamed # series', other: 'Renamed # series' }),
                     color: failed > 0 ? 'var(--warn)' : 'var(--ok)',

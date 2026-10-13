@@ -1369,12 +1369,10 @@ msgstr "{remaining, plural, one {в очереди ещё # элемент} few 
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {Осталась # глава} few {Осталось # главы} many {Осталось # глав} other {Осталось # главы}}"
 
-#. placeholder {0}: formatNumber(failed)
-#. placeholder {1}: formatNumber(failed)
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # series, {1} failed}}"
-msgstr "{renamed, plural, one {Переименована # серия, не удалось: {0}} few {Переименовано # серии, не удалось: {0}} many {Переименовано # серий, не удалось: {0}} other {Переименовано # серии, не удалось: {1}}}"
+msgid "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
+msgstr "{renamed, plural, one {Переименована # серия, не удалось: {failedCount}} few {Переименовано # серии, не удалось: {failedCount}} many {Переименовано # серий, не удалось: {failedCount}} other {Переименовано # серии, не удалось: {failedCount}}}"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy

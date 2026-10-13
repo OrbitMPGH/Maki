@@ -1369,12 +1369,10 @@ msgstr "{remaining, plural, one {# más en la cola} many {# más en la cola} oth
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {Queda # capítulo} many {Quedan # capítulos} other {Quedan # capítulos}}"
 
-#. placeholder {0}: formatNumber(failed)
-#. placeholder {1}: formatNumber(failed)
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # series, {1} failed}}"
-msgstr "{renamed, plural, one {Renombrada # serie, {0} con error} many {Renombradas # series, {1} con error} other {Renombradas # series, {1} con error}}"
+msgid "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
+msgstr "{renamed, plural, one {Renombrada # serie, {failedCount} con error} many {Renombradas # series, {failedCount} con error} other {Renombradas # series, {failedCount} con error}}"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy

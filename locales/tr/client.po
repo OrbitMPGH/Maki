@@ -1369,12 +1369,10 @@ msgstr "{remaining, plural, one {kuyrukta # tane daha} other {kuyrukta # tane da
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# bölüm kaldı} other {# bölüm kaldı}}"
 
-#. placeholder {0}: formatNumber(failed)
-#. placeholder {1}: formatNumber(failed)
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # series, {1} failed}}"
-msgstr "{renamed, plural, one {# seri yeniden adlandırıldı, {0} başarısız} other {# seri yeniden adlandırıldı, {1} başarısız}}"
+msgid "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
+msgstr "{renamed, plural, one {# seri yeniden adlandırıldı, {failedCount} başarısız} other {# seri yeniden adlandırıldı, {failedCount} başarısız}}"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy

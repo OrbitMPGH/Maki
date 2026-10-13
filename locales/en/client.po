@@ -1115,11 +1115,9 @@ msgstr "{remaining, plural, one {# more in the queue} other {# more in the queue
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 
-#. placeholder {0}: formatNumber(failed)
-#. placeholder {1}: formatNumber(failed)
 #: src/pages/settings/LibraryCards.tsx
-msgid "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # series, {1} failed}}"
-msgstr "{renamed, plural, one {Renamed # series, {0} failed} other {Renamed # series, {1} failed}}"
+msgid "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
+msgstr "{renamed, plural, one {Renamed # series, {failedCount} failed} other {Renamed # series, {failedCount} failed}}"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
