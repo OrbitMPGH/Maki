@@ -92,9 +92,16 @@ public class SeriesController(
             return NotFound();
         }
 
-        if (!await metadataRefresh.RefreshAsync(series, includeCover: true, ct))
+        if (await metadataRefresh.LookupAsync(series, ct) is not { } metadata)
         {
             return this.Fail(localizer, "error.series.metadataRefreshFailed");
+        }
+
+        await metadataRefresh.ApplyAsync(series, metadata, includeCover: true, SeriesMetadataField.None, ct,
+            reloadSeries: () => SeriesMetadataLocks.ReloadAsync(db, series, ct));
+        if (db.Entry(series).State == EntityState.Detached)
+        {
+            return NotFound();
         }
 
         await db.SaveChangesAsync(ct);
