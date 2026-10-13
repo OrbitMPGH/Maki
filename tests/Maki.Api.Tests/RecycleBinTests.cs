@@ -977,6 +977,32 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
+    public async Task A_bin_delete_whose_entry_a_restore_already_took_is_no_error()
+    {
+        var s = Seed();
+        using (var db = _db.NewContext())
+        {
+            await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db), default);
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var entry = db.RecycleBin.Single();
+            entry.DeletedAtUtc = DateTime.UtcNow.AddMinutes(-10);
+            db.SaveChanges();
+            using (var other = _db.NewContext())
+            {
+                other.RecycleBin.ExecuteDelete();
+            }
+
+            Assert.Equal(RecycleBinService.DeleteStatus.Deleted, await Bin(db).DeleteAsync(entry, default));
+        }
+
+        using var check = _db.NewContext();
+        Assert.Empty(check.RecycleBin);
+    }
+
+    [Fact]
     public async Task Delete_permanently_and_empty_remove_the_files()
     {
         var s = Seed();

@@ -300,7 +300,8 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
         }
 
         var purged = 0;
-        foreach (var entry in await db.RecycleBin.IgnoreQueryFilters().Where(e => e.DeletedAtUtc < cutoff).ToListAsync(ct))
+        foreach (var entry in await db.RecycleBin.IgnoreQueryFilters().AsNoTracking()
+                     .Where(e => e.DeletedAtUtc < cutoff).ToListAsync(ct))
         {
             if (RecycleBinService.BinFile(entry) is { } path)
             {
@@ -319,10 +320,10 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
                 }
             }
 
-            db.RecycleBin.Remove(entry);
+            // Its own statement: a restore may have taken the entry meanwhile, which is no error.
+            await db.RecycleBin.IgnoreQueryFilters().Where(e => e.Id == entry.Id).ExecuteDeleteAsync(CancellationToken.None);
         }
 
-        await db.SaveChangesAsync(ct);
         return purged;
     }
 }

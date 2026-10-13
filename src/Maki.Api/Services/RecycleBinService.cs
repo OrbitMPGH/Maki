@@ -579,21 +579,24 @@ public class RecycleBinService(
             return DeleteStatus.Failed;
         }
 
-        db.RecycleBin.Remove(entry);
-        await db.SaveChangesAsync(ct);
+        await ForgetAsync([entry]);
         return DeleteStatus.Deleted;
     }
 
-    /// <summary>Deletes every entry the caller can see. Returns how many went and how many could not.</summary>
+    /// <summary>
+    /// Deletes every entry the caller can see. Returns how many went and how many could not. Each
+    /// entry goes in its own statement once its file is gone, so one a restore took meanwhile is no
+    /// error and the entries of files already deleted are not kept with it.
+    /// </summary>
     public async Task<(int Deleted, int Failed)> EmptyAsync(CancellationToken ct)
     {
         var deleted = 0;
         var failed = 0;
-        foreach (var entry in await db.RecycleBin.ToListAsync(ct))
+        foreach (var entry in await db.RecycleBin.AsNoTracking().ToListAsync(ct))
         {
             if (!StillMoving(entry) && DeleteFile(entry))
             {
-                db.RecycleBin.Remove(entry);
+                await ForgetAsync([entry]);
                 deleted++;
             }
             else
@@ -602,7 +605,6 @@ public class RecycleBinService(
             }
         }
 
-        await db.SaveChangesAsync(CancellationToken.None);
         return (deleted, failed);
     }
 
