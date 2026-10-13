@@ -345,8 +345,9 @@ public sealed class TextEmbedder(
 
     /// <summary>
     /// The CPU arena otherwise keeps the high-water mark of the largest batch it has run (a full
-    /// batch of 512-token passages) until the session is disposed. Shrinking after each run hands
-    /// that back between batches and costs a fresh allocation per batch.
+    /// batch of 512-token passages) until the session is disposed. Shrinking after each batch run hands
+    /// that back between batches and costs a fresh allocation per batch. A single query embed is
+    /// tiny and frequent, so it skips the shrink.
     /// </summary>
     private static readonly RunOptions CpuRunOptions = CreateCpuRunOptions();
 
@@ -427,10 +428,13 @@ public sealed class TextEmbedder(
         return buffer;
     }
 
-    public float[] Embed(string text) => EmbedBatch([text])[0];
+    /// <summary>Embeds one text, typically a search query. Leaves the CPU arena as it is rather than shrinking it.</summary>
+    public float[] Embed(string text) => EmbedBatch([text], shrinkArena: false)[0];
 
     /// <summary>Embeds a batch in one forward pass; sequences are padded to the batch's longest.</summary>
-    public float[][] EmbedBatch(IReadOnlyList<string> texts)
+    public float[][] EmbedBatch(IReadOnlyList<string> texts) => EmbedBatch(texts, shrinkArena: true);
+
+    private float[][] EmbedBatch(IReadOnlyList<string> texts, bool shrinkArena)
     {
         // The read lock is what makes ReleaseIfIdle safe: the session cannot be disposed while any
         // pass holds it. Stamping on the way out rather than the way in means a long indexing pass
@@ -447,7 +451,7 @@ public sealed class TextEmbedder(
             {
                 if (_session is not null && _tokenizer is not null)
                 {
-                    return EmbedBatchCore(texts);
+                    return EmbedBatchCore(texts, shrinkArena);
                 }
             }
             finally
@@ -463,7 +467,7 @@ public sealed class TextEmbedder(
         }
     }
 
-    private float[][] EmbedBatchCore(IReadOnlyList<string> texts)
+    private float[][] EmbedBatchCore(IReadOnlyList<string> texts, bool shrinkArena)
     {
         if (_session is null || _tokenizer is null)
         {
@@ -531,7 +535,9 @@ public sealed class TextEmbedder(
         var pooled = options.Model.Pooling == EmbeddingPooling.Pooled;
         var outputName = pooled ? PooledOutput : HiddenStateOutput;
         using var results = ActiveProvider == EmbeddingProvider.Cpu
-            ? _session.Run(inputs, [outputName], CpuRunOptions)
+            ? (shrinkArena
+                ? _session.Run(inputs, [outputName], CpuRunOptions)
+                : _session.Run(inputs, [outputName]))
             : _session.Run(inputs);
         // Both supported precisions emit a float tensor: int8 models are QDQ graphs that dequantize
         // before the output, and fp32 is float by definition. See EmbeddingPrecision for why there
