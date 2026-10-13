@@ -67,8 +67,7 @@ public class RecycleBinController(
             e.DeletedAtUtc,
             e.DeletedByName,
             e.DeletedAtUtc.AddDays(days),
-            // Occupied, as restore checks: a binned link whose target is gone can still be put back.
-            RecycleBinService.BinFile(e) is not { } path || !SameVolumeMove.Occupied(path),
+            Missing(e),
             RecycleBinService.Chapters(e).Select(c => new ChapterRef(c.Number, c.Volume, c.Language)).ToList()))
             .ToList();
         return Ok(new BinDto(days, entries.Sum(e => e.Size), dtos));
@@ -127,6 +126,22 @@ public class RecycleBinController(
 
         await settings.SetAsync(SettingKeys.RecycleBinRetentionDays, request.Days.ToString(CultureInfo.InvariantCulture), ct);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Occupied, as restore checks: a binned link whose target is gone can still be put back. A file
+    /// that cannot even be looked at cannot be restored either, and must not fail the whole list.
+    /// </summary>
+    private static bool Missing(RecycleBinEntry entry)
+    {
+        try
+        {
+            return RecycleBinService.BinFile(entry) is not { } path || !SameVolumeMove.Occupied(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return true;
+        }
     }
 
     private static string ReasonName(RecycleReason reason) => reason switch
