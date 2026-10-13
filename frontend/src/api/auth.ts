@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { stopConnection } from './signalr'
-import { api, invalidateInitialize } from './client'
+import { api, beginSession, invalidateInitialize } from './client'
 import { noteSignedInUser, noteSignedOut } from '../lib/pageState'
 import { useSaveSettingsRecord } from './settingsRecord'
 
@@ -106,6 +106,8 @@ export const ME_QUERY_KEY = ['auth', 'me'] as const
  * screens. Keeping ME_QUERY_KEY's instance alive lets the caller's setQueryData notify it directly.
  */
 export function dropAccountData(qc: QueryClient): void {
+  // Every caller is a session boundary, so a late 401 from a request the old session sent is ignored.
+  beginSession()
   // The live socket is account data too: it is in the old account's hub groups and would keep
   // delivering that account's inbox and admin events to whoever signs in next on this tab.
   stopConnection()
