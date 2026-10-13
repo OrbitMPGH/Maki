@@ -10828,6 +10828,7 @@ msgstr "系列中没有此编号的章节"
 msgid "No chapters known."
 msgstr "没有已知章节。"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/CoverCard.tsx
 msgid "No chapters listed"
 msgstr ""

@@ -10829,6 +10829,7 @@ msgstr "seride bu numarada bir bölüm yok"
 msgid "No chapters known."
 msgstr "Bilinen bölüm yok."
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/CoverCard.tsx
 msgid "No chapters listed"
 msgstr ""

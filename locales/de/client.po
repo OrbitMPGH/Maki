@@ -10829,6 +10829,7 @@ msgstr "kein Kapitel mit dieser Nummer in der Serie"
 msgid "No chapters known."
 msgstr "Keine Kapitel bekannt."
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/CoverCard.tsx
 msgid "No chapters listed"
 msgstr ""

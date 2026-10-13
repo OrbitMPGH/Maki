@@ -283,7 +283,7 @@ export default function ScrobblePage() {
       }
       actions={
         <Group gap="sm">
-          <Text size="xs" c="var(--ink-3)" ta="right" className="tnum">
+          <Text size="xs" c="var(--ink-3)" ta={{ base: 'left', sm: 'right' }} className="tnum">
             {data?.running ? (
               <Trans>
                 sync running… · last {lastSync} · next {nextSync}

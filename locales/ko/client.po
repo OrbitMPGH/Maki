@@ -10828,6 +10828,7 @@ msgstr "시리즈에 이 번호의 챕터가 없습니다"
 msgid "No chapters known."
 msgstr "확인된 챕터 없음."
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/CoverCard.tsx
 msgid "No chapters listed"
 msgstr ""

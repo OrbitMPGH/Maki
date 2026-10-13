@@ -10828,6 +10828,7 @@ msgstr "シリーズにこの番号の章がありません"
 msgid "No chapters known."
 msgstr "既知の章はありません。"
 
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/CoverCard.tsx
 msgid "No chapters listed"
 msgstr ""

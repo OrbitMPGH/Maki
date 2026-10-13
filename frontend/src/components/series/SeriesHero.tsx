@@ -344,7 +344,9 @@ export function SeriesHero({
                                     {/* Two whole messages rather than one with a clause appended: a
                                         fragment glued onto a translated sentence lands in the wrong place
                                         in any language that does not order it the way English does. */}
-                                    {progress.nothingWanted ? (
+                                    {series.knownChapterCount === 0 ? (
+                                        <Trans>No chapters listed</Trans>
+                                    ) : progress.nothingWanted ? (
                                         <Trans>
                                             {haveCount} /{' '}
                                             <Plural value={totalCount} one="# chapter" other="# chapters" />{' '}
@@ -362,9 +364,11 @@ export function SeriesHero({
                                         </Trans>
                                     )}
                                 </Text>
-                                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                    {Math.round(progress.pct)}%
-                                </Text>
+                                {series.knownChapterCount > 0 && (
+                                    <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
+                                        {Math.round(progress.pct)}%
+                                    </Text>
+                                )}
                             </Group>
                             {missingWanted > 0 && (
                                 <Text size="xs" c="var(--ink-4)" mt={7} className="tnum">

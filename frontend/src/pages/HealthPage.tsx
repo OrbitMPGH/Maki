@@ -1907,7 +1907,8 @@ function OptionsPanel() {
           checked={value.automaticScanning}
           onChange={(e) => update({ automaticScanning: e.currentTarget.checked })}
         />
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        {/* Bottom-aligned: in the narrow side column one label wraps and the other does not. */}
+        <SimpleGrid cols={{ base: 1, sm: 2 }} style={{ alignItems: 'end' }}>
           <NumberInput
             label={t`Daily scan hour (0-23)`}
             min={0}
@@ -1935,7 +1936,7 @@ function OptionsPanel() {
           opened={thresholdsOpen}
           onToggle={() => setThresholdsOpen((o) => !o)}
         >
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} style={{ alignItems: 'end' }}>
             {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB', 'backupDays'] as const).map((key) => (
               <NumberInput
                 key={key}
