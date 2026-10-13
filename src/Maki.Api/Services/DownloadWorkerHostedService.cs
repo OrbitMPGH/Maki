@@ -139,7 +139,14 @@ public class DownloadWorkerHostedService(
             using var scope = scopeFactory.CreateScope();
             if (scope.ServiceProvider.GetService<EventBroadcaster>() is { } events)
             {
-                await events.QueuePauseChanged(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+                try
+                {
+                    await events.QueuePauseChanged(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex, "Could not broadcast the lifted download pause");
+                }
             }
 
             await queue.WakeWorkersAsync(ct);

@@ -178,7 +178,16 @@ public class QueueController(
     private async Task<QueuePauseDto> ChangePauseAsync(DownloadPauseState state, CancellationToken ct)
     {
         var dto = QueuePauseDto.From(state);
-        await events.QueuePauseChanged(dto);
+        try
+        {
+            await events.QueuePauseChanged(dto);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The pause is already saved; open pages pick it up on their next poll.
+            logger.LogWarning(ex, "Could not broadcast the download pause change");
+        }
+
         await queue.WakeWorkersAsync(ct);
         return dto;
     }

@@ -240,6 +240,27 @@ public class DownloadPauseTests : IDisposable
     }
 
     [Fact]
+    public async Task A_pause_is_answered_even_when_its_broadcast_fails()
+    {
+        var controller = new Maki.Api.Controllers.QueueController(
+            new TestLocalizer(), _db.NewContext(), _queue, null!, _pauses,
+            new Maki.Core.Sources.SourceRegistry([new FakeSource { Name = "MangaDex" }]), null!,
+            new Maki.Api.Hubs.EventBroadcaster(new NoopHubContext(), new ThrowingScopeFactory()), null!,
+            NullLogger<Maki.Api.Controllers.QueueController>.Instance);
+
+        var result = await controller.Pause(new Maki.Api.Dtos.QueuePauseRequestDto(Source: null, ResumeAt: null), CancellationToken.None);
+
+        Assert.IsType<Microsoft.AspNetCore.Mvc.OkObjectResult>(result);
+        Assert.NotNull((await _pauses.ActiveAsync()).All);
+    }
+
+    private sealed class ThrowingScopeFactory : Microsoft.Extensions.DependencyInjection.IServiceScopeFactory
+    {
+        public Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope() =>
+            throw new InvalidOperationException("database unavailable");
+    }
+
+    [Fact]
     public async Task A_pause_change_reaches_everyone_who_may_manage_the_queue()
     {
         var admin = _db.SeedUser("admin", Maki.Core.Security.MakiPermission.Admin);
