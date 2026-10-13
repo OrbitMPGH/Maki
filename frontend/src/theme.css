@@ -48,6 +48,7 @@
   --info-on: #06142b;
   --danger: #f2554c;
   --danger-on: #2a0a08;
+  --danger-fg: #ff8b84;
   /* Filled danger buttons carry white text, which --danger is too light for in the dark themes. */
   --danger-fill: #c0322b;
   --watched: #b197fc;
@@ -166,7 +167,7 @@
   --brand: #c4476e;
   --brand-hover: #b8436a;
   --brand-on: #ffffff;
-  --brand-fg: #b8496b;
+  --brand-fg: #ad4064;
   --brand-fg-on-art: #f5b6c8;
 }
 :root[data-theme='light'][data-accent='rose'] {
@@ -279,6 +280,7 @@
   --info-on: #ffffff;
   --danger: #c0322b;
   --danger-on: #ffffff;
+  --danger-fg: var(--danger);
   --watched: #7040bd;
   --watched-on: #ffffff;
   --suggestive: #657018;
@@ -371,6 +373,17 @@ body::before {
 :root[data-mantine-color-scheme='dark'],
 :root[data-mantine-color-scheme='light'] {
   --mantine-color-dimmed: var(--ink-3);
+  --mantine-color-placeholder: var(--ink-3);
+}
+.mantine-Slider-markLabel,
+.mantine-RangeSlider-markLabel {
+  color: var(--ink-3);
+}
+/* For fields whose empty state is a real answer ("Any", "Min"): the word is the value, so it reads
+   at value strength rather than as a hint. A disabled field keeps the quieter placeholder. */
+.field-default-value input:not(:disabled)::placeholder {
+  color: var(--mantine-color-text);
+  opacity: 1;
 }
 
 /* Elevate surfaces above the app body so cards/modals read as layers. */
@@ -1563,7 +1576,10 @@ body::before {
    containment on the cards it was switched off (the old rule here) and every one of the ~240
    posters stayed laid out, painted and image-decoded for as long as the tab was open.
    No scroll-snap: WebKit re-snaps after layout, and a contained rail coming on screen (or posters
-   replacing skeletons) left iOS Safari's rails parked mid-row on first load. */
+   replacing skeletons) left iOS Safari's rails parked mid-row on first load.
+   The 6px gutter, cancelled by the negative margin, keeps the cards where they were but gives the
+   focus ring and Trending's rank badge room inside the scroller, which clips both. Scroll padding
+   lands a focused card clear of the edge fade. */
 .discover-rail {
   --rail-fade-start: 0px;
   --rail-fade-end: 0px;
@@ -1571,14 +1587,16 @@ body::before {
   gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 8px;
+  margin: -6px -6px 0;
+  padding: 6px 6px 8px;
+  scroll-padding-inline: 30px;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   content-visibility: auto;
-  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the scrollbar
-     gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
-     first guess, so Discover's wider steps cost nothing more than a slightly stale one. */
-  contain-intrinsic-size: auto 233px;
+  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the gutters.
+     `auto` keeps the real measurement once a rail has been on screen; this is only the first
+     guess, so Discover's wider steps cost nothing more than a slightly stale one. */
+  contain-intrinsic-size: auto 239px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
@@ -1963,7 +1981,7 @@ body::before {
    clipped line: these rows are claims about the reader, so the grounds have to be readable. */
 .discover-rail[data-engine] {
   /* Poster at the wider item (2/3) plus the footer and the scrollbar gutter. */
-  contain-intrinsic-size: auto 330px;
+  contain-intrinsic-size: auto 336px;
 }
 .discover-rail[data-engine] .discover-rail-item {
   width: var(--rail-item-engine-w, 180px);
@@ -6647,9 +6665,13 @@ body.reader-open {
   border-radius: var(--mantine-radius-sm);
 }
 /* An acknowledged check is kept, not hidden: the decision was "stop telling me", not "this is
-   fine", and the row has to stay findable for whoever reverses it. */
-.health-check[data-acknowledged] {
-  opacity: 0.55;
+   fine", and the row has to stay findable for whoever reverses it. The dot and the quieter
+   message carry the state; dimming the whole row took its text and buttons under 4.5:1. */
+.health-check[data-acknowledged] .status-dot {
+  color: var(--ink-3);
+}
+.health-check[data-acknowledged] .status-dot::before {
+  opacity: 0.45;
 }
 
 /* The category heading is a label, not a title: it separates groups inside one panel and must not

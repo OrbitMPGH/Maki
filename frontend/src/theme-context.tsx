@@ -3,7 +3,7 @@ import { MantineProvider } from '@mantine/core'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import type { MessageDescriptor } from '@lingui/core'
-import { accentSwatch, accents, createAppTheme, groundRamp, grounds } from './theme'
+import { accentSwatch, accents, createAppTheme, cssVariablesResolver, groundRamp, grounds } from './theme'
 
 /**
  * Appearance is two independent choices. A background is a dark surface ramp, the light theme, or
@@ -234,7 +234,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={value}>
-      <MantineProvider theme={mantineTheme} forceColorScheme={scheme}>
+      <MantineProvider theme={mantineTheme} forceColorScheme={scheme} cssVariablesResolver={cssVariablesResolver}>
         {children}
       </MantineProvider>
     </ThemeContext.Provider>

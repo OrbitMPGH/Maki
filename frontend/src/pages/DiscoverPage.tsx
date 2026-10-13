@@ -627,6 +627,7 @@ function RecommendedTab() {
 
             <MultiSelect
                 label={t`Type`}
+                className="field-default-value"
                 placeholder={types.length ? undefined : t`Any`}
                 data={typeOptions}
                 value={types}
@@ -635,6 +636,7 @@ function RecommendedTab() {
             />
             <MultiSelect
                 label={t`Status`}
+                className="field-default-value"
                 placeholder={statuses.length ? undefined : t`Any`}
                 data={statusOptions}
                 value={statuses}
@@ -643,6 +645,7 @@ function RecommendedTab() {
             />
             <MultiSelect
                 label={t`Content rating`}
+                className="field-default-value"
                 placeholder={contentRatings.length ? undefined : t`Any`}
                 data={contentRatingOptions}
                 value={contentRatings}

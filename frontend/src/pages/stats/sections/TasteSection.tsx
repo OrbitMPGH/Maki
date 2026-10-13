@@ -104,7 +104,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
     const tags = activity?.topTags ?? []
     const sorted = [...tags].sort((a, b) => b.weight - a.weight)
     const cut = Math.ceil(sorted.length / 3)
-    return new Map(sorted.map((tag, i) => [tag.name, i < cut ? 'filled' : 'light'] as const))
+    return new Map(sorted.map((tag, i) => [tag.name, i < cut ? 'light' : 'outline'] as const))
   }, [activity])
 
   if (activity && activity.readTrackingAvailable === false) {
@@ -270,8 +270,9 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
             {activity.topTags.map((tag) => (
               <Badge
                 key={tag.name}
-                variant={tagTiers.get(tag.name) ?? 'light'}
+                variant={tagTiers.get(tag.name) ?? 'outline'}
                 color="var(--brand)"
+                c="var(--brand-fg)"
               >
                 {tag.name}
               </Badge>

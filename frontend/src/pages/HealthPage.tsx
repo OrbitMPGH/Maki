@@ -948,7 +948,7 @@ function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body
     <div className="health-check" data-acknowledged={check.acknowledged || undefined}>
       <Status value={check.status} />
       <div style={{ minWidth: 0 }}>
-        <Text size="sm" c="var(--ink-2)">
+        <Text size="sm" c={check.acknowledged ? 'var(--ink-3)' : 'var(--ink-2)'}>
           {check.message}
         </Text>
         <Text size="xs" c="var(--ink-4)" mt={2}>

@@ -884,6 +884,7 @@ export default function LibraryPage() {
       data={data}
       value={value}
       onChange={onChange}
+      className="field-default-value"
       placeholder={value.length === 0 ? t`None` : undefined}
       disabled={disabled || data.length === 0}
       searchable
@@ -931,6 +932,7 @@ export default function LibraryPage() {
         data={data}
         value={value}
         onChange={onChange}
+        className="field-default-value"
         placeholder={value.length === 0 ? (data.length > 0 ? t`Any` : t`None available`) : undefined}
         disabled={disabled || data.length === 0}
         searchable
@@ -1392,6 +1394,7 @@ export default function LibraryPage() {
               />
               <MultiSelect
                 label={t`Type`}
+                className="field-default-value"
                 placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
                 data={typeOptions}
                 value={typeFilter}
@@ -1402,6 +1405,7 @@ export default function LibraryPage() {
               />
               <MultiSelect
                 label={t`Content rating`}
+                className="field-default-value"
                 placeholder={contentRatingFilter.length ? undefined : t`Any`}
                 data={contentRatingOptions}
                 value={contentRatingFilter}
@@ -1428,6 +1432,7 @@ export default function LibraryPage() {
                 <Group grow gap="xs" align="flex-start">
                   <NumberInput
                     aria-label={t`Minimum chapters`}
+                    className="field-default-value"
                     placeholder={t`Min`}
                     min={0}
                     allowDecimal={false}
@@ -1436,6 +1441,7 @@ export default function LibraryPage() {
                   />
                   <NumberInput
                     aria-label={t`Maximum chapters`}
+                    className="field-default-value"
                     placeholder={t`Max`}
                     min={0}
                     allowDecimal={false}
