@@ -3,8 +3,10 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Button,
+  Collapse,
   Group,
   Select,
+  Stack,
   Text,
 } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '@tabler/icons-react'
@@ -22,10 +24,10 @@ import {
 import { ApiError } from '../api/client'
 import { useFollowToggle } from '../api/following'
 import {
-  CatalogueFilterDrawer,
+  CatalogueFilterActions,
+  CatalogueFilters,
   useBrowseSortOptions,
   useCatalogueFilters,
-  useLiveApply,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
 import { CREDIT_ROLE_LABELS } from '../components/CreditPicker'
@@ -33,6 +35,7 @@ import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip } from '../components/ui/TagChip'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
@@ -79,19 +82,10 @@ export default function CreatorPage() {
   // the last studio looked at.
   const scope = `creator:${decoded}:${role ?? ''}`
   const catalogue = useCatalogueFilters(undefined, scope)
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = usePageState(`${scope}:filters-open`, false)
   const [applied, setApplied] = usePageState<RecommendationFilters>(`${scope}:applied`, {})
   const [sort, setSort] = usePageState<BrowseSort>(`${scope}:sort`, 'popular')
   const [pages, setPages] = usePageState(`${scope}:pages`, 1)
-  useLiveApply(catalogue.build, setApplied)
-
-  // New filters start the list over, but not on mount: restored filters arrive looking like a
-  // change, and resetting there would drop pages loaded before opening one of the results.
-  const filtersAsMounted = useUnchangedSinceMount([applied])
-  useEffect(() => {
-    if (filtersAsMounted) return
-    setPages(1)
-  }, [filtersAsMounted, applied, setPages])
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
 
   // Clicking a credit on this page navigates to the same route with a different name, so React
@@ -248,28 +242,37 @@ export default function CreatorPage() {
         </Group>
       </Group>
 
-      <CatalogueFilterDrawer
-        opened={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        controls={catalogue.controls}
-        isCustomized={catalogue.isCustomized || appliedCount > 0}
-        onReset={() => {
-          catalogue.reset()
-          setApplied({})
-        }}
-        extra={
-          <>
-            <PresetMenu
-              current={catalogue.build}
-              onLoad={(f) => {
-                catalogue.hydrate(f)
-                setApplied(f)
+      <Collapse expanded={filtersOpen}>
+        <Panel edge="strong" p="md" mb="md">
+          <Stack gap="md">
+            <CatalogueFilters controls={catalogue.controls} />
+            <CatalogueFilterActions
+              isCustomized={catalogue.isCustomized || appliedCount > 0}
+              onReset={() => {
+                catalogue.reset()
+                setApplied({})
               }}
+              onApply={() => {
+                setApplied(catalogue.build())
+                setPages(1)
+              }}
+              extra={
+                <>
+                  <PresetMenu
+                    current={catalogue.build}
+                    onLoad={(f) => {
+                      catalogue.hydrate(f)
+                      setApplied(f)
+                      setPages(1)
+                    }}
+                  />
+                  <HiddenContentButton />
+                </>
+              }
             />
-            <HiddenContentButton />
-          </>
-        }
-      />
+          </Stack>
+        </Panel>
+      </Collapse>
 
       {isFetching && !data && (
         <PosterSkeletons density={prefs.density} viewMode={prefs.viewMode} />

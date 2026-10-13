@@ -4009,6 +4009,15 @@ button.hero-score[aria-expanded='true'] .hero-score-caret {
   background: var(--danger-soft);
   color: var(--ink-hi);
 }
+/* Hover deepens the tone instead of falling back to the plain chip hover, which outranks the rules above. */
+.term-chip[data-state='include']:hover {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 22%, var(--ok-soft));
+}
+.term-chip[data-state='exclude']:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 22%, var(--danger-soft));
+}
 .term-chip[data-state='exclude'] .tag-chip-body,
 .term-pill[data-state='exclude'] .mantine-Pill-label {
   text-decoration: line-through;
@@ -7711,10 +7720,6 @@ body.reader-open {
 }
 .filter-drawer-show {
   flex: 1;
-}
-.filter-drawer-actions {
-  padding-top: var(--mantine-spacing-sm);
-  border-top: 1px solid var(--border);
 }
 @media (max-width: 47.9375em) {
   .filter-drawer {

@@ -3553,9 +3553,6 @@ msgstr "Changed"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "Changes apply straight to the grid behind this panel."
 
-#: src/components/CatalogueFilters.tsx
-msgid "Changes apply straight to the results behind this panel."
-msgstr "Changes apply straight to the results behind this panel."
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Changes apply to this series only."
@@ -3818,7 +3815,6 @@ msgstr "Clean up read files"
 msgid "Clear"
 msgstr "Clear"
 
-#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 msgid "Clear all"
@@ -5932,7 +5928,6 @@ msgid "Filter the catalogue"
 msgstr "Filter the catalogue"
 
 #: src/components/CatalogueBrowser.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -12864,9 +12859,6 @@ msgstr "Show reading streaks"
 msgid "Show replaced files"
 msgstr "Show replaced files"
 
-#: src/components/CatalogueFilters.tsx
-msgid "Show results"
-msgstr "Show results"
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

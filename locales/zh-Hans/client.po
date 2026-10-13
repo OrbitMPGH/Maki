@@ -4356,9 +4356,6 @@ msgstr "已更改"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "更改会直接应用到此面板后面的网格。"
 
-#: src/components/CatalogueFilters.tsx
-msgid "Changes apply straight to the results behind this panel."
-msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4679,7 +4676,6 @@ msgstr "清理已读文件"
 msgid "Clear"
 msgstr "清除"
 
-#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -7273,7 +7269,6 @@ msgid "Filter the catalogue"
 msgstr "筛选目录"
 
 #: src/components/CatalogueBrowser.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15797,9 +15792,6 @@ msgstr "显示阅读连续记录"
 msgid "Show replaced files"
 msgstr "显示被替换的文件"
 
-#: src/components/CatalogueFilters.tsx
-msgid "Show results"
-msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

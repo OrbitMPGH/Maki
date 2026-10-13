@@ -4356,9 +4356,6 @@ msgstr "변경됨"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "변경 사항은 이 패널 뒤의 그리드에 즉시 적용됩니다."
 
-#: src/components/CatalogueFilters.tsx
-msgid "Changes apply straight to the results behind this panel."
-msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4679,7 +4676,6 @@ msgstr "읽은 파일 정리"
 msgid "Clear"
 msgstr "지우기"
 
-#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -7273,7 +7269,6 @@ msgid "Filter the catalogue"
 msgstr "카탈로그 필터링"
 
 #: src/components/CatalogueBrowser.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15797,9 +15792,6 @@ msgstr "읽기 연속 기록 표시"
 msgid "Show replaced files"
 msgstr "교체된 파일 표시"
 
-#: src/components/CatalogueFilters.tsx
-msgid "Show results"
-msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

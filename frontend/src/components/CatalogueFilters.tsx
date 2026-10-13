@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { usePageState } from '../lib/pageState'
-import { Button, Drawer, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Stack, Text } from '@mantine/core'
+import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
 import {
   allowedContentRatings,
@@ -505,8 +505,7 @@ export function CatalogueFilters({
 /**
  * Reset/Apply pair, so the callers agree on wording and disabled state. "Save as default" only
  * appears where there is somewhere to save to: the rail modal's filters are scoped to the rail
- * that is open, so a default there would mean nothing. Without `onApply` there is no Apply: the
- * filter drawer applies as it changes.
+ * that is open, so a default there would mean nothing.
  */
 export function CatalogueFilterActions({
   isCustomized,
@@ -518,7 +517,7 @@ export function CatalogueFilterActions({
 }: {
   isCustomized: boolean
   onReset: () => void
-  onApply?: () => void
+  onApply: () => void
   onSaveAsDefault?: () => void
   saving?: boolean
   /** Sits on the left: saved filters, the never-show list, the live count. */
@@ -549,106 +548,10 @@ export function CatalogueFilterActions({
         <Button variant="subtle" size="xs" onClick={onReset} disabled={!isCustomized}>
           {t`Reset`}
         </Button>
-        {onApply && (
-          <Button size="xs" onClick={onApply}>
-            {t`Apply`}
-          </Button>
-        )}
+        <Button size="xs" onClick={onApply}>
+          {t`Apply`}
+        </Button>
       </Group>
     </Group>
-  )
-}
-
-/** Top-level keys sorted, so two builds of one filter compare equal whatever order set them. */
-function filterKey(f: RecommendationFilters): string {
-  return JSON.stringify(Object.fromEntries(Object.entries(f).sort(([a], [b]) => a.localeCompare(b))))
-}
-
-/**
- * Applies the panel a beat after it stops changing. A slider drag would otherwise be one
- * full-catalogue query per step. Reset, presets and the saved default still set `applied`
- * themselves, at once, so a restored filter never runs one stale query first.
- */
-export function useLiveApply(
-  build: () => RecommendationFilters,
-  setApplied: Dispatch<SetStateAction<RecommendationFilters>>,
-) {
-  const key = filterKey(build())
-  useEffect(() => {
-    const id = window.setTimeout(
-      () => setApplied((prev) => (filterKey(prev) === key ? prev : (JSON.parse(key) as RecommendationFilters))),
-      400,
-    )
-    return () => window.clearTimeout(id)
-  }, [key, setApplied])
-}
-
-/**
- * The catalogue filters in a side drawer, the library's pattern: results stay in view behind it on
- * a desktop and update as the filters change. On a phone the drawer covers them, so a footer that
- * stays on screen leads back.
- */
-export function CatalogueFilterDrawer({
-  opened,
-  onClose,
-  controls,
-  isCustomized,
-  onReset,
-  onSaveAsDefault,
-  saving,
-  count,
-  extra,
-}: {
-  opened: boolean
-  onClose: () => void
-  controls: CatalogueFilterControls
-  isCustomized: boolean
-  onReset: () => void
-  onSaveAsDefault?: () => void
-  saving?: boolean
-  /** The live match count, where the caller has one that means something for its results. */
-  count?: ReactNode
-  /** Saved filters and the never-show list. */
-  extra?: ReactNode
-}) {
-  const { t } = useLingui()
-  return (
-    <Drawer
-      opened={opened}
-      onClose={onClose}
-      position="right"
-      size="md"
-      title={t`Filters`}
-      classNames={{ content: 'filter-drawer' }}
-    >
-      <Stack gap="sm" className="filter-drawer-body">
-        <Stack gap={2} visibleFrom="sm">
-          {count}
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Changes apply straight to the results behind this panel.</Trans>
-          </Text>
-        </Stack>
-        <CatalogueFilters controls={controls} cols={{ base: 1 }} />
-        <div className="filter-drawer-actions">
-          <CatalogueFilterActions
-            isCustomized={isCustomized}
-            onReset={onReset}
-            onSaveAsDefault={onSaveAsDefault}
-            saving={saving}
-            extra={extra}
-          />
-        </div>
-        <Group className="filter-drawer-footer" hiddenFrom="sm" gap="sm" wrap="nowrap">
-          {isCustomized && (
-            <Button variant="default" onClick={onReset}>
-              <Trans>Clear all</Trans>
-            </Button>
-          )}
-          <Button className="filter-drawer-show" onClick={onClose}>
-            <Trans>Show results</Trans>
-          </Button>
-        </Group>
-      </Stack>
-    </Drawer>
   )
 }

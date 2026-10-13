@@ -4357,9 +4357,6 @@ msgstr "Zmienione"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "Zmiany są stosowane bezpośrednio do siatki za tym panelem."
 
-#: src/components/CatalogueFilters.tsx
-msgid "Changes apply straight to the results behind this panel."
-msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4680,7 +4677,6 @@ msgstr "Porządkuj przeczytane pliki"
 msgid "Clear"
 msgstr "Wyczyść"
 
-#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -7274,7 +7270,6 @@ msgid "Filter the catalogue"
 msgstr "Filtruj katalog"
 
 #: src/components/CatalogueBrowser.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15798,9 +15793,6 @@ msgstr "Pokazuj serie czytania"
 msgid "Show replaced files"
 msgstr "Pokaż zastąpione pliki"
 
-#: src/components/CatalogueFilters.tsx
-msgid "Show results"
-msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

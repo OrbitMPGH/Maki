@@ -4356,9 +4356,6 @@ msgstr "変更済み"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "変更はこのパネルの背後にあるグリッドにすぐ反映されます。"
 
-#: src/components/CatalogueFilters.tsx
-msgid "Changes apply straight to the results behind this panel."
-msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4679,7 +4676,6 @@ msgstr "既読のファイルを整理"
 msgid "Clear"
 msgstr "クリア"
 
-#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -7273,7 +7269,6 @@ msgid "Filter the catalogue"
 msgstr "カタログを絞り込む"
 
 #: src/components/CatalogueBrowser.tsx
-#: src/components/CatalogueFilters.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15797,9 +15792,6 @@ msgstr "読書連続記録を表示"
 msgid "Show replaced files"
 msgstr "置き換えたファイルを表示"
 
-#: src/components/CatalogueFilters.tsx
-msgid "Show results"
-msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

@@ -8,6 +8,7 @@ import {
   ActionIcon,
   Alert,
   Button,
+  Collapse,
   Group,
   SegmentedControl,
   Select,
@@ -22,6 +23,7 @@ import {
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '@tabler/icons-react'
+import { Panel } from './ui/Panel'
 import { TagChip } from './ui/TagChip'
 import {
   useDiscoverFeed,
@@ -36,11 +38,11 @@ import {
   type ResolvedCredit,
 } from '../api/hooks'
 import {
-  CatalogueFilterDrawer,
+  CatalogueFilterActions,
+  CatalogueFilters,
   filtersFromSpec,
   useBrowseSortOptions,
   useCatalogueFilters,
-  useLiveApply,
 } from './CatalogueFilters'
 import { FilterMatchCount } from './CatalogueRules'
 import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
@@ -142,14 +144,13 @@ export function CatalogueBrowser({
     onSearchingChange?.(searching)
   }, [searching, onSearchingChange])
 
-  // `applied` trails the live controls by a beat (see useLiveApply), so a slider drag is one
-  // query when it settles rather than one per step.
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  // `applied` is separate from the live control state because a query re-runs on every change to
+  // it, and dragging a slider would otherwise fire one full-catalogue query per pixel.
+  const [filtersOpen, setFiltersOpen] = usePageState(memory('filters-open'), false)
   const [applied, setApplied] = usePageState<RecommendationFilters>(memory('applied'), {})
   const [sort, setSort] = usePageState<BrowseSort>(memory('sort'), 'popular')
   const [pages, setPages] = usePageState(memory('pages'), 1)
   const catalogue = useCatalogueFilters(undefined, memory('filters'))
-  useLiveApply(catalogue.build, setApplied)
 
   // Seeded from the saved default exactly once, and nothing queries until that has happened:
   // searching earlier fires an unfiltered request that the hydration then immediately replaces,
@@ -235,7 +236,8 @@ export function CatalogueBrowser({
 
   /**
    * Stores the panel as this user's default, so the next visit opens already constrained. Saves the
-   * live controls rather than `applied`, which can trail them by a beat.
+   * live controls rather than `applied`, matching the Recommended tab: the button says what you are
+   * looking at, not what you last pressed Apply on.
    */
   const saveAsDefault = () => {
     saveDefaults.mutate(catalogue.build(), {
@@ -334,31 +336,36 @@ export function CatalogueBrowser({
             </Button>
           </Group>
 
-          <CatalogueFilterDrawer
-            opened={filtersOpen}
-            onClose={() => setFiltersOpen(false)}
-            controls={catalogue.controls}
-            isCustomized={catalogue.isCustomized || appliedCount > 0}
-            onReset={() => {
-              catalogue.reset()
-              setApplied({})
-            }}
-            saving={saveDefaults.isPending}
-            onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
-            count={<FilterMatchCount filters={catalogue.build()} />}
-            extra={
-              <>
-                <PresetMenu
-                  current={catalogue.build}
-                  onLoad={(f) => {
-                    catalogue.hydrate(f)
-                    setApplied(f)
+          <Collapse expanded={filtersOpen}>
+            <Panel edge="strong" p="md" mb="md">
+              <Stack gap="md">
+                <CatalogueFilters controls={catalogue.controls} />
+                <CatalogueFilterActions
+                  isCustomized={catalogue.isCustomized || appliedCount > 0}
+                  onReset={() => {
+                    catalogue.reset()
+                    setApplied({})
                   }}
+                  onApply={() => setApplied(catalogue.build())}
+                  saving={saveDefaults.isPending}
+                  onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
+                  extra={
+                    <>
+                      <PresetMenu
+                        current={catalogue.build}
+                        onLoad={(f) => {
+                          catalogue.hydrate(f)
+                          setApplied(f)
+                        }}
+                      />
+                      <HiddenContentButton />
+                      <FilterMatchCount filters={catalogue.build()} />
+                    </>
+                  }
                 />
-                <HiddenContentButton />
-              </>
-            }
-          />
+              </Stack>
+            </Panel>
+          </Collapse>
         </>
       )}
 
