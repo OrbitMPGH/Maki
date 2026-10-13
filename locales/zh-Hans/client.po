@@ -879,6 +879,10 @@ msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}"
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}已列出，但没有想要的"
 
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -1216,6 +1220,10 @@ msgstr "{newChapterCount, plural, other {最近新增的 # 个章节文件}}"
 #, fuzzy
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, other {包含你没有的 # 个章节}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
@@ -3884,10 +3892,18 @@ msgstr "无法加载此导入"
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
 msgstr "目前无法连接到 Kavita。Maki 会持续重试，scrobble 同步之后仍会补上。"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Can't reach Kavita with the saved address and API key."
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Can't read this download"
 msgstr "无法读取此下载"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Can't sign in with the saved details."
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/FailedQueueActions.tsx
@@ -4495,6 +4511,10 @@ msgstr "立即检查预构建版本"
 msgid "Check for updates"
 msgstr "检查更新"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Check in Settings"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -4877,8 +4897,8 @@ msgstr "配置密钥"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "configured, not connected"
-msgstr "已配置，未连接"
+#~ msgid "configured, not connected"
+#~ msgstr "已配置，未连接"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -4915,6 +4935,10 @@ msgstr "连接"
 msgid "Connect {label} on the Scrobble page to import from it."
 msgstr "在「记录」页面连接 {label} 即可从中导入。"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker first"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this."
@@ -4947,11 +4971,12 @@ msgstr "连接进度跟踪服务"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "connected"
-msgstr "已连接"
+#~ msgid "connected"
+#~ msgstr "已连接"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
+#: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connected"
 msgstr "已连接"
@@ -5366,6 +5391,10 @@ msgstr "无法启动扫描"
 #, fuzzy
 msgid "Couldn't start the volume search"
 msgstr "无法启动卷搜索"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Couldn't update {serviceName}"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -11141,14 +11170,18 @@ msgstr "尚未配置"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "not configured (see Settings)"
-msgstr "未配置（请查看设置）"
+#~ msgid "not configured (see Settings)"
+#~ msgstr "未配置（请查看设置）"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not connected"
 msgstr "未连接"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not connected yet."
+msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -11258,6 +11291,14 @@ msgstr "未扫描"
 #, fuzzy
 msgid "Not set"
 msgstr "未设置"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet."
+msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet. An admin can add it in Settings."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -11396,6 +11437,10 @@ msgstr "不会重命名任何内容，所有文件仍留在原文件夹中。"
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "不再向它发送任何内容。此操作无法撤销。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Nothing left to download"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13163,8 +13208,12 @@ msgstr "读取每个字节并与归档自身的校验和进行核对，这样可
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-msgstr "从 Kavita 读取阅读进度，并每 {intervalMinutes, plural, other {# 分钟}} 向你的跟踪器推送只前进不后退的更新。远程进度不会降低，已完成条目也不会降级。在设置中配置凭据。"
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
+#~ msgstr "从 Kavita 读取阅读进度，并每 {intervalMinutes, plural, other {# 分钟}} 向你的跟踪器推送只前进不后退的更新。远程进度不会降低，已完成条目也不会降级。在设置中配置凭据。"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr ""
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -15374,6 +15423,10 @@ msgstr "设置为 <0>0</0> 以禁用锁定。"
 #, fuzzy
 msgid "Set up"
 msgstr "设置"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Set up in Settings"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy

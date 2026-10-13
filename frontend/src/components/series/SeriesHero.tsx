@@ -123,6 +123,9 @@ export function SeriesHero({
     // nothing about what goes in the slot. The defaults on the gap are never rendered, since every
     // use of them sits behind `sourceGap &&`; they are here to keep the destructure typed as numbers.
     const { have: haveCount, total: totalCount } = progress
+    // The total is the wanted chapters, so a series with unwanted ones read 100% here while the
+    // Chapters tab counted everything listed. Named, and the rest counted, so the two agree.
+    const notWanted = progress.nothingWanted ? 0 : Math.max(0, series.knownChapterCount - totalCount)
     const readCount = series.readChapterCount ?? 0
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
 
@@ -349,6 +352,11 @@ export function SeriesHero({
                                             <Plural value={totalCount} one="# chapter" other="# chapters" />{' '}
                                             listed, none wanted
                                         </Trans>
+                                    ) : notWanted > 0 ? (
+                                        <Trans>
+                                            {haveCount} /{' '}
+                                            <Plural value={totalCount} one="# wanted chapter" other="# wanted chapters" />
+                                        </Trans>
                                     ) : (
                                         <Trans>
                                             {haveCount} /{' '}
@@ -366,6 +374,15 @@ export function SeriesHero({
                                         value={missingWanted}
                                         one="# wanted, not fetched"
                                         other="# wanted, not fetched"
+                                    />
+                                </Text>
+                            )}
+                            {notWanted > 0 && (
+                                <Text size="xs" c="var(--ink-4)" mt={missingWanted > 0 ? 2 : 7} className="tnum">
+                                    <Plural
+                                        value={notWanted}
+                                        one="# more listed, not wanted"
+                                        other="# more listed, not wanted"
                                     />
                                 </Text>
                             )}

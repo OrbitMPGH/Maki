@@ -879,6 +879,10 @@ msgstr "{haveCount} / {totalCount, plural, one {# rozdział} few {# rozdziały} 
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, one {# rozdział} few {# rozdziały} many {# rozdziałów} other {# rozdziału}} na liście, żaden nie jest chciany"
 
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -1216,6 +1220,10 @@ msgstr "{newChapterCount, plural, one {# ostatni plik rozdziału} few {# ostatni
 #, fuzzy
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, one {Dodaje # rozdział, którego nie masz} few {Dodaje # rozdziały, których nie masz} many {Dodaje # rozdziałów, których nie masz} other {Dodaje # rozdziału, którego nie masz}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
@@ -3885,10 +3893,18 @@ msgstr "Nie można wczytać tego importu"
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
 msgstr "Nie można teraz połączyć się z Kavita. Maki ponawia próby, a synchronizacja scrobble i tak nadrobi zaległości."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Can't reach Kavita with the saved address and API key."
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Can't read this download"
 msgstr "Nie można odczytać tego pobrania"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Can't sign in with the saved details."
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/FailedQueueActions.tsx
@@ -4496,6 +4512,10 @@ msgstr "Sprawdź teraz dostępność gotowego indeksu"
 msgid "Check for updates"
 msgstr "Sprawdź aktualizacje"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Check in Settings"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -4878,8 +4898,8 @@ msgstr "Klucz konfiguracji"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "configured, not connected"
-msgstr "skonfigurowane, niepołączone"
+#~ msgid "configured, not connected"
+#~ msgstr "skonfigurowane, niepołączone"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -4916,6 +4936,10 @@ msgstr "Połącz"
 msgid "Connect {label} on the Scrobble page to import from it."
 msgstr "Połącz {label} na stronie Scrobble, aby z niego importować."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker first"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this."
@@ -4948,11 +4972,12 @@ msgstr "Połącz swoje trackery"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "connected"
-msgstr "połączono"
+#~ msgid "connected"
+#~ msgstr "połączono"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
+#: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connected"
 msgstr "Połączono"
@@ -5367,6 +5392,10 @@ msgstr "Nie udało się uruchomić skanu"
 #, fuzzy
 msgid "Couldn't start the volume search"
 msgstr "Nie udało się uruchomić wyszukiwania tomów"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Couldn't update {serviceName}"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -11142,14 +11171,18 @@ msgstr "Nie skonfigurowano"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "not configured (see Settings)"
-msgstr "nieskonfigurowane (zobacz Ustawienia)"
+#~ msgid "not configured (see Settings)"
+#~ msgstr "nieskonfigurowane (zobacz Ustawienia)"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not connected"
 msgstr "Niepołączony"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not connected yet."
+msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -11259,6 +11292,14 @@ msgstr "Nieprzeskanowane"
 #, fuzzy
 msgid "Not set"
 msgstr "Nie ustawiono"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet."
+msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet. An admin can add it in Settings."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -11397,6 +11438,10 @@ msgstr "Żadna nazwa nie zostanie zmieniona, a wszystko pozostanie w obecnym fol
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "Nic do niego nie jest już wysyłane. Tej operacji nie można cofnąć."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Nothing left to download"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13164,8 +13209,12 @@ msgstr "Odczytuje każdy bajt i porównuje go z własnymi sumami kontrolnymi arc
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-msgstr "Odczytuje postęp czytania z Kavity i wysyła do Twoich trackerów aktualizacje działające tylko naprzód co {intervalMinutes, plural, one {# minutę} few {# minuty} many {# minut} other {# minuty}}. Zdalny postęp nigdy nie jest obniżany, a ukończone wpisy nigdy nie są cofane. Skonfiguruj dane uwierzytelniające w Ustawieniach."
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
+#~ msgstr "Odczytuje postęp czytania z Kavity i wysyła do Twoich trackerów aktualizacje działające tylko naprzód co {intervalMinutes, plural, one {# minutę} few {# minuty} many {# minut} other {# minuty}}. Zdalny postęp nigdy nie jest obniżany, a ukończone wpisy nigdy nie są cofane. Skonfiguruj dane uwierzytelniające w Ustawieniach."
+
+#: src/pages/ScrobblePage.tsx
+msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr ""
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -15375,6 +15424,10 @@ msgstr "Ustaw na <0>0</0>, aby wyłączyć blokadę."
 #, fuzzy
 msgid "Set up"
 msgstr "Skonfiguruj"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Set up in Settings"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy

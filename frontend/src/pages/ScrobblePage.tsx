@@ -2,6 +2,7 @@ import { errorText } from '../api/errorText'
 import { useEffect, useState } from 'react'
 import {
   Alert,
+  Anchor,
   Badge,
   Box,
   Button,
@@ -20,7 +21,8 @@ import { IconRefresh } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../auth/AuthProvider'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
@@ -41,6 +43,9 @@ import {
 } from '../api/hooks'
 import { formatDateTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+
+const TRACKER_SETTINGS = '/settings?tab=integrations&s=scrobbling'
+const KAVITA_SETTINGS = '/settings?tab=integrations&s=kavita'
 
 function fmtTime(iso: string | null | undefined): string {
   return iso ? formatDateTime(iso) : '-'
@@ -64,15 +69,33 @@ function serviceLabel(connections: ScrobbleConnection[] | undefined, service: st
 function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   const authStart = useScrobbleAuthStart()
   const disconnect = useScrobbleDisconnect()
+  const { can } = useAuth()
+  const isAdmin = can('Admin')
+  const isKavita = connection.service === 'kavita'
 
   const dot = trackerConnectionVisual(connection.connected, connection.configured)
+  // Every state that is not connected says what to do next: connect, check the saved details, or
+  // set the tracker up. Setting one up is an admin job, so a reader is told who can.
   const state = connection.connected ? (
-    (connection.username ?? <Trans>connected</Trans>)
+    (connection.username ?? <Trans>Connected</Trans>)
+  ) : connection.configured && connection.oAuth ? (
+    <Trans>Not connected yet.</Trans>
   ) : connection.configured ? (
-    <Trans>configured, not connected</Trans>
+    isKavita ? (
+      <Trans>Can't reach Kavita with the saved address and API key.</Trans>
+    ) : (
+      <Trans>Can't sign in with the saved details.</Trans>
+    )
+  ) : isAdmin ? (
+    <Trans>Not set up yet.</Trans>
   ) : (
-    <Trans>not configured (see Settings)</Trans>
+    <Trans>Not set up yet. An admin can add it in Settings.</Trans>
   )
+  const settingsLink = isAdmin && !connection.connected && !(connection.configured && connection.oAuth) ? (
+    <Button component={Link} to={isKavita ? KAVITA_SETTINGS : TRACKER_SETTINGS} size="compact-sm" variant="default">
+      {connection.configured ? <Trans>Check in Settings</Trans> : <Trans>Set up in Settings</Trans>}
+    </Button>
+  ) : null
 
   const connect = () => {
     authStart.mutate(connection.service, {
@@ -115,6 +138,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
           )}
         </Group>
       )}
+      {settingsLink && <Group mt="sm">{settingsLink}</Group>}
     </Panel>
   )
 }
@@ -225,7 +249,11 @@ export default function ScrobblePage() {
         <Trans>
           Reads reading progress from Kavita and pushes forward-only updates to your trackers every{' '}
           <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Remote progress is never
-          lowered and completed entries are never demoted. Configure credentials in Settings.
+          lowered and completed entries are never demoted. Trackers are set up in{' '}
+          <Anchor component={Link} to={TRACKER_SETTINGS}>
+            Settings
+          </Anchor>
+          .
         </Trans>
       }
       actions={
@@ -241,18 +269,24 @@ export default function ScrobblePage() {
               </Trans>
             )}
           </Text>
-          <Button
-            leftSection={<IconRefresh size={16} />}
-            loading={syncNow.isPending || data?.running}
-            disabled={!anyTrackerConnected}
-            onClick={() =>
-              syncNow.mutate(undefined, {
-                onSuccess: (r) => notifications.show({ message: r.message }),
-              })
-            }
-          >
-            <Trans>Sync now</Trans>
-          </Button>
+          {/* data-disabled rather than disabled: a disabled button gets no hover or focus, so the
+              tooltip saying why could never show. */}
+          <Tooltip label={t`Connect a tracker first`} disabled={anyTrackerConnected}>
+            <Button
+              leftSection={<IconRefresh size={16} />}
+              loading={syncNow.isPending || data?.running}
+              data-disabled={!anyTrackerConnected || undefined}
+              aria-disabled={!anyTrackerConnected}
+              onClick={() => {
+                if (!anyTrackerConnected) return
+                syncNow.mutate(undefined, {
+                  onSuccess: (r) => notifications.show({ message: r.message }),
+                })
+              }}
+            >
+              <Trans>Sync now</Trans>
+            </Button>
+          </Tooltip>
         </Group>
       }
     />
@@ -355,9 +389,11 @@ export default function ScrobblePage() {
                       <Table.Td data-priority="low">{serviceLabel(data.connections, service)}</Table.Td>
                       <Table.Td>
                         {error ? (
+                          // The tracker's own words are English and technical, so they sit behind the
+                          // hover; the cell says plainly what did not happen.
                           <Tooltip label={error} multiline maw={400}>
-                            <Text size="sm" c="var(--danger)" lineClamp={1} className="scrobble-error-text">
-                              {error}
+                            <Text size="sm" c="var(--danger)" lineClamp={1} className="scrobble-error-text" tabIndex={0}>
+                              <Trans>Not updated</Trans>
                             </Text>
                           </Tooltip>
                         ) : volume ? (

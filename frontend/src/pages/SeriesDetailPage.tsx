@@ -1603,6 +1603,8 @@ function SeriesDetailBody() {
                         queue, so nobody has to open the Chapters tab to find out. */}
                           {missingWanted > 0 ? (
                               <Trans>Download {missingWanted} wanted</Trans>
+                          ) : chapters !== undefined ? (
+                              <Trans>Nothing left to download</Trans>
                           ) : (
                               <Trans>Download all wanted</Trans>
                           )}
