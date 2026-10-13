@@ -446,6 +446,10 @@ msgstr "현재 {0}개 행"
 msgid "{abs} pt"
 msgstr "{abs}점"
 
+#: src/pages/HealthPage.tsx
+msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -637,10 +641,26 @@ msgstr "{connectedCount, plural, other {#개 연결됨}}"
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, other {#화}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, other {#개 시리즈 일치}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -681,6 +701,10 @@ msgstr "{count, plural, other {측정한 챕터 #개의 중앙값: 너비 {width
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, other {영향을 받는 #개 시리즈 표시}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -874,9 +898,17 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, other {#개 허용됨}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
 #, fuzzy
-msgid "{have} of {totalLabel}"
-msgstr "{totalLabel} 중 {have}"
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{totalLabel} 중 {have}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -2605,6 +2637,10 @@ msgid "Acknowledge"
 msgstr "확인"
 
 #: src/pages/HealthPage.tsx
+msgid "Acknowledge all"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Acknowledged"
 msgstr "확인됨"
@@ -4083,10 +4119,21 @@ msgstr "주요 소재인 경우만"
 msgid "ch {maxChapter}"
 msgstr "챕터 {maxChapter}"
 
+#. placeholder {0}: r.chapter
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0}"
+msgstr ""
+
+#. placeholder {0}: r.chapter
+#. placeholder {1}: r.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0} · vol. {1}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter}"
-msgstr "{chapter}화"
+#~ msgid "ch. {chapter}"
+#~ msgstr "{chapter}화"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -4095,8 +4142,8 @@ msgstr "챕터 {chapter}"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter} · vol. {volume}"
-msgstr "{chapter}화 · {volume}권"
+#~ msgid "ch. {chapter} · vol. {volume}"
+#~ msgstr "{chapter}화 · {volume}권"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -6691,6 +6738,10 @@ msgstr "추정"
 msgid "Events"
 msgstr "이벤트"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Every chapter"
@@ -7975,6 +8026,10 @@ msgstr "소스 이름 숨기기"
 #, fuzzy
 msgid "Hide source text"
 msgstr "소스 텍스트 숨기기"
+
+#: src/pages/HealthPage.tsx
+msgid "Hide the list"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -10736,6 +10791,10 @@ msgstr "시리즈에 이 번호의 챕터가 없습니다"
 msgid "No chapters known."
 msgstr "확인된 챕터 없음."
 
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "No chapters match that filter."
@@ -11063,6 +11122,11 @@ msgstr "아직 다운로드한 스냅샷 없음"
 msgid "No source could serve the first chapter."
 msgstr "첫 챕터를 제공할 수 있는 소스가 없습니다."
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 msgid "No source has scored this yet."
 msgstr ""
@@ -11189,6 +11253,10 @@ msgstr "최근 알림에 없음"
 #, fuzzy
 msgid "None linked"
 msgstr "연결된 항목 없음"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -12718,7 +12786,6 @@ msgstr "프로필 생성됨"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sectionList.ts
 #, fuzzy
 msgid "Progress"
@@ -13303,8 +13370,8 @@ msgstr "모든 바이트를 읽고 보관 파일 자체 체크섬과 비교하�
 #~ msgstr "Kavita에서 읽기 진행 상황을 읽고 {intervalMinutes, plural, other {#분}}마다 트래커에 앞으로 나아가는 업데이트만 전송합니다. 원격 진행 상황은 절대 낮아지지 않으며 완료된 항목도 이전 상태로 돌아가지 않습니다. 설정에서 자격 증명을 구성하세요."
 
 #: src/pages/ScrobblePage.tsx
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
-msgstr ""
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+#~ msgstr ""
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -13929,6 +13996,10 @@ msgstr "폴더 이름 변경 중"
 #, fuzzy
 msgid "Reopen"
 msgstr "다시 열기"
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen all"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -15471,8 +15542,8 @@ msgstr "서버 URL"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Service"
-msgstr "서비스"
+#~ msgid "Service"
+#~ msgstr "서비스"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -16294,7 +16365,6 @@ msgstr "통계 섹션"
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Status"
@@ -17692,6 +17762,7 @@ msgstr "OPDS에서 읽기 진행 상황 추적"
 msgid "Tracker"
 msgstr "트래커"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy

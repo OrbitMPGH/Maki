@@ -375,6 +375,10 @@ msgstr "{0} rows right now"
 msgid "{abs} pt"
 msgstr "{abs} pt"
 
+#: src/pages/HealthPage.tsx
+msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+msgstr "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "{actionError} Refresh the page and try again."
@@ -529,9 +533,25 @@ msgstr "{connectedCount, plural, one {# connected} other {# connected}}"
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# ch.} other {# ch.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+msgstr "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+
 #: src/components/CatalogueRules.tsx
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, one {# series matches} other {# series match}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+msgstr "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
+msgstr "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "{count, plural, one {# title matches} other {# titles match}}"
@@ -564,6 +584,10 @@ msgstr "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp}
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Show # affected series} other {Show # affected series}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr "{count, plural, one {Show # check} other {Show all # checks}}"
 
 #: src/components/import/RecentImports.tsx
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
@@ -719,8 +743,16 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# granted} other {# granted}}"
 
 #: src/components/ui/CoverCard.tsx
-msgid "{have} of {totalLabel}"
-msgstr "{have} of {totalLabel}"
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr "{have, plural, one {# chapter} other {# chapters}}"
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr "{have} of {total}"
+
+#: src/components/ui/CoverCard.tsx
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{have} of {totalLabel}"
 
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -2113,6 +2145,10 @@ msgid "Acknowledge"
 msgstr "Acknowledge"
 
 #: src/pages/HealthPage.tsx
+msgid "Acknowledge all"
+msgstr "Acknowledge all"
+
+#: src/pages/HealthPage.tsx
 msgid "Acknowledged"
 msgstr "Acknowledged"
 
@@ -3323,17 +3359,28 @@ msgstr "Central only"
 msgid "ch {maxChapter}"
 msgstr "ch {maxChapter}"
 
+#. placeholder {0}: r.chapter
 #: src/pages/ScrobblePage.tsx
-msgid "ch. {chapter}"
-msgstr "ch. {chapter}"
+msgid "ch. {0}"
+msgstr "ch. {0}"
+
+#. placeholder {0}: r.chapter
+#. placeholder {1}: r.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0} · vol. {1}"
+msgstr "ch. {0} · vol. {1}"
+
+#: src/pages/ScrobblePage.tsx
+#~ msgid "ch. {chapter}"
+#~ msgstr "ch. {chapter}"
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Ch. {chapter}"
 msgstr "Ch. {chapter}"
 
 #: src/pages/ScrobblePage.tsx
-msgid "ch. {chapter} · vol. {volume}"
-msgstr "ch. {chapter} · vol. {volume}"
+#~ msgid "ch. {chapter} · vol. {volume}"
+#~ msgstr "ch. {chapter} · vol. {volume}"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Ch. {chapterLabel}"
@@ -5447,6 +5494,10 @@ msgstr "Estimated"
 msgid "Events"
 msgstr "Events"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+
 #: src/components/ui/seriesNotifications.ts
 msgid "Every chapter"
 msgstr "Every chapter"
@@ -6487,6 +6538,10 @@ msgstr "Hide source names"
 #: src/components/AnimeCoverageBar.tsx
 msgid "Hide source text"
 msgstr "Hide source text"
+
+#: src/pages/HealthPage.tsx
+msgid "Hide the list"
+msgstr "Hide the list"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Hide this and its franchise"
@@ -8727,6 +8782,10 @@ msgstr "no chapter with this number in the series"
 msgid "No chapters known."
 msgstr "No chapters known."
 
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr "No chapters listed"
+
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "No chapters match that filter."
 msgstr "No chapters match that filter."
@@ -8990,6 +9049,11 @@ msgstr "No snapshot downloaded yet"
 msgid "No source could serve the first chapter."
 msgstr "No source could serve the first chapter."
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr "No source has listed this series' chapters yet, so there is no total to count against."
+
 #: src/components/discover/DiscoverHero.tsx
 msgid "No source has scored this yet."
 msgstr "No source has scored this yet."
@@ -9093,6 +9157,10 @@ msgstr "None in the latest notifications"
 #: src/pages/HealthPage.tsx
 msgid "None linked"
 msgstr "None linked"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr "None listed"
 
 #: src/pages/CreatorPage.tsx
 msgid "None of their titles match these filters. Try loosening one of them."
@@ -10335,7 +10403,6 @@ msgstr "Profile created"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sectionList.ts
 msgid "Progress"
 msgstr "Progress"
@@ -10813,8 +10880,8 @@ msgstr "Reads every byte and checks it against the archive's own checksums, whic
 #~ msgstr "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
 
 #: src/pages/ScrobblePage.tsx
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
-msgstr "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+#~ msgstr "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
 
 #: src/components/FailedQueueActions.tsx
 msgid "Reason"
@@ -11319,6 +11386,10 @@ msgstr "Renaming folder"
 #: src/pages/HealthPage.tsx
 msgid "Reopen"
 msgstr "Reopen"
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen all"
+msgstr "Reopen all"
 
 #: src/components/SourceMeasurePanel.tsx
 msgid "Reorder priority to match"
@@ -12576,8 +12647,8 @@ msgid "Server URL"
 msgstr "Server URL"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Service"
-msgstr "Service"
+#~ msgid "Service"
+#~ msgstr "Service"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Session lifetime (days)"
@@ -13248,7 +13319,6 @@ msgstr "Stats sections"
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Status"
 msgstr "Status"
@@ -14378,6 +14448,7 @@ msgstr "Track reading progress from OPDS"
 msgid "Tracker"
 msgstr "Tracker"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Trackers"

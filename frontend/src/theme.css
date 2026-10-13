@@ -6720,6 +6720,19 @@ body.reader-open {
   gap: 4px;
   align-self: center;
 }
+/* A collapsed type's own rows, opened under its summary: indented to the message column so they
+   read as the group's members, each keeping its Open and Acknowledge. */
+.health-check-group-body {
+  margin-left: calc(104px + 14px);
+  border-left: 1px solid var(--hairline);
+  padding-left: 14px;
+}
+.health-check-group-body .health-check {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+.health-check-group-body .health-check > .status-dot {
+  display: none;
+}
 /* Sixty series behind one outage must not push the rest of the checks off the page. */
 .health-source-series {
   grid-column: 2 / -1;
@@ -8380,8 +8393,46 @@ body.reader-open {
 .scrobble-review-input {
   width: 160px;
 }
-.scrobble-error-text {
-  max-width: 320px;
+/* Recent syncs: one row per series, a line per tracker. A failure keeps the tracker's own reason
+   in full beside the plain "Not updated", wrapping rather than hidden behind a hover. */
+.scrobble-recent-table thead th:nth-child(1) {
+  width: 32%;
+}
+.scrobble-recent-table thead th:nth-child(3) {
+  width: 150px;
+}
+.scrobble-recent-series {
+  font-weight: var(--fw-medium);
+  vertical-align: top;
+}
+.scrobble-recent-table td {
+  vertical-align: top;
+}
+.scrobble-trackers {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.scrobble-tracker {
+  display: grid;
+  grid-template-columns: 7.5rem auto 1fr;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.scrobble-tracker-name {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.scrobble-tracker-error {
+  display: grid;
+  grid-column: 2 / -1;
+  gap: 2px;
+  min-width: 0;
+}
+.scrobble-tracker-reason {
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 47.9375em) {
@@ -8397,8 +8448,12 @@ body.reader-open {
   .scrobble-review-input {
     width: 100%;
   }
-  .scrobble-error-text {
-    max-width: none;
+  .scrobble-tracker {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .scrobble-tracker-name,
+  .scrobble-tracker-error {
+    grid-column: 1 / -1;
   }
   /* Service and timestamp are recoverable from the row itself; series, progress
      and status are what the table is read for. */

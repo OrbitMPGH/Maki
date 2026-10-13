@@ -39,6 +39,7 @@ import {
   useScrobbleStatus,
   useScrobbleSyncNow,
   type ScrobbleConnection,
+  type ScrobbleSyncRow,
   type ScrobbleUnmatchedItem,
 } from '../api/hooks'
 import { formatDateTime } from '../format'
@@ -62,6 +63,23 @@ function dedupeKeys(keys: string[]): string[] {
 }
 
 /** A tracker's display name from its connection card, falling back to the raw service key. */
+/**
+ * One entry per series, newest first, with each tracker's latest result under it. The rows are
+ * already one per series and tracker (sync state, not history), so nothing older is dropped.
+ */
+function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[]) {
+  const groups = new Map<string, { title: string; at: string; rows: ScrobbleSyncRow[] }>()
+  for (const r of rows) {
+    const group = groups.get(r.title)
+    if (!group) groups.set(r.title, { title: r.title, at: r.at, rows: [r] })
+    else if (!group.rows.some((x) => x.service === r.service)) group.rows.push(r)
+  }
+  // Trackers in the Connections order on every row, so a column of names lines up down the table.
+  const order = (service: string) => connections.findIndex((c) => c.service === service)
+  for (const group of groups.values()) group.rows.sort((a, b) => order(a.service) - order(b.service))
+  return [...groups.values()]
+}
+
 function serviceLabel(connections: ScrobbleConnection[] | undefined, service: string): string {
   return connections?.find((c) => c.service === service)?.label ?? service
 }
@@ -253,9 +271,10 @@ export default function ScrobblePage() {
       title={t`Scrobble`}
       description={
         <Trans>
-          Reads reading progress from Kavita and pushes forward-only updates to your trackers every{' '}
-          <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Remote progress is never
-          lowered and completed entries are never demoted. Trackers are set up in{' '}
+          Every <Plural value={intervalMinutes} one="# minute" other="# minutes" />, sends what you have
+          read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is
+          connected. Remote progress is never lowered and completed entries are never demoted. Trackers are
+          set up in{' '}
           <Anchor component={Link} to={TRACKER_SETTINGS}>
             Settings
           </Anchor>
@@ -371,14 +390,8 @@ export default function ScrobblePage() {
                   <Table.Th>
                     <Trans>Series</Trans>
                   </Table.Th>
-                  <Table.Th data-priority="low">
-                    <Trans>Service</Trans>
-                  </Table.Th>
                   <Table.Th>
-                    <Trans>Progress</Trans>
-                  </Table.Th>
-                  <Table.Th>
-                    <Trans>Status</Trans>
+                    <Trans>Trackers</Trans>
                   </Table.Th>
                   <Table.Th data-priority="low">
                     <Trans>When</Trans>
@@ -386,50 +399,54 @@ export default function ScrobblePage() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {dedupeKeys(data.recent.map((r) => `${r.at}-${r.service}-${r.title}`)).map((key, i) => {
-                  const r = data.recent[i]
-                  const { title, service, error, chapter, volume, status, at } = r
-                  return (
-                    <Table.Tr key={key}>
-                      <Table.Td>{title || '#'}</Table.Td>
-                      <Table.Td data-priority="low">{serviceLabel(data.connections, service)}</Table.Td>
-                      <Table.Td>
-                        {error ? (
-                          // The tracker's own words are English and technical, so they sit behind the
-                          // hover; the cell says plainly what did not happen.
-                          <Tooltip label={error} multiline maw={400}>
-                            <Text size="sm" c="var(--danger)" lineClamp={1} className="scrobble-error-text" tabIndex={0}>
-                              <Trans>Not updated</Trans>
-                            </Text>
-                          </Tooltip>
-                        ) : volume ? (
-                          <Trans>
-                            ch. {chapter} · vol. {volume}
-                          </Trans>
-                        ) : (
-                          <Trans>ch. {chapter}</Trans>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        {status ? (
-                          (() => {
-                            const visual = trackerStatusVisual(status)
-                            return (
-                              <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
-                            )
-                          })()
-                        ) : (
-                          '-'
-                        )}
-                      </Table.Td>
-                      <Table.Td data-priority="low">
-                        <Text size="sm" c="var(--ink-3)">
-                          {fmtTime(at)}
-                        </Text>
-                      </Table.Td>
-                    </Table.Tr>
-                  )
-                })}
+                {groupBySeries(data.recent, data.connections).map((group) => (
+                  <Table.Tr key={group.title}>
+                    <Table.Td className="scrobble-recent-series">{group.title || '#'}</Table.Td>
+                    <Table.Td>
+                      <ul className="scrobble-trackers">
+                        {group.rows.map((r) => (
+                          <li key={r.service} className="scrobble-tracker" data-failed={r.error ? true : undefined}>
+                            <span className="scrobble-tracker-name">{serviceLabel(data.connections, r.service)}</span>
+                            {r.error ? (
+                              // The tracker's own words: English and technical, so they follow the
+                              // plain statement rather than replace it.
+                              <span className="scrobble-tracker-error">
+                                <Text span size="sm" fw={600} c="var(--danger)">
+                                  <Trans>Not updated</Trans>
+                                </Text>
+                                <Text span size="sm" c="var(--ink-3)" className="scrobble-tracker-reason">
+                                  {r.error}
+                                </Text>
+                              </span>
+                            ) : (
+                              <>
+                                <Text span size="sm" className="tnum">
+                                  {r.volume ? (
+                                    <Trans>
+                                      ch. {r.chapter} · vol. {r.volume}
+                                    </Trans>
+                                  ) : (
+                                    <Trans>ch. {r.chapter}</Trans>
+                                  )}
+                                </Text>
+                                {r.status &&
+                                  (() => {
+                                    const visual = trackerStatusVisual(r.status)
+                                    return <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
+                                  })()}
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </Table.Td>
+                    <Table.Td data-priority="low">
+                      <Text size="sm" c="var(--ink-3)">
+                        {fmtTime(group.at)}
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>

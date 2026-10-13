@@ -446,6 +446,10 @@ msgstr "当前显示 {0} 行"
 msgid "{abs} pt"
 msgstr "{abs} 分"
 
+#: src/pages/HealthPage.tsx
+msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -637,10 +641,26 @@ msgstr "{connectedCount, plural, other {# 个已连接}}"
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, other {# 章}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, other {# 个作品匹配}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -681,6 +701,10 @@ msgstr "{count, plural, other {# 个已测量章节的中位数：宽 {width}px�
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, other {显示受影响的 # 部作品}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -874,9 +898,17 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, other {已授予 # 个}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
 #, fuzzy
-msgid "{have} of {totalLabel}"
-msgstr "{have} / {totalLabel}"
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{have} / {totalLabel}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -2605,6 +2637,10 @@ msgid "Acknowledge"
 msgstr "确认"
 
 #: src/pages/HealthPage.tsx
+msgid "Acknowledge all"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Acknowledged"
 msgstr "已确认"
@@ -4083,10 +4119,21 @@ msgstr "仅限核心内容"
 msgid "ch {maxChapter}"
 msgstr "第 {maxChapter} 章"
 
+#. placeholder {0}: r.chapter
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0}"
+msgstr ""
+
+#. placeholder {0}: r.chapter
+#. placeholder {1}: r.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0} · vol. {1}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter}"
-msgstr "第 {chapter} 章"
+#~ msgid "ch. {chapter}"
+#~ msgstr "第 {chapter} 章"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -4095,8 +4142,8 @@ msgstr "第 {chapter} 章"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter} · vol. {volume}"
-msgstr "第 {chapter} 章 · 卷 {volume}"
+#~ msgid "ch. {chapter} · vol. {volume}"
+#~ msgstr "第 {chapter} 章 · 卷 {volume}"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -6691,6 +6738,10 @@ msgstr "估算"
 msgid "Events"
 msgstr "事件"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Every chapter"
@@ -7975,6 +8026,10 @@ msgstr "隐藏来源名称"
 #, fuzzy
 msgid "Hide source text"
 msgstr "隐藏来源文本"
+
+#: src/pages/HealthPage.tsx
+msgid "Hide the list"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -10736,6 +10791,10 @@ msgstr "系列中没有此编号的章节"
 msgid "No chapters known."
 msgstr "没有已知章节。"
 
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "No chapters match that filter."
@@ -11063,6 +11122,11 @@ msgstr "尚未下载快照"
 msgid "No source could serve the first chapter."
 msgstr "没有来源能提供第一章。"
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 msgid "No source has scored this yet."
 msgstr ""
@@ -11189,6 +11253,10 @@ msgstr "最近的通知中没有内容"
 #, fuzzy
 msgid "None linked"
 msgstr "未关联任何内容"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -12718,7 +12786,6 @@ msgstr "配置文件已创建"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sectionList.ts
 #, fuzzy
 msgid "Progress"
@@ -13303,8 +13370,8 @@ msgstr "读取每个字节并与归档自身的校验和进行核对，这样可
 #~ msgstr "从 Kavita 读取阅读进度，并每 {intervalMinutes, plural, other {# 分钟}} 向你的跟踪器推送只前进不后退的更新。远程进度不会降低，已完成条目也不会降级。在设置中配置凭据。"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
-msgstr ""
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+#~ msgstr ""
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -13929,6 +13996,10 @@ msgstr "正在重命名文件夹"
 #, fuzzy
 msgid "Reopen"
 msgstr "重新打开"
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen all"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -15471,8 +15542,8 @@ msgstr "服务器 URL"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Service"
-msgstr "服务"
+#~ msgid "Service"
+#~ msgstr "服务"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -16294,7 +16365,6 @@ msgstr "统计内容"
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Status"
@@ -17692,6 +17762,7 @@ msgstr "跟踪来自 OPDS 的阅读进度"
 msgid "Tracker"
 msgstr "跟踪器"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy

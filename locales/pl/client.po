@@ -446,6 +446,10 @@ msgstr "Liczba wierszy: {0}"
 msgid "{abs} pt"
 msgstr "{abs} pkt"
 
+#: src/pages/HealthPage.tsx
+msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -637,10 +641,26 @@ msgstr "{connectedCount, plural, one {Połączono #} few {Połączono #} many {P
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# rozdz.} few {# rozdz.} many {# rozdz.} other {# rozdz.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, one {# pasująca seria} few {# pasujące serie} many {# pasujących serii} other {# pasującej serii}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -681,6 +701,10 @@ msgstr "{count, plural, one {Mediana z # zmierzonego rozdziału: szerokość {wi
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Pokaż # serię objętą zmianą} few {Pokaż # serie objęte zmianą} many {Pokaż # serii objętych zmianą} other {Pokaż # serii objętych zmianą}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -874,9 +898,17 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# przyznane} few {# przyznane} many {# przyznanych} other {# przyznanego}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
 #, fuzzy
-msgid "{have} of {totalLabel}"
-msgstr "{have} z {totalLabel}"
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{have} z {totalLabel}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -2606,6 +2638,10 @@ msgid "Acknowledge"
 msgstr "Potwierdź"
 
 #: src/pages/HealthPage.tsx
+msgid "Acknowledge all"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Acknowledged"
 msgstr "Potwierdzone"
@@ -4084,10 +4120,21 @@ msgstr "Tylko jako główny motyw"
 msgid "ch {maxChapter}"
 msgstr "rozdz. {maxChapter}"
 
+#. placeholder {0}: r.chapter
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0}"
+msgstr ""
+
+#. placeholder {0}: r.chapter
+#. placeholder {1}: r.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0} · vol. {1}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter}"
-msgstr "rozdz. {chapter}"
+#~ msgid "ch. {chapter}"
+#~ msgstr "rozdz. {chapter}"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -4096,8 +4143,8 @@ msgstr "Rozdz. {chapter}"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter} · vol. {volume}"
-msgstr "rozdz. {chapter} · t. {volume}"
+#~ msgid "ch. {chapter} · vol. {volume}"
+#~ msgstr "rozdz. {chapter} · t. {volume}"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -6692,6 +6739,10 @@ msgstr "Szacunkowo"
 msgid "Events"
 msgstr "Zdarzenia"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr ""
+
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Every chapter"
@@ -7976,6 +8027,10 @@ msgstr "Ukryj nazwy źródeł"
 #, fuzzy
 msgid "Hide source text"
 msgstr "Ukryj tekst źródła"
+
+#: src/pages/HealthPage.tsx
+msgid "Hide the list"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -10737,6 +10792,10 @@ msgstr "w serii nie ma rozdziału o tym numerze"
 msgid "No chapters known."
 msgstr "Brak znanych rozdziałów."
 
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "No chapters match that filter."
@@ -11064,6 +11123,11 @@ msgstr "Jeszcze nie pobrano migawki"
 msgid "No source could serve the first chapter."
 msgstr "Żadne źródło nie mogło dostarczyć pierwszego rozdziału."
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 msgid "No source has scored this yet."
 msgstr ""
@@ -11190,6 +11254,10 @@ msgstr "Brak w najnowszych powiadomieniach"
 #, fuzzy
 msgid "None linked"
 msgstr "Brak połączonych"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -12719,7 +12787,6 @@ msgstr "Utworzono profil"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sectionList.ts
 #, fuzzy
 msgid "Progress"
@@ -13304,8 +13371,8 @@ msgstr "Odczytuje każdy bajt i porównuje go z własnymi sumami kontrolnymi arc
 #~ msgstr "Odczytuje postęp czytania z Kavity i wysyła do Twoich trackerów aktualizacje działające tylko naprzód co {intervalMinutes, plural, one {# minutę} few {# minuty} many {# minut} other {# minuty}}. Zdalny postęp nigdy nie jest obniżany, a ukończone wpisy nigdy nie są cofane. Skonfiguruj dane uwierzytelniające w Ustawieniach."
 
 #: src/pages/ScrobblePage.tsx
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
-msgstr ""
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+#~ msgstr ""
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -13930,6 +13997,10 @@ msgstr "Zmiana nazwy folderu"
 #, fuzzy
 msgid "Reopen"
 msgstr "Otwórz ponownie"
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen all"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -15472,8 +15543,8 @@ msgstr "Adres URL serwera"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Service"
-msgstr "Usługa"
+#~ msgid "Service"
+#~ msgstr "Usługa"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -16295,7 +16366,6 @@ msgstr "Sekcje statystyk"
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Status"
@@ -17693,6 +17763,7 @@ msgstr "Śledź postęp czytania z OPDS"
 msgid "Tracker"
 msgstr "Tracker"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy

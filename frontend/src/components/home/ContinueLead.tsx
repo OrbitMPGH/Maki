@@ -109,9 +109,7 @@ const ContinueTile = memo(function ContinueTile({
               >
                 <div className="continue-tile-fill" style={{ width: `${resumePct}%` }} />
               </div>
-              <span className="continue-tile-pages tnum" title={t`Page ${pageNumber} of ${pageCount}`}>
-                {pageNumber}/{pageCount}
-              </span>
+              <span className="continue-tile-pages tnum">{t`Page ${pageNumber} of ${pageCount}`}</span>
             </div>
           )}
 

@@ -919,13 +919,129 @@ function ChecksPanel({
                 {rows.length}
               </Text>
             </Group>
-            {rows.map((check) => (
-              <CheckRow key={check.id} check={check} run={run} />
-            ))}
+            {collapseByType(rows).map((item) =>
+              Array.isArray(item) ? (
+                <CheckGroup key={checkType(item[0].id)} checks={item} run={run} />
+              ) : (
+                <CheckRow key={item.id} check={item} run={run} />
+              ),
+            )}
           </div>
         )
       })}
     </Panel>
+  )
+}
+
+/**
+ * Checks that repeat once per series or per source. Past `COLLAPSE_AT` live issues of one type they
+ * fold into a single row: eleven "monitored but has no enabled sources" rows read as eleven
+ * problems and took eleven clicks to acknowledge. The prefix is the check type; the rest of the id
+ * is the series, mapping or source it is about.
+ */
+const COLLAPSIBLE = ['legacy:series:', 'legacy:mapping:', 'legacy:source:', 'suwayomi:missing:'] as const
+const COLLAPSE_AT = 3
+
+function checkType(id: string): string | null {
+  return COLLAPSIBLE.find((prefix) => id.startsWith(prefix)) ?? null
+}
+
+/** The rows in order, with each collapsible type's live issues gathered where its first one stood. */
+function collapseByType(rows: HealthCheck[]): (HealthCheck | HealthCheck[])[] {
+  const issues = new Map<string, HealthCheck[]>()
+  for (const row of rows) {
+    const type = checkType(row.id)
+    if (type && ISSUE.includes(row.status)) issues.set(type, [...(issues.get(type) ?? []), row])
+  }
+  const out: (HealthCheck | HealthCheck[])[] = []
+  for (const row of rows) {
+    const type = checkType(row.id)
+    const group = type && ISSUE.includes(row.status) ? issues.get(type) : undefined
+    if (!group || group.length < COLLAPSE_AT) out.push(row)
+    else if (group[0] === row) out.push(group)
+  }
+  return out
+}
+
+function CheckGroup({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+  const [open, setOpen] = useState(false)
+  const count = checks.length
+  const type = checkType(checks[0].id)
+  const unsettled = checks.filter((c) => !c.acknowledged)
+  const acknowledged = count - unsettled.length
+  const worst = checks.find((c) => tone(c.status) === 'danger') ?? checks[0]
+  const latest = checks.reduce((a, b) => (a.checkedAt > b.checkedAt ? a : b)).checkedAt
+  const headline =
+    type === 'legacy:series:' ? (
+      <Plural
+        value={count}
+        one="# monitored series has no enabled sources"
+        other="# monitored series have no enabled sources"
+      />
+    ) : type === 'legacy:mapping:' ? (
+      <Plural
+        value={count}
+        one="# series is failing to refresh from its source"
+        other="# series are failing to refresh from their sources"
+      />
+    ) : type === 'legacy:source:' ? (
+      <Plural value={count} one="# source looks unstable" other="# sources look unstable" />
+    ) : (
+      <Plural value={count} one="# source is no longer installed in Suwayomi" other="# sources are no longer installed in Suwayomi" />
+    )
+
+  return (
+    <div className="health-check-group">
+      <div className="health-check" data-acknowledged={unsettled.length === 0 || undefined}>
+        <Status value={worst.status} />
+        <div style={{ minWidth: 0 }}>
+          <Text size="sm" c={unsettled.length === 0 ? 'var(--ink-3)' : 'var(--ink-2)'}>
+            {headline}
+          </Text>
+          <Text size="xs" c="var(--ink-4)" mt={2}>
+            {formatDateTime(latest)}
+            {acknowledged > 0 && (
+              <>
+                {' · '}
+                <Plural value={acknowledged} one="# acknowledged" other="# acknowledged" />
+              </>
+            )}
+          </Text>
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            mt={4}
+            px={0}
+            aria-expanded={open}
+            rightSection={<IconChevronDown size={12} style={{ transform: open ? 'rotate(180deg)' : undefined }} />}
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? <Trans>Hide the list</Trans> : <Plural value={count} one="Show # check" other="Show all # checks" />}
+          </Button>
+        </div>
+        <div className="health-check-actions">
+          <Button
+            size="xs"
+            variant="subtle"
+            onClick={() =>
+              run('/checks/acknowledge/bulk', {
+                ids: (unsettled.length > 0 ? unsettled : checks).map((c) => c.id),
+                acknowledged: unsettled.length > 0,
+              })
+            }
+          >
+            {unsettled.length > 0 ? <Trans>Acknowledge all</Trans> : <Trans>Reopen all</Trans>}
+          </Button>
+        </div>
+      </div>
+      {open && (
+        <div className="health-check-group-body">
+          {checks.map((check) => (
+            <CheckRow key={check.id} check={check} run={run} />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

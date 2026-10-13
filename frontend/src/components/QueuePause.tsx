@@ -92,7 +92,7 @@ export function QueuePauseButton() {
   return (
     <>
       <Button variant="light" leftSection={<IconPlayerPause size={16} />} onClick={openDialog}>
-        <Trans>Pause</Trans>
+        <Trans>Pause downloads</Trans>
       </Button>
 
       <Modal opened={open} onClose={() => setOpen(false)} centered title={<Trans>Pause downloads</Trans>}>
