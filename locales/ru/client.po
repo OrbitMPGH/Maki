@@ -3165,8 +3165,9 @@ msgid "Another upgrade scan was already running, so this one did not run. Try ag
 msgstr "Другая проверка улучшений уже шла, поэтому эта не запустилась. Повторите, когда она завершится."
 
 #: src/pages/stats/sections/ProgressSection.tsx
+#, fuzzy
 msgid "Another user"
-msgstr ""
+msgstr "Другой пользователь"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9031,6 +9032,11 @@ msgstr "Оставьте поле пустым, чтобы не ограничи
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
+msgid "Leave at 0–10 to ignore. Narrowing it hides series without a score."
+msgstr "Оставьте 0–10, чтобы игнорировать. Сужение диапазона скрывает серии без оценки."
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Leave at 0–100% to ignore."
 msgstr "Оставьте 0–100%, чтобы игнорировать."
 
@@ -10289,6 +10295,16 @@ msgstr "Мой телефон"
 #, fuzzy
 msgid "My rating"
 msgstr "Моя оценка"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating from"
+msgstr "Моя оценка от"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating to"
+msgstr "Моя оценка до"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12862,6 +12878,7 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "Источник {source} ограничил частоту запросов, ожидание перед следующей попыткой"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rated"
 msgstr "Оценено"
@@ -12877,11 +12894,27 @@ msgstr "Оценка: {rating}/10"
 msgid "Rating"
 msgstr "Рейтинг"
 
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgctxt "MangaBaka score filter"
+msgid "Rating"
+msgstr "Рейтинг"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
 msgstr "Оценка очищена"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating from"
+msgstr "Рейтинг от"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating to"
+msgstr "Рейтинг до"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15302,8 +15335,9 @@ msgid "Set by {user}"
 msgstr "Задано: {user}"
 
 #: src/components/series/MetadataHistoryModal.tsx
+#, fuzzy
 msgid "Set by another user"
-msgstr ""
+msgstr "Задано другим пользователем"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17794,8 +17828,9 @@ msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "Отвязано {unlinkedPhrase} от {fileName}"
 
 #: src/components/series/EditMetadataModal.tsx
+#, fuzzy
 msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
-msgstr ""
+msgstr "Разблокировано, но постер провайдера не удалось загрузить. Ваш постер остаётся, пока обновление не пройдёт успешно."
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17828,6 +17863,7 @@ msgstr "Неофициальная сборка, проверка обновле
 msgid "Unpin it from every series first"
 msgstr "Сначала открепите его от всех серий"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
 msgid "Unrated"

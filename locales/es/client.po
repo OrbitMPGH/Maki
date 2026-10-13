@@ -3165,8 +3165,9 @@ msgid "Another upgrade scan was already running, so this one did not run. Try ag
 msgstr "Ya había otro análisis de mejoras en curso, así que este no se ejecutó. Inténtalo de nuevo cuando termine."
 
 #: src/pages/stats/sections/ProgressSection.tsx
+#, fuzzy
 msgid "Another user"
-msgstr ""
+msgstr "Otro usuario"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9031,6 +9032,11 @@ msgstr "Deja un campo en blanco para no establecer un límite. Aprobar pone exac
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
+msgid "Leave at 0–10 to ignore. Narrowing it hides series without a score."
+msgstr "Déjalo en 0–10 para ignorarlo. Acotarlo oculta las series sin valoración."
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Leave at 0–100% to ignore."
 msgstr "Déjalo en 0–100 % para ignorarlo."
 
@@ -10289,6 +10295,16 @@ msgstr "Mi teléfono"
 #, fuzzy
 msgid "My rating"
 msgstr "Mi valoración"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating from"
+msgstr "Mi valoración desde"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating to"
+msgstr "Mi valoración hasta"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12862,6 +12878,7 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "Limitado por velocidad por {source}, esperando antes del próximo intento"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rated"
 msgstr "Valorado"
@@ -12877,11 +12894,27 @@ msgstr "Valorado {rating}/10"
 msgid "Rating"
 msgstr "Valoración"
 
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgctxt "MangaBaka score filter"
+msgid "Rating"
+msgstr "Valoración"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
 msgstr "Valoración borrada"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating from"
+msgstr "Valoración desde"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating to"
+msgstr "Valoración hasta"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15302,8 +15335,9 @@ msgid "Set by {user}"
 msgstr "Establecido por {user}"
 
 #: src/components/series/MetadataHistoryModal.tsx
+#, fuzzy
 msgid "Set by another user"
-msgstr ""
+msgstr "Establecido por otro usuario"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17794,8 +17828,9 @@ msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "Desvinculado {unlinkedPhrase} de {fileName}"
 
 #: src/components/series/EditMetadataModal.tsx
+#, fuzzy
 msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
-msgstr ""
+msgstr "Desbloqueado, pero no se pudo descargar el póster del proveedor. Tu póster se mantiene hasta que una actualización tenga éxito."
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17828,6 +17863,7 @@ msgstr "Compilación no oficial, se omiten las comprobaciones de actualizaciones
 msgid "Unpin it from every series first"
 msgstr "Desfíjalo primero de todas las series"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
 msgid "Unrated"

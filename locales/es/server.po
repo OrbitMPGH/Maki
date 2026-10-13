@@ -777,14 +777,16 @@ msgstr "Se conservó {name}: Maki lo generó, pero el original del que venía ya
 
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: cover.jpg was kept: Maki could not confirm it is the one it wrote, so it may be yours
+#, fuzzy
 msgid "error.libraryImport.undoKeptCover"
-msgstr ""
+msgstr "cover.jpg se conservó: Maki no puede confirmar que sea el que escribió, así que puede ser tuyo."
 
 #. {name} is a file name, not translated.
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: {name} was kept: it changed after the import, so it is not the file Maki built
+#, fuzzy
 msgid "error.libraryImport.undoKeptReplaced"
-msgstr ""
+msgstr "{name} se conservó: cambió después de la importación, así que no es el archivo que generó Maki."
 
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: Sources are still being searched for this series. Try again in a minute.
@@ -1256,8 +1258,9 @@ msgstr "Ya hay otro archivo en el lugar de este. Muévelo o bórralo y luego vue
 #. A delete saved this entry a moment ago and is still moving its file into the bin folder.
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 #. English: This file is still being moved into the recycle bin. Try again in a moment.
+#, fuzzy
 msgid "error.recycleBin.stillMoving"
-msgstr ""
+msgstr "Este archivo todavía se está moviendo a la papelera. Inténtalo de nuevo en un momento."
 
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 #. English: The original location is outside the root folder or behind a link, so the file cannot go back there.

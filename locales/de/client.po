@@ -3165,8 +3165,9 @@ msgid "Another upgrade scan was already running, so this one did not run. Try ag
 msgstr "Ein anderer Upgrade-Scan lief bereits, daher wurde dieser nicht ausgeführt. Versuche es erneut, sobald er fertig ist."
 
 #: src/pages/stats/sections/ProgressSection.tsx
+#, fuzzy
 msgid "Another user"
-msgstr ""
+msgstr "Anderer Benutzer"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9031,6 +9032,11 @@ msgstr "Lass ein Feld leer, um keine Begrenzung zu setzen. Durch die Genehmigung
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
+msgid "Leave at 0–10 to ignore. Narrowing it hides series without a score."
+msgstr "Bei 0–10 lassen, um ihn zu ignorieren. Enger eingestellt blendet er Serien ohne Bewertung aus."
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Leave at 0–100% to ignore."
 msgstr "Bei 0–100 % lassen, um es zu ignorieren."
 
@@ -10289,6 +10295,16 @@ msgstr "Mein Smartphone"
 #, fuzzy
 msgid "My rating"
 msgstr "Meine Bewertung"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating from"
+msgstr "Meine Bewertung von"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating to"
+msgstr "Meine Bewertung bis"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12862,6 +12878,7 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "Ratenlimit von {source}, warten vor dem nächsten Versuch"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rated"
 msgstr "Bewertet"
@@ -12877,11 +12894,27 @@ msgstr "Bewertung {rating}/10"
 msgid "Rating"
 msgstr "Bewertung"
 
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgctxt "MangaBaka score filter"
+msgid "Rating"
+msgstr "Bewertung"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
 msgstr "Bewertung gelöscht"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating from"
+msgstr "Bewertung von"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating to"
+msgstr "Bewertung bis"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15302,8 +15335,9 @@ msgid "Set by {user}"
 msgstr "Gesetzt von {user}"
 
 #: src/components/series/MetadataHistoryModal.tsx
+#, fuzzy
 msgid "Set by another user"
-msgstr ""
+msgstr "Von einem anderen Benutzer gesetzt"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17794,8 +17828,9 @@ msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "{unlinkedPhrase} von {fileName} gelöst"
 
 #: src/components/series/EditMetadataModal.tsx
+#, fuzzy
 msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
-msgstr ""
+msgstr "Entsperrt, aber das Poster des Anbieters konnte nicht heruntergeladen werden. Dein Poster bleibt, bis eine Aktualisierung gelingt."
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17828,6 +17863,7 @@ msgstr "Inoffizieller Build, Update-Prüfungen werden übersprungen."
 msgid "Unpin it from every series first"
 msgstr "Zuerst überall von den Serien lösen"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
 msgid "Unrated"

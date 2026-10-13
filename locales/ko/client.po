@@ -3164,8 +3164,9 @@ msgid "Another upgrade scan was already running, so this one did not run. Try ag
 msgstr "다른 업그레이드 스캔이 이미 실행 중이어서 이번 스캔은 실행되지 않았습니다. 끝난 뒤 다시 시도하세요."
 
 #: src/pages/stats/sections/ProgressSection.tsx
+#, fuzzy
 msgid "Another user"
-msgstr ""
+msgstr "다른 사용자"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9030,6 +9031,11 @@ msgstr "제한을 두지 않으려면 필드를 비워 두세요. 승인하면 �
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
+msgid "Leave at 0–10 to ignore. Narrowing it hides series without a score."
+msgstr "무시하려면 0–10으로 두세요. 범위를 좁히면 점수가 없는 시리즈가 숨겨집니다."
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Leave at 0–100% to ignore."
 msgstr "무시하려면 0–100%로 두세요."
 
@@ -10288,6 +10294,16 @@ msgstr "내 휴대폰"
 #, fuzzy
 msgid "My rating"
 msgstr "내 평점"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating from"
+msgstr "내 평점 최소"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating to"
+msgstr "내 평점 최대"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12861,6 +12877,7 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "{source}의 속도 제한으로 다음 시도 전 대기 중"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rated"
 msgstr "평가함"
@@ -12876,11 +12893,27 @@ msgstr "{rating}/10점"
 msgid "Rating"
 msgstr "평점"
 
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgctxt "MangaBaka score filter"
+msgid "Rating"
+msgstr "평점"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
 msgstr "평점 지움"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating from"
+msgstr "평점 최소"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating to"
+msgstr "평점 최대"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15301,8 +15334,9 @@ msgid "Set by {user}"
 msgstr "{user} 설정"
 
 #: src/components/series/MetadataHistoryModal.tsx
+#, fuzzy
 msgid "Set by another user"
-msgstr ""
+msgstr "다른 사용자 설정"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17793,8 +17827,9 @@ msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "{fileName}에서 {unlinkedPhrase} 연결을 해제함"
 
 #: src/components/series/EditMetadataModal.tsx
+#, fuzzy
 msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
-msgstr ""
+msgstr "잠금을 해제했지만 제공자의 포스터를 내려받지 못했습니다. 새로 고침에 성공할 때까지 현재 포스터가 유지됩니다."
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17827,6 +17862,7 @@ msgstr "비공식 빌드이므로 업데이트 확인을 건너뜁니다."
 msgid "Unpin it from every series first"
 msgstr "먼저 모든 시리즈에서 고정을 해제하세요"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
 msgid "Unrated"

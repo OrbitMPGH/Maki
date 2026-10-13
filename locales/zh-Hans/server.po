@@ -777,14 +777,16 @@ msgstr "{name} 已保留：Maki 已生成它，但它的原始文件已不存在
 
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: cover.jpg was kept: Maki could not confirm it is the one it wrote, so it may be yours
+#, fuzzy
 msgid "error.libraryImport.undoKeptCover"
-msgstr ""
+msgstr "cover.jpg 已保留：Maki 无法确认它是自己写入的那个文件，因此它可能是你的文件。"
 
 #. {name} is a file name, not translated.
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: {name} was kept: it changed after the import, so it is not the file Maki built
+#, fuzzy
 msgid "error.libraryImport.undoKeptReplaced"
-msgstr ""
+msgstr "{name} 已保留：它在导入后有过改动，因此不是 Maki 生成的文件。"
 
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: Sources are still being searched for this series. Try again in a minute.
@@ -1256,8 +1258,9 @@ msgstr "原位置已有另一个文件。请先移动或删除它，然后再次
 #. A delete saved this entry a moment ago and is still moving its file into the bin folder.
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 #. English: This file is still being moved into the recycle bin. Try again in a moment.
+#, fuzzy
 msgid "error.recycleBin.stillMoving"
-msgstr ""
+msgstr "该文件仍在移入回收站，请稍后再试。"
 
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 #. English: The original location is outside the root folder or behind a link, so the file cannot go back there.

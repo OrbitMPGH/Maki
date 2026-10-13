@@ -3164,8 +3164,9 @@ msgid "Another upgrade scan was already running, so this one did not run. Try ag
 msgstr "已有另一个升级扫描正在运行，因此这次没有运行。请等它完成后再试。"
 
 #: src/pages/stats/sections/ProgressSection.tsx
+#, fuzzy
 msgid "Another user"
-msgstr ""
+msgstr "其他用户"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9030,6 +9031,11 @@ msgstr "字段留空表示没有边界。批准后会将此范围准确加入队
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
+msgid "Leave at 0–10 to ignore. Narrowing it hides series without a score."
+msgstr "保持 0–10 即忽略此筛选。缩小范围会隐藏没有评分的系列。"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Leave at 0–100% to ignore."
 msgstr "保持为 0–100% 即可忽略。"
 
@@ -10288,6 +10294,16 @@ msgstr "我的手机"
 #, fuzzy
 msgid "My rating"
 msgstr "我的评分"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating from"
+msgstr "我的评分下限"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating to"
+msgstr "我的评分上限"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12861,6 +12877,7 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "受到 {source} 的速率限制，等待后再试"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rated"
 msgstr "已评分"
@@ -12876,11 +12893,27 @@ msgstr "评分 {rating}/10"
 msgid "Rating"
 msgstr "评分"
 
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgctxt "MangaBaka score filter"
+msgid "Rating"
+msgstr "评分"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
 msgstr "评分已清除"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating from"
+msgstr "评分下限"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating to"
+msgstr "评分上限"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15301,8 +15334,9 @@ msgid "Set by {user}"
 msgstr "由 {user} 设置"
 
 #: src/components/series/MetadataHistoryModal.tsx
+#, fuzzy
 msgid "Set by another user"
-msgstr ""
+msgstr "由其他用户设置"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17793,8 +17827,9 @@ msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "已从 {fileName} 取消关联 {unlinkedPhrase}"
 
 #: src/components/series/EditMetadataModal.tsx
+#, fuzzy
 msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
-msgstr ""
+msgstr "已解锁，但无法下载提供方的海报。在下次刷新成功之前，将保留你的海报。"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17827,6 +17862,7 @@ msgstr "非官方构建，跳过更新检查。"
 msgid "Unpin it from every series first"
 msgstr "请先从所有系列中取消固定"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
 msgid "Unrated"

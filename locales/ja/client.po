@@ -3164,8 +3164,9 @@ msgid "Another upgrade scan was already running, so this one did not run. Try ag
 msgstr "別のアップグレードスキャンがすでに実行中だったため、今回は実行されませんでした。完了してからもう一度お試しください。"
 
 #: src/pages/stats/sections/ProgressSection.tsx
+#, fuzzy
 msgid "Another user"
-msgstr ""
+msgstr "別のユーザー"
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -9030,6 +9031,11 @@ msgstr "上限なしの場合は空欄にしてください。承認するとこ
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
+msgid "Leave at 0–10 to ignore. Narrowing it hides series without a score."
+msgstr "無視する場合は0～10のままにしてください。範囲を狭めると、スコアのないシリーズは非表示になります。"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
 msgid "Leave at 0–100% to ignore."
 msgstr "無視する場合は0～100%のままにしてください。"
 
@@ -10288,6 +10294,16 @@ msgstr "自分のスマートフォン"
 #, fuzzy
 msgid "My rating"
 msgstr "自分の評価"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating from"
+msgstr "自分の評価（下限）"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "My rating to"
+msgstr "自分の評価（上限）"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -12861,6 +12877,7 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "{source}によるレート制限。次の試行まで待機中"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rated"
 msgstr "評価済み"
@@ -12876,11 +12893,27 @@ msgstr "{rating}/10と評価"
 msgid "Rating"
 msgstr "評価"
 
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgctxt "MangaBaka score filter"
+msgid "Rating"
+msgstr "評価"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rating cleared"
 msgstr "評価をクリアしました"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating from"
+msgstr "評価（下限）"
+
+#: src/pages/LibraryPage.tsx
+#, fuzzy
+msgid "Rating to"
+msgstr "評価（上限）"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -15301,8 +15334,9 @@ msgid "Set by {user}"
 msgstr "{user}が設定"
 
 #: src/components/series/MetadataHistoryModal.tsx
+#, fuzzy
 msgid "Set by another user"
-msgstr ""
+msgstr "別のユーザーが設定"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17793,8 +17827,9 @@ msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "{fileName}から{unlinkedPhrase}のリンクを解除しました"
 
 #: src/components/series/EditMetadataModal.tsx
+#, fuzzy
 msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
-msgstr ""
+msgstr "ロックを解除しましたが、プロバイダーのポスターをダウンロードできませんでした。更新が成功するまで、現在のポスターはそのまま残ります。"
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -17827,6 +17862,7 @@ msgstr "非公式ビルドのため、更新確認をスキップします。"
 msgid "Unpin it from every series first"
 msgstr "先にすべてのシリーズから固定を外してください"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
 msgid "Unrated"
