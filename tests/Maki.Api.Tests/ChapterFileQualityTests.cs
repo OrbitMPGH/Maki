@@ -133,6 +133,32 @@ public class ChapterFileMeasureServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Files_of_a_series_still_owed_its_import_link_wait_for_the_link()
+    {
+        var seriesId = SeedSeries();
+        TestQuality.WriteCbz(Path.Combine(_root, "Series", "Series 001.cbz"), 2, 10, 10);
+        var file = SeedFile(seriesId, Path.Combine("Series", "Series 001.cbz"));
+        using (var db = _db.NewContext())
+        {
+            var series = db.Series.Single();
+            series.PendingImportLink = PendingImportLink.LinkAndComicInfo;
+            db.SaveChanges();
+            Assert.True(await Service(db).RunAsync(CancellationToken.None));
+        }
+
+        Assert.Null(Load(file).MeasuredAtUtc);
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single().PendingImportLink = PendingImportLink.None;
+            db.SaveChanges();
+            Assert.True(await Service(db).RunAsync(CancellationToken.None));
+        }
+
+        Assert.NotNull(Load(file).MeasuredAtUtc);
+    }
+
+    [Fact]
     public async Task A_root_whose_folder_is_missing_adds_nothing_to_the_pending_count()
     {
         var seriesId = SeedSeries();
