@@ -1,9 +1,11 @@
 using Maki.Api.Configuration;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Core.Notifications;
 using System.Security.Cryptography;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 
@@ -15,6 +17,8 @@ public class CoverService(
     : INotificationCoverStore
 {
     private const int PosterWidth = 400;
+
+    private static readonly DecoderOptions FirstFrameOnly = new() { MaxFrames = 1 };
 
     public string CoverPathFor(int seriesId) => Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
 
@@ -65,7 +69,7 @@ public class CoverService(
         {
             var client = httpClientFactory.CreateClient("covers");
             await using var stream = await client.GetStreamAsync(coverUrl, ct);
-            using var image = await Image.LoadAsync(stream, ct);
+            using var image = await Image.LoadAsync(FirstFrameOnly, stream, ct);
             return await SavePosterAsync(seriesId, image);
         }
         catch (Exception ex)
@@ -81,16 +85,17 @@ public class CoverService(
     /// Orientation is applied and every metadata profile dropped, so a phone photo's EXIF location
     /// never reaches the poster other users can fetch.
     /// </summary>
-    public async Task<string> StoreUploadedCoverAsync(int seriesId, Stream content, CancellationToken ct = default)
-    {
-        using var image = await Image.LoadAsync(content, ct);
-        image.Mutate(x => x.AutoOrient());
-        image.Metadata.ExifProfile = null;
-        image.Metadata.IptcProfile = null;
-        image.Metadata.XmpProfile = null;
-        image.Metadata.IccProfile = null;
-        return await SavePosterAsync(seriesId, image);
-    }
+    public Task<string> StoreUploadedCoverAsync(int seriesId, Stream content, CancellationToken ct = default) =>
+        ImageWorkGate.RunAsync(async () =>
+        {
+            using var image = await Image.LoadAsync(FirstFrameOnly, content, ct);
+            image.Mutate(x => x.AutoOrient());
+            image.Metadata.ExifProfile = null;
+            image.Metadata.IptcProfile = null;
+            image.Metadata.XmpProfile = null;
+            image.Metadata.IccProfile = null;
+            return await SavePosterAsync(seriesId, image);
+        }, ct);
 
     private async Task<string> SavePosterAsync(int seriesId, Image image)
     {
