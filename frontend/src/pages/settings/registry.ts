@@ -55,6 +55,8 @@ export interface SettingsEntry {
   /** Instance configuration: the server rejects these for a non-admin, so they are not rendered. */
   admin?: boolean
   permission?: Permission
+  /** Rendered under the tab's collapsed "Advanced" group rather than with the everyday cards. */
+  advanced?: boolean
 }
 
 export const SETTINGS_TABS: SettingsTab[] = [
@@ -359,6 +361,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'flaresolverr',
     tab: 'downloads',
+    advanced: true,
     title: msg`FlareSolverr`,
     admin: true,
     keywords: msg({
@@ -369,6 +372,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'prowlarr',
     tab: 'downloads',
+    advanced: true,
     title: msg`Prowlarr`,
     admin: true,
     keywords: msg({
@@ -379,6 +383,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'qbittorrent',
     tab: 'downloads',
+    advanced: true,
     title: msg`qBittorrent`,
     admin: true,
     keywords: msg({
@@ -389,6 +394,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'profiles',
     tab: 'downloads',
+    advanced: true,
     title: msg`Quality profiles`,
     admin: true,
     keywords: msg({
@@ -399,6 +405,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'formats',
     tab: 'downloads',
+    advanced: true,
     title: msg`Quality formats`,
     admin: true,
     keywords: msg({
@@ -409,6 +416,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'upgrades',
     tab: 'downloads',
+    advanced: true,
     title: msg`Upgrade scan`,
     admin: true,
     keywords: msg({
@@ -419,6 +427,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'volume-releases',
     tab: 'downloads',
+    advanced: true,
     title: msg`Volume releases`,
     admin: true,
     keywords: msg({

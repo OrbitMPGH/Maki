@@ -8,7 +8,7 @@ The poster card for rows the recommender produced (`EngineRailRow` of `EngineCar
 - `affiliate`: a relation ("Sequel to X")
 - `sparkles`: semantic similarity ("Feels like X")
 - `feather`: same author ("By an author you read")
-- `users`: the crowd ("Readers like you also finished this")
+- `users`: the crowd, naming the reader's own title when the co-read graph knows it ("Readers who finished Boy Meets Maria also finished this", otherwise "Readers like you also finished this")
 - `heart`: taste match ("Close to your taste")
 
 Then up to two matched tags as `engine-chip`s (`surface-2`, `ink-3`, `badge-text` size). Tags go before genres: "Time Loop" says what a pick is, "Action" says what a third of the catalogue is. Two, because three truncate at this width. The tags are already spoiler-filtered.

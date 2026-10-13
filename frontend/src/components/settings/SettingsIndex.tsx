@@ -9,7 +9,14 @@ import { scrollBehavior } from '../../lib/scrollBehavior'
  * The cards on one settings tab, as a sticky list beside them. Highlights whichever card is in the
  * upper part of the viewport. Hidden below the width where it fits beside the content.
  */
-export function SettingsIndex({ entries }: { entries: SettingsEntry[] }) {
+export function SettingsIndex({
+  entries,
+  reveal,
+}: {
+  entries: SettingsEntry[]
+  /** Opens whatever hides an entry; true when it had to, so the jump waits for the expand. */
+  reveal?: (entry: SettingsEntry) => boolean
+}) {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const [active, setActive] = useState(entries[0]?.id)
@@ -46,7 +53,10 @@ export function SettingsIndex({ entries }: { entries: SettingsEntry[] }) {
           className="settings-index-link"
           data-active={active === e.id || undefined}
           onClick={() => {
-            document.getElementById(`setting-${e.id}`)?.scrollIntoView({ block: 'start', behavior: scrollBehavior() })
+            const jump = () =>
+              document.getElementById(`setting-${e.id}`)?.scrollIntoView({ block: 'start', behavior: scrollBehavior() })
+            if (reveal?.(e)) window.setTimeout(jump, 260)
+            else jump()
             setActive(e.id)
           }}
         >

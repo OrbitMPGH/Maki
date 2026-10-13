@@ -59,6 +59,7 @@ import {
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
+import { Disclosure } from '../components/ui/Disclosure'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
@@ -1772,6 +1773,7 @@ function OptionsPanel() {
   const { t } = useLingui()
   const { data } = useHealthData<HealthOptions>('/options')
   const [draft, setDraft] = useState<HealthOptions | null>(null)
+  const [thresholdsOpen, setThresholdsOpen] = useState(false)
   const action = useHealthAction()
   const value = draft ?? data
   if (!value) return null
@@ -1810,24 +1812,33 @@ function OptionsPanel() {
             value={value.scanWorkers}
             onChange={(v) => update({ scanWorkers: Number(v) })}
           />
-          {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB', 'backupDays'] as const).map((key) => (
-            <NumberInput
-              key={key}
-              label={
-                {
-                  warningPercent: t`Low disk warning (%)`,
-                  errorPercent: t`Low disk error (%)`,
-                  warningGiB: t`Low disk warning (GiB)`,
-                  errorGiB: t`Low disk error (GiB)`,
-                  backupDays: t`Backup freshness (days)`,
-                }[key]
-              }
-              min={0}
-              value={value[key]}
-              onChange={(v) => update({ [key]: Number(v) })}
-            />
-          ))}
         </SimpleGrid>
+        <Disclosure
+          title={t`Thresholds`}
+          summary={t`Disk warning below ${value.warningPercent}% or ${value.warningGiB} GiB, error below ${value.errorPercent}% or ${value.errorGiB} GiB. Backups count as stale after ${value.backupDays} days.`}
+          opened={thresholdsOpen}
+          onToggle={() => setThresholdsOpen((o) => !o)}
+        >
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB', 'backupDays'] as const).map((key) => (
+              <NumberInput
+                key={key}
+                label={
+                  {
+                    warningPercent: t`Low disk warning (%)`,
+                    errorPercent: t`Low disk error (%)`,
+                    warningGiB: t`Low disk warning (GiB)`,
+                    errorGiB: t`Low disk error (GiB)`,
+                    backupDays: t`Backup freshness (days)`,
+                  }[key]
+                }
+                min={0}
+                value={value[key]}
+                onChange={(v) => update({ [key]: Number(v) })}
+              />
+            ))}
+          </SimpleGrid>
+        </Disclosure>
         <Button
           disabled={!draft}
           loading={action.isPending}

@@ -56,6 +56,9 @@ import { ImportListSettingsSection, KavitaCard, ScrobbleSection } from './settin
 import { SuwayomiCard } from './settings/SuwayomiCards'
 import { BackupSection, ImageCacheSection, UpdatesSection } from './settings/SystemCards'
 import { scrollBehavior } from '../lib/scrollBehavior'
+import { usePageState } from '../lib/pageState'
+import { Disclosure } from '../components/ui/Disclosure'
+import type { SettingsEntry } from './settings/registry'
 
 /**
  * Every card, keyed by its registry id. The registry decides order, tab and who may see it; this
@@ -161,6 +164,15 @@ export default function SettingsPage() {
     return tabs.some((x) => x.key === want) ? want! : (tabs[0]?.key ?? 'account')
   }
   const tabEntries = useMemo(() => visible.filter((e) => e.tab === activeTab), [visible, activeTab])
+  const basicEntries = tabEntries.filter((e) => !e.advanced)
+  const advancedEntries = tabEntries.filter((e) => e.advanced)
+  const [advancedOpen, setAdvancedOpen] = usePageState('settings:advanced-open', false)
+  /** Opens the Advanced group when it hides `entry`. True when it had to, so a jump waits for the expand. */
+  const reveal = (entry: SettingsEntry) => {
+    if (!entry.advanced || advancedOpen) return false
+    setAdvancedOpen(true)
+    return true
+  }
 
   // Panels unmount on a tab change (`keepMounted={false}`), which used to drop half-typed edits
   // without a word. Cards report through SettingsSection; a switch away from unsaved edits asks first.
@@ -198,6 +210,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!target || awaitingTarget) return
+    const revealing = !advancedOpen && visible.find((e) => e.id === target)?.advanced === true
+    if (revealing) setAdvancedOpen(true)
     // Consumed immediately, so picking the same entry twice in a row flashes it twice. This also
     // re-runs the effect with no target, which is why nothing below is torn down on cleanup: the
     // scroll and the flash have to outlive the render that clears the parameter.
@@ -212,18 +226,33 @@ export default function SettingsPage() {
       { replace: true },
     )
 
-    const el = document.getElementById(`setting-${target}`)
-    if (!el) return
-    const show = () => el.scrollIntoView({ block: 'center', behavior: scrollBehavior() })
+    // Looked up on each call: a card inside a group that starts closed may not be in the DOM yet.
+    const find = () => document.getElementById(`setting-${target}`)
+    if (!revealing && !find()) return
+    const show = () => find()?.scrollIntoView({ block: 'center', behavior: scrollBehavior() })
     // Cards above the target fill in as their queries resolve (the source table, the indexer list),
     // which pushes it down after the first scroll lands. Re-anchoring twice costs nothing and is
-    // what makes a deep link arrive at the card rather than somewhere above it.
-    show()
-    window.setTimeout(show, 400)
-    window.setTimeout(show, 1000)
-    el.classList.add('settings-flash')
-    window.setTimeout(() => el.classList.remove('settings-flash'), 2200)
-  }, [target, awaitingTarget, activeTab, setSearchParams])
+    // what makes a deep link arrive at the card rather than somewhere above it. A card inside a
+    // closed Advanced group is not laid out until the group opens and its cards mount, so the
+    // anchors start later.
+    for (const delay of revealing ? [300, 800, 1500] : [0, 400, 1000]) {
+      if (delay === 0) show()
+      else window.setTimeout(show, delay)
+    }
+    const flash = () => {
+      const el = find()
+      el?.classList.add('settings-flash')
+      window.setTimeout(() => el?.classList.remove('settings-flash'), 2200)
+    }
+    if (revealing) window.setTimeout(flash, 300)
+    else flash()
+  }, [target, awaitingTarget, activeTab, setSearchParams, visible, advancedOpen, setAdvancedOpen])
+
+  const card = (entry: SettingsEntry) => (
+    <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
+      {sectionNodes[entry.id]}
+    </div>
+  )
 
   return (
     <SurfaceFrame pageStyle="operational" className="settings-surface">
@@ -273,13 +302,30 @@ export default function SettingsPage() {
                   <Text size="sm" c="var(--ink-3)">
                     {renderLabel(tab.description)}
                   </Text>
-                  {tabEntries.map((entry) => (
-                    <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
-                      {sectionNodes[entry.id]}
-                    </div>
-                  ))}
+                  {advancedEntries.length === 0 ? (
+                    basicEntries.map(card)
+                  ) : (
+                    <>
+                      <h2 className="settings-group-title">
+                        <Trans>Basics</Trans>
+                      </h2>
+                      {basicEntries.map(card)}
+                      <div className="settings-group-advanced">
+                        <Disclosure
+                          title={t`Advanced`}
+                          summary={advancedEntries.map((e) => renderLabel(e.title)).join(', ')}
+                          opened={advancedOpen}
+                          onToggle={() => setAdvancedOpen((o) => !o)}
+                        >
+                          <Stack gap="xl">{advancedEntries.map(card)}</Stack>
+                        </Disclosure>
+                      </div>
+                    </>
+                  )}
                 </Stack>
-                <SettingsIndex entries={tabEntries} />
+                {/* Remounted on open and close: cards in a group that starts closed are not in the
+                    DOM when the index first looks for them to observe. */}
+                <SettingsIndex key={String(advancedOpen)} entries={tabEntries} reveal={reveal} />
               </div>
             </Tabs.Panel>
           ))}

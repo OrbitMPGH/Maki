@@ -69,6 +69,20 @@ export declare function FigureStrip(props: {
   middleAfter?: number
 }): JSX.Element
 
+export interface DisclosureProps {
+  title: ReactNode
+  /** Badges how many things inside are set. Hidden at 0. */
+  count?: number
+  /** What a screen reader hears for `count`, translated. */
+  countLabel?: string
+  /** Up to two lines under the title, shown only while closed. */
+  summary?: ReactNode
+  opened: boolean
+  onToggle: () => void
+  children: ReactNode
+}
+export declare function Disclosure(props: DisclosureProps): JSX.Element
+
 /** A status as a coloured dot and a word. `tone` is a token stem. */
 export declare function StatusDot(
   props: ComponentPropsWithRef<'span'> & { tone: string; live?: boolean },

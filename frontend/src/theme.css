@@ -2156,29 +2156,17 @@ body::before {
 }
 /* The feature's rows. Spacing lives here rather than on the elements so the short-viewport block
    at the bottom can tune the whole stack in one place. */
-.discover-hero-pills {
-  margin-top: 14px;
-}
-/* Reserved, because the source scores arrive with the detail request and a row that appears from
-   nothing shoves the buttons down while somebody is reading them. */
-.discover-hero-sources {
-  min-height: 22px;
-  margin-top: 14px;
-}
-.discover-hero-reasons {
-  margin-top: 12px;
+.discover-hero-reason {
+  max-width: 52ch;
+  margin: 16px 0 0;
+  color: var(--ink-2);
+  font-size: var(--type-body);
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
+  text-wrap: pretty;
 }
 .discover-hero-actions {
   margin-top: 20px;
-}
-.discover-hero-reason {
-  padding: 4px 9px;
-  border-radius: var(--radius-control);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-medium);
-  color: var(--ink-2);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  border: 1px solid var(--border-strong);
 }
 
 .discover-hero-strip {
@@ -2648,14 +2636,8 @@ body::before {
   .discover-hero-eyebrow {
     margin-bottom: 4px;
   }
-  .discover-hero-pills {
+  .discover-hero-reason {
     margin-top: 10px;
-  }
-  .discover-hero-sources {
-    margin-top: 8px;
-  }
-  .discover-hero-reasons {
-    margin-top: 8px;
   }
   .discover-hero-actions {
     margin-top: 14px;
@@ -3610,6 +3592,81 @@ body::before {
   font-size: var(--type-figure);
   font-weight: var(--fw-bold);
   line-height: 1;
+}
+/* On the Discover band the score is the way in to everything the band no longer shows, so it is a
+   button: same chip, plus a caret and a hover that says it opens. */
+button.hero-score {
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
+}
+button.hero-score:hover,
+button.hero-score[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--band) 24%, transparent);
+  border-color: color-mix(in srgb, var(--band) 55%, transparent);
+}
+button.hero-score:focus-visible {
+  outline: 2px solid var(--band);
+  outline-offset: 2px;
+}
+.hero-score-caret {
+  margin-right: -4px;
+  opacity: 0.8;
+  transition: transform var(--dur-base) var(--ease);
+}
+button.hero-score[aria-expanded='true'] .hero-score-caret {
+  transform: rotate(180deg);
+}
+.hero-score-none {
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+
+.hero-details {
+  display: grid;
+  gap: 16px;
+  width: min(340px, calc(100vw - 32px));
+  padding: 16px;
+}
+.hero-details-group {
+  display: grid;
+  gap: 8px;
+}
+.hero-details-label {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.hero-details-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 2px 0 0;
+}
+.hero-details-facts div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.hero-details-facts dt {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.hero-details-facts dd {
+  margin: 0;
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+}
+.hero-details-reasons {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  line-height: 1.4;
 }
 .hero-figure-rule {
   width: 1px;
@@ -7171,6 +7228,21 @@ body.reader-open {
   max-width: 68ch;
   margin: -2px 0 10px;
 }
+/* A tab whose cards split into everyday and advanced: two headings at one size, quieter than the
+   card titles under them, so they read as the tab's two halves rather than as two more cards. */
+.settings-group-title {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.settings-group-advanced {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.settings-group-advanced > .disclosure > .disclosure-head .disclosure-title {
+  color: var(--ink-2);
+}
 .settings-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 13rem;
@@ -7207,6 +7279,80 @@ body.reader-open {
   .settings-index {
     display: none;
   }
+}
+
+/* --- Disclosure --------------------------------------------------------------
+   A heading row that opens the controls below it. Rows in a run share one hairline between them,
+   so four filter groups read as one list rather than four boxes. */
+.disclosure + .disclosure {
+  border-top: 1px solid var(--border);
+}
+.disclosure-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 2px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+}
+.disclosure-head:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.disclosure-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.disclosure-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.disclosure-title {
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.disclosure-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  color: var(--brand-on);
+  background: var(--brand);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+}
+.disclosure-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.disclosure-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease), color var(--dur-base) var(--ease);
+}
+.disclosure-head:hover .disclosure-chevron {
+  color: var(--ink-hi);
+}
+.disclosure[data-open] .disclosure-chevron {
+  transform: rotate(180deg);
+}
+.disclosure-body {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+  padding: 4px 2px 18px;
 }
 
 .save-control {

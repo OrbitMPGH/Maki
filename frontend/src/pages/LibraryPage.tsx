@@ -89,6 +89,7 @@ import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
+import { Disclosure } from '../components/ui/Disclosure'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { FigureStrip } from '../components/ui/FigureStrip'
@@ -268,6 +269,9 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   communityRatingMax: 10,
 }
 
+/** The filter drawer's groups, in the order they appear. */
+type FilterGroup = 'series' | 'tags' | 'ratings' | 'monitoring'
+
 /** Quality profile filter value for series with no pin of their own. */
 const DEFAULT_PROFILE_FILTER = 'default'
 
@@ -414,6 +418,7 @@ export default function LibraryPage() {
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
   const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
+  const [openGroups, setOpenGroups] = usePageState<FilterGroup[]>(`${MEM}:filter-groups`, ['series'])
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
   const [tagModalOpen, setTagModalOpen] = useState(false)
   const [tagsToAdd, setTagsToAdd] = useState<string[]>([])
@@ -682,27 +687,41 @@ export default function LibraryPage() {
     setActiveFilterId(id)
   }
 
-  /** Everything except the search box: what the "Filters" button badges. */
-  const activeFilterCount =
-    (statusFilter !== 'all' ? 1 : 0) +
-    (typeFilter.length > 0 ? 1 : 0) +
-    (!untaggedOnly && tagFilter.length > 0 ? 1 : 0) +
-    (genreFilter.length > 0 ? 1 : 0) +
-    (!untaggedOnly && excludeTagFilter.length > 0 ? 1 : 0) +
-    (excludeGenreFilter.length > 0 ? 1 : 0) +
-    (untaggedOnly ? 1 : 0) +
-    (metaTagFilter.length > 0 ? 1 : 0) +
-    (monitoredFilter !== 'all' ? 1 : 0) +
-    (completeness !== 'all' ? 1 : 0) +
-    (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0) +
-    (chapterMin != null || chapterMax != null ? 1 : 0) +
-    (contentRatingFilter.length > 0 ? 1 : 0) +
-    (ratingState !== 'all' ? 1 : 0) +
-    (communityRange[0] > 0 || communityRange[1] < 10 ? 1 : 0) +
-    (sourceFilter.length > 0 ? 1 : 0) +
-    (sourceState !== 'all' ? 1 : 0) +
-    (fileSourceFilter.length > 0 ? 1 : 0) +
-    (qualityProfileFilter !== 'all' ? 1 : 0)
+  /** Active filters per drawer group. Their sum, without the search box, is what "Filters" badges. */
+  const groupCounts: Record<FilterGroup, number> = {
+    series:
+      (statusFilter !== 'all' ? 1 : 0) +
+      (typeFilter.length > 0 ? 1 : 0) +
+      (contentRatingFilter.length > 0 ? 1 : 0) +
+      (chapterMin != null || chapterMax != null ? 1 : 0),
+    tags:
+      (!untaggedOnly && tagFilter.length > 0 ? 1 : 0) +
+      (!untaggedOnly && excludeTagFilter.length > 0 ? 1 : 0) +
+      (untaggedOnly ? 1 : 0) +
+      (genreFilter.length > 0 ? 1 : 0) +
+      (excludeGenreFilter.length > 0 ? 1 : 0) +
+      (metaTagFilter.length > 0 ? 1 : 0),
+    ratings:
+      (ratingState !== 'all' ? 1 : 0) +
+      (communityRange[0] > 0 || communityRange[1] < 10 ? 1 : 0) +
+      (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0),
+    monitoring:
+      (monitoredFilter !== 'all' ? 1 : 0) +
+      (completeness !== 'all' ? 1 : 0) +
+      (qualityProfileFilter !== 'all' ? 1 : 0) +
+      (sourceState !== 'all' ? 1 : 0) +
+      (sourceFilter.length > 0 ? 1 : 0) +
+      (fileSourceFilter.length > 0 ? 1 : 0),
+  }
+  const activeFilterCount = Object.values(groupCounts).reduce((a, b) => a + b, 0)
+  const toggleGroup = (group: FilterGroup) =>
+    setOpenGroups((open) => (open.includes(group) ? open.filter((g) => g !== group) : [...open, group]))
+  const groupProps = (group: FilterGroup) => ({
+    opened: openGroups.includes(group),
+    onToggle: () => toggleGroup(group),
+    count: groupCounts[group],
+    countLabel: plural(groupCounts[group], { one: '# filter active', other: '# filters active' }),
+  })
 
   const filtersActive = query.trim() !== '' || activeFilterCount > 0
 
@@ -1359,270 +1378,280 @@ export default function LibraryPage() {
             })}{' '}
             <Trans>Changes apply straight to the grid behind this panel.</Trans>
           </Text>
-          <Select
-            label={t`Status`}
-            data={statusOptions.map((s) => ({
-              value: s,
-              label: s === 'all' ? t`All statuses` : renderLabel(seriesStatusVisual(s).label),
-            }))}
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <MultiSelect
-            label={t`Type`}
-            placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
-            data={typeOptions}
-            value={typeFilter}
-            onChange={setTypeFilter}
-            disabled={typeOptions.length === 0}
-            clearable
-            comboboxProps={{ withinPortal: true }}
-          />
-          {facetFilter({
-            label: t`Your tags`,
-            data: tagOptions,
-            value: tagFilter,
-            onChange: setTagFilter,
-            mode: tagMatch,
-            onModeChange: setTagMatch,
-            disabled: untaggedOnly,
-          })}
-          {excludeFilter({
-            label: t`Exclude your tags`,
-            data: tagOptions,
-            value: excludeTagFilter,
-            onChange: setExcludeTagFilter,
-            disabled: untaggedOnly,
-          })}
-          <Switch
-            label={t`Untagged only`}
-            description={t`Series with none of your tags`}
-            checked={untaggedOnly}
-            onChange={(e) => setUntaggedOnly(e.currentTarget.checked)}
-          />
-          <Button
-            variant="subtle"
-            size="compact-sm"
-            color="var(--neutral)"
-            leftSection={<IconSettings size={14} />}
-            style={{ alignSelf: 'flex-start' }}
-            onClick={() => {
-              setFiltersOpen(false)
-              setTagManagerOpen(true)
-            }}
-          >
-            <Trans>Manage tags</Trans>
-          </Button>
-          {facetFilter({
-            label: t`Genres`,
-            data: genreOptions,
-            value: genreFilter,
-            onChange: setGenreFilter,
-            mode: genreMatch,
-            onModeChange: setGenreMatch,
-          })}
-          {excludeFilter({
-            label: t`Exclude genres`,
-            data: genreOptions,
-            value: excludeGenreFilter,
-            onChange: setExcludeGenreFilter,
-          })}
-          {facetFilter({
-            label: t`Tags`,
-            description: t`From the metadata provider, not your own tags`,
-            data: metaTagOptions,
-            value: metaTagFilter,
-            onChange: setMetaTagFilter,
-            mode: metaTagMatch,
-            onModeChange: setMetaTagMatch,
-          })}
-          <MultiSelect
-            label={t`Content rating`}
-            placeholder={contentRatingFilter.length ? undefined : t`Any`}
-            data={contentRatingOptions}
-            value={contentRatingFilter}
-            onChange={setContentRatingFilter}
-            clearable
-            comboboxProps={{ withinPortal: true }}
-          />
           <div>
-            <Text size="sm" fw={500} mb="xs">
-              <Trans>My rating</Trans>
-            </Text>
-            <SegmentedControl
-              aria-label={t`My rating`}
-              size="xs"
-              fullWidth
-              value={ratingState}
-              onChange={setRatingState}
-              data={ratingStateOptions}
-              mb={ratingState === 'rated' ? 'md' : undefined}
-            />
-            {ratingState === 'rated' && (
-              <RangeSlider
-                thumbFromLabel={t`My rating from`}
-                thumbToLabel={t`My rating to`}
-                min={1}
-                max={10}
-                step={1}
-                minRange={0}
-                value={ratingRange}
-                onChange={setRatingRange}
-                marks={[
-                  { value: 1, label: '1' },
-                  { value: 5, label: '5' },
-                  { value: 10, label: '10' },
-                ]}
-                mb="lg"
+            <Disclosure title={t`Series`} {...groupProps('series')}>
+              <Select
+                label={t`Status`}
+                data={statusOptions.map((s) => ({
+                  value: s,
+                  label: s === 'all' ? t`All statuses` : renderLabel(seriesStatusVisual(s).label),
+                }))}
+                value={statusFilter}
+                onChange={(v) => setStatusFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
               />
-            )}
+              <MultiSelect
+                label={t`Type`}
+                placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
+                data={typeOptions}
+                value={typeFilter}
+                onChange={setTypeFilter}
+                disabled={typeOptions.length === 0}
+                clearable
+                comboboxProps={{ withinPortal: true }}
+              />
+              <MultiSelect
+                label={t`Content rating`}
+                placeholder={contentRatingFilter.length ? undefined : t`Any`}
+                data={contentRatingOptions}
+                value={contentRatingFilter}
+                onChange={setContentRatingFilter}
+                clearable
+                comboboxProps={{ withinPortal: true }}
+              />
+              <div>
+                <Text size="sm" fw={500} mb={2}>
+                  <Trans>Chapters</Trans>
+                </Text>
+                <Text size="xs" c="var(--ink-3)" mb="xs">
+                  <Trans>Leave both boxes empty to ignore.</Trans>
+                </Text>
+                <SegmentedControl
+                  aria-label={t`Chapters`}
+                  size="xs"
+                  fullWidth
+                  value={chapterMode}
+                  onChange={setChapterMode}
+                  data={chapterModeOptions}
+                  mb="xs"
+                />
+                <Group grow gap="xs" align="flex-start">
+                  <NumberInput
+                    aria-label={t`Minimum chapters`}
+                    placeholder={t`Min`}
+                    min={0}
+                    allowDecimal={false}
+                    value={chapterMin ?? ''}
+                    onChange={(v) => setChapterMin(toBound(v))}
+                  />
+                  <NumberInput
+                    aria-label={t`Maximum chapters`}
+                    placeholder={t`Max`}
+                    min={0}
+                    allowDecimal={false}
+                    value={chapterMax ?? ''}
+                    onChange={(v) => setChapterMax(toBound(v))}
+                  />
+                </Group>
+              </div>
+            </Disclosure>
+            <Disclosure title={t`Tags and genres`} {...groupProps('tags')}>
+              {facetFilter({
+                label: t`Your tags`,
+                data: tagOptions,
+                value: tagFilter,
+                onChange: setTagFilter,
+                mode: tagMatch,
+                onModeChange: setTagMatch,
+                disabled: untaggedOnly,
+              })}
+              {excludeFilter({
+                label: t`Exclude your tags`,
+                data: tagOptions,
+                value: excludeTagFilter,
+                onChange: setExcludeTagFilter,
+                disabled: untaggedOnly,
+              })}
+              <Switch
+                label={t`Untagged only`}
+                description={t`Series with none of your tags`}
+                checked={untaggedOnly}
+                onChange={(e) => setUntaggedOnly(e.currentTarget.checked)}
+              />
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                color="var(--neutral)"
+                leftSection={<IconSettings size={14} />}
+                style={{ alignSelf: 'flex-start' }}
+                onClick={() => {
+                  setFiltersOpen(false)
+                  setTagManagerOpen(true)
+                }}
+              >
+                <Trans>Manage tags</Trans>
+              </Button>
+              {facetFilter({
+                label: t`Genres`,
+                data: genreOptions,
+                value: genreFilter,
+                onChange: setGenreFilter,
+                mode: genreMatch,
+                onModeChange: setGenreMatch,
+              })}
+              {excludeFilter({
+                label: t`Exclude genres`,
+                data: genreOptions,
+                value: excludeGenreFilter,
+                onChange: setExcludeGenreFilter,
+              })}
+              {facetFilter({
+                label: t`Tags`,
+                description: t`From the metadata provider, not your own tags`,
+                data: metaTagOptions,
+                value: metaTagFilter,
+                onChange: setMetaTagFilter,
+                mode: metaTagMatch,
+                onModeChange: setMetaTagMatch,
+              })}
+            </Disclosure>
+            <Disclosure title={t`Ratings and reading`} {...groupProps('ratings')}>
+              <div>
+                <Text size="sm" fw={500} mb="xs">
+                  <Trans>My rating</Trans>
+                </Text>
+                <SegmentedControl
+                  aria-label={t`My rating`}
+                  size="xs"
+                  fullWidth
+                  value={ratingState}
+                  onChange={setRatingState}
+                  data={ratingStateOptions}
+                  mb={ratingState === 'rated' ? 'md' : undefined}
+                />
+                {ratingState === 'rated' && (
+                  <RangeSlider
+                    thumbFromLabel={t`My rating from`}
+                    thumbToLabel={t`My rating to`}
+                    min={1}
+                    max={10}
+                    step={1}
+                    minRange={0}
+                    value={ratingRange}
+                    onChange={setRatingRange}
+                    marks={[
+                      { value: 1, label: '1' },
+                      { value: 5, label: '5' },
+                      { value: 10, label: '10' },
+                    ]}
+                    mb="lg"
+                  />
+                )}
+              </div>
+              {hasCommunityRatings && (
+                <div>
+                  <Text size="sm" fw={500} mb={2}>
+                    <Trans context="MangaBaka score filter">Rating</Trans>
+                  </Text>
+                  <Text size="xs" c="var(--ink-3)" mb="md">
+                    <Trans>Leave at 0–10 to ignore. Narrowing it hides series without a score.</Trans>
+                  </Text>
+                  <RangeSlider
+                    thumbFromLabel={t`Rating from`}
+                    thumbToLabel={t`Rating to`}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    minRange={0}
+                    value={communityRange}
+                    onChange={setCommunityRange}
+                    marks={[
+                      { value: 0, label: '0' },
+                      { value: 5, label: '5' },
+                      { value: 10, label: '10' },
+                    ]}
+                    mb="lg"
+                  />
+                </div>
+              )}
+              {readTracking && (
+                <div>
+                  <Text size="sm" fw={500} mb={2}>
+                    <Trans>Read</Trans>
+                  </Text>
+                  <Text size="xs" c="var(--ink-3)" mb="md">
+                    <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
+                  </Text>
+                  <RangeSlider
+                    thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
+                    min={0}
+                    max={100}
+                    step={5}
+                    minRange={0}
+                    value={readRange}
+                    onChange={setReadRange}
+                    marks={[
+                      { value: 0, label: '0%' },
+                      { value: 50, label: '50%' },
+                      { value: 100, label: '100%' },
+                    ]}
+                    mb="lg"
+                  />
+                </div>
+              )}
+            </Disclosure>
+            <Disclosure title={t`Monitoring and sources`} {...groupProps('monitoring')}>
+              <Select
+                label={t`Monitoring`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: 'monitored', label: t`Monitored` },
+                  { value: 'unmonitored', label: t`Unmonitored` },
+                ]}
+                value={monitoredFilter}
+                onChange={(v) => setMonitoredFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Quality profile`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
+                  ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+                ]}
+                value={qualityProfileFilter}
+                onChange={(v) => setQualityProfileFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Completeness`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: 'behind', label: t`Behind (missing chapters)` },
+                  { value: 'complete', label: t`Complete` },
+                ]}
+                value={completeness}
+                onChange={(v) => setCompleteness(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Source state`}
+                description={t`Counts both switches: the per-series link and the global source toggle`}
+                data={sourceStateOptions}
+                value={sourceState}
+                onChange={(v) => setSourceState(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              {facetFilter({
+                label: t`Sources`,
+                description: t`Linked to the series, enabled or not`,
+                data: sourceOptions,
+                value: sourceFilter,
+                onChange: setSourceFilter,
+                mode: sourceMatch,
+                onModeChange: setSourceMatch,
+              })}
+              {facetFilter({
+                label: t`Downloaded from`,
+                description: t`Where the files on disk came from, which can outlive the link`,
+                data: fileSourceOptions,
+                value: fileSourceFilter,
+                onChange: setFileSourceFilter,
+                mode: fileSourceMatch,
+                onModeChange: setFileSourceMatch,
+              })}
+            </Disclosure>
           </div>
-          {hasCommunityRatings && (
-            <div>
-              <Text size="sm" fw={500} mb={2}>
-                <Trans context="MangaBaka score filter">Rating</Trans>
-              </Text>
-              <Text size="xs" c="var(--ink-3)" mb="md">
-                <Trans>Leave at 0–10 to ignore. Narrowing it hides series without a score.</Trans>
-              </Text>
-              <RangeSlider
-                thumbFromLabel={t`Rating from`}
-                thumbToLabel={t`Rating to`}
-                min={0}
-                max={10}
-                step={0.5}
-                minRange={0}
-                value={communityRange}
-                onChange={setCommunityRange}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 5, label: '5' },
-                  { value: 10, label: '10' },
-                ]}
-                mb="lg"
-              />
-            </div>
-          )}
-          <Select
-            label={t`Monitoring`}
-            data={[
-              { value: 'all', label: t`Any` },
-              { value: 'monitored', label: t`Monitored` },
-              { value: 'unmonitored', label: t`Unmonitored` },
-            ]}
-            value={monitoredFilter}
-            onChange={(v) => setMonitoredFilter(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <Select
-            label={t`Quality profile`}
-            data={[
-              { value: 'all', label: t`Any` },
-              { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
-              ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
-            ]}
-            value={qualityProfileFilter}
-            onChange={(v) => setQualityProfileFilter(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <Select
-            label={t`Completeness`}
-            data={[
-              { value: 'all', label: t`Any` },
-              { value: 'behind', label: t`Behind (missing chapters)` },
-              { value: 'complete', label: t`Complete` },
-            ]}
-            value={completeness}
-            onChange={(v) => setCompleteness(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <div>
-            <Text size="sm" fw={500} mb={2}>
-              <Trans>Chapters</Trans>
-            </Text>
-            <Text size="xs" c="var(--ink-3)" mb="xs">
-              <Trans>Leave both boxes empty to ignore.</Trans>
-            </Text>
-            <SegmentedControl
-              aria-label={t`Chapters`}
-              size="xs"
-              fullWidth
-              value={chapterMode}
-              onChange={setChapterMode}
-              data={chapterModeOptions}
-              mb="xs"
-            />
-            <Group grow gap="xs" align="flex-start">
-              <NumberInput
-                aria-label={t`Minimum chapters`}
-                placeholder={t`Min`}
-                min={0}
-                allowDecimal={false}
-                value={chapterMin ?? ''}
-                onChange={(v) => setChapterMin(toBound(v))}
-              />
-              <NumberInput
-                aria-label={t`Maximum chapters`}
-                placeholder={t`Max`}
-                min={0}
-                allowDecimal={false}
-                value={chapterMax ?? ''}
-                onChange={(v) => setChapterMax(toBound(v))}
-              />
-            </Group>
-          </div>
-          <Select
-            label={t`Source state`}
-            description={t`Counts both switches: the per-series link and the global source toggle`}
-            data={sourceStateOptions}
-            value={sourceState}
-            onChange={(v) => setSourceState(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          {facetFilter({
-            label: t`Sources`,
-            description: t`Linked to the series, enabled or not`,
-            data: sourceOptions,
-            value: sourceFilter,
-            onChange: setSourceFilter,
-            mode: sourceMatch,
-            onModeChange: setSourceMatch,
-          })}
-          {facetFilter({
-            label: t`Downloaded from`,
-            description: t`Where the files on disk came from, which can outlive the link`,
-            data: fileSourceOptions,
-            value: fileSourceFilter,
-            onChange: setFileSourceFilter,
-            mode: fileSourceMatch,
-            onModeChange: setFileSourceMatch,
-          })}
-          {readTracking && (
-            <div>
-              <Text size="sm" fw={500} mb={2}>
-                <Trans>Read</Trans>
-              </Text>
-              <Text size="xs" c="var(--ink-3)" mb="md">
-                <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
-              </Text>
-              <RangeSlider
-                thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
-                min={0}
-                max={100}
-                step={5}
-                minRange={0}
-                value={readRange}
-                onChange={setReadRange}
-                marks={[
-                  { value: 0, label: '0%' },
-                  { value: 50, label: '50%' },
-                  { value: 100, label: '100%' },
-                ]}
-                mb="lg"
-              />
-            </div>
-          )}
           {activeFilterCount > 0 && (
             <Button variant="default" leftSection={<IconX size={15} />} onClick={() => applySpec(DEFAULT_SPEC, null)}>
               <Trans>Clear all filters</Trans>

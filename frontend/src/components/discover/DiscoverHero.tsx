@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
-import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { Badge, Box, Button, Group, Popover, Stack, Text, Title } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowRight, IconPlus, IconStar } from '@tabler/icons-react'
+import { IconArrowRight, IconChevronDown, IconPlus, IconStar } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -15,7 +15,7 @@ import {
   seriesStatusVisual,
   statusToken,
 } from '../ui/status'
-import { relationPhrase } from '../ui/DiscoverRail'
+import { coReadPhrase, relationPhrase } from '../ui/DiscoverRail'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 
@@ -70,6 +70,7 @@ export function DiscoverHero({
   const [activeIndex, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
   const [autoRotate, setAutoRotate] = useState(true)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const reducedMotion = useReducedMotion()
   // Called up here, unconditionally, rather than after the `if (!item) return null` below: both are
   // hooks, and the rule holds even though `item` is never actually undefined once Discover is the
@@ -86,15 +87,16 @@ export function DiscoverHero({
 
   const choose = useCallback((n: number) => {
     setAutoRotate(false)
+    setDetailsOpen(false)
     setActive(n)
   }, [])
 
   useEffect(() => {
-    if (!canAutoRotate || paused) return
+    if (!canAutoRotate || paused || detailsOpen) return
 
     const id = window.setTimeout(() => setActive((n) => (n + 1) % picks.length), ROTATE_MS)
     return () => window.clearTimeout(id)
-  }, [active, canAutoRotate, paused, picks.length])
+  }, [active, canAutoRotate, paused, detailsOpen, picks.length])
 
   if (!item) return null
 
@@ -110,17 +112,17 @@ export function DiscoverHero({
   const band = ratingBandVisual(score ?? 0)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
   // whole figures block on a language switch.
-  const figures = [
-    { id: 'released', label: t`Released`, value: detail?.year ?? item.year },
+  const year = detail?.year ?? item.year
+  const lengths = [
     { id: 'chapters', label: t`Chapters`, value: detail?.totalChapters ?? item.totalChapters },
     { id: 'volumes', label: t`Volumes`, value: detail?.finalVolume },
   ].filter((f): f is { id: string; label: string; value: number } => f.value != null)
 
   // The three "why" flavours, in the order of how much they claim: what readers did beats what they
-  // said, and both beat proximity in the behavioural space. Each carries a stable id rather than
-  // being keyed by its own (translated) text below.
+  // said, and both beat proximity in the behavioural space. The band shows the first; the rest wait
+  // behind the score. Each carries a stable id rather than being keyed by its own translated text.
   const reasons = [
-    item.coRead ? { id: 'co-read', text: t`Readers like you also finished this` } : null,
+    item.coRead ? { id: 'co-read', text: coReadPhrase(item) } : null,
     item.coRecommended
       ? { id: 'co-recommended', text: t`Readers like you also recommended this` }
       : null,
@@ -187,94 +189,158 @@ export function DiscoverHero({
                 </button>
               </Title>
 
-              <Group gap={9} wrap="wrap" className="discover-hero-pills">
-                <span
-                  className="series-hero-status"
-                  style={{
-                    color: `var(--${statusToken(status.color)})`,
-                    background: `var(--${statusToken(status.color)}-soft)`,
-                  }}
-                >
-                  <status.Icon size={14} />
-                  {renderLabel(status.label)}
-                </span>
-                {contentRating && (
-                  <span
-                    className="series-hero-status"
-                    data-quiet={ratingToken ? undefined : true}
-                    style={
-                      ratingToken
-                        ? {
-                            color: `var(--${ratingToken})`,
-                            background: `var(--${ratingToken}-soft)`,
-                          }
-                        : undefined
-                    }
-                  >
-                    <contentRating.Icon size={14} />
-                    {renderLabel(contentRating.label)}
-                  </span>
-                )}
-              </Group>
-
+              {/* Score, year and the strongest reason are what the band is for. Everything else a
+                  pick carries sits behind the score: the per-source scores, status, rating,
+                  lengths and the weaker reasons. */}
               <div className="hero-figures">
-                {score != null && (
-                  <span
-                    className="hero-score"
-                    style={{ '--band': `var(--${band.token})` } as CSSProperties}
-                  >
-                    <IconStar size={18} />
-                    <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
-                  </span>
-                )}
-                {score != null && figures.length > 0 && (
-                  <span className="hero-figure-rule" aria-hidden />
-                )}
-                {figures.length > 0 && (
-                  <div className="hero-stats">
-                    {figures.map((f) => (
-                      <div key={f.id} className="hero-stat">
-                        <span className="hero-stat-n figure">{f.value}</span>
-                        <span className="hero-stat-l">{f.label}</span>
+                <Popover
+                  opened={detailsOpen}
+                  onChange={setDetailsOpen}
+                  position="bottom-start"
+                  offset={8}
+                  shadow="md"
+                  withinPortal
+                >
+                  <Popover.Target>
+                    <button
+                      type="button"
+                      className="hero-score"
+                      data-empty={score == null || undefined}
+                      style={{ '--band': score != null ? `var(--${band.token})` : 'var(--ink-3)' } as CSSProperties}
+                      onClick={() => setDetailsOpen((o) => !o)}
+                      aria-expanded={detailsOpen}
+                      aria-label={
+                        score != null
+                          ? t`Score ${formatFixedDecimal(score / 10, 1)}. Show scores and details`
+                          : t`Show scores and details`
+                      }
+                    >
+                      <IconStar size={18} />
+                      {score != null ? (
+                        <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
+                      ) : (
+                        <span className="hero-score-none">
+                          <Trans>Details</Trans>
+                        </span>
+                      )}
+                      <IconChevronDown size={15} className="hero-score-caret" aria-hidden />
+                    </button>
+                  </Popover.Target>
+                  <Popover.Dropdown className="hero-details">
+                    <section className="hero-details-group">
+                      <h3 className="hero-details-label">
+                        <Trans>Scores by source</Trans>
+                      </h3>
+                      {detail ? (
+                        detail.sourceRatings.length > 0 ? (
+                          <Group gap="xs">
+                            {detail.sourceRatings.map((r) => (
+                              <Badge
+                                key={r.source}
+                                size="md"
+                                variant="outline"
+                                color="var(--neutral)"
+                                title={r.source}
+                                leftSection={
+                                  <MetadataSiteIcon
+                                    site={r.source.toLowerCase()}
+                                    monogram={r.source.slice(0, 2).toUpperCase()}
+                                    size={12}
+                                  />
+                                }
+                              >
+                                {formatFixedDecimal(r.rating / 10, 1)}
+                              </Badge>
+                            ))}
+                          </Group>
+                        ) : (
+                          <Text size="sm" c="var(--ink-3)">
+                            <Trans>No source has scored this yet.</Trans>
+                          </Text>
+                        )
+                      ) : (
+                        <Text size="sm" c="var(--ink-3)">
+                          <Trans>Loading scores…</Trans>
+                        </Text>
+                      )}
+                    </section>
+
+                    <section className="hero-details-group">
+                      <h3 className="hero-details-label">
+                        <Trans>Details</Trans>
+                      </h3>
+                      <Group gap={8} wrap="wrap">
+                        <span
+                          className="series-hero-status"
+                          style={{
+                            color: `var(--${statusToken(status.color)})`,
+                            background: `var(--${statusToken(status.color)}-soft)`,
+                          }}
+                        >
+                          <status.Icon size={14} />
+                          {renderLabel(status.label)}
+                        </span>
+                        {contentRating && (
+                          <span
+                            className="series-hero-status"
+                            data-quiet={ratingToken ? undefined : true}
+                            style={
+                              ratingToken
+                                ? {
+                                    color: `var(--${ratingToken})`,
+                                    background: `var(--${ratingToken}-soft)`,
+                                  }
+                                : undefined
+                            }
+                          >
+                            <contentRating.Icon size={14} />
+                            {renderLabel(contentRating.label)}
+                          </span>
+                        )}
+                      </Group>
+                      {lengths.length > 0 && (
+                        <dl className="hero-details-facts">
+                          {lengths.map((f) => (
+                            <div key={f.id}>
+                              <dt>{f.label}</dt>
+                              <dd className="tnum">{f.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                    </section>
+
+                    {reasons.length > 1 && (
+                      <section className="hero-details-group">
+                        <h3 className="hero-details-label">
+                          <Trans>Also because</Trans>
+                        </h3>
+                        <ul className="hero-details-reasons">
+                          {reasons.slice(1).map((r) => (
+                            <li key={r.id}>{r.text}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                  </Popover.Dropdown>
+                </Popover>
+                {year != null && (
+                  <>
+                    <span className="hero-figure-rule" aria-hidden />
+                    <div className="hero-stats">
+                      <div className="hero-stat">
+                        <span className="hero-stat-n figure">{year}</span>
+                        <span className="hero-stat-l">
+                          <Trans>Released</Trans>
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  </>
                 )}
               </div>
 
-              {/* Reserved height: the source scores arrive with the detail request, and a row that
-                  appears from nothing shoves the buttons down mid-read. Row spacing is in the
-                  stylesheet rather than on `mt` props: it is what the band's height is made of, and
-                  a short viewport tunes all of it at once. */}
-              <Group gap="xs" align="center" className="discover-hero-sources">
-                {detail?.sourceRatings.map((r) => (
-                  <Tooltip key={r.source} label={r.source} withArrow>
-                    <Badge
-                      size="sm"
-                      variant="outline"
-                      color="var(--neutral)"
-                      leftSection={
-                        <MetadataSiteIcon
-                          site={r.source.toLowerCase()}
-                          monogram={r.source.slice(0, 2).toUpperCase()}
-                          size={11}
-                        />
-                      }
-                    >
-                      {formatFixedDecimal(r.rating / 10, 1)}
-                    </Badge>
-                  </Tooltip>
-                ))}
-              </Group>
-
               {reasons.length > 0 && (
-                <Group gap={7} wrap="wrap" className="discover-hero-reasons">
-                  {reasons.slice(0, 3).map((r) => (
-                    <span key={r.id} className="discover-hero-reason">
-                      {r.text}
-                    </span>
-                  ))}
-                </Group>
+                <p className="discover-hero-reason">{reasons[0].text}</p>
               )}
 
               <Group gap="xs" className="discover-hero-actions">
@@ -314,7 +380,7 @@ export function DiscoverHero({
               </Text>
               {canAutoRotate && (
                 <Text className="discover-hero-strip-mode">
-                  {paused ? <Trans>Paused</Trans> : <Trans>Auto</Trans>}
+                  {paused || detailsOpen ? <Trans>Paused</Trans> : <Trans>Auto</Trans>}
                 </Text>
               )}
             </div>
@@ -365,7 +431,7 @@ export function DiscoverHero({
                         <span className="discover-hero-strip-match">{matches.join(' · ')}</span>
                       )}
                     </span>
-                    {n === active && canAutoRotate && !paused && (
+                    {n === active && canAutoRotate && !paused && !detailsOpen && (
                       <span className="discover-hero-strip-progress" aria-hidden>
                         <span key={item.providerId} />
                       </span>

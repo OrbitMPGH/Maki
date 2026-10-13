@@ -1,9 +1,10 @@
-Maki is a self-hosted manga collection manager: add a series once and it keeps it complete. The interface is content-first and cinematic: the ground is a warm near-black with a green cast (nori), the ink is cream, and the accent is the mascot's blush. The chrome takes its colour from the mark, and everything else stays quiet so the covers carry the colour.
+Maki is a self-hosted manga collection manager: add a series once and it keeps it complete. The interface is content-first and cinematic. By default the ground is a near-black tinted toward the accent, the ink is a cool off-white, and the accent is indigo. The chrome stays quiet so the covers carry the colour.
 
 ## Voice and copy
 
 - Write plain, direct sentences, the way a developer explains something to a teammate. Say what happens: "Add series", "Refresh the catalogue", "Browse the catalogue", never "Submit" or "OK".
-- Sentence case everywhere: buttons, titles, menu items. Uppercase only through the `label` style (figure labels, stat labels, cover badges), and let CSS do it.- Address the reader as "you" and the product as "Maki": "Maki finds its chapters and keeps it complete." No "we".
+- Sentence case everywhere: buttons, titles, menu items. Uppercase only through the `label` style (figure labels, stat labels, cover badges), and let CSS do it.
+- Address the reader as "you" and the product as "Maki": "Maki finds its chapters and keeps it complete." No "we".
 - Empty states are statements, not apologies: "No series yet", "No chapters read in this period.", "Queue is empty". Follow with one line on what would fill it and at most one action.
 - Explain a consequence in a short clause after a colon: "Sliding: a failed sign-in resets the timer." "No change: this title was already in that state."
 - No em dashes. No emoji in UI copy. No filler words ("seamless", "robust", "leverage") and no "it's not just X, it's Y".
@@ -11,16 +12,18 @@ Maki is a self-hosted manga collection manager: add a series once and it keeps i
 
 ## Colour
 
-**One accent, warm near-black ground.** `brand` is the only accent. It marks progress, selection, focus and the one primary action. Everything else is surfaces and cream-tinted ink. Covers bring their own colour; the chrome stays out of their way.
+**One accent, near-black ground.** `brand` is the only accent. It marks progress, selection, focus and the one primary action. Everything else is surfaces and neutral ink. Covers bring their own colour; the chrome stays out of their way.
 
-**Themes.** Six presets, matching the app's picker: `Blush` (the default dark scheme and the default accent), `Light`, and four dark accent swaps, `Indigo`, `Rose`, `Emerald` and `Amber`. The accent themes change only the brand group (`brand`, `brand-hover`, `brand-on`, `brand-fg`, `brand-fg-on-art`, `brand-glow`, `primary`, `primary-hover`, `primary-on`); surfaces, ink and status stay those of dark. Blush is pale, so on dark it fills with a near-black label. Light keeps blush, deepened so it holds a white label, on warm paper surfaces.
+**Appearance.** The app's picker makes two choices per user. A background: `Tinted black` (the default), `Night`, `Charcoal`, `Moss`, `Light` or `Match system`. An accent: `Indigo` (the default), `Rose`, `Blush`, `Emerald` or `Amber`. Tinted black mixes every surface 4% from neutral black toward the active accent, so the ground belongs to whichever accent is on. Night is blue-black, Charcoal a neutral grey with warmer ink, Moss a faint green.
+
+**Themes here.** Six: the dark theme (`Indigo`), four dark accent swaps (`Rose`, `Blush`, `Emerald`, `Amber`) and `Light` (Indigo on cool paper, white cards). All the dark themes sit on Night, the reference ramp in `:root`: Tinted black is computed from the accent in the browser, so its exact values cannot be listed as tokens. Treat Night's values as the shape of the ladder and expect the default ground to read a touch more neutral and accent-warmed. The accent themes change only the brand group (`brand`, `brand-hover`, `brand-on`, `brand-fg`, `brand-fg-on-art`, `brand-glow`, `primary`, `primary-hover`, `primary-on`); surfaces, ink and status stay those of dark. Blush, Emerald and Amber are pale enough that their fills take a near-black label. Light deepens `brand-fg` per accent so brand text holds on white.
 
 **The layer ladder.** Build every screen from these, in order of height:
-- `app-bg`: the page ground. `body` carries two faint radial washes at the top corners: a warm cream one at the top left and one tinted with the current `brand` at the top right (5% in dark, 6% in Light). Over both sits a fixed paper grain at 4.5% opacity (3% in Light), behind the app and off under `prefers-reduced-transparency`. Those are the only gradients on the ground.
+- `app-bg`: the page ground. `body` carries two faint radial washes of the current `brand`, a larger one at the top right and a smaller one at the top left (12% and 8% on Night, Charcoal and Moss; 10% and 6% on Tinted black and Light, where the ground already leans toward the accent). Over both sits a fixed paper grain at 4.5% opacity (3% in Light), behind the app and off under `prefers-reduced-transparency`. Those are the only gradients on the ground.
 - `surface`: the default layer. Every Card, Paper and `Panel` sits here.
 - `surface-2`: one step up. Tag chips, inputs at rest.
 - `surface-raised`: overlays (modals, drawers, menus, popovers). Dark elevates by lightening (it aliases `surface-2`); light elevates by staying white and casting `shadow-raised`. Never assume one direction reads in both.
-- `surface-sunken`: recessed wells. `app-bg` in dark, paper `#ebe9e2` in light.
+- `surface-sunken`: recessed wells. `app-bg` in dark, `#eceef6` in light.
 - `surface-hover` for hover fills on rows and chips.
 
 Borders are 1px `border`; hovered or emphasised edges take `border-strong`; row dividers inside tables use `hairline`.
