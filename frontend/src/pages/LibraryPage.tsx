@@ -1517,9 +1517,9 @@ export default function LibraryPage() {
         position="right"
         size="sm"
         title={t`Filters`}
-        classNames={{ content: 'library-filter-drawer' }}
+        classNames={{ content: 'filter-drawer' }}
       >
-        <Stack gap="sm" className="library-filter-drawer-body">
+        <Stack gap="sm" className="filter-drawer-body">
           {/* On a phone the drawer covers the grid, so the count moves to the footer instead. */}
           <Text size="sm" c="var(--ink-3)" visibleFrom="sm">
             {plural(totalSeriesShown, {
@@ -1816,13 +1816,13 @@ export default function LibraryPage() {
               <Trans>Clear all filters</Trans>
             </Button>
           )}
-          <Group className="library-filter-footer" hiddenFrom="sm" gap="sm" wrap="nowrap">
+          <Group className="filter-drawer-footer" hiddenFrom="sm" gap="sm" wrap="nowrap">
             {activeFilterCount > 0 && (
               <Button variant="default" onClick={() => applySpec(DEFAULT_SPEC, null)}>
                 <Trans>Clear all</Trans>
               </Button>
             )}
-            <Button className="library-filter-show" onClick={() => setFiltersOpen(false)}>
+            <Button className="filter-drawer-show" onClick={() => setFiltersOpen(false)}>
               <Plural value={shownCount} one="Show # series" other="Show # series" />
             </Button>
           </Group>

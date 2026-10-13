@@ -1019,7 +1019,7 @@ function FeedExpandModal({
     >
       <Panel p="md" mb="md">
         <Stack gap="md">
-          <CatalogueFilters controls={catalogue.controls} />
+          <CatalogueFilters controls={catalogue.controls} collapsed />
           <CatalogueFilterActions
             isCustomized={catalogue.isCustomized || Object.keys(applied).length > 0}
             onReset={() => {

@@ -7700,7 +7700,7 @@ body.reader-open {
 }
 /* On a phone the drawer covers the grid it filters, so the count and the way back to the grid sit
    in a footer that stays on screen however far the groups run. */
-.library-filter-footer {
+.filter-drawer-footer {
   position: sticky;
   bottom: 0;
   z-index: 2;
@@ -7709,26 +7709,30 @@ body.reader-open {
   border-top: 1px solid var(--border);
   background: var(--surface-raised);
 }
-.library-filter-show {
+.filter-drawer-show {
   flex: 1;
 }
+.filter-drawer-actions {
+  padding-top: var(--mantine-spacing-sm);
+  border-top: 1px solid var(--border);
+}
 @media (max-width: 47.9375em) {
-  .library-filter-drawer {
+  .filter-drawer {
     display: flex;
     flex-direction: column;
   }
-  .library-filter-drawer > .mantine-Drawer-body {
+  .filter-drawer > .mantine-Drawer-body {
     display: flex;
     flex: 1;
     flex-direction: column;
     padding-bottom: 0;
   }
-  .library-filter-drawer-body {
+  .filter-drawer-body {
     flex: 1;
   }
 }
 @media (min-width: 48em) {
-  .library-filter-drawer-body {
+  .filter-drawer-body {
     padding-bottom: var(--mantine-spacing-xl);
   }
 }

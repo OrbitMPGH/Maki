@@ -148,7 +148,9 @@ msgstr "{0, plural, other {#件のファイル、{totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {#個のファイル}}"
 
+#. placeholder {0}: counts[group]
 #. placeholder {0}: groupCounts[group]
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr ""
@@ -600,6 +602,10 @@ msgstr "{chaptersMarked, plural, other {#章}}を{seriesMatched, plural, other {
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 msgstr "{chaptersMarked, plural, other {#章}}を{seriesMatched, plural, other {#件のシリーズ}}で既読にしました。{seriesUnmatched, plural, other {#件のKavitaシリーズ}}は照合されませんでした"
+
+#: src/components/CatalogueFilters.tsx
+msgid "{chaptersMin}–{chaptersMax} chapters"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4350,6 +4356,10 @@ msgstr "変更済み"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "変更はこのパネルの背後にあるグリッドにすぐ反映されます。"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Changes apply straight to the results behind this panel."
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Changes apply to this series only."
@@ -4564,6 +4574,10 @@ msgstr "同じ巻アーカイブを共有する章のファイルも削除され
 msgid "Chapters to fetch each time"
 msgstr "毎回取得する章数"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters, year, minimum rating"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
@@ -4665,6 +4679,7 @@ msgstr "既読のファイルを整理"
 msgid "Clear"
 msgstr "クリア"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -5603,6 +5618,10 @@ msgstr "フォロー中のクリエイター"
 #, fuzzy
 msgid "Creators you return to"
 msgstr "よく読むクリエイター"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Creators, type, status, content rating"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -7132,6 +7151,10 @@ msgstr "メタデータを取得中"
 msgid "Fetching pages…"
 msgstr "ページを取得中…"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Fewest chapters"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7250,6 +7273,7 @@ msgid "Filter the catalogue"
 msgstr "カタログを絞り込む"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueFilters.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -7679,6 +7703,7 @@ msgstr "ジェム"
 msgid "Genres"
 msgstr "ジャンル"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Genres and tags"
@@ -9222,6 +9247,10 @@ msgstr "左から右"
 msgid "Left to right"
 msgstr "左から右"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Length, year and rating"
+msgstr ""
+
 #: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -10108,6 +10137,10 @@ msgid "Minimum pages"
 msgstr "最小ページ数"
 
 #: src/components/CatalogueFilters.tsx
+msgid "Minimum rating"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Minimum rating: {ratingLabel}"
 msgstr "最低レーティング: {ratingLabel}"
@@ -10301,6 +10334,10 @@ msgstr "Makiをもっと自分好みに"
 #, fuzzy
 msgid "Moss"
 msgstr "モス"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Most chapters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -13085,6 +13122,10 @@ msgstr ""
 msgid "Rated {rating}/10"
 msgstr "{rating}/10と評価"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Rated {ratingLabel} or more"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14133,6 +14174,10 @@ msgstr "HTTPSを必須にする"
 #, fuzzy
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "平文のHTTPアドレスからのアクセスにHTTPSを必須にしますか？"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Require or exclude genres and tags"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15404,6 +15449,7 @@ msgstr "{relatedTo}の続編"
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "MangaBakaがこれにリンクした続編、前日譚、スピンオフ、外伝。"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/nav.ts
@@ -15749,6 +15795,10 @@ msgstr "読書連続記録を表示"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "置き換えたファイルを表示"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Show results"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

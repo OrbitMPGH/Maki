@@ -125,7 +125,9 @@ msgstr "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# file} other {# files}}"
 
+#. placeholder {0}: counts[group]
 #. placeholder {0}: groupCounts[group]
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr "{0, plural, one {# filter active} other {# filters active}}"
@@ -500,6 +502,10 @@ msgstr "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read
 #: src/pages/settings/ReadingCards.tsx
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 msgstr "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
+
+#: src/components/CatalogueFilters.tsx
+msgid "{chaptersMin}–{chaptersMax} chapters"
+msgstr "{chaptersMin}–{chaptersMax} chapters"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read"
@@ -3547,6 +3553,10 @@ msgstr "Changed"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "Changes apply straight to the grid behind this panel."
 
+#: src/components/CatalogueFilters.tsx
+msgid "Changes apply straight to the results behind this panel."
+msgstr "Changes apply straight to the results behind this panel."
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Changes apply to this series only."
 msgstr "Changes apply to this series only."
@@ -3721,6 +3731,10 @@ msgstr "Chapters that share a volume archive will also lose their file."
 msgid "Chapters to fetch each time"
 msgstr "Chapters to fetch each time"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters, year, minimum rating"
+msgstr "Chapters, year, minimum rating"
+
 #: src/pages/DiscoverPage.tsx
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "Chapters: {chapterRangeMin}–{chapterRangeMax}"
@@ -3804,6 +3818,7 @@ msgstr "Clean up read files"
 msgid "Clear"
 msgstr "Clear"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 msgid "Clear all"
@@ -4569,6 +4584,10 @@ msgstr "Creators you follow"
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Creators you return to"
 msgstr "Creators you return to"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Creators, type, status, content rating"
+msgstr "Creators, type, status, content rating"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
@@ -5812,6 +5831,10 @@ msgstr "Fetching metadata"
 msgid "Fetching pages…"
 msgstr "Fetching pages…"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Fewest chapters"
+msgstr "Fewest chapters"
+
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 msgid "File"
@@ -5909,6 +5932,7 @@ msgid "Filter the catalogue"
 msgstr "Filter the catalogue"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueFilters.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -6258,6 +6282,7 @@ msgstr "gems"
 msgid "Genres"
 msgstr "Genres"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 msgid "Genres and tags"
 msgstr "Genres and tags"
@@ -7506,6 +7531,10 @@ msgstr "left to right"
 msgid "Left to right"
 msgstr "Left to right"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Length, year and rating"
+msgstr "Length, year and rating"
+
 #: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -8226,6 +8255,10 @@ msgid "Minimum pages"
 msgstr "Minimum pages"
 
 #: src/components/CatalogueFilters.tsx
+msgid "Minimum rating"
+msgstr "Minimum rating"
+
+#: src/components/CatalogueFilters.tsx
 msgid "Minimum rating: {ratingLabel}"
 msgstr "Minimum rating: {ratingLabel}"
 
@@ -8385,6 +8418,10 @@ msgstr "More ways to make Maki yours"
 #: src/theme-context.tsx
 msgid "Moss"
 msgstr "Moss"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Most chapters"
+msgstr "Most chapters"
 
 #: src/pages/LibraryPage.tsx
 msgid "Most missing"
@@ -10646,6 +10683,10 @@ msgstr "Rated {rated}"
 msgid "Rated {rating}/10"
 msgstr "Rated {rating}/10"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Rated {ratingLabel} or more"
+msgstr "Rated {ratingLabel} or more"
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Rating"
@@ -11498,6 +11539,10 @@ msgstr "Require HTTPS"
 #: src/components/settings/SecuritySection.tsx
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "Require HTTPS from a plain HTTP address?"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Require or exclude genres and tags"
+msgstr "Require or exclude genres and tags"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Require single sign-on"
@@ -12535,6 +12580,7 @@ msgstr "Sequel to {relatedTo}"
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/nav.ts
@@ -12816,6 +12862,10 @@ msgstr "Show reading streaks"
 #: src/pages/ActivityPage.tsx
 msgid "Show replaced files"
 msgstr "Show replaced files"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Show results"
+msgstr "Show results"
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"

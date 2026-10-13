@@ -148,7 +148,9 @@ msgstr "{0, plural, one {# archivo, {totalSize}} many {# archivos, {totalSize}} 
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# archivo} many {# archivos} other {# archivos}}"
 
+#. placeholder {0}: counts[group]
 #. placeholder {0}: groupCounts[group]
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr ""
@@ -600,6 +602,10 @@ msgstr "{chaptersMarked, plural, one {# capítulo} many {# capítulos} other {# 
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 msgstr "{chaptersMarked, plural, one {# capítulo} many {# capítulos} other {# capítulos}} marcados como leídos en {seriesMatched, plural, one {# serie} many {# series} other {# series}}, {seriesUnmatched, plural, one {# serie de Kavita} many {# series de Kavita} other {# series de Kavita}} sin vincular"
+
+#: src/components/CatalogueFilters.tsx
+msgid "{chaptersMin}–{chaptersMax} chapters"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4351,6 +4357,10 @@ msgstr "Cambiado"
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "Los cambios se aplican directamente a la cuadrícula detrás de este panel."
 
+#: src/components/CatalogueFilters.tsx
+msgid "Changes apply straight to the results behind this panel."
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Changes apply to this series only."
@@ -4565,6 +4575,10 @@ msgstr "Los capítulos que comparten un archivo de volumen también perderán su
 msgid "Chapters to fetch each time"
 msgstr "Capítulos que se buscan cada vez"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters, year, minimum rating"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
@@ -4666,6 +4680,7 @@ msgstr "Limpiar archivos leídos"
 msgid "Clear"
 msgstr "Borrar"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -5604,6 +5619,10 @@ msgstr "Creadores que sigues"
 #, fuzzy
 msgid "Creators you return to"
 msgstr "Autores a los que vuelves"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Creators, type, status, content rating"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -7133,6 +7152,10 @@ msgstr "Obteniendo metadatos"
 msgid "Fetching pages…"
 msgstr "Obteniendo páginas…"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Fewest chapters"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7251,6 +7274,7 @@ msgid "Filter the catalogue"
 msgstr "Filtrar el catálogo"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueFilters.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -7680,6 +7704,7 @@ msgstr "joyas"
 msgid "Genres"
 msgstr "Géneros"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Genres and tags"
@@ -9223,6 +9248,10 @@ msgstr "de izquierda a derecha"
 msgid "Left to right"
 msgstr "De izquierda a derecha"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Length, year and rating"
+msgstr ""
+
 #: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -10109,6 +10138,10 @@ msgid "Minimum pages"
 msgstr "Páginas mínimas"
 
 #: src/components/CatalogueFilters.tsx
+msgid "Minimum rating"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Minimum rating: {ratingLabel}"
 msgstr "Clasificación mínima: {ratingLabel}"
@@ -10302,6 +10335,10 @@ msgstr "Más formas de personalizar Maki"
 #, fuzzy
 msgid "Moss"
 msgstr "Musgo"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Most chapters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -13086,6 +13123,10 @@ msgstr ""
 msgid "Rated {rating}/10"
 msgstr "Valorado {rating}/10"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Rated {ratingLabel} or more"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14134,6 +14175,10 @@ msgstr "Exigir HTTPS"
 #, fuzzy
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "¿Exigir HTTPS desde una dirección HTTP sin cifrar?"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Require or exclude genres and tags"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15405,6 +15450,7 @@ msgstr "Secuela de {relatedTo}"
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "Secuelas, precuelas, spin-offs y relatos secundarios que MangaBaka ha vinculado a este."
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/nav.ts
@@ -15750,6 +15796,10 @@ msgstr "Mostrar rachas de lectura"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "Mostrar archivos reemplazados"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Show results"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Show scores and details"
