@@ -568,6 +568,10 @@ msgstr "{chapterCount, plural, one {# rozdział} few {# rozdziały} many {# rozd
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip} rozdz."
 
+#: src/pages/LibraryPage.tsx
+msgid "{chapters} chapters"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
@@ -1314,6 +1318,10 @@ msgstr "{rated} ocenionych"
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
 msgstr "{ratioValue} więcej niż zawiera katalog MangaBaka, z naciskiem na tytuły czytane przez więcej osób"
 
+#: src/pages/LibraryPage.tsx
+msgid "{read}% read"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -1568,6 +1576,10 @@ msgstr "{seriesWantedCount, plural, one {# w serii} few {# w serii} many {# w se
 #, fuzzy
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, one {Wyświetlono # wynik. Wyszukaj, aby zawęzić wyniki.} few {Wyświetlono # wyniki. Wyszukaj, aby zawęzić wyniki.} many {Wyświetlono # wyników. Wyszukaj, aby zawęzić wyniki.} other {Wyświetlono # wyniku. Wyszukaj, aby zawęzić wyniki.}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -2603,6 +2615,10 @@ msgstr "Potwierdzone"
 msgid "Action"
 msgstr "Akcja"
 
+#: src/pages/LibraryPage.tsx
+msgid "Actions"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Actions for {spanLabel}"
@@ -3380,6 +3396,10 @@ msgstr "Przypisz"
 msgid "At a glance"
 msgstr "W skrócie"
 
+#: src/pages/LibraryPage.tsx
+msgid "At least {chapterMin} chapters"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "At least {MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements."
@@ -3401,6 +3421,10 @@ msgstr "Co najmniej jedno włączone"
 #, fuzzy
 msgid "At least one language must stay enabled."
 msgstr "Co najmniej jeden język musi pozostać włączony."
+
+#: src/pages/LibraryPage.tsx
+msgid "At most {chapterMax} chapters"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -7491,6 +7515,10 @@ msgstr "Francuski"
 msgid "From"
 msgstr "Od"
 
+#: src/pages/LibraryPage.tsx
+msgid "From {origins}"
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "From {source}. You can keep browsing while it downloads."
@@ -10140,6 +10168,10 @@ msgstr "Monitorowanie"
 msgid "Monitoring and sources"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring, quality profile, completeness, sources"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Monitoring: {modeLabel}"
@@ -10151,6 +10183,7 @@ msgid "Month"
 msgstr "Miesiąc"
 
 #: src/components/settings/SettingsHelp.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -11172,6 +11205,10 @@ msgstr "Żaden z tych rozdziałów nie ma pliku na dysku."
 #, fuzzy
 msgid "none yet"
 msgstr "jeszcze brak"
+
+#: src/pages/LibraryPage.tsx
+msgid "Not {excluded}"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12972,6 +13009,10 @@ msgstr "Limit zapytań przekroczony na {source}, oczekiwanie przed kolejną pró
 #, fuzzy
 msgid "Rated"
 msgstr "Ocenione"
+
+#: src/pages/LibraryPage.tsx
+msgid "Rated {rated}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -14807,6 +14848,7 @@ msgid "score {score}"
 msgstr "wynik {score}"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Score {score}"
 msgstr "Wynik {score}"
@@ -16263,6 +16305,10 @@ msgstr "Status"
 #, fuzzy
 msgid "Status change"
 msgstr "Zmiana statusu"
+
+#: src/pages/LibraryPage.tsx
+msgid "Status, type, content rating, chapters"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
@@ -19035,6 +19081,10 @@ msgstr "Cały rok"
 msgid "Whole-series pack, needs your call"
 msgstr "Paczka całej serii, wymaga Twojej decyzji"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Why this pick"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Width"
@@ -19361,6 +19411,10 @@ msgstr "Twoja kolejność priorytetów"
 msgid "Your progress"
 msgstr "Twój postęp"
 
+#: src/pages/LibraryPage.tsx
+msgid "Your rating, score, how much you've read"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Your reading history is not affected. You can set a new goal at any time."
@@ -19411,6 +19465,10 @@ msgstr "Twoje źródła sięgają tylko do rozdziału <0>{highest}</0>, a ustawi
 #, fuzzy
 msgid "Your tags"
 msgstr "Twoje tagi"
+
+#: src/pages/LibraryPage.tsx
+msgid "Your tags, genres, provider tags"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/components/discover/DiscoverTasteStrip.tsx

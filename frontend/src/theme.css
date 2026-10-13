@@ -2174,14 +2174,27 @@ body::before {
 }
 /* The feature's rows. Spacing lives here rather than on the elements so the short-viewport block
    at the bottom can tune the whole stack in one place. */
+/* Clamped: a co-read reason names another title, and a long one ran the band to six lines on a
+   phone. When it is cut, the score's details list it in full (DiscoverHero). */
 .discover-hero-reason {
+  display: -webkit-box;
   max-width: 52ch;
   margin: 16px 0 0;
+  overflow: hidden;
   color: var(--ink-2);
   font-size: var(--type-body);
   font-weight: var(--fw-medium);
   line-height: 1.4;
   text-wrap: pretty;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+@media (max-width: 47.9375em) {
+  .discover-hero-reason {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
 }
 .discover-hero-actions {
   margin-top: 20px;
@@ -3490,6 +3503,35 @@ body::before {
   display: grid;
   grid-template-columns: minmax(70%, 2fr) 0.6fr
 }
+/* The tabs follow the Progress panel in the markup so a stacked band reads title, progress, tabs.
+   Side by side, the panel spans both rows and the tabs line up under the title, past the poster. */
+.series-hero-tabs {
+  margin-top: var(--mantine-spacing-md);
+}
+@media (min-width: 68.8125em) {
+  /* The empty first and last rows take whatever the panel is taller by, so the title and tabs stay
+     one block centred against it rather than splitting around the extra height. */
+  .series-hero:not([data-compact]) .series-hero-content {
+    grid-template-rows: 1fr auto auto 1fr;
+    row-gap: 0;
+  }
+  .series-hero:not([data-compact]) .series-hero-row {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .series-hero:not([data-compact]) .series-hero-glass-panel {
+    grid-column: 2;
+    grid-row: 1 / -1;
+  }
+  .series-hero:not([data-compact]) .series-hero-tabs {
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: var(--mantine-spacing-xl);
+  }
+  .series-hero:not([data-compact]) .series-hero-content:has(.series-hero-poster) .series-hero-tabs {
+    padding-left: calc(224px + 32px);
+  }
+}
 
 .series-hero-poster {
   display: block;
@@ -3516,7 +3558,7 @@ body::before {
   color: var(--ink-hi);
   font-size: var(--type-display);
   line-height: 0.9;
-
+  hyphens: auto;
   overflow-wrap: anywhere;
 }
 .series-hero-status {
@@ -4019,12 +4061,20 @@ button.hero-score[aria-expanded='true'] .hero-score-caret {
 }
 
 /* --- Series tabs ---------------------------------------------------------- */
+/* One row that scrolls sideways. Mantine's list wraps by default, which on a phone stacked
+   Settings' eight tabs into three rows. */
 .series-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 32px;
   border-bottom: none;
   overflow-x: auto;
   scrollbar-width: none;
+}
+@media (max-width: 47.9375em) {
+  .series-tabs {
+    gap: 24px;
+  }
 }
 .series-tabs::-webkit-scrollbar {
   display: none;
@@ -4420,9 +4470,11 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
+/* Two columns only when each can hold the 132px label and a name beside it. A fixed pair inside
+   the narrower Metadata panel left a creator link 16px and pushed the page sideways. */
 .series-records {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
   gap: 0 var(--mantine-spacing-xl);
 }
 .series-record {
@@ -4442,18 +4494,35 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 }
 
 @media (max-width: 61.9375em) {
-  .series-split,
-  .series-records {
+  .series-split {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* The Progress panel gets its own line before it starts squeezing the title and actions.
-     `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
-     breakpoint below. */
+}
+/* The Progress panel gets its own line before it starts squeezing the title and actions: beside
+   them under ~1100px it was a 150px column, and the title broke inside its words. Stacked, the two
+   meters sit side by side so the panel stays one short band rather than a tall card.
+   `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
+   breakpoint below. */
+@media (max-width: 68.75em) {
   .series-hero:not([data-compact]) .series-hero-content {
     grid-template-columns: minmax(0, 1fr);
   }
   .series-hero:not([data-compact]) .series-hero-glass-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    column-gap: var(--mantine-spacing-xl);
     margin-top: var(--mantine-spacing-lg);
+  }
+  .series-hero:not([data-compact]) .series-hero-glass-panel > :not(.series-progress-meter),
+  .series-hero-glass-panel:not(:has(.series-progress-meter + .series-progress-meter)) > .series-progress-meter {
+    grid-column: 1 / -1;
+  }
+  .series-hero:not([data-compact]) .series-progress-meter .mantine-Divider-root {
+    display: none;
+  }
+  .series-hero:not([data-compact]) .series-hero-poster {
+    width: 176px;
+    height: 264px;
   }
 }
 
@@ -7288,13 +7357,72 @@ body.reader-open {
   color: var(--ink-hi);
   font-weight: var(--fw-semibold);
 }
+/* Below the width the index fits beside the cards, the same list is a bar pinned under the header
+   that names the card being read. The dirty-card header that also sticks moves down to sit under it. */
+.settings-jump {
+  display: none;
+}
+.settings-entry {
+  scroll-margin-top: 80px;
+}
 @media (max-width: 74.9375em) {
   .settings-layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--mantine-spacing-md);
   }
   .settings-index {
     display: none;
   }
+  .settings-surface {
+    --settings-jump-h: 52px;
+  }
+  .settings-jump {
+    position: sticky;
+    top: var(--app-shell-header-height, 0px);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    height: var(--settings-jump-h);
+    background: var(--app-bg);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .settings-section[data-dirty] .settings-section-head {
+    top: calc(var(--app-shell-header-height, 0px) + var(--settings-jump-h));
+  }
+  .settings-entry {
+    scroll-margin-top: calc(var(--app-shell-header-height, 0px) + var(--settings-jump-h) + 16px);
+  }
+}
+.settings-jump-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 4px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.settings-jump-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.settings-jump-icon {
+  flex-shrink: 0;
+  color: var(--brand-fg);
+}
+.settings-jump-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-jump-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
 }
 
 /* --- Disclosure --------------------------------------------------------------
@@ -7494,6 +7622,53 @@ body.reader-open {
 }
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
+}
+/* Remove is the one action that cannot be taken back, so a rule keeps it out of the run of the rest. */
+.library-bulk-divider {
+  align-self: stretch;
+  margin-inline: 4px;
+}
+@media (min-width: 48em) {
+  .library-bulk-more-phone {
+    display: none;
+  }
+}
+/* On a phone the drawer covers the grid it filters, so the count and the way back to the grid sit
+   in a footer that stays on screen however far the groups run. */
+.library-filter-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: auto calc(var(--mantine-spacing-md) * -1) 0;
+  padding: 12px var(--mantine-spacing-md) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+.library-filter-show {
+  flex: 1;
+}
+@media (max-width: 47.9375em) {
+  .library-filter-drawer {
+    display: flex;
+    flex-direction: column;
+  }
+  .library-filter-drawer > .mantine-Drawer-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+  .library-filter-drawer-body {
+    flex: 1;
+  }
+}
+@media (min-width: 48em) {
+  .library-filter-drawer-body {
+    padding-bottom: var(--mantine-spacing-xl);
+  }
+}
+.disclosure-summary-active {
+  color: var(--ink-2);
 }
 @media (max-width: 47.9375em) {
   /* Home carries the same four numbers. On a phone the 2x2 tiles pushed the first cover below the

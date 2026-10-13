@@ -568,6 +568,10 @@ msgstr "{chapterCount, plural, other {#章}}"
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip}章"
 
+#: src/pages/LibraryPage.tsx
+msgid "{chapters} chapters"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
@@ -1314,6 +1318,10 @@ msgstr "{rated}件を評価済み"
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
 msgstr "MangaBakaカタログより{ratioValue}多く、より多く読まれているタイトルを重視"
 
+#: src/pages/LibraryPage.tsx
+msgid "{read}% read"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -1567,6 +1575,10 @@ msgstr "{seriesWantedCount, plural, other {シリーズ内#件}}"
 #, fuzzy
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, other {最初の # 件を表示しています。検索して絞り込んでください。}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -2602,6 +2614,10 @@ msgstr "確認済み"
 msgid "Action"
 msgstr "アクション"
 
+#: src/pages/LibraryPage.tsx
+msgid "Actions"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Actions for {spanLabel}"
@@ -3379,6 +3395,10 @@ msgstr "割り当て"
 msgid "At a glance"
 msgstr "概要"
 
+#: src/pages/LibraryPage.tsx
+msgid "At least {chapterMin} chapters"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "At least {MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements."
@@ -3400,6 +3420,10 @@ msgstr "1つ以上を有効化"
 #, fuzzy
 msgid "At least one language must stay enabled."
 msgstr "少なくとも1つの言語を有効のままにする必要があります。"
+
+#: src/pages/LibraryPage.tsx
+msgid "At most {chapterMax} chapters"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -7490,6 +7514,10 @@ msgstr "フランス語"
 msgid "From"
 msgstr "開始"
 
+#: src/pages/LibraryPage.tsx
+msgid "From {origins}"
+msgstr ""
+
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
 msgid "From {source}. You can keep browsing while it downloads."
@@ -10139,6 +10167,10 @@ msgstr "監視"
 msgid "Monitoring and sources"
 msgstr ""
 
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring, quality profile, completeness, sources"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Monitoring: {modeLabel}"
@@ -10150,6 +10182,7 @@ msgid "Month"
 msgstr "月"
 
 #: src/components/settings/SettingsHelp.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
@@ -11171,6 +11204,10 @@ msgstr "これらの章のファイルはディスク上にありません。"
 #, fuzzy
 msgid "none yet"
 msgstr "まだありません"
+
+#: src/pages/LibraryPage.tsx
+msgid "Not {excluded}"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12971,6 +13008,10 @@ msgstr "{source}によるレート制限。次の試行まで待機中"
 #, fuzzy
 msgid "Rated"
 msgstr "評価済み"
+
+#: src/pages/LibraryPage.tsx
+msgid "Rated {rated}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -14806,6 +14847,7 @@ msgid "score {score}"
 msgstr "スコア{score}"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Score {score}"
 msgstr "スコア{score}"
@@ -16262,6 +16304,10 @@ msgstr "ステータス"
 #, fuzzy
 msgid "Status change"
 msgstr "ステータス変更"
+
+#: src/pages/LibraryPage.tsx
+msgid "Status, type, content rating, chapters"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
@@ -19034,6 +19080,10 @@ msgstr "年間全体"
 msgid "Whole-series pack, needs your call"
 msgstr "シリーズ全体のパックのため、判断が必要です"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Why this pick"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Width"
@@ -19360,6 +19410,10 @@ msgstr "あなたの優先順位"
 msgid "Your progress"
 msgstr "あなたの進捗"
 
+#: src/pages/LibraryPage.tsx
+msgid "Your rating, score, how much you've read"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Your reading history is not affected. You can set a new goal at any time."
@@ -19410,6 +19464,10 @@ msgstr "ソースが届くのは章<0>{highest}</0>までですが、設定し�
 #, fuzzy
 msgid "Your tags"
 msgstr "あなたのタグ"
+
+#: src/pages/LibraryPage.tsx
+msgid "Your tags, genres, provider tags"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/components/discover/DiscoverTasteStrip.tsx

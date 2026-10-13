@@ -5,9 +5,11 @@ import {
   ActionIcon,
   Badge,
   Button,
+  Divider,
   Drawer,
   Group,
   Indicator,
+  Menu,
   Modal,
   MultiSelect,
   NumberInput,
@@ -24,6 +26,7 @@ import {
 } from '@mantine/core'
 import {
   IconBookmark,
+  IconChevronDown,
   IconDeviceFloppy,
   IconEye,
   IconStars,
@@ -716,11 +719,68 @@ export default function LibraryPage() {
   const activeFilterCount = Object.values(groupCounts).reduce((a, b) => a + b, 0)
   const toggleGroup = (group: FilterGroup) =>
     setOpenGroups((open) => (open.includes(group) ? open.filter((g) => g !== group) : [...open, group]))
+  /** What a closed group is doing: its active values, or failing that, what it holds. */
+  const groupSummary = (group: FilterGroup): ReactNode => {
+    const label = (options: { value: string; label: string }[], values: string[]) =>
+      values.map((v) => options.find((o) => o.value === v)?.label ?? v).join(', ')
+    const tagNames = (ids: string[]) => ids.map((id) => tags?.find((tag) => String(tag.id) === id)?.label ?? id).join(', ')
+    const range = (lo: number, hi: number) => `${formatNumber(lo)}–${formatNumber(hi)}`
+    const parts: string[] = []
+    if (group === 'series') {
+      if (statusFilter !== 'all') parts.push(renderLabel(seriesStatusVisual(statusFilter).label))
+      if (typeFilter.length > 0) parts.push(label(typeOptions, typeFilter))
+      if (contentRatingFilter.length > 0) parts.push(label(contentRatingOptions, contentRatingFilter))
+      const chapters = range(chapterMin ?? 0, chapterMax ?? 0)
+      if (chapterMin != null && chapterMax != null) parts.push(t`${chapters} chapters`)
+      else if (chapterMin != null) parts.push(t`At least ${chapterMin} chapters`)
+      else if (chapterMax != null) parts.push(t`At most ${chapterMax} chapters`)
+    } else if (group === 'tags') {
+      if (untaggedOnly) parts.push(t`Untagged only`)
+      else {
+        if (tagFilter.length > 0) parts.push(tagNames(tagFilter))
+        const excluded = tagNames(excludeTagFilter)
+        if (excludeTagFilter.length > 0) parts.push(t`Not ${excluded}`)
+      }
+      if (genreFilter.length > 0) parts.push(genreFilter.join(', '))
+      const excluded = excludeGenreFilter.join(', ')
+      if (excludeGenreFilter.length > 0) parts.push(t`Not ${excluded}`)
+      if (metaTagFilter.length > 0) parts.push(metaTagFilter.join(', '))
+    } else if (group === 'ratings') {
+      const rated = range(ratingRange[0], ratingRange[1])
+      const score = range(communityRange[0], communityRange[1])
+      const read = range(readRange[0], readRange[1])
+      if (ratingState === 'rated') parts.push(t`Rated ${rated}`)
+      else if (ratingState !== 'all') parts.push(label(ratingStateOptions, [ratingState]))
+      if (communityRange[0] > 0 || communityRange[1] < 10) parts.push(t`Score ${score}`)
+      if (readRange[0] > 0 || readRange[1] < 100) parts.push(t`${read}% read`)
+    } else {
+      if (monitoredFilter !== 'all') parts.push(monitoredFilter === 'monitored' ? t`Monitored` : t`Unmonitored`)
+      if (completeness !== 'all') parts.push(completeness === 'behind' ? t`Behind (missing chapters)` : t`Complete`)
+      if (qualityProfileFilter !== 'all')
+        parts.push(
+          qualityProfileFilter === DEFAULT_PROFILE_FILTER
+            ? t`Instance default`
+            : (upgradeProfiles?.find((p) => String(p.id) === qualityProfileFilter)?.name ?? qualityProfileFilter),
+        )
+      if (sourceState !== 'all') parts.push(label(sourceStateOptions, [sourceState]))
+      if (sourceFilter.length > 0) parts.push(label(sourceOptions, sourceFilter))
+      const origins = label(fileSourceOptions, fileSourceFilter)
+      if (fileSourceFilter.length > 0) parts.push(t`From ${origins}`)
+    }
+    if (parts.length > 0) return <span className="disclosure-summary-active">{parts.join(' · ')}</span>
+    return {
+      series: t`Status, type, content rating, chapters`,
+      tags: t`Your tags, genres, provider tags`,
+      ratings: t`Your rating, score, how much you've read`,
+      monitoring: t`Monitoring, quality profile, completeness, sources`,
+    }[group]
+  }
   const groupProps = (group: FilterGroup) => ({
     opened: openGroups.includes(group),
     onToggle: () => toggleGroup(group),
     count: groupCounts[group],
     countLabel: plural(groupCounts[group], { one: '# filter active', other: '# filters active' }),
+    summary: groupSummary(group),
   })
 
   const filtersActive = query.trim() !== '' || activeFilterCount > 0
@@ -947,19 +1007,85 @@ export default function LibraryPage() {
 
   // `key` is compared against `busy` (see runBulk) and must stay an untranslated identifier;
   // `label` is what actually renders, so it's the only part that gets translated.
-  const bulkBtn = (key: string, label: ReactNode, icon: ReactNode, run: () => void, color?: string) => (
-    <Button
-      size="xs"
-      variant="light"
-      color={color}
-      leftSection={icon}
-      disabled={selected.size === 0 || (busy !== null && busy !== key)}
-      loading={busy === key}
-      onClick={run}
-    >
-      {label}
-    </Button>
-  )
+  // In priority order: the first four the user may run are buttons, the rest sit under More.
+  // Remove is not in here; it stays a button of its own, apart from the rest.
+  const bulkActions: { key: string; label: ReactNode; icon: ReactNode; run: () => void }[] = [
+    can('DownloadChapters') && {
+      key: 'Search missing',
+      label: <Trans>Search missing</Trans>,
+      icon: <IconSearch size={15} />,
+      run: () => runBulk('Search missing', (id) => api(`/series/${id}/searchmissing`, { method: 'POST' })),
+    },
+    can('EditMetadata') && {
+      key: 'Monitoring',
+      label: <Trans>Monitoring</Trans>,
+      icon: <IconEye size={15} />,
+      run: () => setMonitorModalOpen(true),
+    },
+    can('ManageTags') && {
+      key: 'Tags',
+      label: <Trans>Tags</Trans>,
+      icon: <IconTag size={15} />,
+      run: () => {
+        setTagsToAdd([])
+        setTagsToRemove([])
+        setTagModalOpen(true)
+      },
+    },
+    can('EditMetadata') && {
+      key: 'Refresh',
+      label: <Trans>Refresh</Trans>,
+      icon: <IconRefresh size={15} />,
+      run: () => runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
+    },
+    can('EditMetadata') && {
+      key: 'Metadata',
+      label: <Trans>Metadata</Trans>,
+      icon: <IconPhoto size={15} />,
+      run: () => runBulk('Metadata', (id) => api(`/series/${id}/refreshmetadata`, { method: 'POST' })),
+    },
+    can('ManageSources') && {
+      key: 'Auto-match',
+      label: <Trans>Auto-match</Trans>,
+      icon: <IconWand size={15} />,
+      run: () => setAutoMatchModalOpen(true),
+    },
+    can('EditMetadata') && {
+      key: 'Quality profile',
+      label: <Trans>Quality profile</Trans>,
+      icon: <IconStars size={15} />,
+      run: () => {
+        setBulkProfile(DEFAULT_PROFILE_FILTER)
+        setProfileModalOpen(true)
+      },
+    },
+    {
+      key: 'Notifications',
+      label: <Trans>Notifications</Trans>,
+      icon: <IconBell size={15} />,
+      run: () => setNotifyModalOpen(true),
+    },
+    // "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5).
+    can('EditMetadata') && {
+      key: 'ComicInfo',
+      label: 'ComicInfo',
+      icon: <IconFileText size={15} />,
+      run: () => runBulk('ComicInfo', (id) => api(`/series/${id}/updatecomicinfo`, { method: 'POST' })),
+    },
+    can('EditMetadata') && {
+      key: 'Move',
+      label: <Trans>Move</Trans>,
+      icon: <IconFolderSymlink size={15} />,
+      run: () => {
+        setMoveTarget(null)
+        setMoveFiles(true)
+        setMoveModalOpen(true)
+      },
+    },
+  ].filter((a) => a !== false)
+  const primaryActions = bulkActions.slice(0, 4)
+  const moreActions = bulkActions.slice(4)
+  const bulkDisabled = (key: string) => selected.size === 0 || (busy !== null && busy !== key)
 
   // A series that drops out of `visible` (filter change, bulk tag removal, ...) must drop out of
   // `selected` too, or a later bulk action (Delete, optionally with files) still hits it even
@@ -1145,52 +1271,72 @@ export default function LibraryPage() {
                 </Text>
               </Group>
               <Group gap="xs">
-                {can('DownloadChapters') && bulkBtn('Search missing', <Trans>Search missing</Trans>, <IconSearch size={15} />, () =>
-                  runBulk('Search missing', (id) =>
-                    api(`/series/${id}/searchmissing`, { method: 'POST' }),
-                  ),
+                {primaryActions.map((a) => (
+                  <Button
+                    key={a.key}
+                    visibleFrom="sm"
+                    size="xs"
+                    variant="light"
+                    leftSection={a.icon}
+                    disabled={bulkDisabled(a.key)}
+                    loading={busy === a.key}
+                    onClick={a.run}
+                  >
+                    {a.label}
+                  </Button>
+                ))}
+                {/* On a phone the primary four join the menu too, so the row is one menu and Remove. */}
+                <Menu position="bottom-end" withinPortal>
+                  <Menu.Target>
+                    <Button
+                      size="xs"
+                      variant="default"
+                      rightSection={<IconChevronDown size={14} />}
+                      disabled={selected.size === 0 || (busy !== null && !moreActions.some((a) => a.key === busy))}
+                      loading={moreActions.some((a) => a.key === busy)}
+                      className={moreActions.length === 0 ? 'library-bulk-more-phone' : undefined}
+                    >
+                      <Text span inherit visibleFrom="sm">
+                        <Trans>More</Trans>
+                      </Text>
+                      <Text span inherit hiddenFrom="sm">
+                        <Trans>Actions</Trans>
+                      </Text>
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    {primaryActions.map((a) => (
+                      <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} onClick={a.run}>
+                        {a.label}
+                      </Menu.Item>
+                    ))}
+                    {primaryActions.length > 0 && moreActions.length > 0 && <Menu.Divider hiddenFrom="sm" />}
+                    {moreActions.map((a) => (
+                      <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
+                        {a.label}
+                      </Menu.Item>
+                    ))}
+                  </Menu.Dropdown>
+                </Menu>
+                {can('DeleteSeries') && (
+                  <>
+                    <Divider orientation="vertical" className="library-bulk-divider" />
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="var(--danger)"
+                      leftSection={<IconTrash size={15} />}
+                      disabled={bulkDisabled('Remove')}
+                      loading={busy === 'Remove'}
+                      onClick={() => {
+                        setDeleteFiles(false)
+                        setDeleteModalOpen(true)
+                      }}
+                    >
+                      <Trans>Remove</Trans>
+                    </Button>
+                  </>
                 )}
-                {can('EditMetadata') && bulkBtn('Refresh', <Trans>Refresh</Trans>, <IconRefresh size={15} />, () =>
-                  runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
-                )}
-                {can('ManageSources') && bulkBtn('Auto-match', <Trans>Auto-match</Trans>, <IconWand size={15} />, () =>
-                  setAutoMatchModalOpen(true),
-                )}
-                {can('EditMetadata') && bulkBtn('Metadata', <Trans>Metadata</Trans>, <IconPhoto size={15} />, () =>
-                  runBulk('Metadata', (id) =>
-                    api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
-                  ),
-                )}
-                {/* "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5). */}
-                {can('EditMetadata') && bulkBtn('ComicInfo', 'ComicInfo', <IconFileText size={15} />, () =>
-                  runBulk('ComicInfo', (id) =>
-                    api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
-                  ),
-                )}
-                {can('ManageTags') && bulkBtn('Tags', <Trans>Tags</Trans>, <IconTag size={15} />, () => {
-                  setTagsToAdd([])
-                  setTagsToRemove([])
-                  setTagModalOpen(true)
-                })}
-                {can('EditMetadata') && bulkBtn('Monitoring', <Trans>Monitoring</Trans>, <IconEye size={15} />, () =>
-                  setMonitorModalOpen(true),
-                )}
-                {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
-                  setNotifyModalOpen(true),
-                )}
-                {can('EditMetadata') && bulkBtn('Quality profile', <Trans>Quality profile</Trans>, <IconStars size={15} />, () => {
-                  setBulkProfile(DEFAULT_PROFILE_FILTER)
-                  setProfileModalOpen(true)
-                })}
-                {can('EditMetadata') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
-                  setMoveTarget(null)
-                  setMoveFiles(true)
-                  setMoveModalOpen(true)
-                })}
-                {can('DeleteSeries') && bulkBtn('Remove', <Trans>Remove</Trans>, <IconTrash size={15} />, () => {
-                  setDeleteFiles(false)
-                  setDeleteModalOpen(true)
-                }, 'var(--danger)')}
                 <Button
                   visibleFrom="sm"
                   size="xs"
@@ -1371,9 +1517,11 @@ export default function LibraryPage() {
         position="right"
         size="sm"
         title={t`Filters`}
+        classNames={{ content: 'library-filter-drawer' }}
       >
-        <Stack gap="sm" pb="xl">
-          <Text size="sm" c="var(--ink-3)">
+        <Stack gap="sm" className="library-filter-drawer-body">
+          {/* On a phone the drawer covers the grid, so the count moves to the footer instead. */}
+          <Text size="sm" c="var(--ink-3)" visibleFrom="sm">
             {plural(totalSeriesShown, {
               one: `${shownCount} of # series shown.`,
               other: `${shownCount} of # series shown.`,
@@ -1659,10 +1807,25 @@ export default function LibraryPage() {
             </Disclosure>
           </div>
           {activeFilterCount > 0 && (
-            <Button variant="default" leftSection={<IconX size={15} />} onClick={() => applySpec(DEFAULT_SPEC, null)}>
+            <Button
+              visibleFrom="sm"
+              variant="default"
+              leftSection={<IconX size={15} />}
+              onClick={() => applySpec(DEFAULT_SPEC, null)}
+            >
               <Trans>Clear all filters</Trans>
             </Button>
           )}
+          <Group className="library-filter-footer" hiddenFrom="sm" gap="sm" wrap="nowrap">
+            {activeFilterCount > 0 && (
+              <Button variant="default" onClick={() => applySpec(DEFAULT_SPEC, null)}>
+                <Trans>Clear all</Trans>
+              </Button>
+            )}
+            <Button className="library-filter-show" onClick={() => setFiltersOpen(false)}>
+              <Plural value={shownCount} one="Show # series" other="Show # series" />
+            </Button>
+          </Group>
         </Stack>
       </Drawer>
 

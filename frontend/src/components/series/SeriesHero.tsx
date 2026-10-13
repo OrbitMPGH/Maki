@@ -289,8 +289,6 @@ export function SeriesHero({
                             <Group gap="xs" mt="lg" wrap="wrap">
                                 {actions}
                             </Group>
-
-                            <Box mt="xl">{tabs}</Box>
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
@@ -299,7 +297,7 @@ export function SeriesHero({
                         </Title>
 
                         {readTracking && series.readChapterCount != null && progress.have > 0 && (
-                            <Box mt="md">
+                            <Box mt="md" className="series-progress-meter">
                                 <Group gap={9} c="var(--ink-3)">
                                     <IconBook size={17} />
                                     <Text size="sm" fw={600} c="var(--ink)">
@@ -327,7 +325,7 @@ export function SeriesHero({
                             </Box>
                         )}
 
-                        <Box mt="md">
+                        <Box mt="md" className="series-progress-meter">
                             <Group gap={9} c="var(--ink-3)">
                                 <IconDownload size={17} />
                                 <Text size="sm" fw={600} c="var(--ink)">
@@ -432,6 +430,9 @@ export function SeriesHero({
                             </Alert>
                         )}
                     </Paper>
+                    {/* After the panel, not inside the title column: once the panel stacks, the tabs
+                        have to sit on the content they switch, not above the panel. */}
+                    <Box className="series-hero-tabs">{tabs}</Box>
                 </Group>
             </div>
         </Box>

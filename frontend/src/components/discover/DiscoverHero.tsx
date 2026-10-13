@@ -84,6 +84,25 @@ export function DiscoverHero({
   const active = Math.min(activeIndex, picks.length - 1)
   const item = picks[active] as RecommendationItem | undefined
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
+  // The band's reason is clamped; when it is actually cut, the details list carries it in full
+  // (a title attribute alone leaves a phone with no way to read the rest).
+  const [reasonCut, setReasonCut] = useState(false)
+  const reasonRef = useCallback(
+    (el: HTMLParagraphElement | null) => {
+      if (!el) return
+      const check = () => setReasonCut(el.scrollHeight > el.clientHeight + 1)
+      check()
+      const observer = new ResizeObserver(check)
+      observer.observe(el)
+      return () => {
+        observer.disconnect()
+        setReasonCut(false)
+      }
+    },
+    // Re-measured per pick: the next reason can be cut where this one was not, at the same size.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [item?.providerId],
+  )
 
   const choose = useCallback((n: number) => {
     setAutoRotate(false)
@@ -310,13 +329,13 @@ export function DiscoverHero({
                       )}
                     </section>
 
-                    {reasons.length > 1 && (
+                    {(reasons.length > 1 || (reasons.length > 0 && reasonCut)) && (
                       <section className="hero-details-group">
                         <h3 className="hero-details-label">
-                          <Trans>Also because</Trans>
+                          {reasonCut ? <Trans>Why this pick</Trans> : <Trans>Also because</Trans>}
                         </h3>
                         <ul className="hero-details-reasons">
-                          {reasons.slice(1).map((r) => (
+                          {reasons.slice(reasonCut ? 0 : 1).map((r) => (
                             <li key={r.id}>{r.text}</li>
                           ))}
                         </ul>
@@ -340,7 +359,9 @@ export function DiscoverHero({
               </div>
 
               {reasons.length > 0 && (
-                <p className="discover-hero-reason">{reasons[0].text}</p>
+                <p ref={reasonRef} className="discover-hero-reason" title={reasons[0].text}>
+                  {reasons[0].text}
+                </p>
               )}
 
               <Group gap="xs" className="discover-hero-actions">
