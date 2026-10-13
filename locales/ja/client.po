@@ -3081,11 +3081,6 @@ msgstr "そのユーザー名のアカウントは既に存在します"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-#~ msgid "An admin approved your request."
-#~ msgstr "管理者がリクエストを承認しました。"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "管理者が追加先とダウンロード対象を決めます。"
 

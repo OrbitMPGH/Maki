@@ -3082,11 +3082,6 @@ msgstr "Bu kullanıcı adına sahip bir hesap zaten var"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-#~ msgid "An admin approved your request."
-#~ msgstr "Bir yönetici isteğinizi onayladı."
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "Nereye ekleneceğine ve nelerin indirileceğine yönetici karar verir."
 

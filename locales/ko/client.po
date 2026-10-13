@@ -3081,11 +3081,6 @@ msgstr "해당 사용자 이름의 계정이 이미 있습니다"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-#~ msgid "An admin approved your request."
-#~ msgstr "관리자가 요청을 승인했습니다."
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "추가 위치와 다운로드 항목은 관리자가 결정합니다."
 

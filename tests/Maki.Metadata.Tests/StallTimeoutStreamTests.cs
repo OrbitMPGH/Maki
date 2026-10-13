@@ -41,14 +41,15 @@ public class StallTimeoutStreamTests
     [Fact]
     public async Task A_slow_but_steady_body_is_read_to_the_end()
     {
-        // Thirteen reads at a sixth of the stall each: more than twice the stall in total, and each gap
-        // leaves five sixths of the window as headroom for a slow CI runner.
-        await using var stream = new StallTimeoutStream(new TrickleStream(12, Stall / 6), Stall);
+        // Sixteen reads at a tenth of a one second stall: 1.6 s in total, and each gap
+        // leaves 900 ms of headroom, since a 300 ms window still flaked on a contended CI runner.
+        var stall = TimeSpan.FromSeconds(1);
+        await using var stream = new StallTimeoutStream(new TrickleStream(15, stall / 10), stall);
         using var output = new MemoryStream();
 
         await stream.CopyToAsync(output);
 
-        Assert.Equal(12, output.Length);
+        Assert.Equal(15, output.Length);
     }
 
     [Fact]
