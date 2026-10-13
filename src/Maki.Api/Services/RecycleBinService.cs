@@ -328,6 +328,12 @@ public class RecycleBinService(
             return new RestoreResult(RestoreStatus.NotFound);
         }
 
+        using var seriesLock = await SeriesLocks.SeriesAsync(entry.SeriesId, ct);
+        if (!await db.RecycleBin.AnyAsync(e => e.Id == id, ct))
+        {
+            return new RestoreResult(RestoreStatus.NotFound);
+        }
+
         // Occupied rather than File.Exists: a binned symlink whose target is gone is still a file to put back.
         if (BinFile(entry) is not { } source || !SameVolumeMove.Occupied(source))
         {
@@ -339,7 +345,6 @@ public class RecycleBinService(
             return new RestoreResult(RestoreStatus.TargetInvalid);
         }
 
-        using var seriesLock = await SeriesLocks.SeriesAsync(entry.SeriesId, ct);
         if (SameVolumeMove.Occupied(target))
         {
             return new RestoreResult(RestoreStatus.TargetExists);
@@ -368,13 +373,13 @@ public class RecycleBinService(
         }
 
         // The file is back where it was. Whatever happens to the rows now, it is on disk, and at
-        // worst Health reports it as an unlinked file.
+        // worst Health reports it as an unlinked file. The entry goes in its own statement: a purge
+        // or a bin delete may have taken it meanwhile, and that must not cost the relink.
         var linked = 0;
         var relinked = false;
         try
         {
             (relinked, linked) = await RelinkAsync(entry, ct);
-            db.RecycleBin.Remove(entry);
             await db.SaveChangesAsync(CancellationToken.None);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -382,6 +387,15 @@ public class RecycleBinService(
             logger.LogError(ex, "Restored {File} to disk but could not update its records", target);
             db.ChangeTracker.Clear();
             relinked = false;
+        }
+
+        try
+        {
+            await ForgetAsync([entry]);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Restored {File} to disk but could not remove its recycle bin entry", target);
         }
 
         await QueueHealthScanAsync(entry, relinked);

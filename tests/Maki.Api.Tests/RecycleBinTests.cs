@@ -350,6 +350,34 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
+    public async Task A_restore_whose_entry_a_purge_takes_mid_move_still_relinks()
+    {
+        var s = Seed();
+        using (var db = _db.NewContext())
+        {
+            await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db), default);
+        }
+
+        var mover = new ScriptedMover((_, _) =>
+        {
+            using var other = _db.NewContext();
+            other.RecycleBin.ExecuteDelete();
+            return null;
+        });
+        using (var db = _db.NewContext())
+        {
+            var result = await Bin(db, mover).RestoreAsync(db.RecycleBin.Single().Id, default);
+            Assert.Equal(RecycleBinService.RestoreStatus.Linked, result.Status);
+        }
+
+        Assert.Equal("volume one", File.ReadAllText(s.Absolute));
+        using var check = _db.NewContext();
+        Assert.Empty(check.RecycleBin);
+        var file = Assert.Single(check.ChapterFiles);
+        Assert.All(check.Chapters, c => Assert.Equal(file.Id, c.ChapterFileId));
+    }
+
+    [Fact]
     public async Task A_binned_link_whose_target_is_gone_can_still_be_restored()
     {
         var s = Seed();
