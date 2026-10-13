@@ -1214,20 +1214,27 @@ public class DownloadQueueService(
     /// wouldn't resubmit the grab. Returns the number re-queued.
     /// </summary>
     public Task<int> RequeueEligibleFailuresAsync(int maxAttempts, CancellationToken ct = default) =>
-        RequeueFailuresAsync(maxAttempts, null, null, manual: false, ct);
+        RequeueFailuresAsync(maxAttempts, null, null, manual: false, callerScope: null, ct);
 
     /// <summary>
     /// A retry somebody asked for: every Failed scraper item, narrowed by failure key and/or source,
     /// whatever its attempt count or backoff, the way the single-item retry ignores both.
+    /// <paramref name="callerScope"/> is the request's, so a caller limited to some root folders
+    /// retries only the rows they can see.
     /// </summary>
-    public Task<int> RetryFailedAsync(string? reasonKey, string? source, CancellationToken ct = default) =>
-        RequeueFailuresAsync(int.MaxValue, reasonKey, source, manual: true, ct);
+    public Task<int> RetryFailedAsync(
+        string? reasonKey, string? source, DataScope callerScope, CancellationToken ct = default) =>
+        RequeueFailuresAsync(int.MaxValue, reasonKey, source, manual: true, callerScope, ct);
 
     private async Task<int> RequeueFailuresAsync(
-        int maxAttempts, string? reasonKey, string? source, bool manual, CancellationToken ct)
+        int maxAttempts, string? reasonKey, string? source, bool manual, DataScope? callerScope, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        if (callerScope is { Unrestricted: false })
+        {
+            db.Scope.SetUser(callerScope.UserId, callerScope.AllRootFolders);
+        }
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
 
         var now = time.GetUtcNow().UtcDateTime;

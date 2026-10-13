@@ -102,6 +102,40 @@ public class QueueBulkFailedTests : IDisposable
     }
 
     [Fact]
+    public async Task Retry_failed_only_touches_rows_in_root_folders_the_caller_can_see()
+    {
+        var visible = SeedScraper("alpha", DownloadFailureReason.Network);
+        var otherSeries = _db.SeedSeries("Elsewhere", mappings:
+            new SourceMapping { SourceName = "alpha", SourceSeriesId = "x", Url = "https://alpha.test/x", Enabled = true });
+        var reader = _db.SeedUser("restricted", Maki.Core.Security.MakiPermission.ManageDownloadQueue, allRootFolders: false);
+        int hidden;
+        using (var db = _db.NewContext())
+        {
+            var root = db.Series.Single(s => s.Id == _seriesId).RootFolderId;
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder { UserId = reader, RootFolderId = root });
+            var chapter = new Chapter { SeriesId = otherSeries, Number = 1, Language = "en" };
+            db.Chapters.Add(chapter);
+            db.SaveChanges();
+            var item = new DownloadQueueItem
+            {
+                SeriesId = otherSeries, ChapterId = chapter.Id, SourceMappingId = db.SourceMappings.Single(m => m.SeriesId == otherSeries).Id,
+                Protocol = AcquisitionProtocol.Scraper, Status = QueueStatus.Failed, ErrorKey = DownloadFailureReason.Network, QueuedAt = T0
+            };
+            db.DownloadQueue.Add(item);
+            db.SaveChanges();
+            hidden = item.Id;
+        }
+
+        var controller = new QueueController(
+            new TestLocalizer(), _db.NewContext(reader, allRootFolders: false), _queue, _batches, null!, null!, null!, null!, null!,
+            NullLogger<QueueController>.Instance);
+
+        Assert.Equal(1, Affected(await controller.RetryFailed(null, CancellationToken.None)));
+        Assert.Equal(QueueStatus.Queued, StatusOf(visible));
+        Assert.Equal(QueueStatus.Failed, StatusOf(hidden));
+    }
+
+    [Fact]
     public async Task Retry_failed_can_be_narrowed_by_reason_and_by_source()
     {
         var a = SeedScraper("alpha", DownloadFailureReason.Network);

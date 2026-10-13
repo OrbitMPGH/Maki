@@ -548,7 +548,7 @@ public class QueueController(
     [HttpPost("retry-failed")]
     public async Task<IActionResult> RetryFailed([FromBody] QueueFailedActionDto? request, CancellationToken ct)
     {
-        var retried = await queue.RetryFailedAsync(request?.Reason, request?.Source, ct);
+        var retried = await queue.RetryFailedAsync(request?.Reason, request?.Source, db.Scope, ct);
         return Ok(new QueueBulkResultDto(retried));
     }
 
