@@ -820,6 +820,30 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
+    public async Task Delete_and_empty_leave_a_fresh_entry_whose_file_is_still_moving()
+    {
+        var s = Seed();
+        using (var db = _db.NewContext())
+        {
+            var series = db.Series.Include(x => x.RootFolder).Single();
+            Bin(db).Record(series, _root, s.RelativePath, s.Absolute, null, [], RecycleReason.DeleteFile);
+            db.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var entry = db.RecycleBin.Single();
+            var api = new RecycleBinController(db, Bin(db), _settings, new TestLocalizer());
+            Assert.IsNotType<NoContentResult>(await api.Delete(entry.Id, default));
+            var emptied = Assert.IsType<OkObjectResult>(await api.EmptyBin(default));
+            Assert.Equal(1, emptied.Value?.GetType().GetProperty("failed")?.GetValue(emptied.Value));
+        }
+
+        using var check = _db.NewContext();
+        Assert.Single(check.RecycleBin);
+    }
+
+    [Fact]
     public async Task Delete_permanently_and_empty_remove_the_files()
     {
         var s = Seed();

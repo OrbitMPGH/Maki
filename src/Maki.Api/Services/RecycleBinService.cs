@@ -468,10 +468,27 @@ public class RecycleBinService(
         }
     }
 
+    /// <summary>
+    /// A fresh entry whose file is not in the bin yet belongs to a delete still moving it. Dropping
+    /// it now would let the file land with no entry, and the orphan sweep would then delete it.
+    /// Once the file has landed the entry is final, so a fresh one may go then.
+    /// </summary>
+    private bool StillMoving(RecycleBinEntry entry)
+    {
+        if (entry.DeletedAtUtc <= time.GetUtcNow().UtcDateTime - RecycleBin.SettleTime || BinFile(entry) is not { } path
+            || SameVolumeMove.Occupied(path))
+        {
+            return false;
+        }
+
+        logger.LogInformation("Left {File} in the recycle bin: its delete is still moving it there", entry.OriginalPath);
+        return true;
+    }
+
     /// <summary>Deletes the entry's file for good, then the entry. False when the file could not be deleted; the entry stays.</summary>
     public async Task<bool> DeleteAsync(RecycleBinEntry entry, CancellationToken ct)
     {
-        if (!DeleteFile(entry))
+        if (StillMoving(entry) || !DeleteFile(entry))
         {
             return false;
         }
@@ -488,7 +505,7 @@ public class RecycleBinService(
         var failed = 0;
         foreach (var entry in await db.RecycleBin.ToListAsync(ct))
         {
-            if (DeleteFile(entry))
+            if (!StillMoving(entry) && DeleteFile(entry))
             {
                 db.RecycleBin.Remove(entry);
                 deleted++;
