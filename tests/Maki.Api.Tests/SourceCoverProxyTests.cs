@@ -102,6 +102,26 @@ public class SourceCoverProxyTests
         Assert.Contains("error.search.hostNotServed", JsonSerializer.Serialize(bad.Value));
     }
 
+    [Fact]
+    public async Task Refuses_a_suwayomi_source_even_for_a_path_on_its_own_host()
+    {
+        var requested = false;
+        var (controller, _) = Build((_, _) =>
+        {
+            requested = true;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }, new Maki.Sources.Suwayomi.SuwayomiSource(
+            new Maki.Sources.Suwayomi.SuwayomiStoredSource("100", "Fake", "Fake (EN)", "en"),
+            new Uri("http://192.168.1.20:4567"), null!, new Maki.Sources.Suwayomi.SuwayomiMangaIdCache()));
+
+        var result = await controller.SourceCover(
+            "suwayomi-100", "http://192.168.1.20:4567/api/v1/extension/icon/a.png", CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("error.search.hostNotServed", JsonSerializer.Serialize(bad.Value));
+        Assert.False(requested);
+    }
+
     private static void AssertRefused(IActionResult result, string key)
     {
         var status = Assert.IsType<ObjectResult>(result);
@@ -119,9 +139,9 @@ public class SourceCoverProxyTests
         };
 
     private static (SearchController Controller, DefaultHttpContext Http) Build(
-        Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> upstream)
+        Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> upstream, ISource? extra = null)
     {
-        var registry = new SourceRegistry([new FakeSource { Name = "src" }]);
+        var registry = new SourceRegistry(extra is null ? [new FakeSource { Name = "src" }] : [new FakeSource { Name = "src" }, extra]);
         var settings = new FakeAppSettings();
         var http = new DefaultHttpContext();
         var controller = new SearchController(

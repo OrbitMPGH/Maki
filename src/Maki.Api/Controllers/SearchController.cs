@@ -131,7 +131,9 @@ public class SearchController(
             return BadRequest();
         }
 
-        if (!CoverHostPolicy.Allows(source, target))
+        // A Suwayomi source's "own domain" is the admin's Suwayomi host, so the host check would let any
+        // signed-in user fetch arbitrary image-typed paths from it. Its thumbnails use the dedicated relay.
+        if (source is SuwayomiSource || !CoverHostPolicy.Allows(source, target))
         {
             logger.LogWarning("Blocked cover proxy request for {Host} via source {Source}", target.Host, sourceName);
             return this.Fail(localizer, "error.search.hostNotServed");
