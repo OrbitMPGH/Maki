@@ -324,7 +324,7 @@ public class ProgressController(
 
             rows.Add(new LeaderboardRowDto(
                 user.Id,
-                user.DisplayName ?? user.UserName ?? $"User {user.Id}",
+                UserNameVisibility.For(currentUser, user.Id, user.DisplayName, user.UserName),
                 level,
                 snapshot.ChaptersRead + snapshot.VolumesRead,
                 snapshot.CurrentStreak));

@@ -4450,7 +4450,8 @@ export interface HeatmapDay {
 
 export interface LeaderboardRow {
   userId: number
-  name: string
+  /** Null when the user has no display name and the reader may not see their login name. */
+  name: string | null
   level: number
   chaptersRead: number
   currentStreak: number

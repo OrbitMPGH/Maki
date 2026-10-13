@@ -56,4 +56,5 @@ public record HeatmapDayDto(DateOnly Date, int Chapters, int Seconds);
 /// A row of the household leaderboard. Aggregate figures only — never anything per series, since
 /// opting in to being compared is not opting in to publishing a reading list.
 /// </summary>
-public record LeaderboardRowDto(int UserId, string Name, int Level, long ChaptersRead, long CurrentStreak);
+/// <param name="Name">Null when the user has no display name and the reader may not see their login name.</param>
+public record LeaderboardRowDto(int UserId, string? Name, int Level, long ChaptersRead, long CurrentStreak);

@@ -276,7 +276,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
                 <Table.Tbody>
                   {leaderboard.map((row) => (
                     <Table.Tr key={row.userId}>
-                      <Table.Td>{row.name}</Table.Td>
+                      <Table.Td>{row.name ?? t`Another user`}</Table.Td>
                       <Table.Td ta="right" className="tnum">
                         {row.level}
                       </Table.Td>

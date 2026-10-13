@@ -97,17 +97,15 @@ public class SeriesMetadataController(
             })
             .ToListAsync(ct);
 
-        var seesLoginNames = currentUser.Has(MakiPermission.Admin);
-        string? NameFor(int? userId, string? displayName, string? loginName) =>
-            displayName ?? (seesLoginNames || (userId is { } id && id == currentUser.UserId) ? loginName : null);
-
         return Ok(rows.Select(r => new MetadataChangeDto(
             r.Change.Id,
             SeriesDto.MetadataFieldName(r.Change.Field),
             r.Change.OldValue,
             r.Change.NewValue,
             r.Change.Source == MetadataChangeSource.User ? "user" : "refresh",
-            r.Editor is null ? null : NameFor(r.Change.UserId, r.Editor.DisplayName, r.Editor.UserName),
+            r.Editor is null || r.Change.UserId is not { } editorId
+                ? null
+                : UserNameVisibility.For(currentUser, editorId, r.Editor.DisplayName, r.Editor.UserName),
             DateTime.SpecifyKind(r.Change.ChangedAtUtc, DateTimeKind.Utc))));
     }
 
