@@ -207,15 +207,16 @@ public class RecycleBinTests : IDisposable
             Path.Combine(folder, "scans.zip"),
             Path.Combine(folder, "notes.txt"),
             Path.Combine(folder, "Extras", "Art", "poster.png"),
+            // No hash record and not the poster, so the user put it there. Maki never writes a
+            // folder-level ComicInfo.xml.
+            Path.Combine(folder, "cover.jpg"),
+            Path.Combine(folder, "ComicInfo.xml"),
         };
         foreach (var path in others)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, Path.GetFileName(path));
         }
-
-        File.WriteAllText(Path.Combine(folder, "cover.jpg"), "jpg");
-        File.WriteAllText(Path.Combine(folder, "ComicInfo.xml"), "<x/>");
 
         using (var db = _db.NewContext())
         {
@@ -236,6 +237,27 @@ public class RecycleBinTests : IDisposable
             others.Select(p => Path.GetRelativePath(_root, p)).Append(s.RelativePath).Order(),
             entries.Select(e => e.RelativePath).Order());
         Assert.NotNull(Assert.Single(entries, e => e.ChapterFileId == s.FileId).FileJson);
+    }
+
+    [Fact]
+    public async Task Series_delete_removes_a_cover_maki_wrote_instead_of_binning_it()
+    {
+        var s = Seed();
+        var folder = Path.Combine(_root, "Berserk");
+        var cover = Path.Combine(folder, "cover.jpg");
+        File.WriteAllText(cover, "maki cover");
+        var record = Path.Combine(new AppPaths().MediaCoverDir, s.SeriesId.ToString(), "library-cover.sha256");
+        Directory.CreateDirectory(Path.GetDirectoryName(record)!);
+        File.WriteAllText(record, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(cover))));
+
+        using (var db = _db.NewContext())
+        {
+            Assert.IsType<NoContentResult>(await SeriesApi(db).Delete(s.SeriesId, deleteFiles: true, Deletion(db), default));
+        }
+
+        Assert.False(Directory.Exists(folder));
+        using var check = _db.NewContext();
+        Assert.Equal(s.RelativePath, Assert.Single(check.RecycleBin).RelativePath);
     }
 
     [Fact]

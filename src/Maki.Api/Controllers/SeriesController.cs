@@ -1187,8 +1187,10 @@ public class SeriesController(
     /// <param name="RemoveFolderWhole">Bin everything in <paramref name="Folder"/>, then prune it.</param>
     /// <param name="Files">Single files to bin, for folders the series does not own outright.</param>
     /// <param name="PruneIfEmpty">Folders removed only if nothing is left in them.</param>
+    /// <param name="MakiCover">The folder's cover.jpg when Maki wrote it, deleted rather than binned.</param>
     private sealed record SeriesDiskPlan(
-        string? Folder, bool RemoveFolderWhole, List<string> Files, List<string> PruneIfEmpty, string? Trash);
+        string? Folder, bool RemoveFolderWhole, List<string> Files, List<string> PruneIfEmpty, string? Trash,
+        string? MakiCover);
 
     private async Task<SeriesDiskPlan> PlanSeriesDiskDeleteAsync(Series series, bool deleteFiles, CancellationToken ct)
     {
@@ -1257,15 +1259,15 @@ public class SeriesController(
             prune.Add(trash);
         }
 
-        return new SeriesDiskPlan(folder, removeWhole, files, prune, deleteFiles ? trash : null);
+        // Read now: the hash record goes with the poster folder once the series is gone. Maki never
+        // writes a folder-level ComicInfo.xml, so that one is always the user's.
+        var cover = folder is null ? null : Path.Combine(folder, "cover.jpg");
+        var makiCover = removeWhole && cover is not null && coverService.IsMakiLibraryCover(series.Id, cover) ? cover : null;
+        return new SeriesDiskPlan(folder, removeWhole, files, prune, deleteFiles ? trash : null, makiCover);
     }
 
-    /// <summary>Written into a series folder by Maki itself, so a delete may remove them rather than bin them.</summary>
-    private static readonly string[] FolderSidecars = ["cover.jpg", "ComicInfo.xml"];
-
-    private static bool IsSidecar(string folder, string path) =>
-        LibraryPaths.FolderComparer.Equals(Path.GetDirectoryName(path), folder) &&
-        FolderSidecars.Contains(Path.GetFileName(path), StringComparer.OrdinalIgnoreCase);
+    private static bool IsMakiCover(SeriesDiskPlan plan, string path) =>
+        plan.MakiCover is { } cover && LibraryPaths.FolderComparer.Equals(path, cover);
 
     private static bool Present(string path) =>
         System.IO.File.Exists(path) || new FileInfo(path).LinkTarget is not null;
@@ -1273,7 +1275,7 @@ public class SeriesController(
     /// <summary>
     /// Every file the delete would take: in a folder the series owns outright, every regular file
     /// in the tree whatever its extension, plus the files the series tracks there (a tracked link
-    /// included); elsewhere only the tracked files. Maki's own sidecars are left for the prune, and a
+    /// included); elsewhere only the tracked files. Maki's own cover.jpg is left for the prune, and a
     /// file another series or a nested root still claims stays where it is.
     /// </summary>
     private async Task<List<(string Absolute, string Relative, ChapterFile? File)>> SeriesBinTargetsAsync(
@@ -1295,7 +1297,7 @@ public class SeriesController(
         {
             var prefix = folder.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
             paths.AddRange(tracked.Keys.Where(p => p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)));
-            paths.AddRange(LibraryPaths.EnumerateFilesNoLinks(folder).Where(p => !IsSidecar(folder, p)));
+            paths.AddRange(LibraryPaths.EnumerateFilesNoLinks(folder).Where(p => !IsMakiCover(plan, p)));
         }
 
         var candidates = paths.Distinct(LibraryPaths.FolderComparer).Where(Present).ToList();
@@ -1353,7 +1355,7 @@ public class SeriesController(
 
         if (plan is { RemoveFolderWhole: true, Folder: { } folder } && Directory.Exists(folder))
         {
-            Attempt(folder, () => PruneSeriesFolder(folder, seriesId));
+            Attempt(folder, () => PruneSeriesFolder(plan, folder, seriesId));
         }
 
         foreach (var dir in plan.PruneIfEmpty)
@@ -1375,9 +1377,9 @@ public class SeriesController(
 
     /// <summary>
     /// Removes the empty folders under <paramref name="folder"/>, deepest first, then the folder
-    /// itself once nothing but Maki's sidecars is left in it. Anything else keeps it.
+    /// itself once nothing but Maki's own cover.jpg is left in it. Anything else keeps it.
     /// </summary>
-    private void PruneSeriesFolder(string folder, int seriesId)
+    private void PruneSeriesFolder(SeriesDiskPlan plan, string folder, int seriesId)
     {
         foreach (var dir in LibraryPaths.EnumerateDirectoriesNoLinks(folder).OrderByDescending(d => d.Length).ToList())
         {
@@ -1388,16 +1390,16 @@ public class SeriesController(
         }
 
         var left = Directory.EnumerateFileSystemEntries(folder).ToList();
-        if (left.Any(p => !IsSidecar(folder, p) || Directory.Exists(p)))
+        if (left.Any(p => !IsMakiCover(plan, p) || Directory.Exists(p)))
         {
             logger.LogWarning("Kept {Folder} for removed series {SeriesId}: {Count} entries are still in it",
                 folder, seriesId, left.Count);
             return;
         }
 
-        foreach (var sidecar in left)
+        foreach (var cover in left)
         {
-            System.IO.File.Delete(sidecar);
+            System.IO.File.Delete(cover);
         }
 
         Directory.Delete(folder, recursive: false);

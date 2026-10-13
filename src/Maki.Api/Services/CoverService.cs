@@ -164,6 +164,23 @@ public class CoverService(
     private static bool WrittenByMaki(string cover, string record) =>
         File.Exists(record) && File.ReadAllText(record).Trim() == Sha256Of(cover);
 
+    /// <summary>
+    /// True for a cover.jpg Maki wrote: it matches the hash record or is the current poster. Anything
+    /// else in a series folder is the user's.
+    /// </summary>
+    public bool IsMakiLibraryCover(int seriesId, string cover)
+    {
+        try
+        {
+            return File.Exists(cover)
+                   && (WrittenByMaki(cover, LibraryCoverRecordFor(seriesId)) || SameBytes(cover, CoverPathFor(seriesId)));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     private static string Sha256Of(string path)
     {
         using var stream = File.OpenRead(path);
