@@ -148,6 +148,11 @@ msgstr "{0, plural, one {# dosya, {totalSize}} other {# dosya, {totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# dosya} other {# dosya}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2820,6 +2825,10 @@ msgstr "Yönetici"
 msgid "Advance to the next chapter at the end"
 msgstr "Sonunda bir sonraki bölüme geç"
 
+#: src/pages/SettingsPage.tsx
+msgid "Advanced"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Adventure"
@@ -3035,6 +3044,10 @@ msgstr "Zaten güncel"
 #, fuzzy
 msgid "Already yours"
 msgstr "Zaten sizde"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Also because"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -3638,6 +3651,10 @@ msgstr "Son etkinliğinize göre"
 #, fuzzy
 msgid "Basic auth"
 msgstr "Temel kimlik doğrulama"
+
+#: src/pages/SettingsPage.tsx
+msgid "Basics"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -5394,8 +5411,8 @@ msgid "Couldn't start the volume search"
 msgstr "Cilt araması başlatılamadı"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Couldn't update {serviceName}"
-msgstr ""
+#~ msgid "Couldn't update {serviceName}"
+#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5967,6 +5984,7 @@ msgstr "Hedef kök klasör"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Ayrılan CBZ'ler, silmeyi seçmediğiniz sürece Dosyalar bölümünde kalır."
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -6088,6 +6106,15 @@ msgstr "Keşfet ve çevrimdışı arama artık kullanılabilir."
 #, fuzzy
 msgid "Disk used"
 msgstr "Kullanılan disk"
+
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -9383,6 +9410,10 @@ msgstr "Daha fazla yükle"
 msgid "Loading chapters…"
 msgstr "Bölümler yükleniyor…"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Loading scores…"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -10104,6 +10135,10 @@ msgstr "İzleniyor"
 #, fuzzy
 msgid "Monitoring"
 msgstr "İzleme"
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10996,6 +11031,10 @@ msgstr "Henüz indirilmiş anlık görüntü yok"
 msgid "No source could serve the first chapter."
 msgstr "Hiçbir kaynak ilk bölümü sunamadı."
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "No source has scored this yet."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "No source has this chapter right now"
@@ -11310,6 +11349,10 @@ msgstr "Henüz senkronize edilmedi"
 #, fuzzy
 msgid "Not this anime?"
 msgstr "Bu anime değil mi?"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not updated"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12963,6 +13006,10 @@ msgstr "Derecelendirme: başlangıç"
 msgid "Rating to"
 msgstr "Derecelendirme: bitiş"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
@@ -13118,7 +13165,6 @@ msgstr "Okuyucu ayarları"
 msgid "Readers like you"
 msgstr "Sizin gibi okurlar"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers like you also finished this"
@@ -13129,6 +13175,10 @@ msgstr "Sizin gibi okuyucular bunu da bitirdi"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "Sizin gibi okuyucular bunu da önerdi"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -14746,6 +14796,11 @@ msgstr "Kapsamlar"
 msgid "Score"
 msgstr "Puan"
 
+#. placeholder {0}: formatFixedDecimal(score / 10, 1)
+#: src/components/discover/DiscoverHero.tsx
+msgid "Score {0}. Show scores and details"
+msgstr ""
+
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
 msgid "score {score}"
@@ -14776,6 +14831,10 @@ msgstr "Piksel başına görsel verisine göre puanlanır, PNG ve WebP'nin JPG i
 #, fuzzy
 msgid "Scored on median page width, from 500 to 2000 pixels."
 msgstr "Ortanca sayfa genişliğine göre puanlanır, 500 ile 2000 piksel arası."
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Scores by source"
+msgstr ""
 
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -15578,6 +15637,10 @@ msgstr "Okuma zincirlerini göster"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "Değiştirilen dosyaları göster"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Show scores and details"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -16459,6 +16522,10 @@ msgstr "Maki'nin eklediği torrentlere verilen etiket. Varsayılanı maki."
 msgid "Tags"
 msgstr "Etiketler"
 
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -17281,6 +17348,10 @@ msgstr "Bu yıl"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "Bu seriler zaten eşleştiriliyor."
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy

@@ -125,6 +125,11 @@ msgstr "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# file} other {# files}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr "{0, plural, one {# filter active} other {# filters active}}"
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 msgid "{0, plural, one {# ignored folder} other {# ignored folders}}"
@@ -2284,6 +2289,10 @@ msgstr "Administrator"
 msgid "Advance to the next chapter at the end"
 msgstr "Advance to the next chapter at the end"
 
+#: src/pages/SettingsPage.tsx
+msgid "Advanced"
+msgstr "Advanced"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Adventure"
 msgstr "Adventure"
@@ -2459,6 +2468,10 @@ msgstr "Already up to date"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Already yours"
 msgstr "Already yours"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Also because"
+msgstr "Also because"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Also delete detached files from disk"
@@ -2948,6 +2961,10 @@ msgstr "Based on your recent activity"
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Basic auth"
 msgstr "Basic auth"
+
+#: src/pages/SettingsPage.tsx
+msgid "Basics"
+msgstr "Basics"
 
 #: src/components/NotificationsSection.tsx
 msgid "Bearer token"
@@ -4382,8 +4399,8 @@ msgid "Couldn't start the volume search"
 msgstr "Couldn't start the volume search"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Couldn't update {serviceName}"
-msgstr "Couldn't update {serviceName}"
+#~ msgid "Couldn't update {serviceName}"
+#~ msgstr "Couldn't update {serviceName}"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Counted from the moment the limit is hit."
@@ -4847,6 +4864,7 @@ msgstr "Destination root folder"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Detached CBZs stay in the Files section unless you choose to delete them."
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Details"
 msgstr "Details"
@@ -4946,6 +4964,15 @@ msgstr "Discover and offline search are available now."
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Disk used"
 msgstr "Disk used"
+
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -7616,6 +7643,10 @@ msgstr "Load more"
 msgid "Loading chapters…"
 msgstr "Loading chapters…"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Loading scores…"
+msgstr "Loading scores…"
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 msgid "Loading…"
@@ -8201,6 +8232,10 @@ msgstr "Monitored"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Monitoring"
 msgstr "Monitoring"
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr "Monitoring and sources"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Monitoring: {modeLabel}"
@@ -8922,6 +8957,10 @@ msgstr "No snapshot downloaded yet"
 msgid "No source could serve the first chapter."
 msgstr "No source could serve the first chapter."
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "No source has scored this yet."
+msgstr "No source has scored this yet."
+
 #: src/api/queue.ts
 msgid "No source has this chapter right now"
 msgstr "No source has this chapter right now"
@@ -9178,6 +9217,10 @@ msgstr "Not synced yet"
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "Not this anime?"
 msgstr "Not this anime?"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not updated"
+msgstr "Not updated"
 
 #: src/components/NotificationsSection.tsx
 msgid "Not used yet"
@@ -10518,6 +10561,10 @@ msgstr "Rating from"
 msgid "Rating to"
 msgstr "Rating to"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr "Ratings and reading"
+
 #: src/components/SourceCompareModal.tsx
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
 msgstr "Re-download {staleChapters} from {winnerDisplayName}"
@@ -10644,7 +10691,6 @@ msgstr "Reader settings"
 msgid "Readers like you"
 msgstr "Readers like you"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 msgid "Readers like you also finished this"
 msgstr "Readers like you also finished this"
@@ -10653,6 +10699,10 @@ msgstr "Readers like you also finished this"
 #: src/components/ui/DiscoverRail.tsx
 msgid "Readers like you also recommended this"
 msgstr "Readers like you also recommended this"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr "Readers who finished {finished} also finished this"
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -11971,6 +12021,11 @@ msgstr "Scopes"
 msgid "Score"
 msgstr "Score"
 
+#. placeholder {0}: formatFixedDecimal(score / 10, 1)
+#: src/components/discover/DiscoverHero.tsx
+msgid "Score {0}. Show scores and details"
+msgstr "Score {0}. Show scores and details"
+
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "score {score}"
 msgstr "score {score}"
@@ -11995,6 +12050,10 @@ msgstr "Scored on image data per pixel, adjusted so PNG and WebP compare fairly 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Scored on median page width, from 500 to 2000 pixels."
 msgstr "Scored on median page width, from 500 to 2000 pixels."
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Scores by source"
+msgstr "Scores by source"
 
 #: src/pages/stats/labels.ts
 msgid "Scraper"
@@ -12644,6 +12703,10 @@ msgstr "Show reading streaks"
 #: src/pages/ActivityPage.tsx
 msgid "Show replaced files"
 msgstr "Show replaced files"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Show scores and details"
+msgstr "Show scores and details"
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "Show source text"
@@ -13362,6 +13425,10 @@ msgstr "Tag given to torrents Maki adds. Defaults to maki."
 msgid "Tags"
 msgstr "Tags"
 
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr "Tags and genres"
+
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
 msgid "Tags appear once the recommendation index is built"
@@ -14021,6 +14088,10 @@ msgstr "This year"
 #: src/pages/LibraryPage.tsx
 msgid "Those series are already being matched."
 msgstr "Those series are already being matched."
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr "Thresholds"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Thriller"

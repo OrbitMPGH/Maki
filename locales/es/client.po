@@ -148,6 +148,11 @@ msgstr "{0, plural, one {# archivo, {totalSize}} many {# archivos, {totalSize}} 
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# archivo} many {# archivos} other {# archivos}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2820,6 +2825,10 @@ msgstr "Administrador"
 msgid "Advance to the next chapter at the end"
 msgstr "Avanzar al capítulo siguiente al terminar"
 
+#: src/pages/SettingsPage.tsx
+msgid "Advanced"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Adventure"
@@ -3035,6 +3044,10 @@ msgstr "Ya está actualizado"
 #, fuzzy
 msgid "Already yours"
 msgstr "Ya lo tienes"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Also because"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -3638,6 +3651,10 @@ msgstr "Según tu actividad reciente"
 #, fuzzy
 msgid "Basic auth"
 msgstr "Autenticación básica"
+
+#: src/pages/SettingsPage.tsx
+msgid "Basics"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -5394,8 +5411,8 @@ msgid "Couldn't start the volume search"
 msgstr "No se pudo iniciar la búsqueda de volúmenes"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Couldn't update {serviceName}"
-msgstr ""
+#~ msgid "Couldn't update {serviceName}"
+#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5967,6 +5984,7 @@ msgstr "Carpeta raíz de destino"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Los CBZ desvinculados permanecen en la sección Archivos a menos que elijas eliminarlos."
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -6088,6 +6106,15 @@ msgstr "Descubrir y la búsqueda sin conexión ya están disponibles."
 #, fuzzy
 msgid "Disk used"
 msgstr "Espacio usado en disco"
+
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -9383,6 +9410,10 @@ msgstr "Cargar más"
 msgid "Loading chapters…"
 msgstr "Cargando capítulos…"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Loading scores…"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -10104,6 +10135,10 @@ msgstr "Supervisado"
 #, fuzzy
 msgid "Monitoring"
 msgstr "Supervisión"
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10996,6 +11031,10 @@ msgstr "Aún no se ha descargado ninguna instantánea"
 msgid "No source could serve the first chapter."
 msgstr "Ninguna fuente pudo ofrecer el primer capítulo."
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "No source has scored this yet."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "No source has this chapter right now"
@@ -11310,6 +11349,10 @@ msgstr "Aún no sincronizado"
 #, fuzzy
 msgid "Not this anime?"
 msgstr "¿No es este anime?"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not updated"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12963,6 +13006,10 @@ msgstr "Valoración desde"
 msgid "Rating to"
 msgstr "Valoración hasta"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
@@ -13118,7 +13165,6 @@ msgstr "Ajustes del lector"
 msgid "Readers like you"
 msgstr "Lectores como tú"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers like you also finished this"
@@ -13129,6 +13175,10 @@ msgstr "Lectores como tú también terminaron esto"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "Lectores como tú también recomendaron esto"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -14746,6 +14796,11 @@ msgstr "Ámbitos"
 msgid "Score"
 msgstr "Puntuación"
 
+#. placeholder {0}: formatFixedDecimal(score / 10, 1)
+#: src/components/discover/DiscoverHero.tsx
+msgid "Score {0}. Show scores and details"
+msgstr ""
+
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
 msgid "score {score}"
@@ -14776,6 +14831,10 @@ msgstr "Se puntúa según los datos de imagen por píxel, ajustados para que PNG
 #, fuzzy
 msgid "Scored on median page width, from 500 to 2000 pixels."
 msgstr "Se puntúa según el ancho mediano de página, de 500 a 2000 píxeles."
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Scores by source"
+msgstr ""
 
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -15578,6 +15637,10 @@ msgstr "Mostrar rachas de lectura"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "Mostrar archivos reemplazados"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Show scores and details"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -16459,6 +16522,10 @@ msgstr "Etiqueta que se da a los torrents que añade Maki. Por defecto, maki."
 msgid "Tags"
 msgstr "Etiquetas"
 
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -17281,6 +17348,10 @@ msgstr "Este año"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "Esas series ya están obteniendo coincidencias."
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy

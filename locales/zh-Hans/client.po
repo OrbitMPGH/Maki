@@ -148,6 +148,11 @@ msgstr "{0, plural, other {# 个文件，{totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {# 个文件}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2819,6 +2824,10 @@ msgstr "管理员"
 msgid "Advance to the next chapter at the end"
 msgstr "结束时前进到下一章"
 
+#: src/pages/SettingsPage.tsx
+msgid "Advanced"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Adventure"
@@ -3034,6 +3043,10 @@ msgstr "已经是最新"
 #, fuzzy
 msgid "Already yours"
 msgstr "已经拥有"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Also because"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -3637,6 +3650,10 @@ msgstr "根据你最近的活动"
 #, fuzzy
 msgid "Basic auth"
 msgstr "基本认证"
+
+#: src/pages/SettingsPage.tsx
+msgid "Basics"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -5393,8 +5410,8 @@ msgid "Couldn't start the volume search"
 msgstr "无法启动卷搜索"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Couldn't update {serviceName}"
-msgstr ""
+#~ msgid "Couldn't update {serviceName}"
+#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5966,6 +5983,7 @@ msgstr "目标根文件夹"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "已取消关联的 CBZ 会保留在文件部分，除非你选择删除它们。"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -6087,6 +6105,15 @@ msgstr "发现和离线搜索现在可用。"
 #, fuzzy
 msgid "Disk used"
 msgstr "磁盘使用量"
+
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -9382,6 +9409,10 @@ msgstr "加载更多"
 msgid "Loading chapters…"
 msgstr "正在加载章节…"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Loading scores…"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -10103,6 +10134,10 @@ msgstr "已监控"
 #, fuzzy
 msgid "Monitoring"
 msgstr "监控"
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10995,6 +11030,10 @@ msgstr "尚未下载快照"
 msgid "No source could serve the first chapter."
 msgstr "没有来源能提供第一章。"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "No source has scored this yet."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "No source has this chapter right now"
@@ -11309,6 +11348,10 @@ msgstr "尚未同步"
 #, fuzzy
 msgid "Not this anime?"
 msgstr "不是这部动画？"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not updated"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12962,6 +13005,10 @@ msgstr "评分下限"
 msgid "Rating to"
 msgstr "评分上限"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
@@ -13117,7 +13164,6 @@ msgstr "阅读器设置"
 msgid "Readers like you"
 msgstr "和你相似的读者"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers like you also finished this"
@@ -13128,6 +13174,10 @@ msgstr "像你一样的读者也读完了此内容"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "像你一样的读者也推荐了此内容"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -14745,6 +14795,11 @@ msgstr "范围"
 msgid "Score"
 msgstr "分数"
 
+#. placeholder {0}: formatFixedDecimal(score / 10, 1)
+#: src/components/discover/DiscoverHero.tsx
+msgid "Score {0}. Show scores and details"
+msgstr ""
+
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
 msgid "score {score}"
@@ -14775,6 +14830,10 @@ msgstr "按每像素的图像数据量计分，并经过调整，使 PNG 和 Web
 #, fuzzy
 msgid "Scored on median page width, from 500 to 2000 pixels."
 msgstr "按页面宽度中位数计分，范围为 500 到 2000 像素。"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Scores by source"
+msgstr ""
 
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -15577,6 +15636,10 @@ msgstr "显示阅读连续记录"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "显示被替换的文件"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Show scores and details"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -16458,6 +16521,10 @@ msgstr "添加到 Maki 所添加种子上的标签。默认为 maki。"
 msgid "Tags"
 msgstr "标签"
 
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -17280,6 +17347,10 @@ msgstr "今年"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "这些系列已经在匹配中。"
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy

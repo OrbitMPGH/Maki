@@ -148,6 +148,11 @@ msgstr "{0, plural, other {파일 #개, {totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {#개 파일}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2819,6 +2824,10 @@ msgstr "관리자"
 msgid "Advance to the next chapter at the end"
 msgstr "마지막에 다음 챕터로 이동"
 
+#: src/pages/SettingsPage.tsx
+msgid "Advanced"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Adventure"
@@ -3034,6 +3043,10 @@ msgstr "이미 최신 상태"
 #, fuzzy
 msgid "Already yours"
 msgstr "이미 보유함"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Also because"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -3637,6 +3650,10 @@ msgstr "최근 활동 기반"
 #, fuzzy
 msgid "Basic auth"
 msgstr "Basic 인증"
+
+#: src/pages/SettingsPage.tsx
+msgid "Basics"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -5393,8 +5410,8 @@ msgid "Couldn't start the volume search"
 msgstr "권 검색을 시작하지 못했습니다"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Couldn't update {serviceName}"
-msgstr ""
+#~ msgid "Couldn't update {serviceName}"
+#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -5966,6 +5983,7 @@ msgstr "대상 루트 폴더"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "분리된 CBZ는 삭제하도록 선택하지 않는 한 파일 섹션에 유지됩니다."
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -6087,6 +6105,15 @@ msgstr "탐색 및 오프라인 검색을 지금 사용할 수 있습니다."
 #, fuzzy
 msgid "Disk used"
 msgstr "디스크 사용량"
+
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -9382,6 +9409,10 @@ msgstr "더 불러오기"
 msgid "Loading chapters…"
 msgstr "챕터 불러오는 중…"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Loading scores…"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -10103,6 +10134,10 @@ msgstr "모니터링됨"
 #, fuzzy
 msgid "Monitoring"
 msgstr "모니터링"
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10995,6 +11030,10 @@ msgstr "아직 다운로드한 스냅샷 없음"
 msgid "No source could serve the first chapter."
 msgstr "첫 챕터를 제공할 수 있는 소스가 없습니다."
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "No source has scored this yet."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "No source has this chapter right now"
@@ -11309,6 +11348,10 @@ msgstr "아직 동기화되지 않음"
 #, fuzzy
 msgid "Not this anime?"
 msgstr "이 애니메이션이 아닌가요?"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not updated"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12962,6 +13005,10 @@ msgstr "평점 최소"
 msgid "Rating to"
 msgstr "평점 최대"
 
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
@@ -13117,7 +13164,6 @@ msgstr "리더 설정"
 msgid "Readers like you"
 msgstr "나와 비슷한 독자"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers like you also finished this"
@@ -13128,6 +13174,10 @@ msgstr "나와 비슷한 독자도 이 항목을 완료함"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "나와 비슷한 독자도 이 항목을 추천함"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
@@ -14745,6 +14795,11 @@ msgstr "범위"
 msgid "Score"
 msgstr "점수"
 
+#. placeholder {0}: formatFixedDecimal(score / 10, 1)
+#: src/components/discover/DiscoverHero.tsx
+msgid "Score {0}. Show scores and details"
+msgstr ""
+
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
 msgid "score {score}"
@@ -14775,6 +14830,10 @@ msgstr "픽셀당 이미지 데이터를 기준으로 점수를 매기며, PNG�
 #, fuzzy
 msgid "Scored on median page width, from 500 to 2000 pixels."
 msgstr "페이지 너비 중앙값으로 점수를 매기며, 500~2000픽셀 범위입니다."
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Scores by source"
+msgstr ""
 
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -15577,6 +15636,10 @@ msgstr "읽기 연속 기록 표시"
 #, fuzzy
 msgid "Show replaced files"
 msgstr "교체된 파일 표시"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Show scores and details"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -16458,6 +16521,10 @@ msgstr "Maki가 추가하는 토렌트에 붙이는 태그입니다. 기본값�
 msgid "Tags"
 msgstr "태그"
 
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -17280,6 +17347,10 @@ msgstr "올해"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "해당 시리즈는 이미 일치 작업 중입니다."
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
