@@ -85,7 +85,7 @@ public sealed class SuwayomiAuthHandler(SuwayomiTokenStore tokens) : DelegatingH
         }
 
         // Buffered, so the caller still reads the body after this.
-        await response.Content.LoadIntoBufferAsync(ct);
+        await SuwayomiGraphQl.BufferBodyAsync(response.Content, ct);
         return SuwayomiGraphQl.IsUnauthorizedBody(await response.Content.ReadAsStringAsync(ct));
     }
 }

@@ -79,13 +79,9 @@ internal static class SuwayomiGraphQl
             request.Options.Set(RateLimitingHandler.Skip, true);
         }
 
-        using var response = await client.SendAsync(request, ct);
-
-        // The client has no overall timeout (the request timeout stops at the headers), so a body that
-        // stalls halfway needs its own bound.
-        using var bodyTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        bodyTimeout.CancelAfter(BodyTimeout);
-        var text = await response.Content.ReadAsStringAsync(bodyTimeout.Token);
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        await BufferBodyAsync(response.Content, ct);
+        var text = await response.Content.ReadAsStringAsync(ct);
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(
@@ -136,6 +132,27 @@ internal static class SuwayomiGraphQl
         }
 
         return data;
+    }
+
+    /// <summary>
+    /// Reads the body into memory within <see cref="BodyTimeout"/>. The clients have no overall
+    /// timeout and the request timeout stops at the headers, so a server that stalls mid-body needs
+    /// this bound; expiry reads like the client's own timeout.
+    /// </summary>
+    public static async Task BufferBodyAsync(HttpContent content, CancellationToken ct, TimeSpan? timeout = null)
+    {
+        var limit = timeout ?? BodyTimeout;
+        using var bodyTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        bodyTimeout.CancelAfter(limit);
+        try
+        {
+            await content.LoadIntoBufferAsync(bodyTimeout.Token);
+        }
+        catch (OperationCanceledException) when (bodyTimeout.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            throw new TaskCanceledException(
+                $"Reading the response timed out after {limit.TotalSeconds:0.###} seconds.", new TimeoutException());
+        }
     }
 
     /// <summary>True when a buffered GraphQL body is the 200-with-Unauthorized answer.</summary>

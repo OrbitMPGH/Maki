@@ -61,4 +61,18 @@ public class RequestTimeoutHandlerTests
         using var answered = await queued.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(HttpStatusCode.OK, answered.StatusCode);
     }
+
+    [Fact]
+    public async Task An_inner_timeout_passes_through_an_outer_one_untouched()
+    {
+        var inner = new RequestTimeoutHandler(TimeSpan.FromMilliseconds(100)) { InnerHandler = new Hangs() };
+        using var client = new HttpClient(new RequestTimeoutHandler(TimeSpan.FromMinutes(10)) { InnerHandler = inner })
+        {
+            Timeout = Timeout.InfiniteTimeSpan,
+        };
+
+        var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetAsync("http://lan.test/a"));
+
+        Assert.DoesNotContain("600", ex.Message);
+    }
 }

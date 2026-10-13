@@ -16,7 +16,7 @@ public sealed class RequestTimeoutHandler(TimeSpan timeout) : DelegatingHandler
         {
             return await base.SendAsync(request, cts.Token);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             throw new TaskCanceledException(
                 $"The request was canceled due to the configured timeout of {timeout.TotalSeconds:0} seconds elapsing.",
