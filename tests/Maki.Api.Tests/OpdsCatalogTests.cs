@@ -35,9 +35,10 @@ public sealed class OpdsCatalogTests : IDisposable
         }
     }
 
-    private OpdsCatalogService Catalog()
+    private OpdsCatalogService Catalog() => Catalog(_db.NewContext());
+
+    private OpdsCatalogService Catalog(Maki.Data.MakiDbContext context)
     {
-        var context = _db.NewContext();
         var scopeFactory = _db.ScopeFactory();
         var pusher = InertKavitaPusher.For(scopeFactory);
         var reader = new ReaderService(context, _archives,
@@ -332,6 +333,50 @@ public sealed class OpdsCatalogTests : IDisposable
         Assert.Equal("Spy x Family", Assert.Single((await catalog.SearchFeedAsync(Ctx, "y×f", 0, CancellationToken.None)).Entries).Title);
         Assert.Equal("Love Is War", Assert.Single((await catalog.SearchFeedAsync(Ctx, "sama's", 0, CancellationToken.None)).Entries).Title);
         Assert.Equal("100% Pure_Love", Assert.Single((await catalog.SearchFeedAsync(Ctx, "0% pure_", 0, CancellationToken.None)).Entries).Title);
+    }
+
+    [Fact]
+    public async Task SearchPrefilteredInSqlStillFindsATitleOnlyAnAlternateCarries()
+    {
+        var (berserk, _) = SeedSeriesWithChapters("Berserk", "b.cbz", ["001.jpg"], [1m]);
+        SeedSeriesWithChapters("Vagabond", "v.cbz", ["001.jpg"], [1m]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.First(s => s.Id == berserk).AltTitles = [new LocalizedTitle("Kenpuu Denki", "ja-Latn")];
+            db.SaveChanges();
+        }
+
+        Assert.True(OpdsCatalogService.SqlPrefilterable("puu den"));
+        var feed = await Catalog().SearchFeedAsync(Ctx, "puu den", 0, CancellationToken.None);
+
+        Assert.Equal("Berserk", Assert.Single(feed.Entries).Title);
+    }
+
+    [Fact]
+    public async Task SearchOnlyFindsSeriesInRootFoldersTheReaderMaySee()
+    {
+        var (granted, _) = SeedSeriesWithChapters("Granted Ippo", "g.cbz", ["001.jpg"], [1m]);
+        var (hidden, _) = SeedSeriesWithChapters("Hidden", "h.cbz", ["001.jpg"], [1m]);
+        var reader = _db.SeedUser("restricted", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        using (var db = _db.NewContext())
+        {
+            db.Series.First(s => s.Id == granted).AltTitles = [new LocalizedTitle("Granted Ippö", "de")];
+            db.Series.First(s => s.Id == hidden).AltTitles =
+                [new LocalizedTitle("Hidden Ippo", "en"), new LocalizedTitle("Hidden Ippö", "de")];
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder
+            {
+                UserId = reader, RootFolderId = db.Series.First(s => s.Id == granted).RootFolderId
+            });
+            db.SaveChanges();
+        }
+
+        var byPrefilter = await Catalog(_db.NewContext(reader, allRootFolders: false))
+            .SearchFeedAsync(Ctx, "ippo", 0, CancellationToken.None);
+        var byScan = await Catalog(_db.NewContext(reader, allRootFolders: false))
+            .SearchFeedAsync(Ctx, "ippö", 0, CancellationToken.None);
+
+        Assert.Equal("Granted Ippo", Assert.Single(byPrefilter.Entries).Title);
+        Assert.Equal("Granted Ippo", Assert.Single(byScan.Entries).Title);
     }
 
     [Theory]
