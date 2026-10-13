@@ -55,7 +55,9 @@ export function SettingsIndex({
           onClick={() => {
             const jump = () =>
               document.getElementById(`setting-${e.id}`)?.scrollIntoView({ block: 'start', behavior: scrollBehavior() })
-            if (reveal?.(e)) window.setTimeout(jump, 260)
+            // A revealed card's group only starts rendering its cards once it opens, and they grow as
+            // their queries resolve, so one jump lands short. Re-anchored like a deep link is.
+            if (reveal?.(e)) [300, 800, 1500].forEach((delay) => window.setTimeout(jump, delay))
             else jump()
             setActive(e.id)
           }}

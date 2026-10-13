@@ -105,8 +105,10 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
     })
   }
 
+  // A column with the buttons pushed to the bottom, so a state that wraps to two lines in one card
+  // does not drop its button below the others in the row.
   return (
-    <Panel p="md">
+    <Panel p="md" style={{ display: 'flex', flexDirection: 'column' }}>
       <Group gap="xs">
         <Box
           w={10}
@@ -119,7 +121,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
         {state}
       </Text>
       {connection.oAuth && connection.configured && (
-        <Group mt="sm">
+        <Group mt="auto" pt="sm">
           {connection.connected ? (
             <Button
               size="compact-sm"
@@ -138,7 +140,11 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
           )}
         </Group>
       )}
-      {settingsLink && <Group mt="sm">{settingsLink}</Group>}
+      {settingsLink && (
+        <Group mt="auto" pt="sm">
+          {settingsLink}
+        </Group>
+      )}
     </Panel>
   )
 }

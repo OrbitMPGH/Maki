@@ -3653,8 +3653,8 @@ msgid "Basic auth"
 msgstr "Autenticación básica"
 
 #: src/pages/SettingsPage.tsx
-msgid "Basics"
-msgstr ""
+#~ msgid "Basics"
+#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

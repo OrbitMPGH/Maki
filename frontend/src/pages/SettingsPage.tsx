@@ -306,9 +306,6 @@ export default function SettingsPage() {
                     basicEntries.map(card)
                   ) : (
                     <>
-                      <h2 className="settings-group-title">
-                        <Trans>Basics</Trans>
-                      </h2>
                       {basicEntries.map(card)}
                       <div className="settings-group-advanced">
                         <Disclosure

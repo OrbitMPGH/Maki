@@ -7228,14 +7228,8 @@ body.reader-open {
   max-width: 68ch;
   margin: -2px 0 10px;
 }
-/* A tab whose cards split into everyday and advanced: two headings at one size, quieter than the
-   card titles under them, so they read as the tab's two halves rather than as two more cards. */
-.settings-group-title {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: var(--type-body);
-  font-weight: var(--fw-semibold);
-}
+/* The Advanced group closing a tab: a hairline and a heading quieter than the card titles above,
+   so it reads as the tab's second half rather than as one more card. */
 .settings-group-advanced {
   border-top: 1px solid var(--border);
   padding-top: 6px;
@@ -7321,9 +7315,9 @@ body.reader-open {
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  border-radius: 10px;
-  color: var(--brand-on);
-  background: var(--brand);
+  border-radius: var(--radius-pill);
+  color: var(--mantine-primary-color-contrast);
+  background: var(--mantine-primary-color-filled);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
 }
