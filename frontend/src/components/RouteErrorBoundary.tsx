@@ -7,13 +7,15 @@ import { EmptyState } from './ui/EmptyState'
 /**
  * Catches a render error in one route so the shell, nav and the rest of the app stay up. Without
  * it React unmounts the whole root on any throw, and the reader saw a blank page with nothing to
- * click: one bad field on one series page took the app down with it. Keyed on the path, so
- * navigating somewhere else leaves the broken page behind without a reload.
+ * click: one bad field on one series page took the app down with it. The error state clears when
+ * the path changes after a failure, so navigating somewhere else leaves the broken page behind
+ * without a reload. Children are not remounted on ordinary path changes, which the reader relies
+ * on when it swaps chapters in place.
  */
 export function RouteErrorBoundary({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   return (
-    <Catcher key={pathname} fallback={<RouteErrorFallback />}>
+    <Catcher pathname={pathname} fallback={<RouteErrorFallback />}>
       {children}
     </Catcher>
   )
@@ -37,11 +39,29 @@ function RouteErrorFallback() {
   )
 }
 
-class Catcher extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
-  state = { failed: false }
+interface CatcherProps {
+  children: ReactNode
+  fallback: ReactNode
+  pathname: string
+}
+
+interface CatcherState {
+  failed: boolean
+  failedAt: string | null
+}
+
+class Catcher extends Component<CatcherProps, CatcherState> {
+  state: CatcherState = { failed: false, failedAt: null }
 
   static getDerivedStateFromError() {
     return { failed: true }
+  }
+
+  static getDerivedStateFromProps(props: CatcherProps, state: CatcherState) {
+    if (!state.failed) return null
+    if (state.failedAt === null) return { failedAt: props.pathname }
+    if (state.failedAt !== props.pathname) return { failed: false, failedAt: null }
+    return null
   }
 
   componentDidCatch(error: unknown) {
