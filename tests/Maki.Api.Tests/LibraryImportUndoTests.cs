@@ -794,6 +794,43 @@ public class LibraryImportUndoTests : IDisposable
         Assert.Null((await check.Chapters.SingleAsync(c => c.Number == 2)).FileRemovedAt);
     }
 
+    [Fact]
+    public async Task A_refused_undo_keeps_a_rematch_queued_on_a_series_that_already_has_mappings()
+    {
+        var rootId = SeedRoot();
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        var seriesId = result.SeriesId!.Value;
+        while (_queue.TryReadMatch(out _))
+        {
+        }
+
+        await using (var db = _db.NewContext())
+        {
+            // Matched and linked since; then a bulk re-match flagged it again.
+            db.SourceMappings.Add(new SourceMapping
+            {
+                SeriesId = seriesId, SourceName = "mangadex", SourceSeriesId = "x", Url = "https://example.invalid/x",
+            });
+            var series = await db.Series.SingleAsync();
+            series.SourceMatchPending = true;
+            series.PendingImportLink = PendingImportLink.None;
+            db.Series.Add(new Series
+            {
+                Title = "Other", SortTitle = "Other", FolderName = "chainsaw raws", RootFolderId = rootId,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.StartsWith("error.libraryImport.folderOwnedByOtherSeries", outcome.Error);
+        await using var check = _db.NewContext();
+        Assert.True((await check.Series.SingleAsync(s => s.Id == seriesId)).SourceMatchPending);
+        Assert.True(_queue.TryReadMatch(out var requeued));
+        Assert.Equal(seriesId, requeued);
+    }
+
     private async Task EditOperationsAsync(Action<ImportOperations> edit)
     {
         await using var db = _db.NewContext();

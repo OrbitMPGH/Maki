@@ -209,11 +209,16 @@ public class LibraryImportUndoService(
         // The deferred stages first. Clearing the flags the worker reads means a match or link
         // still queued finds nothing to do; a match already running is waited out, since it holds
         // no lock an undo could take to stop it.
+        // Replaced by what the clear below actually cleared, read here only in case it throws first.
         var before = (series.SourceMatchPending, series.PendingImportLink);
+        var matchMayHaveRun = false;
         var committed = false;
         try
         {
-            await StopPendingAsync(series.Id, row.CreatedSeries, ct);
+            before = await StopPendingAsync(series.Id, row.CreatedSeries, ct);
+            // A run registered after the clear reads the cleared flag and matches nothing. One that
+            // was already registered may have read the flag first and done the match itself.
+            matchMayHaveRun = !matchQueue.MatchInProgress(series.Id).IsCompleted;
             try
             {
                 await matchQueue.MatchInProgress(series.Id).WaitAsync(MatchWait, ct);
@@ -241,7 +246,7 @@ public class LibraryImportUndoService(
 
             if (await RefusalAsync(row, series.Id, registered, ct) is { } late)
             {
-                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false);
+                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false, matchMayHaveRun);
                 return Refused(row, late);
             }
 
@@ -250,7 +255,7 @@ public class LibraryImportUndoService(
             var sourceDir = LibraryPaths.ResolveNoLinks(root.Path, row.OriginalFolderName);
             if (await FolderProblemAsync(row, operations, series.Id, registered, targetDir, sourceDir, ct) is { } problem)
             {
-                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false);
+                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false, matchMayHaveRun);
                 return Refused(row, problem, new { name = row.OriginalFolderName, folder = row.FolderName });
             }
 
@@ -338,7 +343,7 @@ public class LibraryImportUndoService(
             db.ChangeTracker.Clear();
             try
             {
-                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false);
+                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false, matchMayHaveRun);
             }
             catch (Exception restoreEx)
             {
@@ -464,21 +469,40 @@ public class LibraryImportUndoService(
     /// Cancels what the import still owes the series. For a series the import created that is the
     /// source match as well as the link; a series already in the library keeps any match it was
     /// waiting on before the import.
+    /// <para>
+    /// Each flag is tested and cleared in one update, so what comes back is exactly what was
+    /// cleared, even when a re-match was flagged after the undo first read the series.
+    /// </para>
     /// </summary>
-    private Task StopPendingAsync(int seriesId, bool created, CancellationToken ct) =>
-        created
-            ? db.Series.IgnoreQueryFilters().Where(s => s.Id == seriesId).ExecuteUpdateAsync(u => u
-                .SetProperty(s => s.SourceMatchPending, false)
-                .SetProperty(s => s.PendingImportLink, PendingImportLink.None), ct)
-            : db.Series.IgnoreQueryFilters().Where(s => s.Id == seriesId).ExecuteUpdateAsync(u => u
-                .SetProperty(s => s.PendingImportLink, PendingImportLink.None), ct);
+    private async Task<(bool MatchPending, PendingImportLink Link)> StopPendingAsync(
+        int seriesId, bool created, CancellationToken ct)
+    {
+        var query = db.Series.IgnoreQueryFilters().Where(s => s.Id == seriesId);
+        var matchPending = created && await query.Where(s => s.SourceMatchPending)
+            .ExecuteUpdateAsync(u => u.SetProperty(s => s.SourceMatchPending, false), ct) > 0;
+        var link = PendingImportLink.None;
+        foreach (var owed in new[] { PendingImportLink.LinkAndComicInfo, PendingImportLink.Link })
+        {
+            if (await query.Where(s => s.PendingImportLink == owed)
+                    .ExecuteUpdateAsync(u => u.SetProperty(s => s.PendingImportLink, PendingImportLink.None), ct) > 0)
+            {
+                link = owed;
+            }
+        }
+
+        return (matchPending, link);
+    }
 
     /// <summary>
     /// Puts the deferred stages back after a refused undo, and queues them again. A match that ran
-    /// while the undo waited is not repeated: the series then only owes its link.
+    /// while the undo waited is not repeated: the series then only owes its link. Only a run that was
+    /// already registered when the flag was cleared can have done it (<paramref name="matchMayHaveRun"/>),
+    /// and then the mappings it saved are what tells; otherwise the flag goes back exactly, so a
+    /// re-match still queued for a series that has mappings is not lost.
     /// </summary>
     private async Task RestorePendingAsync(
-        int seriesId, bool created, (bool MatchPending, PendingImportLink Link) before, bool matchRunning)
+        int seriesId, bool created, (bool MatchPending, PendingImportLink Link) before, bool matchRunning,
+        bool matchMayHaveRun = false)
     {
         var none = CancellationToken.None;
         var query = db.Series.IgnoreQueryFilters().Where(s => s.Id == seriesId);
@@ -501,7 +525,8 @@ public class LibraryImportUndoService(
         if (created)
         {
             matchPending = before.MatchPending &&
-                           !await db.SourceMappings.IgnoreQueryFilters().AnyAsync(m => m.SeriesId == seriesId, none);
+                           (!matchMayHaveRun ||
+                            !await db.SourceMappings.IgnoreQueryFilters().AnyAsync(m => m.SeriesId == seriesId, none));
             await query.ExecuteUpdateAsync(u => u
                 .SetProperty(s => s.SourceMatchPending, matchPending)
                 .SetProperty(s => s.PendingImportLink, before.Link), none);
