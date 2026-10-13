@@ -639,6 +639,61 @@ public class LibraryImportUndoTests : IDisposable
         Assert.False(ImportOperations.Parse((await check.ImportBatchFolders.SingleAsync()).OperationsJson).DiskPending);
     }
 
+    private async Task EditOperationsAsync(Action<ImportOperations> edit)
+    {
+        await using var db = _db.NewContext();
+        var row = await db.ImportBatchFolders.SingleAsync();
+        var operations = ImportOperations.Parse(row.OperationsJson);
+        edit(operations);
+        row.OperationsJson = operations.Serialize();
+        await db.SaveChangesAsync();
+    }
+
+    private static string HashOf(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+
+    [Fact]
+    public async Task Undo_removes_the_cover_Maki_wrote_but_keeps_one_the_user_replaced_it_with()
+    {
+        var rootId = SeedRoot();
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        WriteZip(At("monster raws", "Monster 001.cbz"));
+        _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
+        await ImportAsync(rootId, "chainsaw raws");
+
+        File.WriteAllText(At("chainsaw raws", "cover.jpg"), "the cover Maki wrote");
+        await EditOperationsAsync(o =>
+        {
+            o.WroteCover = true;
+            o.CoverHashes = [HashOf(At("chainsaw raws", "cover.jpg"))];
+        });
+        var removed = await UndoAsync(await RecordIdAsync());
+        Assert.True(removed.Undone, removed.Error);
+        Assert.Null(removed.Warnings);
+        Assert.False(File.Exists(At("chainsaw raws", "cover.jpg")));
+
+        await ImportAsync(rootId, "monster raws", batch: "batch-2", providerId: "43");
+        File.WriteAllText(At("monster raws", "cover.jpg"), "the cover Maki wrote");
+        int id;
+        await using (var db = _db.NewContext())
+        {
+            var row = await db.ImportBatchFolders.SingleAsync(r => r.BatchId == "batch-2");
+            var operations = ImportOperations.Parse(row.OperationsJson);
+            operations.WroteCover = true;
+            operations.CoverHashes = [HashOf(At("monster raws", "cover.jpg"))];
+            row.OperationsJson = operations.Serialize();
+            await db.SaveChangesAsync();
+            id = row.Id;
+        }
+
+        // The user dropped their own poster over it after the import.
+        File.WriteAllText(At("monster raws", "cover.jpg"), "the user's own poster");
+        var kept = await UndoAsync(id);
+
+        Assert.True(kept.Undone, kept.Error);
+        Assert.Contains(kept.Warnings!, w => w.StartsWith("error.libraryImport.undoKeptCover"));
+        Assert.Equal("the user's own poster", File.ReadAllText(At("monster raws", "cover.jpg")));
+    }
+
     private sealed class FailingSave : SaveChangesInterceptor
     {
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(

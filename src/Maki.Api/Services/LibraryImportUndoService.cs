@@ -294,6 +294,13 @@ public class LibraryImportUndoService(
                 }
             }
 
+            // A metadata refresh may have rewritten the cover since; its hash goes before the record does.
+            if (operations.WroteCover && coverService.LibraryCoverHash(series.Id) is { } coverHash &&
+                !operations.CoverHashes.Contains(coverHash, StringComparer.OrdinalIgnoreCase))
+            {
+                operations.CoverHashes.Add(coverHash);
+            }
+
             row.UndoneAt = DateTime.UtcNow;
             operations.DiskPending = true;
             row.OperationsJson = operations.Serialize();
@@ -605,7 +612,14 @@ public class LibraryImportUndoService(
             {
                 if (File.Exists(cover))
                 {
-                    File.Delete(cover);
+                    if (operations.CoverHashes.Contains(CoverService.Sha256Of(cover), StringComparer.OrdinalIgnoreCase))
+                    {
+                        File.Delete(cover);
+                    }
+                    else
+                    {
+                        warnings.Add(localizer.Get("error.libraryImport.undoKeptCover"));
+                    }
                 }
 
                 operations.WroteCover = false;

@@ -776,6 +776,11 @@ msgid "error.libraryImport.undoKeptBuilt"
 msgstr "{name} wurde behalten: Maki hat die Datei erstellt, aber das Original, aus dem sie stammt, ist nicht mehr vorhanden"
 
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
+#. English: cover.jpg was kept: it changed after the import, so it is not the one Maki wrote
+msgid "error.libraryImport.undoKeptCover"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportUndoService.cs
 #. English: Sources are still being searched for this series. Try again in a minute.
 #, fuzzy
 msgid "error.libraryImport.undoMatchRunning"

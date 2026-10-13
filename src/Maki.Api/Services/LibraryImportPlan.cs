@@ -148,6 +148,12 @@ public sealed class ImportOperations
     /// <summary>The import wrote cover.jpg into a folder that had none.</summary>
     public bool WroteCover { get; set; }
 
+    /// <summary>
+    /// SHA-256 of each cover.jpg Maki is known to have written there. Undo deletes cover.jpg only
+    /// while it matches one; anything else is the user's.
+    /// </summary>
+    public List<string> CoverHashes { get; set; } = [];
+
     /// <summary>For an existing series, where it pointed before the import moved it.</summary>
     public string? PreviousSeriesFolderName { get; set; }
 

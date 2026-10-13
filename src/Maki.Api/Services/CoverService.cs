@@ -181,7 +181,21 @@ public class CoverService(
         }
     }
 
-    private static string Sha256Of(string path)
+    /// <summary>The SHA-256 of the cover.jpg Maki last wrote into the series folder, or null.</summary>
+    public string? LibraryCoverHash(int seriesId)
+    {
+        var record = LibraryCoverRecordFor(seriesId);
+        try
+        {
+            return File.Exists(record) ? File.ReadAllText(record).Trim() : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    internal static string Sha256Of(string path)
     {
         using var stream = File.OpenRead(path);
         return Convert.ToHexString(SHA256.HashData(stream));

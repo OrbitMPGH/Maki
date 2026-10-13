@@ -620,6 +620,7 @@ public class LibraryImportService(
 
             var (added, skipped, built, registered) =
                 await RegisterAndDeferLinkAsync(series, item, targetDir, owedLink, operationId, ct);
+            var wroteCover = !coverExisted && File.Exists(folderCover);
             await RecordBatchFolderAsync(rootFolder.Id, operationId, series, created: true, item.FolderName, targetDir,
                 new ImportOperations
                 {
@@ -627,7 +628,10 @@ public class LibraryImportService(
                     Built = built,
                     RegisteredFileIds = registered.Keys.ToList(),
                     RegisteredPaths = registered,
-                    WroteCover = !coverExisted && File.Exists(folderCover),
+                    WroteCover = wroteCover,
+                    CoverHashes = wroteCover && coverService.LibraryCoverHash(series.Id) is { } coverHash
+                        ? [coverHash]
+                        : [],
                 });
 
             // After registering rather than at the insert, so an import rolled back below leaves no
