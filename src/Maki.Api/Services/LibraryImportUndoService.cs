@@ -557,7 +557,8 @@ public class LibraryImportUndoService(
     /// <summary>
     /// The disk half: removes the CBZs Maki built, puts a mislabelled original back under its name,
     /// removes the cover the import wrote, and moves the folder (or a merge's files) back. A built
-    /// file whose original is gone or no longer whole is kept, since it is then the only copy.
+    /// file whose original is gone or no longer whole is kept, since it is then the only copy, and so
+    /// is one the user replaced since.
     /// Returns false when something failed that a retry may fix; the reasons are in
     /// <paramref name="warnings"/>. By now the database no longer refers to any of these files.
     /// <para>
@@ -607,6 +608,14 @@ public class LibraryImportUndoService(
             {
                 warnings.Add(localizer.Get("error.libraryImport.undoKeptBuilt", new { name = built.Name }));
                 remaining.Add(built);
+                continue;
+            }
+
+            if (built.Digest is not null &&
+                !string.Equals(built.Digest, ImportBuiltFile.DigestOf(target), StringComparison.OrdinalIgnoreCase))
+            {
+                // Not the file Maki built any more: the user put another one under its name.
+                warnings.Add(localizer.Get("error.libraryImport.undoKeptReplaced", new { name = built.Name }));
                 continue;
             }
 

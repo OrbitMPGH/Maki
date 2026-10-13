@@ -1,5 +1,9 @@
+using System.IO.Compression;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Maki.Core.Reading;
 
 namespace Maki.Api.Services;
 
@@ -102,7 +106,7 @@ public record LibraryImportPlan(
     IReadOnlyList<ImportSkippedFile>? Skipped = null,
     bool WritesCover = false);
 
-/// <param name="Name">The CBZ Maki wrote, relative to the folder the files ended up in.</param>
+//// <param name="Name">The CBZ Maki wrote, relative to the folder the files ended up in.</param>
 /// <param name="Source">The original it was built from, relative to the same folder.</param>
 /// <param name="Aside">For a rebuild in place, where the original was renamed to.</param>
 /// <param name="Kind">The container the build read: zip, repack or looseImages.</param>
@@ -111,9 +115,35 @@ public record LibraryImportPlan(
 /// original, so a CBZ whose original was deleted or emptied since is kept as the only copy. Empty for
 /// an archive nested in another one, whose pages cannot be listed without extracting it.
 /// </param>
+/// <param name="Digest">
+/// <see cref="DigestOf"/> of the CBZ as built. Undo deletes it only while it still matches, so a file
+/// the user put under the same name since is kept. Null on records from before it was kept.
+/// </param>
 public sealed record ImportBuiltFile(
     string Name, string Source, string? Entry, string Action, string? Aside, string? Kind = null,
-    IReadOnlyList<string>? Pages = null);
+    IReadOnlyList<string>? Pages = null, string? Digest = null)
+{
+    /// <summary>
+    /// A hash of every page's name, CRC and length, or null when the file is not a readable zip. A
+    /// ComicInfo.xml rewrite copies the pages unchanged, so it keeps the digest; another file does not.
+    /// </summary>
+    public static string? DigestOf(string cbzPath)
+    {
+        try
+        {
+            using var zip = ZipFile.OpenRead(cbzPath);
+            var pages = zip.Entries
+                .Where(e => e.Name.Length > 0 && CbzReader.IsImage(e.FullName))
+                .OrderBy(e => e.FullName, StringComparer.Ordinal)
+                .Select(e => $"{e.FullName}\t{e.Crc32:x8}\t{e.Length}");
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', pages))));
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+}
 
 /// <summary>
 /// What one folder's import changed, stored on <c>ImportBatchFolder.OperationsJson</c>. Undo

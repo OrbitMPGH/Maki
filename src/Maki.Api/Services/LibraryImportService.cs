@@ -695,7 +695,8 @@ public class LibraryImportService(
                 c.Action,
                 c.Aside is null ? null : Path.GetRelativePath(dir, c.Aside),
                 JsonNamingPolicy.CamelCase.ConvertName(c.Source.Kind.ToString()),
-                c.Source.Pages))
+                c.Source.Pages,
+                ImportBuiltFile.DigestOf(c.Target)))
             .ToList();
 
     /// <summary>

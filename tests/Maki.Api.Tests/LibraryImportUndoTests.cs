@@ -710,6 +710,46 @@ public class LibraryImportUndoTests : IDisposable
         Assert.True(ImportOperations.Parse((await check.ImportBatchFolders.SingleAsync()).OperationsJson).DiskPending);
     }
 
+    [Fact]
+    public async Task A_built_CBZ_the_user_replaced_under_the_same_name_is_kept()
+    {
+        _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
+        var rootId = SeedRoot();
+        WriteFixture("chainsaw raws");
+        await ImportAsync(rootId, "chainsaw raws");
+        var replaced = At("chainsaw raws", "Chainsaw Man 002.cbz");
+        File.Delete(replaced);
+        using (var archive = ZipFile.Open(replaced, ZipArchiveMode.Create))
+        using (var writer = new StreamWriter(archive.CreateEntry("001.png").Open()))
+        {
+            writer.Write("a better scan the user dropped in");
+        }
+
+        var userCopy = HashOf(replaced);
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(outcome.Undone, outcome.Error);
+        Assert.Contains(outcome.Warnings!, w => w.StartsWith("error.libraryImport.undoKeptReplaced"));
+        Assert.Equal(userCopy, HashOf(replaced));
+        Assert.False(File.Exists(At("chainsaw raws", "Chainsaw Man 003.cbz")));
+    }
+
+    [Fact]
+    public void A_ComicInfo_rewrite_keeps_the_built_digest()
+    {
+        var path = At("digest.cbz");
+        WriteZip(path);
+        var built = ImportBuiltFile.DigestOf(path);
+        Assert.NotNull(built);
+
+        var series = new Series { Title = "Chainsaw Man", SortTitle = "Chainsaw Man", FolderName = "x" };
+        Assert.True(Maki.Core.ComicInfo.ComicInfoUpdater.UpdateFile(
+            path, series, Maki.Core.Parsing.ReleaseNameParser.ParseFileName("Chainsaw Man 001.cbz"), null));
+
+        Assert.Equal(built, ImportBuiltFile.DigestOf(path));
+    }
+
     private async Task EditOperationsAsync(Action<ImportOperations> edit)
     {
         await using var db = _db.NewContext();
