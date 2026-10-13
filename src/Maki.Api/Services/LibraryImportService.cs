@@ -409,7 +409,10 @@ public class LibraryImportService(
             return new LibraryImportPlan(item.FolderName, localizer.Get(decision.ErrorKey, decision.ErrorArgs));
         }
 
-        var plan = PlanComics(sourceDir);
+        // Loose pages at the folder's root are named after the folder they are built in, which a
+        // rename or merge has given the series' name by then.
+        var plan = PlanComics(sourceDir,
+            decision.Action is ImportFolderAction.Rename or ImportFolderAction.Merge ? decision.TargetName : null);
         var comics = plan.Comics.Select(c => (Comic: c, Name: Path.GetRelativePath(sourceDir, c.Target))).ToList();
         var skipped = plan.Unreadable
             .Select(f => new ImportSkippedFile(Path.GetRelativePath(sourceDir, f), ImportSkipReason.Unreadable))
@@ -1128,9 +1131,10 @@ public class LibraryImportService(
     /// writing anything. The import runs exactly this plan and the preview shows it, so the two are
     /// one set of rules.
     /// </summary>
-    internal static ComicPlan PlanComics(string dir)
+    /// <param name="rootName">See <see cref="ComicSourceScanner.Scan"/>; the import itself never passes it.</param>
+    internal static ComicPlan PlanComics(string dir, string? rootName = null)
     {
-        var sources = ComicSourceScanner.Scan(dir);
+        var sources = ComicSourceScanner.Scan(dir, rootName);
 
         // An archive the scan read nothing out of drops from its list without a trace. One whose
         // name a found comic shares is a second copy of it (an X.cbr beside X.cbz), not a failure.

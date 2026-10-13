@@ -53,8 +53,12 @@ public static class ComicSourceScanner
     /// the second would find the first already there and link the same bytes twice. Dropping it
     /// here is what keeps the plan honest about that.
     /// </para>
+    /// <para>
+    /// <paramref name="rootName"/> names loose pages lying directly in <paramref name="contentPath"/>
+    /// as if the folder had that name, for a preview of a folder that is renamed before it is built.
+    /// </para>
     /// </summary>
-    public static IReadOnlyList<ComicSource> Scan(string contentPath)
+    public static IReadOnlyList<ComicSource> Scan(string contentPath, string? rootName = null)
     {
         List<ComicSource> found = [];
         if (File.Exists(contentPath))
@@ -70,7 +74,7 @@ public static class ComicSourceScanner
                 found.AddRange(FromArchive(file));
             }
 
-            found.AddRange(LooseImageFolders(contentPath));
+            found.AddRange(LooseImageFolders(contentPath, rootName));
         }
 
         return found
@@ -161,7 +165,7 @@ public static class ComicSourceScanner
             .ToList();
     }
 
-    private static IEnumerable<ComicSource> LooseImageFolders(string root) =>
+    private static IEnumerable<ComicSource> LooseImageFolders(string root, string? rootName) =>
         LibraryPaths.EnumerateDirectoriesNoLinks(root)
             .Append(root)
             .OrderBy(d => d, StringComparer.Ordinal)
@@ -175,7 +179,8 @@ public static class ComicSourceScanner
             // packed.
             .Where(x => x.Files.Any(f => CbzReader.IsImage(f)) && !x.Files.Any(IsArchiveOrPdf))
             .Select(x => new ComicSource(
-                new DirectoryInfo(x.Directory).Name + ".cbz",
+                (rootName is not null && string.Equals(x.Directory, root, StringComparison.Ordinal) ? rootName : new DirectoryInfo(x.Directory).Name) +
+                ".cbz",
                 ComicSourceKind.LooseImages,
                 x.Directory,
                 x.Files.Where(CbzReader.IsImage).Sum(f => new FileInfo(f).Length),

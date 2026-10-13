@@ -327,6 +327,35 @@ public class LibraryImportPlanTests : IDisposable
     }
 
     [Fact]
+    public async Task Loose_pages_at_the_folder_root_are_planned_under_the_name_the_rename_gives_them()
+    {
+        var rootId = SeedRoot();
+        Directory.CreateDirectory(At("loose raws"));
+        File.WriteAllText(At("loose raws", "001.png"), "page one");
+        File.WriteAllText(At("loose raws", "002.png"), "page two");
+
+        LibraryImportPlan plan;
+        await using (var db = _db.NewContext())
+        {
+            plan = await ImportService(db).PlanAsync(rootId, new ImportRequestItem("loose raws", "42"));
+        }
+
+        Assert.Equal(ImportFolderAction.Rename, plan.FolderAction);
+        var planned = Assert.Single(plan.Files!);
+        Assert.Equal(plan.TargetFolderName + ".cbz", planned.Name);
+
+        await using (var db = _db.NewContext())
+        {
+            var result = await ImportService(db).ImportAsync(rootId, new ImportRequestItem("loose raws", "42"));
+            Assert.True(result.Success, result.Error);
+        }
+
+        await using var check = _db.NewContext();
+        Assert.Equal(Path.Combine(plan.TargetFolderName!, planned.Name),
+            (await check.ChapterFiles.SingleAsync()).RelativePath);
+    }
+
+    [Fact]
     public async Task The_plan_reports_the_refusal_the_import_would_give()
     {
         var rootId = SeedRoot();
