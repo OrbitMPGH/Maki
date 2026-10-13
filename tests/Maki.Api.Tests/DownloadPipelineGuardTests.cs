@@ -88,13 +88,14 @@ public class DownloadPipelineGuardTests : IDisposable
         Assert.Equal(TimeSpan.FromMinutes(2), ex.RetryAfter);
     }
 
-    private void SeedRow(int seriesId, int chapterId, QueueStatus status, int retries, DateTime? nextAttempt)
+    private void SeedRow(int seriesId, int chapterId, QueueStatus status, int retries, DateTime? nextAttempt,
+        DownloadOrigin origin = DownloadOrigin.Unknown)
     {
         using var db = _db.NewContext();
         db.DownloadQueue.Add(new DownloadQueueItem
         {
             SeriesId = seriesId, ChapterId = chapterId, Protocol = AcquisitionProtocol.Scraper, Status = status,
-            RetryCount = retries, NextAttempt = nextAttempt, QueuedAt = DateTime.UtcNow,
+            RetryCount = retries, NextAttempt = nextAttempt, QueuedAt = DateTime.UtcNow, Origin = origin,
         });
         db.SaveChanges();
     }
@@ -120,6 +121,41 @@ public class DownloadPipelineGuardTests : IDisposable
 
         Assert.Equal(new HashSet<int> { backingOff.Id, exhausted.Id }, skipped);
         Assert.Equal([due.Id, retriedSince.Id], Chapter.NextWanted(chapters, 2, skipped));
+    }
+
+    [Theory]
+    [InlineData(QueueStatus.Queued, 0, 0, true)]
+    [InlineData(QueueStatus.Failed, 1, 5, true)]
+    [InlineData(QueueStatus.Failed, 1, -1, false)]
+    [InlineData(QueueStatus.Failed, 5, 5, false)]
+    [InlineData(QueueStatus.Cancelled, 0, 0, false)]
+    public async Task Smart_waits_for_its_previous_batch_before_queueing_the_next(
+        QueueStatus status, int retries, int nextAttemptMinutes, bool waits)
+    {
+        var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var seriesId = _db.SeedSeries();
+        var chapter = SeedChapter(seriesId, 1m);
+        SeedChapter(seriesId, 2m);
+        SeedRow(seriesId, chapter.Id, status, retries, now.AddMinutes(nextAttemptMinutes), DownloadOrigin.SmartDownload);
+
+        using var db = _db.NewContext();
+        var chapters = db.Chapters.Where(c => c.SeriesId == seriesId).ToList();
+
+        Assert.Equal(waits, await SmartDownloadJob.PreviousBatchPendingAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Smart_is_not_held_back_by_a_download_somebody_else_queued()
+    {
+        var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var seriesId = _db.SeedSeries();
+        var chapter = SeedChapter(seriesId, 1m);
+        SeedRow(seriesId, chapter.Id, QueueStatus.Queued, 0, null, DownloadOrigin.Manual);
+
+        using var db = _db.NewContext();
+        var chapters = db.Chapters.Where(c => c.SeriesId == seriesId).ToList();
+
+        Assert.False(await SmartDownloadJob.PreviousBatchPendingAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
     }
 
     [Fact]

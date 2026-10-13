@@ -73,6 +73,11 @@ public class SmartDownloadJob(
         foreach (var (series, after) in dueSeries)
         {
             var chapters = await db.Chapters.AsNoTracking().Where(c => c.SeriesId == series.Id).ToListAsync(ct);
+            if (await PreviousBatchPendingAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct))
+            {
+                continue;
+            }
+
             var backingOff = await BackingOffAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct);
             var missing = Chapter.NextWanted(Ahead(chapters, after), batchSize, backingOff);
 
@@ -150,6 +155,34 @@ public class SmartDownloadJob(
             .Where(r => r.Status == QueueStatus.Failed && (r.RetryCount >= maxAttempts || r.NextAttempt > now))
             .Select(r => r.ChapterId)
             .ToHashSet();
+    }
+
+    /// <summary>
+    /// Whether an earlier Smart batch is still being worked on: one of its chapters is queued or
+    /// downloading, or failed and waiting out its backoff. A series whose downloads all fail stays
+    /// due, and queueing the next batch past the backing-off one would walk the whole series a batch
+    /// per tick. A chapter out of attempts no longer holds the series back.
+    /// </summary>
+    internal static async Task<bool> PreviousBatchPendingAsync(
+        MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct)
+    {
+        var candidates = chapters.Where(Chapter.IsMissing).Select(c => c.Id).ToList();
+        if (candidates.Count == 0)
+        {
+            return false;
+        }
+
+        var rows = await db.DownloadQueue
+            .Where(q => q.ChapterId != null && candidates.Contains(q.ChapterId.Value) &&
+                        q.Origin == DownloadOrigin.SmartDownload)
+            .Select(q => new { ChapterId = q.ChapterId!.Value, q.Id, q.Status, q.RetryCount, q.NextAttempt })
+            .ToListAsync(ct);
+
+        return rows
+            .GroupBy(r => r.ChapterId)
+            .Select(g => g.MaxBy(r => r.Id)!)
+            .Any(r => r.Status is not (QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled) ||
+                      (r.Status == QueueStatus.Failed && r.RetryCount < maxAttempts && r.NextAttempt > now));
     }
 
     /// <summary>
