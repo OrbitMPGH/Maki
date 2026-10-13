@@ -171,6 +171,39 @@ public class LibraryImportScanTests : IDisposable
     }
 
     [Fact]
+    public async Task IgnoringOneFolderInTwoCasesAtOnceKeepsOneRowAndUnignoringClearsEveryCase()
+    {
+        var root = SeedRoot();
+        WriteComic("Extras", "art book.cbz");
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(async i =>
+        {
+            await using var db = _db.NewContext();
+            await IgnoreService(db).IgnoreFolderAsync(root, i % 2 == 0 ? "Extras" : "extras", CancellationToken.None);
+        }));
+
+        await using (var check = _db.NewContext())
+        {
+            var kept = Assert.Single(check.ImportIgnoredFolders);
+            // A row from before ignoring was serialized, in the other case.
+            check.ImportIgnoredFolders.Add(new ImportIgnoredFolder
+            {
+                RootFolderId = root,
+                FolderName = kept.FolderName == "Extras" ? "extras" : "Extras",
+                CreatedAt = DateTime.UtcNow,
+            });
+            await check.SaveChangesAsync();
+            Assert.True(await IgnoreService(check).UnignoreFolderAsync(kept.Id, CancellationToken.None));
+        }
+
+        await using (var check = _db.NewContext())
+        {
+            Assert.Empty(check.ImportIgnoredFolders);
+        }
+
+        Assert.Contains(await ScanAsync(root), c => c.FolderName == "Extras");
+    }
+
+    [Fact]
     public async Task IgnoringAFolderSomebodyIgnoredAMomentAgoIsNotAnError()
     {
         var root = SeedRoot();

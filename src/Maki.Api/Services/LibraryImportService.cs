@@ -238,18 +238,33 @@ public class LibraryImportService(
             return "error.libraryImport.invalidFolderName";
         }
 
-        var taken = (await db.ImportIgnoredFolders
-                .Where(x => x.RootFolderId == rootFolderId)
-                .Select(x => x.FolderName)
-                .ToListAsync(ct))
-            .Contains(folderName, LibraryPaths.FolderComparer);
-        if (!taken)
+        // The unique index compares exactly, while folder names ignore case, so "Extras" and
+        // "extras" ignored at once would both get in without this.
+        await IgnoreGate.WaitAsync(ct);
+        try
         {
-            await InsertIgnoredFolderAsync(rootFolderId, folderName, ct);
+            if (!await IsIgnoredAsync(rootFolderId, folderName, ct))
+            {
+                await InsertIgnoredFolderAsync(rootFolderId, folderName, ct);
+            }
+        }
+        finally
+        {
+            IgnoreGate.Release();
         }
 
         return null;
     }
+
+    private static readonly SemaphoreSlim IgnoreGate = new(1, 1);
+
+    private async Task<bool> IsIgnoredAsync(int rootFolderId, string folderName, CancellationToken ct) =>
+        (await db.ImportIgnoredFolders
+            .AsNoTracking()
+            .Where(x => x.RootFolderId == rootFolderId)
+            .Select(x => x.FolderName)
+            .ToListAsync(ct))
+        .Contains(folderName, LibraryPaths.FolderComparer);
 
     /// <summary>
     /// Adds the row, treating the unique index refusing it as done: two clicks, or two admins,
@@ -269,15 +284,17 @@ public class LibraryImportService(
         catch (DbUpdateException)
         {
             db.Entry(row).State = EntityState.Detached;
-            if (!await db.ImportIgnoredFolders.AsNoTracking()
-                    .AnyAsync(x => x.RootFolderId == rootFolderId && x.FolderName == folderName, ct))
+            if (!await IsIgnoredAsync(rootFolderId, folderName, ct))
             {
                 throw;
             }
         }
     }
 
-    /// <summary>False when there was no such entry the caller may see.</summary>
+    /// <summary>
+    /// False when there was no such entry the caller may see. Also removes rows naming the same
+    /// folder in another case, which the scan reads as the same folder and would keep skipping.
+    /// </summary>
     public async Task<bool> UnignoreFolderAsync(int id, CancellationToken ct)
     {
         var row = await db.ImportIgnoredFolders.FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -286,7 +303,10 @@ public class LibraryImportService(
             return false;
         }
 
-        db.ImportIgnoredFolders.Remove(row);
+        db.ImportIgnoredFolders.RemoveRange((await db.ImportIgnoredFolders
+                .Where(x => x.RootFolderId == row.RootFolderId)
+                .ToListAsync(ct))
+            .Where(x => LibraryPaths.FolderComparer.Equals(x.FolderName, row.FolderName)));
         await db.SaveChangesAsync(ct);
         return true;
     }
