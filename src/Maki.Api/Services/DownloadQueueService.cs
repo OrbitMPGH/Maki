@@ -218,10 +218,6 @@ public class DownloadQueueService(
     }
 
     /// <summary>
-    /// Snapshot of the sources currently cooling down, for <see cref="ClaimNextAsync"/> to exclude in
-    /// SQL. Usually empty, which is the case the query is optimized for.
-    /// </summary>
-    /// <summary>
     /// Sources no new work may start on right now: paused, or cooling down after a rate limit.
     /// <see cref="ClaimNextAsync"/> skips rows already on one, and a resolve or a failover in the
     /// processor must not move a row onto one either.
@@ -237,6 +233,10 @@ public class DownloadQueueService(
         return held;
     }
 
+    /// <summary>
+    /// Snapshot of the sources currently cooling down, for <see cref="ClaimNextAsync"/> to exclude in
+    /// SQL. Usually empty, which is the case the query is optimized for.
+    /// </summary>
     private List<string> CoolingDownSources()
     {
         lock (_cooldownLock)
