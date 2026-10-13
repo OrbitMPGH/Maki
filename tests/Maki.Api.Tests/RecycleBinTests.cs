@@ -439,6 +439,9 @@ public class RecycleBinTests : IDisposable
         File.Delete(target);
         using (var db = _db.NewContext())
         {
+            var list = Assert.IsType<OkObjectResult>(
+                await new RecycleBinController(db, Bin(db), _settings, new TestLocalizer()).List(default));
+            Assert.False(Assert.Single(Assert.IsType<RecycleBinController.BinDto>(list.Value).Entries).Missing);
             var result = await Bin(db).RestoreAsync(db.RecycleBin.Single().Id, default);
             Assert.NotEqual(RecycleBinService.RestoreStatus.FileMissing, result.Status);
         }

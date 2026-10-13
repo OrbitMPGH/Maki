@@ -4,6 +4,7 @@ using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -66,7 +67,8 @@ public class RecycleBinController(
             e.DeletedAtUtc,
             e.DeletedByName,
             e.DeletedAtUtc.AddDays(days),
-            RecycleBinService.BinFile(e) is not { } path || !System.IO.File.Exists(path),
+            // Occupied, as restore checks: a binned link whose target is gone can still be put back.
+            RecycleBinService.BinFile(e) is not { } path || !SameVolumeMove.Occupied(path),
             RecycleBinService.Chapters(e).Select(c => new ChapterRef(c.Number, c.Volume, c.Language)).ToList()))
             .ToList();
         return Ok(new BinDto(days, entries.Sum(e => e.Size), dtos));
