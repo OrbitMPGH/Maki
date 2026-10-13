@@ -29,7 +29,7 @@ export interface MetadataChange {
   oldValue: string | null
   newValue: string | null
   source: 'refresh' | 'user'
-  /** Who made a user change; null for a refresh or a deleted account. */
+  /** Who made a user change; null for a refresh, a deleted account, or another user's login name the reader may not see. */
   userName: string | null
   changedAt: string
 }

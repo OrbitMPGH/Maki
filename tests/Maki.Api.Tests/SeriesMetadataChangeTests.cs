@@ -241,6 +241,49 @@ public class SeriesMetadataChangeTests : IDisposable
         Assert.Contains(history, h => h is { Field: "status", OldValue: "Ongoing", NewValue: "Hiatus" });
     }
 
+    [Theory]
+    [InlineData(false, false, null)]
+    [InlineData(true, false, "editor-login")]
+    [InlineData(false, true, "editor-login")]
+    public async Task History_shows_a_login_name_only_to_an_admin_or_the_editor(bool viewerIsAdmin, bool viewerIsEditor, string? expected)
+    {
+        var id = SeedOngoing();
+        var editor = _db.SeedUser("editor-login", MakiPermission.EditMetadata);
+        var viewer = viewerIsEditor ? editor : _db.SeedUser("viewer", MakiPermission.None);
+        await using (var db = _db.NewContext())
+        {
+            await Controller(db, editor).Edit(id, new SeriesMetadataController.EditMetadataRequest(
+                ["status"], Status: "Hiatus"), CancellationToken.None);
+        }
+
+        await using var read = _db.NewContext();
+        var permissions = viewerIsAdmin ? MakiPermission.Admin : MakiPermission.None;
+        var ok = Assert.IsType<OkObjectResult>(
+            await Controller(read, viewer, permissions).History(id, CancellationToken.None));
+        var history = Assert.IsAssignableFrom<IEnumerable<SeriesMetadataController.MetadataChangeDto>>(ok.Value);
+
+        Assert.Equal(expected, Assert.Single(history).UserName);
+    }
+
+    [Fact]
+    public async Task History_shows_a_display_name_to_any_reader()
+    {
+        var id = SeedOngoing();
+        var editor = _db.SeedUser("editor-login", MakiPermission.EditMetadata, configure: u => u.DisplayName = "Ed");
+        var viewer = _db.SeedUser("viewer", MakiPermission.None);
+        await using (var db = _db.NewContext())
+        {
+            await Controller(db, editor).Edit(id, new SeriesMetadataController.EditMetadataRequest(
+                ["status"], Status: "Hiatus"), CancellationToken.None);
+        }
+
+        await using var read = _db.NewContext();
+        var ok = Assert.IsType<OkObjectResult>(
+            await Controller(read, viewer, MakiPermission.None).History(id, CancellationToken.None));
+
+        Assert.Equal("Ed", Assert.Single(Assert.IsAssignableFrom<IEnumerable<SeriesMetadataController.MetadataChangeDto>>(ok.Value)).UserName);
+    }
+
     [Fact]
     public async Task History_is_newest_first()
     {
@@ -275,10 +318,11 @@ public class SeriesMetadataChangeTests : IDisposable
         new(db, _inbox, _notifications, new TestUserLocaleResolver(), new TestLocalizer(), TimeProvider.System,
             NullLogger<SeriesMetadataChangeLog>.Instance);
 
-    private SeriesMetadataController Controller(MakiDbContext db, int userId) =>
+    private SeriesMetadataController Controller(
+        MakiDbContext db, int userId, MakiPermission permissions = MakiPermission.Admin) =>
         new(new TestLocalizer(), db, new SeriesMetadataRefreshService([new StubProvider(Provider())], null!),
             ChangeLog(db), new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance),
-            new TestCurrentUser(userId),
+            new TestCurrentUser(userId, permissions: permissions),
             new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), new FakeAppSettings(),
                 _db.ScopeFactory(), NullLogger<KavitaScanService>.Instance));
 

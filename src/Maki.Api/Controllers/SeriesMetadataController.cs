@@ -67,7 +67,11 @@ public class SeriesMetadataController(
     /// <param name="Field">camelCase, as in <see cref="SeriesDto.LockedFields"/>.</param>
     /// <param name="OldValue">Invariant text: a status by its enum name, counts as digits, genres comma separated. Null for the synopsis and the cover.</param>
     /// <param name="Source">"refresh" or "user".</param>
-    /// <param name="UserName">Who made a user change; null for a refresh or a deleted account.</param>
+    /// <param name="UserName">
+    /// Who made a user change: their display name, or their login name when they have no display name
+    /// and the reader is an admin or that user. Null for a refresh, a deleted account, and a user with
+    /// no display name seen by anyone else, so a login name never reaches other readers.
+    /// </param>
     public record MetadataChangeDto(
         int Id, string Field, string? OldValue, string? NewValue, string Source, string? UserName, DateTime ChangedAt);
 
@@ -89,9 +93,13 @@ public class SeriesMetadataController(
             .Select(c => new
             {
                 Change = c,
-                UserName = db.Users.Where(u => u.Id == c.UserId).Select(u => u.DisplayName ?? u.UserName).FirstOrDefault(),
+                Editor = db.Users.Where(u => u.Id == c.UserId).Select(u => new { u.DisplayName, u.UserName }).FirstOrDefault(),
             })
             .ToListAsync(ct);
+
+        var seesLoginNames = currentUser.Has(MakiPermission.Admin);
+        string? NameFor(int? userId, string? displayName, string? loginName) =>
+            displayName ?? (seesLoginNames || (userId is { } id && id == currentUser.UserId) ? loginName : null);
 
         return Ok(rows.Select(r => new MetadataChangeDto(
             r.Change.Id,
@@ -99,7 +107,7 @@ public class SeriesMetadataController(
             r.Change.OldValue,
             r.Change.NewValue,
             r.Change.Source == MetadataChangeSource.User ? "user" : "refresh",
-            r.UserName,
+            r.Editor is null ? null : NameFor(r.Change.UserId, r.Editor.DisplayName, r.Editor.UserName),
             DateTime.SpecifyKind(r.Change.ChangedAtUtc, DateTimeKind.Utc))));
     }
 

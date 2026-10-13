@@ -57,7 +57,7 @@ function ChangeRow({ change }: { change: MetadataChange }) {
   const when = formatDateTime(change.changedAt)
   const user = change.userName
   const who =
-    change.source === 'refresh' ? t`Metadata refresh` : user ? t`Set by ${user}` : t`Set by hand`
+    change.source === 'refresh' ? t`Metadata refresh` : user ? t`Set by ${user}` : t`Set by another user`
 
   const show = (value: string | null) =>
     value == null || value === ''
