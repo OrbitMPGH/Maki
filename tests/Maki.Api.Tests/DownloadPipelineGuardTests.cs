@@ -89,13 +89,13 @@ public class DownloadPipelineGuardTests : IDisposable
     }
 
     private void SeedRow(int seriesId, int chapterId, QueueStatus status, int retries, DateTime? nextAttempt,
-        DownloadOrigin origin = DownloadOrigin.Unknown)
+        DownloadOrigin origin = DownloadOrigin.Unknown, string? errorKey = null)
     {
         using var db = _db.NewContext();
         db.DownloadQueue.Add(new DownloadQueueItem
         {
             SeriesId = seriesId, ChapterId = chapterId, Protocol = AcquisitionProtocol.Scraper, Status = status,
-            RetryCount = retries, NextAttempt = nextAttempt, QueuedAt = DateTime.UtcNow, Origin = origin,
+            RetryCount = retries, NextAttempt = nextAttempt, QueuedAt = DateTime.UtcNow, Origin = origin, ErrorKey = errorKey,
         });
         db.SaveChanges();
     }
@@ -142,6 +142,23 @@ public class DownloadPipelineGuardTests : IDisposable
         var chapters = db.Chapters.Where(c => c.SeriesId == seriesId).ToList();
 
         Assert.Equal(waits, await SmartDownloadJob.PreviousBatchPendingAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Smart_is_not_held_back_by_a_chapter_parked_for_early_access()
+    {
+        var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var seriesId = _db.SeedSeries();
+        var locked = SeedChapter(seriesId, 1m);
+        SeedChapter(seriesId, 2m);
+        SeedRow(seriesId, locked.Id, QueueStatus.Failed, 0, now.AddHours(4), DownloadOrigin.SmartDownload,
+            ChapterDownloadProcessor.EarlyAccessKey);
+
+        using var db = _db.NewContext();
+        var chapters = db.Chapters.Where(c => c.SeriesId == seriesId).ToList();
+
+        Assert.False(await SmartDownloadJob.PreviousBatchPendingAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
+        Assert.Contains(locked.Id, await SmartDownloadJob.BackingOffAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
     }
 
     [Fact]

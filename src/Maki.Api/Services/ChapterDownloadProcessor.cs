@@ -57,6 +57,9 @@ public class ChapterDownloadProcessor(
     /// <summary>A RateLimited row parked for a missing root folder, which no source's cooldown is about.</summary>
     public const string RootFolderUnavailableKey = "error.download.rootFolderUnavailable";
 
+    /// <summary>A chapter still behind early access, parked Failed until it unlocks without spending an attempt.</summary>
+    public const string EarlyAccessKey = "error.download.earlyAccess";
+
     public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
         ProcessAsync(queueItemId, [], ct);
 
@@ -1044,7 +1047,7 @@ public class ChapterDownloadProcessor(
 
         item.Status = QueueStatus.Failed;
         item.NextAttempt = next;
-        item.SetError("error.download.earlyAccess", new { source = sourceName });
+        item.SetError(EarlyAccessKey, new { source = sourceName });
         await db.SaveChangesAsync(ct);
         await BroadcastAsync(item, chapter, series, sourceName);
 

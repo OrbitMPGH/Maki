@@ -161,7 +161,8 @@ public class SmartDownloadJob(
     /// Whether an earlier Smart batch is still being worked on: one of its chapters is queued or
     /// downloading, or failed and waiting out its backoff. A series whose downloads all fail stays
     /// due, and queueing the next batch past the backing-off one would walk the whole series a batch
-    /// per tick. A chapter out of attempts no longer holds the series back.
+    /// per tick. A chapter out of attempts no longer holds the series back, and neither does one
+    /// parked for early access: that waits hours or days without spending an attempt.
     /// </summary>
     internal static async Task<bool> PreviousBatchPendingAsync(
         MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct)
@@ -175,14 +176,15 @@ public class SmartDownloadJob(
         var rows = await db.DownloadQueue
             .Where(q => q.ChapterId != null && candidates.Contains(q.ChapterId.Value) &&
                         q.Origin == DownloadOrigin.SmartDownload)
-            .Select(q => new { ChapterId = q.ChapterId!.Value, q.Id, q.Status, q.RetryCount, q.NextAttempt })
+            .Select(q => new { ChapterId = q.ChapterId!.Value, q.Id, q.Status, q.RetryCount, q.NextAttempt, q.ErrorKey })
             .ToListAsync(ct);
 
         return rows
             .GroupBy(r => r.ChapterId)
             .Select(g => g.MaxBy(r => r.Id)!)
             .Any(r => r.Status is not (QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled) ||
-                      (r.Status == QueueStatus.Failed && r.RetryCount < maxAttempts && r.NextAttempt > now));
+                      (r.Status == QueueStatus.Failed && r.ErrorKey != ChapterDownloadProcessor.EarlyAccessKey &&
+                       r.RetryCount < maxAttempts && r.NextAttempt > now));
     }
 
     /// <summary>
