@@ -377,6 +377,48 @@ public class RecycleBinTests : IDisposable
         Assert.All(check.Chapters, c => Assert.Equal(file.Id, c.ChapterFileId));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Restore_after_a_rename_goes_into_the_series_current_folder(bool nameReused)
+    {
+        var s = Seed();
+        using (var db = _db.NewContext())
+        {
+            await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db), default);
+        }
+
+        var renamed = Path.Combine(_root, "Berserk (1989)");
+        Directory.Move(Path.Combine(_root, "Berserk"), renamed);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single().FolderName = "Berserk (1989)";
+            if (nameReused)
+            {
+                db.Series.Add(new Series
+                {
+                    Title = "Berserk Remake", SortTitle = "berserk remake", FolderName = "Berserk",
+                    RootFolderId = db.RootFolders.Single().Id
+                });
+                Directory.CreateDirectory(Path.Combine(_root, "Berserk"));
+            }
+
+            db.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var result = await Bin(db).RestoreAsync(db.RecycleBin.Single().Id, default);
+            Assert.Equal(RecycleBinService.RestoreStatus.Linked, result.Status);
+        }
+
+        Assert.Equal("volume one", File.ReadAllText(Path.Combine(renamed, "Berserk v01.cbz")));
+        Assert.Equal(nameReused, Directory.Exists(Path.Combine(_root, "Berserk")));
+        Assert.False(File.Exists(s.Absolute));
+        using var check = _db.NewContext();
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk v01.cbz"), Assert.Single(check.ChapterFiles).RelativePath);
+    }
+
     [Fact]
     public async Task A_binned_link_whose_target_is_gone_can_still_be_restored()
     {

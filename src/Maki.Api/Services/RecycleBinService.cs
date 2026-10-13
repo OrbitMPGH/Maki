@@ -330,8 +330,9 @@ public class RecycleBinService(
     public static string? BinFile(RecycleBinEntry entry) => LibraryPaths.Resolve(entry.RootPath, entry.BinPath);
 
     /// <summary>
-    /// Moves the file back to where it was and, when its series still exists in the same root folder,
-    /// gives it back to the chapters it backed that have no file now. Refuses rather than overwrite a
+    /// Moves the file back to where it was (into the series' current folder when that folder was
+    /// renamed since, see <see cref="RestorePathAsync"/>) and, when its series still exists in the same
+    /// root folder, gives it back to the chapters it backed that have no file now. Refuses rather than overwrite a
     /// file that has taken its place. A file whose chapters or series are gone is still put back, as an
     /// unlinked file Health can import.
     /// </summary>
@@ -355,7 +356,8 @@ public class RecycleBinService(
             return new RestoreResult(RestoreStatus.FileMissing);
         }
 
-        if (LibraryPaths.ResolveNoLinks(entry.RootPath, entry.RelativePath) is not { } target)
+        var relativePath = await RestorePathAsync(entry, ct);
+        if (LibraryPaths.ResolveNoLinks(entry.RootPath, relativePath) is not { } target)
         {
             return new RestoreResult(RestoreStatus.TargetInvalid);
         }
@@ -394,7 +396,7 @@ public class RecycleBinService(
         var relinked = false;
         try
         {
-            (relinked, linked) = await RelinkAsync(entry, ct);
+            (relinked, linked) = await RelinkAsync(entry, relativePath, ct);
             await db.SaveChangesAsync(CancellationToken.None);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -417,7 +419,39 @@ public class RecycleBinService(
         return new RestoreResult(relinked ? RestoreStatus.Linked : RestoreStatus.Unlinked, linked);
     }
 
-    private async Task<(bool Relinked, int Chapters)> RelinkAsync(RecycleBinEntry entry, CancellationToken ct)
+    /// <summary>
+    /// The stored path, unless the entry's series still exists and its folder is no longer one of
+    /// the series' folders and is gone from disk or now another series' folder: a rename moved the
+    /// series since, so the file goes back into <see cref="Series.FolderName"/> rather than recreate
+    /// the old folder or land in someone else's.
+    /// </summary>
+    private async Task<string> RestorePathAsync(RecycleBinEntry entry, CancellationToken ct)
+    {
+        if (LibraryPaths.TopFolder(entry.RelativePath) is not { } top)
+        {
+            return entry.RelativePath;
+        }
+
+        var series = await db.Series.IgnoreQueryFilters().AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == entry.SeriesId && s.RootFolderId == entry.RootFolderId, ct);
+        // Added after the delete: SQLite handed a removed series' id to a new one.
+        if (series is null || series.Added > entry.DeletedAtUtc
+                           || (await SeriesFolders.ForAsync(db, series, ct)).Contains(top, LibraryPaths.FolderComparer))
+        {
+            return entry.RelativePath;
+        }
+
+        var taken = (await db.Series.IgnoreQueryFilters()
+                .Where(s => s.RootFolderId == entry.RootFolderId && s.Id != series.Id)
+                .Select(s => s.FolderName)
+                .ToListAsync(ct))
+            .Contains(top, LibraryPaths.FolderComparer);
+        var gone = LibraryPaths.ResolveNoLinks(entry.RootPath, top) is not { } folder || !Directory.Exists(folder);
+        return taken || gone ? Path.Combine(series.FolderName, entry.RelativePath[(top.Length + 1)..]) : entry.RelativePath;
+    }
+
+    private async Task<(bool Relinked, int Chapters)> RelinkAsync(
+        RecycleBinEntry entry, string relativePath, CancellationToken ct)
     {
         var series = await db.Series.IgnoreQueryFilters()
             .FirstOrDefaultAsync(s => s.Id == entry.SeriesId && s.RootFolderId == entry.RootFolderId, ct);
@@ -426,7 +460,7 @@ public class RecycleBinService(
             return (false, 0);
         }
 
-        var key = LibraryPaths.ComparisonKey(entry.RelativePath);
+        var key = LibraryPaths.ComparisonKey(relativePath);
         var rows = await db.ChapterFiles.IgnoreQueryFilters().Where(f => f.SeriesId == series.Id).ToListAsync(ct);
         // Binned but never settled (the save after the move failed): the row was never removed.
         if (rows.FirstOrDefault(f => f.Id == entry.ChapterFileId) is { } kept &&
@@ -455,7 +489,7 @@ public class RecycleBinService(
             file = snapshot;
             file.Id = 0;
             file.SeriesId = series.Id;
-            file.RelativePath = entry.RelativePath;
+            file.RelativePath = relativePath;
             db.ChapterFiles.Add(file);
         }
 
