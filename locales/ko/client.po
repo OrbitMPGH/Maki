@@ -12245,6 +12245,10 @@ msgstr "일시 정지"
 msgid "Pause downloads"
 msgstr "다운로드 일시 정지"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Pause Rewind"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14118,6 +14122,10 @@ msgstr "{seriesTitle} 이어 읽기, {chapterLabel}"
 msgid "Resume at"
 msgstr "재개 시각"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Resume Rewind"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retried {retryCount}x"
@@ -15763,6 +15771,10 @@ msgstr "새 시리즈의 특별편 건너뛰기"
 #, fuzzy
 msgid "Skip this file"
 msgstr "이 파일 건너뛰기"
+
+#: src/App.tsx
+msgid "Skip to content"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

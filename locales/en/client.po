@@ -9928,6 +9928,10 @@ msgstr "Pause"
 msgid "Pause downloads"
 msgstr "Pause downloads"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Pause Rewind"
+msgstr "Pause Rewind"
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Paused"
@@ -11445,6 +11449,10 @@ msgstr "Resume {seriesTitle}, {chapterLabel}"
 msgid "Resume at"
 msgstr "Resume at"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Resume Rewind"
+msgstr "Resume Rewind"
+
 #: src/pages/ActivityPage.tsx
 msgid "Retried {retryCount}x"
 msgstr "Retried {retryCount}x"
@@ -12783,6 +12791,10 @@ msgstr "Skip specials on new series"
 #: src/components/ImportReviewModal.tsx
 msgid "Skip this file"
 msgstr "Skip this file"
+
+#: src/App.tsx
+msgid "Skip to content"
+msgstr "Skip to content"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Skipped {latestVersion}"

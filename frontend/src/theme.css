@@ -93,8 +93,8 @@
   --type-body: 0.875rem;
   --type-meta: 0.8125rem;
   --type-micro: 0.75rem;
-  --type-label: 0.6875rem;
-  --type-badge: 0.625rem;
+  --type-label: 0.75rem;
+  --type-badge: 0.6875rem;
 
   /* Weight scale. Same rule as the type scale: a weight between two steps belongs on one of them. */
   --fw-regular: 400;
@@ -631,6 +631,28 @@ body::before {
   }
 }
 
+/* First tab stop on every page, out of sight until it has focus. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 300;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  transform: translateY(calc(-100% - 16px));
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+#main:focus {
+  outline: none;
+}
+
 /* Sits under the drawer and over the page; tapping it closes the drawer. Below the header (100)
    as well as the navbar (101), so the burger that opened the drawer still closes it. */
 .nav-scrim {
@@ -746,8 +768,8 @@ body::before {
   flex-shrink: 0;
 }
 .nav-user-avatar .mantine-Avatar-placeholder {
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
 }
@@ -862,7 +884,7 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--type-badge);
   font-weight: 600;
   color: var(--ink-4);
   text-transform: uppercase;
@@ -873,7 +895,7 @@ body::before {
 .nav-footer .nav-footer-version-button {
   margin-left: -4px;
   padding: 2px 4px;
-  font-size: 10px;
+  font-size: var(--type-badge);
   font-weight: 600;
   border-radius: 4px;
   transition:
@@ -1015,7 +1037,7 @@ body::before {
   }
 }
 .nav-section-label {
-  font-size: 10.5px;
+  font-size: var(--type-label);
   font-weight: var(--fw-bold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1029,8 +1051,8 @@ body::before {
   margin-left: auto;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   line-height: 18px;
@@ -1042,8 +1064,22 @@ body::before {
   font-variant-numeric: tabular-nums;
 }
 .count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+}
+/* Mantine's xs and sm badges set 9 and 10px type, under the floor every other label keeps. */
+.mantine-Badge-root {
+  --badge-fz-xs: var(--type-badge);
+  --badge-fz-sm: var(--type-badge);
+}
+/* Mantine puts white on any colour it was handed as a CSS variable; on warn that is 2.3:1. */
+.count-indicator[data-tone='warn'] > .mantine-Indicator-indicator {
+  background: var(--warn);
+  color: var(--warn-on);
+}
+.count-indicator[data-tone='danger'] > .mantine-Indicator-indicator {
+  background: var(--danger);
+  color: var(--danger-on);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
@@ -1395,8 +1431,8 @@ body::before {
   height: 16px;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-badge);
   font-weight: var(--fw-bold);
   letter-spacing: 0.02em;
@@ -1418,8 +1454,8 @@ body::before {
   margin-bottom: 7px;
   padding: 0 8px 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
   letter-spacing: 0.02em;
@@ -5536,7 +5572,7 @@ body.column-resizing * {
   position: absolute;
   top: 16px;
   left: 16px;
-  right: 64px;
+  right: 104px;
   display: flex;
   gap: 6px;
 }
@@ -5552,11 +5588,25 @@ body.column-resizing * {
   border-radius: var(--radius-pill);
   background: #fff;
 }
+/* A CSS animation rather than a motion one so pausing Rewind can freeze it where it is. */
+.rewind-progress-timed {
+  width: 0;
+  animation-name: rewind-progress-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes rewind-progress-fill {
+  to {
+    width: 100%;
+  }
+}
 
-.rewind-close {
+.rewind-controls {
   position: absolute;
   top: 10px;
   right: 12px;
+  display: flex;
+  gap: 4px;
 }
 
 .rewind-slide {
@@ -5662,7 +5712,7 @@ body.column-resizing * {
 }
 .rewind-slide,
 .rewind-progress,
-.rewind-close {
+.rewind-controls {
   z-index: 1;
 }
 .rewind-slide {
@@ -7497,9 +7547,9 @@ body.reader-open {
   transition: background-color 0.25s, border-color 0.25s, color 0.25s;
 }
 .relink-cell.is-move {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  border-color: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
 }
 .relink-cell.is-fill {
   background: var(--ok);
@@ -7945,7 +7995,7 @@ body.reader-open {
     left: 16px;
     right: 16px;
   }
-  .rewind-close {
+  .rewind-controls {
     top: auto;
     bottom: 34px;
     right: 8px;
@@ -8670,8 +8720,8 @@ body.reader-open {
   height: 18px;
   padding: 0 5px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
 }

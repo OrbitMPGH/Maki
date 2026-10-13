@@ -233,7 +233,7 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
   return (
     <Stack gap="lg">
       <Stack gap="xs">
-        <Title order={4}>
+        <Title order={3} size="h4">
           <Trans>Reading</Trans>
         </Title>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
@@ -245,7 +245,7 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
 
       {library.length > 0 && (
         <Stack gap="xs">
-          <Title order={4}>
+          <Title order={3} size="h4">
             <Trans>The library</Trans>
           </Title>
           {/* Said plainly, because these count what is on disk and the library is shared: on a

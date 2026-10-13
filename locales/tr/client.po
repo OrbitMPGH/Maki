@@ -12246,6 +12246,10 @@ msgstr "Duraklat"
 msgid "Pause downloads"
 msgstr "İndirmeleri duraklat"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Pause Rewind"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14119,6 +14123,10 @@ msgstr "{seriesTitle}, {chapterLabel} konumundan devam et"
 msgid "Resume at"
 msgstr "Şu saatte devam et"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Resume Rewind"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retried {retryCount}x"
@@ -15764,6 +15772,10 @@ msgstr "Yeni serilerde özel bölümleri atla"
 #, fuzzy
 msgid "Skip this file"
 msgstr "Bu dosyayı atla"
+
+#: src/App.tsx
+msgid "Skip to content"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
