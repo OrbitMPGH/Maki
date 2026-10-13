@@ -240,7 +240,8 @@ public class ReleaseNameParserTests
     [InlineData("My_Series_Ch.001-Special")]
     [InlineData("My.Series.Vol.3-Extras")]
     [InlineData("My_Series_v01-Omake")]
-    public void A_dotted_or_underscored_name_without_scene_markers_has_no_group(string name)
+    [InlineData("My.Series.v01-bonus")]
+    public void A_title_word_after_a_hyphen_is_not_a_group(string name)
     {
         Assert.Empty(ReleaseNameParser.ExtractTags(name));
     }
@@ -249,6 +250,12 @@ public class ReleaseNameParserTests
     [InlineData("Series.Name.T29.Author.FR.[CBZ]-GROUP", "GROUP")]
     [InlineData("Series.Name.T29.Author.FR-GROUP", "GROUP")]
     [InlineData("One.Piece.v01-v10.Digital-GRP", "GRP")]
+    [InlineData("Series_Name_c001-LuCaZ", "LuCaZ")]
+    [InlineData("Series.Name.v01.FR.[CBZ]-GROUP [2024]", "GROUP")]
+    [InlineData("Series.Name.v01.digital-HR", "HR")]
+    [InlineData("Series.Name.v01.Retail.Comic-Group", "Group")]
+    [InlineData("Series.Name.v01.Scans-Group", "Group")]
+    [InlineData("Series.Name.v01.eBook-GROUP", "GROUP")]
     public void A_scene_name_ends_in_its_group(string name, string group)
     {
         Assert.Equal(group, ReleaseNameParser.ExtractTags(name)[^1]);
