@@ -7325,6 +7325,10 @@ msgid "Leave a field blank for no bound. Approving queues exactly this range."
 msgstr "Leave a field blank for no bound. Approving queues exactly this range."
 
 #: src/pages/LibraryPage.tsx
+msgid "Leave at 0–10 to ignore. Narrowing it hides series without a score."
+msgstr "Leave at 0–10 to ignore. Narrowing it hides series without a score."
+
+#: src/pages/LibraryPage.tsx
 msgid "Leave at 0–100% to ignore."
 msgstr "Leave at 0–100% to ignore."
 
@@ -8346,6 +8350,14 @@ msgstr "My phone"
 #: src/pages/LibraryPage.tsx
 msgid "My rating"
 msgstr "My rating"
+
+#: src/pages/LibraryPage.tsx
+msgid "My rating from"
+msgstr "My rating from"
+
+#: src/pages/LibraryPage.tsx
+msgid "My rating to"
+msgstr "My rating to"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "MyAnimeList"
@@ -10428,6 +10440,7 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "Rate limited by {source}, waiting before the next try"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Rated"
 msgstr "Rated"
 
@@ -10440,10 +10453,23 @@ msgstr "Rated {rating}/10"
 msgid "Rating"
 msgstr "Rating"
 
+#: src/pages/LibraryPage.tsx
+msgctxt "MangaBaka score filter"
+msgid "Rating"
+msgstr "Rating"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rating cleared"
 msgstr "Rating cleared"
+
+#: src/pages/LibraryPage.tsx
+msgid "Rating from"
+msgstr "Rating from"
+
+#: src/pages/LibraryPage.tsx
+msgid "Rating to"
+msgstr "Rating to"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
@@ -14457,6 +14483,7 @@ msgstr "Unofficial build, update checks are skipped."
 msgid "Unpin it from every series first"
 msgstr "Unpin it from every series first"
 
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/labels.ts
 msgid "Unrated"
 msgstr "Unrated"

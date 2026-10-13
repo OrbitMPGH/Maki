@@ -45,6 +45,19 @@ public class MangaBakaLocalStoreTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     [Fact]
+    public async Task GetRatingsAsync_returns_scores_for_known_ids_and_skips_unscored_and_missing()
+    {
+        _db.AddSeries(1, "Scored", rating: 82.5);
+        _db.AddSeries(2, "Unscored");
+
+        var ratings = await Store.GetRatingsAsync([1, 2, 3]);
+
+        Assert.Equal(82.5, ratings[1]);
+        Assert.False(ratings.ContainsKey(2));
+        Assert.False(ratings.ContainsKey(3));
+    }
+
+    [Fact]
     public async Task Similar_hides_spoiler_tags_per_series_and_backfills_safe_matches()
     {
         const string genres = """["Action","Adventure"]""";

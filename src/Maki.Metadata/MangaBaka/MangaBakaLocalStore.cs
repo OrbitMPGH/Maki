@@ -1020,6 +1020,39 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// The aggregate score (0–100) for each of <paramref name="ids"/> that has one. Ids the dump
+    /// lacks, or holds unscored, are absent from the result.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, double>> GetRatingsAsync(
+        IReadOnlyCollection<long> ids, CancellationToken ct = default)
+    {
+        var ratings = new Dictionary<long, double>(ids.Count);
+        if (ids.Count == 0)
+        {
+            return ratings;
+        }
+
+        using var conn = Open();
+        foreach (var chunk in ids.Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT id, rating FROM series
+                WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                  AND rating IS NOT NULL
+                """;
+            cmd.CommandTimeout = 600;
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                ratings[reader.GetInt64(0)] = reader.GetDouble(1);
+            }
+        }
+
+        return ratings;
+    }
+
+    /// <summary>
     /// How many of <paramref name="ids"/> carry one of <paramref name="ratings"/> in the dump, by the
     /// same <c>content_rating IN</c> test <see cref="GetByIdsAsync"/> hydrates with, so a count and the
     /// page it describes agree. Reads the dump directly, so it also covers series the vector index

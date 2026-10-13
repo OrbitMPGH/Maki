@@ -261,6 +261,11 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   fileSources: [],
   fileSourceMatch: 'any',
   qualityProfile: 'all',
+  ratingState: 'all',
+  ratingMin: 1,
+  ratingMax: 10,
+  communityRatingMin: 0,
+  communityRatingMax: 10,
 }
 
 /** Quality profile filter value for series with no pin of their own. */
@@ -299,6 +304,14 @@ const CHAPTER_MODE_VALUES = ['downloaded', 'total'] as const
 const CHAPTER_MODE_LABELS: Record<string, MessageDescriptor> = {
   downloaded: msg`Downloaded`,
   total: msg`Total`,
+}
+
+const RATING_STATE_VALUES = ['all', 'rated', 'unrated'] as const
+
+const RATING_STATE_LABELS: Record<string, MessageDescriptor> = {
+  all: msg`Any`,
+  rated: msg`Rated`,
+  unrated: msg`Unrated`,
 }
 
 const MATCH_MODE_VALUES = ['any', 'all'] as const
@@ -381,6 +394,9 @@ export default function LibraryPage() {
   const [metaTagMatch, setMetaTagMatch] = usePageState(`${MEM}:meta-tag-match`, 'any')
   const [contentRatingFilter, setContentRatingFilter] = usePageState<string[]>(`${MEM}:content-ratings`, [])
   const [readRange, setReadRange] = usePageState<[number, number]>(`${MEM}:read-range`, [0, 100])
+  const [ratingState, setRatingState] = usePageState(`${MEM}:rating-state`, 'all')
+  const [ratingRange, setRatingRange] = usePageState<[number, number]>(`${MEM}:rating-range`, [1, 10])
+  const [communityRange, setCommunityRange] = usePageState<[number, number]>(`${MEM}:community-rating-range`, [0, 10])
   // Null ends, not 0/Infinity: an empty box has to mean "unbounded", and a min of 0 is a real
   // (if inert) bound the user can type.
   const [chapterMin, setChapterMin] = usePageState<number | null>(`${MEM}:chapter-min`, null)
@@ -460,6 +476,16 @@ export default function LibraryPage() {
       // excluded rather than assumed safe, since this filter exists to gate content.
       list = list.filter((s) => s.contentRating != null && contentRatingFilter.includes(s.contentRating))
     }
+    if (ratingState === 'unrated') {
+      list = list.filter((s) => s.rating == null)
+    } else if (ratingState === 'rated') {
+      list = list.filter((s) => s.rating != null && s.rating >= ratingRange[0] && s.rating <= ratingRange[1])
+    }
+    if (communityRange[0] > 0 || communityRange[1] < 10) {
+      list = list.filter(
+        (s) => s.communityRating != null && s.communityRating >= communityRange[0] && s.communityRating <= communityRange[1],
+      )
+    }
     if (monitoredFilter !== 'all') {
       list = list.filter((s) => s.monitored === (monitoredFilter === 'monitored'))
     }
@@ -499,8 +525,13 @@ export default function LibraryPage() {
     excludeTagFilter, excludeGenreFilter, untaggedOnly,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, sortDir, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
-    chapterMin, chapterMax, chapterMode, qualityProfileFilter,
+    chapterMin, chapterMax, chapterMode, qualityProfileFilter, ratingState, ratingRange, communityRange,
   ])
+
+  // Hidden when nothing carries a score (no dump, or no MangaBaka links), unless a saved filter
+  // narrowed it anyway: a counted filter the user can't see or reset on its own would be a trap.
+  const hasCommunityRatings =
+    (series ?? []).some((s) => s.communityRating != null) || communityRange[0] > 0 || communityRange[1] < 10
 
   const statusOptions = useMemo(() => {
     const set = new Set((series ?? []).map((s) => s.status))
@@ -567,6 +598,10 @@ export default function LibraryPage() {
     () => CHAPTER_MODE_VALUES.map((value) => ({ value, label: _(CHAPTER_MODE_LABELS[value]) })),
     [_, i18n.locale],
   )
+  const ratingStateOptions = useMemo(
+    () => RATING_STATE_VALUES.map((value) => ({ value, label: _(RATING_STATE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
   const matchModeOptions = useMemo(
     () => MATCH_MODE_VALUES.map((value) => ({ value, label: _(MATCH_MODE_LABELS[value]) })),
     [_, i18n.locale],
@@ -601,6 +636,11 @@ export default function LibraryPage() {
     fileSources: fileSourceFilter,
     fileSourceMatch,
     qualityProfile: qualityProfileFilter,
+    ratingState,
+    ratingMin: ratingRange[0],
+    ratingMax: ratingRange[1],
+    communityRatingMin: communityRange[0],
+    communityRatingMax: communityRange[1],
   })
 
   const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
@@ -634,6 +674,9 @@ export default function LibraryPage() {
     setFileSourceFilter(merged.fileSources ?? [])
     setFileSourceMatch(merged.fileSourceMatch)
     setQualityProfileFilter(merged.qualityProfile ?? 'all')
+    setRatingState(merged.ratingState ?? 'all')
+    setRatingRange([merged.ratingMin ?? 1, merged.ratingMax ?? 10])
+    setCommunityRange([merged.communityRatingMin ?? 0, merged.communityRatingMax ?? 10])
     setSort(merged.sort)
     setSortDirOverride(merged.sortDir === 'asc' || merged.sortDir === 'desc' ? merged.sortDir : '')
     setActiveFilterId(id)
@@ -654,6 +697,8 @@ export default function LibraryPage() {
     (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0) +
     (chapterMin != null || chapterMax != null ? 1 : 0) +
     (contentRatingFilter.length > 0 ? 1 : 0) +
+    (ratingState !== 'all' ? 1 : 0) +
+    (communityRange[0] > 0 || communityRange[1] < 10 ? 1 : 0) +
     (sourceFilter.length > 0 ? 1 : 0) +
     (sourceState !== 'all' ? 1 : 0) +
     (fileSourceFilter.length > 0 ? 1 : 0) +
@@ -1399,6 +1444,64 @@ export default function LibraryPage() {
             clearable
             comboboxProps={{ withinPortal: true }}
           />
+          <div>
+            <Text size="sm" fw={500} mb="xs">
+              <Trans>My rating</Trans>
+            </Text>
+            <SegmentedControl
+              aria-label={t`My rating`}
+              size="xs"
+              fullWidth
+              value={ratingState}
+              onChange={setRatingState}
+              data={ratingStateOptions}
+              mb={ratingState === 'rated' ? 'md' : undefined}
+            />
+            {ratingState === 'rated' && (
+              <RangeSlider
+                thumbFromLabel={t`My rating from`}
+                thumbToLabel={t`My rating to`}
+                min={1}
+                max={10}
+                step={1}
+                minRange={0}
+                value={ratingRange}
+                onChange={setRatingRange}
+                marks={[
+                  { value: 1, label: '1' },
+                  { value: 5, label: '5' },
+                  { value: 10, label: '10' },
+                ]}
+                mb="lg"
+              />
+            )}
+          </div>
+          {hasCommunityRatings && (
+            <div>
+              <Text size="sm" fw={500} mb={2}>
+                <Trans context="MangaBaka score filter">Rating</Trans>
+              </Text>
+              <Text size="xs" c="var(--ink-3)" mb="md">
+                <Trans>Leave at 0–10 to ignore. Narrowing it hides series without a score.</Trans>
+              </Text>
+              <RangeSlider
+                thumbFromLabel={t`Rating from`}
+                thumbToLabel={t`Rating to`}
+                min={0}
+                max={10}
+                step={0.5}
+                minRange={0}
+                value={communityRange}
+                onChange={setCommunityRange}
+                marks={[
+                  { value: 0, label: '0' },
+                  { value: 5, label: '5' },
+                  { value: 10, label: '10' },
+                ]}
+                mb="lg"
+              />
+            </div>
+          )}
           <Select
             label={t`Monitoring`}
             data={[

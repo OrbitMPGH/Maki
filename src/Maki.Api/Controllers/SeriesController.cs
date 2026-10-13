@@ -22,6 +22,7 @@ using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Maki.Api.Controllers;
@@ -393,6 +394,7 @@ public class SeriesController(
             .ToDictionaryAsync(x => x.SeriesId, x => x.At, ct);
 
         var titleLanguage = await TitleLanguageAsync(ct);
+        var communityRatings = await CommunityRatingsAsync(series, ct);
 
         return Ok(series.Select(s =>
         {
@@ -425,8 +427,36 @@ public class SeriesController(
                 FileSources = fileSourcesBySeries.GetValueOrDefault(s.Id) ?? [],
                 LastReadAt = lastReadBySeries.TryGetValue(s.Id, out var lastRead) ? lastRead : null,
                 LastDownloadedAt = lastDownloadBySeries.TryGetValue(s.Id, out var lastDownload) ? lastDownload : null,
+                CommunityRating = s.MangaBakaId is int bakaId && communityRatings.TryGetValue(bakaId, out var score)
+                    ? Math.Round(score / 10.0, 1)
+                    : null,
             };
         }));
+    }
+
+    /// <summary>
+    /// MangaBaka scores (0–100) keyed by MangaBaka id, read live from the dump rather than stored on
+    /// the series so they follow each nightly refresh. Empty when the dump is off or unreadable: the
+    /// library has to load without it.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<long, double>> CommunityRatingsAsync(
+        List<Series> series, CancellationToken ct)
+    {
+        var ids = series.Where(s => s.MangaBakaId != null).Select(s => (long)s.MangaBakaId!.Value).ToHashSet();
+        if (ids.Count == 0 || !await mangaBakaStore.IsAvailableAsync(ct))
+        {
+            return new Dictionary<long, double>();
+        }
+
+        try
+        {
+            return await mangaBakaStore.GetRatingsAsync(ids, ct);
+        }
+        catch (SqliteException ex)
+        {
+            logger.LogWarning(ex, "Could not read MangaBaka ratings for the library list");
+            return new Dictionary<long, double>();
+        }
     }
 
     private sealed record ChapterTallies(int SeriesId, int Wanted, int WithFile, int Known, int Removed);

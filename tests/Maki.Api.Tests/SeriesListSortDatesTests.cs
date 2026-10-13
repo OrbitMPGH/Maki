@@ -4,7 +4,9 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
+using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
@@ -18,11 +20,11 @@ public sealed class SeriesListSortDatesTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private static SeriesController Controller(Maki.Data.MakiDbContext db)
+    private static SeriesController Controller(Maki.Data.MakiDbContext db, MangaBakaLocalStore? mangaBaka = null)
     {
         var settings = new FakeAppSettings();
         return new SeriesController(new TestLocalizer(), db, null!, null!, null!, null!, null!, null!, null!, null!,
-            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
+            null!, null!, null!, null!, null!, mangaBaka!, null!, null!, null!, null!,
             new SourceAvailability(settings, new SourceRegistry([])), null!, new NoUserSettings(), null!, null!, null!);
     }
 
@@ -113,6 +115,32 @@ public sealed class SeriesListSortDatesTests : IDisposable
 
         Assert.Equal(Newer, list.Single(s => s.Id == withFiles).LastDownloadedAt);
         Assert.Null(list.Single(s => s.Id == empty).LastDownloadedAt);
+    }
+
+    [Fact]
+    public async Task Community_rating_is_the_dump_score_on_a_ten_point_scale_and_null_without_one()
+    {
+        var alice = _db.SeedUser("alice");
+        var scored = _db.SeedSeries("Scored", configure: s => s.MangaBakaId = 10);
+        var unscored = _db.SeedSeries("Unscored", configure: s => s.MangaBakaId = 11);
+        var unlinked = _db.SeedSeries("Unlinked");
+
+        using var db = _db.NewContext(alice);
+        var list = Listed(await Controller(db, new RatedStore(new() { [10] = 87.4 })).List(default));
+
+        Assert.Equal(8.7, list.Single(s => s.Id == scored).CommunityRating);
+        Assert.Null(list.Single(s => s.Id == unscored).CommunityRating);
+        Assert.Null(list.Single(s => s.Id == unlinked).CommunityRating);
+    }
+
+    private sealed class RatedStore(Dictionary<long, double> ratings) : MangaBakaLocalStore(
+        new MangaBakaDumpOptions("", ""), new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+    {
+        public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
+
+        public override Task<IReadOnlyDictionary<long, double>> GetRatingsAsync(
+            IReadOnlyCollection<long> ids, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<long, double>>(ratings);
     }
 
     private sealed class NoUserSettings : IUserSettings

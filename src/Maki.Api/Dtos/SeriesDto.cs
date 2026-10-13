@@ -188,6 +188,12 @@ public record SeriesDto(
     public DateTime? LastDownloadedAt { get; init; }
 
     /// <summary>
+    /// MangaBaka's aggregate score on a 0–10 scale, read from the local dump. Library list only; null
+    /// without a MangaBaka link, without the dump, or when MangaBaka has no score for the series.
+    /// </summary>
+    public double? CommunityRating { get; init; }
+
+    /// <summary>
     /// Personal time left, based on timed chapters from the built-in reader. Filled only by the
     /// detail endpoint; null when fewer than three comparable chapters have timing data.
     /// </summary>

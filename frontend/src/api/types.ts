@@ -136,6 +136,8 @@ export interface SeriesDto {
   lastReadAt?: string | null
   /** When the newest chapter file landed, or null with no files. Library list endpoint only. */
   lastDownloadedAt?: string | null
+  /** MangaBaka's aggregate score, 0–10, from the local dump. Library list endpoint only. */
+  communityRating?: number | null
   /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.
@@ -231,6 +233,14 @@ export interface LibraryFilterSpec {
   fileSourceMatch: string
   /** "all", "default" (no pin of its own), or a quality profile id as a string. Absent on older presets. */
   qualityProfile?: string
+  /** "all" | "rated" | "unrated" on the user's own rating. Absent on older presets. */
+  ratingState?: string
+  /** 1–10 window on the user's own rating, only applied when `ratingState` is "rated". */
+  ratingMin?: number
+  ratingMax?: number
+  /** 0–10 window on the MangaBaka score. Full range means "don't filter"; narrower drops unscored series. */
+  communityRatingMin?: number
+  communityRatingMax?: number
 }
 
 export interface SavedFilterDto {
