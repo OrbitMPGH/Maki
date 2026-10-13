@@ -35,6 +35,8 @@ internal static class SuwayomiGraphQl
     /// </summary>
     public const string UnauthorizedMarker = "Unauthorized";
 
+    private static readonly TimeSpan BodyTimeout = TimeSpan.FromSeconds(60);
+
     /// <summary>
     /// POSTs <paramref name="query"/> and returns its <c>data</c> object. Throws:
     /// <list type="bullet">
@@ -78,7 +80,12 @@ internal static class SuwayomiGraphQl
         }
 
         using var response = await client.SendAsync(request, ct);
-        var text = await response.Content.ReadAsStringAsync(ct);
+
+        // The client has no overall timeout (the request timeout stops at the headers), so a body that
+        // stalls halfway needs its own bound.
+        using var bodyTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        bodyTimeout.CancelAfter(BodyTimeout);
+        var text = await response.Content.ReadAsStringAsync(bodyTimeout.Token);
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(

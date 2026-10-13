@@ -783,10 +783,13 @@ try
     builder.Services.AddSingleton<SuwayomiMangaIdCache>();
     builder.Services.AddSingleton(_ => new SuwayomiConnectionTester());
     builder.Services.AddSingleton<ISourceProvider, SuwayomiSourceProvider>();
-    AddSuwayomiClient(SuwayomiClient.HttpClientName, TimeSpan.FromSeconds(60));
-    AddSuwayomiClient(SuwayomiClient.PagesHttpClientName, TimeSpan.FromMinutes(2));
+    AddSuwayomiClient(SuwayomiClient.HttpClientName, TimeSpan.FromSeconds(60), perRequest: true);
+    AddSuwayomiClient(SuwayomiClient.PagesHttpClientName, TimeSpan.FromMinutes(2), perRequest: false);
 
-    void AddSuwayomiClient(string name, TimeSpan timeout)
+    // The API client times the request itself, not its wait in the concurrency queue: a bulk refresh
+    // queues dozens of calls behind four permits, and the client-wide timeout would fail the tail of
+    // them as "Search failed" without Suwayomi ever being slow. The outer bound only caps the queue.
+    void AddSuwayomiClient(string name, TimeSpan timeout, bool perRequest)
     {
         var limiter = new System.Threading.RateLimiting.ConcurrencyLimiter(
             new System.Threading.RateLimiting.ConcurrencyLimiterOptions
@@ -795,19 +798,28 @@ try
                 QueueLimit = int.MaxValue,
                 QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst
             });
-        builder.Services.AddHttpClient(name, client =>
+        var http = builder.Services.AddHttpClient(name, client =>
             {
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
-                client.Timeout = timeout;
+                client.Timeout = perRequest ? Timeout.InfiniteTimeSpan : timeout;
             })
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false })
-            .AddHttpMessageHandler(sp => new SuwayomiOriginHandler(sp.GetRequiredService<SuwayomiSettings>()))
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+        if (perRequest)
+        {
+            http.AddHttpMessageHandler(() => new RequestTimeoutHandler(TimeSpan.FromMinutes(10)));
+        }
+
+        http.AddHttpMessageHandler(sp => new SuwayomiOriginHandler(sp.GetRequiredService<SuwayomiSettings>()))
             .AddHttpMessageHandler(sp => new SuwayomiAuthHandler(sp.GetRequiredService<SuwayomiTokenStore>()))
             .AddHttpMessageHandler(() => new TransientRetryHandler())
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler())
             .AddHttpMessageHandler(() => new RateLimitingHandler(limiter));
+        if (perRequest)
+        {
+            http.AddHttpMessageHandler(() => new RequestTimeoutHandler(timeout));
+        }
     }
-    
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
