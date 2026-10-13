@@ -639,6 +639,77 @@ public class LibraryImportUndoTests : IDisposable
         Assert.False(ImportOperations.Parse((await check.ImportBatchFolders.SingleAsync()).OperationsJson).DiskPending);
     }
 
+    [Fact]
+    public async Task A_built_CBZ_that_could_not_be_removed_keeps_the_folder_in_place_for_the_retry()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var rootId = SeedRoot();
+        WriteFixture("chainsaw raws");
+        var originals = Fingerprint(At("chainsaw raws"));
+        var result = await ImportAsync(rootId, "chainsaw raws");
+
+        ImportUndoOutcome first;
+        using (new FileStream(At(result.NewFolderName!, "Chainsaw Man 002.cbz"), FileMode.Open, FileAccess.Read,
+                   FileShare.None))
+        {
+            first = await UndoAsync(await RecordIdAsync());
+        }
+
+        Assert.True(first.Undone, first.Error);
+        Assert.Contains(first.Warnings!, w => w.StartsWith("error.libraryImport.undoDiskPending"));
+        // Moved anyway, the retry would look for the CBZ under the new name and call it done.
+        Assert.True(Directory.Exists(At(result.NewFolderName!)));
+        Assert.False(Directory.Exists(At("chainsaw raws")));
+
+        var retry = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(retry.Undone, retry.Error);
+        Assert.Null(retry.Warnings);
+        Assert.Equal(originals, Fingerprint(At("chainsaw raws")));
+    }
+
+    [Fact]
+    public async Task A_rebuilt_original_left_set_aside_goes_back_under_its_name_even_when_its_CBZ_is_gone()
+    {
+        var rootId = SeedRoot();
+        WriteFixture("chainsaw raws");
+        var originals = Fingerprint(At("chainsaw raws"));
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        // What a first undo leaves when it removed the CBZ and then failed to put the original back.
+        File.Delete(At(result.NewFolderName!, "Chainsaw Man 004.cbz"));
+        Assert.True(File.Exists(At(result.NewFolderName!, "Chainsaw Man 004.cbt")));
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(outcome.Undone, outcome.Error);
+        Assert.Equal(originals, Fingerprint(At("chainsaw raws")));
+    }
+
+    [Fact]
+    public async Task A_retry_whose_old_name_was_taken_again_stays_pending()
+    {
+        var rootId = SeedRoot();
+        WriteFixture("chainsaw raws");
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        File.WriteAllText(At("chainsaw raws"), "in the way");
+        var first = await UndoAsync(await RecordIdAsync());
+        Assert.Contains(first.Warnings!, w => w.StartsWith("error.libraryImport.undoDiskPending"));
+
+        File.Delete(At("chainsaw raws"));
+        Directory.CreateDirectory(At("chainsaw raws"));
+        var retry = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(retry.Undone, retry.Error);
+        Assert.Contains(retry.Warnings!, w => w.StartsWith("error.libraryImport.undoDiskPending"));
+        Assert.True(Directory.Exists(At(result.NewFolderName!)));
+        await using var check = _db.NewContext();
+        Assert.True(ImportOperations.Parse((await check.ImportBatchFolders.SingleAsync()).OperationsJson).DiskPending);
+    }
+
     private async Task EditOperationsAsync(Action<ImportOperations> edit)
     {
         await using var db = _db.NewContext();

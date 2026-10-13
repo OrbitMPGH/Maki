@@ -560,22 +560,46 @@ public class LibraryImportUndoService(
     /// file whose original is gone or no longer whole is kept, since it is then the only copy.
     /// Returns false when something failed that a retry may fix; the reasons are in
     /// <paramref name="warnings"/>. By now the database no longer refers to any of these files.
+    /// <para>
+    /// Every step can be repeated: a retry finds the folder under whichever name it has now, a
+    /// rebuilt original still set aside is put back even when its CBZ is already gone, and the folder
+    /// is not moved while anything inside it still failed, so a retry still finds what is left.
+    /// </para>
     /// </summary>
     private bool RestoreDisk(
         ImportBatchFolder row, ImportOperations operations, string rootPath, string targetDir, string sourceDir,
         List<string> warnings)
     {
         var complete = true;
+        var movedBack = operations.FolderAction == ImportFolderAction.Rename &&
+                        !LibraryPaths.IsSameDirectory(sourceDir, targetDir) &&
+                        !Directory.Exists(targetDir) && Directory.Exists(sourceDir);
+        var folderName = movedBack ? row.OriginalFolderName : row.FolderName;
+        var folderDir = movedBack ? sourceDir : targetDir;
+
         // What is put back is dropped from the record, so a retry only repeats what is left.
         var remaining = new List<ImportBuiltFile>();
         foreach (var built in operations.Built)
         {
-            var target = LibraryPaths.ResolveNoLinks(rootPath, Path.Combine(row.FolderName, built.Name));
-            var original = built.Action == ImportFileAction.RebuildInPlace
-                ? built.Aside is null ? null : LibraryPaths.ResolveNoLinks(rootPath, Path.Combine(row.FolderName, built.Aside))
-                : LibraryPaths.ResolveNoLinks(rootPath, Path.Combine(row.FolderName, built.Source));
-            if (target is null || !File.Exists(target))
+            var target = LibraryPaths.ResolveNoLinks(rootPath, Path.Combine(folderName, built.Name));
+            var rebuilt = built.Action == ImportFileAction.RebuildInPlace;
+            var original = rebuilt
+                ? built.Aside is null ? null : LibraryPaths.ResolveNoLinks(rootPath, Path.Combine(folderName, built.Aside))
+                : LibraryPaths.ResolveNoLinks(rootPath, Path.Combine(folderName, built.Source));
+            if (target is null)
             {
+                continue;
+            }
+
+            if (!File.Exists(target))
+            {
+                // The CBZ went but the original never came back from where it was set aside.
+                if (rebuilt && original is not null && File.Exists(original) && !TryMove(original, target, built))
+                {
+                    remaining.Add(built);
+                    complete = false;
+                }
+
                 continue;
             }
 
@@ -588,10 +612,14 @@ public class LibraryImportUndoService(
 
             try
             {
-                File.Delete(target);
-                if (built.Action == ImportFileAction.RebuildInPlace)
+                if (rebuilt)
                 {
-                    File.Move(original, target);
+                    // One rename over the CBZ, so there is no moment with neither file under the name.
+                    File.Move(original, target, overwrite: true);
+                }
+                else
+                {
+                    File.Delete(target);
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -607,7 +635,7 @@ public class LibraryImportUndoService(
 
         if (operations.WroteCover)
         {
-            var cover = Path.Combine(targetDir, LibraryImportService.LibraryCoverFileName);
+            var cover = Path.Combine(folderDir, LibraryImportService.LibraryCoverFileName);
             try
             {
                 if (File.Exists(cover))
@@ -631,12 +659,33 @@ public class LibraryImportUndoService(
             }
         }
 
+        var folderNotMoved = localizer.Get("error.libraryImport.undoFolderNotMoved",
+            new { name = row.OriginalFolderName, folder = row.FolderName });
+        if (!complete)
+        {
+            // Moving the folder now would leave what failed under a name a retry no longer looks in.
+            if (operations.FolderAction is ImportFolderAction.Rename or ImportFolderAction.Merge && !movedBack)
+            {
+                warnings.Add(folderNotMoved);
+            }
+
+            return false;
+        }
+
         try
         {
-            if (operations.FolderAction == ImportFolderAction.Rename && Directory.Exists(targetDir) &&
-                (LibraryPaths.IsSameDirectory(sourceDir, targetDir) || !Directory.Exists(sourceDir)))
+            if (operations.FolderAction == ImportFolderAction.Rename && !movedBack && Directory.Exists(targetDir))
             {
-                SeriesRenameService.MovePath(targetDir, sourceDir, Directory.Move);
+                if (LibraryPaths.IsSameDirectory(sourceDir, targetDir) || !Directory.Exists(sourceDir))
+                {
+                    SeriesRenameService.MovePath(targetDir, sourceDir, Directory.Move);
+                }
+                else
+                {
+                    // Something took the old name since; the folder stays where it is until it is free.
+                    warnings.Add(folderNotMoved);
+                    complete = false;
+                }
             }
             else if (operations.FolderAction == ImportFolderAction.Merge)
             {
@@ -664,12 +713,26 @@ public class LibraryImportUndoService(
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             logger.LogWarning(ex, "Could not move '{Folder}' back to '{Original}'", row.FolderName, row.OriginalFolderName);
-            warnings.Add(localizer.Get("error.libraryImport.undoFolderNotMoved",
-                new { name = row.OriginalFolderName, folder = row.FolderName }));
+            warnings.Add(folderNotMoved);
             complete = false;
         }
 
         return complete;
+
+        bool TryMove(string from, string to, ImportBuiltFile built)
+        {
+            try
+            {
+                File.Move(from, to);
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogWarning(ex, "Could not put {File} back under its own name", from);
+                warnings.Add(localizer.Get("error.libraryImport.undoKeptBuilt", new { name = built.Name }));
+                return false;
+            }
+        }
     }
 
     private ImportUndoOutcome Refused(ImportBatchFolder row, string key, object? args = null) =>
