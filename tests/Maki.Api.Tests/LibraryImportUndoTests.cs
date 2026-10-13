@@ -585,13 +585,39 @@ public class LibraryImportUndoTests : IDisposable
         Assert.Equal(after, Fingerprint(At(folder)));
     }
 
+    /// <summary>
+    /// Makes the next series id unique to this test. Series locks are process-wide and keyed by id,
+    /// and every test database starts its ids at 1, so a test that counts who waits on a series lock
+    /// would otherwise count another test's holder.
+    /// </summary>
+    private async Task<int> ReserveUniqueSeriesIdAsync(int rootId)
+    {
+        await using var db = _db.NewContext();
+        var placeholder = new Series
+        {
+            Id = Random.Shared.Next(1_000_000, int.MaxValue / 2), Title = "placeholder", SortTitle = "placeholder",
+            FolderName = "placeholder-" + Guid.NewGuid().ToString("N"), RootFolderId = rootId,
+        };
+        db.Series.Add(placeholder);
+        await db.SaveChangesAsync();
+        return placeholder.Id;
+    }
+
+    private async Task DropSeriesAsync(int seriesId)
+    {
+        await using var db = _db.NewContext();
+        await db.Series.Where(s => s.Id == seriesId).ExecuteDeleteAsync();
+    }
+
     [Fact]
     public async Task Two_undos_at_once_undo_once_and_the_second_says_so()
     {
         _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
         var rootId = SeedRoot();
+        var placeholder = await ReserveUniqueSeriesIdAsync(rootId);
         WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
         var result = await ImportAsync(rootId, "chainsaw raws");
+        await DropSeriesAsync(placeholder);
         var id = await RecordIdAsync();
 
         // Both contexts share the test's one in-memory connection, which takes one statement at a
