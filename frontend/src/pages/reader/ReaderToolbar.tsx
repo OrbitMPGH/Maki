@@ -580,6 +580,13 @@ export default function ReaderToolbar({
 
           {prefs.mode !== 'vertical' && (
             <>
+              {zoom !== 1 && (
+                <Tooltip label={t`Reset zoom`} withArrow zIndex={OVERLAY_Z}>
+                  <ActionIcon variant="light" color="gray" onClick={onZoomReset} aria-label={t`Reset zoom`}>
+                    <IconZoomReset size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
               <Tooltip label={t`Zoom out`} withArrow zIndex={OVERLAY_Z}>
                 <ActionIcon
                   variant="subtle"
@@ -602,13 +609,6 @@ export default function ReaderToolbar({
                   <IconZoomIn size={18} />
                 </ActionIcon>
               </Tooltip>
-              {zoom !== 1 && (
-                <Tooltip label={t`Reset zoom`} withArrow zIndex={OVERLAY_Z}>
-                  <ActionIcon variant="light" color="gray" onClick={onZoomReset} aria-label={t`Reset zoom`}>
-                    <IconZoomReset size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
             </>
           )}
 
