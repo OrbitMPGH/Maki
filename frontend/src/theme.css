@@ -601,6 +601,23 @@ body::before {
   [data-theme='light'] .app-navbar {
     background: var(--surface);
   }
+  /* Thumb-sized targets: the desktop sizes are mouse sizes. */
+  .app-header .mantine-Burger-root {
+    width: 44px;
+    height: 44px;
+    padding: 13px;
+  }
+  .app-header-actions .mantine-ActionIcon-root {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .app-header-actions .command-palette-trigger {
+    width: 40px;
+    height: 40px;
+    margin-inline: 2px;
+  }
 }
 
 /* Popovers carry a fixed pixel width (the inbox bell is 380, health is 340), which Mantine writes
@@ -817,6 +834,22 @@ body::before {
 .nav-footer .nav-footer-dismiss:hover {
   color: var(--ink-hi);
   background: var(--surface-hover);
+}
+/* The phone drawer is tapped, not clicked. */
+@media (max-width: 47.9375em) {
+  .nav-link,
+  .nav-footer-link {
+    height: 44px;
+  }
+  .nav-footer-link {
+    padding-right: 44px;
+  }
+  .nav-footer .nav-footer-dismiss {
+    right: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-control);
+  }
 }
 .nav-footer-row {
   display: flex;
@@ -7279,16 +7312,20 @@ body.reader-open {
   .library-toolbar {
     gap: 0.5rem;
   }
+  /* Two rows: search and the filter button, then sort and its controls. On one row the fixed-width
+     sort and the icon buttons left search a 48px stub. The basis leaves exactly the filter button's
+     width beside search, so sort always starts the second row. */
   .library-toolbar-row {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
   .library-toolbar-row .library-search {
-    flex: 1 1 0;
+    flex: 1 1 calc(100% - 2.75rem);
     min-width: 0;
   }
   .library-toolbar-row .library-sort {
-    flex: 0 0 9.75rem;
+    flex: 1 1 0;
+    min-width: 0;
   }
   /* One line that scrolls sideways, and gone entirely when it would hold only the tag gear: the
      Filters drawer carries "Manage tags" too. */

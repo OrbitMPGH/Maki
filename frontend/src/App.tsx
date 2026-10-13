@@ -404,7 +404,7 @@ function AppShellRoutes() {
             </Group>
             <ShellTitle />
           </Group>
-          <Group gap={4} wrap="nowrap">
+          <Group gap={4} wrap="nowrap" className="app-header-actions">
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <NotificationBell />

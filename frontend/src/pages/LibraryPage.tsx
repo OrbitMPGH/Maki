@@ -1208,7 +1208,7 @@ export default function LibraryPage() {
                 >
                   <Trans>Filters</Trans>
                 </Button>
-                {/* On a phone the bar is one sticky line, so the button gives up its label. */}
+                {/* On a phone the button gives up its label to leave search the room. */}
                 <Indicator
                   hiddenFrom="sm"
                   label={activeFilterCount}
@@ -1225,8 +1225,10 @@ export default function LibraryPage() {
                     <IconFilter size={16} />
                   </ActionIcon>
                 </Indicator>
+                {/* The Filters drawer carries "Manage tags" too, so a phone skips this one. */}
                 <Tooltip label={t`Manage tags`} withArrow>
                   <ActionIcon
+                    visibleFrom="sm"
                     className="library-tags-button"
                     variant="default"
                     size={34}
