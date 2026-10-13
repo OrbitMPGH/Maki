@@ -576,14 +576,14 @@ export default function LibraryPage() {
     query,
     status: statusFilter,
     types: typeFilter,
-    tagIds: tagFilter.map(Number),
+    tagIds: untaggedOnly ? [] : tagFilter.map(Number),
     tagMatch,
     monitored: monitoredFilter,
     completeness,
     sort,
     sortDir: sortDirOverride,
     genres: genreFilter,
-    excludeTagIds: excludeTagFilter.map(Number),
+    excludeTagIds: untaggedOnly ? [] : excludeTagFilter.map(Number),
     excludeGenres: excludeGenreFilter,
     untaggedOnly,
     genreMatch,
@@ -643,9 +643,9 @@ export default function LibraryPage() {
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) +
     (typeFilter.length > 0 ? 1 : 0) +
-    (tagFilter.length > 0 ? 1 : 0) +
+    (!untaggedOnly && tagFilter.length > 0 ? 1 : 0) +
     (genreFilter.length > 0 ? 1 : 0) +
-    (excludeTagFilter.length > 0 ? 1 : 0) +
+    (!untaggedOnly && excludeTagFilter.length > 0 ? 1 : 0) +
     (excludeGenreFilter.length > 0 ? 1 : 0) +
     (untaggedOnly ? 1 : 0) +
     (metaTagFilter.length > 0 ? 1 : 0) +
