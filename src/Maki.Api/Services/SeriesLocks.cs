@@ -19,6 +19,9 @@ public static class SeriesLocks
     public static Task<IDisposable> SeriesAsync(int seriesId, CancellationToken ct) =>
         Series.AcquireAsync(seriesId, ct);
 
+    /// <summary>The holder of a series lock plus everyone waiting for it, for tests that need a race to line up.</summary>
+    internal static int SeriesUsers(int seriesId) => Series.Users(seriesId);
+
     /// <summary>
     /// Held from "is this MangaBaka id already in the library?" through inserting the row, so an add,
     /// an import and an import list racing on one work cannot each insert their own copy.
@@ -87,6 +90,14 @@ internal sealed class KeyedAsyncLock<TKey> where TKey : notnull
         }
 
         return new Releaser(this, key, entry);
+    }
+
+    public int Users(TKey key)
+    {
+        lock (_entries)
+        {
+            return _entries.TryGetValue(key, out var entry) ? entry.Users : 0;
+        }
     }
 
     private void Leave(TKey key, Entry entry)

@@ -594,18 +594,37 @@ public class LibraryImportUndoTests : IDisposable
         var result = await ImportAsync(rootId, "chainsaw raws");
         var id = await RecordIdAsync();
 
+        // Both contexts share the test's one in-memory connection, which takes one statement at a
+        // time. So each undo is started only once the one before it is parked on the series lock:
+        // their reads before the lock never overlap, and both still race for the lock itself.
+        await using var a = _db.NewContext();
+        await using var b = _db.NewContext();
+        var seriesId = result.SeriesId!.Value;
         Task<ImportUndoOutcome> first, second;
-        using (await SeriesLocks.SeriesAsync(result.SeriesId!.Value, CancellationToken.None))
+        using (await SeriesLocks.SeriesAsync(seriesId, CancellationToken.None))
         {
-            first = Task.Run(() => UndoAsync(id));
-            second = Task.Run(() => UndoAsync(id));
-            await Task.Delay(300);
+            first = UndoService(a).UndoFolderAsync(id, CancellationToken.None)!;
+            await WaitForLockUsersAsync(seriesId, 2, first);
+            second = UndoService(b).UndoFolderAsync(id, CancellationToken.None)!;
+            await WaitForLockUsersAsync(seriesId, 3, first, second);
         }
 
         var outcomes = await Task.WhenAll(first, second);
 
         Assert.Single(outcomes, o => o.Undone);
         Assert.Single(outcomes, o => o.Error?.StartsWith("error.libraryImport.undoAlreadyDone") == true);
+    }
+
+    /// <summary>Until <paramref name="users"/> hold or wait for the series lock; fails if an undo ends first.</summary>
+    private static async Task WaitForLockUsersAsync(int seriesId, int users, params Task[] undos)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (SeriesLocks.SeriesUsers(seriesId) < users)
+        {
+            Assert.True(DateTime.UtcNow < deadline, "the undo never reached the series lock");
+            Assert.DoesNotContain(undos, u => u.IsCompleted);
+            await Task.Delay(5);
+        }
     }
 
     [Fact]
