@@ -51,3 +51,6 @@ skills-lock.json
 
 # Release checklist fixtures and test runs (scripts/release-test)
 /.release-test/
+/.github/agents
+/.claude/agents
+/.impeccable
