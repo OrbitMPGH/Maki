@@ -465,6 +465,8 @@ function SuwayomiBadge() {
   )
 }
 
+const REFRESH_WAIT_MS = 4000
+
 /**
  * Every registered source: switch them on or off in the catalogue and rank the enabled ones on the
  * rail. Edits stay local until Save, which writes the whole thing through the priority endpoint
@@ -493,6 +495,7 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
   const [initialRail, setInitialRail] = useState<string[]>([])
   const [ready, setReady] = useState(false)
   const [refreshState, setRefreshState] = useState<'idle' | 'running' | 'done'>('idle')
+  const [refreshGaveUp, setRefreshGaveUp] = useState(false)
   const [pane, setPane] = useState<Pane>('catalogue')
   const [search, setSearch] = useState('')
   const [stateFilter, setStateFilter] = useState<StateFilter>('all')
@@ -515,7 +518,17 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
     setRefreshState('running')
     refreshSources(undefined, { onSettled: () => setRefreshState((state) => (state === 'running' ? 'done' : state)) })
   }, [opened, suwayomiUrl, refreshState, refreshSources])
-  const waitingForSuwayomi = suwayomiPending || (Boolean(suwayomiUrl) && refreshState !== 'done')
+  // An unreachable Suwayomi would otherwise hold the rail back for the request timeout. Past this
+  // the modal seeds from what is stored, and the refresh still lands in the catalogue when it ends.
+  useEffect(() => {
+    if (refreshState !== 'running') {
+      setRefreshGaveUp(false)
+      return
+    }
+    const timer = window.setTimeout(() => setRefreshGaveUp(true), REFRESH_WAIT_MS)
+    return () => window.clearTimeout(timer)
+  }, [refreshState])
+  const waitingForSuwayomi = suwayomiPending || (Boolean(suwayomiUrl) && refreshState !== 'done' && !refreshGaveUp)
 
   // Seed once per opening. A background refetch of the priority must not wipe a draft in progress.
   const seeded = useRef(false)
