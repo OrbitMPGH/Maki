@@ -69,8 +69,14 @@ public class CoverService(
         {
             var client = httpClientFactory.CreateClient("covers");
             await using var stream = await client.GetStreamAsync(coverUrl, ct);
-            using var image = await Image.LoadAsync(FirstFrameOnly, stream, ct);
-            return await SavePosterAsync(seriesId, image);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            buffer.Position = 0;
+            return await ImageWorkGate.RunAsync(async () =>
+            {
+                using var image = await Image.LoadAsync(FirstFrameOnly, buffer, ct);
+                return await SavePosterAsync(seriesId, image);
+            }, ct);
         }
         catch (Exception ex)
         {
@@ -127,7 +133,7 @@ public class CoverService(
             {
                 File.Delete(temp);
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
             }
 
