@@ -36,6 +36,15 @@ public class SourceMatchWorkerHostedService(
 {
     internal const int MatchReaders = 2;
 
+    /// <summary>First wait before linking again into a root folder that was not reachable; doubles each time.</summary>
+    internal static TimeSpan UnreachableRetry { get; set; } = TimeSpan.FromSeconds(30);
+
+    internal static readonly TimeSpan UnreachableRetryMax = TimeSpan.FromMinutes(30);
+
+    // Per series: how many times in a row its root was unreachable, and whether a retry is waiting.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> unreachableAttempts = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, byte> retryScheduled = new();
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await RecoverAsync(stoppingToken);
@@ -334,11 +343,16 @@ public class SourceMatchWorkerHostedService(
             var rootPath = series.RootFolder?.Path;
             if (rootPath is null || !Directory.Exists(rootPath))
             {
-                // An unmounted share. Not attempted, so the marker stays and the next start retries.
-                logger.LogWarning("Not linking the imported files of {Title} yet: root folder {Root} is not reachable",
-                    series.Title, rootPath);
+                // An unmounted share. Not attempted, so the marker stays and the link is tried again
+                // later, waiting longer each time the share is still gone.
+                var delay = RetryUnreachableLater(seriesId, ct);
+                logger.LogWarning(
+                    "Not linking the imported files of {Title} yet: root folder {Root} is not reachable. Trying again in {Delay}",
+                    series.Title, rootPath, delay);
                 return;
             }
+
+            unreachableAttempts.TryRemove(seriesId, out _);
 
             try
             {
@@ -402,6 +416,37 @@ public class SourceMatchWorkerHostedService(
         if (scope.ServiceProvider.GetService<ISchedulerFactory>() is { } scheduler)
         {
             await ChapterFileMeasureJob.TriggerAsync(scheduler, logger);
+        }
+    }
+
+    private TimeSpan RetryUnreachableLater(int seriesId, CancellationToken ct)
+    {
+        var attempt = unreachableAttempts.AddOrUpdate(seriesId, 0, (_, n) => n + 1);
+        var delay = TimeSpan.FromTicks(Math.Min(
+            UnreachableRetry.Ticks * (1L << Math.Min(attempt, 16)), UnreachableRetryMax.Ticks));
+        if (retryScheduled.TryAdd(seriesId, 0))
+        {
+            _ = RetryAsync();
+        }
+
+        return delay;
+
+        async Task RetryAsync()
+        {
+            try
+            {
+                await Task.Delay(delay, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            finally
+            {
+                retryScheduled.TryRemove(seriesId, out _);
+            }
+
+            queue.EnqueueLink(seriesId);
         }
     }
 

@@ -127,6 +127,26 @@ export function useSeriesIdLookup() {
     seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 }
 
+// When each series was first seen waiting on its match or link, for the polling backoff below.
+const pendingSince = new Map<number, number>()
+
+/**
+ * Every 3 s for the first minute, then every 15 s, then every minute. A link waiting on an
+ * unmounted share can stay pending for hours, and the hub push still ends the wait the moment
+ * anything finishes.
+ */
+function pendingPollInterval(id: number, pending: boolean): number | false {
+  if (!pending) {
+    pendingSince.delete(id)
+    return false
+  }
+  const now = Date.now()
+  const since = pendingSince.get(id) ?? now
+  pendingSince.set(id, since)
+  const waited = now - since
+  return waited < 60_000 ? 3000 : waited < 5 * 60_000 ? 15_000 : 60_000
+}
+
 export function useSeriesDetail(id: number) {
   return useQuery({
     queryKey: ['series', id],
@@ -136,7 +156,10 @@ export function useSeriesDetail(id: number) {
     // would otherwise leave the Sources card spinning with nothing to end it, so poll while, and
     // only while, there is something to wait for.
     refetchInterval: (query) =>
-      query.state.data?.sourceMatchPending || query.state.data?.importLinkPending ? 3000 : false,
+      pendingPollInterval(
+        id,
+        Boolean(query.state.data?.sourceMatchPending || query.state.data?.importLinkPending),
+      ),
   })
 }
 

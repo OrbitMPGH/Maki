@@ -247,17 +247,30 @@ public class LibraryImportDeferredLinkTests : IDisposable
     }
 
     [Fact]
-    public async Task An_unreachable_root_keeps_the_marker_for_the_next_start()
+    public async Task An_unreachable_root_keeps_the_marker_and_queues_the_link_again_later()
     {
         var rootId = SeedRoot(Path.Combine(_root, "unmounted"));
         var seriesId = SeedOwedSeries(rootId, PendingImportLink.LinkAndComicInfo,
             Path.Combine("Chainsaw Man", "Chainsaw Man c001.cbz"));
+        var retry = SourceMatchWorkerHostedService.UnreachableRetry;
+        SourceMatchWorkerHostedService.UnreachableRetry = TimeSpan.FromMilliseconds(50);
+        try
+        {
+            await Worker().LinkAsync(seriesId, default);
 
-        await Worker().LinkAsync(seriesId, default);
+            await using (var check = _db.NewContext())
+            {
+                Assert.Equal(PendingImportLink.LinkAndComicInfo,
+                    (await check.Series.SingleAsync(s => s.Id == seriesId)).PendingImportLink);
+            }
 
-        await using var check = _db.NewContext();
-        Assert.Equal(PendingImportLink.LinkAndComicInfo,
-            (await check.Series.SingleAsync(s => s.Id == seriesId)).PendingImportLink);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            Assert.Equal(seriesId, await _queue.LinkReader.ReadAsync(timeout.Token));
+        }
+        finally
+        {
+            SourceMatchWorkerHostedService.UnreachableRetry = retry;
+        }
     }
 
     [Fact]
