@@ -90,10 +90,12 @@ public class DiscoverCacheWarmJob(
                 await catalogueIndex.GetAsync(context.CancellationToken);
             }
 
-            if (everything)
-            {
-                await settings.SetAsync(SettingKeys.DiscoverWarmedStamp, stamp, context.CancellationToken);
-            }
+            // Saved after every successful run, not only a full one. The stamp exists to catch files that
+            // changed while the process was down; one replaced while it was up (the nightly vector and
+            // taste installs) is already in the process's hands, and any index built later reads it.
+            // Saving only after a full warm left the stamp behind every nightly install, so the first
+            // restart after each one rebuilt both indexes for nothing.
+            await settings.SetAsync(SettingKeys.DiscoverWarmedStamp, stamp, context.CancellationToken);
         }
         catch (LocalCatalogueUnavailableException)
         {
