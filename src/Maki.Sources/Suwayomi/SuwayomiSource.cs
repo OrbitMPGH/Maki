@@ -175,8 +175,31 @@ public sealed partial class SuwayomiSource(
             throw NotListed(chapter);
         }
 
-        var (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
+        var chapterWasCached = cache.Chapter(connection.BaseUri, mangaId, chapter.SourceChapterId) == id;
+        IReadOnlyList<string> pages;
+        string? pagesFor;
+        try
+        {
+            (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
+        }
+        catch (SuwayomiGraphQlException) when (chapterWasCached)
+        {
+            // A cached chapter id that Suwayomi no longer has fails the call; look it up again once.
+            id = await ReResolveChapterAsync();
+            (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
+        }
+
         if (pagesFor is not null && pagesFor != chapter.SourceChapterId)
+        {
+            id = await ReResolveChapterAsync();
+            (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
+            if (pagesFor is not null && pagesFor != chapter.SourceChapterId)
+            {
+                throw new InvalidOperationException($"Suwayomi returned the pages of '{pagesFor}' for '{chapter.SourceChapterId}'");
+            }
+        }
+
+        async Task<int> ReResolveChapterAsync()
         {
             cache.ForgetChapter(connection.BaseUri, mangaId, chapter.SourceChapterId);
             if (await client.FindChapterIdAsync(mangaId, chapter.SourceChapterId, ct) is not { } current)
@@ -185,11 +208,7 @@ public sealed partial class SuwayomiSource(
             }
 
             cache.SetChapter(connection.BaseUri, mangaId, chapter.SourceChapterId, current);
-            (pages, pagesFor) = await client.FetchPagesAsync(current, ct);
-            if (pagesFor is not null && pagesFor != chapter.SourceChapterId)
-            {
-                throw new InvalidOperationException($"Suwayomi returned the pages of '{pagesFor}' for '{chapter.SourceChapterId}'");
-            }
+            return current;
         }
 
         return new ChapterPages([.. pages.Select(p => new PageRequest(connection.Resolve(p).ToString()))]);
@@ -203,8 +222,20 @@ public sealed partial class SuwayomiSource(
     private async Task<(int MangaId, SuwayomiRefresh Refresh)> RefreshAsync(
         SuwayomiConnection connection, string url, bool manga, bool chapters, CancellationToken ct)
     {
+        var wasCached = cache.Manga(connection.BaseUri, SourceId, url) is not null;
         var mangaId = await MangaIdAsync(connection, url, fresh: false, ct);
-        var refresh = await client.RefreshAsync(mangaId, manga, chapters, ct);
+        SuwayomiRefresh refresh;
+        try
+        {
+            refresh = await client.RefreshAsync(mangaId, manga, chapters, ct);
+        }
+        catch (SuwayomiGraphQlException) when (wasCached)
+        {
+            // A cached id Suwayomi no longer has fails the call; forget it and resolve the url again once.
+            mangaId = await MangaIdAsync(connection, url, fresh: true, ct);
+            refresh = await client.RefreshAsync(mangaId, manga, chapters, ct);
+        }
+
         if (refresh.Manga is null || refresh.Manga.Url == url)
         {
             return (mangaId, refresh);

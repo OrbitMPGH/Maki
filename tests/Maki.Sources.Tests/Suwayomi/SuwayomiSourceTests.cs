@@ -198,6 +198,39 @@ public class SuwayomiSourceTests
     }
 
     [Fact]
+    public async Task A_cached_manga_id_suwayomi_no_longer_has_is_forgotten_and_resolved_again()
+    {
+        var h = new SuwayomiHarness();
+        var server = new Uri(SuwayomiHarness.Base);
+        h.Cache.SetManga(server, "100", SeriesUrl, 7);
+        h.MangaByUrl(9);
+        h.Server.Ops["Refresh"] = (vars, _) => vars.GetProperty("id").GetInt32() == 7
+            ? FakeSuwayomi.Errors("Exception while fetching data (/fetchMangaAndChapters) : No value present")
+            : FakeSuwayomi.Data(new { fetchMangaAndChapters = new { manga = SuwayomiHarness.Manga(9, SeriesUrl), chapters = new[] { SuwayomiHarness.Chapter(1, "/c/1", "Ch.1", 1) } } });
+
+        Assert.Single(await h.Source().ListChaptersAsync(SeriesUrl));
+
+        Assert.Equal(9, h.Cache.Manga(server, "100", SeriesUrl));
+    }
+
+    [Fact]
+    public async Task A_cached_chapter_id_suwayomi_no_longer_has_is_forgotten_and_resolved_again()
+    {
+        var h = new SuwayomiHarness();
+        var server = new Uri(SuwayomiHarness.Base);
+        h.Cache.SetManga(server, "100", SeriesUrl, 7);
+        h.Cache.SetChapter(server, 7, "/c/2", 41);
+        h.Server.Ops["ChapterByUrl"] = (_, _) => FakeSuwayomi.Data(new { chapters = new { nodes = new[] { new { id = 43 } } } });
+        h.Server.Ops["Pages"] = (vars, _) => vars.GetProperty("chapterId").GetInt32() == 41
+            ? FakeSuwayomi.Errors("Exception while fetching data (/fetchChapterPages) : No value present")
+            : FakeSuwayomi.Data(new { fetchChapterPages = new { pages = new[] { "/api/v1/manga/7/chapter/2/page/0" }, chapter = new { url = "/c/2" } } });
+
+        Assert.Single((await h.Source().GetPagesAsync(Chapter("/c/2"))).Pages);
+
+        Assert.Equal(43, h.Cache.Chapter(server, 7, "/c/2"));
+    }
+
+    [Fact]
     public async Task An_uninstalled_extension_fails_before_anything_is_asked_of_it()
     {
         var h = new SuwayomiHarness();
