@@ -146,9 +146,30 @@ public class ChapterDownloadProcessor(
                     return DownloadOutcome.Settled;
                 }
 
-                var resolved = await sourceResolver.ResolveAsync(
-                    db, chapter, item.PreferredMappingId ?? item.SourceMappingId, ct, triedMappingIds,
-                    onlyPreferred: item.PreferredMappingId != null);
+                // A paused or cooling-down source is left out, and a row only one of those can serve
+                // waits on it rather than failing. With no mapping it would be claimable again at once.
+                var held = await queue.HeldSourcesAsync(ct);
+                var heldMappings = held.Count == 0
+                    ? []
+                    : await db.SourceMappings
+                        .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && held.Contains(m.SourceName) &&
+                                    !disabledSources.Contains(m.SourceName) && !triedMappingIds.Contains(m.Id) &&
+                                    (item.PreferredMappingId == null || m.Id == item.PreferredMappingId))
+                        .ToListAsync(ct);
+
+                ResolvedChapterSource resolved;
+                try
+                {
+                    resolved = await sourceResolver.ResolveAsync(
+                        db, chapter, item.PreferredMappingId ?? item.SourceMappingId, ct,
+                        [.. triedMappingIds, .. heldMappings.Select(m => m.Id)],
+                        onlyPreferred: item.PreferredMappingId != null);
+                }
+                catch (ChapterUnavailableException) when (heldMappings.Count > 0)
+                {
+                    return await HoldAsync(item, chapter, series, heldMappings, ct);
+                }
+
                 mapping = resolved.Mapping;
                 source = resolved.Source;
                 sourceChapterId = resolved.SourceChapterId;
@@ -470,10 +491,14 @@ public class ChapterDownloadProcessor(
         triedMappingIds.Add(failedMappingId);
 
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
-        var mappings = await sourceResolver.OrderAsync(db, chapter.SeriesId, await db.SourceMappings
-            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !triedMappingIds.Contains(m.Id) &&
-                        !disabledSources.Contains(m.SourceName))
-            .ToListAsync(ct), ct);
+        var held = await queue.HeldSourcesAsync(ct);
+        var mappings = (await sourceResolver.OrderAsync(db, chapter.SeriesId, await db.SourceMappings
+                .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !triedMappingIds.Contains(m.Id) &&
+                            !disabledSources.Contains(m.SourceName))
+                .ToListAsync(ct), ct))
+            // A paused or cooling-down source only as a last resort; the resolve then parks the row on it.
+            .OrderBy(m => held.Contains(m.SourceName) ? 1 : 0)
+            .ToList();
         if (mappings.Count == 0)
         {
             return null;
@@ -961,6 +986,37 @@ public class ChapterDownloadProcessor(
 
         logger.LogWarning(
             "Rate limited by {Source} on queue item {Id}; backing off until {Until:o}", sourceName, item.Id, until);
+    }
+
+    /// <summary>
+    /// Parks a row whose chapter only a paused or cooling-down source can serve, on the first of them:
+    /// Queued for a pause and RateLimited until the cooldown ends, so <see cref="DownloadQueueService.ClaimNextAsync"/>
+    /// skips it until that source may be used again. The source chapter id is left empty for the
+    /// claim after that to resolve again.
+    /// </summary>
+    private async Task<DownloadOutcome> HoldAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, List<SourceMapping> heldMappings, CancellationToken ct)
+    {
+        var mapping = (await sourceResolver.OrderAsync(db, chapter.SeriesId, heldMappings, ct))[0];
+        var cooldownUntil = queue.CooldownUntil(mapping.SourceName);
+
+        item.SourceMappingId = mapping.Id;
+        item.SourceChapterId = null;
+        item.PagesDone = 0;
+        item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
+        item.NextAttempt = cooldownUntil;
+        if (cooldownUntil is null)
+        {
+            item.ClearError();
+        }
+        else
+        {
+            item.SetError("error.download.rateLimited", new { source = mapping.SourceName });
+        }
+
+        await db.SaveChangesAsync(ct);
+        await BroadcastAsync(item, chapter, series, mapping.SourceName);
+        return cooldownUntil is null ? DownloadOutcome.Settled : DownloadOutcome.RateLimited;
     }
 
     private static readonly TimeSpan LockedRecheckInterval = TimeSpan.FromHours(4);
