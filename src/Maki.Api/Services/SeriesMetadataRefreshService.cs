@@ -8,7 +8,7 @@ namespace Maki.Api.Services;
 /// Shared by the daily MetadataRefreshJob (no cover) and the on-demand
 /// refresh endpoint (with cover). Does not save changes.
 /// <para>
-/// With a <see cref="SeriesMetadataChangeLog"/>, changes to the title, status and totals are added
+/// With a <see cref="SeriesMetadataChangeLog"/>, changes to the title, status, totals, genres, synopsis and poster are added
 /// to the change history on the same context; the caller saves, then calls
 /// <see cref="PublishChangesAsync"/> to announce them.
 /// </para>
@@ -168,12 +168,17 @@ public class SeriesMetadataRefreshService(
         var coverReplaced = false;
         if (includeCover && Open(SeriesMetadataField.Cover) && metadata.CoverUrl != null)
         {
+            var stamp = File.GetLastWriteTimeUtc(coverService.CoverPathFor(series.Id));
             var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
             if (coverPath != null)
             {
                 series.CoverPath = coverPath;
                 await coverService.WriteLibraryCoverAsync(series, ct);
                 coverReplaced = true;
+                if (File.GetLastWriteTimeUtc(coverPath) != stamp)
+                {
+                    changeLog?.RecordReplaced(series, SeriesMetadataField.Cover, null, MetadataChangeSource.Refresh);
+                }
             }
         }
 

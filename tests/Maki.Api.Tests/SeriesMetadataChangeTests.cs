@@ -84,6 +84,47 @@ public class SeriesMetadataChangeTests : IDisposable
     }
 
     [Fact]
+    public async Task A_refresh_records_a_new_synopsis_without_its_text_and_changed_genres_as_text()
+    {
+        var id = _db.SeedSeries("Berserk", configure: s =>
+        {
+            s.MangaBakaId = 42;
+            s.Status = SeriesStatus.Ongoing;
+            s.TotalChapters = 120;
+            s.TotalVolumes = 41;
+            s.Overview = "Old synopsis";
+            s.Genres = ["Action"];
+        });
+
+        await RefreshAndSave(id, Provider(SeriesStatus.Ongoing) with { Description = "New synopsis", Genres = ["Action", "Drama"] });
+
+        var changes = Changes(id).ToDictionary(c => c.Field);
+        Assert.Equal(2, changes.Count);
+        var overview = changes[SeriesMetadataField.Overview];
+        Assert.Equal((null, null, MetadataChangeSource.Refresh), (overview.OldValue, overview.NewValue, overview.Source));
+        var genres = changes[SeriesMetadataField.Genres];
+        Assert.Equal(("Action", "Action, Drama", MetadataChangeSource.Refresh), (genres.OldValue, genres.NewValue, genres.Source));
+    }
+
+    [Fact]
+    public async Task A_refresh_that_leaves_synopsis_and_genres_alone_records_neither()
+    {
+        var id = _db.SeedSeries("Berserk", configure: s =>
+        {
+            s.MangaBakaId = 42;
+            s.Status = SeriesStatus.Ongoing;
+            s.TotalChapters = 120;
+            s.TotalVolumes = 41;
+            s.Overview = "Same";
+            s.Genres = ["Action"];
+        });
+
+        await RefreshAndSave(id, Provider(SeriesStatus.Ongoing) with { Description = "Same", Genres = ["Action"] });
+
+        Assert.Empty(Changes(id));
+    }
+
+    [Fact]
     public async Task Counts_are_recorded_as_invariant_text()
     {
         var id = SeedOngoing();

@@ -30,10 +30,12 @@ public class SeriesMetadataChangeLog(
     private sealed record StatusChange(int SeriesId, int RootFolderId, string Title, SeriesStatus From, SeriesStatus To);
 
     /// <summary>The values a refresh may change, read before it runs.</summary>
-    public readonly record struct Snapshot(string Title, SeriesStatus Status, int? TotalChapters, int? TotalVolumes)
+    public readonly record struct Snapshot(
+        string Title, SeriesStatus Status, int? TotalChapters, int? TotalVolumes, string? Overview, string Genres)
     {
         public static Snapshot Of(Series series) =>
-            new(series.Title, series.Status, series.TotalChapters, series.TotalVolumes);
+            new(series.Title, series.Status, series.TotalChapters, series.TotalVolumes, series.Overview,
+                string.Join(", ", series.Genres));
     }
 
     /// <summary>Records each tracked field that differs between <paramref name="before"/> and the series now.</summary>
@@ -43,6 +45,11 @@ public class SeriesMetadataChangeLog(
         RecordStatus(series, before.Status, series.Status, MetadataChangeSource.Refresh);
         Record(series, SeriesMetadataField.TotalChapters, Text(before.TotalChapters), Text(series.TotalChapters), MetadataChangeSource.Refresh);
         Record(series, SeriesMetadataField.TotalVolumes, Text(before.TotalVolumes), Text(series.TotalVolumes), MetadataChangeSource.Refresh);
+        Record(series, SeriesMetadataField.Genres, before.Genres, string.Join(", ", series.Genres), MetadataChangeSource.Refresh);
+        if (!string.Equals(before.Overview, series.Overview, StringComparison.Ordinal))
+        {
+            RecordReplaced(series, SeriesMetadataField.Overview, null, MetadataChangeSource.Refresh);
+        }
     }
 
     /// <summary>
@@ -75,11 +82,12 @@ public class SeriesMetadataChangeLog(
     }
 
     /// <summary>
-    /// A user changed a field whose value does not fit in the history (the synopsis, the poster).
+    /// A field whose value does not fit in the history changed (the synopsis, the poster).
     /// The row says that it changed and who changed it, without either value.
     /// </summary>
-    public void RecordReplaced(Series series, SeriesMetadataField field, int? userId) =>
-        Add(series, field, null, null, MetadataChangeSource.User, userId);
+    public void RecordReplaced(
+        Series series, SeriesMetadataField field, int? userId, MetadataChangeSource source = MetadataChangeSource.User) =>
+        Add(series, field, null, null, source, userId);
 
     private void Add(
         Series series, SeriesMetadataField field, string? from, string? to,
