@@ -1,9 +1,10 @@
+using Maki.Api.Services;
 using Maki.Core.Entities;
 
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// <see cref="Maki.Api.Services.ChapterFileDeletion.ClaimedAsync"/> reads only the rows whose name
+/// <see cref="ChapterFileDeletion.ClaimedAsync"/> reads only the rows whose name
 /// could match, and must still find a row that names the file another way.
 /// </summary>
 public class ChapterFileDeletionClaimedTests : IDisposable
@@ -50,6 +51,29 @@ public class ChapterFileDeletionClaimedTests : IDisposable
         {
             var other = Path.Combine(_root, "shonen", "One", "Ch_2.cbz");
             Assert.Empty(await TestDeletion.For(db).ClaimedAsync([other], new HashSet<int>(), default));
+        }
+    }
+
+    [Theory]
+    [InlineData(ChapterFileDeletion.NamePrefilterLimit)]
+    [InlineData(ChapterFileDeletion.NamePrefilterLimit + 1)]
+    [InlineData(100)]
+    public async Task Any_number_of_names_finds_exactly_the_claimed_files(int count)
+    {
+        var paths = Enumerable.Range(1, count).Select(i => Path.Combine(_root, "One", $"Ch_{i}.cbz")).ToList();
+        using (var db = _db.NewContext())
+        {
+            var root = new RootFolder { Path = _root };
+            db.RootFolders.Add(root);
+            db.SaveChanges();
+            AddFile(db, root.Id, "Theirs", "One/ch_1.cbz");
+            AddFile(db, root.Id, "Decoy", "One/Chx2.cbz");
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var claimed = await TestDeletion.For(db).ClaimedAsync(paths, new HashSet<int>(), default);
+            Assert.Equal(paths[0], Assert.Single(claimed), ignoreCase: true);
         }
     }
 }

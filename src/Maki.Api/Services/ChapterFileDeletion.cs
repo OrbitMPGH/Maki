@@ -41,12 +41,17 @@ public class ChapterFileDeletion(
 
         var wanted = absolutePaths.ToHashSet(LibraryPaths.FolderComparer);
         var names = absolutePaths.Select(Path.GetFileName).OfType<string>().ToHashSet(LibraryPaths.FolderComparer);
-        var patterns = names.Select(NamePattern).Distinct().ToList();
         var roots = await db.RootFolders.IgnoreQueryFilters().AsNoTracking()
             .ToDictionaryAsync(r => r.Id, r => r.Path, ct);
-        var rows = await (from f in db.ChapterFiles.IgnoreQueryFilters()
+        var files = db.ChapterFiles.IgnoreQueryFilters();
+        if (names.Count <= NamePrefilterLimit)
+        {
+            var patterns = names.Select(NamePattern).Distinct().ToList();
+            files = files.Where(f => patterns.Any(p => EF.Functions.Like(f.RelativePath, p, @"\")));
+        }
+
+        var rows = await (from f in files
                           join s in db.Series.IgnoreQueryFilters() on f.SeriesId equals s.Id
-                          where patterns.Any(p => EF.Functions.Like(f.RelativePath, p, @"\"))
                           select new { f.Id, f.RelativePath, s.RootFolderId })
             .AsNoTracking()
             .ToListAsync(ct);
@@ -69,6 +74,14 @@ public class ChapterFileDeletion(
 
         return claimed;
     }
+
+    /// <summary>
+    /// Up to this many names, <see cref="ClaimedAsync"/> reads only the rows a LIKE pattern per name
+    /// matches. EF sends each pattern as its own parameter and SQLite scans the table once per
+    /// pattern, so past a handful (a series delete passes every file in the folder) reading every
+    /// row once is cheaper and stays under SQLite's parameter limit.
+    /// </summary>
+    internal const int NamePrefilterLimit = 16;
 
     /// <summary>
     /// A LIKE pattern for every stored path that may end in <paramref name="name"/>, so only those rows
