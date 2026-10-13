@@ -89,6 +89,14 @@ public class RefreshMonitoredSeriesJob(
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        // Checked here as well as in RefreshableSeriesIdsAsync, since health recovery calls this
+        // directly: until a library import links its files, every chapter it has reads as missing.
+        if (await db.Series.AnyAsync(s => s.Id == seriesId && s.PendingImportLink != PendingImportLink.None, ct))
+        {
+            return;
+        }
+
         var chapterSync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
 
         var newChapterIds = await chapterSync.SyncSeriesAsync(seriesId, ct);
