@@ -106,7 +106,7 @@ public record LibraryImportPlan(
     IReadOnlyList<ImportSkippedFile>? Skipped = null,
     bool WritesCover = false);
 
-//// <param name="Name">The CBZ Maki wrote, relative to the folder the files ended up in.</param>
+/// <param name="Name">The CBZ Maki wrote, relative to the folder the files ended up in.</param>
 /// <param name="Source">The original it was built from, relative to the same folder.</param>
 /// <param name="Aside">For a rebuild in place, where the original was renamed to.</param>
 /// <param name="Kind">The container the build read: zip, repack or looseImages.</param>

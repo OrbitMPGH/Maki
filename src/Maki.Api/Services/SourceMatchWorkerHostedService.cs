@@ -341,6 +341,12 @@ public class SourceMatchWorkerHostedService(
             // Still matching means an import re-flagged it; the match stage routes it back here.
             if (series is null || series.PendingImportLink == PendingImportLink.None || series.SourceMatchPending)
             {
+                if (series is null || series.PendingImportLink == PendingImportLink.None)
+                {
+                    // Deleted, undone or linked some other way: no retry is owed any more.
+                    unreachableAttempts.TryRemove(seriesId, out _);
+                }
+
                 return;
             }
 
@@ -426,10 +432,15 @@ public class SourceMatchWorkerHostedService(
 
     private TimeSpan RetryUnreachableLater(int seriesId, CancellationToken ct)
     {
-        var attempt = unreachableAttempts.AddOrUpdate(seriesId, 0, (_, n) => n + 1);
+        // A link read again while its retry is still waiting (a duplicate enqueue) neither schedules
+        // another one nor counts as another failed attempt.
+        var scheduling = retryScheduled.TryAdd(seriesId, 0);
+        var attempt = scheduling
+            ? unreachableAttempts.AddOrUpdate(seriesId, 0, (_, n) => n + 1)
+            : unreachableAttempts.GetValueOrDefault(seriesId);
         var delay = TimeSpan.FromTicks(Math.Min(
             UnreachableRetry.Ticks * (1L << Math.Min(attempt, 16)), UnreachableRetryMax.Ticks));
-        if (retryScheduled.TryAdd(seriesId, 0))
+        if (scheduling)
         {
             _ = RetryAsync();
         }
