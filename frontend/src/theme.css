@@ -1080,10 +1080,13 @@ body::before {
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
 }
-/* Mantine's xs and sm badges set 9 and 10px type, under the floor every other label keeps. */
+/* Mantine's xs and sm badges and its xs pills set 9 and 10px type, under the floor every other label keeps. */
 .mantine-Badge-root {
   --badge-fz-xs: var(--type-badge);
   --badge-fz-sm: var(--type-badge);
+}
+.mantine-Pill-root {
+  --pill-fz-xs: var(--type-badge);
 }
 /* Mantine puts white on any colour it was handed as a CSS variable; on warn that is 2.3:1. */
 .count-indicator[data-tone='warn'] > .mantine-Indicator-indicator {
@@ -2215,6 +2218,20 @@ body::before {
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(18px) saturate(0.85);
+}
+/* The quiet stand-in for the download button once every wanted chapter is on disk. Button height,
+   so the action row keeps its line. */
+.series-actions-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding-inline: 4px;
+  color: var(--ink-3);
+}
+.series-actions-done svg {
+  flex-shrink: 0;
+  color: var(--ok);
 }
 .discover-hero-strip-label {
   font-size: var(--type-label);
@@ -4154,6 +4171,22 @@ button.hero-score[aria-expanded='true'] .hero-score-caret {
   margin-bottom: 14px;
   min-width: 0;
 }
+/* Icon, title and count wrap as one unit, so a narrow row never strands the count on a line of its own. */
+.section-header-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.section-header-end {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+}
+.section-header-end:not(:has(> .section-header-action)):has(> .section-header-arrows:empty) {
+  display: none;
+}
 .section-header-icon {
   display: grid;
   flex-shrink: 0;
@@ -4264,18 +4297,28 @@ button.hero-score[aria-expanded='true'] .hero-score-caret {
   cursor: default;
 }
 
-/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the rule drops out and the row wraps naturally. */
+/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the
+   rule drops out and the action moves under the title, right-aligned, only when both cannot share a
+   line. A phone swipes rails, so it skips the arrows and keeps the header to one row. */
 @media (max-width: 36em) {
   .section-header {
     flex-wrap: wrap;
     row-gap: 6px;
   }
+  .section-header-lead {
+    max-width: 100%;
+  }
   .section-header-rule {
     display: none;
   }
-  .section-header-action,
-  .section-header-rule + .section-header-arrows {
+  .section-header-end {
     margin-left: auto;
+  }
+}
+@media (max-width: 36em) and (hover: none) {
+  .section-header-arrows,
+  .section-header-end:not(:has(> .section-header-action)) {
+    display: none;
   }
 }
 
@@ -7289,6 +7332,11 @@ body.reader-open {
 .health-filter-rail .mantine-InputWrapper-root {
   min-width: 12rem;
 }
+/* A badge clips its own label, so its min-content is only its padding and the table would size the
+   column to that and ellipsize every finding. */
+.health-finding-badges > .mantine-Badge-root {
+  min-width: max-content;
+}
 
 .settings-content {
   width: 100%;
@@ -7575,6 +7623,10 @@ body.reader-open {
 }
 .library-toolbar-row .library-sort {
   flex: 0 0 10.625rem;
+}
+/* Tags are a filter concern, so the gear sits against Filters rather than a full gap away. */
+.library-toolbar-row .library-tags-button {
+  margin-inline-start: calc(0.375rem - var(--mantine-spacing-sm));
 }
 .library-toolbar-row > .tnum {
   flex: none;
@@ -8481,8 +8533,8 @@ body.reader-open {
 }
 
 @media (max-width: 47.9375em) {
-  .activity-queue-table thead th,
-  .activity-history-table thead th {
+  .activity-queue-table thead th:nth-child(n),
+  .activity-history-table thead th:nth-child(n) {
     width: auto;
   }
   .mantine-TableScrollContainer-scrollContainerInner:has(> .activity-queue-table),

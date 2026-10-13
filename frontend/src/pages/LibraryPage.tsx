@@ -1398,7 +1398,7 @@ export default function LibraryPage() {
                     visibleFrom="sm"
                     className="library-tags-button"
                     variant="default"
-                    size={34}
+                    size="input-sm"
                     onClick={() => setTagManagerOpen(true)}
                     aria-label={t`Manage tags`}
                   >

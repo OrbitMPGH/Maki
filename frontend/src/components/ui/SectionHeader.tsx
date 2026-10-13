@@ -26,20 +26,24 @@ export function SectionHeader({
 }) {
   return (
     <div className="section-header">
-      <span className="section-header-icon" aria-hidden>
-        <SectionIcon size={16} stroke={1.9} />
+      <span className="section-header-lead">
+        <span className="section-header-icon" aria-hidden>
+          <SectionIcon size={16} stroke={1.9} />
+        </span>
+        <Title order={2} className="section-header-title">
+          {title}
+        </Title>
+        {count != null && <span className="section-header-count tnum">{count}</span>}
       </span>
-      <Title order={2} className="section-header-title">
-        {title}
-      </Title>
-      {count != null && <span className="section-header-count tnum">{count}</span>}
       <span className="section-header-rule" aria-hidden />
-      {action && (
-        <div className="section-header-action" data-chevron={chevron || undefined}>
-          {action}
-        </div>
-      )}
-      <div className="section-header-arrows" />
+      <div className="section-header-end">
+        {action && (
+          <div className="section-header-action" data-chevron={chevron || undefined}>
+            {action}
+          </div>
+        )}
+        <div className="section-header-arrows" />
+      </div>
     </div>
   )
 }
