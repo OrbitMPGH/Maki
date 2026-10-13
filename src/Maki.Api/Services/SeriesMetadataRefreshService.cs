@@ -77,18 +77,27 @@ public class SeriesMetadataRefreshService(
     public async Task<RefreshResult> RefreshWithResultAsync(
         Series series, bool includeCover, SeriesMetadataField restore, CancellationToken ct = default)
     {
-        if (series.MangaBakaId is null)
-        {
-            return new RefreshResult(false, false);
-        }
+        var metadata = await LookupAsync(series, ct);
+        return metadata is null
+            ? new RefreshResult(false, false)
+            : await ApplyAsync(series, metadata, includeCover, restore, ct);
+    }
 
-        var provider = metadataProviders.First();
-        var metadata = await provider.GetAsync(series.MangaBakaId.Value.ToString(), ct);
-        if (metadata is null)
-        {
-            return new RefreshResult(false, false);
-        }
+    /// <summary>
+    /// The provider's answer for a series, or null when it has no provider id or the lookup returned
+    /// nothing. Split from <see cref="ApplyAsync"/> so a caller that holds the series across this slow
+    /// call can reload it first and apply against what is stored now.
+    /// </summary>
+    public async Task<SeriesMetadata?> LookupAsync(Series series, CancellationToken ct = default) =>
+        series.MangaBakaId is null
+            ? null
+            : await metadataProviders.First().GetAsync(series.MangaBakaId.Value.ToString(), ct);
 
+    /// <summary>Applies <paramref name="metadata"/> to the fields the series has not locked. Does not save.</summary>
+    public async Task<RefreshResult> ApplyAsync(
+        Series series, SeriesMetadata metadata, bool includeCover, SeriesMetadataField restore,
+        CancellationToken ct = default)
+    {
         var before = SeriesMetadataChangeLog.Snapshot.Of(series);
         bool Open(SeriesMetadataField field) => !series.IsLocked(field);
         bool Restoring(SeriesMetadataField field) => (restore & field) == field;

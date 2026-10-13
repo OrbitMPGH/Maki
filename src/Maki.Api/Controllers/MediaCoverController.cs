@@ -122,9 +122,14 @@ public class MediaCoverController(
             return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
         }
 
-        series.LockedFields |= SeriesMetadataField.Cover;
         changeLog.RecordReplaced(series, SeriesMetadataField.Cover, currentUser.UserId);
-        await db.SaveChangesAsync(ct);
+        await using (var transaction = await db.Database.BeginTransactionAsync(ct))
+        {
+            await db.SaveChangesAsync(ct);
+            await SeriesMetadataLocks.ApplyAsync(db, series, SeriesMetadataField.Cover, SeriesMetadataField.None, ct);
+            await transaction.CommitAsync(ct);
+        }
+
         await covers.WriteLibraryCoverAsync(series, ct);
         if (series.RootFolder is { } rootFolder)
         {

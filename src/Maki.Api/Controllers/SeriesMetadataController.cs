@@ -133,7 +133,6 @@ public class SeriesMetadataController(
         var overview = series.Overview;
         var genres = string.Join(", ", series.Genres);
         Apply(series, request, fields);
-        series.LockedFields |= fields;
 
         var userId = currentUser.UserId;
         const MetadataChangeSource user = MetadataChangeSource.User;
@@ -149,7 +148,7 @@ public class SeriesMetadataController(
             changeLog.RecordReplaced(series, SeriesMetadataField.Overview, userId);
         }
 
-        await SaveAsync(series, oldKey, ct);
+        await SaveAsync(series, oldKey, fields, SeriesMetadataField.None, ct);
         await changeLog.PublishAsync(ct);
         return Ok(new MetadataStateDto(SeriesDto.LockedFieldNames(series.LockedFields)));
     }
@@ -179,7 +178,7 @@ public class SeriesMetadataController(
         var resetCover = (fields & SeriesMetadataField.Cover) != 0;
         var result = await metadataRefresh.RefreshWithResultAsync(series, includeCover: resetCover, restore: fields, ct);
         var refreshed = result.Refreshed;
-        await SaveAsync(series, oldKey, ct);
+        await SaveAsync(series, oldKey, SeriesMetadataField.None, fields, ct);
         await changeLog.PublishAsync(ct);
 
         if (refreshed && series.RootFolder is { } rootFolder)
@@ -192,20 +191,23 @@ public class SeriesMetadataController(
     }
 
     /// <summary>
-    /// Saves, and when the change moved the series' stats identity (a title edit on a series with no
-    /// provider ids) re-keys its history in the same transaction, so the save and the re-key land together.
+    /// Saves the values and the lock change in one transaction. The locks are a bitwise UPDATE, not the
+    /// flags this request read, so a concurrent edit of another field keeps its lock. When the change
+    /// moved the series' stats identity (a title edit on a series with no provider ids) its history is
+    /// re-keyed in the same transaction.
     /// </summary>
-    private async Task SaveAsync(Series series, string oldKey, CancellationToken ct)
+    private async Task SaveAsync(
+        Series series, string oldKey, SeriesMetadataField set, SeriesMetadataField clear, CancellationToken ct)
     {
-        if (SeriesIdentity.For(series) == oldKey)
-        {
-            await db.SaveChangesAsync(ct);
-            return;
-        }
-
+        SeriesMetadataLocks.LeaveToApply(db, series);
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.SaveChangesAsync(ct);
-        await identity.RekeyAsync(series, oldKey, ct);
+        await SeriesMetadataLocks.ApplyAsync(db, series, set, clear, ct);
+        if (SeriesIdentity.For(series) != oldKey)
+        {
+            await identity.RekeyAsync(series, oldKey, ct);
+        }
+
         await transaction.CommitAsync(ct);
     }
 
