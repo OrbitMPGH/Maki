@@ -231,6 +231,35 @@ public class SuwayomiSourceTests
     }
 
     [Fact]
+    public async Task A_site_error_on_a_cached_manga_id_is_not_asked_twice()
+    {
+        var h = new SuwayomiHarness();
+        var server = new Uri(SuwayomiHarness.Base);
+        h.Cache.SetManga(server, "100", SeriesUrl, 7);
+        h.MangaByUrl(7);
+        h.Server.Ops["Refresh"] = (_, _) => FakeSuwayomi.Errors("Exception while fetching data (/fetchMangaAndChapters) : The site is down");
+
+        await Assert.ThrowsAsync<SuwayomiGraphQlException>(() => h.Source().ListChaptersAsync(SeriesUrl));
+
+        Assert.Equal(1, h.Server.Count("Refresh"));
+    }
+
+    [Fact]
+    public async Task A_site_error_on_a_cached_chapter_id_is_not_asked_twice()
+    {
+        var h = new SuwayomiHarness();
+        var server = new Uri(SuwayomiHarness.Base);
+        h.Cache.SetManga(server, "100", SeriesUrl, 7);
+        h.Cache.SetChapter(server, 7, "/c/2", 41);
+        h.Server.Ops["ChapterByUrl"] = (_, _) => FakeSuwayomi.Data(new { chapters = new { nodes = new[] { new { id = 41 } } } });
+        h.Server.Ops["Pages"] = (_, _) => FakeSuwayomi.Errors("Exception while fetching data (/fetchChapterPages) : The site is down");
+
+        await Assert.ThrowsAsync<SuwayomiGraphQlException>(() => h.Source().GetPagesAsync(Chapter("/c/2")));
+
+        Assert.Equal(1, h.Server.Count("Pages"));
+    }
+
+    [Fact]
     public async Task An_uninstalled_extension_fails_before_anything_is_asked_of_it()
     {
         var h = new SuwayomiHarness();
@@ -401,6 +430,44 @@ public class SuwayomiAuthTests
         Assert.Contains("Unauthorized region", ex.Message);
         Assert.Equal(1, h.Server.Count("Login"));
         Assert.Equal(1, h.Server.Count("Search"));
+    }
+
+    private sealed class StallingContent : HttpContent
+    {
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            await Task.Delay(Timeout.Infinite);
+
+        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+    }
+
+    [Fact]
+    public async Task A_body_that_stalls_times_out_like_the_client_would()
+    {
+        using var content = new StallingContent();
+
+        var ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
+            SuwayomiGraphQl.BufferBodyAsync(content, CancellationToken.None, TimeSpan.FromMilliseconds(100)));
+
+        Assert.IsType<TimeoutException>(ex.InnerException);
+    }
+
+    [Fact]
+    public async Task A_caller_cancelling_a_body_read_stays_a_plain_cancellation()
+    {
+        using var content = new StallingContent();
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            SuwayomiGraphQl.BufferBodyAsync(content, cts.Token, TimeSpan.FromMinutes(1)));
+
+        Assert.Null(ex.InnerException as TimeoutException);
     }
 
     [Fact]

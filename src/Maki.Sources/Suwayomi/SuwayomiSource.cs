@@ -148,12 +148,14 @@ public sealed partial class SuwayomiSource(
         var connection = await client.ConnectionAsync(ct);
         var mangaWasCached = cache.Manga(connection.BaseUri, SourceId, chapter.SourceSeriesId) is not null;
         var mangaId = await MangaIdAsync(connection, chapter.SourceSeriesId, fresh: false, ct);
+        var cachedChapterId = cache.Chapter(connection.BaseUri, mangaId, chapter.SourceChapterId);
         var chapterId = await ChapterIdAsync(connection, mangaId, chapter.SourceChapterId, ct);
 
         if (chapterId is null && mangaWasCached)
         {
             // A cached manga id that no longer has the chapter may name a different manga now.
             mangaId = await MangaIdAsync(connection, chapter.SourceSeriesId, fresh: true, ct);
+            cachedChapterId = null;
             chapterId = await ChapterIdAsync(connection, mangaId, chapter.SourceChapterId, ct);
         }
 
@@ -162,6 +164,7 @@ public sealed partial class SuwayomiSource(
             // Suwayomi's list can be older than Maki's; one refresh from the source, then give up.
             var (refreshedId, refresh) = await RefreshAsync(connection, chapter.SourceSeriesId, manga: false, chapters: true, ct);
             mangaId = refreshedId;
+            cachedChapterId = null;
             foreach (var listed in refresh.Chapters!)
             {
                 cache.SetChapter(connection.BaseUri, mangaId, listed.Url, listed.Id);
@@ -175,17 +178,23 @@ public sealed partial class SuwayomiSource(
             throw NotListed(chapter);
         }
 
-        var chapterWasCached = cache.Chapter(connection.BaseUri, mangaId, chapter.SourceChapterId) == id;
         IReadOnlyList<string> pages;
         string? pagesFor;
         try
         {
             (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
         }
-        catch (SuwayomiGraphQlException) when (chapterWasCached)
+        catch (SuwayomiGraphQlException) when (cachedChapterId == id)
         {
-            // A cached chapter id that Suwayomi no longer has fails the call; look it up again once.
-            id = await ReResolveChapterAsync();
+            // A cached chapter id that Suwayomi no longer has fails the call. Look it up again; if it
+            // is the same id the failure is the site's own, so it is not asked a second time.
+            var current = await ReResolveChapterAsync();
+            if (current == id)
+            {
+                throw;
+            }
+
+            id = current;
             (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
         }
 
@@ -222,17 +231,24 @@ public sealed partial class SuwayomiSource(
     private async Task<(int MangaId, SuwayomiRefresh Refresh)> RefreshAsync(
         SuwayomiConnection connection, string url, bool manga, bool chapters, CancellationToken ct)
     {
-        var wasCached = cache.Manga(connection.BaseUri, SourceId, url) is not null;
+        var cachedId = cache.Manga(connection.BaseUri, SourceId, url);
         var mangaId = await MangaIdAsync(connection, url, fresh: false, ct);
         SuwayomiRefresh refresh;
         try
         {
             refresh = await client.RefreshAsync(mangaId, manga, chapters, ct);
         }
-        catch (SuwayomiGraphQlException) when (wasCached)
+        catch (SuwayomiGraphQlException) when (cachedId == mangaId)
         {
-            // A cached id Suwayomi no longer has fails the call; forget it and resolve the url again once.
-            mangaId = await MangaIdAsync(connection, url, fresh: true, ct);
+            // A cached id Suwayomi no longer has fails the call. Resolve the url again; the same id
+            // means the failure is the site's own, so it is not asked a second time.
+            var resolved = await MangaIdAsync(connection, url, fresh: true, ct);
+            if (resolved == mangaId)
+            {
+                throw;
+            }
+
+            mangaId = resolved;
             refresh = await client.RefreshAsync(mangaId, manga, chapters, ct);
         }
 
