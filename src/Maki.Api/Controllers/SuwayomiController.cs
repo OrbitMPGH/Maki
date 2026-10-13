@@ -98,7 +98,10 @@ public partial class SuwayomiController(
         // clears it rather than sending the old one to another host, turning the integration off
         // included, or off-then-on with a different URL would carry it across.
         var previousUrl = await settings.GetAsync(SettingKeys.SuwayomiUrl, ct);
-        var password = request.Password is not null
+        // Switching to no authentication drops it too, since the form sends no password in that mode.
+        var password = mode == SuwayomiAuthMode.None
+            ? null
+            : request.Password is not null
             ? request.Password.Length == 0 ? null : request.Password
             : !string.Equals(previousUrl, url, StringComparison.Ordinal)
                 ? null

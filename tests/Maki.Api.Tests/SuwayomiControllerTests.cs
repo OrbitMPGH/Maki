@@ -100,6 +100,17 @@ public sealed class SuwayomiControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Switching_to_no_authentication_clears_the_stored_password()
+    {
+        Configure("basic", "maki", "secret");
+
+        await Controller().SetConnection(new(Base, "none", null, Password: null), default);
+
+        Assert.Null(await _settings.GetAsync(SettingKeys.SuwayomiPassword));
+        Assert.False(Body<SuwayomiController.SuwayomiConnectionSettings>(await Controller().GetConnection(default)).PasswordSet);
+    }
+
+    [Fact]
     public async Task A_new_url_without_a_new_password_does_not_carry_the_old_one_over()
     {
         Configure("basic", "maki", "secret");
