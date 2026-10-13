@@ -616,7 +616,7 @@ function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo
           <SummaryLine
             tone="warn"
             action={
-              <Anchor component="button" size="sm" onClick={() => goTo('library')}>
+              <Anchor component="button" type="button" size="sm" onClick={() => goTo('library')}>
                 <Trans>Add one</Trans>
               </Anchor>
             }

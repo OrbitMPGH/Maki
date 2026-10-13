@@ -171,6 +171,8 @@ export function LoginPage() {
               <Trans>Verify</Trans>
             </Button>
             <Anchor
+              component="button"
+              type="button"
               fz="sm"
               ta="center"
               onClick={() => {
@@ -182,6 +184,8 @@ export function LoginPage() {
               {useRecovery ? <Trans>Use your authenticator app</Trans> : <Trans>Use a recovery code</Trans>}
             </Anchor>
             <Anchor
+              component="button"
+              type="button"
               fz="sm"
               ta="center"
               onClick={() => {
@@ -217,7 +221,7 @@ export function LoginPage() {
           )}
 
           {passwordHidden ? (
-            <Anchor fz="sm" ta="center" onClick={() => setShowPassword(true)}>
+            <Anchor component="button" type="button" fz="sm" ta="center" onClick={() => setShowPassword(true)}>
               <Trans>Sign in with a password</Trans>
             </Anchor>
           ) : (
