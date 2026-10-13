@@ -94,13 +94,32 @@ public class SeriesMetadataRefreshService(
             : await metadataProviders.First().GetAsync(series.MangaBakaId.Value.ToString(), ct);
 
     /// <summary>Applies <paramref name="metadata"/> to the fields the series has not locked. Does not save.</summary>
+    /// <param name="reloadSeries">
+    /// Runs after the poster download, the slow step, and before any field is written. A caller that
+    /// holds the series across the lookup passes a reload here, so a hand edit and lock saved meanwhile
+    /// are seen before the provider's values go on top of them.
+    /// </param>
     public async Task<RefreshResult> ApplyAsync(
         Series series, SeriesMetadata metadata, bool includeCover, SeriesMetadataField restore,
-        CancellationToken ct = default)
+        CancellationToken ct = default, Func<Task>? reloadSeries = null)
     {
-        var before = SeriesMetadataChangeLog.Snapshot.Of(series);
         bool Open(SeriesMetadataField field) => !series.IsLocked(field);
         bool Restoring(SeriesMetadataField field) => (restore & field) == field;
+
+        string? coverPath = null;
+        var stamp = default(DateTime);
+        if (includeCover && Open(SeriesMetadataField.Cover) && metadata.CoverUrl != null)
+        {
+            stamp = File.GetLastWriteTimeUtc(coverService.CoverPathFor(series.Id));
+            coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
+        }
+
+        if (reloadSeries is not null)
+        {
+            await reloadSeries();
+        }
+
+        var before = SeriesMetadataChangeLog.Snapshot.Of(series);
 
         if (Open(SeriesMetadataField.Status))
         {
@@ -175,19 +194,14 @@ public class SeriesMetadataRefreshService(
         changeLog?.RecordRefresh(series, before);
 
         var coverReplaced = false;
-        if (includeCover && Open(SeriesMetadataField.Cover) && metadata.CoverUrl != null)
+        if (coverPath != null && Open(SeriesMetadataField.Cover))
         {
-            var stamp = File.GetLastWriteTimeUtc(coverService.CoverPathFor(series.Id));
-            var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
-            if (coverPath != null)
+            series.CoverPath = coverPath;
+            await coverService.WriteLibraryCoverAsync(series, ct);
+            coverReplaced = true;
+            if (File.GetLastWriteTimeUtc(coverPath) != stamp)
             {
-                series.CoverPath = coverPath;
-                await coverService.WriteLibraryCoverAsync(series, ct);
-                coverReplaced = true;
-                if (File.GetLastWriteTimeUtc(coverPath) != stamp)
-                {
-                    changeLog?.RecordReplaced(series, SeriesMetadataField.Cover, null, MetadataChangeSource.Refresh);
-                }
+                changeLog?.RecordReplaced(series, SeriesMetadataField.Cover, null, MetadataChangeSource.Refresh);
             }
         }
 

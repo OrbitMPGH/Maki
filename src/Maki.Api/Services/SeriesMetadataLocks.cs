@@ -19,6 +19,16 @@ public static class SeriesMetadataLocks
     public static void LeaveToApply(MakiDbContext db, Series series) =>
         db.Entry(series).Property(s => s.LockedFields).IsModified = false;
 
+    /// <summary>
+    /// Re-reads the series after a slow step and says whether it still exists, so what a refresh
+    /// applies is checked against what is stored now and not against what was loaded before the wait.
+    /// </summary>
+    public static async Task<bool> ReloadAsync(MakiDbContext db, Series series, CancellationToken ct)
+    {
+        await db.Entry(series).ReloadAsync(ct);
+        return db.Entry(series).State != EntityState.Detached;
+    }
+
     /// <summary>Sets and clears flags in the database, then makes the loaded series show the stored result.</summary>
     public static async Task ApplyAsync(
         MakiDbContext db, Series series, SeriesMetadataField set, SeriesMetadataField clear, CancellationToken ct)

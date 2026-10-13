@@ -184,7 +184,24 @@ public class SeriesMetadataController(
         var oldKey = SeriesIdentity.For(series);
         series.LockedFields &= ~fields;
         var resetCover = (fields & SeriesMetadataField.Cover) != 0;
-        var result = await metadataRefresh.RefreshWithResultAsync(series, includeCover: resetCover, restore: fields, ct);
+        var result = new SeriesMetadataRefreshService.RefreshResult(false, false);
+        if (await metadataRefresh.LookupAsync(series, ct) is { } metadata)
+        {
+            result = await metadataRefresh.ApplyAsync(series, metadata, includeCover: resetCover, restore: fields, ct,
+                reloadSeries: async () =>
+                {
+                    if (await SeriesMetadataLocks.ReloadAsync(db, series, ct))
+                    {
+                        series.LockedFields &= ~fields;
+                        oldKey = SeriesIdentity.For(series);
+                    }
+                });
+            if (db.Entry(series).State == EntityState.Detached)
+            {
+                return NotFound();
+            }
+        }
+
         var refreshed = result.Refreshed;
         await SaveAsync(series, oldKey, SeriesMetadataField.None, fields, ct);
         await changeLog.PublishAsync(ct);

@@ -121,10 +121,40 @@ public class MetadataRefreshRaceTests : IDisposable
         await using var read = _db.NewContext();
         var stored = await read.Series.AsNoTracking().SingleAsync(s => s.Id == id);
         Assert.Equal(SeriesMetadataField.Status, stored.LockedFields);
+        Assert.Equal(SeriesStatus.Hiatus, stored.Status);
+        Assert.Equal("Provider Title", stored.Title);
     }
 
-    private SeriesMetadataController Controller(MakiDbContext db) =>
-        new(new TestLocalizer(), db, new SeriesMetadataRefreshService([new EditingProvider(ProviderValues(), null)], null!),
+    [Fact]
+    public async Task A_reset_sees_a_hand_edit_saved_while_it_waited_on_the_provider()
+    {
+        var id = _db.SeedSeries("Berserk", configure: s =>
+        {
+            s.MangaBakaId = 42;
+            s.LockedFields = SeriesMetadataField.Title;
+        });
+        var provider = new EditingProvider(ProviderValues(), async () =>
+        {
+            await using var db = _db.NewContext();
+            var series = await db.Series.SingleAsync(s => s.Id == id);
+            series.TotalChapters = 7;
+            series.LockedFields |= SeriesMetadataField.TotalChapters;
+            await db.SaveChangesAsync();
+        });
+        await using var resetting = _db.NewContext();
+
+        Assert.IsType<OkObjectResult>(await Controller(resetting, provider).Reset(
+            id, new SeriesMetadataController.ResetMetadataRequest(["title"]), CancellationToken.None));
+
+        await using var read = _db.NewContext();
+        var stored = await read.Series.AsNoTracking().SingleAsync(s => s.Id == id);
+        Assert.Equal(7, stored.TotalChapters);
+        Assert.Equal(SeriesMetadataField.TotalChapters, stored.LockedFields);
+        Assert.Equal("Provider Title", stored.Title);
+    }
+
+    private SeriesMetadataController Controller(MakiDbContext db, IMetadataProvider? provider = null) =>
+        new(new TestLocalizer(), db, new SeriesMetadataRefreshService([provider ?? new EditingProvider(ProviderValues(), null)], null!),
             new SeriesMetadataChangeLog(db, new RecordingInbox(), new RecordingNotifications(), new TestUserLocaleResolver(),
                 new TestLocalizer(), TimeProvider.System, NullLogger<SeriesMetadataChangeLog>.Instance),
             new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance),
