@@ -705,9 +705,10 @@ export function ManageSourcesModal({ opened, onClose, initialProvider = null }: 
   function submit() {
     // Disabled sources keep their stored index so an off/on cycle restores their rank; the enabled
     // slots are refilled in rail order, and anything the stored order never had goes last.
-    const stored = priority?.order ?? []
+    // A Suwayomi refresh can drop a source between seeding and saving; the server refuses unknown
+    // names, so both the rail and the stored order are held to what the catalogue has now.
+    const stored = (priority?.order ?? []).filter((name) => byName.has(name))
     const storedSet = new Set(stored)
-    // A Suwayomi refresh can drop a source between seeding and saving; the server refuses unknown names.
     const known = rail.filter((name) => byName.has(name))
     const queue = known.filter((name) => storedSet.has(name))
     const order = stored.map((name) => (railSet.has(name) ? queue.shift()! : name))
