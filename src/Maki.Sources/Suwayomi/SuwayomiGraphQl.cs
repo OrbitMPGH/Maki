@@ -30,8 +30,8 @@ internal static class SuwayomiGraphQl
     public static readonly HttpRequestOptionsKey<bool> SkipAuth = new("Maki.Suwayomi.SkipAuth");
 
     /// <summary>
-    /// Under a login mode Suwayomi answers an unauthenticated query with 200 and this text in
-    /// <c>errors[].message</c>, not a 401.
+    /// Under a login mode Suwayomi answers an unauthenticated query with 200 and this as an
+    /// <c>errors[].message</c> (see <see cref="IsUnauthorized"/>), not a 401.
     /// </summary>
     public const string UnauthorizedMarker = "Unauthorized";
 
@@ -107,7 +107,7 @@ internal static class SuwayomiGraphQl
         var errors = ErrorMessages(root);
         if (errors.Count > 0)
         {
-            if (errors.Any(m => m.Contains(UnauthorizedMarker, StringComparison.OrdinalIgnoreCase)))
+            if (errors.Any(IsUnauthorized))
             {
                 throw new HttpRequestException(
                     $"Suwayomi refused the credentials for {operationName}", null, HttpStatusCode.Unauthorized);
@@ -149,13 +149,29 @@ internal static class SuwayomiGraphQl
         try
         {
             using var doc = JsonDocument.Parse(text);
-            return ErrorMessages(doc.RootElement)
-                .Any(m => m.Contains(UnauthorizedMarker, StringComparison.OrdinalIgnoreCase));
+            return ErrorMessages(doc.RootElement).Any(IsUnauthorized);
         }
         catch (JsonException)
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Suwayomi's own rejection: the whole message, or the part after graphql-java's
+    /// "Exception while fetching data (/field) : " prefix, is just "Unauthorized". Error text from a
+    /// site behind an extension that merely mentions the word must not trigger a token renewal.
+    /// </summary>
+    internal static bool IsUnauthorized(string message)
+    {
+        const string fetchPrefix = "Exception while fetching data";
+        var text = message.Trim();
+        if (text.StartsWith(fetchPrefix, StringComparison.Ordinal) && text.LastIndexOf(" : ", StringComparison.Ordinal) is var at and >= 0)
+        {
+            text = text[(at + 3)..];
+        }
+
+        return text.Trim().TrimEnd('.').Equals(UnauthorizedMarker, StringComparison.OrdinalIgnoreCase);
     }
 
     private static List<string> ErrorMessages(JsonElement root)

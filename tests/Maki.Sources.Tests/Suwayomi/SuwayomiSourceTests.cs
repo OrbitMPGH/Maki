@@ -379,6 +379,30 @@ public class SuwayomiAuthTests
         Assert.All(h.Server.Calls.Where(c => c.Op == "Search"), c => Assert.Equal("Bearer a1", c.Auth));
     }
 
+    [Theory]
+    [InlineData("Unauthorized", true)]
+    [InlineData("unauthorized.", true)]
+    [InlineData("Exception while fetching data (/sources) : Unauthorized", true)]
+    [InlineData("Unauthorized access to this chapter", false)]
+    [InlineData("Exception while fetching data (/fetchChapterPages) : Request failed: Unauthorized area, log in on the site", false)]
+    [InlineData("HTTP error 401 Unauthorized", false)]
+    public void Only_suwayomis_own_rejection_counts_as_unauthorized(string message, bool expected) =>
+        Assert.Equal(expected, SuwayomiGraphQl.IsUnauthorized(message));
+
+    [Fact]
+    public async Task A_site_error_that_mentions_unauthorized_is_not_a_credential_failure()
+    {
+        var h = new SuwayomiHarness(authMode: "uilogin", username: "maki", password: "pw");
+        LoginReturns(h, "a1");
+        h.Server.Ops["Search"] = (_, _) => FakeSuwayomi.Errors("Exception while fetching data (/fetchSourceManga) : The site said Unauthorized region");
+
+        var ex = await Assert.ThrowsAsync<SuwayomiGraphQlException>(() => h.Client.SearchAsync("100", "x"));
+
+        Assert.Contains("Unauthorized region", ex.Message);
+        Assert.Equal(1, h.Server.Count("Login"));
+        Assert.Equal(1, h.Server.Count("Search"));
+    }
+
     [Fact]
     public async Task A_200_unauthorized_refreshes_once_for_every_caller_rejected_with_the_same_token()
     {
