@@ -503,9 +503,15 @@ export function SourceMappingsSection({
                   </Group>
                 </Table.Td>
                 <Table.Td>
-                  <Anchor href={m.url} target="_blank" size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
-                    {m.sourceSeriesId}
-                  </Anchor>
+                  {m.url ? (
+                    <Anchor href={m.url} target="_blank" size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
+                      {m.sourceSeriesId}
+                    </Anchor>
+                  ) : (
+                    <Text size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
+                      {m.sourceSeriesId}
+                    </Text>
+                  )}
                 </Table.Td>
                 <Table.Td>
                   <MappingLanguages
@@ -894,9 +900,11 @@ export function SourceMappingsSection({
                         {resolved.displayName}
                       </Badge>
                     </Group>
-                    <Text size="xs" c="var(--ink-3)" lineClamp={1}>
-                      {resolved.url}
-                    </Text>
+                    {resolved.url && (
+                      <Text size="xs" c="var(--ink-3)" lineClamp={1}>
+                        {resolved.url}
+                      </Text>
+                    )}
                   </div>
                 </Group>
               </Card>
@@ -922,23 +930,27 @@ export function SourceMappingsSection({
                     <Text fw={600} size="sm">
                       {r.title}
                     </Text>
-                    <Text size="xs" c="var(--ink-3)" lineClamp={1}>
-                      {r.url}
-                    </Text>
+                    {r.url && (
+                      <Text size="xs" c="var(--ink-3)" lineClamp={1}>
+                        {r.url}
+                      </Text>
+                    )}
                   </div>
-                  <Tooltip label={t`Open the page to check it's the right series`} withArrow>
-                    <ActionIcon
-                      component="a"
-                      href={r.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      variant="subtle"
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={t`Open source page`}
-                    >
-                      <IconExternalLink size={16} />
-                    </ActionIcon>
-                  </Tooltip>
+                  {r.url && (
+                    <Tooltip label={t`Open the page to check it's the right series`} withArrow>
+                      <ActionIcon
+                        component="a"
+                        href={r.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        variant="subtle"
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={t`Open source page`}
+                      >
+                        <IconExternalLink size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
                 </Group>
               </Card>
             ))}

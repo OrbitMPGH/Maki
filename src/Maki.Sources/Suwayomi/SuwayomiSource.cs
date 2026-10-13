@@ -102,7 +102,7 @@ public sealed partial class SuwayomiSource(
         return [.. results
             .Where(m => m.Url.Length > 0)
             .Select(m => new SourceSeriesResult(
-                m.Url, m.Title, SeriesUrl(connection, m), CoverUrl(m), m.Description, Author: m.Author))];
+                m.Url, m.Title, SeriesUrl(m), CoverUrl(m), m.Description, Author: m.Author))];
     }
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
@@ -113,7 +113,7 @@ public sealed partial class SuwayomiSource(
         var manga = refresh.Manga!;
         cache.SetOwner(connection.BaseUri, manga.Id, SourceId);
         return new SourceSeriesDetail(
-            sourceSeriesId, manga.Title, SeriesUrl(connection, manga), CoverUrl(manga), manga.Description,
+            sourceSeriesId, manga.Title, SeriesUrl(manga), CoverUrl(manga), manga.Description,
             manga.Status?.ToLowerInvariant());
     }
 
@@ -312,10 +312,12 @@ public sealed partial class SuwayomiSource(
     private string? CoverUrl(SuwayomiManga manga) =>
         string.IsNullOrEmpty(manga.ThumbnailUrl) || manga.Id <= 0 ? null : ThumbnailPath(SourceId, manga.Id);
 
-    /// <summary>The site's own page when Suwayomi knows it, else the manga's page in Suwayomi's web UI.</summary>
-    private static string SeriesUrl(SuwayomiConnection connection, SuwayomiManga manga) =>
-        !string.IsNullOrWhiteSpace(manga.RealUrl) ? manga.RealUrl
-        : connection.Resolve($"/manga/{manga.Id.ToString(CultureInfo.InvariantCulture)}").ToString();
+    /// <summary>
+    /// The site's own page when Suwayomi knows it, else empty. Suwayomi's web UI address is never
+    /// offered instead: these URLs reach every user, and the admin's Suwayomi host is not theirs to see.
+    /// </summary>
+    private static string SeriesUrl(SuwayomiManga manga) =>
+        !string.IsNullOrWhiteSpace(manga.RealUrl) ? manga.RealUrl : string.Empty;
 
     private static HttpRequestException NotListed(SourceChapter chapter) =>
         new($"Suwayomi does not list chapter '{chapter.SourceChapterId}'", null, HttpStatusCode.NotFound);

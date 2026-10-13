@@ -87,6 +87,18 @@ public class SourceMappingControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_mapping_can_be_linked_with_no_source_url()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var controller = BuildController(null, new FakeSource { Name = "MangaDex" });
+
+        var result = await controller.Create(new(seriesId, "MangaDex", "sid", Url: null), default);
+
+        var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(string.Empty, mapping.Url);
+    }
+
+    [Fact]
     public async Task A_mapping_for_a_series_the_caller_cannot_see_is_not_found()
     {
         var result = await BuildController().Create(new(424242, "fake", "sid", "https://fake.test/s"), default);

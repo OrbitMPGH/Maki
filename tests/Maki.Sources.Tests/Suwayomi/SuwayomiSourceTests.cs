@@ -13,7 +13,7 @@ public class SuwayomiSourceTests
     private const string SeriesUrl = "/manga/ippo";
 
     [Fact]
-    public async Task Search_returns_portable_ids_and_falls_back_to_suwayomis_own_page()
+    public async Task Search_returns_portable_ids_and_no_url_when_the_site_page_is_unknown()
     {
         var h = new SuwayomiHarness();
         h.Server.Ops["Search"] = (vars, request) =>
@@ -46,7 +46,7 @@ public class SuwayomiSourceTests
             },
             r =>
             {
-                Assert.Equal($"{SuwayomiHarness.Base}/manga/8", r.Url);
+                Assert.Equal(string.Empty, r.Url);
                 Assert.Null(r.CoverUrl);
             });
     }

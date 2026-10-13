@@ -32,7 +32,7 @@ public class SourceMappingController(
     ICurrentUser currentUser) : ControllerBase
 {
     public record CreateMappingRequest(
-        int SeriesId, string SourceName, string SourceSeriesId, string Url,
+        int SeriesId, string SourceName, string SourceSeriesId, string? Url,
         string? LanguageFilter = null, int? Priority = null);
 
     public record AutoMatchRequest(int[] SeriesIds);
@@ -89,7 +89,7 @@ public class SourceMappingController(
             SeriesId = request.SeriesId,
             SourceName = sourceName,
             SourceSeriesId = request.SourceSeriesId,
-            Url = request.Url,
+            Url = request.Url ?? string.Empty,
             LanguageFilter = string.IsNullOrWhiteSpace(request.LanguageFilter)
                 ? SourceLanguagePreference.SeedFilter(
                     source,
