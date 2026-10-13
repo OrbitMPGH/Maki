@@ -864,6 +864,11 @@ msgstr "The recycle bin folder could not be created in this root folder. Nothing
 msgid "error.recycleBin.targetExists"
 msgstr "Another file is already where this one was. Move or delete it, then restore again."
 
+#. A delete saved this entry a moment ago and is still moving its file into the bin folder.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+msgid "error.recycleBin.stillMoving"
+msgstr "This file is still being moved into the recycle bin. Try again in a moment."
+
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 msgid "error.recycleBin.targetInvalid"
 msgstr "The original location is outside the root folder or behind a link, so the file cannot go back there."

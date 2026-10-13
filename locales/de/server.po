@@ -1242,6 +1242,12 @@ msgstr "Der Papierkorb-Ordner konnte in diesem Stammordner nicht angelegt werden
 msgid "error.recycleBin.targetExists"
 msgstr "An der Stelle, wo diese Datei war, liegt bereits eine andere Datei. Verschiebe oder lösche sie und stelle dann erneut wieder her."
 
+#. A delete saved this entry a moment ago and is still moving its file into the bin folder.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: This file is still being moved into the recycle bin. Try again in a moment.
+msgid "error.recycleBin.stillMoving"
+msgstr ""
+
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 #. English: The original location is outside the root folder or behind a link, so the file cannot go back there.
 #, fuzzy

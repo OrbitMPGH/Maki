@@ -1242,6 +1242,12 @@ msgstr "Папку корзины не удалось создать в этой
 msgid "error.recycleBin.targetExists"
 msgstr "На месте, где был этот файл, уже есть другой. Переместите или удалите его, затем восстановите снова."
 
+#. A delete saved this entry a moment ago and is still moving its file into the bin folder.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: This file is still being moved into the recycle bin. Try again in a moment.
+msgid "error.recycleBin.stillMoving"
+msgstr ""
+
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 #. English: The original location is outside the root folder or behind a link, so the file cannot go back there.
 #, fuzzy

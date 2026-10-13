@@ -965,7 +965,9 @@ public class RecycleBinTests : IDisposable
         {
             var entry = db.RecycleBin.Single();
             var api = new RecycleBinController(db, Bin(db), _settings, new TestLocalizer());
-            Assert.IsNotType<NoContentResult>(await api.Delete(entry.Id, default));
+            var deleted = await api.Delete(entry.Id, default);
+            Assert.IsType<ConflictObjectResult>(deleted);
+            Assert.Equal("error.recycleBin.stillMoving", Code(deleted));
             var emptied = Assert.IsType<OkObjectResult>(await api.EmptyBin(default));
             Assert.Equal(1, emptied.Value?.GetType().GetProperty("failed")?.GetValue(emptied.Value));
         }

@@ -134,6 +134,13 @@ public class RecycleBinService(
 
     public sealed record RestoreResult(RestoreStatus Status, int ChaptersLinked = 0);
 
+    public enum DeleteStatus
+    {
+        Deleted,
+        StillMoving,
+        Failed
+    }
+
     /// <summary>
     /// Null when <paramref name="absolutePaths"/> can go to the bin, otherwise the key saying why not:
     /// the bin folder cannot be created, or a folder holding one of them is on another volume.
@@ -559,17 +566,22 @@ public class RecycleBinService(
         return true;
     }
 
-    /// <summary>Deletes the entry's file for good, then the entry. False when the file could not be deleted; the entry stays.</summary>
-    public async Task<bool> DeleteAsync(RecycleBinEntry entry, CancellationToken ct)
+    /// <summary>Deletes the entry's file for good, then the entry. Unless it is <see cref="DeleteStatus.Deleted"/>, the entry stays.</summary>
+    public async Task<DeleteStatus> DeleteAsync(RecycleBinEntry entry, CancellationToken ct)
     {
-        if (StillMoving(entry) || !DeleteFile(entry))
+        if (StillMoving(entry))
         {
-            return false;
+            return DeleteStatus.StillMoving;
+        }
+
+        if (!DeleteFile(entry))
+        {
+            return DeleteStatus.Failed;
         }
 
         db.RecycleBin.Remove(entry);
         await db.SaveChangesAsync(ct);
-        return true;
+        return DeleteStatus.Deleted;
     }
 
     /// <summary>Deletes every entry the caller can see. Returns how many went and how many could not.</summary>

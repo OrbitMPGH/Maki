@@ -99,9 +99,12 @@ public class RecycleBinController(
             return this.NotFoundMessage(localizer, "error.recycleBin.notFound");
         }
 
-        return await bin.DeleteAsync(entry, ct)
-            ? NoContent()
-            : this.ServerError(localizer, "error.recycleBin.deleteFailed");
+        return await bin.DeleteAsync(entry, ct) switch
+        {
+            RecycleBinService.DeleteStatus.Deleted => NoContent(),
+            RecycleBinService.DeleteStatus.StillMoving => this.Conflict(localizer, "error.recycleBin.stillMoving"),
+            _ => this.ServerError(localizer, "error.recycleBin.deleteFailed")
+        };
     }
 
     [HttpDelete]

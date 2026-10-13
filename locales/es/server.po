@@ -1242,6 +1242,12 @@ msgstr "No se pudo crear la carpeta de la papelera en esta carpeta raíz. No se 
 msgid "error.recycleBin.targetExists"
 msgstr "Ya hay otro archivo en el lugar de este. Muévelo o bórralo y luego vuelve a restaurar."
 
+#. A delete saved this entry a moment ago and is still moving its file into the bin folder.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: This file is still being moved into the recycle bin. Try again in a moment.
+msgid "error.recycleBin.stillMoving"
+msgstr ""
+
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 #. English: The original location is outside the root folder or behind a link, so the file cannot go back there.
 #, fuzzy

@@ -1242,6 +1242,12 @@ msgstr "Bu kök klasörde geri dönüşüm kutusu klasörü oluşturulamadı. Hi
 msgid "error.recycleBin.targetExists"
 msgstr "Bunun yerine geçen başka bir dosya zaten var. Onu taşıyın veya silin, sonra yeniden geri yükleyin."
 
+#. A delete saved this entry a moment ago and is still moving its file into the bin folder.
+#: src/Maki.Api/Controllers/RecycleBinController.cs
+#. English: This file is still being moved into the recycle bin. Try again in a moment.
+msgid "error.recycleBin.stillMoving"
+msgstr ""
+
 #: src/Maki.Api/Controllers/RecycleBinController.cs
 #. English: The original location is outside the root folder or behind a link, so the file cannot go back there.
 #, fuzzy
