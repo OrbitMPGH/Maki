@@ -420,6 +420,36 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
+    public async Task Restore_after_a_rename_falls_back_to_the_stored_path_when_the_new_name_is_taken()
+    {
+        var s = Seed();
+        using (var db = _db.NewContext())
+        {
+            await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db), default);
+        }
+
+        var renamed = Path.Combine(_root, "Berserk (1989)");
+        Directory.Move(Path.Combine(_root, "Berserk"), renamed);
+        File.WriteAllText(Path.Combine(renamed, "Berserk v01.cbz"), "a new download");
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single().FolderName = "Berserk (1989)";
+            db.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var result = await Bin(db).RestoreAsync(db.RecycleBin.Single().Id, default);
+            Assert.Equal(RecycleBinService.RestoreStatus.Linked, result.Status);
+        }
+
+        Assert.Equal("volume one", File.ReadAllText(s.Absolute));
+        Assert.Equal("a new download", File.ReadAllText(Path.Combine(renamed, "Berserk v01.cbz")));
+        using var check = _db.NewContext();
+        Assert.Equal(s.RelativePath, Assert.Single(check.ChapterFiles).RelativePath);
+    }
+
+    [Fact]
     public async Task A_binned_link_whose_target_is_gone_can_still_be_restored()
     {
         var s = Seed();
