@@ -236,7 +236,7 @@ public class LibraryImportUndoService(
             }
             catch (TimeoutException)
             {
-                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: true);
+                await RestorePendingAsync(series.Id, before, matchRunning: true);
                 return Refused(row, "error.libraryImport.undoMatchRunning");
             }
 
@@ -257,7 +257,7 @@ public class LibraryImportUndoService(
 
             if (await RefusalAsync(row, series.Id, registered, ct) is { } late)
             {
-                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false, matchMayHaveRun);
+                await RestorePendingAsync(series.Id, before, matchRunning: false, matchMayHaveRun);
                 return Refused(row, late);
             }
 
@@ -266,7 +266,7 @@ public class LibraryImportUndoService(
             var sourceDir = LibraryPaths.ResolveNoLinks(root.Path, row.OriginalFolderName);
             if (await FolderProblemAsync(row, operations, series.Id, registered, targetDir, sourceDir, ct) is { } problem)
             {
-                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false, matchMayHaveRun);
+                await RestorePendingAsync(series.Id, before, matchRunning: false, matchMayHaveRun);
                 return Refused(row, problem, new { name = row.OriginalFolderName, folder = row.FolderName });
             }
 
@@ -354,7 +354,7 @@ public class LibraryImportUndoService(
             db.ChangeTracker.Clear();
             try
             {
-                await RestorePendingAsync(series.Id, row.CreatedSeries, before, matchRunning: false, matchMayHaveRun);
+                await RestorePendingAsync(series.Id, before, matchRunning: false, matchMayHaveRun);
             }
             catch (Exception restoreEx)
             {
@@ -505,55 +505,57 @@ public class LibraryImportUndoService(
     }
 
     /// <summary>
-    /// Puts the deferred stages back after a refused undo, and queues them again. A match that ran
-    /// while the undo waited is not repeated: the series then only owes its link. Only a run that was
-    /// already registered when the flag was cleared can have done it (<paramref name="matchMayHaveRun"/>),
-    /// and then the mappings it saved are what tells; otherwise the flag goes back exactly, so a
-    /// re-match still queued for a series that has mappings is not lost.
+    /// Puts back what this undo cleared after it was refused, and queues it again. Only what
+    /// <paramref name="before"/> says this undo cleared is written: an undo that overlapped another
+    /// one cleared nothing, and writing its empty snapshot would wipe the flags the other just put back.
+    /// A match that ran while the undo waited is not repeated: the series then only owes its link.
+    /// Only a run that was already registered when the flag was cleared can have done it
+    /// (<paramref name="matchMayHaveRun"/>), and then the mappings it saved are what tells; otherwise
+    /// the flag goes back, so a re-match still queued for a series that has mappings is not lost.
     /// </summary>
     private async Task RestorePendingAsync(
-        int seriesId, bool created, (bool MatchPending, PendingImportLink Link) before, bool matchRunning,
+        int seriesId, (bool MatchPending, PendingImportLink Link) before, bool matchRunning,
         bool matchMayHaveRun = false)
     {
+        if (before is (false, PendingImportLink.None))
+        {
+            return;
+        }
+
         var none = CancellationToken.None;
         var query = db.Series.IgnoreQueryFilters().Where(s => s.Id == seriesId);
+        // The link marker first, so a match queued below always finds it and routes the link.
+        if (before.Link != PendingImportLink.None)
+        {
+            await query.ExecuteUpdateAsync(u => u.SetProperty(s => s.PendingImportLink, before.Link), none);
+        }
+
         if (matchRunning)
         {
-            // The match still running routes the link when it ends, so the flags go back exactly as
-            // they were and no link is queued: one queued now would link against no chapters and
-            // clear the marker under the match. A run that read the cleared marker before this put it
-            // back gets a successor, which waits for it and then routes the link or matches again.
-            await (created
-                ? query.ExecuteUpdateAsync(u => u
-                    .SetProperty(s => s.SourceMatchPending, before.MatchPending)
-                    .SetProperty(s => s.PendingImportLink, before.Link), none)
-                : query.ExecuteUpdateAsync(u => u.SetProperty(s => s.PendingImportLink, before.Link), none));
+            // The match still running routes the link when it ends, so the flags go back as they
+            // were and no link is queued: one queued now would link against no chapters and clear
+            // the marker under the match. A run that read the cleared marker before this put it back
+            // gets a successor, which waits for it and then routes the link or matches again.
+            if (before.MatchPending)
+            {
+                await query.ExecuteUpdateAsync(u => u.SetProperty(s => s.SourceMatchPending, true), none);
+            }
+
             matchQueue.Enqueue(seriesId, SourceMatchLane.Background);
             return;
         }
 
-        bool matchPending;
-        if (created)
+        if (before.MatchPending &&
+            (!matchMayHaveRun ||
+             !await db.SourceMappings.IgnoreQueryFilters().AnyAsync(m => m.SeriesId == seriesId, none)))
         {
-            matchPending = before.MatchPending &&
-                           (!matchMayHaveRun ||
-                            !await db.SourceMappings.IgnoreQueryFilters().AnyAsync(m => m.SeriesId == seriesId, none));
-            await query.ExecuteUpdateAsync(u => u
-                .SetProperty(s => s.SourceMatchPending, matchPending)
-                .SetProperty(s => s.PendingImportLink, before.Link), none);
-            if (matchPending)
-            {
-                matchQueue.Enqueue(seriesId, SourceMatchLane.Background);
-            }
-        }
-        else
-        {
-            await query.ExecuteUpdateAsync(u => u.SetProperty(s => s.PendingImportLink, before.Link), none);
-            // Whoever flagged a still-pending match queued it; its end routes the link.
-            matchPending = await query.Select(s => s.SourceMatchPending).FirstOrDefaultAsync(none);
+            await query.ExecuteUpdateAsync(u => u.SetProperty(s => s.SourceMatchPending, true), none);
+            matchQueue.Enqueue(seriesId, SourceMatchLane.Background);
         }
 
-        if (!matchPending && before.Link != PendingImportLink.None)
+        // Whoever flagged a still-pending match queued it; its end routes the link.
+        if (before.Link != PendingImportLink.None &&
+            !await query.Select(s => s.SourceMatchPending).FirstOrDefaultAsync(none))
         {
             matchQueue.EnqueueLink(seriesId);
         }

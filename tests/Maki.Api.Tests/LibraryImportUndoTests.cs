@@ -610,6 +610,51 @@ public class LibraryImportUndoTests : IDisposable
     }
 
     [Fact]
+    public async Task Two_overlapping_refused_undos_leave_the_flags_the_first_put_back()
+    {
+        var rootId = SeedRoot();
+        var placeholder = await ReserveUniqueSeriesIdAsync(rootId);
+        WriteZip(At("chainsaw raws", "Chainsaw Man 001.cbz"));
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        await DropSeriesAsync(placeholder);
+        var seriesId = result.SeriesId!.Value;
+        while (_queue.TryReadMatch(out _))
+        {
+        }
+
+        await using (var db = _db.NewContext())
+        {
+            // The folder's old name now belongs to another series, so both undos are refused late.
+            db.Series.Add(new Series
+            {
+                Title = "Other", SortTitle = "Other", FolderName = "chainsaw raws", RootFolderId = rootId,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var id = await RecordIdAsync();
+        await using var a = _db.NewContext();
+        await using var b = _db.NewContext();
+        Task<ImportUndoOutcome> first, second;
+        using (await SeriesLocks.SeriesAsync(seriesId, CancellationToken.None))
+        {
+            // The first clears the flags, the second finds them cleared already.
+            first = UndoService(a).UndoFolderAsync(id, CancellationToken.None)!;
+            await WaitForLockUsersAsync(seriesId, 2, first);
+            second = UndoService(b).UndoFolderAsync(id, CancellationToken.None)!;
+            await WaitForLockUsersAsync(seriesId, 3, first, second);
+        }
+
+        var outcomes = await Task.WhenAll(first, second);
+
+        Assert.All(outcomes, o => Assert.StartsWith("error.libraryImport.folderOwnedByOtherSeries", o.Error));
+        await using var check = _db.NewContext();
+        var series = await check.Series.SingleAsync(s => s.Id == seriesId);
+        Assert.True(series.SourceMatchPending);
+        Assert.Equal(PendingImportLink.LinkAndComicInfo, series.PendingImportLink);
+    }
+
+    [Fact]
     public async Task Two_undos_at_once_undo_once_and_the_second_says_so()
     {
         _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
