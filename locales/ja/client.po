@@ -15301,8 +15301,11 @@ msgstr "セッション"
 msgid "Set by {user}"
 msgstr "{user}が設定"
 
-#: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by another user"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "Set by hand"
 msgstr "手動で設定"
@@ -17789,6 +17792,10 @@ msgstr "リンク解除"
 #, fuzzy
 msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "{fileName}から{unlinkedPhrase}のリンクを解除しました"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy

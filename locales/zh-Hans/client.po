@@ -15301,8 +15301,11 @@ msgstr "会话"
 msgid "Set by {user}"
 msgstr "由 {user} 设置"
 
-#: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by another user"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "Set by hand"
 msgstr "手动设置"
@@ -17789,6 +17792,10 @@ msgstr "取消关联"
 #, fuzzy
 msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "已从 {fileName} 取消关联 {unlinkedPhrase}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy

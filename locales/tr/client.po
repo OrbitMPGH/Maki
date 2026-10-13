@@ -15302,8 +15302,11 @@ msgstr "Oturumlar"
 msgid "Set by {user}"
 msgstr "{user} tarafından ayarlandı"
 
-#: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by another user"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "Set by hand"
 msgstr "Elle ayarlandı"
@@ -17790,6 +17793,10 @@ msgstr "Bağlantıyı kaldır"
 #, fuzzy
 msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "{fileName} dosyasından {unlinkedPhrase} bağlantısı kaldırıldı"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy

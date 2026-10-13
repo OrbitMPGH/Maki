@@ -15302,8 +15302,11 @@ msgstr "Sesiones"
 msgid "Set by {user}"
 msgstr "Establecido por {user}"
 
-#: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by another user"
+msgstr ""
+
+#: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "Set by hand"
 msgstr "Establecido a mano"
@@ -17790,6 +17793,10 @@ msgstr "Desvincular"
 #, fuzzy
 msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "Desvinculado {unlinkedPhrase} de {fileName}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy

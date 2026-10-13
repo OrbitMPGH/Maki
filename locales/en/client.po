@@ -12409,8 +12409,11 @@ msgstr "Sessions"
 msgid "Set by {user}"
 msgstr "Set by {user}"
 
-#: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+msgid "Set by another user"
+msgstr "Set by another user"
+
+#: src/components/series/EditMetadataModal.tsx
 msgid "Set by hand"
 msgstr "Set by hand"
 
@@ -14424,6 +14427,10 @@ msgstr "Unlink"
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "Unlinked {unlinkedPhrase} from {fileName}"
 msgstr "Unlinked {unlinkedPhrase} from {fileName}"
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
+msgstr "Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds."
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Unlocked. The provider's value returns on the next metadata refresh."
