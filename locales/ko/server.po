@@ -776,7 +776,7 @@ msgid "error.libraryImport.undoKeptBuilt"
 msgstr "{name}은(는) 유지되었습니다. Maki가 만든 파일이지만, 원본은 더 이상 없습니다"
 
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
-#. English: cover.jpg was kept: it changed after the import, so it is not the one Maki wrote
+#. English: cover.jpg was kept: Maki could not confirm it is the one it wrote, so it may be yours
 msgid "error.libraryImport.undoKeptCover"
 msgstr ""
 

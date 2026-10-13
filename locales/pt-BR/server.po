@@ -776,7 +776,7 @@ msgid "error.libraryImport.undoKeptBuilt"
 msgstr "{name} foi mantido: o Maki o criou, mas o original de onde veio não está mais lá"
 
 #: src/Maki.Api/Services/LibraryImportUndoService.cs
-#. English: cover.jpg was kept: it changed after the import, so it is not the one Maki wrote
+#. English: cover.jpg was kept: Maki could not confirm it is the one it wrote, so it may be yours
 msgid "error.libraryImport.undoKeptCover"
 msgstr ""
 
