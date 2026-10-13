@@ -32,14 +32,21 @@ public static partial class ReleaseTags
     [GeneratedRegex(@"^[a-z]{2}(?:-(?:[a-z]{2,4}|[A-Z]{2}|[A-Z][a-z]{3}))?$")]
     private static partial Regex LanguageTagPattern();
 
-    // These describe the release, not who made it. The three-letter codes are ISO 639-2 language
-    // tags, which the two-letter pattern above deliberately leaves alone. The uppercase codes and
-    // language names cover what non-English releases write ("(FR)", "[Español]"), and the container
-    // formats are what a scene release puts in brackets ("[CBZ]"); none of them names a group.
+    // These describe the release, not who made it. The uppercase language codes and "END"/"Fin" are
+    // matched exactly: ignoring case would also reject real groups spelled "End", "Fin" or "Tr".
+    private static readonly HashSet<string> CaseSensitiveNoiseTokens = new(StringComparer.Ordinal)
+    {
+        "END", "Fin",
+        "DE", "FR", "ES", "PT", "PT-BR", "BR", "PL", "RU", "TR", "JP", "KR", "CN"
+    };
+
+    // The three-letter codes are ISO 639-2 language tags, which the two-letter pattern above
+    // deliberately leaves alone. The language names cover what non-English releases write
+    // ("[Español]"), and the container formats are what a scene release puts in brackets ("[CBZ]");
+    // none of them names a group.
     private static readonly HashSet<string> NoiseTokens = new(StringComparer.OrdinalIgnoreCase)
     {
-        "CBZ", "CBR", "CB7", "PDF", "EPUB", "END", "Fin",
-        "DE", "FR", "ES", "PT", "PT-BR", "BR", "PL", "RU", "TR", "JP", "KR", "CN",
+        "CBZ", "CBR", "CB7", "PDF", "EPUB",
         "German", "Deutsch", "French", "Français", "Francais", "VF", "VOSTFR", "Spanish", "Español",
         "Espanol", "Portuguese", "Português", "Portugues", "Polish", "Polski", "Russian", "Русский",
         "Turkish", "Türkçe", "Turkce", "Japanese", "日本語", "Korean", "한국어", "Chinese", "中文", "简体",
@@ -83,7 +90,7 @@ public static partial class ReleaseTags
             if (IsMarker(tag)) continue;
             if (tag.StartsWith("Digital", StringComparison.OrdinalIgnoreCase)) continue;
             if (LanguageTagPattern().IsMatch(tag)) continue;
-            if (NoiseTokens.Contains(tag)) continue;
+            if (NoiseTokens.Contains(tag) || CaseSensitiveNoiseTokens.Contains(tag)) continue;
             return tag;
         }
 

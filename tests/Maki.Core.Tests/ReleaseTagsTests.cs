@@ -82,6 +82,33 @@ public class ReleaseTagsTests
     }
 
     [Theory]
+    [InlineData("End")]
+    [InlineData("fin")]
+    [InlineData("FIN")]
+    [InlineData("Tr")]
+    [InlineData("Br")]
+    [InlineData("Pl")]
+    [InlineData("Cn")]
+    [InlineData("Fr")]
+    public void Group_keeps_a_capitalised_name_that_only_looks_like_a_language_code(string tag)
+    {
+        Assert.Equal(tag, ReleaseTags.Group([tag]));
+    }
+
+    [Theory]
+    [InlineData("END")]
+    [InlineData("Fin")]
+    [InlineData("FR")]
+    [InlineData("DE")]
+    [InlineData("TR")]
+    [InlineData("JP")]
+    [InlineData("PT-BR")]
+    public void Group_is_null_for_the_exact_uppercase_codes(string tag)
+    {
+        Assert.Null(ReleaseTags.Group([tag]));
+    }
+
+    [Theory]
     [InlineData("Digital-HD")]
     [InlineData("c2c")]
     [InlineData("WEB-DL")]
