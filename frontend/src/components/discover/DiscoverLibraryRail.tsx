@@ -316,17 +316,13 @@ export function DiscoverLibraryRail({
             <Trans>Add</Trans>
           </Button>
         </Stack>
-      ) : myRequest && myRequest.status !== 'Rejected' ? (
+      ) : myRequest && (myRequest.status === 'Pending' || myRequest.status === 'Processing') ? (
         <>
           <Title order={3} fz="var(--type-subhead)">
-            {myRequest.status === 'Approved' ? <Trans>Approved</Trans> : <Trans>Requested</Trans>}
+            <Trans>Requested</Trans>
           </Title>
           <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
-            {myRequest.status === 'Approved' ? (
-              <Trans>An admin approved your request.</Trans>
-            ) : (
-              <Trans>An admin decides where it lands and what gets downloaded.</Trans>
-            )}
+            <Trans>An admin decides where it lands and what gets downloaded.</Trans>
           </Alert>
         </>
       ) : (
@@ -340,7 +336,7 @@ export function DiscoverLibraryRail({
               downloaded.
             </Trans>
           </Text>
-          {myRequest && (
+          {myRequest?.status === 'Rejected' && (
             <Alert color="var(--warn)" variant="light" mt="sm">
               {resolutionNote ? (
                 <Trans>Your last request was rejected: {resolutionNote}</Trans>
