@@ -29,7 +29,8 @@ public sealed class SeriesListSortDatesTests : IDisposable
     private static List<SeriesDto> Listed(IActionResult result) =>
         [.. (IEnumerable<SeriesDto>)((OkObjectResult)result).Value!];
 
-    private void AddProgress(int userId, int seriesId, DateTime at, bool watched = false)
+    private void AddProgress(
+        int userId, int seriesId, DateTime at, bool watched = false, bool bulkMarked = false, DateTime? unreadAt = null)
     {
         using var db = _db.NewContext();
         var chapter = new Chapter { SeriesId = seriesId, Number = db.Chapters.Count() + 1 };
@@ -37,7 +38,7 @@ public sealed class SeriesListSortDatesTests : IDisposable
         db.SaveChanges();
         db.ChapterProgress.Add(new ChapterProgress
         {
-            UserId = userId, SeriesId = seriesId, ChapterId = chapter.Id, Watched = watched, StartedAt = at, UpdatedAt = at,
+            UserId = userId, SeriesId = seriesId, ChapterId = chapter.Id, Watched = watched, BulkMarked = bulkMarked, UnreadAt = unreadAt, StartedAt = at, UpdatedAt = at,
         });
         db.SaveChanges();
     }
@@ -63,6 +64,34 @@ public sealed class SeriesListSortDatesTests : IDisposable
         Assert.Null(list.Single(s => s.Id == untouched).LastReadAt);
         Assert.Null(list.Single(s => s.Id == onlyWatched).LastReadAt);
         Assert.Null(list.Single(s => s.Id == bobsOnly).LastReadAt);
+    }
+
+    [Fact]
+    public async Task Last_read_skips_bulk_marks_tombstones_and_fully_incognito_series()
+    {
+        var alice = _db.SeedUser("alice");
+        var mixed = _db.SeedSeries("Mixed");
+        var bulkOnly = _db.SeedSeries("Bulk");
+        var tombstoneOnly = _db.SeedSeries("Tombstone");
+        var incognito = _db.SeedSeries("Incognito");
+        AddProgress(alice, mixed, Older);
+        AddProgress(alice, mixed, Newer, bulkMarked: true);
+        AddProgress(alice, bulkOnly, Newer, bulkMarked: true);
+        AddProgress(alice, tombstoneOnly, Newer, unreadAt: Newer);
+        AddProgress(alice, incognito, Newer);
+        using (var seed = _db.NewContext())
+        {
+            seed.Series.Single(s => s.Id == incognito).Incognito = IncognitoMode.Full;
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(alice);
+        var list = Listed(await Controller(db).List(default));
+
+        Assert.Equal(Older, list.Single(s => s.Id == mixed).LastReadAt);
+        Assert.Null(list.Single(s => s.Id == bulkOnly).LastReadAt);
+        Assert.Null(list.Single(s => s.Id == tombstoneOnly).LastReadAt);
+        Assert.Null(list.Single(s => s.Id == incognito).LastReadAt);
     }
 
     [Fact]

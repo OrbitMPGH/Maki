@@ -368,9 +368,13 @@ public class SeriesController(
             .GroupBy(f => f.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(f => f.SourceName).Order().ToList());
 
-        // One grouped read each. Watched ticks are not reading, matching the Home rails.
+        // One grouped read each. Only genuine reads date a series: watched ticks, bulk mark-reads
+        // and Kavita syncs say nothing about when anyone read, mark-unread tombstones are the
+        // opposite of a read, and a fully incognito series keeps no reading history. The series
+        // join also keeps the aggregate to series the caller can see.
         var lastReadBySeries = await db.ChapterProgress
-            .Where(p => !p.Watched)
+            .Where(p => !p.Watched && !p.BulkMarked && p.UnreadAt == null)
+            .Where(p => db.Series.Any(s => s.Id == p.SeriesId && s.Incognito != IncognitoMode.Full))
             .OwnedByScopeUser(db)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, At = g.Max(p => p.UpdatedAt) })
