@@ -340,7 +340,8 @@ public class LibraryImportUndoService(
             }
 
             var warnings = new List<string>();
-            var complete = RestoreDisk(row, operations, root.Path, targetDir!, sourceDir!, warnings);
+            // FolderProblemAsync above already refused an old name another series owns.
+            var complete = RestoreDisk(row, operations, root.Path, targetDir!, sourceDir!, oldNameOwned: false, warnings);
             await SaveDiskOutcomeAsync(row, operations, complete, warnings);
             logger.LogInformation("Undid the import of '{Folder}' into series {SeriesId}", row.OriginalFolderName,
                 series.Id);
@@ -392,8 +393,12 @@ public class LibraryImportUndoService(
             return Refused(row, "error.libraryImport.undoFolderGone", new { folder = row.FolderName });
         }
 
+        // Checked again here: another series may have taken the old name since the first attempt.
+        var oldNameOwned = operations.FolderAction is ImportFolderAction.Rename or ImportFolderAction.Merge &&
+                           (await SeriesCreationService.SeriesFoldersInRootAsync(db, row.RootFolderId, row.SeriesId, ct))
+                           .Contains(row.OriginalFolderName);
         var warnings = new List<string>();
-        var complete = RestoreDisk(row, operations, root.Path, targetDir, sourceDir, warnings);
+        var complete = RestoreDisk(row, operations, root.Path, targetDir, sourceDir, oldNameOwned, warnings);
         await SaveDiskOutcomeAsync(row, operations, complete, warnings);
         return new ImportUndoOutcome(row.Id, row.OriginalFolderName, true, null, warnings.Count > 0 ? warnings : null);
     }
@@ -611,7 +616,7 @@ public class LibraryImportUndoService(
     /// </summary>
     private bool RestoreDisk(
         ImportBatchFolder row, ImportOperations operations, string rootPath, string targetDir, string sourceDir,
-        List<string> warnings)
+        bool oldNameOwned, List<string> warnings)
     {
         var complete = true;
         var movedBack = operations.FolderAction == ImportFolderAction.Rename &&
@@ -720,6 +725,13 @@ public class LibraryImportUndoService(
                 warnings.Add(folderNotMoved);
             }
 
+            return false;
+        }
+
+        if (oldNameOwned && !movedBack)
+        {
+            // Another series' folder: moving there would hand it these files. Stays pending until it is free.
+            warnings.Add(folderNotMoved);
             return false;
         }
 

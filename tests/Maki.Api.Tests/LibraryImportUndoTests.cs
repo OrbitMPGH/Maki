@@ -655,6 +655,35 @@ public class LibraryImportUndoTests : IDisposable
     }
 
     [Fact]
+    public async Task A_retry_does_not_move_the_folder_onto_a_name_another_series_took_since()
+    {
+        var rootId = SeedRoot();
+        WriteFixture("chainsaw raws");
+        var result = await ImportAsync(rootId, "chainsaw raws");
+        File.WriteAllText(At("chainsaw raws"), "in the way");
+        var first = await UndoAsync(await RecordIdAsync());
+        Assert.Contains(first.Warnings!, w => w.StartsWith("error.libraryImport.undoDiskPending"));
+
+        File.Delete(At("chainsaw raws"));
+        await using (var db = _db.NewContext())
+        {
+            db.Series.Add(new Series
+            {
+                Title = "Other", SortTitle = "Other", FolderName = "chainsaw raws", RootFolderId = rootId,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var retry = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(retry.Undone, retry.Error);
+        Assert.Contains(retry.Warnings!, w => w.StartsWith("error.libraryImport.undoFolderNotMoved"));
+        Assert.Contains(retry.Warnings!, w => w.StartsWith("error.libraryImport.undoDiskPending"));
+        Assert.True(Directory.Exists(At(result.NewFolderName!)));
+        Assert.False(Directory.Exists(At("chainsaw raws")));
+    }
+
+    [Fact]
     public async Task Two_undos_at_once_undo_once_and_the_second_says_so()
     {
         _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
