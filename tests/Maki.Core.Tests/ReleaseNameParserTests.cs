@@ -236,6 +236,24 @@ public class ReleaseNameParserTests
         Assert.Empty(parsed.Tags);
     }
 
+    [Theory]
+    [InlineData("My_Series_Ch.001-Special")]
+    [InlineData("My.Series.Vol.3-Extras")]
+    [InlineData("My_Series_v01-Omake")]
+    public void A_dotted_or_underscored_name_without_scene_markers_has_no_group(string name)
+    {
+        Assert.Empty(ReleaseNameParser.ExtractTags(name));
+    }
+
+    [Theory]
+    [InlineData("Series.Name.T29.Author.FR.[CBZ]-GROUP", "GROUP")]
+    [InlineData("Series.Name.T29.Author.FR-GROUP", "GROUP")]
+    [InlineData("One.Piece.v01-v10.Digital-GRP", "GRP")]
+    public void A_scene_name_ends_in_its_group(string name, string group)
+    {
+        Assert.Equal(group, ReleaseNameParser.ExtractTags(name)[^1]);
+    }
+
     [Fact]
     public void Non_ascii_digits_are_unrecognized_rather_than_throwing()
     {

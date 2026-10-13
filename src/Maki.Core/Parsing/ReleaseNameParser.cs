@@ -40,7 +40,10 @@ public static partial class ReleaseNameParser
     [GeneratedRegex(@"\s*[\(\[【][^\)\]】]*[\)\]】]")]
     internal static partial Regex TagGroups();
 
-    [GeneratedRegex(@"-([\p{L}\p{N}]+)$")]
+    // A scene name's "-GROUP" counts only after a bracket group ("[CBZ]-GROUP") or a language or
+    // release word ("FR-GROUP", "Digital-GROUP"). Any other dotted or underscored name ending in a
+    // hyphenated word, like "My_Series_Ch.001-Special", is a title, not a scene release.
+    [GeneratedRegex(@"(?:[\]\)】]|[._](?:[A-Z]{2,6}|Digital|Raw|Scan|Fixed|Complete|Compilation))-([\p{L}\p{N}]+)$")]
     private static partial Regex SceneSuffix();
 
     // A volume range takes a bare hyphen, or a spaced one when the end carries its own v/vol marker
@@ -157,7 +160,7 @@ public static partial class ReleaseNameParser
     {
         if (!IsSceneStyle(name)) return null;
 
-        var suffix = SceneSuffix().Match(TagGroups().Replace(name, string.Empty).Trim());
+        var suffix = SceneSuffix().Match(name.Trim());
         if (!suffix.Success || !suffix.Groups[1].Value.Any(char.IsLetter)) return null;
 
         return ReleaseTags.Group([suffix.Groups[1].Value]);
