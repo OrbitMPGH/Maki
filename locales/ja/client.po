@@ -3081,8 +3081,8 @@ msgstr "そのユーザー名のアカウントは既に存在します"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "An admin approved your request."
-msgstr "管理者がリクエストを承認しました。"
+#~ msgid "An admin approved your request."
+#~ msgstr "管理者がリクエストを承認しました。"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -3302,7 +3302,6 @@ msgstr "承認してキューに追加"
 msgid "Approve request"
 msgstr "リクエストを承認"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approved"

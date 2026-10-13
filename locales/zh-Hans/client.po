@@ -3081,8 +3081,8 @@ msgstr "已存在使用该用户名的账户"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "An admin approved your request."
-msgstr "管理员已批准你的请求。"
+#~ msgid "An admin approved your request."
+#~ msgstr "管理员已批准你的请求。"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -3302,7 +3302,6 @@ msgstr "批准并加入队列"
 msgid "Approve request"
 msgstr "批准请求"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approved"

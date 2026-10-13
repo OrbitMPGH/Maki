@@ -3082,8 +3082,8 @@ msgstr "Un compte portant ce nom d'utilisateur existe déjà"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "An admin approved your request."
-msgstr "Un administrateur a approuvé votre demande."
+#~ msgid "An admin approved your request."
+#~ msgstr "Un administrateur a approuvé votre demande."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -3303,7 +3303,6 @@ msgstr "Approuver et mettre en file"
 msgid "Approve request"
 msgstr "Approuver la demande"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approved"
