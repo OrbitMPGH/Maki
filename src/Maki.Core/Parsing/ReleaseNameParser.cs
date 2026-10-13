@@ -190,14 +190,14 @@ public static partial class ReleaseNameParser
     internal static (int Start, int? End)? VolumeRange(Match match)
     {
         if (TryInt(match.Groups[1].Value) is not { } start) return null;
-        if (match.Groups["all"].Success)
+        var end = match.Groups[2].Success ? TryInt(match.Groups[2].Value) : null;
+        if (end > start && end < MinYearLikeVolume && end - start <= MaxVolumeSpan) return (start, end);
+        if (match.Groups["all"].Success && !match.Groups[2].Success && start > 1 && start - 1 <= MaxVolumeSpan)
         {
-            return start > 1 && start - 1 <= MaxVolumeSpan ? (1, start) : (start, null);
+            return (1, start);
         }
 
-        if (!match.Groups[2].Success) return (start, null);
-        var end = TryInt(match.Groups[2].Value);
-        return end > start && end < MinYearLikeVolume && end - start <= MaxVolumeSpan ? (start, end) : (start, null);
+        return (start, null);
     }
 
     private const int MinYearLikeVolume = 1900;

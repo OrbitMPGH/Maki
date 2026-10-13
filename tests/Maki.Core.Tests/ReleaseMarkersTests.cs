@@ -31,6 +31,8 @@ public class ReleaseMarkersTests
     [InlineData("ja", "ワンピース 第１２巻.cbz", 12, null)]
     [InlineData("ja", "ワンピース 第1〜3巻.cbz", 1, 3)]
     [InlineData("ja", "ワンピース 全12巻.zip", 1, 12)]
+    [InlineData("ja", "ワンピース 全1-3巻.zip", 1, 3)]
+    [InlineData("ja", "ワンピース 全1~3巻.zip", 1, 3)]
     [InlineData("zh-Hans", "海贼王 第5卷.cbz", 5, null)]
     [InlineData("zh-Hans", "海贼王 7册.cbz", 7, null)]
     [InlineData("ko", "원피스 3권.cbz", 3, null)]
