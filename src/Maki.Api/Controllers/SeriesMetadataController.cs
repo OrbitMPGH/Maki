@@ -61,7 +61,8 @@ public class SeriesMetadataController(
     public record ResetMetadataRequest(IReadOnlyList<string>? Fields);
 
     /// <param name="Refreshed">Whether the provider answered after a reset. False leaves the unlocked value as it was until the next refresh.</param>
-    public record MetadataStateDto(IReadOnlyList<string> LockedFields, bool Refreshed = false);
+    /// <param name="CoverRestored">False when a reset asked for the poster and the provider's did not come down (none on offer, or the download failed), so the series keeps its current poster.</param>
+    public record MetadataStateDto(IReadOnlyList<string> LockedFields, bool Refreshed = false, bool CoverRestored = true);
 
     /// <param name="Field">camelCase, as in <see cref="SeriesDto.LockedFields"/>.</param>
     /// <param name="OldValue">Invariant text: a status by its enum name, counts as digits, genres comma separated. Null for the synopsis and the cover.</param>
@@ -175,8 +176,9 @@ public class SeriesMetadataController(
 
         var oldKey = SeriesIdentity.For(series);
         series.LockedFields &= ~fields;
-        var refreshed = await metadataRefresh.RefreshAsync(
-            series, includeCover: (fields & SeriesMetadataField.Cover) != 0, restore: fields, ct);
+        var resetCover = (fields & SeriesMetadataField.Cover) != 0;
+        var result = await metadataRefresh.RefreshWithResultAsync(series, includeCover: resetCover, restore: fields, ct);
+        var refreshed = result.Refreshed;
         await SaveAsync(series, oldKey, ct);
         await changeLog.PublishAsync(ct);
 
@@ -185,7 +187,8 @@ public class SeriesMetadataController(
             kavitaScans.QueuePush(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
         }
 
-        return Ok(new MetadataStateDto(SeriesDto.LockedFieldNames(series.LockedFields), refreshed));
+        return Ok(new MetadataStateDto(
+            SeriesDto.LockedFieldNames(series.LockedFields), refreshed, !resetCover || result.CoverReplaced));
     }
 
     /// <summary>

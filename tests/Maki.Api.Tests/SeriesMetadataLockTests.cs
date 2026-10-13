@@ -239,6 +239,30 @@ public class SeriesMetadataLockTests : IDisposable
         Assert.Equal(SeriesMetadataField.None, (await Reload(id)).LockedFields);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Resetting_the_cover_says_so_when_the_provider_poster_did_not_come_down(bool providerHasUrl)
+    {
+        var id = _db.SeedSeries("Berserk", configure: s =>
+        {
+            s.MangaBakaId = 42;
+            s.LockedFields = SeriesMetadataField.Cover;
+        });
+        WriteCover(id, Jpeg(8));
+        await using var db = _db.NewContext();
+        var metadata = ProviderValues() with { CoverUrl = providerHasUrl ? "https://example.test/broken.jpg" : null };
+        var controller = Controller(db, metadata, new JpegClientFactory([1, 2, 3]));
+
+        var result = await controller.Reset(
+            id, new SeriesMetadataController.ResetMetadataRequest(["cover"]), CancellationToken.None);
+
+        var state = Assert.IsType<SeriesMetadataController.MetadataStateDto>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.True(state.Refreshed);
+        Assert.False(state.CoverRestored);
+        Assert.Equal(8, Image.Identify(Covers().CoverPathFor(id)).Width);
+    }
+
     [Fact]
     public async Task The_image_cache_rebuild_skips_a_user_cover_even_when_forced()
     {
@@ -349,9 +373,9 @@ public class SeriesMetadataLockTests : IDisposable
         return await db.Series.AsNoTracking().SingleAsync(s => s.Id == id);
     }
 
-    private SeriesMetadataController Controller(MakiDbContext db, SeriesMetadata metadata)
+    private SeriesMetadataController Controller(MakiDbContext db, SeriesMetadata metadata, IHttpClientFactory? http = null)
     {
-        var covers = Covers();
+        var covers = http is null ? Covers() : new CoverService(http, _paths, new FakeAppSettings(), NullLogger<CoverService>.Instance);
         return new SeriesMetadataController(
             new TestLocalizer(), db, new SeriesMetadataRefreshService([new Provider(metadata)], covers),
             ChangeLog(db), new SeriesIdentityService(db, NullLogger<SeriesIdentityService>.Instance),

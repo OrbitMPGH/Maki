@@ -131,13 +131,17 @@ export function EditMetadataModal({
     reset.mutate(
       { seriesId: series.id, fields: [field] },
       {
-        onSuccess: (state) =>
+        onSuccess: (state) => {
+          const restored = state.refreshed && (field !== 'cover' || state.coverRestored)
           notifications.show({
-            message: state.refreshed
+            message: restored
               ? t`Restored from the provider`
-              : t`Unlocked. The provider's value returns on the next metadata refresh.`,
-            color: state.refreshed ? 'var(--ok)' : 'var(--warn)',
-          }),
+              : state.refreshed
+                ? t`Unlocked, but the provider's poster could not be downloaded. Your poster stays until a refresh succeeds.`
+                : t`Unlocked. The provider's value returns on the next metadata refresh.`,
+            color: restored ? 'var(--ok)' : 'var(--warn)',
+          })
+        },
       },
     )
   }

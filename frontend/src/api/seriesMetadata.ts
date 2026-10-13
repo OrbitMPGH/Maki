@@ -6,6 +6,8 @@ export interface MetadataState {
   lockedFields: MetadataField[]
   /** After a reset: whether the provider answered. False leaves the old value until the next refresh. */
   refreshed: boolean
+  /** False when a cover reset got no poster from the provider, so the current one stays. */
+  coverRestored: boolean
 }
 
 /** Only the fields named in `fields` are read; a null count named there clears it. */

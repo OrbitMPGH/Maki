@@ -54,6 +54,13 @@ public class SeriesMetadataRefreshService(
         return true;
     }
 
+    /// <param name="Refreshed">Whether the provider answered and its fields were applied.</param>
+    /// <param name="CoverReplaced">
+    /// Whether the poster was replaced by the provider's. Only meaningful when a cover was requested
+    /// and the cover is not locked: false then means the provider had no poster or it did not download.
+    /// </param>
+    public readonly record struct RefreshResult(bool Refreshed, bool CoverReplaced);
+
     /// <returns>false when the series has no provider id or the lookup returned nothing.</returns>
     public Task<bool> RefreshAsync(Series series, bool includeCover, CancellationToken ct = default) =>
         RefreshAsync(series, includeCover, SeriesMetadataField.None, ct);
@@ -63,18 +70,23 @@ public class SeriesMetadataRefreshService(
     /// where an ordinary refresh keeps the current value, so a reset never leaves the user's text behind.
     /// </param>
     public async Task<bool> RefreshAsync(
+        Series series, bool includeCover, SeriesMetadataField restore, CancellationToken ct = default) =>
+        (await RefreshWithResultAsync(series, includeCover, restore, ct)).Refreshed;
+
+    /// <summary>As <see cref="RefreshAsync(Series, bool, SeriesMetadataField, CancellationToken)"/>, also saying whether the poster was replaced.</summary>
+    public async Task<RefreshResult> RefreshWithResultAsync(
         Series series, bool includeCover, SeriesMetadataField restore, CancellationToken ct = default)
     {
         if (series.MangaBakaId is null)
         {
-            return false;
+            return new RefreshResult(false, false);
         }
 
         var provider = metadataProviders.First();
         var metadata = await provider.GetAsync(series.MangaBakaId.Value.ToString(), ct);
         if (metadata is null)
         {
-            return false;
+            return new RefreshResult(false, false);
         }
 
         var before = SeriesMetadataChangeLog.Snapshot.Of(series);
@@ -153,6 +165,7 @@ public class SeriesMetadataRefreshService(
         series.OriginalTitle = metadata.OriginalTitle ?? series.OriginalTitle;
         changeLog?.RecordRefresh(series, before);
 
+        var coverReplaced = false;
         if (includeCover && Open(SeriesMetadataField.Cover) && metadata.CoverUrl != null)
         {
             var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
@@ -160,9 +173,10 @@ public class SeriesMetadataRefreshService(
             {
                 series.CoverPath = coverPath;
                 await coverService.WriteLibraryCoverAsync(series, ct);
+                coverReplaced = true;
             }
         }
 
-        return true;
+        return new RefreshResult(true, coverReplaced);
     }
 }
