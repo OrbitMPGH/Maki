@@ -50,6 +50,11 @@ namespace Maki.Metadata.MangaBaka;
 /// for it is a materially different explanation.
 /// </para>
 /// </param>
+/// <param name="CoReadWithTitle">
+/// The reader's own title that did the most to earn <see cref="CoRead"/>, so the card can say
+/// "Readers who finished X also finished this" instead of an anonymous crowd. Null whenever
+/// <see cref="CoRead"/> is false, and when the seed has no row in the dump.
+/// </param>
 /// <param name="FranchiseId">
 /// Which same-work component this pick belongs to (<see cref="FranchiseGraph"/>), or null when it
 /// is in no franchise, which is most of the catalogue. Never treat a null as a component: two picks
@@ -81,7 +86,8 @@ public record MangaBakaRecommendation(
     bool CoRecommended = false,
     bool CoRead = false,
     bool TasteMatch = false,
-    int? FranchiseId = null);
+    int? FranchiseId = null,
+    string? CoReadWithTitle = null);
 
 /// <summary>A dump row's anime range, as <c>AnimeCoverage.Parse</c> reads it, plus its chapter count.</summary>
 public record MangaBakaAnimeCoverage(string? AnimeStart, string? AnimeEnd, int? TotalChapters);

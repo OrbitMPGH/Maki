@@ -342,9 +342,9 @@ public class SemanticRecommender(
             ? await BuildGraphScoresAsync(index, seedIds, seedWeights, ct)
             : [];
 
-        var coReadByRow = coRead && coReadTuning.Weight > 0
+        var (coReadByRow, coReadSeedByRow) = coRead && coReadTuning.Weight > 0
             ? await BuildCoReadScoresAsync(index, seedIds, seedWeights, ct)
-            : [];
+            : (new Dictionary<int, double>(), new Dictionary<int, long>());
 
         // Each weight is set only when its graph actually returned something. A channel whose
         // artifact is absent must not shift the score of every candidate by a constant zero term
@@ -738,7 +738,7 @@ public class SemanticRecommender(
         var cutoff = AttributionCutoff([.. winners.Select(c => c.Distinctiveness)], _tuning);
         var results = await HydrateAsync(
             conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, CategoryWeight, tagTree,
-            cutoff, ct);
+            cutoff, coReadSeedByRow, ct);
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
             "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-recommended and {CoReadInjected} co-read " +
@@ -1875,7 +1875,11 @@ public class SemanticRecommender(
     /// than a parameterized one: the two scorers take different tunings and mean different things,
     /// and the only shared part is the id-to-row projection below, which is three lines.
     /// </summary>
-    private async Task<Dictionary<int, double>> BuildCoReadScoresAsync(
+    /// <returns>
+    /// The score per row, and per row the seed that contributed most to it, which hydration turns
+    /// into "Readers who finished X also finished this".
+    /// </returns>
+    private async Task<(Dictionary<int, double> Scores, Dictionary<int, long> Seeds)> BuildCoReadScoresAsync(
         VectorIndex index,
         IReadOnlyCollection<long> seedIds,
         IReadOnlyDictionary<long, double>? seedWeights,
@@ -1884,11 +1888,13 @@ public class SemanticRecommender(
         var graph = await coReadCache.GetAsync(ct);
         if (graph is null)
         {
-            return [];
+            return ([], []);
         }
 
-        var byId = CoReadScorer.Score(graph, seedIds, seedWeights, coReadTuning);
+        var seedById = new Dictionary<long, long>();
+        var byId = CoReadScorer.Score(graph, seedIds, seedWeights, coReadTuning, seedById);
         var byRow = new Dictionary<int, double>(byId.Count);
+        var seedByRow = new Dictionary<int, long>(byId.Count);
         foreach (var (id, score) in byId)
         {
             // The graph covers series the vector index does not (novels, inactive rows, anything
@@ -1897,10 +1903,14 @@ public class SemanticRecommender(
             if (index.TryGetRow(id, out var row))
             {
                 byRow[row] = score;
+                if (seedById.TryGetValue(id, out var seed))
+                {
+                    seedByRow[row] = seed;
+                }
             }
         }
 
-        return byRow;
+        return (byRow, seedByRow);
     }
 
     /// <summary>
@@ -2043,6 +2053,7 @@ public class SemanticRecommender(
         Func<int, double> categoryWeight,
         TagMath.TagTree tagTree,
         double cutoff,
+        IReadOnlyDictionary<int, long> coReadSeedByRow,
         CancellationToken ct)
     {
         if (winners.Count == 0)
@@ -2052,6 +2063,8 @@ public class SemanticRecommender(
 
         var ids = winners.Select(w => index.IdAt(w.Row)).ToList();
         var rowById = winners.ToDictionary(w => index.IdAt(w.Row), w => w);
+        var coReadTitles = await SeedTitlesAsync(
+            conn, winners.Where(w => w.CoRead).Select(w => coReadSeedByRow.GetValueOrDefault(w.Row)), ct);
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
@@ -2112,13 +2125,44 @@ public class SemanticRecommender(
                     ThumbUrlHiDpi: GetString(reader, 10),
                     CoRecommended: winner.CoRecommended,
                     CoRead: winner.CoRead,
-                    TasteMatch: winner.TasteMatch);
+                    TasteMatch: winner.TasteMatch,
+                    CoReadWithTitle: winner.CoRead
+                        && coReadSeedByRow.TryGetValue(winner.Row, out var seed)
+                        && coReadTitles.TryGetValue(seed, out var seedTitle)
+                            ? seedTitle
+                            : null);
             }
         }
 
         // Preserve the ranking the selection produced; the IN query returns rows in whatever order
         // SQLite likes.
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
+    }
+
+    private static async Task<Dictionary<long, string>> SeedTitlesAsync(
+        SqliteConnection conn, IEnumerable<long> seedIds, CancellationToken ct)
+    {
+        var ids = seedIds.Where(id => id > 0).Distinct().ToList();
+        var titles = new Dictionary<long, string>(ids.Count);
+        if (ids.Count == 0)
+        {
+            return titles;
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            $"SELECT id, {MangaBakaLocalStore.DisplayTitleSql("dump.series")} " +
+            $"FROM dump.series WHERE id IN ({string.Join(",", ids)})";
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            if (GetString(reader, 1) is { Length: > 0 } title)
+            {
+                titles[reader.GetInt64(0)] = title;
+            }
+        }
+
+        return titles;
     }
 
     /// <summary>
