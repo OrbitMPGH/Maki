@@ -314,6 +314,36 @@ public sealed class OpdsCatalogTests : IDisposable
     }
 
     [Fact]
+    public async Task SearchFindsAlternateTitlesTheDatabaseStoresEscaped()
+    {
+        var (spy, _) = SeedSeriesWithChapters("Spy x Family", "s.cbz", ["001.jpg"], [1m]);
+        var (kaguya, _) = SeedSeriesWithChapters("Love Is War", "k.cbz", ["001.jpg"], [1m]);
+        SeedSeriesWithChapters("100% Pure_Love", "p.cbz", ["001.jpg"], [1m]);
+        SeedSeriesWithChapters("100 Percent", "q.cbz", ["001.jpg"], [1m]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.First(s => s.Id == spy).AltTitles = [new LocalizedTitle("SPY×FAMILY", "ja-Latn")];
+            db.Series.First(s => s.Id == kaguya).AltTitles = [new LocalizedTitle("Kaguya-sama's War", "en")];
+            db.SaveChanges();
+        }
+
+        var catalog = Catalog();
+
+        Assert.Equal("Spy x Family", Assert.Single((await catalog.SearchFeedAsync(Ctx, "y×f", 0, CancellationToken.None)).Entries).Title);
+        Assert.Equal("Love Is War", Assert.Single((await catalog.SearchFeedAsync(Ctx, "sama's", 0, CancellationToken.None)).Entries).Title);
+        Assert.Equal("100% Pure_Love", Assert.Single((await catalog.SearchFeedAsync(Ctx, "0% pure_", 0, CancellationToken.None)).Entries).Title);
+    }
+
+    [Theory]
+    [InlineData("ippo", true)]
+    [InlineData("100% pure_love!", true)]
+    [InlineData("sama's", false)]
+    [InlineData("a+b", false)]
+    [InlineData("ä", false)]
+    public void OnlyNeedlesLikeAgreesOnArePrefilteredInSql(string needle, bool prefiltered) =>
+        Assert.Equal(prefiltered, OpdsCatalogService.SqlPrefilterable(needle));
+
+    [Fact]
     public async Task SearchPagesOverTheMatchesNotTheLibrary()
     {
         var total = OpdsCatalogService.SeriesPageSize + 1;

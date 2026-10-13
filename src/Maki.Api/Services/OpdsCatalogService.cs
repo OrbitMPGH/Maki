@@ -125,10 +125,26 @@ public class OpdsCatalogService(
         int total;
         if (query is { Length: > 0 })
         {
-            // AltTitles is a JSON text column behind a value converter, so SQL cannot see into it.
-            // Match in memory over a narrow projection, then page the surviving ids.
+            // AltTitles is a JSON text column behind a value converter, so SQL cannot match it
+            // exactly. The real match runs in memory over a narrow projection; SQL only narrows the
+            // rows it has to load, and only for a needle LIKE and the stored JSON agree on.
             var needle = query.Trim();
-            var candidates = await source
+            var filtered = source;
+            if (SqlPrefilterable(needle))
+            {
+                var pattern = "%" + needle.Replace("%", @"\%").Replace("_", @"\_") + "%";
+                var altIds = db.Database.SqlQuery<int>(
+                    $"SELECT \"Id\" AS \"Value\" FROM \"Series\" WHERE \"AltTitles\" LIKE {pattern} ESCAPE '\\'");
+                filtered = source.Where(s =>
+                    EF.Functions.Like(s.SortTitle, pattern, @"\") ||
+                    EF.Functions.Like(s.Title, pattern, @"\") ||
+                    EF.Functions.Like(s.OriginalTitle, pattern, @"\") ||
+                    EF.Functions.Like(s.AuthorStory, pattern, @"\") ||
+                    EF.Functions.Like(s.AuthorArt, pattern, @"\") ||
+                    altIds.Contains(s.Id));
+            }
+
+            var candidates = await filtered
                 .Select(s => new
                 {
                     s.Id, s.SortTitle, s.Title, s.OriginalTitle, s.AltTitles, s.AuthorStory, s.AuthorArt
@@ -212,6 +228,15 @@ public class OpdsCatalogService(
 
     private static bool Contains(string? haystack, string needle) =>
         haystack is not null && haystack.Contains(needle, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Whether a SQL <c>LIKE</c> finds everything the in-memory match does. SQLite folds case for
+    /// ASCII only, and the alt titles are stored with the default JSON encoder, which writes
+    /// non-ASCII and <c>" \ &amp; ' + &lt; &gt; `</c> as escapes. Any other needle scans every row.
+    /// One gap is accepted: OrdinalIgnoreCase also reads a dotless i or a long s as i or s.
+    /// </summary>
+    internal static bool SqlPrefilterable(string needle) =>
+        needle.All(c => c is >= ' ' and <= '~' and not ('"' or '\\' or '&' or '\'' or '+' or '<' or '>' or '`'));
 
     private record SeriesRow(
         int Id, string Title, string? Overview, string? AuthorStory, List<string> Genres, string? CoverPath,
