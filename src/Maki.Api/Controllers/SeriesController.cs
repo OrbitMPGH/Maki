@@ -1899,7 +1899,8 @@ public class SeriesController(
     /// <param name="Mode">"Default", "On" or "Off".</param>
     public record ReadFileCleanupRequest(string Mode);
 
-    [Authorize(Policy = Policies.EditMetadata)]
+    // DeleteSeries, not EditMetadata: On overrides the instance switch and the cleanup deletes for good.
+    [Authorize(Policy = Policies.DeleteSeries)]
     [HttpPost("{id:int}/readcleanup")]
     public async Task<IActionResult> SetReadFileCleanup(int id, [FromBody] ReadFileCleanupRequest request, CancellationToken ct)
     {

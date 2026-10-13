@@ -53,6 +53,7 @@ export function SeriesActionsMenu({
                                       readFileCleanup,
                                       readFileCleanupActive,
                                       canEdit,
+                                      canCleanUpReadFiles,
                                       canScanUpgrades,
                                       scanningUpgrades,
                                       searchingVolumes,
@@ -85,6 +86,8 @@ export function SeriesActionsMenu({
     readFileCleanupActive: boolean
     /** EditMetadata: gates every item that changes the series itself. Notify is per user and stays. */
     canEdit: boolean
+    /** DeleteSeries: "On" overrides the instance switch, and the cleanup deletes files for good. */
+    canCleanUpReadFiles: boolean
     /** DownloadChapters: gates the "Scan for upgrades" item, same permission as "Upgrade now". */
     canScanUpgrades: boolean
     scanningUpgrades: boolean
@@ -161,47 +164,57 @@ export function SeriesActionsMenu({
                         </Menu.Item>
 
                         <Menu.Divider />
+                    </>
+                )}
+                {(canEdit || canCleanUpReadFiles) && (
+                    <>
                         <Menu.Label><Trans>Files</Trans></Menu.Label>
-                        <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
-                            <Trans>Rescan files</Trans>
-                        </Menu.Item>
-                        <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
-                            <Trans>Move to another root folder</Trans>
-                        </Menu.Item>
-                        <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
-                            <Trans>Rename files</Trans>
-                        </Menu.Item>
-                        <Menu.Sub>
-                            <Menu.Sub.Target>
-                                <Menu.Sub.Item
-                                    leftSection={<IconTrashX size={16} />}
-                                    rightSection={
-                                        <Text size="xs" c="var(--ink-3)">
-                                            {readFileCleanupActive ? t`On` : t`Off`}
-                                        </Text>
-                                    }
-                                >
-                                    <Trans>Clean up read files</Trans>
-                                </Menu.Sub.Item>
-                            </Menu.Sub.Target>
-                            <Menu.Sub.Dropdown maw={264}>
-                                <Menu.Label>
-                                    <Trans>Delete a chapter's file some days after everyone has read it</Trans>
-                                </Menu.Label>
-                                <Menu.RadioGroup value={readFileCleanup} onChange={onSetReadFileCleanup}>
-                                    <Menu.RadioItem value="Default">
-                                        <Trans>Follow the setting</Trans>
-                                    </Menu.RadioItem>
-                                    <Menu.RadioItem value="On">
-                                        <Trans>On for this series</Trans>
-                                    </Menu.RadioItem>
-                                    <Menu.RadioItem value="Off">
-                                        <Trans>Off for this series</Trans>
-                                    </Menu.RadioItem>
-                                </Menu.RadioGroup>
-                                <Menu.Label><Trans>Read history stays, and the chapters aren't downloaded again.</Trans></Menu.Label>
-                            </Menu.Sub.Dropdown>
-                        </Menu.Sub>
+                        {canEdit && (
+                            <>
+                                <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
+                                    <Trans>Rescan files</Trans>
+                                </Menu.Item>
+                                <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
+                                    <Trans>Move to another root folder</Trans>
+                                </Menu.Item>
+                                <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
+                                    <Trans>Rename files</Trans>
+                                </Menu.Item>
+                            </>
+                        )}
+                        {canCleanUpReadFiles && (
+                            <Menu.Sub>
+                                <Menu.Sub.Target>
+                                    <Menu.Sub.Item
+                                        leftSection={<IconTrashX size={16} />}
+                                        rightSection={
+                                            <Text size="xs" c="var(--ink-3)">
+                                                {readFileCleanupActive ? t`On` : t`Off`}
+                                            </Text>
+                                        }
+                                    >
+                                        <Trans>Clean up read files</Trans>
+                                    </Menu.Sub.Item>
+                                </Menu.Sub.Target>
+                                <Menu.Sub.Dropdown maw={264}>
+                                    <Menu.Label>
+                                        <Trans>Delete a chapter's file some days after everyone has read it</Trans>
+                                    </Menu.Label>
+                                    <Menu.RadioGroup value={readFileCleanup} onChange={onSetReadFileCleanup}>
+                                        <Menu.RadioItem value="Default">
+                                            <Trans>Follow the setting</Trans>
+                                        </Menu.RadioItem>
+                                        <Menu.RadioItem value="On">
+                                            <Trans>On for this series</Trans>
+                                        </Menu.RadioItem>
+                                        <Menu.RadioItem value="Off">
+                                            <Trans>Off for this series</Trans>
+                                        </Menu.RadioItem>
+                                    </Menu.RadioGroup>
+                                    <Menu.Label><Trans>Read history stays, and the chapters aren't downloaded again.</Trans></Menu.Label>
+                                </Menu.Sub.Dropdown>
+                            </Menu.Sub>
+                        )}
 
                         <Menu.Divider />
                     </>
