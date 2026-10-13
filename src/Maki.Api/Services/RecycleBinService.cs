@@ -255,7 +255,9 @@ public class RecycleBinService(
             return false;
         }
 
-        var outcome = await MoveAsync(entry.OriginalPath, target, ct);
+        // The housekeeping purge removes empty bin folders, and may take this one before the move.
+        var outcome = await MoveAsync(entry.OriginalPath, target, ct,
+            () => UpgradeTrash.EnsureDirectory(entry.RootPath, Path.GetDirectoryName(target)!));
         if (outcome.Result != MoveResult.Moved)
         {
             logger.LogWarning(outcome.Error, "Could not move {File} to the recycle bin ({Result})", entry.OriginalPath, outcome.Result);
@@ -284,10 +286,23 @@ public class RecycleBinService(
         await db.RecycleBin.IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(CancellationToken.None);
     }
 
-    private async Task<MoveOutcome> MoveAsync(string from, string to, CancellationToken ct)
+    /// <param name="prepare">Run before each retry, to put back a target folder something removed.</param>
+    private async Task<MoveOutcome> MoveAsync(string from, string to, CancellationToken ct, Action? prepare = null)
     {
         for (var attempt = 0; ; attempt++)
         {
+            if (attempt > 0 && prepare is not null)
+            {
+                try
+                {
+                    prepare();
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogDebug(ex, "Could not prepare the move of {From}", from);
+                }
+            }
+
             var outcome = mover.Move(from, to);
             if (outcome.Racy)
             {

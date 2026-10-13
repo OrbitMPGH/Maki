@@ -570,6 +570,34 @@ public class RecycleBinTests : IDisposable
     }
 
     [Fact]
+    public async Task A_bin_folder_a_purge_removes_before_the_move_is_made_again()
+    {
+        var s = Seed();
+        var swept = false;
+        var mover = new ScriptedMover((source, target) =>
+        {
+            if (source == s.Absolute && !swept)
+            {
+                swept = true;
+                Directory.Delete(Path.GetDirectoryName(target)!);
+            }
+
+            return null;
+        });
+
+        using (var db = _db.NewContext())
+        {
+            var result = Assert.IsType<OkObjectResult>(await Chapters(db).DeleteFiles([s.ChapterId], Deletion(db, mover), default));
+            Assert.Equal(0, Assert.IsType<ChapterFileDeletion.Result>(result.Value).Failed);
+        }
+
+        Assert.True(swept);
+        Assert.False(File.Exists(s.Absolute));
+        using var check = _db.NewContext();
+        Assert.Equal("volume one", File.ReadAllText(BinFile(Assert.Single(check.RecycleBin))));
+    }
+
+    [Fact]
     public async Task A_purge_with_retention_zero_leaves_an_entry_that_was_just_recorded()
     {
         var s = Seed();
