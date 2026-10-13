@@ -169,7 +169,9 @@ public class QueueController(
     [HttpDelete("pause")]
     public async Task<IActionResult> Resume([FromQuery] string? source, CancellationToken ct)
     {
-        var name = string.IsNullOrWhiteSpace(source) ? null : source;
+        // Canonicalised like the pause, so a differently cased name lifts it; a name no source answers
+        // to any more is taken as given, or a pause on a source since removed could never be lifted.
+        var name = string.IsNullOrWhiteSpace(source) ? null : sourceRegistry.Find(source)?.Name ?? source;
         return Ok(await ChangePauseAsync(await pauses.ResumeAsync(name, ct), ct));
     }
 

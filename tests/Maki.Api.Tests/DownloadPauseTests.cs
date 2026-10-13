@@ -223,4 +223,72 @@ public class DownloadPauseTests : IDisposable
         Assert.True((await _pauses.ActiveAsync()).IsEmpty);
         Assert.Equal(id, await _queue.ClaimNextAsync());
     }
+
+    [Fact]
+    public async Task Resuming_a_source_matches_its_name_the_way_pausing_does()
+    {
+        await _pauses.PauseAsync("MangaDex", null);
+        var controller = new Maki.Api.Controllers.QueueController(
+            new TestLocalizer(), _db.NewContext(), _queue, null!, _pauses,
+            new Maki.Core.Sources.SourceRegistry([new FakeSource { Name = "MangaDex" }]), null!,
+            new Maki.Api.Hubs.EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()), null!,
+            NullLogger<Maki.Api.Controllers.QueueController>.Instance);
+
+        await controller.Resume("mangadex", CancellationToken.None);
+
+        Assert.True((await _pauses.ActiveAsync()).IsEmpty);
+    }
+
+    [Fact]
+    public async Task A_pause_change_reaches_everyone_who_may_manage_the_queue()
+    {
+        var admin = _db.SeedUser("admin", Maki.Core.Security.MakiPermission.Admin);
+        var manager = _db.SeedUser("manager", Maki.Core.Security.MakiPermission.ManageDownloadQueue);
+        _db.SeedUser("reader", Maki.Core.Security.MakiPermission.None);
+        _db.SeedUser("gone", Maki.Core.Security.MakiPermission.ManageDownloadQueue, configure: u => u.Disabled = true);
+        var hub = new RecordingHubContext();
+
+        await new Maki.Api.Hubs.EventBroadcaster(hub, _db.ScopeFactory()).QueuePauseChanged(new { });
+
+        Assert.Equal(
+            new[] { Maki.Api.Hubs.EventsHub.UserGroup(admin), Maki.Api.Hubs.EventsHub.UserGroup(manager) }.Order(),
+            hub.Groups.Order());
+    }
+
+    private sealed class RecordingHubContext : Microsoft.AspNetCore.SignalR.IHubContext<Maki.Api.Hubs.EventsHub>
+    {
+        public List<string> Groups { get; } = [];
+        public Microsoft.AspNetCore.SignalR.IHubClients Clients => new RecordingClients(this);
+        Microsoft.AspNetCore.SignalR.IGroupManager Microsoft.AspNetCore.SignalR.IHubContext<Maki.Api.Hubs.EventsHub>.Groups =>
+            throw new NotSupportedException();
+
+        private sealed class RecordingClients(RecordingHubContext owner) : Microsoft.AspNetCore.SignalR.IHubClients
+        {
+            private static readonly Microsoft.AspNetCore.SignalR.IClientProxy Proxy = new NoopProxy();
+            public Microsoft.AspNetCore.SignalR.IClientProxy All => Proxy;
+            public Microsoft.AspNetCore.SignalR.IClientProxy AllExcept(IReadOnlyList<string> excludedConnectionIds) => Proxy;
+            public Microsoft.AspNetCore.SignalR.IClientProxy Client(string connectionId) => Proxy;
+            public Microsoft.AspNetCore.SignalR.IClientProxy Clients(IReadOnlyList<string> connectionIds) => Proxy;
+            public Microsoft.AspNetCore.SignalR.IClientProxy GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds) => Proxy;
+            public Microsoft.AspNetCore.SignalR.IClientProxy User(string userId) => Proxy;
+            public Microsoft.AspNetCore.SignalR.IClientProxy Users(IReadOnlyList<string> userIds) => Proxy;
+
+            public Microsoft.AspNetCore.SignalR.IClientProxy Group(string groupName)
+            {
+                owner.Groups.Add(groupName);
+                return Proxy;
+            }
+
+            public Microsoft.AspNetCore.SignalR.IClientProxy Groups(IReadOnlyList<string> groupNames)
+            {
+                owner.Groups.AddRange(groupNames);
+                return Proxy;
+            }
+        }
+
+        private sealed class NoopProxy : Microsoft.AspNetCore.SignalR.IClientProxy
+        {
+            public Task SendCoreAsync(string method, object?[] args, CancellationToken ct = default) => Task.CompletedTask;
+        }
+    }
 }

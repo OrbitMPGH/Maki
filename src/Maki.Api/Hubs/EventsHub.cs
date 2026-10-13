@@ -100,9 +100,30 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     public Task QueueUpdated(object queueItem) =>
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queueUpdated", queueItem);
 
-    /// <summary>The download pause changed, by a person or because a resume time passed.</summary>
-    public Task QueuePauseChanged(object pause) =>
-        hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queuePauseChanged", pause);
+    /// <summary>
+    /// The download pause changed, by a person or because a resume time passed. Goes to everyone
+    /// who may pause and resume (<see cref="MakiPermission.ManageDownloadQueue"/>), not just admins,
+    /// so their pause controls do not wait for the poll. Rare enough to resolve the audience each time.
+    /// </summary>
+    public async Task QueuePauseChanged(object pause)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        var users = await db.Users
+            .Where(u => !u.Disabled && !u.PendingSetup)
+            .Select(u => new { u.Id, u.Permissions })
+            .ToListAsync();
+        var groups = users
+            .Where(u => u.Permissions.Grants(MakiPermission.ManageDownloadQueue))
+            .Select(u => EventsHub.UserGroup(u.Id))
+            .ToList();
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        await hubContext.Clients.Groups(groups).SendAsync("queuePauseChanged", pause);
+    }
 
     /// <summary>
     /// A chapter finished importing. Unlike the rest of this class the audience is not "admins" —
