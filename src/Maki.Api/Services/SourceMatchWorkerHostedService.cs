@@ -41,6 +41,8 @@ public class SourceMatchWorkerHostedService(
 
     internal static readonly TimeSpan UnreachableRetryMax = TimeSpan.FromMinutes(30);
 
+    private readonly SourceFailureStreaks failureStreaks = new();
+
     // Per series: how many times in a row its root was unreachable, and whether a retry is waiting.
     private readonly System.Collections.Concurrent.ConcurrentDictionary<int, int> unreachableAttempts = new();
     private readonly System.Collections.Concurrent.ConcurrentDictionary<int, byte> retryScheduled = new();
@@ -263,6 +265,7 @@ public class SourceMatchWorkerHostedService(
 
         // A source whose search failed can still be mapped from a neighbour's cross-reference.
         var unsearched = progress.Failed.Except(mapped, StringComparer.OrdinalIgnoreCase).ToList();
+        failureStreaks.Record(progress.Answered, unsearched);
         await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count, unsearched);
 
         var registry = scope.ServiceProvider.GetRequiredService<Maki.Core.Sources.SourceRegistry>();
@@ -273,8 +276,10 @@ public class SourceMatchWorkerHostedService(
             await HealthCheckJob.RequestSoonAsync(schedulers, logger);
         }
 
-        // "Link one by hand" would be wrong while sources that may carry it could not be asked.
-        if (mapped.Count == 0 && !failed && unsearched.Count == 0)
+        // "Link one by hand" would be wrong while sources that may carry it could not be asked, but a
+        // source failing every search (an uninstalled extension, a site that needs FlareSolverr) would
+        // then hold the alert back for every series, so one that keeps failing no longer counts.
+        if (mapped.Count == 0 && !failed && unsearched.All(failureStreaks.IsPersistent))
         {
             await NotifyManualMatchNeededAsync(
                 scope.ServiceProvider.GetRequiredService<NotificationService>(),
@@ -491,19 +496,28 @@ public class SourceMatchWorkerHostedService(
     /// the finished table, and a hub push is not worth failing a match over.
     /// </para>
     /// </summary>
-    /// <summary>Passes every step on and remembers the sources whose search failed.</summary>
+    /// <summary>Passes every step on and remembers which sources answered and which failed.</summary>
     private sealed class FailureCollector(IProgress<SourceMatchStep> inner) : IProgress<SourceMatchStep>
     {
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _failed =
             new(StringComparer.OrdinalIgnoreCase);
 
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _answered =
+            new(StringComparer.OrdinalIgnoreCase);
+
         public IEnumerable<string> Failed => _failed.Keys;
+
+        public IEnumerable<string> Answered => _answered.Keys;
 
         public void Report(SourceMatchStep step)
         {
             if (step.State == SourceMatchState.Failed)
             {
                 _failed.TryAdd(step.SourceName, 0);
+            }
+            else if (step.State is SourceMatchState.Matched or SourceMatchState.NoMatch)
+            {
+                _answered.TryAdd(step.SourceName, 0);
             }
 
             inner.Report(step);
@@ -527,4 +541,33 @@ public class SourceMatchWorkerHostedService(
             }
         }
     }
+}
+
+/// <summary>
+/// How many searches in a row each source has failed, across every series matched since the start.
+/// One that failed <see cref="Threshold"/> times running without answering once is taken to be down
+/// for good, until it answers again: a single timeout says nothing, an uninstalled extension fails
+/// every time.
+/// </summary>
+internal sealed class SourceFailureStreaks
+{
+    internal const int Threshold = 3;
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _streaks =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public void Record(IEnumerable<string> answered, IEnumerable<string> failed)
+    {
+        foreach (var name in answered)
+        {
+            _streaks.TryRemove(name, out _);
+        }
+
+        foreach (var name in failed)
+        {
+            _streaks.AddOrUpdate(name, 1, (_, n) => n + 1);
+        }
+    }
+
+    public bool IsPersistent(string source) => _streaks.TryGetValue(source, out var n) && n >= Threshold;
 }
