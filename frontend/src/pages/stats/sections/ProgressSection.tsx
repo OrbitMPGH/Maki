@@ -55,7 +55,7 @@ function GoalRow({ goal }: { goal: ReadingGoal }) {
         size={30}
         thickness={4}
         roundCaps
-        sections={[{ value: done * 100, color: done >= 1 ? 'var(--ok)' : 'var(--brand)' }]}
+        sections={[{ value: done * 100, color: done >= 1 ? 'var(--ok)' : 'var(--neutral)' }]}
       />
       <div style={{ minWidth: 0 }}>
         <div className="stats-row-title">{renderLabel(GOAL_LABELS[goal.period])}</div>
@@ -198,7 +198,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
               size={84}
               thickness={8}
               roundCaps
-              sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
+              sections={[{ value: level.progress * 100, color: 'var(--neutral)' }]}
               label={
                 <Text ta="center" fw={700} size="lg" className="figure">
                   {level.level}

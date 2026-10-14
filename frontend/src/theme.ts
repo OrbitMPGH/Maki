@@ -9,7 +9,9 @@ import {
   type MantineColorsTuple,
   type MantineThemeOverride,
   Modal,
+  Pagination,
   Paper,
+  Progress,
   Popover,
   Table,
   type VariantColorsResolver,
@@ -335,6 +337,19 @@ const themeBase: MantineThemeOverride = {
     Modal: Modal.extend({ defaultProps: modalDefaults }),
     Table: Table.extend({
       defaultProps: { verticalSpacing: 'sm', horizontalSpacing: 'md' },
+    }),
+    // Work in flight is neutral; brand is kept for actions and for reading. Callers turn a bar ok when it completes.
+    Progress: Progress.extend({
+      defaultProps: { color: 'var(--neutral)' },
+    }),
+    // The current page is a place, not an action: the nav's tint rather than a brand fill.
+    Pagination: Pagination.extend({
+      vars: () => ({
+        root: {
+          '--pagination-active-bg': 'color-mix(in srgb, var(--brand) 13%, transparent)',
+          '--pagination-active-color': 'var(--brand-fg)',
+        },
+      }),
     }),
   },
 }

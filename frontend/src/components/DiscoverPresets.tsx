@@ -14,10 +14,6 @@ import {
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
-  IconBookmark,
-  IconDeviceFloppy,
-  IconEyeOff,
-  IconLayoutRows,
   IconTrash,
 } from '@tabler/icons-react'
 import {
@@ -100,7 +96,7 @@ export function PresetMenu({
     <>
       <Menu position="bottom-start" withinPortal shadow="md" width={280}>
         <Menu.Target>
-          <Button size="xs" variant="default" leftSection={<IconBookmark size={14} />}>
+          <Button size="xs" variant="default">
             <Trans>Saved filters</Trans>
           </Button>
         </Menu.Target>
@@ -128,11 +124,10 @@ export function PresetMenu({
             </Group>
           ))}
           <Menu.Divider />
-          <Menu.Item leftSection={<IconDeviceFloppy size={14} />} onClick={() => setSaveOpen(true)}>
+          <Menu.Item onClick={() => setSaveOpen(true)}>
             <Trans>Save these filters…</Trans>
           </Menu.Item>
           <Menu.Item
-            leftSection={<IconLayoutRows size={14} />}
             onClick={() => setRailSpec(railDraft ? railDraft() : { source: 'catalogue', filters: current() })}
           >
             <Trans>Save as a rail…</Trans>
@@ -224,7 +219,6 @@ export function HiddenContentButton() {
         size="xs"
         variant="subtle"
         color="var(--neutral)"
-        leftSection={<IconEyeOff size={14} />}
         onClick={() => setOpen(true)}
       >
         {count > 0 ? <Trans>Hidden everywhere ({count})</Trans> : <Trans>Hidden everywhere</Trans>}

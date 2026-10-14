@@ -2,7 +2,6 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
   Anchor,
-  Badge,
   Button,
   Checkbox,
   Group,
@@ -77,6 +76,7 @@ import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
+import { TagChip } from '../components/ui/TagChip'
 import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../components/ui/status'
 import { isHeldByPause, queueErrorMessage, queueItemLabel, queueOriginOrUnknown } from '../api/queue'
 import { useLabel } from '../i18n-context'
@@ -519,9 +519,9 @@ export default function ActivityPage() {
                                 {sourceLabel(q.sourceName)}
                               </Text>
                               {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                <Badge size="xs" variant="light" color="var(--brand)">
+                                <TagChip size="sm">
                                   {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
-                                </Badge>
+                                </TagChip>
                               )}
                             </Group>
                             {transitionText && (
@@ -540,7 +540,7 @@ export default function ActivityPage() {
                               style={{ flex: 1 }}
                               radius="xl"
                               animated={q.status === 'Downloading'}
-                              color={q.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                              color={q.status === 'Failed' ? 'var(--danger)' : 'var(--neutral)'}
                             />
                             <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">
                               {q.pagesDone}/{q.pagesTotal}
@@ -805,9 +805,9 @@ export default function ActivityPage() {
                                   {sourceLabel(q.sourceName)}
                                 </Text>
                                 {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                  <Badge size="xs" variant="light" color="var(--brand)">
+                                  <TagChip size="sm">
                                     {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
-                                  </Badge>
+                                  </TagChip>
                                 )}
                               </Group>
                               {transitionText && (

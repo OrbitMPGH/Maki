@@ -4,12 +4,10 @@ import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { ChapterFileQualityDto } from '../../api/types'
-import { QUALITY_TIER_COLOR, QUALITY_TIER_LABELS } from '../../api/upgrades'
+import { QUALITY_TIER_LABELS } from '../../api/upgrades'
 import { useLabel } from '../../i18n-context'
 import { HoverTooltip } from './HoverTooltip'
-import { LightBadge } from './lightMantine'
-
-const TIER_COLOR = QUALITY_TIER_COLOR
+import { TagChip } from '../ui/TagChip'
 
 /** `imageFormat` is mostly raw codec names (jpg, webp, ...), which are data, not copy. Only the
  * two words the backend itself chooses need translating. */
@@ -19,9 +17,11 @@ const FORMAT_LABEL: Partial<Record<string, MessageDescriptor>> = {
 }
 
 /**
- * Quiet quality signal that sits next to the Source badge: which kind of release a chapter's file
+ * Quiet quality signal that sits next to the Source chip: which kind of release a chapter's file
  * is (a scanlator's own work, an aggregator repost, an official release, a volume/compilation
- * archive), and once the backfill has opened the archive, its resolution.
+ * archive), and once the backfill has opened the archive, its resolution. Same neutral chip as
+ * the source: the tier is a word and needs no colour of its own. A file below its upgrade cutoff
+ * keeps a small warn dot.
  *
  * Renders nothing for a chapter with no file, and nothing for a file the backfill hasn't reached
  * yet and couldn't otherwise classify from its name alone, so an "Unknown" badge on every unmeasured
@@ -102,27 +102,10 @@ export function FileQualityBadge({
         </Stack>
       }
     >
-      <LightBadge
-        color={TIER_COLOR[tier]}
-        rightSection={
-          trusted ? (
-            <IconLock size={9} aria-hidden />
-          ) : cutoffUnmet ? (
-            <span
-              aria-hidden
-              style={{
-                display: 'inline-block',
-                width: 5,
-                height: 5,
-                borderRadius: '50%',
-                background: 'var(--warn)',
-              }}
-            />
-          ) : undefined
-        }
-      >
+      <TagChip size="sm" dot={cutoffUnmet ? 'var(--warn)' : undefined}>
         {label}
-      </LightBadge>
+        {trusted && <IconLock size={11} aria-hidden />}
+      </TagChip>
     </HoverTooltip>
   )
 }

@@ -10,7 +10,7 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowRight, IconBan, IconFileTypePdf, IconFileZip } from '@tabler/icons-react'
+import { IconAlertTriangle, IconArrowRight, IconFileTypePdf, IconFileZip } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useImportPlan, useQueue, useSettleImport } from '../api/hooks'
@@ -296,7 +296,6 @@ export function ImportReviewModal({
               color="var(--neutral)"
               onClick={() => decide('Reject')}
               {...pendingProps('Reject')}
-              leftSection={<IconBan size={16} />}
             >
               <PendingLabel pending={<Trans>Ignoring</Trans>}>
                 <Trans>Ignore this download</Trans>

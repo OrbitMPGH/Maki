@@ -18,7 +18,7 @@ import {
   useCombobox,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconEyeOff, IconListTree, IconPlus, IconSitemap, IconTarget, IconTrash } from '@tabler/icons-react'
+import { IconListTree, IconPlus, IconSitemap, IconTarget, IconTrash } from '@tabler/icons-react'
 import { usePageState } from '../lib/pageState'
 import {
   useDiscoverCount,
@@ -676,7 +676,6 @@ function TermPill({
               size="xs"
               variant="subtle"
               color="var(--danger)"
-              leftSection={<IconEyeOff size={14} />}
               loading={hideEverywhere.isPending}
               disabled={!hideEverywhere.ready}
               onClick={() => {

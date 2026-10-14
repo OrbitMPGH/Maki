@@ -9,12 +9,10 @@ import { useRecommendationDetail, type RecommendationItem } from '../../api/hook
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import {
-  contentRatingToken,
-  contentRatingVisual,
   ratingBandVisual,
   seriesStatusVisual,
-  statusToken,
 } from '../ui/status'
+import { HeroStatusPills } from '../ui/HeroStatus'
 import { coReadPhrase, relationPhrase } from '../ui/DiscoverRail'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
@@ -124,9 +122,6 @@ export function DiscoverHero({
   const cover = item.thumbUrlHiDpi ?? item.coverUrl ?? null
   const { title, becauseOfTitle, relationKind, relatedToTitle } = item
   const ownedSeriesId = seriesIdFor?.(item) ?? null
-  const status = seriesStatusVisual(detail?.status ?? item.status)
-  const contentRating = contentRatingVisual(detail?.contentRating ?? null)
-  const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item.rating
   const band = ratingBandVisual(score ?? 0)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
@@ -285,33 +280,7 @@ export function DiscoverHero({
                         <Trans>Details</Trans>
                       </h3>
                       <Group gap={8} wrap="wrap">
-                        <span
-                          className="series-hero-status"
-                          style={{
-                            color: `var(--${statusToken(status.color)})`,
-                            background: `var(--${statusToken(status.color)}-soft)`,
-                          }}
-                        >
-                          <status.Icon size={14} />
-                          {renderLabel(status.label)}
-                        </span>
-                        {contentRating && (
-                          <span
-                            className="series-hero-status"
-                            data-quiet={ratingToken ? undefined : true}
-                            style={
-                              ratingToken
-                                ? {
-                                    color: `var(--${ratingToken})`,
-                                    background: `var(--${ratingToken}-soft)`,
-                                  }
-                                : undefined
-                            }
-                          >
-                            <contentRating.Icon size={14} />
-                            {renderLabel(contentRating.label)}
-                          </span>
-                        )}
+                        <HeroStatusPills status={detail?.status ?? item.status} contentRating={detail?.contentRating ?? null} />
                       </Group>
                       {lengths.length > 0 && (
                         <dl className="hero-details-facts">

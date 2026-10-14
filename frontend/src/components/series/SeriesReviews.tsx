@@ -22,7 +22,6 @@ export function SeriesReviews({ malId }: { malId: number }) {
       <Button
         size="xs"
         variant="light"
-        leftSection={<IconMessage2 size={14} />}
         onClick={() => {
           setRequested(true)
           setOpened(true)

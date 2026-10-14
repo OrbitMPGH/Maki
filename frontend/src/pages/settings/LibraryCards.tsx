@@ -19,7 +19,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconRestore, IconTrash } from '@tabler/icons-react'
+import { IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { SettingsSection } from './SettingsSection'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -854,7 +854,6 @@ export function RecycleBinSection() {
                                 <Button
                                   size="xs"
                                   variant="default"
-                                  leftSection={<IconRestore size={14} />}
                                   disabled={entry.missing}
                                   loading={restore.isPending && restore.variables === entry.id}
                                   onClick={() => onRestore(entry)}

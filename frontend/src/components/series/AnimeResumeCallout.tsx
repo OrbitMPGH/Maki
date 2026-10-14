@@ -81,7 +81,7 @@ export function AnimeResumeCallout({
           {variant === 'library' && (
             <Group gap="xs" wrap="wrap">
               {unmarkedCount !== 0 && (
-                <Button size="xs" onClick={openConfirm} loading={pending === 'mark'} disabled={!!pending && pending !== 'mark'}>
+                <Button size="xs" variant="light" onClick={openConfirm} loading={pending === 'mark'} disabled={!!pending && pending !== 'mark'}>
                   <Trans>Mark ch. 1 to {coveredTo} watched</Trans>
                 </Button>
               )}

@@ -117,6 +117,7 @@ const ContinueTile = memo(function ContinueTile({
             component={Link}
             to={`/read/${item.chapterId}`}
             size="sm"
+            variant="light"
             leftSection={<IconPlayerPlay size={15} />}
             className="continue-tile-action"
           >

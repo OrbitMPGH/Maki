@@ -1,20 +1,7 @@
 import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
 import { useState } from 'react'
 import {
-    IconBell,
-    IconDotsVertical,
-    IconEyeOff,
-    IconFileText,
-    IconFolderSymlink,
-    IconEye,
-    IconPencil,
-    IconPhoto,
-    IconRefresh,
-    IconScan,
-    IconSearch,
-    IconSparkles,
-    IconTrash,
-    IconTrashX,
+  IconDotsVertical,
 } from '@tabler/icons-react'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationOptions } from '../ui/seriesNotifications'
@@ -153,13 +140,13 @@ export function SeriesActionsMenu({
                 {canEdit && (
                     <>
                         <Menu.Label><Trans>Series</Trans></Menu.Label>
-                        <Menu.Item leftSection={<IconRefresh size={16} />} onClick={onRefreshChapters}>
+                        <Menu.Item onClick={onRefreshChapters}>
                             <Trans>Refresh chapters</Trans>
                         </Menu.Item>
-                        <Menu.Item leftSection={<IconPhoto size={16} />} onClick={onRefreshMetadata}>
+                        <Menu.Item onClick={onRefreshMetadata}>
                             <Trans>Refresh metadata and poster</Trans>
                         </Menu.Item>
-                        <Menu.Item leftSection={<IconPencil size={16} />} onClick={onEditMetadata}>
+                        <Menu.Item onClick={onEditMetadata}>
                             <Trans>Edit metadata</Trans>
                         </Menu.Item>
 
@@ -171,13 +158,13 @@ export function SeriesActionsMenu({
                         <Menu.Label><Trans>Files</Trans></Menu.Label>
                         {canEdit && (
                             <>
-                                <Menu.Item leftSection={<IconScan size={16} />} onClick={onRescan}>
+                                <Menu.Item onClick={onRescan}>
                                     <Trans>Rescan files</Trans>
                                 </Menu.Item>
-                                <Menu.Item leftSection={<IconFolderSymlink size={16} />} onClick={onMove}>
+                                <Menu.Item onClick={onMove}>
                                     <Trans>Move to another root folder</Trans>
                                 </Menu.Item>
-                                <Menu.Item leftSection={<IconFileText size={16} />} onClick={onRename}>
+                                <Menu.Item onClick={onRename}>
                                     <Trans>Rename files</Trans>
                                 </Menu.Item>
                             </>
@@ -186,7 +173,6 @@ export function SeriesActionsMenu({
                             <Menu.Sub>
                                 <Menu.Sub.Target>
                                     <Menu.Sub.Item
-                                        leftSection={<IconTrashX size={16} />}
                                         rightSection={
                                             <Text size="xs" c="var(--ink-3)">
                                                 {readFileCleanupActive ? t`On` : t`Off`}
@@ -225,7 +211,6 @@ export function SeriesActionsMenu({
                     <Menu.Sub>
                         <Menu.Sub.Target>
                             <Menu.Sub.Item
-                                leftSection={<IconEye size={16} />}
                                 rightSection={
                                     <Text size="xs" c="var(--ink-3)">
                                         {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
@@ -253,7 +238,6 @@ export function SeriesActionsMenu({
                     <Menu.Sub>
                         <Menu.Sub.Target>
                             <Menu.Sub.Item
-                                leftSection={<IconEyeOff size={16} />}
                                 rightSection={
                                     <Text size="xs" c="var(--ink-3)">
                                         {renderLabel(label(incognitoOptions, incognito))}
@@ -282,7 +266,6 @@ export function SeriesActionsMenu({
                 <Menu.Sub>
                     <Menu.Sub.Target>
                         <Menu.Sub.Item
-                            leftSection={<IconBell size={16} />}
                             rightSection={
                                 <Text size="xs" c="var(--ink-3)">
                                     {renderLabel(label(notificationOptions, notificationMode))}
@@ -311,7 +294,6 @@ export function SeriesActionsMenu({
                     <Menu.Sub>
                         <Menu.Sub.Target>
                             <Menu.Sub.Item
-                                leftSection={<IconSparkles size={16} />}
                                 rightSection={
                                     <Text size="xs" c="var(--ink-3)">
                                         {upgradeProfileLabel}
@@ -341,7 +323,7 @@ export function SeriesActionsMenu({
 
                 {canScanUpgrades && (
                     <Menu.Item
-                        leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
+                        rightSection={scanningUpgrades ? <Loader size={14} /> : undefined}
                         disabled={scanningUpgrades}
                         onClick={onScanUpgrades}
                     >
@@ -351,7 +333,7 @@ export function SeriesActionsMenu({
 
                 {canScanUpgrades && (
                     <Menu.Item
-                        leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
+                        rightSection={searchingVolumes ? <Loader size={14} /> : undefined}
                         disabled={searchingVolumes}
                         onClick={onSearchVolumes}
                     >
@@ -364,7 +346,6 @@ export function SeriesActionsMenu({
                         <Menu.Divider />
                         <Menu.Item
                             color="var(--danger)"
-                            leftSection={<IconTrash size={16} />}
                             closeMenuOnClick={false}
                             onClick={() => {
                                 setOpened(false)

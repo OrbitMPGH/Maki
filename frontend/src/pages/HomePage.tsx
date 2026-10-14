@@ -11,7 +11,6 @@ import {
   IconDownload,
   IconFlame,
   IconFolderDown,
-  IconLayoutDashboard,
   IconPlayerPlay,
   IconPlus,
   IconSparkles,
@@ -176,7 +175,7 @@ export default function HomePage() {
       actions={
         editing ? undefined : (
           <>
-            <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
+            <Button variant="default" onClick={enterEditing}>
               <Trans>Edit layout</Trans>
             </Button>
             <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>

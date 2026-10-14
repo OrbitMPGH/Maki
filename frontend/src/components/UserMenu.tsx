@@ -1,5 +1,5 @@
 import { Avatar, Badge, Menu, Text, UnstyledButton } from '@mantine/core'
-import { IconLogout, IconSelector, IconSettings, IconShieldLock } from '@tabler/icons-react'
+import { IconSelector, IconShieldLock } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { Trans } from '@lingui/react/macro'
 import { useLogout } from '../api/auth'
@@ -31,7 +31,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
     <Menu position="top-start" width={220} offset={6} withinPortal>
       <Menu.Target>
         <UnstyledButton className="nav-user">
-          <Avatar radius="xl" size={30} color="brand" variant="filled" className="nav-user-avatar">
+          <Avatar radius="xl" size={30} color="brand" variant="light" className="nav-user-avatar">
             {initials(name)}
           </Avatar>
           <span className="nav-user-body">
@@ -61,7 +61,6 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
         </Menu.Label>
         <Menu.Divider />
         <Menu.Item
-          leftSection={<IconSettings size={16} />}
           onClick={() => {
             onNavigate?.()
             navigate('/settings?tab=account&s=sign-in')
@@ -71,7 +70,6 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
         </Menu.Item>
         <Menu.Item
           color="var(--danger)"
-          leftSection={<IconLogout size={16} />}
           // No navigation afterwards: clearing the cached identity re-renders AuthGate into the
           // login screen on its own, and the query cache is dropped so nothing of this user's
           // library is left behind for whoever signs in next.

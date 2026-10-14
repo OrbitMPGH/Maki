@@ -107,7 +107,7 @@ export function RecommendationModelSwitch({
           value={(running || switching) && pct === null ? 100 : (pct ?? 0)}
           animated={running || switching}
           striped={running || switching}
-          color={status?.lastError ? 'var(--danger)' : 'brand'}
+          color={status?.lastError ? 'var(--danger)' : 'var(--neutral)'}
         />
       )}
 

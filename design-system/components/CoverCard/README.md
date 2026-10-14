@@ -4,10 +4,8 @@ The poster card for the library grid: cover art is the hero, with a bottom scrim
 
 2:3 aspect, `radius-lg`, `border` outline on `surface`. On hover it takes `border-strong` and the art scales to 1.05. Selected in bulk mode: `brand` border plus a 1px `brand` ring, no glow.
 
-**Corners:** top left carries in-flight work (a badge in the status token, e.g. `info` for queued), a read-progress ring (`info`, `ok` when all read) and an unread count on the `brand` fill in `brand-on`. Top right carries the monitor eye (dimmed when monitored, clear eye-off when not), a muted-bell badge only when muted, and the publication status badge. Badges are 20px tall, `label` size, 700, sentence case, white on the status colour, except the unread count.
+**Corners:** top left carries the read-progress ring (`brand`, `ok` when all read) and in-flight work as a 22px dark disc with a download or clock glyph (`info` while downloading). Top right carries three quiet marks, always visible: the monitor eye (dimmer when monitored, brighter eye-off when not), a muted bell only when muted, and the publication status glyph. Each is a 20px dark disc with a 12px glyph in white at 58 to 78%, no colour of its own; the tip names it. The ring and the "N new" pill are the only colour on a cover.
 
-**Hover-only chips:** the monitor eye and the muted bell fade in (`dur-base`, `ease`) on hover or keyboard focus on devices with a real pointer, and are always visible on touch. The status badge, read ring, unread count and download badge never hide. Only the two small chips animate opacity; the card itself gets no extra layer.
-
-**Bottom:** title in white, `body` size at 650, clamped to two lines; a 4px bar in `brand` (`ok` when complete); the count at `micro` size, tabular.
+**Bottom:** title in white, `body` size at 650, clamped to two lines; a 4px bar in `neutral` while chapters are missing, `ok` when complete; the have/total count at `micro` size, tabular, and an "N new" pill on `brand` when downloaded chapters are unread.
 
 **The consumer provides:** a `series`, `selectMode`, `selected`, `readTracking`, `onToggle(id)`. Built from plain elements and CSS instead of Mantine components on purpose: a grid mounts hundreds of these, so keep it cheap (no `backdrop-filter` on badges, no per-card Tooltip).

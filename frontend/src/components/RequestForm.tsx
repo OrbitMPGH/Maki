@@ -1,5 +1,4 @@
 import { Button, Group, NumberInput, Stack, Text, Textarea } from '@mantine/core'
-import { IconSend } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { FormEvent } from 'react'
 
@@ -94,7 +93,7 @@ export function RequestForm({
         maxRows={4}
       />
       <Group grow={dense}>
-        <Button type="submit" leftSection={<IconSend size={16} />} loading={pending}>
+        <Button type="submit" loading={pending}>
           {buttonLabel}
         </Button>
       </Group>

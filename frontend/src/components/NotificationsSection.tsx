@@ -18,7 +18,6 @@ import {
 } from '@mantine/core'
 import {
   IconBell,
-  IconBellPlus,
   IconBellRinging,
   IconBrandDiscord,
   IconBrandSlack,
@@ -467,7 +466,6 @@ export function NotificationsSection() {
       actions={
         <Button
           size="xs"
-          leftSection={<IconBellPlus size={16} />}
           onClick={openNew}
           disabled={!providers || providers.length === 0}
         >

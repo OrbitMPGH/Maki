@@ -314,7 +314,6 @@ function SuwayomiLanguageSetup({ source, options, opened, onToggle, onSaved }: {
           <Button
             size="compact-xs"
             variant="light"
-            leftSection={<IconLanguage size={13} />}
             onClick={() => onToggle(!opened)}
             aria-expanded={opened}
           >
@@ -412,7 +411,6 @@ function SuwayomiLanguagePicker({ siteName, members, selected, onChange, opened,
         <Button
           size="compact-xs"
           variant="light"
-          leftSection={<IconLanguage size={13} />}
           onClick={() => onToggle(!opened)}
           aria-expanded={opened}
         >

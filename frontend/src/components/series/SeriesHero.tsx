@@ -18,13 +18,8 @@ import {IconAlertTriangle, IconArrowLeft, IconBook, IconDownload, IconX} from '@
 import { Link } from 'react-router-dom'
 import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
-import {
-    contentRatingToken,
-    contentRatingVisual,
-    seriesProgressVisual,
-    seriesStatusVisual,
-    statusToken,
-} from '../ui/status'
+import { seriesProgressVisual } from '../ui/status'
+import { HeroStatusPills } from '../ui/HeroStatus'
 import { useReadTracking } from '../../api/reader'
 import { useChapters } from '../../api/hooks'
 import { msg } from '@lingui/core/macro'
@@ -66,9 +61,6 @@ export function SeriesHero({
 }) {
     const { t, i18n } = useLingui()
     const readTracking = useReadTracking()
-    const status = seriesStatusVisual(series.status)
-    const contentRating = contentRatingVisual(series.contentRating)
-    const ratingToken = contentRatingToken(series.contentRating)
     const author = series.authorStory ?? series.authorArt
     const { data: chapters } = useChapters(series.id)
     // Wherever you came from, not a fixed destination: reached from Discover with a panel full of
@@ -216,40 +208,12 @@ export function SeriesHero({
                                 {/* Status and rating are one cluster at a tighter gap, so they read as two facts
                   about the same thing rather than as two separate items in the row. */}
                                 <Group gap={8} wrap="nowrap">
-                <span
-                    className="series-hero-status"
-                    style={{
-                        color: `var(--${statusToken(status.color)})`,
-                        background: `var(--${statusToken(status.color)}-soft)`,
-                    }}
-                >
-                  <status.Icon size={14} />
-                    {label(status.label)}
-                </span>
-
-                                    {contentRating && (
-                                        <Tooltip label={t`Content rating`} withArrow>
-                    <span
-                        className="series-hero-status"
-                        data-quiet={ratingToken ? undefined : true}
-                        style={
-                            ratingToken
-                                ? {
-                                    color: `var(--${ratingToken})`,
-                                    background: `var(--${ratingToken}-soft)`,
-                                }
-                                : undefined
-                        }
-                    >
-                      <contentRating.Icon size={14} />
-                        {label(contentRating.label)}
-                    </span>
-                                        </Tooltip>
-                                    )}
+                                    <HeroStatusPills status={series.status} contentRating={series.contentRating} />
                                 </Group>
 
-                                <Group gap={8} wrap="nowrap">
+                                <Group gap={8} wrap="nowrap" className="series-hero-status series-hero-rating">
                                     <Rating
+                                        color="var(--ink)"
                                         count={5}
                                         fractions={2}
                                         value={series.rating ? series.rating / 2 : 0}
@@ -336,7 +300,7 @@ export function SeriesHero({
                                 mt={12}
                                 value={progress.pct}
                                 // Warn wins while a source gap exists, a separate claim the alert below already spells out.
-                                color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--brand)'}
+                                color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--neutral)'}
                                 radius="xl"
                             />
                             <Group justify="space-between" mt={9}>

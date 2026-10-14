@@ -11,15 +11,17 @@ export function PageHeader({
   description,
   actions,
   compact,
+  className,
 }: {
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
   compact?: boolean
+  className?: string
 }) {
   return (
     <Group
-      className="page-header"
+      className={className ? `page-header ${className}` : 'page-header'}
       data-compact={compact || undefined}
       justify="space-between"
       align="flex-end"

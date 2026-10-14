@@ -1,6 +1,6 @@
 import { Badge, Button, Group, Paper, Stack, Text, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconDownload, IconX } from '@tabler/icons-react'
+import { IconDownload } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useQueue } from '../../api/hooks'
@@ -119,7 +119,6 @@ export function TorrentProposalCard({
             size="xs"
             variant="subtle"
             color="var(--neutral)"
-            leftSection={<IconX size={14} />}
             loading={dismiss.isPending}
             disabled={grab.isPending}
             onClick={onDismiss}

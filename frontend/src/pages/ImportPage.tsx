@@ -15,7 +15,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { IconEye, IconEyeOff, IconFolderSearch, IconPackageImport, IconSearch } from '@tabler/icons-react'
+import { IconEye, IconEyeOff, IconSearch } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -339,7 +339,6 @@ export default function ImportPage() {
             }}
           />
           <Button
-            leftSection={<IconFolderSearch size={16} />}
             onClick={() => rootFolderId && scan.mutate(Number(rootFolderId))}
             loading={scan.isPending}
             disabled={!rootFolderId || doImport.isPending}
@@ -349,7 +348,6 @@ export default function ImportPage() {
           {candidates && candidates.length > 0 && (
             <Button
               variant="default"
-              leftSection={<IconEye size={16} />}
               disabled={selectedCount === 0 || doImport.isPending}
               onClick={() => setPreviewItems(selectedItems)}
             >
@@ -360,7 +358,6 @@ export default function ImportPage() {
             <Button
               color="var(--ok)"
               vars={okButtonVars}
-              leftSection={<IconPackageImport size={16} />}
               loading={doImport.isPending}
               disabled={selectedCount === 0}
               onClick={() => {
@@ -694,7 +691,7 @@ export default function ImportPage() {
                                     ? rowProgress.success
                                       ? 'var(--ok)'
                                       : 'var(--danger)'
-                                    : 'brand'
+                                    : 'var(--neutral)'
                                 }
                               />
                               <Text

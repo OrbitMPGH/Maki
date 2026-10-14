@@ -39,19 +39,10 @@ import {
   IconChevronDown,
   IconCircleCheck,
   IconDownload,
-  IconEye,
-  IconEyeCheck,
   IconLink,
-  IconLinkOff,
-  IconListCheck,
   IconSearch,
-  IconSend,
-  IconRowRemove,
   IconTrash,
-  IconWand,
   IconX,
-  IconDeviceTv,
-  IconEyeOff,
   IconSortAscendingNumbers,
   IconSortDescendingNumbers,
 } from '@tabler/icons-react'
@@ -1642,7 +1633,6 @@ function SeriesDetailBody() {
                         variant="default"
                         size="md"
                         radius="md"
-                        leftSection={<IconSend size={17} />}
                         onClick={() => {
                           setRequestStart('')
                           setRequestEnd('')
@@ -2265,7 +2255,6 @@ function SeriesDetailBody() {
                         <Button
                             size="xs"
                             variant="default"
-                            leftSection={<IconListCheck size={14} />}
                             onClick={() => setSelectMode(true)}
                         >
                           <Trans>Select</Trans>
@@ -2316,10 +2305,10 @@ function SeriesDetailBody() {
                       </Text>
                     </Group>
                     <Group gap="xs">
-                      <Button size="xs" variant="light" leftSection={<IconWand size={14} />} onClick={() => setRelinkOpen(true)}>
+                      <Button size="xs" variant="light" onClick={() => setRelinkOpen(true)}>
                         <Trans>Relink files</Trans>
                       </Button>
-                      <Button size="xs" variant="subtle" leftSection={<IconLink size={14} />} onClick={() => changeTab('files')}>
+                      <Button size="xs" variant="subtle" onClick={() => changeTab('files')}>
                         <Trans>Link by hand</Trans>
                       </Button>
                     </Group>
@@ -2412,7 +2401,6 @@ function SeriesDetailBody() {
                           <Button
                               size="xs"
                               variant="light"
-                              leftSection={<IconEye size={15} />}
                               disabled={selected.size === 0}
                               loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === true}
                               onClick={() => applyWanted([...selected], true)}
@@ -2423,7 +2411,6 @@ function SeriesDetailBody() {
                               size="xs"
                               variant="light"
                               color="var(--neutral)"
-                              leftSection={<IconEyeOff size={15} />}
                               disabled={selected.size === 0}
                               loading={setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false}
                               onClick={() => applyWanted([...selected], false)}
@@ -2438,7 +2425,6 @@ function SeriesDetailBody() {
                                 size="xs"
                                 variant="light"
                                 color="var(--watched)"
-                                leftSection={<IconDeviceTv size={15} />}
                                 disabled={selected.size === 0}
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'watched'}
                                 onClick={() => applyReadState([...selected], 'watched')}
@@ -2449,7 +2435,6 @@ function SeriesDetailBody() {
                                 size="xs"
                                 variant="light"
                                 color="var(--ok)"
-                                leftSection={<IconEyeCheck size={15} />}
                                 disabled={selected.size === 0}
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'read'}
                                 onClick={() => applyReadState([...selected], 'read')}
@@ -2460,7 +2445,6 @@ function SeriesDetailBody() {
                                 size="xs"
                                 variant="light"
                                 color="var(--neutral)"
-                                leftSection={<IconEyeOff size={15} />}
                                 disabled={selected.size === 0}
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'unread'}
                                 onClick={() => applyReadState([...selected], 'unread')}
@@ -2474,7 +2458,6 @@ function SeriesDetailBody() {
                           <Button
                               size="xs"
                               variant="light"
-                              leftSection={<IconLink size={15} />}
                               disabled={selected.size === 0}
                               onClick={() => setLinkChapterIds([...selected])}
                           >
@@ -2484,7 +2467,6 @@ function SeriesDetailBody() {
                               size="xs"
                               variant="light"
                               color="var(--warn)"
-                              leftSection={<IconLinkOff size={15} />}
                               disabled={selected.size === 0}
                               loading={unlinkChapters.isPending}
                               onClick={() =>
@@ -2518,7 +2500,6 @@ function SeriesDetailBody() {
                                 size="xs"
                                 variant="subtle"
                                 color="var(--danger)"
-                                leftSection={<IconRowRemove size={15} />}
                                 disabled={selected.size === 0}
                                 onClick={() => setDeleteChaptersModalOpen(true)}
                             >
@@ -2529,7 +2510,6 @@ function SeriesDetailBody() {
                       <Button
                           size="xs"
                           variant="default"
-                          leftSection={<IconX size={15} />}
                           onClick={exitSelectMode}
                       >
                         <Trans>Done</Trans>

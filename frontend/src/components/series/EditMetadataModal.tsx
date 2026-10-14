@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconArrowBackUp, IconLock, IconUpload } from '@tabler/icons-react'
+import { IconLock, IconUpload } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MetadataField, SeriesDto } from '../../api/types'
 import {
@@ -151,7 +151,6 @@ export function EditMetadataModal({
       <Button
         variant="subtle"
         size="compact-xs"
-        leftSection={<IconArrowBackUp size={14} />}
         loading={reset.isPending && reset.variables?.fields[0] === field}
         disabled={reset.isPending}
         onClick={() => resetField(field)}

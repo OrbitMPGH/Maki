@@ -145,7 +145,7 @@ export function MeasureResult({
       ))}
       {measured > 0 && differs && (
         <Group gap="xs" mt="sm">
-          <Button size="xs" onClick={onUseQuality} loading={busy === 'quality'} disabled={busy === 'reorder'}>
+          <Button size="xs" variant="light" onClick={onUseQuality} loading={busy === 'quality'} disabled={busy === 'reorder'}>
             <Trans>Use best quality first</Trans>
           </Button>
           <Tooltip

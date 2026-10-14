@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { Button, SegmentedControl } from '@mantine/core'
-import { IconLayoutGrid, IconLayoutList } from '@tabler/icons-react'
+import { type ComponentPropsWithRef, useMemo, useState } from 'react'
+import { ActionIcon, Menu, SegmentedControl, Tooltip } from '@mantine/core'
+import { IconCheck, IconDots, IconLayoutGrid, IconLayoutList } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
 import { useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { useLingui } from '@lingui/react'
@@ -131,7 +131,90 @@ export function DensityControl({
 
 export type ViewPrefs = ReturnType<typeof useViewPrefs>
 
-/** The grid/list buttons and the density segmented control. Layout only; it owns no state. */
+/** Grid or list, as one two-segment control. The icons are named by their tooltips and labels. */
+export function ViewModeToggle({
+  value,
+  onChange,
+  size = 'sm',
+}: {
+  value: ViewMode
+  onChange: (mode: ViewMode) => void
+  size?: string
+}) {
+  const { t } = useLinguiMacro()
+  return (
+    <SegmentedControl
+      className="view-mode-toggle"
+      size={size}
+      value={value}
+      onChange={(v) => onChange(v as ViewMode)}
+      aria-label={t`View`}
+      data={[
+        {
+          value: 'grid',
+          label: (
+            <Tooltip label={t`Grid view`} withArrow>
+              <span className="view-mode-option" aria-label={t`Grid view`}>
+                <IconLayoutGrid size={16} />
+              </span>
+            </Tooltip>
+          ),
+        },
+        {
+          value: 'list',
+          label: (
+            <Tooltip label={t`List view`} withArrow>
+              <span className="view-mode-option" aria-label={t`List view`}>
+                <IconLayoutList size={16} />
+              </span>
+            </Tooltip>
+          ),
+        },
+      ]}
+    />
+  )
+}
+
+/** Density as a labelled group inside a menu, the current one ticked. */
+export function DensityMenuItems({ value, onChange }: { value: Density; onChange: (density: Density) => void }) {
+  const { t } = useLinguiMacro()
+  const options = useDensityOptions()
+  return (
+    <>
+      <Menu.Label>{t`Density`}</Menu.Label>
+      {options.map((o) => (
+        <Menu.Item
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          rightSection={o.value === value ? <IconCheck size={14} /> : undefined}
+          aria-current={o.value === value || undefined}
+        >
+          {o.label}
+        </Menu.Item>
+      ))}
+    </>
+  )
+}
+
+/**
+ * The "..." button that opens a toolbar's overflow menu. Passes the rest of its props through, so
+ * it can sit directly inside a Menu.Target (which hands it a ref and the click handler).
+ */
+export function ToolbarMenuButton({
+  size = 'input-sm',
+  ...rest
+}: { size?: string | number } & ComponentPropsWithRef<'button'>) {
+  const { t } = useLinguiMacro()
+  return (
+    <Tooltip label={t`More options`} withArrow>
+      <ActionIcon {...rest} variant="default" size={size} aria-label={t`More options`}>
+        <IconDots size={16} />
+      </ActionIcon>
+    </Tooltip>
+  )
+}
+
+/** Grid/list toggle plus a menu holding density, the pattern every poster grid shares. */
 export function ViewPrefsControls({
   prefs,
   size = 'sm',
@@ -139,30 +222,17 @@ export function ViewPrefsControls({
   prefs: ViewPrefs
   size?: string
 }) {
-  // The macro form, so these re-render when the language changes. The plain `t` macro reads the
-  // global catalogue once and would leave the old label on an aria attribute nobody looks at.
-  const { t } = useLinguiMacro()
   return (
     <>
-      <Button.Group>
-        <Button
-          variant={prefs.viewMode === 'grid' ? 'filled' : 'default'}
-          size={size}
-          onClick={() => prefs.setViewMode('grid')}
-          aria-label={t`Grid view`}
-        >
-          <IconLayoutGrid size={16} />
-        </Button>
-        <Button
-          variant={prefs.viewMode === 'list' ? 'filled' : 'default'}
-          size={size}
-          onClick={() => prefs.setViewMode('list')}
-          aria-label={t`List view`}
-        >
-          <IconLayoutList size={16} />
-        </Button>
-      </Button.Group>
-      <DensityControl size={size} value={prefs.density} onChange={prefs.setDensity} />
+      <ViewModeToggle size={size} value={prefs.viewMode} onChange={prefs.setViewMode} />
+      <Menu position="bottom-end" withinPortal>
+        <Menu.Target>
+          <ToolbarMenuButton size={`input-${size}`} />
+        </Menu.Target>
+        <Menu.Dropdown>
+          <DensityMenuItems value={prefs.density} onChange={prefs.setDensity} />
+        </Menu.Dropdown>
+      </Menu>
     </>
   )
 }

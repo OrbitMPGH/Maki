@@ -35,13 +35,8 @@ import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
-import {
-  contentRatingToken,
-  contentRatingVisual,
-  ratingBandVisual,
-  seriesStatusVisual,
-  statusToken,
-} from '../ui/status'
+import { ratingBandVisual } from '../ui/status'
+import { HeroStatusPills } from '../ui/HeroStatus'
 import { TagChip, TagChips } from '../ui/TagChip'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
@@ -111,9 +106,6 @@ export function DiscoverDetailModal({
   // complete from the first frame and the detail request fills in rather than rearranges.
   const renderLabel = useLabel()
   const { t, i18n } = useLingui()
-  const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
-  const contentRating = contentRatingVisual(detail?.contentRating ?? null)
-  const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item?.rating ?? null
   const band = ratingBandVisual(score ?? 0)
   const altTitles = readableTitles(detail?.altTitles ?? [], i18n.locale)
@@ -246,35 +238,11 @@ export function DiscoverDetailModal({
                     <Group gap={9} mt={16} wrap="wrap">
                       {/* Same pills as the series page's band, from the same two maps: a result and
                           the series it becomes have to read as one object, not two vocabularies. */}
-                      <span
-                        className="series-hero-status"
-                        style={{
-                          color: `var(--${statusToken(status.color)})`,
-                          background: `var(--${statusToken(status.color)}-soft)`,
-                        }}
-                      >
-                        <status.Icon size={14} />
-                        {renderLabel(status.label)}
-                      </span>
-                      {contentRating && (
-                          <Tooltip label={t`Content rating`} withArrow zIndex={1001}>
-                          <span
-                              className="series-hero-status"
-                              data-quiet={ratingToken ? undefined : true}
-                              style={
-                                ratingToken
-                                    ? {
-                                      color: `var(--${ratingToken})`,
-                                      background: `var(--${ratingToken}-soft)`,
-                                    }
-                                    : undefined
-                              }
-                          >
-                            <contentRating.Icon size={14} />
-                            {renderLabel(contentRating.label)}
-                          </span>
-                          </Tooltip>
-                      )}
+                      <HeroStatusPills
+                        status={detail?.status ?? item?.status ?? ''}
+                        contentRating={detail?.contentRating ?? null}
+                        tooltipZIndex={1001}
+                      />
                     </Group>
 
                     {/* The numbers people open a card to check. Every one of them is on the item the

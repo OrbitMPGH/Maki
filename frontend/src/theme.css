@@ -677,17 +677,6 @@ body {
   background: color-mix(in srgb, var(--brand) 13%, transparent);
   color: var(--ink-hi);
 }
-.nav-link[data-active='true']::before {
-  content: '';
-  position: absolute;
-  left: -6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--brand);
-}
 .nav-link .nav-icon {
   flex-shrink: 0;
   opacity: 0.8;
@@ -781,7 +770,7 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--brand);
+  background: var(--neutral);
 }
 .nav-user-chevron {
   flex-shrink: 0;
@@ -1199,26 +1188,20 @@ body {
   background: #000;
   opacity: 0.7;
 }
-.cover-corner-right > .cover-badge-circle {
-  width: 26px;
-  height: 26px;
-  background: rgba(6, 7, 11, 0.6);
+/* Monitor eye, mute bell and publication status on a poster: small monochrome marks, always
+   visible and named by their tips. The ring and the "new" count carry the colour on a cover. */
+.cover-corner-right {
+  gap: 4px;
 }
-/* Monitor eye and mute bell on a poster: revealed on hover or keyboard focus with a pointer,
-   always shown on touch. Only the two small chips fade, never the card. */
-@media (hover: hover) and (pointer: fine) {
-  .cover-corner-right > .cover-badge-circle {
-    opacity: 0;
-    transition: opacity var(--dur-base) var(--ease);
-  }
-  .cover-card:hover .cover-corner-right > .cover-badge-circle,
-  .cover-card:focus-within .cover-corner-right > .cover-badge-circle {
-    opacity: 0.9;
-  }
-  .cover-card:hover .cover-corner-right > .cover-badge-circle[data-dim],
-  .cover-card:focus-within .cover-corner-right > .cover-badge-circle[data-dim] {
-    opacity: 0.7;
-  }
+.cover-corner-right > .cover-badge-circle {
+  width: 20px;
+  height: 20px;
+  background: rgba(6, 7, 11, 0.5);
+  color: rgba(255, 255, 255, 0.78);
+  opacity: 1;
+}
+.cover-corner-right > .cover-badge-circle[data-dim] {
+  color: rgba(255, 255, 255, 0.58);
 }
 /* Unread count / all-read marker. The progress ring beside these is easy to miss at grid
    density; a number is not, and it is the one thing you scan a library for. */
@@ -1302,15 +1285,13 @@ body {
 .cover-state[data-tone='info'] {
   --tone: var(--info);
 }
-/* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). */
+/* Publication status, top-right: the glyph names it, so it sits as quietly as the eye beside it. */
 .cover-state[data-tone='status'] {
-  width: 24px;
-  height: 24px;
-  background: var(--tone);
-  box-shadow:
-    0 0 0 1.5px rgba(6, 7, 11, 0.45),
-    0 2px 6px rgba(0, 0, 0, 0.35);
-  color: var(--tone-on, #fff);
+  width: 20px;
+  height: 20px;
+  background: rgba(6, 7, 11, 0.5);
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.78);
 }
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
 [data-theme='light'] .cover-state:not([data-tone='status']),
@@ -1415,8 +1396,10 @@ body {
   margin-bottom: 7px;
   padding: 0 8px 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
+  /* A dark pill like the other cover marks: the "new" count is the card's one brand mark. */
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  color: #fff;
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
   white-space: nowrap;
@@ -1446,7 +1429,7 @@ body {
 .cover-bar-fill {
   height: 100%;
   border-radius: var(--radius-pill);
-  background: var(--brand);
+  background: var(--neutral);
 }
 .cover-bar-fill[data-complete] {
   background: var(--ok);
@@ -1629,7 +1612,7 @@ body {
 .home-glance-xp > div {
   height: 100%;
   border-radius: inherit;
-  background: var(--brand);
+  background: var(--neutral);
 }
 /* Tighter than the series band's, where the same figures have a whole band to spread across. */
 .home-glance .hero-stats {
@@ -3425,25 +3408,36 @@ body {
   hyphens: auto;
   overflow-wrap: anywhere;
 }
+/* Status, content rating and the reader's own rating as one set of hairline chips. Only the status
+   carries a hue, as its dot; the faint ground keeps the border legible where the backdrop art runs
+   light behind it. */
 .series-hero-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   height: 28px;
   padding: 0 11px;
   border-radius: var(--radius-control);
-  border: 1px solid transparent;
+  border: 1px solid var(--border-strong);
+  background: color-mix(in srgb, var(--app-bg) 45%, transparent);
+  color: var(--ink);
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
 }
-/* Same size and shape so the pair sits as a set, a step down in weight so it doesn't compete with
-   the state beside it: hairline instead of a fill, ink-3 instead of a colour. The faint ground is
-   what keeps the border legible where the backdrop art runs light behind it. */
+.series-hero-status[data-tone]::before {
+  content: '';
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dot);
+}
 .series-hero-status[data-quiet] {
   color: var(--ink-3);
-  background: color-mix(in srgb, var(--app-bg) 45%, transparent);
-  border-color: var(--border-strong);
+}
+.series-hero-rating {
+  padding-right: 5px;
 }
 
 /* --- The same band, at modal scale ---------------------------------------- */
@@ -5291,7 +5285,7 @@ body.column-resizing * {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--brand);
+  background: var(--neutral);
 }
 
 /* 100% stacked bar. The 2px gaps separate segments without relying on their colours. */
@@ -7018,6 +7012,26 @@ body.reader-open {
   }
 }
 
+.scrobble-log-service {
+  margin-right: 4px;
+  vertical-align: 1px;
+}
+.chapter-status-note {
+  color: var(--ink-4);
+  font-size: var(--type-meta);
+  white-space: nowrap;
+}
+/* The read state as coloured words: the row's file state already carries the dot. */
+.chapter-read-mark {
+  color: var(--ok);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.chapter-read-mark[data-tone='watched'] {
+  color: var(--watched);
+}
+
 /* --- Import page --- */
 .import-workspace {
   display: grid;
@@ -7437,14 +7451,24 @@ body.reader-open {
 }
 .library-toolbar-row .library-search {
   flex: 1 1 15rem;
-  min-width: min(18rem, 100%);
+  min-width: min(14rem, 100%);
 }
-.library-toolbar-row .library-sort {
-  flex: 0 0 10.625rem;
+/* Sort field and direction as one joined control. */
+.library-sort-control {
+  display: flex;
+  flex: none;
 }
-/* Tags are a filter concern, so the gear sits against Filters rather than a full gap away. */
-.library-toolbar-row .library-tags-button {
-  margin-inline-start: calc(0.375rem - var(--mantine-spacing-sm));
+.library-sort-control .library-sort {
+  width: 10.625rem;
+}
+.library-sort-control .library-sort .mantine-Input-input {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+.library-sort-control > .mantine-ActionIcon-root {
+  margin-inline-start: -1px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }
 .library-toolbar-row > .tnum {
   flex: none;
@@ -7455,41 +7479,37 @@ body.reader-open {
 }
 .library-view-controls {
   flex: none;
+  margin-inline-start: auto;
 }
-.library-view-toggle {
+/* Grid / list, shared by every poster grid. */
+.view-mode-toggle {
   flex: none;
   padding: 2px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: transparent;
 }
-.library-view-toggle .mantine-SegmentedControl-indicator {
+.view-mode-toggle .mantine-SegmentedControl-indicator {
   border-radius: 4px;
   background: color-mix(in srgb, var(--brand) 18%, transparent);
   box-shadow: none;
 }
-.library-view-toggle .mantine-SegmentedControl-label {
+.view-mode-toggle .mantine-SegmentedControl-label {
   padding: 0;
   color: var(--ink-3);
 }
-.library-view-toggle .mantine-SegmentedControl-label:hover {
+.view-mode-toggle .mantine-SegmentedControl-label:hover {
   color: var(--ink-hi);
 }
-.library-view-toggle .mantine-SegmentedControl-label[data-active] {
+.view-mode-toggle .mantine-SegmentedControl-label[data-active] {
   color: var(--brand-fg);
 }
-.library-view-option {
+.view-mode-option {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 30px;
   height: 26px;
-}
-.library-density-button {
-  flex: none;
-  border-color: var(--border-strong);
-  background: transparent;
-  color: var(--ink-2);
 }
 .library-saved-filters {
   min-height: 1.75rem;
@@ -7578,20 +7598,38 @@ body.reader-open {
   .library-toolbar {
     gap: 0.5rem;
   }
-  /* Two rows: search and the filter button, then sort and its controls. On one row the fixed-width
-     sort and the icon buttons left search a 48px stub. The basis leaves exactly the filter button's
-     width beside search, so sort always starts the second row. */
+  /* The title shares its row with Select and Add series, the sentence runs full width under both,
+     so the first covers start higher on a phone. */
+  .library-page-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    row-gap: 2px;
+  }
+  .library-page-header > .mantine-Stack-root {
+    display: contents;
+  }
+  .library-page-header > .mantine-Stack-root > .mantine-Text-root {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .library-page-header > .mantine-Group-root {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  /* One row: search, the filter button and the menu. Sort, view and density live in the menu here,
+     so the first cover starts right under the bar. */
   .library-toolbar-row {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.5rem;
   }
   .library-toolbar-row .library-search {
-    flex: 1 1 calc(100% - 2.75rem);
+    flex: 1 1 auto;
     min-width: 0;
   }
-  .library-toolbar-row .library-sort {
-    flex: 1 1 0;
-    min-width: 0;
+  .library-sort-control,
+  .library-toolbar-row > .tnum {
+    display: none;
   }
   /* One line that scrolls sideways, and gone entirely when it would hold only the tag gear: the
      Filters drawer carries "Manage tags" too. */

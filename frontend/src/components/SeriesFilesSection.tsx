@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActionIcon, Badge, Button, Checkbox, Group, Modal, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
+import { ActionIcon, Button, Checkbox, Group, Modal, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconFileTypePdf,
   IconFileZip,
@@ -7,9 +7,7 @@ import {
   IconLock,
   IconLockOpen,
   IconRefresh,
-  IconWand,
   IconTrash,
-  IconX,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
@@ -24,6 +22,8 @@ import { plural, t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual, statusToken } from './ui/status'
+import { StatusDot } from './ui/StatusDot'
+import { TagChip } from './ui/TagChip'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
@@ -153,7 +153,6 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                 <Button
                   size="xs"
                   variant="subtle"
-                  leftSection={<IconWand size={14} />}
                   onClick={() => setRelinkOpen(true)}
                 >
                   <Trans>Relink files</Trans>
@@ -242,7 +241,6 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   <Button
                     size="xs"
                     variant="default"
-                    leftSection={<IconX size={15} />}
                     onClick={exitSelectMode}
                   >
                     <Trans>Done</Trans>
@@ -286,14 +284,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                         </Table.Td>
                         <Table.Td>
                           {f.parsedLabel ? (
-                            <Badge
-                              size="sm"
-                              variant="light"
-                              color={f.isVolume ? 'indigo' : 'gray'}
-                              className="tnum"
-                            >
+                            <TagChip size="sm" className="tnum">
                               {f.parsedLabel}
-                            </Badge>
+                            </TagChip>
                           ) : (
                             <Text size="sm" c="var(--ink-3)">
                               -
@@ -301,14 +294,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           )}
                         </Table.Td>
                         <Table.Td>
-                          <Badge
-                            size="sm"
-                            color={`var(--${statusToken(v.color)})`}
-                            variant="light"
-                            leftSection={<v.Icon size={12} />}
-                          >
-                            {renderLabel(v.label)}
-                          </Badge>
+                          <StatusDot tone={statusToken(v.color)}>{renderLabel(v.label)}</StatusDot>
                         </Table.Td>
                         <Table.Td>
                           {f.isVolume && f.mappedChapters.length > 0 ? (
@@ -327,7 +313,6 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             <Button
                               size="compact-xs"
                               variant="light"
-                              leftSection={<IconLink size={13} />}
                               onClick={() => setLinkFile(f)}
                             >
                               <Trans>Link chapters</Trans>

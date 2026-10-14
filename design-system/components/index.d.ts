@@ -78,6 +78,13 @@ export interface DisclosureProps {
 }
 export declare function Disclosure(props: DisclosureProps): JSX.Element
 
+/** Publication status (a dot in its status token) and content rating (quiet) as hairline chips. */
+export declare function HeroStatusPills(props: {
+  status: string
+  contentRating: string | null
+  tooltipZIndex?: number
+}): JSX.Element
+
 /** A status as a coloured dot and a word. `tone` is a token stem. */
 export declare function StatusDot(
   props: ComponentPropsWithRef<'span'> & { tone: string; live?: boolean },

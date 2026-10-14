@@ -7,22 +7,13 @@ import { ActionIcon, Badge, Group, Loader, Menu, Progress, Skeleton, Switch, Tab
 import {
   IconBook,
   IconChevronDown,
-  IconCircleCheck,
-  IconClock,
   IconDeviceTv,
   IconDotsVertical,
   IconDownload,
   IconEye,
-  IconEyeCheck,
   IconEyeOff,
   IconLink,
-  IconListCheck,
-  IconLock,
-  IconLockOpen,
   IconMinus,
-  IconPhotoSearch,
-  IconSparkles,
-  IconTrash,
 } from '@tabler/icons-react'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
@@ -31,7 +22,9 @@ import { formatCalendarDate } from '../../format'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
-import { queueStatusVisual, statusColor } from '../ui/status'
+import { queueStatusVisual, statusToken } from '../ui/status'
+import { StatusDot } from '../ui/StatusDot'
+import { TagChip } from '../ui/TagChip'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
 import { LightActionIcon, LightBadge, LightGroup, LightStack, LightSwitch, LightText } from './lightMantine'
@@ -242,9 +235,7 @@ export const ChapterRow = memo(function ChapterRow({
                 return (
                     <LightStack gap={4}>
                       <HoverTooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                        <LightBadge variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
-                          {origin.label}
-                        </LightBadge>
+                        <TagChip size="sm">{origin.label}</TagChip>
                       </HoverTooltip>
                       <FileQualityBadge quality={c.fileQuality} />
                     </LightStack>
@@ -253,8 +244,8 @@ export const ChapterRow = memo(function ChapterRow({
           )}
         </Table.Td>
         <Table.Td>
-          {/* Wraps rather than clipping: a re-read chapter carries three badges. */}
-          <LightGroup gap={6} wrap="wrap">
+          {/* Wraps rather than clipping: a re-read chapter carries a state, a read mark and a page. */}
+          <LightGroup gap={10} wrap="wrap">
             {queueItem ? (
                 (() => {
                   const visual = queueStatusVisual(queueItem.status)
@@ -272,29 +263,27 @@ export const ChapterRow = memo(function ChapterRow({
                                   w={72}
                                   radius="xl"
                                   animated={queueItem.status === 'Downloading'}
-                                  color={queueItem.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                                  color={queueItem.status === 'Failed' ? 'var(--danger)' : 'var(--neutral)'}
                               />
                           )}
-                          <Badge
-                              size="sm"
-                              color={statusColor(visual.color)}
-                              variant="light"
-                              leftSection={<visual.Icon size={12} />}
+                          <StatusDot
+                              tone={statusToken(visual.color)}
+                              live={queueItem.status === 'Downloading' || undefined}
                               className="tnum"
                           >
                             {queueItem.pagesTotal > 0
                                 ? `${renderLabel(visual.label)} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
                                 : renderLabel(visual.label)}
-                          </Badge>
+                          </StatusDot>
                         </Group>
                       </Tooltip>
                   )
                 })()
             ) : c.hasFile ? (
                 <>
-                  <LightBadge color="var(--ok)" leftSection={<IconCircleCheck size={12} />}>
+                  <StatusDot tone="ok">
                     <Trans>Downloaded</Trans>
-                  </LightBadge>
+                  </StatusDot>
                   {c.fileDeleteDueAt && (() => {
                     const daysLeft = Math.max(
                         0,
@@ -302,28 +291,28 @@ export const ChapterRow = memo(function ChapterRow({
                     )
                     return (
                         <HoverTooltip label={t`Read file cleanup is on for this series`} withArrow>
-                          <LightBadge color="var(--neutral)" leftSection={<IconClock size={12} />}>
+                          <span className="chapter-status-note">
                             {daysLeft === 0
                                 ? t`File removed soon`
                                 : plural(daysLeft, {
                                   one: 'File removed in # day',
                                   other: 'File removed in # days',
                                 })}
-                          </LightBadge>
+                          </span>
                         </HoverTooltip>
                     )
                   })()}
                 </>
             ) : c.fileRemovedAt ? (
                 <HoverTooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
-                  <LightBadge color="var(--neutral)" leftSection={<IconTrash size={12} />}>
+                  <StatusDot tone="neutral">
                     <Trans>File removed</Trans>
-                  </LightBadge>
+                  </StatusDot>
                 </HoverTooltip>
             ) : (
-                <LightBadge color="var(--neutral)">
+                <StatusDot tone="neutral">
                   <Trans>Missing</Trans>
-                </LightBadge>
+                </StatusDot>
             )}
             {read && (
                 <HoverTooltip
@@ -336,21 +325,14 @@ export const ChapterRow = memo(function ChapterRow({
                     }
                     withArrow
                 >
-                  <LightBadge
-                      color={watched ? 'var(--watched)' : 'var(--ok)'}
-                      variant={watched || external ? 'light' : 'filled'}
-                      c={watched || external ? undefined : 'var(--ok-on)'}
-                      leftSection={
-                        watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
-                      }
-                  >
+                  <span className="chapter-read-mark" data-tone={watched ? 'watched' : 'ok'}>
                     {watched ? <Trans>Watched</Trans> : <Trans>Read</Trans>}
-                  </LightBadge>
+                  </span>
                 </HoverTooltip>
             )}
             {/* Shown alongside Read when a finished chapter is being re-read. */}
             {inProgress && (
-                <LightBadge color="var(--info)" className="tnum">
+                <span className="chapter-status-note tnum">
                   {/* pageCount is 0 on rows imported from Kavita: the reader fills it
                       in on first open, so show a plain label until then. */}
                   {rowProgress && rowProgress.pageCount > 0 ? (
@@ -358,7 +340,7 @@ export const ChapterRow = memo(function ChapterRow({
                   ) : (
                       <Trans>Reading</Trans>
                   )}
-                </LightBadge>
+                </span>
             )}
           </LightGroup>
         </Table.Td>
@@ -428,7 +410,6 @@ export const ChapterRow = memo(function ChapterRow({
                   <Menu.Dropdown>
                     {canDownload && c.number !== null && canFindBetterCopy && (
                         <Menu.Item
-                            leftSection={<IconPhotoSearch size={14} />}
                             onClick={() =>
                                 actions.pickChapter({
                                   id: c.id,
@@ -443,7 +424,7 @@ export const ChapterRow = memo(function ChapterRow({
                     )}
                     {canDownload && (
                     <Menu.Item
-                        leftSection={upgradingThis ? <Loader size={14} /> : <IconSparkles size={14} />}
+                        rightSection={upgradingThis ? <Loader size={14} /> : undefined}
                         disabled={upgradePending}
                         onClick={() => actions.upgradeNow(c.id)}
                     >
@@ -452,11 +433,6 @@ export const ChapterRow = memo(function ChapterRow({
                     )}
                     {canDownload && c.fileQuality && (
                         <Menu.Item
-                            leftSection={
-                              c.fileQuality.trusted
-                                  ? <IconLockOpen size={14} />
-                                  : <IconLock size={14} />
-                            }
                             onClick={() => actions.setTrusted(c.fileQuality!.fileId, !c.fileQuality!.trusted)}
                         >
                           {c.fileQuality.trusted
@@ -469,7 +445,6 @@ export const ChapterRow = memo(function ChapterRow({
                           {canDownload && <Menu.Divider />}
                           <Menu.Item
                               color="var(--danger)"
-                              leftSection={<IconTrash size={14} />}
                               onClick={() => actions.deleteFile(c.id)}
                           >
                             <Trans>Delete file</Trans>
@@ -631,26 +606,22 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Item
-                        leftSection={<IconDeviceTv size={15} />}
                         onClick={() => actions.applyReadState(ids, 'watched')}
                     >
                       <Trans>Mark watched</Trans>
                     </Menu.Item>
                     <Menu.Item
-                        leftSection={<IconEyeCheck size={15} />}
                         onClick={() => actions.applyReadState(ids, 'read')}
                     >
                       <Trans>Mark read</Trans>
                     </Menu.Item>
                     <Menu.Item
-                        leftSection={<IconEyeOff size={15} />}
                         onClick={() => actions.applyReadState(ids, 'unread')}
                     >
                       <Trans>Mark unread</Trans>
                     </Menu.Item>
                     <Menu.Divider />
                     <Menu.Item
-                        leftSection={<IconListCheck size={15} />}
                         onClick={() => actions.selectChapters(ids)}
                     >
                       <Trans>Select these chapters</Trans>

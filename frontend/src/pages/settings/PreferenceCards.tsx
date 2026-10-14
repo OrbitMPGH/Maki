@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useLanguageChoice } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Button, Group, Select, Stack, Switch, Text } from '@mantine/core'
-import { IconLayoutDashboard } from '@tabler/icons-react'
 import { SettingsSection } from './SettingsSection'
 import { ContentRatingCards } from '../../components/ContentRatingCards'
 import { useApplyLanguage, useLanguageOptions } from '../../components/ui/language'
@@ -291,7 +290,6 @@ export function HomeSectionsSection() {
           component={Link}
           to="/home?edit=1"
           variant="default"
-          leftSection={<IconLayoutDashboard size={16} />}
           disabled={!homeEnabled}
         >
           <Trans>Edit Home layout</Trans>
@@ -301,7 +299,6 @@ export function HomeSectionsSection() {
             component={Link}
             to="/discover?edit=1"
             variant="default"
-            leftSection={<IconLayoutDashboard size={16} />}
           >
             <Trans>Edit Discover layout</Trans>
           </Button>

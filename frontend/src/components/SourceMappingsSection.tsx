@@ -4,7 +4,6 @@ import {
   ActionIcon,
   Alert,
   Anchor,
-  Badge,
   Box,
   Button,
   Card,
@@ -28,16 +27,12 @@ import {
 } from '@mantine/core'
 import {
   IconAlertTriangle,
-  IconCheck,
-  IconColumns,
   IconRuler,
   IconExternalLink,
-  IconLink,
   IconPlugConnected,
   IconPower,
   IconRefresh,
   IconTrash,
-  IconWand,
 } from '@tabler/icons-react'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
@@ -61,7 +56,6 @@ import {
 import { MeasureProgress, MeasureResult, ScoutCell } from './SourceMeasurePanel'
 import type { SourceMappingDto } from '../api/types'
 import {
-  QUALITY_TIER_COLOR,
   QUALITY_TIER_LABELS,
   useMeasureSources,
   useSetSourceOrderMode,
@@ -74,6 +68,8 @@ import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { EmptyState } from './ui/EmptyState'
+import { StatusDot } from './ui/StatusDot'
+import { TagChip } from './ui/TagChip'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -86,13 +82,6 @@ const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
   CrossId: msg`Cross-id`,
   Manual: msg`Manual`,
-}
-
-const ORIGIN_COLORS: Record<string, string> = {
-  TitleSearch: 'var(--info)',
-  CrossId: 'var(--watched)',
-  Manual: 'var(--ok)',
-  Unknown: 'var(--neutral)'
 }
 
 export function SourceMappingsSection({
@@ -297,7 +286,6 @@ export function SourceMappingsSection({
               <Button
                 size="xs"
                 variant="default"
-                leftSection={<IconWand size={14} />}
                 disabled={matching || nothingLeftToMatch}
                 loading={autoMatch.isPending}
                 onClick={() =>
@@ -329,7 +317,6 @@ export function SourceMappingsSection({
               <Button
                 size="xs"
                 variant="default"
-                leftSection={<IconColumns size={14} />}
                 disabled={matching || comparable < 2}
                 onClick={() => setCompareOpen(true)}
               >
@@ -371,7 +358,6 @@ export function SourceMappingsSection({
               <Button
                 size="xs"
                 variant="light"
-                leftSection={<IconLink size={14} />}
                 disabled={matching || nothingLeftToMatch}
                 onClick={() => {
                   setSourceName(unmappedSources?.[0]?.name ?? null)
@@ -491,14 +477,12 @@ export function SourceMappingsSection({
                       {sourceName}
                     </Text>
                     {sourceDisabled(m.sourceName) && (
-                      <Badge size="xs" color="var(--neutral)" variant="light">
+                      <TagChip size="sm">
                         <Trans>Source off</Trans>
-                      </Badge>
+                      </TagChip>
                     )}
                     {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
-                      <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light">
-                        {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
-                      </Badge>
+                      <TagChip size="sm">{renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}</TagChip>
                     </Tooltip>}
                   </Group>
                 </Table.Td>
@@ -580,9 +564,9 @@ export function SourceMappingsSection({
                 <Table.Td>
                   {m.lastError ? (
                     <Tooltip label={m.lastError} withArrow>
-                      <Badge size="sm" color="var(--danger)" variant="light">
+                      <StatusDot tone="danger">
                         <Trans>Error</Trans>
-                      </Badge>
+                      </StatusDot>
                     </Tooltip>
                   ) : (
                     <Text size="xs" c="var(--ink-3)">
@@ -645,27 +629,17 @@ export function SourceMappingsSection({
                         {sourceLabel(name)}
                       </Text>
                       {state === 'Matched' ? (
-                        <Badge
-                          size="xs"
-                          color="var(--ok)"
-                          variant="light"
-                          leftSection={<IconCheck size={10} />}
-                        >
+                        <StatusDot tone="ok">
                           <Trans>Found</Trans>
-                        </Badge>
+                        </StatusDot>
                       ) : state === 'NoMatch' ? (
-                        <Badge size="xs" color="var(--neutral)" variant="light">
+                        <StatusDot tone="neutral">
                           <Trans>No match</Trans>
-                        </Badge>
+                        </StatusDot>
                       ) : state === 'Failed' ? (
-                        <Badge
-                          size="xs"
-                          color="var(--warn)"
-                          variant="light"
-                          leftSection={<IconAlertTriangle size={10} />}
-                        >
+                        <StatusDot tone="warn">
                           <Trans>Search failed</Trans>
-                        </Badge>
+                        </StatusDot>
                       ) : (
                         <Loader size={12} />
                       )}
@@ -896,9 +870,7 @@ export function SourceMappingsSection({
                       <Text fw={600} size="sm">
                         {resolved.title}
                       </Text>
-                      <Badge size="xs" variant="light">
-                        {resolved.displayName}
-                      </Badge>
+                      <TagChip size="sm">{resolved.displayName}</TagChip>
                     </Group>
                     {resolved.url && (
                       <Text size="xs" c="var(--ink-3)" lineClamp={1}>
@@ -988,9 +960,7 @@ function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefin
           multiline
           w={260}
         >
-          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]}>
-            {renderLabel(QUALITY_TIER_LABELS[tier])}
-          </Badge>
+          <TagChip size="sm">{renderLabel(QUALITY_TIER_LABELS[tier])}</TagChip>
         </Tooltip>
       )}
       <MappingMeasurement quality={quality} />

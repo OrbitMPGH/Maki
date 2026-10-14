@@ -152,7 +152,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
               <Trans>Disconnect</Trans>
             </Button>
           ) : (
-            <Button size="compact-sm" loading={authStart.isPending} onClick={connect}>
+            <Button size="compact-sm" variant="light" loading={authStart.isPending} onClick={connect}>
               <Trans>Connect</Trans>
             </Button>
           )}
@@ -221,7 +221,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           onChange={(e) => setInput(e.currentTarget.value)}
           onKeyDown={(e) => e.key === 'Enter' && assign(input)}
         />
-        <Button size="compact-sm" onClick={() => assign(input)} loading={match.isPending}>
+        <Button size="compact-sm" variant="light" onClick={() => assign(input)} loading={match.isPending}>
           <Trans>Assign</Trans>
         </Button>
         <Button
@@ -485,9 +485,9 @@ export default function ScrobblePage() {
                       {fmtTime(l.timestamp)}
                     </Text>{' '}
                     {l.service && (
-                      <Badge size="xs" variant="light" mr={4}>
+                      <TagChip size="sm" className="scrobble-log-service">
                         {serviceLabel(data.connections, l.service)}
-                      </Badge>
+                      </TagChip>
                     )}
                     {l.title && <Text span fw={600}>{l.title} </Text>}
                     {l.message}

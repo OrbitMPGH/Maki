@@ -5,7 +5,9 @@ import { randomUUID } from '../../lib/uuid'
 import { ApiError } from '../../api/client'
 import { notifications } from '@mantine/notifications'
 import {
-  IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
+  IconDots,
+  IconThumbUp,
+  IconThumbDown,
 } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
@@ -157,26 +159,26 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
         </Menu.Target>
         <Menu.Dropdown>
           <Menu.Label>{t`Change this title only`}</Menu.Label>
-          <Menu.Item leftSection={<IconEyeOff size={16} />} disabled={suppression === 'hidden'} onClick={() => void submit('hide')}>
+          <Menu.Item disabled={suppression === 'hidden'} onClick={() => void submit('hide')}>
             {t`Hide this title`}
           </Menu.Item>
-          <Menu.Item leftSection={<IconClock size={16} />} disabled={suppression === 'dismissed'} onClick={() => void submit('dismiss')}>
+          <Menu.Item disabled={suppression === 'dismissed'} onClick={() => void submit('dismiss')}>
             {t`Dismiss for 30 days`}
           </Menu.Item>
           <Menu.Divider />
           <Menu.Label>{t`Whole franchise`}</Menu.Label>
-          <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={() => void submitFranchise()}>
+          <Menu.Item onClick={() => void submitFranchise()}>
             {t`Hide this and its franchise`}
           </Menu.Item>
           <Menu.Divider />
           <Menu.Label>{t`Already read or seen, taste unchanged`}</Menu.Label>
-          <Menu.Item leftSection={<IconEye size={16} />} onClick={() => void submit('mark-exposed', 'manga')}>
+          <Menu.Item onClick={() => void submit('mark-exposed', 'manga')}>
             {t`Read manga elsewhere`}
           </Menu.Item>
-          <Menu.Item leftSection={<IconEye size={16} />} onClick={() => void submit('mark-exposed', 'anime')}>
+          <Menu.Item onClick={() => void submit('mark-exposed', 'anime')}>
             {t`Seen anime`}
           </Menu.Item>
-          <Menu.Item leftSection={<IconEye size={16} />} onClick={() => void submit('mark-exposed', 'both')}>
+          <Menu.Item onClick={() => void submit('mark-exposed', 'both')}>
             {t`Both`}
           </Menu.Item>
           <Menu.Divider />

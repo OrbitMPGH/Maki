@@ -5127,10 +5127,9 @@ msgid "Content"
 msgstr "Treść"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
+#: src/components/ui/HeroStatus.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -6050,8 +6049,8 @@ msgstr "Gęstość"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Density: {densityLabel}"
-msgstr "Gęstość: {densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "Gęstość: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10314,6 +10313,10 @@ msgstr "Więcej w tym stylu"
 #, fuzzy
 msgid "More of this"
 msgstr "Więcej takich"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -18682,6 +18685,7 @@ msgstr "bardzo ścisły"
 msgid "Vietnamese"
 msgstr "Wietnamski"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy

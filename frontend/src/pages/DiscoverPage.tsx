@@ -28,9 +28,7 @@ import {
   IconAffiliate,
   IconAlertTriangle,
   IconCompass,
-  IconDeviceFloppy,
   IconFlame,
-  IconLayoutDashboard,
   IconLayoutGrid,
   IconLibrary,
   IconPlus,
@@ -737,7 +735,6 @@ function RecommendedTab() {
                 <Button
                   variant="subtle"
                   size="xs"
-                  leftSection={<IconDeviceFloppy size={14} />}
                   loading={saveDefaults.isPending}
                   // Nothing set and nothing stored: there is neither a default to save nor one to clear.
                   disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
@@ -755,7 +752,7 @@ function RecommendedTab() {
                 <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
                   <Trans>Reset</Trans>
                 </Button>
-                <Button size="xs" onClick={() => apply(false)}>
+                <Button size="xs" variant="light" onClick={() => apply(false)}>
                   <Trans>Apply</Trans>
                 </Button>
               </Group>
@@ -1584,7 +1581,7 @@ export default function DiscoverPage() {
         actions={
           active === 'browse' && !editing ? (
             <Group gap="xs" wrap="wrap">
-              <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
+              <Button variant="default" onClick={enterEditing}>
                 <Trans>Edit layout</Trans>
               </Button>
               <DensityControl

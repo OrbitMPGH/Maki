@@ -13,14 +13,11 @@ import {
 } from '@mantine/core'
 import { useIntersection } from '@mantine/hooks'
 import {
-  IconCopy,
   IconDots,
   IconFilter,
   IconLibrary,
-  IconPencil,
   IconPlus,
   IconSparkles,
-  IconTrash,
 } from '@tabler/icons-react'
 import {
   useSeries,
@@ -130,21 +127,20 @@ export function CustomRailSection({
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => setEditing({ rail })}>
+                <Menu.Item onClick={() => setEditing({ rail })}>
                   <Trans>Edit</Trans>
                 </Menu.Item>
-                <Menu.Item leftSection={<IconCopy size={14} />} onClick={() => duplicate(rail.placement)}>
+                <Menu.Item onClick={() => duplicate(rail.placement)}>
                   <Trans>Duplicate</Trans>
                 </Menu.Item>
                 {canDuplicateAcross && (
-                  <Menu.Item leftSection={<IconCopy size={14} />} onClick={() => duplicate(otherPlacement)}>
+                  <Menu.Item onClick={() => duplicate(otherPlacement)}>
                     {otherPlacement === 'home' ? <Trans>Copy to Home</Trans> : <Trans>Copy to Discover</Trans>}
                   </Menu.Item>
                 )}
                 <Menu.Divider />
                 <Menu.Item
                   color="var(--danger)"
-                  leftSection={<IconTrash size={14} />}
                   onClick={() => setConfirmDelete(true)}
                 >
                   <Trans>Delete</Trans>

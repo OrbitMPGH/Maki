@@ -1,6 +1,5 @@
 import {
   Anchor,
-  Badge,
   Button,
   Group,
   Stack,
@@ -205,9 +204,9 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                     {s.reviewReason ? (
                       <Table.Td colSpan={3}>
                         <Group gap={8} align="flex-start" wrap="nowrap">
-                          <Badge size="sm" color="var(--warn)" variant="light">
+                          <StatusDot tone="warn">
                             <Trans>Needs review</Trans>
-                          </Badge>
+                          </StatusDot>
                           {data.kavitaSeriesId != null && (
                             <ReviewControls kavitaSeriesId={data.kavitaSeriesId} service={s} />
                           )}
@@ -215,9 +214,9 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                       </Table.Td>
                     ) : s.method === 'ignored' ? (
                       <Table.Td colSpan={3}>
-                        <Badge size="sm" color="var(--neutral)" variant="light">
+                        <StatusDot tone="neutral">
                           <Trans>Ignored</Trans>
-                        </Badge>
+                        </StatusDot>
                       </Table.Td>
                     ) : (
                       <>

@@ -13,7 +13,7 @@ import {
 } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual, statusColor, statusOnColor } from './status'
+import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual } from './status'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -145,7 +145,7 @@ export const CoverCard = memo(function CoverCard({
           </div>
 
           <div className="cover-corner cover-corner-right">
-            {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
+            {/* Monitor state on every card: a dimmer eye when watched, a brighter eye-off when not. */}
             <span
               className="cover-badge cover-badge-circle"
               data-dim={series.monitored || undefined}
@@ -153,7 +153,7 @@ export const CoverCard = memo(function CoverCard({
               role="img"
               aria-label={monitoredTip}
             >
-              {series.monitored ? <IconEye size={15} /> : <IconEyeOff size={15} />}
+              {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
             </span>
             {/* Only when muted: the other three modes are the normal case and would be noise. */}
             {series.notificationMode === 'Muted' && (
@@ -164,19 +164,18 @@ export const CoverCard = memo(function CoverCard({
                 role="img"
                 aria-label={mutedTip}
               >
-                <IconBellOff size={15} />
+                <IconBellOff size={12} />
               </span>
             )}
-            {/* Last in the row so it holds the corner; the eye and bell only show on hover. */}
+            {/* Last in the row so it holds the corner. */}
             <span
               className="cover-state"
               data-tone="status"
               data-tip={statusLabel}
               role="img"
               aria-label={statusLabel}
-              style={{ '--tone': statusColor(status.color), '--tone-on': statusOnColor(status.color) } as React.CSSProperties}
             >
-              <StatusGlyph size={13} stroke={2} />
+              <StatusGlyph size={12} stroke={2} />
             </span>
           </div>
         </div>

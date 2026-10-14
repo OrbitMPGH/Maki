@@ -538,7 +538,7 @@ export function ImageCacheSection() {
           value={pct ?? 100}
           animated={running}
           striped={running}
-          color={status?.lastError ? 'var(--danger)' : 'brand'}
+          color={status?.lastError ? 'var(--danger)' : 'var(--neutral)'}
         />
       )}
 

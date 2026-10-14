@@ -1,7 +1,6 @@
 import {
   Alert,
   Anchor,
-  Badge,
   Button,
   Checkbox,
   Divider,
@@ -29,11 +28,8 @@ import {
   IconClockPlay,
   IconDatabase,
   IconDownload,
-  IconFileImport,
   IconPlugConnected,
-  IconPhotoScan,
   IconRefresh,
-  IconScan,
   IconServer,
   IconTrash,
   type Icon,
@@ -63,6 +59,7 @@ import { Disclosure } from '../components/ui/Disclosure'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
+import { TagChip } from '../components/ui/TagChip'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -276,7 +273,7 @@ export default function HealthPage() {
             </Button>
             <Menu position="bottom-end" withinPortal width={320}>
               <Menu.Target>
-                <Button leftSection={<IconScan size={16} />} rightSection={<IconChevronDown size={14} />}>
+                <Button rightSection={<IconChevronDown size={14} />}>
                   <Trans>Scan files</Trans>
                 </Button>
               </Menu.Target>
@@ -588,9 +585,9 @@ export default function HealthPage() {
                             <Table.Td>
                               <Group gap={4} className="health-finding-badges">
                                 {file.findings.map((f) => (
-                                  <Badge key={f.id} color={color(f.severity)} variant="light">
+                                  <TagChip key={f.id} size="sm" dot={color(f.severity)}>
                                     {renderLabel(FINDING_LABEL[f.kind] ?? f.kind)}
-                                  </Badge>
+                                  </TagChip>
                                 ))}
                               </Group>
                             </Table.Td>
@@ -667,7 +664,7 @@ export default function HealthPage() {
           <Stack>
             {history.data?.items.map((entry) => (
               <Group key={entry.id} align="flex-start">
-                <Badge variant="light">{renderLabel(HISTORY_KIND_LABEL[entry.kind] ?? entry.kind)}</Badge>
+                <TagChip size="sm">{renderLabel(HISTORY_KIND_LABEL[entry.kind] ?? entry.kind)}</TagChip>
                 <div>
                   <Text size="sm">{entry.message}</Text>
                   <Text size="xs" c="var(--ink-3)">
@@ -1240,7 +1237,6 @@ function FileReview({
                     <Button
                       size="xs"
                       variant="default"
-                      leftSection={<IconPhotoScan size={14} />}
                       onClick={() =>
                         action.mutate({ path: '/scans', body: { fileIds: [id], force: true, verify: true } })
                       }
@@ -1318,6 +1314,7 @@ function FileReview({
                 <Button
                   mt="sm"
                   fullWidth
+                  variant="light"
                   disabled={data.chapters.length === 0 || data.mappings.length === 0}
                   loading={action.isPending && action.variables?.path === '/repairs'}
                   onClick={() =>
@@ -1447,9 +1444,7 @@ function UnlinkedPanel({
         <Title order={4} fz="var(--type-subhead)">
           <Trans>Not linked to any chapter</Trans>
         </Title>
-        <Badge variant="light" color="var(--neutral)">
-          {label}
-        </Badge>
+        <TagChip size="sm">{label}</TagChip>
       </Group>
 
       {seriesId != null && (
@@ -1511,7 +1506,7 @@ function UnlinkedPanel({
           </Alert>
           <Group gap="xs">
             <Button
-              leftSection={<IconFileImport size={16} />}
+              variant="light"
               loading={action.isPending && action.variables?.path === '/imports'}
               onClick={() => action.mutate({ path: '/imports', body: { fileIds: [file.id] } })}
             >
