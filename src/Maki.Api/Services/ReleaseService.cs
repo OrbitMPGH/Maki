@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
@@ -48,16 +47,13 @@ public sealed class ReleaseRefusedException(string key, string message) : Invali
     public string Key { get; } = key;
 }
 
-public partial class ReleaseService(
+public class ReleaseService(
     MakiDbContext db,
     ProwlarrClient prowlarr,
     QBittorrentClient qbittorrent,
     SettingsService settings,
     ILogger<ReleaseService> logger)
 {
-    [GeneratedRegex(@"xt=urn:btih:([0-9a-fA-F]{40}|[a-zA-Z2-7]{32})")]
-    private static partial Regex MagnetHash();
-
     public virtual async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
         var series = await db.Series.FindAsync([seriesId], ct)
@@ -108,18 +104,12 @@ public partial class ReleaseService(
         }
 
         var qbt = await GetQbtConfigAsync(ct);
-        var link = release.MagnetUrl ?? release.DownloadUrl
-            ?? throw new ReleaseRefusedException(ReleaseRefusedException.NoDownloadLink, "Release has no download link");
-
-        await qbittorrent.AddAsync(qbt.Url, qbt.Username, qbt.Password, link, qbt.Category, ct);
-
-        // Magnets carry their infohash; .torrent URLs get matched later by the
-        // completed-download job (newest unclaimed torrent in our category).
-        string? hash = null;
-        if (release.MagnetUrl != null && MagnetHash().Match(release.MagnetUrl) is { Success: true } m)
+        if (release.MagnetUrl is null && release.DownloadUrl is null)
         {
-            hash = m.Groups[1].Value.ToLowerInvariant();
+            throw new ReleaseRefusedException(ReleaseRefusedException.NoDownloadLink, "Release has no download link");
         }
+
+        var hash = await AddToQbittorrentAsync(release, qbt, ct);
 
         var item = new DownloadQueueItem
         {
@@ -140,6 +130,59 @@ public partial class ReleaseService(
         logger.LogInformation("Grabbed '{Title}' from {Indexer} for series {SeriesId}",
             release.Title, release.Indexer, seriesId);
         return item;
+    }
+
+    /// <summary>
+    /// Adds the release and returns its infohash, so the completed-download job can find the torrent by
+    /// hash. A .torrent link is fetched and uploaded rather than handed to qBittorrent as a URL, because
+    /// a URL leaves the hash unknown and the job then has to guess which torrent is this one by when it
+    /// was added, which fails when qBittorrent already had it. Only when the fetch fails does the URL go
+    /// over as before, with no hash.
+    /// </summary>
+    private async Task<string?> AddToQbittorrentAsync(
+        ReleaseDto release, (string Url, string Username, string Password, string Category) qbt, CancellationToken ct)
+    {
+        if (release.MagnetUrl is { } magnet)
+        {
+            await qbittorrent.AddAsync(qbt.Url, qbt.Username, qbt.Password, magnet, qbt.Category, ct);
+            return TorrentInfoHash.FromMagnet(magnet);
+        }
+
+        var url = release.DownloadUrl!;
+        ProwlarrClient.TorrentLink? link = null;
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+            link = await prowlarr.FetchTorrentAsync(url, timeout.Token);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidDataException ||
+                                   (ex is TaskCanceledException && !ct.IsCancellationRequested))
+        {
+            logger.LogWarning("Could not fetch the torrent file for '{Title}' ({Error}); handing qBittorrent the link instead",
+                release.Title, ex.Message);
+        }
+
+        if (link?.Magnet is { } redirected)
+        {
+            await qbittorrent.AddAsync(qbt.Url, qbt.Username, qbt.Password, redirected, qbt.Category, ct);
+            return TorrentInfoHash.FromMagnet(redirected);
+        }
+
+        if (link?.File is { } file && TorrentInfoHash.FromTorrentFile(file) is { } hash)
+        {
+            await qbittorrent.AddFileAsync(qbt.Url, qbt.Username, qbt.Password, file, hash, qbt.Category, ct);
+            return hash;
+        }
+
+        if (link is not null)
+        {
+            logger.LogWarning("The download link for '{Title}' did not serve a torrent file; handing qBittorrent the link instead",
+                release.Title);
+        }
+
+        await qbittorrent.AddAsync(qbt.Url, qbt.Username, qbt.Password, url, qbt.Category, ct);
+        return null;
     }
 
     /// <summary>Parses a CSV of ids from the settings store; null/blank → null (no restriction).</summary>

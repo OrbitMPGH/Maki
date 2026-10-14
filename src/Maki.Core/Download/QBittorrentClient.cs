@@ -83,13 +83,56 @@ public class QBittorrentClient
         };
 
         using var response = await SendAuthenticatedAsync(
-            baseUrl, username, password, HttpMethod.Post, "torrents/add", fields, ct);
+            baseUrl, username, password, HttpMethod.Post, "torrents/add", () => new FormUrlEncodedContent(fields), ct);
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadAsStringAsync(ct);
         if (body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
         {
             throw new QBittorrentException(QBittorrentFailure.TorrentRejected, "qBittorrent rejected the torrent");
         }
+    }
+
+    /// <summary>
+    /// Uploads a .torrent file. Unlike a URL, which qBittorrent fetches later and so always accepts,
+    /// a file it already has is refused; that is not an error here, since the torrent is there.
+    /// </summary>
+    public virtual async Task AddFileAsync(
+        string baseUrl, string username, string password,
+        byte[] torrent, string infoHash, string category, CancellationToken ct = default)
+    {
+        await EnsureLoginAsync(baseUrl, username, password, force: false, ct);
+
+        using var response = await SendAuthenticatedAsync(baseUrl, username, password, HttpMethod.Post, "torrents/add", () =>
+        {
+            var file = new ByteArrayContent(torrent);
+            file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-bittorrent");
+            return new MultipartFormDataContent
+            {
+                { file, "torrents", infoHash + ".torrent" },
+                { new StringContent(category), "category" },
+            };
+        }, ct);
+        var body = response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync(ct) : string.Empty;
+        if (response.StatusCode == HttpStatusCode.Conflict || body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
+        {
+            if (await HasTorrentAsync(baseUrl, username, password, infoHash, ct))
+            {
+                return;
+            }
+
+            throw new QBittorrentException(QBittorrentFailure.TorrentRejected, "qBittorrent rejected the torrent");
+        }
+
+        response.EnsureSuccessStatusCode();
+    }
+
+    private async Task<bool> HasTorrentAsync(string baseUrl, string username, string password, string infoHash, CancellationToken ct)
+    {
+        using var response = await SendAuthenticatedAsync(
+            baseUrl, username, password, HttpMethod.Get, $"torrents/info?hashes={infoHash}", null, ct);
+        response.EnsureSuccessStatusCode();
+        var torrents = await response.Content.ReadFromJsonAsync<List<QbtTorrent>>(cancellationToken: ct);
+        return torrents is { Count: > 0 };
     }
 
     public virtual async Task<IReadOnlyList<QbtTorrent>> ListAsync(
@@ -108,9 +151,9 @@ public class QBittorrentClient
     /// <summary>Sends a request, logging in again and repeating it once when the session has expired (403).</summary>
     private async Task<HttpResponseMessage> SendAuthenticatedAsync(
         string baseUrl, string username, string password, HttpMethod method, string path,
-        IReadOnlyDictionary<string, string>? formFields, CancellationToken ct)
+        Func<HttpContent>? content, CancellationToken ct)
     {
-        var response = await SendAsync(baseUrl, method, path, formFields, ct);
+        var response = await SendAsync(baseUrl, method, path, content, ct);
         if (response.StatusCode != HttpStatusCode.Forbidden)
         {
             return response;
@@ -118,7 +161,7 @@ public class QBittorrentClient
 
         response.Dispose();
         await EnsureLoginAsync(baseUrl, username, password, force: true, ct);
-        return await SendAsync(baseUrl, method, path, formFields, ct);
+        return await SendAsync(baseUrl, method, path, content, ct);
     }
 
     private async Task EnsureLoginAsync(string baseUrl, string username, string password, bool force, CancellationToken ct)
@@ -137,11 +180,12 @@ public class QBittorrentClient
                 return;
             }
 
-            using var response = await SendAsync(baseUrl, HttpMethod.Post, "auth/login", new Dictionary<string, string>
-            {
-                ["username"] = username,
-                ["password"] = password
-            }, ct);
+            using var response = await SendAsync(baseUrl, HttpMethod.Post, "auth/login", () => new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["username"] = username,
+                    ["password"] = password
+                }), ct);
             response.EnsureSuccessStatusCode();
             if (!await LoginSucceededAsync(response, ct))
             {
@@ -180,16 +224,13 @@ public class QBittorrentClient
     /// </summary>
     private async Task<HttpResponseMessage> SendAsync(
         string baseUrl, HttpMethod method, string path,
-        IReadOnlyDictionary<string, string>? formFields, CancellationToken ct)
+        Func<HttpContent>? content, CancellationToken ct)
     {
         var webUiRoot = new Uri(baseUrl.TrimEnd('/') + "/");
         using var request = new HttpRequestMessage(method, new Uri(webUiRoot, $"api/v2/{path}"));
         request.Headers.Referrer = webUiRoot;
         request.Headers.TryAddWithoutValidation("Origin", webUiRoot.GetLeftPart(UriPartial.Authority));
-        if (formFields is not null)
-        {
-            request.Content = new FormUrlEncodedContent(formFields);
-        }
+        request.Content = content?.Invoke();
 
         return await Client.SendAsync(request, ct);
     }

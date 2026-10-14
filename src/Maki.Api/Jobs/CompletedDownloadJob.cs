@@ -364,8 +364,10 @@ public class CompletedDownloadJob(
         events.QueueUpdated(QueueItemDto.FromEntity(item, chapter: null, item.Series!, "torrent"));
 
     /// <summary>
-    /// Best guess at the qBittorrent torrent for an item grabbed via a .torrent URL (which
-    /// carries no infohash): an unclaimed torrent added around the grab time. Among those,
+    /// Best guess at the qBittorrent torrent for an item with no infohash, which since grabs resolve
+    /// the hash themselves means one whose .torrent file Maki could not fetch (or a row from before
+    /// that): an unclaimed torrent added around the grab time. A torrent qBittorrent already had is
+    /// never found this way, since another row owns it. Among those,
     /// one whose name carries the series' title is strongly preferred, so a new item can't
     /// adopt an unrelated torrent that merely shares the time window. Falls back to the
     /// oldest in-window torrent (the original guess) when nothing matches, so an

@@ -89,6 +89,48 @@ public class ProwlarrClient(IHttpClientFactory httpClientFactory)
         }
     }
 
+    /// <summary>What a release's download link served: the .torrent file, or the magnet Prowlarr redirected to.</summary>
+    public sealed record TorrentLink(byte[]? File, string? Magnet);
+
+    private const int MaxTorrentFileBytes = 20 * 1024 * 1024;
+
+    /// <summary>
+    /// Fetches a release's download link (Prowlarr's own proxy URL, which carries its API key). A
+    /// magnet-only indexer answers with a redirect to the magnet, which the handler does not follow.
+    /// </summary>
+    public virtual async Task<TorrentLink> FetchTorrentAsync(string downloadUrl, CancellationToken ct = default)
+    {
+        var client = httpClientFactory.CreateClient(HttpClientName);
+        using var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (response.Headers.Location is { } location &&
+            location.OriginalString.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
+        {
+            return new TorrentLink(null, location.OriginalString);
+        }
+
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > MaxTorrentFileBytes)
+        {
+            throw new InvalidDataException("The download link served more than a torrent file");
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        int read;
+        while ((read = await stream.ReadAsync(chunk, ct)) > 0)
+        {
+            if (buffer.Length + read > MaxTorrentFileBytes)
+            {
+                throw new InvalidDataException("The download link served more than a torrent file");
+            }
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return new TorrentLink(buffer.ToArray(), null);
+    }
+
     private HttpClient CreateClient(string baseUrl, string apiKey)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);

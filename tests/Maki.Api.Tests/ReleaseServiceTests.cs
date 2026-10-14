@@ -29,6 +29,8 @@ public class ReleaseServiceTests : IDisposable
     {
         public string? AddedLink { get; private set; }
 
+        public (byte[] File, string Hash)? AddedFile { get; private set; }
+
         public override Task AddAsync(
             string baseUrl, string username, string password,
             string urlOrMagnet, string category, CancellationToken ct = default)
@@ -36,13 +38,37 @@ public class ReleaseServiceTests : IDisposable
             AddedLink = urlOrMagnet;
             return Task.CompletedTask;
         }
+
+        public override Task AddFileAsync(
+            string baseUrl, string username, string password,
+            byte[] torrent, string infoHash, string category, CancellationToken ct = default)
+        {
+            AddedFile = (torrent, infoHash);
+            return Task.CompletedTask;
+        }
     }
 
-    private ReleaseService Build(string prowlarrJson = "[]")
+    /// <summary>Serves a release's download link: a body, or a redirect to <c>Location</c>.</summary>
+    private sealed class DownloadLinkFactory(byte[] body, string? location = null) : IHttpClientFactory
     {
-        var prowlarr = new ProwlarrClient(new StubHttpClientFactory(prowlarrJson));
-        return new ReleaseService(_db.NewContext(), prowlarr, _qbt, _settings, NullLogger<ReleaseService>.Instance);
+        public HttpClient CreateClient(string name) => new(new Handler(body, location));
+
+        private sealed class Handler(byte[] body, string? location) : HttpMessageHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            {
+                var response = location is null
+                    ? new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new ByteArrayContent(body) }
+                    : new HttpResponseMessage(System.Net.HttpStatusCode.MovedPermanently) { Headers = { Location = new Uri(location) } };
+                return Task.FromResult(response);
+            }
+        }
     }
+
+    private ReleaseService Build(string prowlarrJson = "[]") => Build(new StubHttpClientFactory(prowlarrJson));
+
+    private ReleaseService Build(IHttpClientFactory prowlarrHttp) =>
+        new(_db.NewContext(), new ProwlarrClient(prowlarrHttp), _qbt, _settings, NullLogger<ReleaseService>.Instance);
 
     private async Task ConfigureProwlarr()
     {
@@ -184,6 +210,54 @@ public class ReleaseServiceTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.Equal(1, db.DownloadQueue.Count(q => q.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task Grab_uploads_a_torrent_file_and_records_its_infohash()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        var torrent = System.Text.Encoding.ASCII.GetBytes(
+            "d4:infod6:lengthi12345e4:name8:test.cbz12:piece lengthi16384e6:pieces20:aaaaaaaaaaaaaaaaaaaaee");
+        var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://prowlarr.test/1/download", null, null);
+
+        var item = await Build(new DownloadLinkFactory(torrent)).GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
+
+        Assert.Null(_qbt.AddedLink);
+        Assert.Equal(torrent, _qbt.AddedFile!.Value.File);
+        Assert.Equal("b0d01790a719342ff42de4fd924dea04a8286157", _qbt.AddedFile.Value.Hash);
+        Assert.Equal("b0d01790a719342ff42de4fd924dea04a8286157",
+            System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
+    }
+
+    [Fact]
+    public async Task Grab_follows_a_download_link_that_redirects_to_a_magnet()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        const string magnet = "magnet:?xt=urn:btih:AERUKZ4JVPG66AJDIVTYTK6N54ASGRLH&dn=x";
+        var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://prowlarr.test/1/download", null, null);
+
+        var item = await Build(new DownloadLinkFactory([], magnet)).GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
+
+        Assert.Equal(magnet, _qbt.AddedLink);
+        Assert.Equal("0123456789abcdef0123456789abcdef01234567",
+            System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
+    }
+
+    [Fact]
+    public async Task Grab_hands_qbittorrent_the_link_when_it_does_not_serve_a_torrent_file()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://prowlarr.test/1/download", null, null);
+
+        var item = await Build(new DownloadLinkFactory("<html>busy</html>"u8.ToArray()))
+            .GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
+
+        Assert.Equal(release.DownloadUrl, _qbt.AddedLink);
+        Assert.Null(_qbt.AddedFile);
+        Assert.Null(System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
     }
 
     [Fact]
