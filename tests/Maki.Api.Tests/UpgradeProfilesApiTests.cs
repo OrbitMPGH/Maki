@@ -57,7 +57,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
     private SettingsController Settings(MakiDbContext db) => new(
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
         settings: new SettingsService(_db.ScopeFactory()), naming: null!, flareSolverr: null!, prowlarr: null!,
-        qbittorrent: null!, kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
+        torrentClients: null!, kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
         mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
         embeddingIndexer: null!, prebuiltIndex: null!, recoGraph: null!,
         recoGraphCache: null!, coReadInstaller: null!, coReadCache: null!, readerCohortInstaller: null!,

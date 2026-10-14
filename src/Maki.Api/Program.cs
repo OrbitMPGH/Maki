@@ -360,7 +360,7 @@ try
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // Page and image clients fetch URLs the scraped site chose, so they may only reach public
-    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, qBittorrent or Prowlarr.
+    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, the download client or Prowlarr.
     builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
@@ -971,7 +971,10 @@ try
             client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers
         .AddHttpMessageHandler(() => new TransientRetryHandler());
     builder.Services.AddSingleton<Maki.Core.Indexers.ProwlarrClient>();
-    builder.Services.AddSingleton<Maki.Core.Download.QBittorrentClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.QBittorrentClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.TransmissionClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.DelugeClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.TorrentClientRegistry>();
     builder.Services.AddHostedService<DownloadWorkerHostedService>();
 
     builder.Services.AddHttpClient(Maki.Core.Kavita.KavitaClient.HttpClientName,

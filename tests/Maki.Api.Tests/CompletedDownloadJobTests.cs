@@ -12,33 +12,26 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-/// <summary>The poll that ties torrent queue rows to qBittorrent: hash claiming, the missing-torrent failure and the park gate.</summary>
+/// <summary>The poll that ties torrent queue rows to the download client: hash claiming, the missing-torrent failure and the park gate.</summary>
 public class CompletedDownloadJobTests : IDisposable
 {
     private readonly TestDb _db = new();
-    private readonly FakeQbt _qbt = new();
+    private readonly FakeTorrentClient _client = new();
     private readonly RecordingNotifications _notifications = new();
     private readonly RecordingInbox _inbox = new();
     private int _seriesId;
 
     public CompletedDownloadJobTests()
     {
-        _db.SetConfig((SettingKeys.QBittorrentUrl, "http://qbt.test"));
+        _db.SetConfig((SettingKeys.DownloadClientUrl, "http://qbt.test"));
         _seriesId = _db.SeedSeries("Berserk");
+        CompletedDownloadJob.ErroredSince.Clear();
     }
 
     public void Dispose() => _db.Dispose();
 
-    private sealed class FakeQbt : QBittorrentClient
-    {
-        public List<QbtTorrent> Torrents { get; } = [];
-
-        public override Task<IReadOnlyList<QbtTorrent>> ListAsync(
-            string baseUrl, string username, string password, string category, CancellationToken ct = default) =>
-            Task.FromResult<IReadOnlyList<QbtTorrent>>(Torrents.ToList());
-    }
-
-    private static long Unix(DateTime utc) => new DateTimeOffset(utc).ToUnixTimeSeconds();
+    private static ClientTorrent Torrent(string hash, double progress, DateTime addedAt) => new(
+        hash, "Berserk v01 (Digital)", progress, progress >= 1.0, "/dl/Berserk v01", new DateTimeOffset(addedAt), false, null);
 
     private int SeedItem(QueueStatus status, string? hash, DateTime queuedAt, string title = "Berserk v01")
     {
@@ -63,12 +56,12 @@ public class CompletedDownloadJobTests : IDisposable
         using var db = _db.NewContext();
         var settings = new SettingsService(_db.ScopeFactory());
         var releases = new ReleaseService(
-            db, new ProwlarrClient(new StubHttpClientFactory("[]")), _qbt, settings, NullLogger<ReleaseService>.Instance);
+            db, new ProwlarrClient(new StubHttpClientFactory("[]")), _client.Registry(), settings, NullLogger<ReleaseService>.Instance);
         var importer = new TorrentImportService(
             db, null!, null!, null!, null!, null!, settings, null!, new RecordingInbox(),
             NullLogger<TorrentImportService>.Instance);
         var job = new CompletedDownloadJob(
-            db, releases, _qbt, importer, new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
+            db, releases, _client.Registry(), importer, new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
             null!, _notifications, _inbox, new TestLocalizer(), new TestUserLocaleResolver(),
             NullLogger<CompletedDownloadJob>.Instance);
         await job.Execute(new TestJobContext());
@@ -129,7 +122,62 @@ public class CompletedDownloadJobTests : IDisposable
         Assert.Empty(db.TorrentProposals);
     }
 
+    private static ClientTorrent ErroredTorrent(string hash) => new(
+        hash, "Berserk v01 (Digital)", 1.0, false, "/dl/Berserk v01", DateTimeOffset.UtcNow, true, "Missing files");
+
+    [Fact]
+    public async Task A_torrent_in_the_clients_error_state_is_left_alone_inside_the_grace()
+    {
+        var id = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1));
+        _client.Torrents.Add(ErroredTorrent("abc123"));
+
+        await RunAsync();
+        await RunAsync();
+
+        Assert.Equal(QueueStatus.Downloading, Reload(id).Status);
+        Assert.Empty(_notifications.Sent);
+    }
+
+    [Fact]
+    public async Task A_torrent_that_stays_in_the_clients_error_state_past_the_grace_fails_with_the_clients_message()
+    {
+        var id = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1));
+        _client.Torrents.Add(ErroredTorrent("abc123"));
+        CompletedDownloadJob.ErroredSince[id] = DateTime.UtcNow - CompletedDownloadJob.ErroredTorrentGrace - TimeSpan.FromMinutes(1);
+
+        await RunAsync();
+
+        var item = Reload(id);
+        Assert.Equal(QueueStatus.Failed, item.Status);
+        Assert.Equal("error.download.torrentClientError", item.ErrorKey);
+        Assert.Equal("Missing files", item.ErrorMessage);
+        Assert.Single(_notifications.Sent);
+
+        using var db = _db.NewContext();
+        Assert.Empty(db.TorrentProposals);
+    }
+
+    [Fact]
+    public async Task A_torrent_whose_error_clears_before_the_grace_starts_over()
+    {
+        var id = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1));
+        CompletedDownloadJob.ErroredSince[id] = DateTime.UtcNow - CompletedDownloadJob.ErroredTorrentGrace - TimeSpan.FromMinutes(1);
+        _client.Torrents.Add(Torrent("abc123", 0.4, DateTime.UtcNow.AddHours(-1)));
+
+        await RunAsync();
+
+        Assert.Equal(QueueStatus.Downloading, Reload(id).Status);
+        Assert.False(CompletedDownloadJob.ErroredSince.ContainsKey(id));
+
+        _client.Torrents.Clear();
+        _client.Torrents.Add(ErroredTorrent("abc123"));
+        await RunAsync();
+
+        Assert.Equal(QueueStatus.Downloading, Reload(id).Status);
+    }
+
     [Theory]
+    [InlineData("error.download.torrentClientError", false)]
     [InlineData("error.download.torrentMissing", true)]
     [InlineData("error.download.torrentRemoved", true)]
     [InlineData("error.torrentImport.noComicsEmpty", true)]
@@ -137,7 +185,7 @@ public class CompletedDownloadJobTests : IDisposable
     [InlineData(null, false)]
     [InlineData("error.download.unexpected", false)]
     [InlineData("error.upgrades.volumeGuard", false)]
-    [InlineData("error.torrentImport.notInQbittorrent", false)]
+    [InlineData("error.torrentImport.notInClient", false)]
     [InlineData("error.torrentImport.pathNotAccessible", false)]
     [InlineData("error.torrentImport.noRootFolder", false)]
     [InlineData("error.torrentImport.copyFailed", false)]
@@ -188,13 +236,12 @@ public class CompletedDownloadJobTests : IDisposable
     {
         var queuedAt = DateTime.UtcNow.AddMinutes(-10);
         var id = SeedItem(QueueStatus.Downloading, hash: null, queuedAt);
-        _qbt.Torrents.Add(new QBittorrentClient.QbtTorrent(
-            "ABC123", "Berserk v01 (Digital)", "downloading", 0.5, "/dl/Berserk v01", "/dl", Unix(queuedAt.AddMinutes(1))));
+        _client.Torrents.Add(Torrent("abc123", 0.5, queuedAt.AddMinutes(1)));
 
         await RunAsync();
 
         var item = Reload(id);
-        Assert.Equal("ABC123", JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
+        Assert.Equal("abc123", JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
         Assert.Equal(50, item.PagesDone);
         Assert.Equal(QueueStatus.Downloading, item.Status);
     }
@@ -205,8 +252,7 @@ public class CompletedDownloadJobTests : IDisposable
         var queuedAt = DateTime.UtcNow.AddMinutes(-10);
         SeedItem(QueueStatus.Completed, hash: "ABC123", queuedAt.AddDays(-1));
         var id = SeedItem(QueueStatus.Downloading, hash: null, queuedAt);
-        _qbt.Torrents.Add(new QBittorrentClient.QbtTorrent(
-            "abc123", "Berserk v01 (Digital)", "stalledUP", 1.0, "/dl/Berserk v01", "/dl", Unix(queuedAt.AddMinutes(1))));
+        _client.Torrents.Add(Torrent("abc123", 1.0, queuedAt.AddMinutes(1)));
 
         await RunAsync();
 
@@ -219,8 +265,7 @@ public class CompletedDownloadJobTests : IDisposable
     public async Task A_finished_torrent_waiting_for_an_import_decision_is_not_advanced()
     {
         var id = SeedItem(QueueStatus.AwaitingImport, hash: "def456", DateTime.UtcNow.AddHours(-1));
-        _qbt.Torrents.Add(new QBittorrentClient.QbtTorrent(
-            "DEF456", "Berserk v01 (Digital)", "stalledUP", 1.0, "/dl/Berserk v01", "/dl", Unix(DateTime.UtcNow.AddHours(-1))));
+        _client.Torrents.Add(Torrent("def456", 1.0, DateTime.UtcNow.AddHours(-1)));
 
         await RunAsync();
 

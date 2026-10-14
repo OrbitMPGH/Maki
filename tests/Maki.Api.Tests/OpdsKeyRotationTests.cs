@@ -207,7 +207,7 @@ public class OpdsKeyRotationTests : IDisposable
     private static SettingsController Controller(int userId, MakiDbContext db) =>
         new(
             localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
-            settings: null!, naming: null!, flareSolverr: null!, prowlarr: null!, qbittorrent: null!,
+            settings: null!, naming: null!, flareSolverr: null!, prowlarr: null!, torrentClients: null!,
             kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
             mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
             embeddingIndexer: null!, prebuiltIndex: null!, recoGraph: null!,

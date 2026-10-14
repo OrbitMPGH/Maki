@@ -13,40 +13,17 @@ namespace Maki.Api.Tests;
 /// <summary>
 /// <see cref="ReleaseService"/>: config-getter guards, Prowlarr search (torrent filter + seeder
 /// ordering) over a stubbed HTTP client, and grab (magnet-hash extraction + queue persistence)
-/// over a fake qBittorrent client.
+/// over a fake download client.
 /// </summary>
 public class ReleaseServiceTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly SettingsService _settings;
-    private readonly RecordingQbt _qbt = new();
+    private readonly FakeTorrentClient _client = new();
 
     public ReleaseServiceTests() => _settings = new SettingsService(_db.ScopeFactory());
 
     public void Dispose() => _db.Dispose();
-
-    private sealed class RecordingQbt : QBittorrentClient
-    {
-        public string? AddedLink { get; private set; }
-
-        public (byte[] File, string Hash)? AddedFile { get; private set; }
-
-        public override Task AddAsync(
-            string baseUrl, string username, string password,
-            string urlOrMagnet, string category, CancellationToken ct = default)
-        {
-            AddedLink = urlOrMagnet;
-            return Task.CompletedTask;
-        }
-
-        public override Task AddFileAsync(
-            string baseUrl, string username, string password,
-            byte[] torrent, string infoHash, string category, CancellationToken ct = default)
-        {
-            AddedFile = (torrent, infoHash);
-            return Task.CompletedTask;
-        }
-    }
 
     /// <summary>Serves a release's download link: a body, or a redirect to <c>Location</c>.</summary>
     private sealed class DownloadLinkFactory(byte[] body, string? location = null) : IHttpClientFactory
@@ -68,7 +45,7 @@ public class ReleaseServiceTests : IDisposable
     private ReleaseService Build(string prowlarrJson = "[]") => Build(new StubHttpClientFactory(prowlarrJson));
 
     private ReleaseService Build(IHttpClientFactory prowlarrHttp) =>
-        new(_db.NewContext(), new ProwlarrClient(prowlarrHttp), _qbt, _settings, NullLogger<ReleaseService>.Instance);
+        new(_db.NewContext(), new ProwlarrClient(prowlarrHttp), _client.Registry(), _settings, NullLogger<ReleaseService>.Instance);
 
     private async Task ConfigureProwlarr()
     {
@@ -100,27 +77,40 @@ public class ReleaseServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Qbt_config_throws_without_url_then_fills_defaults()
+    public async Task Client_settings_throw_without_url_then_fill_defaults()
     {
-        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetQbtConfigAsync(CancellationToken.None));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetClientSettingsAsync(CancellationToken.None));
 
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
-        var config = await Build().GetQbtConfigAsync(CancellationToken.None);
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
+        var config = await Build().GetClientSettingsAsync(CancellationToken.None);
 
+        Assert.Equal(TorrentClientKind.QBittorrent, config.Kind);
         Assert.Equal("http://qbt.test", config.Url);
         Assert.Equal(string.Empty, config.Username);
-        Assert.Equal("maki", config.Category);
+        Assert.Equal("maki", config.Label);
+    }
+
+    [Theory]
+    [InlineData("transmission", TorrentClientKind.Transmission)]
+    [InlineData("Deluge", TorrentClientKind.Deluge)]
+    [InlineData("utorrent", TorrentClientKind.QBittorrent)]
+    public async Task Client_settings_read_the_stored_kind_and_fall_back_to_qbittorrent(string stored, TorrentClientKind expected)
+    {
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://client.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientKind, stored);
+
+        Assert.Equal(expected, (await Build().GetClientSettingsAsync(CancellationToken.None)).Kind);
     }
 
     [Fact]
-    public async Task Qbt_path_map_defaults_to_null_and_reflects_settings()
+    public async Task Client_path_map_defaults_to_null_and_reflects_settings()
     {
-        Assert.Equal((null, null), await Build().GetQbtPathMapAsync(CancellationToken.None));
+        Assert.Equal((null, null), await Build().GetClientPathMapAsync(CancellationToken.None));
 
-        await _settings.SetAsync(SettingKeys.QBittorrentPathMapFrom, "/downloads");
-        await _settings.SetAsync(SettingKeys.QBittorrentPathMapTo, @"Z:\downloads");
+        await _settings.SetAsync(SettingKeys.DownloadClientPathMapFrom, "/downloads");
+        await _settings.SetAsync(SettingKeys.DownloadClientPathMapTo, @"Z:\downloads");
 
-        var (from, to) = await Build().GetQbtPathMapAsync(CancellationToken.None);
+        var (from, to) = await Build().GetClientPathMapAsync(CancellationToken.None);
         Assert.Equal("/downloads", from);
         Assert.Equal(@"Z:\downloads", to);
     }
@@ -194,7 +184,7 @@ public class ReleaseServiceTests : IDisposable
     public async Task Grab_extracts_the_magnet_infohash_and_persists_a_torrent_item()
     {
         var seriesId = _db.SeedSeries("Berserk");
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         var release = new ReleaseDto(
             "g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent",
             DownloadUrl: null,
@@ -205,7 +195,7 @@ public class ReleaseServiceTests : IDisposable
 
         Assert.Equal(AcquisitionProtocol.Torrent, item.Protocol);
         Assert.Equal(QueueStatus.Downloading, item.Status);
-        Assert.Equal(release.MagnetUrl, _qbt.AddedLink);
+        Assert.Equal([release.MagnetUrl!], _client.AddedLinks);
         Assert.Contains("0123456789abcdef0123456789abcdef01234567", item.ReleaseInfoJson);
 
         using var db = _db.NewContext();
@@ -216,16 +206,17 @@ public class ReleaseServiceTests : IDisposable
     public async Task Grab_uploads_a_torrent_file_and_records_its_infohash()
     {
         var seriesId = _db.SeedSeries("Berserk");
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         var torrent = System.Text.Encoding.ASCII.GetBytes(
             "d4:infod6:lengthi12345e4:name8:test.cbz12:piece lengthi16384e6:pieces20:aaaaaaaaaaaaaaaaaaaaee");
         var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://prowlarr.test/1/download", null, null);
 
         var item = await Build(new DownloadLinkFactory(torrent)).GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
 
-        Assert.Null(_qbt.AddedLink);
-        Assert.Equal(torrent, _qbt.AddedFile!.Value.File);
-        Assert.Equal("b0d01790a719342ff42de4fd924dea04a8286157", _qbt.AddedFile.Value.Hash);
+        Assert.Empty(_client.AddedLinks);
+        var added = Assert.Single(_client.AddedFiles);
+        Assert.Equal(torrent, added.File);
+        Assert.Equal("b0d01790a719342ff42de4fd924dea04a8286157", added.Hash);
         Assert.Equal("b0d01790a719342ff42de4fd924dea04a8286157",
             System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
     }
@@ -234,30 +225,46 @@ public class ReleaseServiceTests : IDisposable
     public async Task Grab_follows_a_download_link_that_redirects_to_a_magnet()
     {
         var seriesId = _db.SeedSeries("Berserk");
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         const string magnet = "magnet:?xt=urn:btih:AERUKZ4JVPG66AJDIVTYTK6N54ASGRLH&dn=x";
         var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://prowlarr.test/1/download", null, null);
 
         var item = await Build(new DownloadLinkFactory([], magnet)).GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
 
-        Assert.Equal(magnet, _qbt.AddedLink);
+        Assert.Equal([magnet], _client.AddedLinks);
         Assert.Equal("0123456789abcdef0123456789abcdef01234567",
             System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
     }
 
     [Fact]
-    public async Task Grab_hands_qbittorrent_the_link_when_it_does_not_serve_a_torrent_file()
+    public async Task Grab_hands_the_client_the_link_when_it_does_not_serve_a_torrent_file()
     {
         var seriesId = _db.SeedSeries("Berserk");
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://prowlarr.test/1/download", null, null);
 
         var item = await Build(new DownloadLinkFactory("<html>busy</html>"u8.ToArray()))
             .GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
 
-        Assert.Equal(release.DownloadUrl, _qbt.AddedLink);
-        Assert.Null(_qbt.AddedFile);
+        Assert.Equal([release.DownloadUrl!], _client.AddedLinks);
+        Assert.Empty(_client.AddedFiles);
         Assert.Null(System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
+    }
+
+    [Fact]
+    public async Task Grab_keeps_the_hash_a_client_reports_for_a_url_add()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://client.test");
+        _client.HashToReturn = "fedcba9876543210fedcba9876543210fedcba98";
+        var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://prowlarr.test/1/download", null, null);
+
+        var item = await Build(new DownloadLinkFactory("<html>busy</html>"u8.ToArray()))
+            .GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
+
+        Assert.Equal([release.DownloadUrl!], _client.AddedLinks);
+        Assert.Equal("fedcba9876543210fedcba9876543210fedcba98",
+            System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
     }
 
     [Fact]
@@ -265,7 +272,7 @@ public class ReleaseServiceTests : IDisposable
     {
         var seriesId = _db.SeedSeries("Berserk");
         await ConfigureProwlarr();
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         const string magnet = "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567";
         var service = Build("[" + Release("g", "torrent", 5, magnet: magnet) + "]");
         var controller = new ReleaseController(
@@ -282,7 +289,7 @@ public class ReleaseServiceTests : IDisposable
             new ReleaseController.GrabRequest(seriesId, forged), new TestCurrentUser(1), db, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
-        Assert.Equal(magnet, _qbt.AddedLink);
+        Assert.Equal([magnet], _client.AddedLinks);
         Assert.Equal("g title", db.DownloadQueue.Single(q => q.SeriesId == seriesId).Title);
     }
 
@@ -290,7 +297,7 @@ public class ReleaseServiceTests : IDisposable
     public async Task Grab_endpoint_refuses_a_release_no_search_returned()
     {
         var seriesId = _db.SeedSeries("Berserk");
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         var forged = new ReleaseDto("g", "Forged", 1, "Forged", 0, 0, "torrent",
             DownloadUrl: "http://169.254.169.254/latest/meta-data", MagnetUrl: null, InfoUrl: null);
 
@@ -301,7 +308,7 @@ public class ReleaseServiceTests : IDisposable
             .Grab(new ReleaseController.GrabRequest(seriesId, forged), new TestCurrentUser(1), db, CancellationToken.None);
 
         Assert.Equal(400, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
-        Assert.Null(_qbt.AddedLink);
+        Assert.Empty(_client.AddedLinks);
         Assert.Empty(db.DownloadQueue);
     }
 
@@ -309,7 +316,7 @@ public class ReleaseServiceTests : IDisposable
     public async Task Grab_records_the_origin_the_user_and_the_upgrade_info()
     {
         var seriesId = _db.SeedSeries("Berserk");
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://x/t.torrent", null, null);
 
         var manual = await Build().GrabAsync(seriesId, release, DownloadOrigin.Manual, 7, null);
@@ -330,7 +337,7 @@ public class ReleaseServiceTests : IDisposable
     public async Task Grab_without_a_download_link_throws()
     {
         var seriesId = _db.SeedSeries("Berserk");
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         var release = new ReleaseDto("g", "t", 1, "Nyaa", 1, 0, "torrent", null, null, null);
 
         await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null));
@@ -339,7 +346,7 @@ public class ReleaseServiceTests : IDisposable
     [Fact]
     public async Task Grab_for_a_missing_series_throws()
     {
-        await _settings.SetAsync(SettingKeys.QBittorrentUrl, "http://qbt.test");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
         var release = new ReleaseDto("g", "t", 1, "Nyaa", 1, 0, "torrent", "http://x/t.torrent", null, null);
 
         await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GrabAsync(404, release, DownloadOrigin.Manual, null, null));

@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-/// <summary>A Prowlarr and qBittorrent stand-in: search answers from a list, a grab is recorded.</summary>
+/// <summary>A Prowlarr and download client stand-in: search answers from a list, a grab is recorded.</summary>
 internal sealed class FakeReleases() : ReleaseService(null!, null!, null!, null!, NullLogger<ReleaseService>.Instance)
 {
     public List<ReleaseDto> Results { get; } = [];

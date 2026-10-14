@@ -16,7 +16,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/release")]
 // Both actions: the search hits the instance's Prowlarr indexers, and the grab pushes a torrent to
-// qBittorrent. Neither is something a read-only account should reach.
+// the download client. Neither is something a read-only account should reach.
 [Authorize(Policy = Policies.DownloadChapters)]
 public class ReleaseController(
     ReleaseService releaseService, ReleaseSearchCache searches, ILocalizer localizer, ILogger<ReleaseController> logger)
@@ -94,13 +94,14 @@ public class ReleaseController(
         {
             return this.Fail(localizer, ex.Key);
         }
-        catch (QBittorrentException ex)
+        catch (TorrentClientException ex)
         {
-            logger.LogWarning(ex, "qBittorrent refused the grab for series {SeriesId}", request.SeriesId);
+            logger.LogWarning(ex, "The download client refused the grab for series {SeriesId}", request.SeriesId);
             return this.BadGateway(localizer, ex.Failure switch
             {
-                QBittorrentFailure.LoginFailed => "error.release.qbittorrentLoginFailed",
-                _ => "error.release.qbittorrentRejected",
+                TorrentClientFailure.LoginFailed => "error.release.downloadClientLoginFailed",
+                TorrentClientFailure.Rejected => "error.release.downloadClientRejected",
+                _ => "error.release.downloadClientUnreachable",
             });
         }
         catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException)

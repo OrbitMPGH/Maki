@@ -882,10 +882,10 @@ msgstr "This file is still being moved into the recycle bin. Try again in a mome
 msgid "error.recycleBin.targetInvalid"
 msgstr "The original location is outside the root folder or behind a link, so the file cannot go back there."
 
-#. The Prowlarr or qBittorrent call failed; the cause is in the server log.
+#. The Prowlarr or download client call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.grabFailed"
-msgstr "Could not send the release to qBittorrent. Details are in the server log."
+msgstr "Could not send the release to the download client. Details are in the server log."
 
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.noDownloadLink"
@@ -895,19 +895,24 @@ msgstr "This release has no download link"
 msgid "error.release.prowlarrNotConfigured"
 msgstr "Prowlarr is not configured (Settings → Downloads → Prowlarr)"
 
-#. qBittorrent rejected the username or password Maki has stored for it.
+#. The download client rejected the username or password Maki has stored for it.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-msgid "error.release.qbittorrentLoginFailed"
-msgstr "qBittorrent rejected the login. Check the username and password in Settings → Downloads."
+msgid "error.release.downloadClientLoginFailed"
+msgstr "The download client rejected the login. Check the username and password in Settings → Downloads."
 
 #: src/Maki.Api/Services/ReleaseService.cs
-msgid "error.release.qbittorrentNotConfigured"
-msgstr "qBittorrent is not configured (Settings → Downloads → qBittorrent)"
+msgid "error.release.downloadClientNotConfigured"
+msgstr "No download client is configured (Settings → Downloads → Download client)"
 
-#. qBittorrent answered but refused to add the torrent.
+#. The download client answered but refused to add the torrent.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-msgid "error.release.qbittorrentRejected"
-msgstr "qBittorrent refused to add the torrent."
+msgid "error.release.downloadClientRejected"
+msgstr "The download client refused to add the torrent."
+
+#. The download client did not answer, or answered with something that was not its API.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+msgid "error.release.downloadClientUnreachable"
+msgstr "The download client did not respond. Check its URL in Settings → Downloads."
 
 #. The Prowlarr call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
@@ -1484,8 +1489,8 @@ msgid "error.torrentImport.noRootFolder"
 msgstr "Series has no root folder"
 
 #: src/Maki.Api/Services/TorrentImportService.cs
-msgid "error.torrentImport.notInQbittorrent"
-msgstr "The download is no longer in qBittorrent"
+msgid "error.torrentImport.notInClient"
+msgstr "The download is no longer in the download client"
 
 #. {path} is a filesystem path and is never translated.
 #: src/Maki.Api/Services/TorrentImportService.cs
@@ -1816,8 +1821,21 @@ msgid "error.settings.prowlarrNoResponse"
 msgstr "Prowlarr did not respond (check URL/API key)"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
-msgid "error.settings.qbittorrentLoginFailed"
-msgstr "qBittorrent login failed"
+msgid "error.settings.downloadClientLoginFailed"
+msgstr "The download client rejected the login (check username/password)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.downloadClientNoResponse"
+msgstr "The download client did not respond (check the URL)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.downloadClientKindInvalid"
+msgstr "Unknown download client"
+
+#. The label, category or tag Maki puts on its torrents.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.labelInvalid"
+msgstr "The label cannot start or end with a space, contain control characters, or be longer than 64 characters"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.kavitaNoResponse"
@@ -2826,13 +2844,18 @@ msgstr "Import rejected, the library was left as it was"
 
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentMissing"
-msgstr "The torrent never appeared in qBittorrent"
+msgstr "The torrent never appeared in the download client"
 
-#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
-#. another category, or dropped.
+#. The torrent had been seen in the download client before and has been gone for hours: deleted there,
+#. moved to another category or label, or dropped.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentRemoved"
-msgstr "The torrent is no longer in qBittorrent"
+msgstr "The torrent is no longer in the download client"
+
+#. The download client has held this torrent in an error state for half an hour. The client's own message follows.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentClientError"
+msgstr "The download client reports an error on this torrent"
 
 #. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
 #: src/Maki.Api/Services/DownloadWorkerHostedService.cs

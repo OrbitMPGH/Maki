@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Maki.Api.Configuration;
 using Maki.Core.Configuration;
+using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Inbox;
@@ -121,9 +122,17 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 (url, key, token) => services.GetRequiredService<Maki.Core.Indexers.ProwlarrClient>().PingAsync(url, key!, token));
             await Probe("Kavita", SettingKeys.KavitaUrl, SettingKeys.KavitaApiKey, false,
                 (url, key, token) => services.GetRequiredService<Maki.Core.Kavita.KavitaClient>().PingAsync(url, key!, token));
-            await Probe("qBittorrent", SettingKeys.QBittorrentUrl, null, false,
-                async (url, _, token) => await services.GetRequiredService<Maki.Core.Download.QBittorrentClient>().PingAsync(url,
-                    await settings.GetAsync(SettingKeys.QBittorrentUsername, token) ?? "", await settings.GetAsync(SettingKeys.QBittorrentPassword, token) ?? "", token));
+            var clientKind = TorrentClientKinds.Parse(await settings.GetAsync(SettingKeys.DownloadClientKind, ct)) ?? TorrentClientKind.QBittorrent;
+            await Probe("downloadclient", SettingKeys.DownloadClientUrl, null, false,
+                async (url, _, token) =>
+                {
+                    await services.GetRequiredService<TorrentClientRegistry>().For(clientKind).PingAsync(new TorrentClientSettings(
+                        clientKind, url,
+                        await settings.GetAsync(SettingKeys.DownloadClientUsername, token) ?? "",
+                        await settings.GetAsync(SettingKeys.DownloadClientPassword, token) ?? "",
+                        await settings.GetAsync(SettingKeys.DownloadClientLabel, token) is { Length: > 0 } label ? label : TorrentClientSettings.DefaultLabel), token);
+                    return true;
+                }, "downloadclient", clientKind.DisplayName());
             try
             {
                 var latest = BackupService.NewestBackupUtc(paths);
@@ -262,6 +271,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
                     await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
             }
+            if (old.FirstOrDefault(r => r.Id == "qBittorrent") is { } legacyClientRow)
+                db.HealthChecks.Remove(legacyClientRow);
             foreach (var cooled in old.Where(r => r.Id.StartsWith("cooldown:", StringComparison.Ordinal) && !checks.Any(c => c.Id == r.Id)).ToList())
                 db.HealthChecks.Remove(cooled);
             if (!checks.Any(c => c.Id == "migration-history") && old.FirstOrDefault(r => r.Id == "migration-history") is { } migrationRow)
@@ -346,23 +357,25 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 }
             }
 
-            async Task Probe(string name, string urlKey, string? secretKey, bool required, Func<string, string?, CancellationToken, Task<bool>> ping)
+            async Task Probe(string name, string urlKey, string? secretKey, bool required,
+                Func<string, string?, CancellationToken, Task<bool>> ping, string? section = null, string? label = null)
             {
+                var service = label ?? name;
                 var link = name == "Kavita"
                     ? "/settings?tab=integrations&s=kavita"
-                    : $"/settings?tab=downloads&s={name.ToLowerInvariant()}";
+                    : $"/settings?tab=downloads&s={section ?? name.ToLowerInvariant()}";
                 var url = await settings.GetAsync(urlKey, ct);
                 var secret = secretKey == null ? null : await settings.GetAsync(secretKey, ct);
                 if (string.IsNullOrWhiteSpace(url))
                 {
                     Add(name, "connections", required || !string.IsNullOrWhiteSpace(secret) ? "warning" : "disabled",
-                        "health.check.notConfigured", new { service = name }, link);
+                        "health.check.notConfigured", new { service }, link);
                     return;
                 }
                 if (secretKey != null && string.IsNullOrWhiteSpace(secret))
                 {
                     Add(name, "connections", "warning", "health.check.incompleteConfig",
-                        new { service = name }, link);
+                        new { service }, link);
                     return;
                 }
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -371,7 +384,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 try { ok = await ping(url, secret, timeout.Token).WaitAsync(timeout.Token); } catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; } catch { }
                 Add(name, "connections", ok ? "healthy" : "error",
                     ok ? "health.check.connected" : "health.check.connectionFailed",
-                    new { service = name }, link, true);
+                    new { service }, link, true);
             }
         }
         finally { Gate.Release(); }

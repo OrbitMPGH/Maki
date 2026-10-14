@@ -57,7 +57,8 @@ import { languageName } from '../api/titles'
 import { formatBytes } from '../format'
 import { useLanguageChoice } from '../i18n-context'
 import { AppearancePicker } from './AppearancePicker'
-import { ConnectionForm, type ConnectionField } from './ConnectionSettingsCard'
+import { ConnectionForm, type ConnectionFields } from './ConnectionSettingsCard'
+import { useDownloadClientFields } from './settings/downloadClientFields'
 import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
 import { DumpProgressBar } from './MetadataDumpProgress'
@@ -478,11 +479,12 @@ interface ServiceSpec {
   name: ConnectionName
   title: string
   description: string
-  fields: ConnectionField[]
+  fields: ConnectionFields
 }
 
 function useServices(): ServiceSpec[] {
   const { t } = useLingui()
+  const downloadClientFields = useDownloadClientFields()
   return [
     {
       name: 'flaresolverr',
@@ -500,16 +502,10 @@ function useServices(): ServiceSpec[] {
       ],
     },
     {
-      name: 'qbittorrent',
-      title: 'qBittorrent',
-      description: t`Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker.`,
-      fields: [
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
-        { key: 'username', label: t`Username` },
-        { key: 'password', label: t`Password`, secret: true },
-        { key: 'pathMapFrom', label: t`Path mapping - qBittorrent side`, placeholder: t`/downloads (optional)` },
-        { key: 'pathMapTo', label: t`Path mapping - Maki side`, placeholder: t`Z:\\downloads (optional)` },
-      ],
+      name: 'downloadclient',
+      title: t`Download client`,
+      description: t`Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker.`,
+      fields: downloadClientFields,
     },
     {
       name: 'kavita',
@@ -537,7 +533,7 @@ function useConnectedTitles(): string[] {
   const connected: Record<ConnectionName, boolean> = {
     flaresolverr: useConnected('flaresolverr'),
     prowlarr: useConnected('prowlarr'),
-    qbittorrent: useConnected('qbittorrent'),
+    downloadclient: useConnected('downloadclient'),
     kavita: useConnected('kavita'),
   }
   return services.filter((s) => connected[s.name]).map((s) => s.title)
