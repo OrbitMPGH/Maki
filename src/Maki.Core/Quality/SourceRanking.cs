@@ -4,10 +4,7 @@ namespace Maki.Core.Quality;
 
 /// <summary>
 /// Orders a series' sources best first under a profile: an allowed tier before a disallowed one,
-/// then the profile's tier order, then score, then the manual priority. A source nothing has been
-/// measured from scores its format points only, which puts it next to a source measuring at the
-/// reference quality: ahead of one known to be worse, so it gets tried and measured, and behind one
-/// known to be better.
+/// then the profile's tier order, then score, then the manual priority.
 /// </summary>
 public static class SourceRanking
 {

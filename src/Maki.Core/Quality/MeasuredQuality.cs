@@ -64,6 +64,11 @@ public static class MeasuredQuality
         (Weigh(profile.ResolutionWeight, ResolutionUnits(c) ?? MaxResolutionUnits),
          Weigh(profile.CompressionWeight, CompressionUnits(c) ?? MaxCompressionUnits));
 
+    /// <summary>The lowest points a measurement can score, for a source nothing has measured yet.</summary>
+    public static (int Resolution, int Compression) PessimisticPoints(UpgradeProfile profile) =>
+        (Weigh(profile.ResolutionWeight, Math.Log2((double)MinWidth / ReferenceWidth)),
+         Weigh(profile.CompressionWeight, Math.Log2(MinBitsPerPixel / ReferenceBitsPerPixel)));
+
     private static int Weigh(int weight, double? units) =>
         weight == 0 || units is null ? 0 : (int)Math.Round(weight * units.Value, MidpointRounding.AwayFromZero);
 }
