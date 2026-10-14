@@ -124,5 +124,6 @@ public class ReleaseController(
         v.Verdict.UpgradeCount,
         v.Verdict.AlreadyMetCount,
         v.Verdict.MissingCount,
-        v.TitleMatched);
+        v.TitleMatched,
+        v.RivalTitle);
 }

@@ -10908,6 +10908,10 @@ msgstr "Related series"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Related series: {relatedTitle}"
+msgstr "Related series: {relatedTitle}"
+
 #: src/components/ui/DiscoverRail.tsx
 msgid "Related to {relatedTo}"
 msgstr "Related to {relatedTo}"
@@ -13713,6 +13717,10 @@ msgstr "The Suwayomi sources below are the ones it listed last time."
 #: src/api/upgrades.ts
 msgid "The title might be a different series"
 msgstr "The title might be a different series"
+
+#: src/api/upgrades.ts
+msgid "The title names a related series, not this one"
+msgstr "The title names a related series, not this one"
 
 #: src/components/discover/discoverSectionDefs.ts
 msgid "The titles climbing fastest in popularity right now."

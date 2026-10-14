@@ -429,6 +429,8 @@ export interface ReleaseParsedDto {
   alreadyMetCount: number
   missingCount: number
   titleMatched: boolean
+  /** The related work the title names instead of this series, when that is why it did not match. */
+  rivalTitle: string | null
 }
 
 export interface SeriesVolumeSearchResultDto {
@@ -447,6 +449,7 @@ export const PROPOSAL_REASON_LABELS: Record<string, MessageDescriptor> = {
   volume_span_unknown: msg`Its volumes aren't mapped to your chapters yet`,
   unknown_chapters: msg`Covers chapters Maki doesn't know about`,
   title_uncertain: msg`The title might be a different series`,
+  title_related_series: msg`The title names a related series, not this one`,
   nothing_to_upgrade: msg`Nothing in it beats what you have`,
   no_span: msg`No volume or chapter range in the title`,
   no_profile: msg`No quality profile`,

@@ -287,9 +287,10 @@ public record TorrentProposalDto(
 
 /// <param name="Verdict">ignore, proposal or autoGrab.</param>
 /// <param name="Tier">Lowercase <see cref="QualityTier"/> name.</param>
+/// <param name="RivalTitle">The related work the title names instead of this series, when that is why it did not match.</param>
 public record ReleaseParsedDto(
     ReleaseSpanDto Span, string Tier, int Score, string Verdict, IReadOnlyList<string> Reasons, int UpgradeCount,
-    int AlreadyMetCount, int MissingCount, bool TitleMatched);
+    int AlreadyMetCount, int MissingCount, bool TitleMatched, string? RivalTitle);
 
 /// <param name="Reason">A <c>not_eligible_*</c> code, <c>search_failed</c> or <c>grab_failed</c>; null when it searched.</param>
 public record SeriesVolumeSearchResultDto(bool Searched, int ResultCount, int? Grabbed, int? ProposalId, string? Reason);

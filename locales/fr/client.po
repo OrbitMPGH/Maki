@@ -13452,6 +13452,10 @@ msgstr "Séries associées"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "séries associées, plus comme ceci, similaires, recommandations, rails, suites, dérivées"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Related series: {relatedTitle}"
+msgstr ""
+
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Related to {relatedTo}"
@@ -16907,6 +16911,10 @@ msgstr "Les sources Suwayomi ci-dessous sont celles qu'il a listées la dernièr
 #, fuzzy
 msgid "The title might be a different series"
 msgstr "Le titre correspond peut-être à une autre série"
+
+#: src/api/upgrades.ts
+msgid "The title names a related series, not this one"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy

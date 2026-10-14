@@ -64,4 +64,80 @@ public class ReleaseTitleMatcherTests
     {
         Assert.False(ReleaseTitleMatcher.Matches(ReleaseTitleParser.Parse(""), "Title", null, []));
     }
+
+    private static readonly string[] DressUpDarling = ["My Dress-Up Darling", "Sono Bisque Doll wa Koi o Suru"];
+
+    private static readonly string[] Xoxo =
+        ["My Dress-Up Darling XOXO!", "Bisque Doll de Chu", "Smooch with a Bisque Doll"];
+
+    [Fact]
+    public void A_release_naming_a_spin_off_belongs_to_the_spin_off()
+    {
+        var release = ReleaseTitleParser.Parse(
+            "My Dress-Up Darling XOXO! 001-013 as v01 (Digital-Compilation) (Oak) [Completed]");
+
+        var match = ReleaseTitleMatcher.Match(release, DressUpDarling, Xoxo);
+
+        Assert.False(match.Matched);
+        Assert.Equal("My Dress-Up Darling XOXO!", match.Rival);
+        Assert.True(ReleaseTitleMatcher.Match(release, DressUpDarling, []).Matched);
+    }
+
+    [Fact]
+    public void A_release_of_ours_still_matches_with_the_spin_off_as_a_rival()
+    {
+        var match = ReleaseTitleMatcher.Match(
+            ReleaseTitleParser.Parse("My Dress-Up Darling v01 (Digital) (1r0n)"), DressUpDarling, Xoxo);
+
+        Assert.True(match.Matched);
+        Assert.Null(match.Rival);
+    }
+
+    [Fact]
+    public void A_prequel_with_the_shorter_title_takes_its_own_release()
+    {
+        string[] ours = ["Tokyo Ghoul:re"];
+        string[] rivals = ["Tokyo Ghoul"];
+
+        Assert.False(ReleaseTitleMatcher.Match(ReleaseTitleParser.Parse("Tokyo Ghoul v01 (Digital)"), ours, rivals).Matched);
+        Assert.True(ReleaseTitleMatcher.Match(ReleaseTitleParser.Parse("Tokyo Ghoul:re v01 (Digital)"), ours, rivals).Matched);
+    }
+
+    [Fact]
+    public void A_rival_scoring_the_same_as_our_title_keeps_the_release_ours()
+    {
+        var match = ReleaseTitleMatcher.Match(
+            ReleaseTitleParser.Parse("Kaguya-sama v01 (Digital)"), ["Kaguya-sama"], ["Kaguya sama"]);
+
+        Assert.True(match.Matched);
+    }
+
+    [Fact]
+    public void A_rival_with_a_different_word_set_does_not_compete()
+    {
+        var match = ReleaseTitleMatcher.Match(
+            ReleaseTitleParser.Parse("Hajime no Ippo: Fighting Spirit! v01 (Digital)"),
+            ["Hajime no Ippo"], ["Hajime no Ippo Fighting Spirits Gaiden"]);
+
+        Assert.True(match.Matched);
+    }
+
+    [Fact]
+    public void A_dual_title_release_is_judged_by_the_half_that_names_us()
+    {
+        var ours = ReleaseTitleParser.Parse("Sono Bisque Doll wa Koi o Suru | My Dress-Up Darling v01 (Digital)");
+        var spinOff = ReleaseTitleParser.Parse("Bisque Doll de Chu | My Dress-Up Darling XOXO! v01 (Digital)");
+
+        Assert.True(ReleaseTitleMatcher.Match(ours, DressUpDarling, Xoxo).Matched);
+        Assert.False(ReleaseTitleMatcher.Match(spinOff, DressUpDarling, Xoxo).Matched);
+    }
+
+    [Fact]
+    public void Rivals_keeps_only_whole_word_extensions_that_are_not_our_own_spellings()
+    {
+        var rivals = ReleaseTitleMatcher.Rivals(["Blue Lock"],
+            ["Blue Lock: Episode Nagi", "Blue Locker", "Lock Blue", "BLUE LOCK", "Blue", ""]);
+
+        Assert.Equal(["Blue Lock: Episode Nagi", "Blue"], rivals);
+    }
 }

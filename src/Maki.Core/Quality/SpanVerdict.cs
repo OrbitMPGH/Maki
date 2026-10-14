@@ -28,6 +28,9 @@ public sealed record SpanVerdict(
 public static class SpanVerdictReasons
 {
     public const string TitleUncertain = "title_uncertain";
+
+    /// <summary>In place of <see cref="TitleUncertain"/>: the title names a related work better than the series.</summary>
+    public const string TitleRelatedSeries = "title_related_series";
     public const string NothingToUpgrade = "nothing_to_upgrade";
     public const string NoSpan = "no_span";
     public const string NoProfile = "no_profile";

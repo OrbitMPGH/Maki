@@ -276,7 +276,7 @@ public class ReleaseServiceTests : IDisposable
 
         using var db = _db.NewContext();
         var torrents = new TorrentUpgradeService(db, new UpgradeEvaluationService(db, TestQuality.Create()), service,
-            null!, new FakeAppSettings(), TimeProvider.System, NullLogger<TorrentUpgradeService>.Instance);
+            null!, new FakeAppSettings(), TimeProvider.System, new FakeRelatedTitles(), NullLogger<TorrentUpgradeService>.Instance);
         Assert.IsType<OkObjectResult>(await controller.Search(seriesId, "berserk", torrents, CancellationToken.None));
         var result = await controller.Grab(
             new ReleaseController.GrabRequest(seriesId, forged), new TestCurrentUser(1), db, CancellationToken.None);

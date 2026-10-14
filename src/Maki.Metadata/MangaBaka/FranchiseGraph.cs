@@ -114,11 +114,22 @@ public static class FranchiseGraph
     /// The same-work ids one row points at, off its typed blob plus its flat columns, so a caller
     /// walking the dump a few rows at a time uses the same relation-type set the components do.
     /// </summary>
-    public static IEnumerable<long> SameWorkTargets(string? typed, IEnumerable<string?> flat)
+    public static IEnumerable<long> SameWorkTargets(string? typed, IEnumerable<string?> flat) =>
+        Targets(typed, flat, SameWork.Contains);
+
+    /// <summary>
+    /// Every id one row points at, whatever the relation type. A parody, an adaptation or an
+    /// alternative edition is not the same work, but a release title can still name it, which is
+    /// what the torrent title matcher asks this for.
+    /// </summary>
+    public static IEnumerable<long> RelatedTargets(string? typed, IEnumerable<string?> flat) =>
+        Targets(typed, flat, _ => true);
+
+    private static IEnumerable<long> Targets(string? typed, IEnumerable<string?> flat, Func<string, bool> relation)
     {
         if (typed is not null)
         {
-            foreach (var id in TypedTargets(typed))
+            foreach (var id in TypedTargets(typed, relation))
             {
                 yield return id;
             }
@@ -140,7 +151,7 @@ public static class FranchiseGraph
 
     private static void AddTyped(string json, long from, UnionFind union)
     {
-        foreach (var target in TypedTargets(json))
+        foreach (var target in TypedTargets(json, SameWork.Contains))
         {
             union.Union(from, target);
         }
@@ -154,7 +165,7 @@ public static class FranchiseGraph
         }
     }
 
-    private static List<long> TypedTargets(string json)
+    private static List<long> TypedTargets(string json, Func<string, bool> relation)
     {
         var targets = new List<long>();
         try
@@ -169,8 +180,8 @@ public static class FranchiseGraph
             {
                 if (edge.ValueKind == JsonValueKind.Object
                     && edge.TryGetProperty("relation_type", out var type)
-                    && type.GetString() is { } relation
-                    && SameWork.Contains(relation)
+                    && type.GetString() is { } kind
+                    && relation(kind)
                     && edge.TryGetProperty("to_series_id", out var to)
                     && to.TryGetInt64(out var target))
                 {

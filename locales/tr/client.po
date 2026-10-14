@@ -13452,6 +13452,10 @@ msgstr "İlgili seriler"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "ilgili seriler, buna benzer, benzer, öneriler, raylar, devam serileri, türev seriler"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Related series: {relatedTitle}"
+msgstr ""
+
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Related to {relatedTo}"
@@ -16907,6 +16911,10 @@ msgstr "Aşağıdaki Suwayomi kaynakları, Suwayomi'nin son seferde listelediği
 #, fuzzy
 msgid "The title might be a different series"
 msgstr "Başlık farklı bir seri olabilir"
+
+#: src/api/upgrades.ts
+msgid "The title names a related series, not this one"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy

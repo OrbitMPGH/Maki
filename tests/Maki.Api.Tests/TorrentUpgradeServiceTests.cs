@@ -6,6 +6,7 @@ using Maki.Core.Inbox;
 using Maki.Core.Parsing;
 using Maki.Core.Quality;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -43,6 +44,16 @@ internal sealed class FakeReleases() : ReleaseService(null!, null!, null!, null!
         new(guid ?? title, title, size, "Nyaa", seeders, 0, "torrent", null, "magnet:?xt=urn:btih:abc", null);
 }
 
+/// <summary>A dump that is not installed, except for the related titles a test hands it.</summary>
+internal sealed class FakeRelatedTitles() : MangaBakaLocalStore(new MangaBakaDumpOptions("", Path.GetTempPath()),
+    new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance)
+{
+    public Dictionary<long, IReadOnlyList<string>> Related { get; } = [];
+
+    public override Task<IReadOnlyList<string>> GetRelatedTitlesAsync(long id, CancellationToken ct = default) =>
+        Task.FromResult(Related.GetValueOrDefault(id) ?? []);
+}
+
 internal sealed class SettableClock(DateTimeOffset now) : TimeProvider
 {
     public DateTimeOffset Now { get; set; } = now;
@@ -59,6 +70,7 @@ public class TorrentUpgradeServiceTests : IDisposable
     private readonly UpgradeWorld _world = new();
     private readonly FakeReleases _releases = new();
     private readonly SettableClock _clock = SettableClock.LocalNoon();
+    private readonly FakeRelatedTitles _store = new();
 
     public TorrentUpgradeServiceTests()
     {
@@ -72,7 +84,7 @@ public class TorrentUpgradeServiceTests : IDisposable
 
     private TorrentUpgradeService Service(MakiDbContext db) => new(db,
         new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), _releases, _world.Inbox, _world.Settings,
-        _clock, NullLogger<TorrentUpgradeService>.Instance);
+        _clock, _store, NullLogger<TorrentUpgradeService>.Instance);
 
     private int Chapter(decimal number, int? volume, bool withFile = true, bool wanted = true, Action<ChapterFile>? file = null,
         string language = "en")
@@ -276,6 +288,71 @@ public class TorrentUpgradeServiceTests : IDisposable
         Assert.Equal(1001, result.Grabbed);
         Assert.Null(result.ProposalId);
         Assert.Equal(wanted, WantedFlags());
+    }
+
+    private void AddLibrarySeries(string title)
+    {
+        using var db = _world.Db.NewContext();
+        var rootFolderId = db.Series.Single(s => s.Id == _world.SeriesId).RootFolderId;
+        db.Series.Add(new Series
+        {
+            Title = title, SortTitle = title.ToLowerInvariant(), FolderName = title, RootFolderId = rootFolderId,
+            Added = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_release_naming_a_related_series_is_ignored_with_its_own_reason()
+    {
+        Chapter(1, 1);
+        Chapter(2, 1);
+        using (var db = _world.Db.NewContext())
+        {
+            db.Series.Single(s => s.Id == _world.SeriesId).MangaBakaId = 4323;
+            db.SaveChanges();
+        }
+
+        _store.Related[4323] = ["Kaguya Gaiden", "Unrelated Title"];
+
+        var spinOff = await EvaluateAsync("Kaguya Gaiden v01 (Digital) (1r0n)");
+        var own = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+
+        Assert.False(spinOff.TitleMatched);
+        Assert.Equal(SpanOutcome.Ignore, spinOff.Verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.TitleRelatedSeries], spinOff.Verdict.Reasons);
+        Assert.Equal("Kaguya Gaiden", spinOff.RivalTitle);
+        Assert.True(own.TitleMatched);
+        Assert.Null(own.RivalTitle);
+
+        _releases.Results.Add(FakeReleases.Release("Kaguya Gaiden v01 (Digital) (1r0n)"));
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)"));
+        await SearchAsync();
+
+        Assert.Equal("Kaguya v01 (Digital) (1r0n)", Assert.Single(_releases.Grabs).Release.Title);
+    }
+
+    [Fact]
+    public async Task Another_library_series_is_a_rival_when_there_is_no_dump()
+    {
+        Chapter(1, 1);
+        AddLibrarySeries("Kaguya Gaiden");
+
+        var spinOff = await EvaluateAsync("Kaguya Gaiden v01 (Digital) (1r0n)");
+        var own = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+
+        Assert.False(spinOff.TitleMatched);
+        Assert.Equal("Kaguya Gaiden", spinOff.RivalTitle);
+        Assert.True(own.TitleMatched);
+    }
+
+    [Fact]
+    public async Task A_duplicate_library_entry_is_not_a_rival()
+    {
+        Chapter(1, 1);
+        AddLibrarySeries("Kaguya");
+
+        Assert.True((await EvaluateAsync("Kaguya v01 (Digital) (1r0n)")).TitleMatched);
     }
 
     [Fact]

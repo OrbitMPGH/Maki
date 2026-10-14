@@ -11,6 +11,7 @@ using Maki.Core.Quality;
 using Maki.Core.Reading;
 using Maki.Core.Scrobbling;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -18,8 +19,10 @@ namespace Maki.Api.Services;
 /// <param name="Parsed">The title as the verdict read it: a trailing chapter number is already in the span.</param>
 /// <param name="WholeSeries">A digital pack naming no span, judged against every chapter of the series.</param>
 /// <param name="Language">The one chapter language the verdict judged.</param>
+/// <param name="RivalTitle">The related work the title named better than this series, when that is why it did not match.</param>
 public sealed record TorrentCandidateView(ReleaseDto Release, ParsedReleaseTitle Parsed, bool TitleMatched,
-    QualityTier Tier, int Score, SpanVerdict Verdict, bool WholeSeries = false, string? Language = null);
+    QualityTier Tier, int Score, SpanVerdict Verdict, bool WholeSeries = false, string? Language = null,
+    string? RivalTitle = null);
 
 /// <summary>The shape of <see cref="TorrentProposal.SpanJson"/>.</summary>
 public sealed record StoredReleaseSpan(NumberRange? Volumes, IReadOnlyList<NumberRange>? ChapterSegments, bool WholeSeries = false)
@@ -119,6 +122,7 @@ public class TorrentUpgradeService(
     InboxService inbox,
     IAppSettings settings,
     TimeProvider time,
+    MangaBakaLocalStore store,
     ILogger<TorrentUpgradeService> logger)
 {
     public static readonly TimeSpan SearchInterval = TimeSpan.FromDays(7);
@@ -126,6 +130,8 @@ public class TorrentUpgradeService(
     /// <summary>How soon a series whose search or grab failed is tried again, instead of waiting out the interval.</summary>
     public static readonly TimeSpan RetryAfterFailure = TimeSpan.FromDays(1);
     private const int MaxPlaceholders = 2000;
+
+    private List<(int SeriesId, IReadOnlyList<string> Titles)>? _libraryTitles;
 
     public async Task<IReadOnlyList<TorrentCandidateView>> EvaluateAsync(
         int seriesId, IReadOnlyList<ReleaseDto> found, CancellationToken ct)
@@ -139,12 +145,20 @@ public class TorrentUpgradeService(
         var evaluator = await evaluation.ForSeriesAsync(seriesId, ct);
         var options = await UpgradeOptions.LoadAsync(settings, ct);
         var library = evaluator is null ? null : await LibraryAsync(series, ct);
+        var ourTitles = ReleaseTitleMatcher.Titles(series.Title, series.OriginalTitle, series.AltTitles);
+        var rivals = await RivalTitlesAsync(series, ourTitles, ct);
 
         var views = new List<TorrentCandidateView>();
         foreach (var release in found)
         {
-            var (parsed, trailing) = WithTrailingChapter(ReleaseTitleParser.Parse(release.Title), series);
-            var matched = ReleaseTitleMatcher.Matches(parsed, series.Title, series.OriginalTitle, series.AltTitles);
+            var (parsed, trailing) = WithTrailingChapter(ReleaseTitleParser.Parse(release.Title), ourTitles);
+            var match = ReleaseTitleMatcher.Match(parsed, ourTitles, rivals);
+            var matched = match.Matched;
+            if (match.Rival is not null)
+            {
+                logger.LogDebug("Release {Release} names {Rival} rather than series {SeriesId}",
+                    release.Title, match.Rival, seriesId);
+            }
             var wholeSeries = parsed.Span.IsEmpty && parsed.IsDigital && matched;
             var markersOff = parsed.Span.IsEmpty &&
                              !ReleaseTitleParser.Parse(release.Title, NameParsingProfile.AllLanguages).Span.IsEmpty;
@@ -154,7 +168,7 @@ public class TorrentUpgradeService(
             {
                 views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, 0,
                     WithMarkersOff(new SpanVerdict(SpanOutcome.Ignore, [SpanVerdictReasons.NoProfile], 0, 0, 0, 0, 0, []), markersOff),
-                    wholeSeries));
+                    wholeSeries, RivalTitle: match.Rival));
                 continue;
             }
 
@@ -169,13 +183,45 @@ public class TorrentUpgradeService(
                 verdict = verdict.AtMostProposal(SpanVerdictReasons.TrailingNumber);
             }
 
-            verdict = WithMarkersOff(verdict, markersOff);
+            verdict = WithMarkersOff(WithRival(verdict, match.Rival), markersOff);
 
             views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, score.Score, verdict, wholeSeries,
-                library.Language));
+                library.Language, match.Rival));
         }
 
         return views;
+    }
+
+    /// <summary>Names the reason a title did not match when a related work is the one it names.</summary>
+    private static SpanVerdict WithRival(SpanVerdict verdict, string? rival) =>
+        rival is not null && verdict.Reasons.Contains(SpanVerdictReasons.TitleUncertain)
+            ? verdict with
+            {
+                Reasons = [.. verdict.Reasons.Select(r => r == SpanVerdictReasons.TitleUncertain ? SpanVerdictReasons.TitleRelatedSeries : r)]
+            }
+            : verdict;
+
+    /// <summary>
+    /// The titles that could take a release from this series: every title of the works MangaBaka
+    /// relates to it, and of every other library series, kept only when shaped like an extension of
+    /// one of its own (<see cref="ReleaseTitleMatcher.Rivals"/>). The library is read once per instance,
+    /// so the volume search job pays for it once a run rather than once a series.
+    /// </summary>
+    private async Task<IReadOnlyList<string>> RivalTitlesAsync(Series series, IReadOnlyList<string> ourTitles,
+        CancellationToken ct)
+    {
+        IEnumerable<string> related = series.MangaBakaId is { } id ? await store.GetRelatedTitlesAsync(id, ct) : [];
+
+        // Unfiltered on purpose: the titles are compared, never shown, and a restricted user's manual
+        // search should reach the verdict the job does.
+        _libraryTitles ??= (await db.Series.AsNoTracking().IgnoreQueryFilters()
+                .Select(s => new { s.Id, s.Title, s.OriginalTitle, s.AltTitles })
+                .ToListAsync(ct))
+            .Select(s => (s.Id, ReleaseTitleMatcher.Titles(s.Title, s.OriginalTitle, s.AltTitles)))
+            .ToList();
+        var others = _libraryTitles.Where(s => s.SeriesId != series.Id).SelectMany(s => s.Titles);
+
+        return ReleaseTitleMatcher.Rivals(ourTitles, related.Concat(others));
     }
 
     /// <summary>Tells the results page a release would read with a marker language that is switched off.</summary>
@@ -187,14 +233,14 @@ public class TorrentUpgradeService(
     /// ("Mob Psycho 100"). As a chapter, the title without it joins the candidates the matcher sees.
     /// Such a guess is never enough to grab on its own, so the caller caps the verdict at a proposal.
     /// </summary>
-    private static (ParsedReleaseTitle Parsed, bool Trailing) WithTrailingChapter(ParsedReleaseTitle parsed, Series series)
+    private static (ParsedReleaseTitle Parsed, bool Trailing) WithTrailingChapter(ParsedReleaseTitle parsed,
+        IReadOnlyList<string> titles)
     {
         if (parsed.TrailingNumber is not { } number || parsed.TitleWithoutTrailingNumber is not { } stripped)
         {
             return (parsed, false);
         }
 
-        IEnumerable<string?> titles = [series.Title, series.OriginalTitle, .. series.AltTitles.Select(a => a.Title)];
         if (titles.Any(t => EndsWithNumber(t, number)))
         {
             return (parsed, false);

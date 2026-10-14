@@ -13451,6 +13451,10 @@ msgstr "관련 시리즈"
 msgid "related series, more like this, similar, recommendations, rails, sequels, spin-offs"
 msgstr "관련 시리즈, 이와 비슷한 항목, 유사, 추천, 레일, 속편, 스핀오프"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Related series: {relatedTitle}"
+msgstr ""
+
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Related to {relatedTo}"
@@ -16906,6 +16910,10 @@ msgstr "아래 Suwayomi 소스는 Suwayomi가 지난번에 목록으로 알려�
 #, fuzzy
 msgid "The title might be a different series"
 msgstr "제목이 다른 시리즈일 수 있습니다"
+
+#: src/api/upgrades.ts
+msgid "The title names a related series, not this one"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy

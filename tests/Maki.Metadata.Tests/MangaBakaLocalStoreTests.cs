@@ -605,6 +605,64 @@ public class MangaBakaLocalStoreTests : IDisposable
         Assert.False(await missingFile.IsAvailableAsync());
     }
 
+    // --- related titles --------------------------------------------------------------------
+
+    private void SeedDressUpDarling()
+    {
+        _db.AddSeries(4323, "My Dress-Up Darling", romanizedTitle: "Sono Bisque Doll wa Koi o Suru",
+            relationshipsV2: """
+                [{"to_series_id": 572901, "relation_type": "spin_off"},
+                 {"to_series_id": 9001, "relation_type": "parody"},
+                 {"to_series_id": 372561, "relation_type": "alternative"}]
+                """,
+            sequels: "[9002]");
+        _db.AddSeries(372561, "My Dress-Up Darling", state: "merged", mergedWith: "4323");
+        _db.AddSeries(572901, "My Dress-Up Darling XOXO!", state: "merged", mergedWith: "2428");
+        _db.AddSeries(2428, "My Dress-Up Darling XOXO!", nativeTitle: "ビスク・ドールでチュ♡",
+            romanizedTitle: "Bisque Doll de Chu",
+            titlesJson: """[{"title": "Smooch with a Bisque Doll", "language": "en", "is_primary": false}]""",
+            relationshipsV2: """[{"to_series_id": 4323, "relation_type": "parent"}]""");
+        _db.AddSeries(9001, "Sono Bisque Doll wa Koi o Suru dj - Love", type: "doujinshi", contentRating: "pornographic");
+        _db.AddSeries(9002, "My Dress-Up Darling 2");
+    }
+
+    [Fact]
+    public async Task RelatedTitles_follow_every_relation_type_and_merged_rows()
+    {
+        SeedDressUpDarling();
+
+        var titles = await Store.GetRelatedTitlesAsync(4323);
+
+        string[] expected =
+        [
+            "My Dress-Up Darling XOXO!", "ビスク・ドールでチュ♡", "Bisque Doll de Chu", "Smooch with a Bisque Doll",
+            "Sono Bisque Doll wa Koi o Suru dj - Love", "My Dress-Up Darling 2"
+        ];
+        Assert.Equal(expected.Order(StringComparer.Ordinal), titles.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task RelatedTitles_resolve_a_merged_seed_and_never_return_it()
+    {
+        SeedDressUpDarling();
+
+        var fromAlias = await Store.GetRelatedTitlesAsync(372561);
+
+        Assert.Equal(
+            (await Store.GetRelatedTitlesAsync(4323)).Order(StringComparer.Ordinal),
+            fromAlias.Order(StringComparer.Ordinal));
+        Assert.DoesNotContain("My Dress-Up Darling", fromAlias);
+    }
+
+    [Fact]
+    public async Task RelatedTitles_is_empty_without_the_dump()
+    {
+        SeedDressUpDarling();
+        _settings.Values[SettingKeys.MangaBakaUseLocalDb] = "false";
+
+        Assert.Empty(await Store.GetRelatedTitlesAsync(4323));
+    }
+
     // --- typo tolerance ---------------------------------------------------------------------
 
     [Fact]

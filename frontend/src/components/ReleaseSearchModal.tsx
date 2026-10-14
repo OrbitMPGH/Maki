@@ -113,6 +113,7 @@ export function ReleaseSearchModal({
                 const { title, indexer, infoUrl, size, seeders } = release
                 const spanText = parsed ? releaseSpanText(parsed.span) : null
                 const verdictKey = parsed ? spanVerdictKey(parsed) : null
+                const relatedTitle = parsed?.rivalTitle
                 return (
                   <Table.Tr key={r.guid}>
                     <Table.Td>
@@ -158,6 +159,11 @@ export function ReleaseSearchModal({
                                   {proposalReasonLabel(renderLabel, code)}
                                 </Text>
                               ))}
+                              {relatedTitle && (
+                                <Text size="xs" c="var(--ink-3)">
+                                  {t`Related series: ${relatedTitle}`}
+                                </Text>
+                              )}
                             </Stack>
                           }
                         >

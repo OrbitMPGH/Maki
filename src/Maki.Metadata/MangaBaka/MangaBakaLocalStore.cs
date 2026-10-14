@@ -776,6 +776,90 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// Every title of the works one relation away from <paramref name="id"/>, of any relation type
+    /// (<see cref="FranchiseGraph.RelatedTargets"/>), in every language the dump has. Merged rows are
+    /// followed on both ends, and anything resolving back to the seed's merge chain is the seed itself
+    /// and left out. Novels and adult entries stay in: this is about what a release title may name.
+    /// </summary>
+    public virtual async Task<IReadOnlyList<string>> GetRelatedTitlesAsync(long id, CancellationToken ct = default)
+    {
+        if (!await IsAvailableAsync(ct))
+        {
+            return [];
+        }
+
+        using var conn = Open();
+        var columns = FranchiseGraph.SameWorkColumns;
+        var self = new HashSet<long>();
+        List<long>? targets = null;
+        for (var hop = 0; hop < 5 && targets is null && self.Add(id); hop++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT state, merged_with, relationships_v2, {string.Join(", ", columns)} FROM series WHERE id = $id";
+            cmd.Parameters.AddWithValue("$id", id);
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct))
+            {
+                return [];
+            }
+
+            if (GetString(reader, 0) == "merged" && long.TryParse(GetString(reader, 1), out var canonical))
+            {
+                id = canonical;
+                continue;
+            }
+
+            var flat = Enumerable.Range(3, columns.Count).Select(i => GetString(reader, i)).ToList();
+            targets = FranchiseGraph.RelatedTargets(GetString(reader, 2), flat).ToList();
+        }
+
+        if (targets is null)
+        {
+            return [];
+        }
+
+        var visited = new HashSet<long>(self);
+        var pending = targets.Where(visited.Add).ToList();
+        var titles = new List<string>();
+        for (var hop = 0; hop < 3 && pending.Count > 0; hop++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT state, merged_with, title, native_title, romanized_title, titles
+                FROM series WHERE id IN ({string.Join(",", pending)})
+                """;
+            pending = [];
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                if (GetString(reader, 0) == "merged")
+                {
+                    if (long.TryParse(GetString(reader, 1), out var canonical) && visited.Add(canonical))
+                    {
+                        pending.Add(canonical);
+                    }
+
+                    continue;
+                }
+
+                if (GetString(reader, 0) != "active")
+                {
+                    continue;
+                }
+
+                titles.AddRange(new[] { GetString(reader, 2), GetString(reader, 3), GetString(reader, 4) }
+                    .OfType<string>()
+                    .Where(t => !string.IsNullOrWhiteSpace(t)));
+                titles.AddRange(ParseAllTitles(GetString(reader, 5)));
+            }
+        }
+
+        return titles.Distinct(StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>
     /// Scores every rated, active, non-novel entry in the dump against the library's genre/tag/author
     /// profile and returns the best matches. Content rating is bounded only by
     /// <paramref name="filters"/> — callers must resolve it to the caller's ceiling themselves (see
@@ -2016,6 +2100,35 @@ public class MangaBakaLocalStore(
         catch (JsonException)
         {
             return (null, null, []);
+        }
+    }
+
+    /// <summary>Every title in a <c>titles</c> JSON array, primary or not, in any language.</summary>
+    private static IEnumerable<string> ParseAllTitles(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            return doc.RootElement.EnumerateArray()
+                .Select(e => e.ValueKind == JsonValueKind.Object && e.TryGetProperty("title", out var t) &&
+                             t.ValueKind == JsonValueKind.String ? t.GetString() : null)
+                .OfType<string>()
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .ToList();
+        }
+        catch (JsonException)
+        {
+            return [];
         }
     }
 

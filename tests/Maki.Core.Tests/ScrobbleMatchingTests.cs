@@ -294,4 +294,13 @@ public class ScrobbleMatchingTests
         var best = ScrobbleMatching.BestCandidate("Hajime no Ippo", null, candidates, threshold: 0.6);
         Assert.Equal("1", best?.Id);
     }
+
+    [Fact]
+    public void MatchScore_is_zero_when_a_gate_fails()
+    {
+        Assert.Equal(0, ScrobbleMatching.MatchScore(["High School Boy"], "Magic, High School, and a Boy", 0.6));
+        Assert.Equal(0, ScrobbleMatching.MatchScore(["Boy Meets Girl"], "Boy Meets Maria", 0.6));
+        Assert.InRange(ScrobbleMatching.MatchScore(["Hajime no Ippo"], "Hajime no Ippo: Fighting Spirit!", 0.6), 0.6, 0.85);
+        Assert.Equal(1, ScrobbleMatching.MatchScore(["Nothing", "Blue Lock"], "BLUE LOCK", 0.6));
+    }
 }
