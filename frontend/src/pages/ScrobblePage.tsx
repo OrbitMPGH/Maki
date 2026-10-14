@@ -188,8 +188,9 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
   }
 
   return (
-    <Panel edge="warn" p="md">
+    <Panel p="md">
       <Group gap="xs">
+        <StatusDot tone="warn" aria-hidden />
         <Text fw={700}>{item.title}</Text>
         <TagChip size="sm">{serviceLabel(data?.connections, item.service)}</TagChip>
       </Group>

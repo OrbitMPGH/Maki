@@ -104,7 +104,7 @@ button, input, select, textarea { font: inherit; }
 /* --- SectionHeader --------------------------------------------------------- */
 .mk-preview .section-header,
 .mk-preview .figure-strip { margin: 0; }
-.section-header-icon { width: 20px; height: 20px; }
+.section-header-icon { width: 16px; height: 16px; }
 
 /* --- StatTile (Mantine Card, Group and Text in the app) -------------------- */
 .stat-tile {

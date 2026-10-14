@@ -19,7 +19,7 @@ Maki is a self-hosted manga collection manager: add a series once and it keeps i
 **Themes here.** Six: the dark theme (`Indigo`), four dark accent swaps (`Rose`, `Blush`, `Emerald`, `Amber`) and `Light` (Indigo on cool paper, white cards). All the dark themes sit on Night, the reference ramp in `:root`: Tinted black is computed from the accent in the browser, so its exact values cannot be listed as tokens. Treat Night's values as the shape of the ladder and expect the default ground to read a touch more neutral and accent-warmed. The accent themes change only the brand group (`brand`, `brand-hover`, `brand-on`, `brand-fg`, `brand-fg-on-art`, `brand-glow`, `primary`, `primary-hover`, `primary-on`); surfaces, ink and status stay those of dark. Blush, Emerald and Amber are pale enough that their fills take a near-black label. Light deepens `brand-fg` per accent so brand text holds on white.
 
 **The layer ladder.** Build every screen from these, in order of height:
-- `app-bg`: the page ground. `body` carries two faint radial washes of the current `brand`, a larger one at the top right and a smaller one at the top left (12% and 8% on Night, Charcoal and Moss; 10% and 6% on Tinted black and Light, where the ground already leans toward the accent). Over both sits a fixed paper grain at 4.5% opacity (3% in Light), behind the app and off under `prefers-reduced-transparency`. Those are the only gradients on the ground.
+- `app-bg`: the page ground, flat. No washes, glows or grain; Tinted black already mixes 4% of the accent into every surface, which is all the temperature the ground needs. The app header and the sign-in frame sit on it opaque.
 - `surface`: the default layer. Every Card, Paper and `Panel` sits here.
 - `surface-2`: one step up. Tag chips, inputs at rest.
 - `surface-raised`: overlays (modals, drawers, menus, popovers). Dark elevates by lightening (it aliases `surface-2`); light elevates by staying white and casting `shadow-raised`. Never assume one direction reads in both.
@@ -63,21 +63,21 @@ Two families. **Bricolage Grotesque** (`display`) is for titles and figures: a s
 - Settings sections put the title in the display face and its explanation above the panel; the panel holds only the fields, and the content column is no longer capped.
 - Standard pages cap at `content-wide` (72rem); reading text at `content-prose` (42rem). Editorial sections breathe by `section-space`.
 - Three page styles: standard, editorial (more air), operational (denser: tables at 40px rows, panels at `spacing-md`).
-- The hero band (cover art bleeding behind glass) is reserved for the series page, the Discover modal, sign-in and Rewind. Never hang a panel or a band beside a `PageHeader`.
+- The hero band (cover art bleeding behind the page title) is reserved for the series page, the Discover modal and Rewind. Panels over it are opaque `surface-2` with a `border` hairline, never glass. Never hang a panel or a band beside a `PageHeader`.
 
 ## Shape, borders and depth
 
-- Radii, smallest to largest: `radius-2xs` 2px (tiny marks), `radius-xs` 4px (small thumbnails, keys), `radius-sm`/`radius-control` 6px (badges, checkboxes), `radius-chip` 7px (tag chips, squarer than a pill), `radius-thumb` 8px (row thumbnails), `radius-md`/`radius-surface` 9px (buttons, inputs, strips), `radius-hero` 12px (hero posters, glass panels, the brand-mark tile), `radius-lg`/`radius-overlay` 13px (cards, panels, covers, modals, overlays), `radius-xl` 20px (large hero surfaces).
+- Radii, smallest to largest: `radius-2xs` 2px (tiny marks), `radius-xs` 4px (small thumbnails, keys), `radius-sm`/`radius-control` 6px (badges, checkboxes), `radius-chip` 7px (tag chips, squarer than a pill), `radius-thumb` 8px (row thumbnails), `radius-md`/`radius-surface` 9px (buttons, inputs, strips), `radius-hero` 12px (hero posters, hero panels, the brand-mark tile), `radius-lg`/`radius-overlay` 13px (cards, panels, covers, modals, overlays), `radius-xl` 20px (large hero surfaces).
 - Anything with round ends, whatever its height, takes `radius-pill`: progress bars and their fills, cover badges, seeds. Never set a radius of half the height by hand.
 - No other radius. A value between two steps belongs on one of them.
-- Panels carry a border and the 1px `shadow-card` in both schemes. When one needs emphasis it gets a 2px accent edge (`brand`, a status token, or `border-strong`). No glows anywhere: a selected or active thing takes a flat ring or fill, never a blurred halo.
-- Shadows only where they read: `shadow-lg` under a hovered cover card, `shadow-raised` for the light theme's floating layer (none in dark, where a shadow on near-black is invisible).
-- Modals: centred, `radius-lg`, `spacing-lg` padding, a 3px blur over a 55% scrim, a sectioned header over a hairline with only the body scrolling.
+- Panels carry a border and the 1px `shadow-card` in both schemes, and no accent edges. A panel that needs to report state does it with a `StatusDot` beside its title. No glows and no `backdrop-filter` anywhere: a selected or active thing takes a flat ring or fill, never a blurred halo, and anything floating over content is opaque.
+- Shadows only where they read: `shadow-raised` for the light theme's floating layer (none in dark, where a shadow on near-black is invisible).
+- Modals: centred, `radius-lg`, `spacing-lg` padding, a 60% scrim with no blur, a sectioned header over a hairline with only the body scrolling.
 
 ## Motion
 
 {{MOTION}}
-- Cover cards lift 4px on hover and the art scales to 1.05. A `StatusDot` pulses for work in flight.
+- Cover cards stay put on hover: the border steps to `border-strong` and the art scales to 1.05. A `StatusDot` pulses for work in flight.
 - Everything that moves stops under `prefers-reduced-motion`.
 
 ## Focus and states
@@ -88,7 +88,7 @@ Two families. **Bricolage Grotesque** (`display`) is for titles and figures: a s
 - Active chip: `brand` border, brand at 35% fill, `ink-hi` text.
 - Loading: skeletons in place of the content, keeping labels and icons in place and blanking only the numbers, so a count never reads as zero before it arrives. No page-level spinners.
 - Text selection highlights in `brand-glow`.
-- Dirty: a Settings section with unsaved edits takes the `brand` panel edge and shows Save and Discard beside an "Unsaved" marker in its heading row; both disappear once it matches what is saved.
+- Dirty: a Settings section with unsaved edits shows Save and Discard beside an "Unsaved" marker in its heading row; both disappear once it matches what is saved.
 
 ## Iconography
 

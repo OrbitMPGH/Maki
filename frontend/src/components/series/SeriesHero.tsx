@@ -291,7 +291,7 @@ export function SeriesHero({
                             </Group>
                         </Stack>
                     </Group>
-                    <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
+                    <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
                         <Title order={2} size="h3" fz="var(--type-section)">
                             <Trans>Progress</Trans>
                         </Title>
@@ -475,7 +475,7 @@ export function SeriesHeroSkeleton() {
                             </Group>
                         </Stack>
                     </Group>
-                    <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
+                    <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
                         <Skeleton h={16} w={80} />
                         <Skeleton h={12} w="46%" mt="lg" />
                         <Skeleton h={8} radius="xl" mt={14} />

@@ -2,7 +2,7 @@ import { Title } from '@mantine/core'
 import type { Icon } from '@tabler/icons-react'
 
 /**
- * The heading above a rail or grid: an accent icon, the title, an optional count, a rule running to
+ * The heading above a rail or grid: an optional glyph, the title, an optional count, a rule running to
  * the optional right-aligned action ("Find more", "Refresh") and, at the far end, the slot the
  * rail below it fills with its prev/next arrows (see `Rail`). The rule is the tag buckets' idiom at
  * section scale: it ties the title to its action and gives a run of rails a line to read down.
@@ -18,7 +18,7 @@ export function SectionHeader({
   action,
   chevron,
 }: {
-  icon: Icon
+  icon?: Icon
   title: string
   count?: number
   action?: React.ReactNode
@@ -27,9 +27,7 @@ export function SectionHeader({
   return (
     <div className="section-header">
       <span className="section-header-lead">
-        <span className="section-header-icon" aria-hidden>
-          <SectionIcon size={16} stroke={1.9} />
-        </span>
+        {SectionIcon && <SectionIcon size={16} stroke={1.75} className="section-header-icon" aria-hidden />}
         <Title order={2} className="section-header-title">
           {title}
         </Title>

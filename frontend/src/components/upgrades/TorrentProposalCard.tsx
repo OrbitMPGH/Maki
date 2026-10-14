@@ -139,7 +139,7 @@ export function TorrentProposalCard({
     )
   }
   return (
-    <Panel p="md" edge="warn" edgeSide="left">
+    <Panel p="md">
       {body}
     </Panel>
   )

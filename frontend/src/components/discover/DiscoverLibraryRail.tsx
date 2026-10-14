@@ -196,7 +196,7 @@ export function DiscoverLibraryRail({
       withBorder
       radius="lg"
       p="md"
-      className="series-hero-glass-panel"
+      className="series-hero-panel"
     >
       {seriesId != null ? (
         <>

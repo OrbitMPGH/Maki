@@ -853,20 +853,23 @@ function ChecksPanel({
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
   const totalChecks = checks.length
-  // Coloured only while something needs attention; a healthy system is the plain panel.
+  // Shown only while something needs attention; a healthy system is the plain panel.
   const unresolved = checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged)
-  const edge = unresolved.some((c) => tone(c.status) === 'danger')
-    ? 'danger'
-    : unresolved.length > 0
-      ? 'warn'
-      : undefined
+  const severity = unresolved.some((c) => tone(c.status) === 'danger') ? 'danger' : 'warn'
 
   return (
-    <Panel edge={edge} className="health-area-checks" p="lg">
+    <Panel className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
-        <Title order={3} fz="var(--type-section)">
-          <Trans>System checks</Trans>
-        </Title>
+        <Group gap="sm" align="baseline" wrap="wrap">
+          <Title order={3} fz="var(--type-section)">
+            <Trans>System checks</Trans>
+          </Title>
+          {unresolved.length > 0 && (
+            <StatusDot tone={severity}>
+              <Plural value={unresolved.length} one="# needs attention" other="# need attention" />
+            </StatusDot>
+          )}
+        </Group>
         <Switch
           size="xs"
           label={t`Show passing`}
@@ -1896,7 +1899,7 @@ function OptionsPanel() {
   const update = (patch: Partial<HealthOptions>) => setDraft({ ...value, ...patch })
 
   return (
-    <Panel edge="strong" className="health-area-options" p="lg">
+    <Panel className="health-area-options" p="lg">
       <Stack>
         <Title order={3} fz="var(--type-section)">
           <Trans>Health settings</Trans>

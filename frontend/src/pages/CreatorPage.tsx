@@ -253,7 +253,7 @@ export default function CreatorPage() {
       </Group>
 
       <Collapse expanded={filtersOpen}>
-        <Panel edge="strong" p="md" mb="md">
+        <Panel p="md" mb="md">
           <Stack gap="md">
             <CatalogueFilters controls={catalogue.controls} />
             <CatalogueFilterActions

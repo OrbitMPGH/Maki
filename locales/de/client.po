@@ -197,6 +197,11 @@ msgstr "{0, plural, one {# Minute gelesen} other {# Minuten gelesen}}"
 msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
 msgstr "{0, plural, one {# weiteres Kapitel liegt in derselben Bandedatei und verliert sie ebenfalls.} other {# weitere Kapitel liegen in denselben Bandedateien und verlieren sie ebenfalls.}}"
 
+#. placeholder {0}: unresolved.length
+#: src/pages/HealthPage.tsx
+msgid "{0, plural, one {# needs attention} other {# need attention}}"
+msgstr ""
+
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
 #, fuzzy

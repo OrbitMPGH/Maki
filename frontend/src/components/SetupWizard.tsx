@@ -946,7 +946,6 @@ export default function SetupWizard() {
     >
       <UnsavedSettingsContext value={reportUnsaved}>
         <div className="setup-frame">
-          <div className="setup-art" aria-hidden />
           <GuideRail
             steps={steps}
             active={active}

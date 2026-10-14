@@ -1805,7 +1805,7 @@ function SeriesDetailBody() {
                 />
             )}
             <div className="series-split">
-              <Panel className="series-detail-synopsis" edge="brand">
+              <Panel className="series-detail-synopsis">
                 <Title order={2} size="h3" fz="var(--type-section)">
                   <Trans>Synopsis</Trans>
                   {series.lockedFields.includes('overview') && <>{' '}<MetadataLock /></>}
@@ -1899,7 +1899,7 @@ function SeriesDetailBody() {
               </Panel>
 
               <div className="series-split-row">
-                <Panel className="series-detail-source-panel" edge="info" edgeSide="left">
+                <Panel className="series-detail-source-panel">
                   {series.numberingClash && (
                       <Alert
                           mb="md"
@@ -1970,7 +1970,7 @@ function SeriesDetailBody() {
                     )}
                   </Text>
                 </Panel>
-                <Panel className="series-detail-metadata-panel" edge="strong" edgeSide="left">
+                <Panel className="series-detail-metadata-panel">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
                     <Title order={2} size="h3" fz="var(--type-section)">
                       <Trans>Metadata</Trans>

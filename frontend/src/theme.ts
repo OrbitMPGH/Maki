@@ -247,7 +247,7 @@ const modalDefaults = {
   padding: 'lg',
   centered: true,
   scrollAreaComponent: ModalPassthrough,
-  overlayProps: { blur: 3, backgroundOpacity: 0.55 },
+  overlayProps: { backgroundOpacity: 0.6 },
   classNames: {
     content: 'utility-modal-content',
     header: 'utility-modal-header',
