@@ -5033,6 +5033,14 @@ msgstr "Download client for grabbed releases. Finished torrents import into the 
 msgid "Download failed"
 msgstr "Download failed"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "Download failed: {detail}"
+msgstr "Download failed: {detail}"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Download index"
+msgstr "Download index"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download next chapters"
 msgstr "Download next chapters"
@@ -7587,6 +7595,10 @@ msgstr "Load more"
 msgid "Loading chapters…"
 msgstr "Loading chapters…"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "loading search by meaning, title matches for now"
+msgstr "loading search by meaning, title matches for now"
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 msgid "Loading…"
@@ -9675,6 +9687,7 @@ msgstr "Open Recommended with these filters from now on"
 msgid "Open series"
 msgstr "Open series"
 
+#: src/components/CatalogueBrowser.tsx
 #: src/pages/ImportPage.tsx
 msgid "Open settings"
 msgstr "Open settings"
@@ -12011,6 +12024,14 @@ msgstr "Search ({shortcut})"
 msgid "Search by chapter number or title"
 msgstr "Search by chapter number or title"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "search by meaning is being set up, title matches for now"
+msgstr "search by meaning is being set up, title matches for now"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Search by meaning is ready"
+msgstr "Search by meaning is ready"
+
 #: src/components/CreditPicker.tsx
 msgid "Search by name"
 msgstr "Search by name"
@@ -12170,6 +12191,10 @@ msgstr "Security settings saved. Restart Maki to apply them."
 #: src/components/NotificationBell.tsx
 msgid "See all notifications"
 msgstr "See all notifications"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "See progress"
+msgstr "See progress"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Seed from"
@@ -14055,8 +14080,20 @@ msgid "Title language"
 msgstr "Title language"
 
 #: src/components/CatalogueBrowser.tsx
-msgid "title match only, build the recommendation index for search by meaning"
-msgstr "title match only, build the recommendation index for search by meaning"
+msgid "title match only, an admin can set up search by meaning"
+msgstr "title match only, an admin can set up search by meaning"
+
+#: src/components/CatalogueBrowser.tsx
+#~ msgid "title match only, build the recommendation index for search by meaning"
+#~ msgstr "title match only, build the recommendation index for search by meaning"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning is off"
+msgstr "title match only, search by meaning is off"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning needs its index"
+msgstr "title match only, search by meaning needs its index"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Title search"
@@ -14268,6 +14305,10 @@ msgstr "Turkish"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Turn it off if you don't read in Maki: the tab disappears and Library becomes the start page."
 msgstr "Turn it off if you don't read in Maki: the tab disappears and Library becomes the start page."
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Turn on"
+msgstr "Turn on"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Turn on anime signals on the Taste tab to use this."

@@ -141,11 +141,16 @@ public record DiscoverSearchRequest(
 /// UI shows it as "showing results for ..."; null means no correction was needed.
 /// </param>
 /// <param name="Credits">Creators the query named or was recognised as naming, for display as chips.</param>
+/// <param name="Fallback">
+/// Why the title index answered a query that asked for meaning, one of the
+/// <see cref="SemanticSearchState"/> reasons. Null when nothing fell back.
+/// </param>
 public record DiscoverSearchResponse(
     string Mode,
     IReadOnlyList<MangaBakaRecommendation> Items,
     string? CorrectedQuery = null,
-    IReadOnlyList<ResolvedCredit>? Credits = null);
+    IReadOnlyList<ResolvedCredit>? Credits = null,
+    string? Fallback = null);
 
 /// <summary>
 /// Builds the Discover page's catalogue-browse rails from the local MangaBaka dump: the main

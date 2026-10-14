@@ -18,6 +18,7 @@ public class RecommendationController(
     RecommendationFeedbackService feedback,
     ICurrentUser currentUser,
     DiscoverService discover,
+    SemanticSearchState semanticState,
     RecentActivityRailService recentActivity,
     SideInterestRailService sideInterests,
     TasteProfileService tasteProfile,
@@ -252,7 +253,10 @@ public class RecommendationController(
         try
         {
             var clamped = await ScopeAsync(request.Filters, ct);
-            return Ok(await discover.SearchAsync(request with { Filters = clamped }, ct));
+            var response = await discover.SearchAsync(request with { Filters = clamped }, ct);
+            return Ok(response.Mode == DiscoverSearchRequest.TitleEngine && !request.WantsTitleOnly
+                ? response with { Fallback = semanticState.FallbackReason() }
+                : response);
         }
         catch (LocalCatalogueUnavailableException ex)
         {

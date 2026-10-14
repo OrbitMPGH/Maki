@@ -6200,6 +6200,14 @@ msgstr "찾은 릴리스를 다운로드하는 클라이언트입니다. 완료�
 msgid "Download failed"
 msgstr "다운로드 실패"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "Download failed: {detail}"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Download index"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Download next chapters"
@@ -9353,6 +9361,10 @@ msgstr "더 불러오기"
 msgid "Loading chapters…"
 msgstr "챕터 불러오는 중…"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "loading search by meaning, title matches for now"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -11933,6 +11945,7 @@ msgstr "앞으로 이 필터로 Recommended 열기"
 msgid "Open series"
 msgstr "시리즈 열기"
 
+#: src/components/CatalogueBrowser.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Open settings"
@@ -14808,6 +14821,14 @@ msgstr "검색 ({shortcut})"
 msgid "Search by chapter number or title"
 msgstr "챕터 번호 또는 제목으로 검색"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "search by meaning is being set up, title matches for now"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Search by meaning is ready"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Search by name"
@@ -15007,6 +15028,10 @@ msgstr "보안 설정이 저장되었습니다. 적용하려면 Maki를 다시 �
 #, fuzzy
 msgid "See all notifications"
 msgstr "모든 알림 보기"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "See progress"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -17336,9 +17361,21 @@ msgid "Title language"
 msgstr "제목 언어"
 
 #: src/components/CatalogueBrowser.tsx
+msgid "title match only, an admin can set up search by meaning"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
 #, fuzzy
-msgid "title match only, build the recommendation index for search by meaning"
-msgstr "제목만 일치시킵니다. 의미로 검색하려면 추천 인덱스를 빌드하세요."
+#~ msgid "title match only, build the recommendation index for search by meaning"
+#~ msgstr "제목만 일치시킵니다. 의미로 검색하려면 추천 인덱스를 빌드하세요."
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning is off"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning needs its index"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -17599,6 +17636,10 @@ msgstr "터키어"
 #, fuzzy
 msgid "Turn it off if you don't read in Maki: the tab disappears and Library becomes the start page."
 msgstr "Maki에서 읽지 않는다면 끄세요. 탭이 사라지고 라이브러리가 시작 페이지가 됩니다."
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Turn on"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy

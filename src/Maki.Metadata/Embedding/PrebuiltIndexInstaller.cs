@@ -72,6 +72,9 @@ public class PrebuiltIndexInstaller(
 
     private readonly SemaphoreSlim _installGate = new(1, 1);
 
+    /// <summary>True while a download is in flight.</summary>
+    public bool Installing => _installGate.CurrentCount == 0;
+
     /// <summary>
     /// Where the artifact for the configured model is published, unless overridden in settings.
     /// Each model has its own release tag, so a base install and a large install fetch different

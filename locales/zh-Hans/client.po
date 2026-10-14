@@ -6200,6 +6200,14 @@ msgstr "用于下载已抓取的资源。种子下载完成后会自动导入资
 msgid "Download failed"
 msgstr "下载失败"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "Download failed: {detail}"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Download index"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Download next chapters"
@@ -9353,6 +9361,10 @@ msgstr "加载更多"
 msgid "Loading chapters…"
 msgstr "正在加载章节…"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "loading search by meaning, title matches for now"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -11933,6 +11945,7 @@ msgstr "以后使用这些筛选条件打开推荐内容"
 msgid "Open series"
 msgstr "打开系列"
 
+#: src/components/CatalogueBrowser.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Open settings"
@@ -14808,6 +14821,14 @@ msgstr "搜索（{shortcut}）"
 msgid "Search by chapter number or title"
 msgstr "按章节编号或标题搜索"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "search by meaning is being set up, title matches for now"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Search by meaning is ready"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Search by name"
@@ -15007,6 +15028,10 @@ msgstr "安全设置已保存。重启 Maki 以应用更改。"
 #, fuzzy
 msgid "See all notifications"
 msgstr "查看所有通知"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "See progress"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -17336,9 +17361,21 @@ msgid "Title language"
 msgstr "标题语言"
 
 #: src/components/CatalogueBrowser.tsx
+msgid "title match only, an admin can set up search by meaning"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
 #, fuzzy
-msgid "title match only, build the recommendation index for search by meaning"
-msgstr "仅匹配标题，建立推荐索引以按含义搜索"
+#~ msgid "title match only, build the recommendation index for search by meaning"
+#~ msgstr "仅匹配标题，建立推荐索引以按含义搜索"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning is off"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning needs its index"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -17599,6 +17636,10 @@ msgstr "土耳其语"
 #, fuzzy
 msgid "Turn it off if you don't read in Maki: the tab disappears and Library becomes the start page."
 msgstr "如果你不在 Maki 中阅读，请关闭它：该标签页会消失，资料库将成为起始页。"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Turn on"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy

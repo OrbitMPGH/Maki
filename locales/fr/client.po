@@ -6201,6 +6201,14 @@ msgstr "Client de téléchargement pour les sorties récupérées. Les torrents 
 msgid "Download failed"
 msgstr "Échec du téléchargement"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "Download failed: {detail}"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Download index"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Download next chapters"
@@ -9354,6 +9362,10 @@ msgstr "Charger plus"
 msgid "Loading chapters…"
 msgstr "Chargement des chapitres…"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "loading search by meaning, title matches for now"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -11934,6 +11946,7 @@ msgstr "Ouvrir désormais Recommended avec ces filtres"
 msgid "Open series"
 msgstr "Ouvrir la série"
 
+#: src/components/CatalogueBrowser.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Open settings"
@@ -14809,6 +14822,14 @@ msgstr "Rechercher ({shortcut})"
 msgid "Search by chapter number or title"
 msgstr "Rechercher par numéro ou titre de chapitre"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "search by meaning is being set up, title matches for now"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Search by meaning is ready"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Search by name"
@@ -15008,6 +15029,10 @@ msgstr "Réglages de sécurité enregistrés. Redémarrez Maki pour les applique
 #, fuzzy
 msgid "See all notifications"
 msgstr "Voir toutes les notifications"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "See progress"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -17337,9 +17362,21 @@ msgid "Title language"
 msgstr "Langue du titre"
 
 #: src/components/CatalogueBrowser.tsx
+msgid "title match only, an admin can set up search by meaning"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
 #, fuzzy
-msgid "title match only, build the recommendation index for search by meaning"
-msgstr "recherche par titre uniquement, créez l'index de recommandations pour une recherche par sens"
+#~ msgid "title match only, build the recommendation index for search by meaning"
+#~ msgstr "recherche par titre uniquement, créez l'index de recommandations pour une recherche par sens"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning is off"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning needs its index"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -17600,6 +17637,10 @@ msgstr "Turc"
 #, fuzzy
 msgid "Turn it off if you don't read in Maki: the tab disappears and Library becomes the start page."
 msgstr "Désactivez-le si vous ne lisez pas dans Maki : l'onglet disparaît et Bibliothèque devient la page de démarrage."
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Turn on"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy

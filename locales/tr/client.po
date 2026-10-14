@@ -6201,6 +6201,14 @@ msgstr "Bulunan sürümleri indiren istemci. Tamamlanan torrentler kitaplığa o
 msgid "Download failed"
 msgstr "İndirme başarısız oldu"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "Download failed: {detail}"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Download index"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Download next chapters"
@@ -9354,6 +9362,10 @@ msgstr "Daha fazla yükle"
 msgid "Loading chapters…"
 msgstr "Bölümler yükleniyor…"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "loading search by meaning, title matches for now"
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -11934,6 +11946,7 @@ msgstr "Bundan sonra Önerilenler'i bu filtrelerle aç"
 msgid "Open series"
 msgstr "Seriyi aç"
 
+#: src/components/CatalogueBrowser.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Open settings"
@@ -14809,6 +14822,14 @@ msgstr "Ara ({shortcut})"
 msgid "Search by chapter number or title"
 msgstr "Bölüm numarasına veya başlığa göre ara"
 
+#: src/components/CatalogueBrowser.tsx
+msgid "search by meaning is being set up, title matches for now"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Search by meaning is ready"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Search by name"
@@ -15008,6 +15029,10 @@ msgstr "Güvenlik ayarları kaydedildi. Uygulamak için Maki'yi yeniden başlat�
 #, fuzzy
 msgid "See all notifications"
 msgstr "Tüm bildirimleri gör"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "See progress"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -17337,9 +17362,21 @@ msgid "Title language"
 msgstr "Başlık dili"
 
 #: src/components/CatalogueBrowser.tsx
+msgid "title match only, an admin can set up search by meaning"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
 #, fuzzy
-msgid "title match only, build the recommendation index for search by meaning"
-msgstr "yalnızca başlık eşleşmesi, anlama göre arama için öneri dizinini oluşturun"
+#~ msgid "title match only, build the recommendation index for search by meaning"
+#~ msgstr "yalnızca başlık eşleşmesi, anlama göre arama için öneri dizinini oluşturun"
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning is off"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+msgid "title match only, search by meaning needs its index"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -17600,6 +17637,10 @@ msgstr "Türkçe"
 #, fuzzy
 msgid "Turn it off if you don't read in Maki: the tab disappears and Library becomes the start page."
 msgstr "Maki'de okumuyorsanız kapatın: sekme kaybolur ve Kitaplık başlangıç sayfası olur."
+
+#: src/components/CatalogueBrowser.tsx
+msgid "Turn on"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy

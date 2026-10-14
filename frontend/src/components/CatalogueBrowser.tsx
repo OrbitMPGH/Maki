@@ -1,15 +1,17 @@
 import { errorText } from '../api/errorText'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import {
   ActionIcon,
   Alert,
+  Anchor,
   Button,
   Collapse,
   Group,
+  Loader,
   SegmentedControl,
   Select,
   SimpleGrid,
@@ -22,6 +24,8 @@ import {
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
+import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '../auth/AuthProvider'
 import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '@tabler/icons-react'
 import { Panel } from './ui/Panel'
 import { TagChip } from './ui/TagChip'
@@ -29,13 +33,17 @@ import {
   useDiscoverFeed,
   useDiscoverSearch,
   useDiscoverSearchDefaults,
+  useDownloadPrebuiltIndex,
+  useRecommendationIndex,
   useRootFolders,
   useSaveDiscoverSearchDefaults,
+  useSearchStillWarming,
   useSeriesIdLookup,
   type BrowseSort,
   type RecommendationFilters,
   type RecommendationItem,
   type ResolvedCredit,
+  type SearchFallback,
 } from '../api/hooks'
 import {
   CatalogueFilterActions,
@@ -219,6 +227,7 @@ export function CatalogueBrowser({
   )
 
   const search = useDiscoverSearch(searchRequest, hydrated, minChars)
+  const stillWarming = useSearchStillWarming(searchRequest)
   // Paged by raising `limit`, so the previous page stays on screen while the wider one loads.
   // Dropping back to skeletons would shorten the document and bounce the reader to the top.
   const browse = useDiscoverFeed(browseRequest, true, true)
@@ -229,7 +238,11 @@ export function CatalogueBrowser({
 
   const searchCap = PAGE_SIZE
   const items = searching ? (search.data?.items ?? []) : (browse.data ?? [])
-  const loading = !hydrated || (searching ? search.isFetching && !search.data : browse.isFetching && !browse.data)
+  // An empty title answer while the index warms up is not "no matches": the meaning search is seconds away.
+  const warmingEmpty = stillWarming && items.length === 0
+  const loading =
+    !hydrated ||
+    (searching ? (search.isFetching && !search.data) || warmingEmpty : browse.isFetching && !browse.data)
   const error = searching ? search.error : browse.error
   const credits = search.data?.credits ?? []
   const corrected = search.data?.correctedQuery ?? null
@@ -376,7 +389,7 @@ export function CatalogueBrowser({
           <Group gap="xs" mb="sm" justify="space-between" wrap="wrap">
             <Group gap="xs">
               {searching ? (
-                <Text c="var(--ink-3)" size="sm">
+                !loading && <Text c="var(--ink-3)" size="sm">
                   {items.length >= PAGE_SIZE ? (
                     <Trans>{searchCap}+ matches</Trans>
                   ) : (
@@ -399,9 +412,7 @@ export function CatalogueBrowser({
                 <CreditChip key={`${credit.name}-${credit.roles.join()}`} credit={credit} />
               ))}
               {search.data?.mode === 'title' && mode === 'smart' && (
-                <TagChip size="sm" dot="var(--warn)">
-                  <Trans>title match only, build the recommendation index for search by meaning</Trans>
-                </TagChip>
+                <SmartSearchFallback fallback={search.data.fallback ?? 'unavailable'} />
               )}
             </Group>
             <Group gap="xs">
@@ -476,6 +487,98 @@ function CreditChip({ credit }: { credit: ResolvedCredit }) {
       <IconUser size={11} />
       {credit.name} ({credit.workCount})
     </TagChip>
+  )
+}
+
+const SEMANTIC_SETTINGS = '/settings?tab=library&s=recommendations'
+
+/**
+ * Says why titles answered a meaning search and what happens next. A cold index and one being
+ * downloaded fix themselves (the search re-asks on its own); a missing one gets a one-click
+ * download for admins, since the prebuilt index takes a minute where a local build takes an hour.
+ */
+function SmartSearchFallback({ fallback }: { fallback: SearchFallback }) {
+  const { can } = useAuth()
+  const isAdmin = can('Admin')
+  const queryClient = useQueryClient()
+  const { data: status } = useRecommendationIndex(isAdmin && fallback === 'unavailable')
+  const download = useDownloadPrebuiltIndex()
+
+  const settingsLink = (label: ReactNode) => (
+    <Anchor component={Link} to={SEMANTIC_SETTINGS} size="sm">
+      {label}
+    </Anchor>
+  )
+
+  const downloadIndex = () =>
+    download.mutate(undefined, {
+      onSuccess: (r) => {
+        notifications.show({
+          message: r.installed ? now`Search by meaning is ready` : r.reason,
+          color: r.installed ? 'var(--ok)' : 'var(--warn)',
+        })
+        if (r.installed) queryClient.invalidateQueries({ queryKey: ['discover-search'] })
+      },
+      onError: (err) => {
+        const detail = errorText(err)
+        notifications.show({ color: 'var(--danger)', message: now`Download failed: ${detail}` })
+      },
+    })
+
+  if (fallback === 'warming') {
+    return (
+      <TagChip size="sm" dot="var(--info)">
+        <Group gap={6} wrap="nowrap">
+          <Loader size={10} color="var(--ink-3)" />
+          <Trans>loading search by meaning, title matches for now</Trans>
+        </Group>
+      </TagChip>
+    )
+  }
+
+  if (fallback === 'preparing') {
+    return (
+      <Group gap="xs" wrap="nowrap">
+        <TagChip size="sm" dot="var(--info)">
+          <Trans>search by meaning is being set up, title matches for now</Trans>
+        </TagChip>
+        {isAdmin && settingsLink(<Trans>See progress</Trans>)}
+      </Group>
+    )
+  }
+
+  if (fallback === 'off') {
+    return (
+      <Group gap="xs" wrap="nowrap">
+        <TagChip size="sm" dot="var(--neutral)">
+          <Trans>title match only, search by meaning is off</Trans>
+        </TagChip>
+        {isAdmin && settingsLink(<Trans>Turn on</Trans>)}
+      </Group>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <TagChip size="sm" dot="var(--warn)">
+        <Trans>title match only, an admin can set up search by meaning</Trans>
+      </TagChip>
+    )
+  }
+
+  return (
+    <Group gap="xs" wrap="nowrap">
+      <TagChip size="sm" dot="var(--warn)">
+        <Trans>title match only, search by meaning needs its index</Trans>
+      </TagChip>
+      {status?.prebuiltEnabled ? (
+        <Button size="compact-sm" variant="light" loading={download.isPending} onClick={downloadIndex}>
+          <Trans>Download index</Trans>
+        </Button>
+      ) : (
+        settingsLink(<Trans>Open settings</Trans>)
+      )}
+    </Group>
   )
 }
 

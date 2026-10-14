@@ -285,6 +285,7 @@ try
     builder.Services.AddSingleton<ReadingBehaviourService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
+    builder.Services.AddSingleton<SemanticSearchState>();
     builder.Services.AddScoped<HiddenContentService>();
     builder.Services.AddScoped<CustomRailService>();
 

@@ -748,6 +748,13 @@ export interface DiscoverSearchRequest {
   engine?: SearchEngine
 }
 
+/**
+ * Why a meaning search was answered by titles: `warming` is a built index loading back in after an
+ * idle unload, `preparing` one being built or downloaded, `off` switched off by an admin, and
+ * `unavailable` no index and nothing producing one.
+ */
+export type SearchFallback = 'warming' | 'preparing' | 'off' | 'unavailable'
+
 export interface DiscoverSearchResponse {
   /** `semantic` = matched on meaning; `title` = answered by the title index. */
   mode: 'semantic' | 'title'
@@ -755,6 +762,26 @@ export interface DiscoverSearchResponse {
   /** The spelling that actually found something, when what was typed found next to nothing. */
   correctedQuery?: string | null
   credits?: ResolvedCredit[] | null
+  fallback?: SearchFallback | null
+}
+
+/**
+ * How often to ask again while titles stand in for a meaning search, and for how long. A cold index
+ * loads in seconds; a download or a build takes minutes, so that one is only checked now and then.
+ */
+function fallbackPoll(fallback: SearchFallback | null | undefined, polls: number): number | false {
+  if (fallback === 'warming') return polls < 15 ? 2000 : false
+  if (fallback === 'preparing') return polls < 40 ? 15000 : false
+  return false
+}
+
+/**
+ * True while a cold index is still being waited on for this request, which is when an empty title
+ * answer means "not yet" rather than "nothing". Turns false once the polling gives up.
+ */
+export function useSearchStillWarming(request: DiscoverSearchRequest | null) {
+  const state = useQueryClient().getQueryState<DiscoverSearchResponse>(['discover-search', request])
+  return state?.data?.fallback === 'warming' && fallbackPoll('warming', state.dataUpdateCount) !== false
 }
 
 /**
@@ -780,7 +807,9 @@ export function useDiscoverSearch(
         signal,
       }),
     enabled,
-    staleTime: 5 * 60 * 1000,
+    // A title answer standing in for a meaning search is provisional, so it is never served from cache.
+    staleTime: (q) => (q.state.data?.fallback ? 0 : 5 * 60 * 1000),
+    refetchInterval: (q) => fallbackPoll(q.state.data?.fallback, q.state.dataUpdateCount),
     retry: false,
     meta: { silent: true },
   })
@@ -1511,10 +1540,11 @@ export interface PrebuiltIndexResult {
   rowCount: number | null
 }
 
-export function useRecommendationIndex() {
+export function useRecommendationIndex(enabled = true) {
   return useQuery({
     queryKey: ['recommendation-index'],
     queryFn: () => api<RecommendationIndexStatus>('/settings/recommendations'),
+    enabled,
     // Poll quickly while an index pass or a live model switch is running, or while the server is
     // still counting the catalogue in the background; back off when idle.
     refetchInterval: (query) => {
