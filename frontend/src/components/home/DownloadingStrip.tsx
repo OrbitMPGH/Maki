@@ -21,7 +21,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
   const { length: totalQueued } = items
 
   return (
-    <Paper withBorder radius="lg" p="lg">
+    <Paper withBorder radius="md" p="lg">
       <Stack gap="sm">
         {shown.map((q) => {
           const visual = queueStatusVisual(q.status)

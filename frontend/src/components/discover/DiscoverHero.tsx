@@ -198,10 +198,6 @@ export function DiscoverHero({
             )}
 
             <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-              <Text className="discover-hero-eyebrow">
-                <Trans>Your next read</Trans>
-              </Text>
-
               <Title order={1} className="series-hero-title">
                 <button type="button" className="discover-hero-title" onClick={() => onOpen(item)}>
                   {title}

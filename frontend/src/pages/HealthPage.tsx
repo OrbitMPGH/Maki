@@ -1617,10 +1617,10 @@ function CompareArchives({
     <Panel p="md">
       <div className="health-compare">
         <div />
-        <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
+        <Text size="xs" fw={600} c="var(--ink-4)">
           <Trans>This archive</Trans>
         </Text>
-        <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
+        <Text size="xs" fw={600} c="var(--ink-4)">
           <Trans>Linked file</Trans>
         </Text>
         {rows.map(({ id, label, mine, theirs }) => (

@@ -19498,8 +19498,8 @@ msgstr "你的新 API 密钥"
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
-msgid "Your next read"
-msgstr "你的下一篇阅读"
+#~ msgid "Your next read"
+#~ msgstr "你的下一篇阅读"
 
 #: src/components/settings/AccountSection.tsx
 #: src/pages/settings/ReadingCards.tsx

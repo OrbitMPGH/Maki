@@ -2302,7 +2302,7 @@ function SeriesDetailBody() {
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
             {!selectMode && canEditMetadata && unlinkedFilesOnDisk > 0 && (
-                <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg">
+                <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="md">
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 240 }}>
                       <IconLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -2332,7 +2332,7 @@ function SeriesDetailBody() {
             )}
 
             {selectMode && (
-                <Paper className="series-detail-chapter-selection" withBorder p="xs" radius="lg">
+                <Paper className="series-detail-chapter-selection" withBorder p="xs" radius="md">
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs">
                       <Text size="sm" c="var(--ink-3)" className="tnum">
@@ -2661,7 +2661,7 @@ function SeriesDetailBody() {
                 </Text>
             ) : (
                 <Stack gap="sm">
-                  <Paper className="series-detail-chapter-table" withBorder radius="lg" style={{ overflow: 'hidden' }}>
+                  <Paper className="series-detail-chapter-table" withBorder radius="md" style={{ overflow: 'hidden' }}>
                     <Box
                         pos="relative"
                         ref={setChapterTable}

@@ -241,7 +241,7 @@ export function SignalsCard() {
               </Text>
             )}
 
-            <Card withBorder radius="lg" padding="md">
+            <Card withBorder radius="md" padding="md">
               <Group justify="space-between" align="center" mb={4}>
                 <Text size="sm" fw={600}>
                   <Trans>Recent feedback</Trans>
@@ -261,7 +261,7 @@ export function SignalsCard() {
                 {recent.map((item, index) => (
                   <div key={item.id}>
                     {dayOf(item) !== dayOf(recent[index - 1]) && (
-                      <Text size="xs" fw={600} c="var(--ink-3)" tt="uppercase" mt={index === 0 ? 0 : 10}>
+                      <Text size="xs" fw={600} c="var(--ink-3)" mt={index === 0 ? 0 : 10}>
                         <DayLabel value={item.occurredAtUtc} />
                       </Text>
                     )}
@@ -292,7 +292,7 @@ export function SignalsCard() {
                   </div>
                 ))}
                 {padded.length > 0 && (
-                  <Text size="xs" fw={600} c="var(--ink-3)" tt="uppercase" mt={recent.length === 0 ? 0 : 10}>
+                  <Text size="xs" fw={600} c="var(--ink-3)" mt={recent.length === 0 ? 0 : 10}>
                     <Trans>From your shelf</Trans>
                   </Text>
                 )}

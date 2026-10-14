@@ -1,6 +1,6 @@
 # Button
 
-Mantine `Button` with Maki's theme defaults: `radius="md"` (9px), weight 600, primary fill from `primary` with its label in `primary-on` (Mantine autoContrast: black on Emerald and Amber).
+Mantine `Button` with Maki's theme defaults: `radius="md"` (10px), weight 600, primary fill from `primary` with its label in `primary-on` (Mantine autoContrast: black on Emerald and Amber).
 
 **Variants, by how often the app reaches for them:**
 - `light` (most common): secondary actions that still belong to the brand, like Refresh or Search. Tinted brand fill; the label is `brand-fg`.

@@ -502,7 +502,7 @@ function ReadingSection({
 /** One panel on the glance row: a border, a padding, and a row of figures. */
 function GlancePanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return (
-    <Paper withBorder radius="lg" p="md" className={wide ? 'home-glance-wide' : undefined}>
+    <Paper withBorder radius="md" p="md" className={wide ? 'home-glance-wide' : undefined}>
       {wide ? children : <div className="home-figures">{children}</div>}
     </Paper>
   )

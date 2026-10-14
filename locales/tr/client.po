@@ -19499,8 +19499,8 @@ msgstr "Yeni API anahtarınız"
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
-msgid "Your next read"
-msgstr "Bir sonraki okumanız"
+#~ msgid "Your next read"
+#~ msgstr "Bir sonraki okumanız"
 
 #: src/components/settings/AccountSection.tsx
 #: src/pages/settings/ReadingCards.tsx

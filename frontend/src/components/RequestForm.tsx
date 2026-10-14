@@ -54,7 +54,7 @@ export function RequestForm({
         onSubmit()
       }}
     >
-      <Text size="xs" fw={700} c="var(--ink-3)" tt="uppercase">
+      <Text size="xs" fw={600} c="var(--ink-3)">
         <Trans>Chapters - leave blank for all</Trans>
       </Text>
       <Group gap="sm" align="flex-end" className="requests-form-range">

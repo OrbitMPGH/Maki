@@ -15860,8 +15860,8 @@ msgid "Your new API key"
 msgstr "Your new API key"
 
 #: src/components/discover/DiscoverHero.tsx
-msgid "Your next read"
-msgstr "Your next read"
+#~ msgid "Your next read"
+#~ msgstr "Your next read"
 
 #: src/components/settings/AccountSection.tsx
 #: src/pages/settings/ReadingCards.tsx

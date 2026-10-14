@@ -10,11 +10,12 @@
   --border: #262b36;
   --border-strong: #333947;
 
-  /* Text hierarchy used by the series page. */
+  /* Text hierarchy: primary (--ink-hi for titles, --ink for body), secondary (--ink-3) and
+     tertiary (--ink-4). --ink-2 is an alias of secondary kept so older call sites compile. */
   --ink-hi: #f1f3f5;
   --ink: #dee2e6;
-  --ink-2: #c7cad4;
-  --ink-3: #a6adbb;
+  --ink-3: #b1b7c3;
+  --ink-2: var(--ink-3);
   --ink-4: #9098a8;
   --hairline: var(--border);
   --mantine-color-dimmed: var(--ink-3);
@@ -70,14 +71,15 @@
   --section-space: clamp(2rem, 4vw, 4.5rem);
   --control-height-xs: 1.875rem;
   --control-height-md: 2.625rem;
+  /* Three working radii plus pill. The other names alias onto them so call sites keep compiling. */
   --radius-control: 6px;
-  --radius-surface: 9px;
+  --radius-surface: 10px;
   --radius-overlay: 13px;
-  --radius-2xs: 2px;
-  --radius-chip: 7px;
-  --radius-thumb: 8px;
-  --radius-card: 10px;
-  --radius-hero: 12px;
+  --radius-2xs: var(--radius-control);
+  --radius-chip: var(--radius-control);
+  --radius-thumb: var(--radius-control);
+  --radius-card: var(--radius-surface);
+  --radius-hero: var(--radius-overlay);
   /* Bars, badges and anything whose ends should be fully round, whatever its height. */
   --radius-pill: 999px;
   --line-soft: color-mix(in srgb, var(--border) 76%, transparent);
@@ -91,10 +93,11 @@
   --type-figure: 1.3125rem;
   --type-section: 1.125rem;
   --type-subhead: 1rem;
-  --type-body: 0.875rem;
+  --type-body: 0.9375rem;
   --type-meta: 0.8125rem;
+  /* The floor for anything read. Only badges go under it. */
   --type-micro: 0.75rem;
-  --type-label: 0.75rem;
+  --type-label: 0.8125rem;
   --type-badge: 0.6875rem;
 
   /* Weight scale. Same rule as the type scale: a weight between two steps belongs on one of them. */
@@ -125,8 +128,9 @@
     'Segoe UI', Roboto, sans-serif;
 }
 
-/* Titles only: a series, a page or the product names itself in the display face. Everything read
-   or operated stays in Inter. No Cyrillic or CJK in Bricolage, so those titles fall through to Inter. */
+/* The display face carries names and headline numbers: page, section, modal and series titles, card
+   and row titles, and figures (.figure below). Body copy, tables, inputs and buttons stay in Inter.
+   No Cyrillic or CJK in Bricolage, so those titles fall through to Inter. */
 .series-hero-title,
 .page-header .mantine-Title-root,
 .auth-panel-title,
@@ -135,6 +139,12 @@
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.025em;
+}
+
+.cover-title,
+.row-title,
+.utility-modal-title {
+  font-family: var(--font-display);
 }
 
 /* Mantine centres each slider mark label on its mark, so the end labels hang past the track and
@@ -217,9 +227,8 @@
   --border-strong: #3a3a3a;
   --ink-hi: #f4f2ee;
   --ink: #e3e1dc;
-  --ink-2: #c6c4bf;
-  --ink-3: #a3a19c;
-  --ink-4: #888681;
+  --ink-3: #b0aea9;
+  --ink-4: #8d8b86;
   --neutral: #a3a19c;
 }
 :root[data-ground='moss'] {
@@ -253,8 +262,7 @@
   --border-strong: #ccd1e0;
   --ink-hi: #111420;
   --ink: #252a38;
-  --ink-2: #3d4454;
-  --ink-3: #4a5162;
+  --ink-3: #454c5d;
   --ink-4: #606879;
   --brand-fg: #4553e6;
   --brand-fg-on-art: #b8c1ff;
@@ -405,7 +413,11 @@ body {
   font-feature-settings: 'tnum';
 }
 /* Headline numbers: figure strips, stat tiles, the hero figures, the level. Sizes stay per call site. */
-.figure {
+.figure,
+.figure-strip-n,
+.hero-stat-n,
+.stats-figure-n,
+.stats-fact-value {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.02em;
@@ -754,7 +766,7 @@ body {
   align-items: center;
   gap: 8px;
   color: var(--ink-4);
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   line-height: 1.3;
   white-space: nowrap;
 }
@@ -845,18 +857,16 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--type-badge);
+  font-size: var(--type-meta);
   font-weight: 600;
-  color: var(--ink-4);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--ink-3);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
 .nav-footer .nav-footer-version-button {
   margin-left: -4px;
   padding: 2px 4px;
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: 600;
   border-radius: 4px;
   transition:
@@ -998,7 +1008,7 @@ body {
   }
 }
 .nav-section-label {
-  font-size: var(--type-label);
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1032,6 +1042,8 @@ body {
 .mantine-Badge-root {
   --badge-fz-xs: var(--type-badge);
   --badge-fz-sm: var(--type-badge);
+  text-transform: none;
+  letter-spacing: 0;
 }
 .mantine-Pill-root {
   --pill-fz-xs: var(--type-badge);
@@ -1171,8 +1183,6 @@ body {
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
   line-height: 1;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   white-space: nowrap;
   color: #fff;
   background: color-mix(in srgb, black 55%, transparent);
@@ -1386,10 +1396,8 @@ body {
   border-radius: var(--radius-pill);
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 /* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
 .cover-new-quiet {
@@ -1411,8 +1419,6 @@ body {
   color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 .cover-corner-left > .cover-chapter {
@@ -1632,7 +1638,7 @@ body {
 
 /* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
    up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
-   instead, which the short uppercase labels take without complaint. */
+   instead, which the short labels take without complaint. */
 .home-figures {
   display: grid;
   grid-auto-flow: column;
@@ -1651,7 +1657,7 @@ body {
   padding-left: 14px;
   border-left: 1px solid var(--border-strong);
 }
-/* Too narrow for one row, the shrinking columns ran the uppercase labels into each other. Two
+/* Too narrow for one row, the shrinking columns ran the labels into each other. Two
    columns instead, with the hairline only between the pair on each line. Four figures need more
    room than three, hence the two thresholds. */
 .home-glance > :not(.home-glance-wide) {
@@ -1965,7 +1971,7 @@ body {
   border-radius: var(--radius-control);
   background: var(--surface-2);
   color: var(--ink-3);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-medium);
   white-space: nowrap;
   overflow: hidden;
@@ -2069,14 +2075,6 @@ body {
     align-self: flex-start;
   }
 }
-.discover-hero-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
-  margin-bottom: 8px;
-}
 /* Poster and title are the click target, so they are buttons, but they must not look like one. */
 .discover-hero-poster,
 .discover-hero-title {
@@ -2160,10 +2158,8 @@ body {
   color: var(--ok);
 }
 .discover-hero-strip-label {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
 .discover-hero-strip-heading {
@@ -2173,10 +2169,8 @@ body {
   gap: 12px;
 }
 .discover-hero-strip-mode {
-  font-size: var(--type-badge);
-  font-weight: var(--fw-strong);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
   color: var(--brand-fg, var(--brand));
 }
 .discover-hero-strip-row {
@@ -2265,7 +2259,7 @@ body {
 .discover-hero-strip-match {
   overflow: hidden;
   color: var(--brand-fg, var(--brand));
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
   line-height: 1;
   text-overflow: ellipsis;
@@ -2307,11 +2301,9 @@ body {
 }
 .discover-seeds-label {
   flex: none;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .discover-seeds-row {
   display: flex;
@@ -2366,7 +2358,7 @@ body {
   white-space: nowrap;
 }
 .discover-seed-meta {
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   line-height: 1.1;
   color: var(--ink-4);
   font-variant-numeric: tabular-nums;
@@ -2524,11 +2516,9 @@ body {
   background: var(--surface);
 }
 .discover-taste-lead {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .discover-taste-chip {
   display: inline-flex;
@@ -2606,9 +2596,6 @@ body {
   .discover-hero.series-hero[data-compact] .series-hero-body {
     padding-top: 22px;
     padding-bottom: 22px;
-  }
-  .discover-hero-eyebrow {
-    margin-bottom: 4px;
   }
   .discover-hero-reason {
     margin-top: 10px;
@@ -2783,11 +2770,9 @@ body {
 }
 .setup-rail-caption {
   margin-top: 4px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .setup-steps {
   display: grid;
@@ -2906,10 +2891,8 @@ body {
   animation: setup-stage-in 0.32s var(--ease) both;
 }
 .setup-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--brand-fg, var(--brand));
 }
 .setup-title {
@@ -2998,7 +2981,7 @@ body {
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
   color: var(--brand-fg);
-  font-size: 11px;
+  font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
 }
@@ -3106,10 +3089,8 @@ body {
   padding: 3px 9px;
   border-radius: var(--radius-pill);
   background: var(--neutral-soft);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--ink-3);
   white-space: nowrap;
 }
@@ -3165,10 +3146,8 @@ body {
 }
 .setup-next-heading {
   margin: 36px 0 12px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
 .setup-next {
@@ -3236,10 +3215,8 @@ body {
     background: color-mix(in srgb, var(--surface) 70%, transparent);
   }
   .setup-mobile-step {
-    font-size: var(--type-label);
-    font-weight: var(--fw-bold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: var(--type-meta);
+    font-weight: var(--fw-semibold);
     color: var(--ink-3);
   }
   .setup-mobile-progress {
@@ -3648,11 +3625,9 @@ button.hero-score[aria-expanded='true'] .hero-score-caret {
   line-height: 1.05;
 }
 .hero-stat-l {
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
@@ -3795,8 +3770,6 @@ button.hero-score[aria-expanded='true'] .hero-score-caret {
   color: var(--bucket);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 .tag-bucket-rule {
   flex: 1;
@@ -4984,11 +4957,9 @@ body.column-resizing * {
 }
 /* No rule for `down`: a quieter month is not a failure, and red here read like a broken download. */
 .stats-figure-l {
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 @media (max-width: 61.9375em) {
@@ -5241,10 +5212,8 @@ body.column-resizing * {
 }
 .stats-fact-label {
   color: var(--ink-3);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
 }
 .stats-fact-value {
   color: var(--ink-hi);
@@ -5676,9 +5645,8 @@ body.column-resizing * {
 }
 
 .rewind-eyebrow {
-  font-size: 0.8rem;
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.18em;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   opacity: 0.75;
 }
 .rewind-title {
@@ -5722,10 +5690,8 @@ body.column-resizing * {
   line-height: 1.1;
 }
 .rewind-summary-label {
-  font-size: 0.8rem;
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   opacity: 0.7;
 }
 
@@ -6092,7 +6058,7 @@ body.reader-open {
   bottom: 2px;
   padding: 0 4px;
   border-radius: var(--mantine-radius-xs);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.85);
   background: rgba(0, 0, 0, 0.65);
@@ -6119,9 +6085,7 @@ body.reader-open {
   animation: reader-chapter-banner 2400ms var(--ease) both;
 }
 .reader-chapter-banner-series {
-  font-size: var(--type-micro);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
   color: rgba(255, 255, 255, 0.6);
 }
 .reader-chapter-banner-label {
@@ -6183,10 +6147,8 @@ body.reader-open {
   flex: 1;
 }
 .reader-end-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: rgba(255, 255, 255, 0.5);
 }
 .reader-end-title {
@@ -6329,10 +6291,8 @@ body.reader-open {
 }
 .reader-shortcuts-groups h3 {
   margin: 0 0 8px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: rgba(255, 255, 255, 0.5);
 }
 .reader-shortcuts-groups dl {
@@ -6476,7 +6436,7 @@ body.reader-open {
   height: 100%;
   display: grid;
   place-items: center;
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   /* Scheme-aware, unlike the grid card's placeholder: that one sits on cover art behind a dark
      scrim and can hard-code a light grey, while this one sits on `--surface-2`, which is #f7f8fc
      in the light theme. */
@@ -6665,11 +6625,9 @@ body.reader-open {
    compete with the panel's own heading. */
 .health-group-label {
   margin-top: var(--mantine-spacing-md);
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 .health-group:first-of-type .health-group-label {
   margin-top: 0;
@@ -7021,11 +6979,9 @@ body.reader-open {
   color: var(--ink-4);
 }
 .figure-strip-l {
-  color: var(--ink-4);
-  font-size: var(--type-label);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .status-dot {
@@ -7544,7 +7500,7 @@ body.reader-open {
   align-items: center;
   gap: 0.375rem;
   margin-right: 0.125rem;
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   color: var(--ink-4);
 }
 .library-selection-bar {
@@ -7769,7 +7725,7 @@ body.reader-open {
   border-radius: 3px;
   border: 1px solid var(--border);
   background: var(--surface-2);
-  font-size: 9px;
+  font-size: var(--type-badge);
   font-weight: 600;
   color: var(--ink-4);
   display: grid;
@@ -7882,11 +7838,9 @@ body.reader-open {
   margin: 0;
   padding: 0.8rem 1rem 0.45rem;
   color: var(--ink-3);
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.08em;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   line-height: 1.25;
-  text-transform: uppercase;
 }
 .inbox-record {
   border-bottom: 1px solid var(--line-soft);
@@ -8047,7 +8001,7 @@ body.reader-open {
   place-items: center;
   padding: 0.4rem;
   color: var(--ink-3);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   text-align: center;
 }
 .continue-tile-body {
@@ -8063,10 +8017,8 @@ body.reader-open {
   align-items: center;
   gap: 10px;
   color: var(--ink-3);
-  font-size: var(--type-badge);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   font-variant-numeric: tabular-nums;
 }
 .continue-tile-unread {
@@ -8123,7 +8075,7 @@ body.reader-open {
 }
 .continue-tile-pages {
   color: var(--ink-3);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   white-space: nowrap;
 }
 .continue-tile-action {
@@ -8230,10 +8182,6 @@ body.reader-open {
     top: auto;
     bottom: 34px;
     right: 8px;
-  }
-  .rewind-eyebrow {
-    font-size: 0.72rem;
-    letter-spacing: 0.13em;
   }
   /* The desktop clamps floor at 2rem / 3.5rem, which is wider than 360px once a
      four-digit count is drawn. */
@@ -8571,7 +8519,7 @@ body.reader-open {
   color: var(--brand-fg);
 }
 .layout-edit-badge {
-  font-size: 11px;
+  font-size: var(--type-badge);
   line-height: 1;
   padding: 3px 6px;
   border-radius: var(--radius-pill);
@@ -8824,11 +8772,9 @@ body.reader-open {
   display: flex;
   justify-content: space-between;
   padding: 10px 10px 6px;
-  font-size: var(--type-label);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .source-manager-empty {
   padding: 24px 10px;
@@ -8982,8 +8928,6 @@ body.reader-open {
 .source-tag[data-tone='language'] {
   font-family: var(--mantine-font-family-monospace);
   font-size: var(--type-badge);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .source-filter-count {
@@ -9005,11 +8949,9 @@ body.reader-open {
 }
 .source-filter-label {
   margin-bottom: 6px;
-  font-size: var(--type-label);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .source-filter-n {
   margin-left: 4px;

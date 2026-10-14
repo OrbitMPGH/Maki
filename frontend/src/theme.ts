@@ -4,11 +4,13 @@ import {
   type CSSVariablesResolver,
   Card,
   Drawer,
+  Menu,
   type MantineColorScheme,
   type MantineColorsTuple,
   type MantineThemeOverride,
   Modal,
   Paper,
+  Popover,
   Table,
   type VariantColorsResolver,
   createTheme,
@@ -209,8 +211,8 @@ const variantColorResolver: VariantColorsResolver = (input) => {
  */
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {},
-  light: { '--mantine-color-anchor': 'var(--brand-fg)' },
-  dark: { '--mantine-color-anchor': 'var(--brand-fg)' },
+  light: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
+  dark: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
 })
 
 /**
@@ -268,7 +270,17 @@ const themeBase: MantineThemeOverride = {
     '"Inter Variable", InterVariable, Inter, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   fontFamilyMonospace:
     'ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo, monospace',
+  // One step per role: xs is meta, sm is body, matching --type-meta and --type-body in theme.css.
+  fontSizes: {
+    xs: '0.8125rem',
+    sm: '0.9375rem',
+    md: '1rem',
+    lg: '1.125rem',
+    xl: '1.25rem',
+  },
   headings: {
+    fontFamily:
+      '"Bricolage Grotesque Variable", "Inter Variable", ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif',
     fontWeight: '700',
     sizes: {
       h1: { fontSize: '1.9rem', lineHeight: '1.2', fontWeight: '800' },
@@ -277,12 +289,13 @@ const themeBase: MantineThemeOverride = {
       h4: { fontSize: '1rem', lineHeight: '1.4' },
     },
   },
+  // Control, surface, overlay and pill: the same four values as the --radius-* tokens.
   radius: {
-    xs: '4px',
+    xs: '6px',
     sm: '6px',
-    md: '9px',
+    md: '10px',
     lg: '13px',
-    xl: '20px',
+    xl: '999px',
   },
   shadows: {
     sm: '0 1px 2px rgba(0,0,0,.4)',
@@ -292,9 +305,15 @@ const themeBase: MantineThemeOverride = {
   cursorType: 'pointer',
   components: {
     Card: Card.extend({
-      defaultProps: { radius: 'lg', withBorder: true },
+      defaultProps: { radius: 'md', withBorder: true },
     }),
     Paper: Paper.extend({
+      defaultProps: { radius: 'md' },
+    }),
+    Menu: Menu.extend({
+      defaultProps: { radius: 'lg' },
+    }),
+    Popover: Popover.extend({
       defaultProps: { radius: 'lg' },
     }),
     Button: Button.extend({

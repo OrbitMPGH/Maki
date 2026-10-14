@@ -291,7 +291,7 @@ export function SeriesHero({
                             </Group>
                         </Stack>
                     </Group>
-                    <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
+                    <Paper withBorder radius="md" p="lg" className="series-hero-panel">
                         <Title order={2} size="h3" fz="var(--type-section)">
                             <Trans>Progress</Trans>
                         </Title>
@@ -475,7 +475,7 @@ export function SeriesHeroSkeleton() {
                             </Group>
                         </Stack>
                     </Group>
-                    <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
+                    <Paper withBorder radius="md" p="lg" className="series-hero-panel">
                         <Skeleton h={16} w={80} />
                         <Skeleton h={12} w="46%" mt="lg" />
                         <Skeleton h={8} radius="xl" mt={14} />
@@ -489,13 +489,13 @@ export function SeriesHeroSkeleton() {
         </Box>
         <div className="series-body">
             <div className="series-split">
-                <Paper withBorder radius="lg" p="lg">
+                <Paper withBorder radius="md" p="lg">
                     <Skeleton h={16} w={96} mb="lg" />
                     {['96%', '88%', '92%', '80%', '90%', '54%'].map((w, i) => (
                         <Skeleton key={i} h={10} w={w} mb={12} />
                     ))}
                 </Paper>
-                <Paper withBorder radius="lg" p="lg">
+                <Paper withBorder radius="md" p="lg">
                     <Skeleton h={16} w={84} mb="lg" />
                     {[0, 1, 2].map((i) => (
                         <Group key={i} justify="space-between" py="sm" wrap="nowrap">

@@ -147,7 +147,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
         </SimpleGrid>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm" mt="lg">
           {Array.from({ length: 8 }, (_, i) => (
-            <Skeleton key={i} h={104} radius="lg" />
+            <Skeleton key={i} h={104} radius="md" />
           ))}
         </SimpleGrid>
       </>
@@ -200,7 +200,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
               roundCaps
               sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
               label={
-                <Text ta="center" fw={700} size="lg" className="tnum">
+                <Text ta="center" fw={700} size="lg" className="figure">
                   {level.level}
                 </Text>
               }

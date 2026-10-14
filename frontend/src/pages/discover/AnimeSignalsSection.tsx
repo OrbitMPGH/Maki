@@ -140,7 +140,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   const noTracker = data.services.length === 0
 
   return (
-    <Card withBorder radius="lg" padding="md">
+    <Card withBorder radius="md" padding="md">
       <Stack gap="sm">
         <Group justify="space-between" align="center" wrap="wrap">
           <div>

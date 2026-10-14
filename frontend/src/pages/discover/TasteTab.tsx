@@ -118,7 +118,7 @@ function TasteSkeleton() {
           <div className="discover-rail">
             {Array.from({ length: 8 }, (_, j) => (
               <div key={j} className="discover-rail-item">
-                <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+                <Skeleton radius="md" style={{ aspectRatio: '2 / 3' }} />
               </div>
             ))}
           </div>
@@ -201,7 +201,7 @@ function BehaviourList({
   format: (item: BehaviourSeries) => string
 }) {
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Card padding="md" radius="md" withBorder>
       <Group gap={8} mb="xs" wrap="nowrap">
         <ListIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
         <Text fw={650}>{title}</Text>
@@ -315,7 +315,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
   const data = insights.drift.map((d) => ({ bucket: d.bucket, similarity: d.similarityToStart }))
 
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Card padding="md" radius="md" withBorder>
       <Text c="var(--ink-3)" size="xs" mb="md">
         <Trans>How close each quarter sat to where you started.</Trans>{' '}
         <Trans>Falling means you moved.</Trans>
@@ -450,7 +450,7 @@ function CompositionCard({
 
 function CreatorsCard({ facets }: { facets: TasteFacet[] }) {
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Card padding="md" radius="md" withBorder>
       <Group gap={8} mb="xs" wrap="nowrap">
         <IconPencil size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
         <Text fw={650}>
@@ -659,7 +659,7 @@ export function TasteTab() {
             ))}
           </Stack>
           {insights?.oddOneOut && (
-            <Card padding="md" radius="lg" withBorder>
+            <Card padding="md" radius="md" withBorder>
               <Group gap={8} wrap="nowrap">
                 <IconArrowsShuffle size={16} style={{ color: 'var(--warn)', flexShrink: 0 }} />
                 <Text fw={650} style={{ flexShrink: 0 }}>

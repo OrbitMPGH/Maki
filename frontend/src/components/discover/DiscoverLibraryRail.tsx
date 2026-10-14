@@ -194,7 +194,7 @@ export function DiscoverLibraryRail({
   return (
     <Paper
       withBorder
-      radius="lg"
+      radius="md"
       p="md"
       className="series-hero-panel"
     >

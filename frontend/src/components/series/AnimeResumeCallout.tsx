@@ -68,7 +68,7 @@ export function AnimeResumeCallout({
   return (
     <Paper
       withBorder
-      radius="lg"
+      radius="md"
       p="md"
       className="anime-resume-callout"
       style={{ borderColor: 'var(--watched)', background: 'var(--watched-soft)' }}

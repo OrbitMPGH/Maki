@@ -605,7 +605,7 @@ export function PosterSkeletons({
       aria-hidden
     >
       {Array.from({ length: visibleCount }, (_, i) => (
-        <Skeleton key={i} radius="lg" style={{ aspectRatio: '2 / 3' }} />
+        <Skeleton key={i} radius="md" style={{ aspectRatio: '2 / 3' }} />
       ))}
     </SimpleGrid>
   )

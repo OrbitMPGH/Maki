@@ -193,7 +193,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
         ) : (
         <>
           {unlinkedOnDisk > 0 && canLink && !selectMode && (
-            <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm">
+            <Paper className="series-files-hint" withBorder p="xs" radius="md" mt="sm">
               <Group gap="xs" wrap="nowrap" align="flex-start">
                 <IconLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
                 <Text size="sm" c="var(--ink-2)">

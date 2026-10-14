@@ -167,7 +167,7 @@ function DiscoverHeroSkeleton() {
   return (
     <div className="discover-loading-hero" aria-hidden>
       <div className="discover-loading-feature">
-        <Skeleton className="discover-loading-poster" radius="lg" />
+        <Skeleton className="discover-loading-poster" radius="md" />
         <Stack gap="sm" style={{ flex: 1 }}>
           <Skeleton h={10} w={110} />
           <Skeleton h={34} w="72%" />
@@ -220,7 +220,7 @@ function DiscoverGenreSkeleton() {
       <Skeleton h={18} w={130} mt="xl" mb="sm" />
       <div className="discover-genre-wall">
         {Array.from({ length: 8 }, (_, i) => (
-          <Skeleton key={i} h={80} radius="lg" />
+          <Skeleton key={i} h={80} radius="md" />
         ))}
       </div>
     </div>

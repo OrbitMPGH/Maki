@@ -22,7 +22,7 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
   if (!isLoading && reviews !== null && (reviews?.length ?? 0) === 0) return null
 
   return (
-    <Paper withBorder radius="lg" p="lg">
+    <Paper withBorder radius="md" p="lg">
       <Group justify="space-between" align="baseline">
         <Title order={3} fz="var(--type-section)">
           <Trans>Reviews</Trans>

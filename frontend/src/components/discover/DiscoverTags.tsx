@@ -6,7 +6,7 @@ import { TagBuckets } from '../TagBuckets'
 /** The Discover detail card's Tags panel: a titled card around the shared bucket list. */
 export function DiscoverTags({ tags }: { tags: MangaBakaTag[] }) {
   return (
-    <Paper withBorder radius="lg" p="lg">
+    <Paper withBorder radius="md" p="lg">
       <Title order={3} fz="var(--type-section)">
         <Trans>Tags</Trans>
       </Title>

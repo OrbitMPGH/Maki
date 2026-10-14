@@ -40,9 +40,9 @@ export function StatTile({
     delta === null || delta === 0 ? 'var(--ink-3)' : good ? 'var(--ok)' : 'var(--danger)'
 
   return (
-    <Card className="stat-tile" padding="md" radius="lg">
+    <Card className="stat-tile" padding="md" radius="md">
       <div style={{ minWidth: 0 }}>
-        <Text size="xs" c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+        <Text size="xs" c="var(--ink-3)" fw={600}>
           {label}
         </Text>
         {loading ? (

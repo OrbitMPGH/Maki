@@ -691,7 +691,7 @@ export function SourceCompareModal({
                                   onMouseDown={(e) => e.stopPropagation()}
                                   onClick={() => setZoom({ panel: i, page: pageIndex })}
                                 />
-                                <Text size="10px" c="var(--ink-3)" ta="center" mt={2}>
+                                <Text fz="var(--type-micro)" c="var(--ink-3)" ta="center" mt={2}>
                                   {page.width ? `${page.width}×${page.height} · ` : ''}
                                   {formatBytes(page.bytes)}
                                 </Text>

@@ -27,7 +27,7 @@ export function DiscoverGlance({
   const ongoing = year != null && status === 'Ongoing'
 
   return (
-    <Paper withBorder radius="lg" p="md">
+    <Paper withBorder radius="md" p="md">
       <Title order={3} fz="var(--type-subhead)">
         <Trans>At a glance</Trans>
       </Title>

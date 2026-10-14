@@ -133,7 +133,7 @@ export function TorrentProposalCard({
 
   if (banner) {
     return (
-      <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg">
+      <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="md">
         {body}
       </Paper>
     )

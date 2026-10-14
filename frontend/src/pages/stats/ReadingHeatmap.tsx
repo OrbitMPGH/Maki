@@ -84,7 +84,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
             {columns.map((_, i) => {
               const label = monthLabels.find((m) => m.index === i)
               return (
-                <Box key={i} style={{ width: 11, fontSize: 'var(--type-badge)', whiteSpace: 'nowrap', color: 'var(--ink-3)' }}>
+                <Box key={i} style={{ width: 11, fontSize: 'var(--type-micro)', whiteSpace: 'nowrap', color: 'var(--ink-3)' }}>
                   {label?.label ?? ''}
                 </Box>
               )

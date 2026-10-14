@@ -419,7 +419,7 @@ export function DiscoverDetailModal({
           <div className="discover-body">
           <div className="detail-split">
               <div className="detail-main">
-                <Paper withBorder radius="lg" p="lg">
+                <Paper withBorder radius="md" p="lg">
                   <Stack gap="md">
                     {isLoading && !detail && (
                       <Stack gap="xs">
@@ -486,7 +486,7 @@ export function DiscoverDetailModal({
                     {genres.length > 0 && (
                       <div>
                         <Divider mb="md" color="var(--hairline)"/>
-                        <Text size="xs" fw={700} c="var(--ink-3)" tt="uppercase" mb={6}>
+                        <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
                           <Trans>Genres</Trans>
                         </Text>
                         <TagChips>

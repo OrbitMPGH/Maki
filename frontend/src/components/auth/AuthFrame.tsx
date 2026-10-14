@@ -32,7 +32,7 @@ export function AuthFrame({
         </div>
 
         <div className="auth-column">
-          <Paper withBorder radius="lg" p="lg" className="series-hero-panel auth-panel">
+          <Paper withBorder radius="md" p="lg" className="series-hero-panel auth-panel">
             <Title order={2} className="auth-panel-title">
               {title}
             </Title>

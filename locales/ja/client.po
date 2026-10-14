@@ -19498,8 +19498,8 @@ msgstr "新しいAPIキー"
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
-msgid "Your next read"
-msgstr "次に読むもの"
+#~ msgid "Your next read"
+#~ msgstr "次に読むもの"
 
 #: src/components/settings/AccountSection.tsx
 #: src/pages/settings/ReadingCards.tsx
