@@ -127,17 +127,13 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 "indexer", indexer.Backend.DisplayName());
             await Probe("Kavita", SettingKeys.KavitaUrl, SettingKeys.KavitaApiKey, false,
                 (url, key, token) => services.GetRequiredService<Maki.Core.Kavita.KavitaClient>().PingAsync(url, key!, token));
-            var clientKind = TorrentClientKinds.Parse(await settings.GetAsync(SettingKeys.DownloadClientKind, ct)) ?? TorrentClientKind.QBittorrent;
+            var client = await DownloadClientSettingsStore.LoadAsync(settings, ct);
             await Probe("downloadclient", SettingKeys.DownloadClientUrl, null, false,
                 async (url, _, token) =>
                 {
-                    await services.GetRequiredService<TorrentClientRegistry>().For(clientKind).PingAsync(new TorrentClientSettings(
-                        clientKind, url,
-                        await settings.GetAsync(SettingKeys.DownloadClientUsername, token) ?? "",
-                        await settings.GetAsync(SettingKeys.DownloadClientPassword, token) ?? "",
-                        await settings.GetAsync(SettingKeys.DownloadClientLabel, token) is { Length: > 0 } label ? label : TorrentClientSettings.DefaultLabel), token);
+                    await services.GetRequiredService<TorrentClientRegistry>().For(client.Kind).PingAsync(client with { Url = url }, token);
                     return true;
-                }, "downloadclient", clientKind.DisplayName());
+                }, "downloadclient", client.Kind.DisplayName());
             try
             {
                 var latest = BackupService.NewestBackupUtc(paths);

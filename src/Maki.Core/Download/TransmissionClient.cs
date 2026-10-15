@@ -12,10 +12,12 @@ namespace Maki.Core.Download;
 /// hands out in a 409 and which is cached per (url, username). Transmission 4.1 renamed its fields
 /// to snake_case but answers a request without a JSON-RPC 2.0 envelope in the legacy names, so the
 /// driver speaks the legacy names on every version and reads the rpc version only to place labels.
+/// Labels arrived in rpc 16 (Transmission 3.00); older daemons get no label and list unfiltered.
 /// </summary>
 public class TransmissionClient : ITorrentClient
 {
     private const string SessionHeader = "X-Transmission-Session-Id";
+    private const int LabelsVersion = 16;
     private const int LabelsOnAddVersion = 17;
 
     private sealed class Session
@@ -87,7 +89,7 @@ public class TransmissionClient : ITorrentClient
 
         foreach (var t in torrents.EnumerateArray())
         {
-            if (settings.Label.Length > 0 && !HasLabel(t, "labels", settings.Label))
+            if (UsesLabels(settings, session) && !HasLabel(t, "labels", settings.Label))
             {
                 continue;
             }
@@ -124,7 +126,7 @@ public class TransmissionClient : ITorrentClient
     private async Task<string?> AddCoreAsync(
         TorrentClientSettings settings, Session session, Dictionary<string, object?> args, CancellationToken ct)
     {
-        var labelOnAdd = session.RpcVersion >= LabelsOnAddVersion && settings.Label.Length > 0;
+        var labelOnAdd = UsesLabels(settings, session) && session.RpcVersion >= LabelsOnAddVersion;
         if (labelOnAdd)
         {
             args["labels"] = new[] { settings.Label };
@@ -142,7 +144,7 @@ public class TransmissionClient : ITorrentClient
         }
 
         var hash = ReadString(entry, "hashString");
-        if (settings.Label.Length > 0 && entry.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.Number)
+        if (UsesLabels(settings, session) && entry.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.Number)
         {
             var torrentId = id.GetInt32();
             if (duplicate)
@@ -193,6 +195,9 @@ public class TransmissionClient : ITorrentClient
         var args = new Dictionary<string, object?> { ["ids"] = new[] { torrentId }, ["labels"] = labels };
         await CallAsync(settings, session, "torrent-set", args, TorrentClientFailure.Rejected, ct);
     }
+
+    private static bool UsesLabels(TorrentClientSettings settings, Session session) =>
+        settings.Label.Length > 0 && session.RpcVersion >= LabelsVersion;
 
     private Session SessionFor(TorrentClientSettings settings) =>
         _sessions.GetOrAdd((settings.Url.Trim().TrimEnd('/'), settings.Username), _ => new Session());

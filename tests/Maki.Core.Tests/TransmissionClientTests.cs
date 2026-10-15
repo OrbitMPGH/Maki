@@ -133,6 +133,32 @@ public class TransmissionClientTests
     }
 
     [Fact]
+    public async Task Rpc_15_has_no_labels_so_nothing_is_labelled_and_listing_is_unfiltered()
+    {
+        var handler = new RpcHandler(15, (method, _) => method switch
+        {
+            "torrent-add" => Added("torrent-added", "DD", id: 3),
+            "torrent-get" => new JsonObject
+            {
+                ["torrents"] = new JsonArray(new JsonObject
+                {
+                    ["hashString"] = "DD", ["name"] = "n", ["percentDone"] = 0.5, ["downloadDir"] = "/d",
+                }),
+            },
+            _ => null,
+        });
+        var client = new TransmissionClient(handler);
+
+        var hash = await client.AddAsync(Settings, "magnet:?xt=urn:btih:dd");
+        var torrents = await client.ListAsync(Settings);
+
+        Assert.Equal("dd", hash);
+        Assert.False(handler.Requests.Single(r => r.Method == "torrent-add").Arguments.ContainsKey("labels"));
+        Assert.DoesNotContain(handler.Requests, r => r.Method == "torrent-set");
+        Assert.Equal("dd", Assert.Single(torrents).Hash);
+    }
+
+    [Fact]
     public async Task Rpc_18_still_receives_legacy_names_and_legacy_replies_parse()
     {
         var handler = new RpcHandler(18, (method, _) => method switch

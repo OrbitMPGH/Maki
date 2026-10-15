@@ -11,7 +11,8 @@ namespace Maki.Core.Download;
 /// Deluge 2.x through the web UI's JSON-RPC endpoint. The session is the <c>_session_id</c> cookie, the web UI
 /// has a password and no username, and it may be logged in without being attached to a daemon, so every
 /// fresh login also checks <c>web.connected</c>. Labels need the Label plugin; when it cannot be enabled the
-/// driver stops labelling and lists every torrent.
+/// driver stops labelling and lists every torrent. Once labels work, failing to label a new torrent fails
+/// the grab rather than leaving a torrent the label filter would hide.
 /// </summary>
 public partial class DelugeClient : ITorrentClient
 {
@@ -25,6 +26,7 @@ public partial class DelugeClient : ITorrentClient
     ];
 
     private readonly SemaphoreSlim _loginLock = new(1, 1);
+    private readonly SemaphoreSlim _labelLock = new(1, 1);
     private readonly ConcurrentDictionary<string, bool> _labelsAvailable = new();
     private (string BaseUrl, string Password)? _session;
     private int _nextId;
@@ -212,6 +214,9 @@ public partial class DelugeClient : ITorrentClient
         return match.Success;
     }
 
+    /// <summary>Whether Deluge can store the label: it lowercases it and allows only letters, digits, dot, dash and underscore.</summary>
+    public static bool IsValidLabel(string label) => NormalizeLabel(label) is not null;
+
     private static string? NormalizeLabel(string label)
     {
         var id = label.Trim().ToLowerInvariant();
@@ -260,6 +265,10 @@ public partial class DelugeClient : ITorrentClient
         return label;
     }
 
+    /// <summary>
+    /// Labels a torrent Deluge now has. A failure is the grab's failure: listing filters on the label, so an
+    /// unlabelled torrent would never be seen again. Grabbing again finds the torrent present and retries this.
+    /// </summary>
     private async Task LabelAsync(TorrentClientSettings settings, string hash, CancellationToken ct)
     {
         if (await LabelsAvailableAsync(settings, ct) is not { } label)
@@ -269,20 +278,52 @@ public partial class DelugeClient : ITorrentClient
 
         try
         {
-            var labels = await CallAsync(settings, "label.get_labels", ct);
-            var exists = labels.ValueKind == JsonValueKind.Array
-                && labels.EnumerateArray().Any(l => l.ValueKind == JsonValueKind.String && l.GetString() == label);
-            if (!exists)
+            await EnsureLabelExistsAsync(settings, label, ct);
+            await CallAsync(settings, "label.set_torrent", ct, hash, label);
+        }
+        catch (DelugeRpcException ex)
+        {
+            // The plugin may have been switched off since it was checked; look again next time.
+            _labelsAvailable.TryRemove(KeyOf(settings), out _);
+            throw new TorrentClientException(
+                TorrentClientFailure.Rejected, "Deluge added the torrent but would not label it: " + ex.Message, ex);
+        }
+    }
+
+    /// <summary>Two grabs at once may both find the label missing; the one that loses the race to create it is fine.</summary>
+    private async Task EnsureLabelExistsAsync(TorrentClientSettings settings, string label, CancellationToken ct)
+    {
+        await _labelLock.WaitAsync(ct);
+        try
+        {
+            if (await HasLabelAsync(settings, label, ct))
+            {
+                return;
+            }
+
+            try
             {
                 await CallAsync(settings, "label.add", ct, label);
             }
-
-            await CallAsync(settings, "label.set_torrent", ct, hash, label);
+            catch (DelugeRpcException)
+            {
+                if (!await HasLabelAsync(settings, label, ct))
+                {
+                    throw;
+                }
+            }
         }
-        catch (DelugeRpcException)
+        finally
         {
-            _labelsAvailable[KeyOf(settings)] = false;
+            _labelLock.Release();
         }
+    }
+
+    private async Task<bool> HasLabelAsync(TorrentClientSettings settings, string label, CancellationToken ct)
+    {
+        var labels = await CallAsync(settings, "label.get_labels", ct);
+        return labels.ValueKind == JsonValueKind.Array
+            && labels.EnumerateArray().Any(l => l.ValueKind == JsonValueKind.String && l.GetString() == label);
     }
 
     /// <summary>Sends a call, logging in again and repeating it once when the session has expired (error code 1).</summary>

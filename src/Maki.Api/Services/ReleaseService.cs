@@ -236,20 +236,14 @@ public class ReleaseService(
 
     public async Task<TorrentClientSettings> GetClientSettingsAsync(CancellationToken ct)
     {
-        var url = await settings.GetAsync(SettingKeys.DownloadClientUrl, ct);
-        if (string.IsNullOrWhiteSpace(url))
+        var client = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        if (string.IsNullOrWhiteSpace(client.Url))
         {
             throw new ReleaseRefusedException(
                 ReleaseRefusedException.DownloadClientNotConfigured, "No download client is configured (Settings, Downloads)");
         }
 
-        var label = await settings.GetAsync(SettingKeys.DownloadClientLabel, ct);
-        return new TorrentClientSettings(
-            TorrentClientKinds.Parse(await settings.GetAsync(SettingKeys.DownloadClientKind, ct)) ?? TorrentClientKind.QBittorrent,
-            url,
-            await settings.GetAsync(SettingKeys.DownloadClientUsername, ct) ?? string.Empty,
-            await settings.GetAsync(SettingKeys.DownloadClientPassword, ct) ?? string.Empty,
-            string.IsNullOrWhiteSpace(label) ? TorrentClientSettings.DefaultLabel : label);
+        return client;
     }
 
     /// <summary>

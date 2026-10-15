@@ -1519,14 +1519,13 @@ public class SettingsController(
     [HttpGet("downloadclient")]
     public async Task<IActionResult> GetDownloadClient(CancellationToken ct)
     {
-        var kind = TorrentClientKinds.Parse(await settings.GetAsync(SettingKeys.DownloadClientKind, ct)) ?? TorrentClientKind.QBittorrent;
-        var label = await settings.GetAsync(SettingKeys.DownloadClientLabel, ct);
+        var stored = await DownloadClientSettingsStore.LoadAsync(settings, ct);
         return Ok(new DownloadClientSettings(
-            kind.Key(),
+            stored.Kind.Key(),
             await settings.GetAsync(SettingKeys.DownloadClientUrl, ct),
             await settings.GetAsync(SettingKeys.DownloadClientUsername, ct),
             await settings.GetAsync(SettingKeys.DownloadClientPassword, ct),
-            string.IsNullOrWhiteSpace(label) ? TorrentClientSettings.DefaultLabel : label,
+            stored.Label,
             await settings.GetAsync(SettingKeys.DownloadClientPathMapFrom, ct),
             await settings.GetAsync(SettingKeys.DownloadClientPathMapTo, ct)));
     }
@@ -1551,6 +1550,12 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.labelInvalid");
         }
 
+        // Deluge would refuse it, and the driver would then label nothing and list every torrent.
+        if (kind == TorrentClientKind.Deluge && !DelugeClient.IsValidLabel(DownloadClientSettingsStore.LabelOrDefault(request.Label)))
+        {
+            return this.Fail(localizer, "error.settings.labelInvalidDeluge");
+        }
+
         await settings.SetAsync(SettingKeys.DownloadClientKind, kind.Key(), ct);
         await settings.SetAsync(SettingKeys.DownloadClientUrl, request.Url, ct);
         await settings.SetAsync(SettingKeys.DownloadClientUsername, request.Username, ct);
@@ -1565,12 +1570,22 @@ public class SettingsController(
     [HttpPost("downloadclient/test")]
     public async Task<IActionResult> TestDownloadClient([FromBody] DownloadClientSettings request, CancellationToken ct)
     {
-        if (TorrentClientKinds.Parse(request.Kind ?? await settings.GetAsync(SettingKeys.DownloadClientKind, ct)) is not { } kind)
+        var stored = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        TorrentClientKind kind;
+        if (request.Kind is null)
+        {
+            kind = stored.Kind;
+        }
+        else if (TorrentClientKinds.Parse(request.Kind) is { } chosen)
+        {
+            kind = chosen;
+        }
+        else
         {
             return this.Fail(localizer, "error.settings.downloadClientKindInvalid");
         }
 
-        var url = request.Url ?? await settings.GetAsync(SettingKeys.DownloadClientUrl, ct);
+        var url = request.Url ?? stored.Url;
         if (string.IsNullOrWhiteSpace(url))
         {
             return this.Fail(localizer, "error.settings.urlRequired");
@@ -1581,13 +1596,12 @@ public class SettingsController(
             return UrlError(kind.DisplayName());
         }
 
-        var label = request.Label ?? await settings.GetAsync(SettingKeys.DownloadClientLabel, ct);
         var client = new TorrentClientSettings(
             kind,
             url,
-            request.Username ?? await settings.GetAsync(SettingKeys.DownloadClientUsername, ct) ?? string.Empty,
-            request.Password ?? await settings.GetAsync(SettingKeys.DownloadClientPassword, ct) ?? string.Empty,
-            string.IsNullOrWhiteSpace(label) ? TorrentClientSettings.DefaultLabel : label);
+            request.Username ?? stored.Username,
+            request.Password ?? stored.Password,
+            request.Label is null ? stored.Label : DownloadClientSettingsStore.LabelOrDefault(request.Label));
 
         try
         {

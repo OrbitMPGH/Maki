@@ -45,14 +45,15 @@ public class CompletedDownloadJob(
     /// <summary>How long a torrent whose hash is known may be missing from the client before its row fails.</summary>
     internal static readonly TimeSpan MissingTorrentGrace = TimeSpan.FromHours(6);
 
-    /// <summary>How long a torrent may sit in the client's error state before its row fails.</summary>
-    internal static readonly TimeSpan ErroredTorrentGrace = TimeSpan.FromMinutes(30);
+    internal const string ClientErrorKey = "error.download.torrentClientError";
 
     // The job instance is created per run, so state that must outlive a poll is static. In memory
     // only: after a restart the grace period for a missing torrent starts over, which errs on waiting.
     private static readonly ConcurrentDictionary<int, DateTime> MissingSince = new();
     private static int _clientDown;
-    internal static readonly ConcurrentDictionary<int, DateTime> ErroredSince = new();
+
+    /// <summary>Rows whose torrent error has been logged, so a poll every 15 seconds logs it once.</summary>
+    internal static readonly ConcurrentDictionary<int, byte> ErrorLogged = new();
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -112,9 +113,9 @@ public class CompletedDownloadJob(
             MissingSince.TryRemove(gone, out _);
         }
 
-        foreach (var gone in ErroredSince.Keys.Where(id => pending.All(q => q.Id != id)).ToList())
+        foreach (var gone in ErrorLogged.Keys.Where(id => pending.All(q => q.Id != id)).ToList())
         {
-            ErroredSince.TryRemove(gone, out _);
+            ErrorLogged.TryRemove(gone, out _);
         }
 
         // Hashes already tied to any torrent item — including completed and failed ones,
@@ -197,30 +198,32 @@ public class CompletedDownloadJob(
 
             MissingSince.TryRemove(item.Id, out _);
 
+            // An errored torrent keeps its row and shows the client's reason. It is never failed: the
+            // usual cause is the client losing its disk for a while (a mount that came up late), and a
+            // Failed row is never polled again, so the torrent would finish with nobody importing it.
+            var errorChanged = false;
             if (torrent.IsErrored && item.Status != QueueStatus.AwaitingImport)
             {
-                var since = ErroredSince.GetOrAdd(item.Id, _ =>
+                if (ErrorLogged.TryAdd(item.Id, 0))
                 {
                     logger.LogWarning("{Client} reports an error on torrent '{Title}' ({Message})",
                         clientName, item.Title, torrent.Message ?? "no detail");
-                    return DateTime.UtcNow;
-                });
+                }
 
-                if (DateTime.UtcNow - since > ErroredTorrentGrace)
+                if (item.ErrorKey != ClientErrorKey || item.ErrorMessage != torrent.Message)
                 {
-                    // Not complete as far as the client is concerned, so nothing else would ever settle
-                    // the row; it would read "Downloading" until someone fixes the client.
-                    item.Status = QueueStatus.Failed;
-                    item.SetError("error.download.torrentClientError", detail: torrent.Message);
-                    ErroredSince.TryRemove(item.Id, out _);
-                    await BroadcastAsync(item);
-                    announcements.Add((item, false));
-                    continue;
+                    item.SetError(ClientErrorKey, detail: torrent.Message);
+                    errorChanged = true;
                 }
             }
             else
             {
-                ErroredSince.TryRemove(item.Id, out _);
+                ErrorLogged.TryRemove(item.Id, out _);
+                if (item.ErrorKey == ClientErrorKey)
+                {
+                    item.ClearError();
+                    errorChanged = true;
+                }
             }
 
             if (info.TorrentHash is null)
@@ -263,7 +266,7 @@ public class CompletedDownloadJob(
             // Only on a real change. A finished torrent stays finished, so keying this on
             // IsComplete pushed the same row to every client on every poll for as long as it sat
             // there — which an item parked for an import decision does indefinitely.
-            if (item.PagesDone != previousPagesDone || item.Status != previousStatus)
+            if (errorChanged || item.PagesDone != previousPagesDone || item.Status != previousStatus)
             {
                 await BroadcastAsync(item);
             }

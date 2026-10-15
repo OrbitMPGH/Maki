@@ -557,6 +557,7 @@ export const SETTINGS_ENTRY_ALIASES: Record<string, string> = {
   'source-languages': 'languages',
   backups: 'backup',
   prowlarr: 'indexer',
+  qbittorrent: 'downloadclient',
 }
 
 /** Old `tab` values. `connections` is still emitted by stored health notifications. */

@@ -1,3 +1,5 @@
+using Maki.Core.Configuration;
+
 namespace Maki.Core.Download;
 
 public enum TorrentClientKind
@@ -118,6 +120,21 @@ public interface ITorrentClient
     /// its own guards.
     /// </summary>
     Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default);
+}
+
+/// <summary>The one place that reads the stored download client settings and applies their defaults.</summary>
+public static class DownloadClientSettingsStore
+{
+    /// <summary>Unset or unknown reads as qBittorrent, an unset label as <see cref="TorrentClientSettings.DefaultLabel"/>, and an unset URL as empty.</summary>
+    public static async Task<TorrentClientSettings> LoadAsync(IAppSettings settings, CancellationToken ct = default) => new(
+        TorrentClientKinds.Parse(await settings.GetAsync(SettingKeys.DownloadClientKind, ct)) ?? TorrentClientKind.QBittorrent,
+        await settings.GetAsync(SettingKeys.DownloadClientUrl, ct) ?? string.Empty,
+        await settings.GetAsync(SettingKeys.DownloadClientUsername, ct) ?? string.Empty,
+        await settings.GetAsync(SettingKeys.DownloadClientPassword, ct) ?? string.Empty,
+        LabelOrDefault(await settings.GetAsync(SettingKeys.DownloadClientLabel, ct)));
+
+    public static string LabelOrDefault(string? label) =>
+        string.IsNullOrWhiteSpace(label) ? TorrentClientSettings.DefaultLabel : label;
 }
 
 /// <summary>Resolves the configured kind to its driver. One instance per kind is registered in DI.</summary>

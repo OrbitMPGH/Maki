@@ -63,6 +63,21 @@ public sealed class DownloadClientSettingsTests : IDisposable
         Assert.Null(await settings.GetAsync(SettingKeys.DownloadClientLabel));
     }
 
+    [Theory]
+    [InlineData("Manga Downloads", false)]
+    [InlineData("books/maki", false)]
+    [InlineData("Maki_books-1.0", true)]
+    [InlineData(null, true)]
+    public async Task A_deluge_label_must_be_one_deluge_can_store(string? label, bool saves)
+    {
+        var settings = new SettingsService(_db.ScopeFactory());
+
+        var result = await Controller(settings).SetDownloadClient(Request(kind: "deluge", label: label), default);
+
+        Assert.Equal(saves, result is OkObjectResult);
+        Assert.Equal(saves ? "deluge" : null, await settings.GetAsync(SettingKeys.DownloadClientKind));
+    }
+
     [Fact]
     public async Task A_label_over_64_characters_is_refused()
     {
