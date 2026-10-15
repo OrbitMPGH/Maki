@@ -15,6 +15,7 @@ import {
   Modal,
   MultiSelect,
   NumberInput,
+  Popover,
   Select,
   Skeleton,
   Stack,
@@ -33,6 +34,7 @@ import {
   IconRuler,
   IconExternalLink,
   IconLink,
+  IconPencil,
   IconPlugConnected,
   IconPower,
   IconRefresh,
@@ -70,7 +72,7 @@ import {
   type SourceQualityDto,
 } from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
-import { formatDateTime } from '../format'
+import { formatDateTime, formatRecentDate } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { EmptyState } from './ui/EmptyState'
@@ -444,26 +446,25 @@ export function SourceMappingsSection({
           <EmptyState compact mood="asleep" title={t`No sources linked. Chapters cannot be synced or downloaded.`} />
         )
       ) : (
-        // A persistent scrollbar, since a hover-to-reveal one gave no hint that Enabled/Refreshed were off the visible edge.
+        // A persistent scrollbar, since a hover-to-reveal one gave no hint that columns were off the visible edge.
+        // Fixed layout: every column but Source has a set width, and Source takes what is left.
         <Table.ScrollContainer
-          minWidth={720}
+          minWidth={560}
           scrollAreaProps={{ type: 'always', scrollbars: 'x', offsetScrollbars: 'present' }}
         >
-          <Table className="ops-table">
+          <Table className="ops-table sources-table" layout="fixed">
             <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Source</Trans></Table.Th>
-              <Table.Th><Trans>Series</Trans></Table.Th>
-              <Table.Th><Trans>Languages</Trans></Table.Th>
-              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Priority</Trans></Table.Th>
-              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Quality</Trans></Table.Th>
+              <Table.Th w={84}><Trans>Languages</Trans></Table.Th>
+              <Table.Th w={84}><Trans>Priority</Trans></Table.Th>
+              <Table.Th w={120}><Trans>Quality</Trans></Table.Th>
               {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
-              <Table.Th w={44}>
+              <Table.Th w={40}>
                 <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
                 <IconPower size={14} style={{ opacity: 0.7 }} aria-hidden />
               </Table.Th>
-              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Refreshed</Trans></Table.Th>
-              <Table.Th />
+              <Table.Th w={36} />
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -487,31 +488,52 @@ export function SourceMappingsSection({
                             }}
                         />
                     )}
-                    <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'var(--ink-3)' : undefined}>
-                      {sourceName}
-                    </Text>
-                    {sourceDisabled(m.sourceName) && (
-                      <Badge size="xs" color="var(--neutral)" variant="light">
-                        <Trans>Source off</Trans>
-                      </Badge>
-                    )}
-                    {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
-                      <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light">
-                        {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
-                      </Badge>
-                    </Tooltip>}
+                    <Stack gap={0} miw={0}>
+                      <Group gap={6} wrap="nowrap">
+                        <Text fw={600} size="sm" truncate c={sourceDisabled(m.sourceName) ? 'var(--ink-3)' : undefined}>
+                          {sourceName}
+                        </Text>
+                        {sourceDisabled(m.sourceName) && (
+                          <Badge size="xs" color="var(--neutral)" variant="light" style={{ flexShrink: 0 }}>
+                            <Trans>Source off</Trans>
+                          </Badge>
+                        )}
+                        {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
+                          <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light" style={{ flexShrink: 0 }}>
+                            {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
+                          </Badge>
+                        </Tooltip>}
+                      </Group>
+                      <Group gap={6} wrap="nowrap" miw={0}>
+                        {m.url ? (
+                          <Anchor href={m.url} target="_blank" size="xs" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
+                            {m.sourceSeriesId}
+                          </Anchor>
+                        ) : (
+                          <Text size="xs" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
+                            {m.sourceSeriesId}
+                          </Text>
+                        )}
+                        <Text size="xs" c="var(--ink-3)" aria-hidden>·</Text>
+                        {m.lastError ? (
+                          <Tooltip label={m.lastError} withArrow>
+                            <Text size="xs" c="var(--danger)" fw={600} style={{ flexShrink: 0 }}>
+                              <Trans>Error</Trans>
+                            </Text>
+                          </Tooltip>
+                        ) : (
+                          <Text
+                            size="xs"
+                            c="var(--ink-3)"
+                            title={m.lastRefresh ? formatDateTime(m.lastRefresh) : undefined}
+                            style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                          >
+                            {m.lastRefresh ? formatRecentDate(m.lastRefresh) : <Trans>never</Trans>}
+                          </Text>
+                        )}
+                      </Group>
+                    </Stack>
                   </Group>
-                </Table.Td>
-                <Table.Td>
-                  {m.url ? (
-                    <Anchor href={m.url} target="_blank" size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
-                      {m.sourceSeriesId}
-                    </Anchor>
-                  ) : (
-                    <Text size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
-                      {m.sourceSeriesId}
-                    </Text>
-                  )}
                 </Table.Td>
                 <Table.Td>
                   <MappingLanguages
@@ -578,19 +600,6 @@ export function SourceMappingsSection({
                   </Tooltip>
                 </Table.Td>
                 <Table.Td>
-                  {m.lastError ? (
-                    <Tooltip label={m.lastError} withArrow>
-                      <Badge size="sm" color="var(--danger)" variant="light">
-                        <Trans>Error</Trans>
-                      </Badge>
-                    </Tooltip>
-                  ) : (
-                    <Text size="xs" c="var(--ink-3)">
-                      {m.lastRefresh ? formatDateTime(m.lastRefresh) : <Trans>never</Trans>}
-                    </Text>
-                  )}
-                </Table.Td>
-                <Table.Td>
                   <ActionIcon
                     variant="subtle"
                     color="var(--danger)"
@@ -641,38 +650,42 @@ export function SourceMappingsSection({
                           style={{ flex: '0 0 auto' }}
                         />
                       )}
-                      <Text fw={600} size="sm">
-                        {sourceLabel(name)}
-                      </Text>
-                      {state === 'Matched' ? (
-                        <Badge
-                          size="xs"
-                          color="var(--ok)"
-                          variant="light"
-                          leftSection={<IconCheck size={10} />}
-                        >
-                          <Trans>Found</Trans>
-                        </Badge>
-                      ) : state === 'NoMatch' ? (
-                        <Badge size="xs" color="var(--neutral)" variant="light">
-                          <Trans>No match</Trans>
-                        </Badge>
-                      ) : state === 'Failed' ? (
-                        <Badge
-                          size="xs"
-                          color="var(--warn)"
-                          variant="light"
-                          leftSection={<IconAlertTriangle size={10} />}
-                        >
-                          <Trans>Search failed</Trans>
-                        </Badge>
-                      ) : (
-                        <Loader size={12} />
-                      )}
+                      <Stack gap={4} miw={0} style={{ flex: 1 }}>
+                        <Group gap={6} wrap="nowrap">
+                          <Text fw={600} size="sm" truncate>
+                            {sourceLabel(name)}
+                          </Text>
+                          {state === 'Matched' ? (
+                            <Badge
+                              size="xs"
+                              color="var(--ok)"
+                              variant="light"
+                              leftSection={<IconCheck size={10} />}
+                              style={{ flexShrink: 0 }}
+                            >
+                              <Trans>Found</Trans>
+                            </Badge>
+                          ) : state === 'NoMatch' ? (
+                            <Badge size="xs" color="var(--neutral)" variant="light" style={{ flexShrink: 0 }}>
+                              <Trans>No match</Trans>
+                            </Badge>
+                          ) : state === 'Failed' ? (
+                            <Badge
+                              size="xs"
+                              color="var(--warn)"
+                              variant="light"
+                              leftSection={<IconAlertTriangle size={10} />}
+                              style={{ flexShrink: 0 }}
+                            >
+                              <Trans>Search failed</Trans>
+                            </Badge>
+                          ) : (
+                            <Loader size={12} />
+                          )}
+                        </Group>
+                        <Skeleton height={8} width="55%" radius="sm" animate={state === 'Searching'} />
+                      </Stack>
                     </Group>
-                  </Table.Td>
-                  <Table.Td>
-                    <Skeleton height={10} width="55%" radius="sm" animate={state === 'Searching'} />
                   </Table.Td>
                   <Table.Td>
                     <Skeleton height={10} width={44} radius="sm" animate={state === 'Searching'} />
@@ -683,6 +696,7 @@ export function SourceMappingsSection({
                   <Table.Td>
                     <Skeleton height={10} width="45%" radius="sm" animate={state === 'Searching'} />
                   </Table.Td>
+                  <Table.Td />
                   <Table.Td />
                 </Table.Tr>
               ))}
@@ -980,7 +994,7 @@ function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefin
   const { t } = useLingui()
   const renderLabel = useLabel()
   return (
-    <Group gap={8} wrap="nowrap">
+    <Stack gap={3} align="flex-start">
       {tier && (
         <Tooltip
           label={t`Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers.`}
@@ -988,13 +1002,13 @@ function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefin
           multiline
           w={260}
         >
-          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]}>
+          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]} style={{ flexShrink: 0 }}>
             {renderLabel(QUALITY_TIER_LABELS[tier])}
           </Badge>
         </Tooltip>
       )}
       <MappingMeasurement quality={quality} />
-    </Group>
+    </Stack>
   )
 }
 
@@ -1077,7 +1091,7 @@ function PriorityInput({
   return (
     <NumberInput
       size="xs"
-      w={70}
+      w={60}
       min={1}
       max={99}
       aria-label={label}
@@ -1135,26 +1149,55 @@ function MappingLanguages({
     )
   }
 
+  // Almost every mapping holds one code, so the cell shows text and the picker lives in a popover
+  // where it has room. Inline, its search field wrapped under the pill and doubled the row height.
   return (
-    <MultiSelect
-      aria-label={t`Chapter languages`}
-      size="xs"
-      w={150}
-      data={languageOptions}
-      value={selected}
-      searchable
-      // The picker is not a whitelist: a site can carry a code this list has never heard of, and
-      // typing it has to work rather than being silently unavailable.
-      onChange={(codes) => {
-        const next = codes.length === 0 ? ['en'] : codes
-        onChange(next.length === 1 && next[0] === 'en' ? null : next.join(','))
-      }}
-      description={
-        selected.length > 1
-          ? plural(selected.length, { one: '#× chapter row', other: '#× chapter rows' })
-          : undefined
-      }
-    />
+    <Popover width={260} trapFocus position="bottom-start" withArrow shadow="md">
+      <Group gap={4} wrap="nowrap">
+        <Tooltip
+          label={plural(selected.length, { one: '#× chapter row', other: '#× chapter rows' })}
+          withArrow
+          disabled={selected.length < 2}
+        >
+          <Text size="xs" truncate title={selected.join(', ')}>
+            {selected.join(', ')}
+          </Text>
+        </Tooltip>
+        <Popover.Target>
+          <ActionIcon
+            size="xs"
+            variant="subtle"
+            color="var(--ink-3)"
+            aria-label={t`Change chapter languages for ${sourceName}`}
+            style={{ flexShrink: 0 }}
+          >
+            <IconPencil size={12} />
+          </ActionIcon>
+        </Popover.Target>
+      </Group>
+      <Popover.Dropdown>
+        <MultiSelect
+          data-autofocus
+          label={t`Chapter languages`}
+          size="xs"
+          data={languageOptions}
+          value={selected}
+          searchable
+          comboboxProps={{ withinPortal: false }}
+          // The picker is not a whitelist: a site can carry a code this list has never heard of, and
+          // typing it has to work rather than being silently unavailable.
+          onChange={(codes) => {
+            const next = codes.length === 0 ? ['en'] : codes
+            onChange(next.length === 1 && next[0] === 'en' ? null : next.join(','))
+          }}
+          description={
+            selected.length > 1
+              ? plural(selected.length, { one: '#× chapter row', other: '#× chapter rows' })
+              : t`Each language adds its own chapter rows and files.`
+          }
+        />
+      </Popover.Dropdown>
+    </Popover>
   )
 }
 

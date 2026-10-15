@@ -87,6 +87,13 @@ export function formatDate(value: string | number | Date): string {
   return Number.isNaN(date.getTime()) ? '' : dateOnly().format(date)
 }
 
+/** "15 Sep" within the current year, "15 Sep 2025" before it. For dates that are nearly always recent. */
+export function formatRecentDate(value: string | number | Date): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.getFullYear() === new Date().getFullYear() ? dayAndMonth().format(date) : dateOnly().format(date)
+}
+
 /**
  * "15 Sep 2026" for a day with no time of day, such as a chapter's release date. The server stamps
  * those as midnight UTC, so the viewer's zone would show the previous day anywhere west of Greenwich.

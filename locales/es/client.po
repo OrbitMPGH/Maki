@@ -4202,6 +4202,10 @@ msgstr "Cap.{number}"
 msgid "Change"
 msgstr "Cambiar"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Change chapter languages for {sourceName}"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Change how individual titles affect recommendations."
@@ -6374,6 +6378,10 @@ msgstr "p. ej., En curso y atrasado"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "Cada cuenta tiene su propio inicio de sesión, permisos, clasificación de contenido e historial de lectura."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Each language adds its own chapter rows and files."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -13370,11 +13378,6 @@ msgstr "Actualización iniciada, descargando en segundo plano si hay una instant
 msgid "Refresh the catalogue"
 msgstr "Actualizar el catálogo"
 
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "Refreshed"
-msgstr "Actualizado"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Refreshing"
@@ -15206,7 +15209,6 @@ msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked t
 msgstr "Secuelas, precuelas, spin-offs y relatos secundarios que MangaBaka ha vinculado a este."
 
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/HomePage.tsx
@@ -17372,11 +17374,6 @@ msgstr "Idioma del título"
 #: src/components/CatalogueBrowser.tsx
 msgid "title match only, an admin can set up search by meaning"
 msgstr ""
-
-#: src/components/CatalogueBrowser.tsx
-#, fuzzy
-#~ msgid "title match only, build the recommendation index for search by meaning"
-#~ msgstr "solo coincidencia de títulos, crea el índice de recomendaciones para buscar por significado"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "title match only, search by meaning is off"

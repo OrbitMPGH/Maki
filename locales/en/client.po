@@ -3407,6 +3407,10 @@ msgstr "Ch.{number}"
 msgid "Change"
 msgstr "Change"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Change chapter languages for {sourceName}"
+msgstr "Change chapter languages for {sourceName}"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Change how individual titles affect recommendations."
 msgstr "Change how individual titles affect recommendations."
@@ -5175,6 +5179,10 @@ msgstr "e.g. Ongoing & behind"
 #: src/components/settings/UsersSection.tsx
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "Each account has its own login, permissions, content rating and reading history."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Each language adds its own chapter rows and files."
+msgstr "Each language adds its own chapter rows and files."
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -10842,10 +10850,6 @@ msgstr "Refresh started, downloading in the background if a new snapshot is avai
 msgid "Refresh the catalogue"
 msgstr "Refresh the catalogue"
 
-#: src/components/SourceMappingsSection.tsx
-msgid "Refreshed"
-msgstr "Refreshed"
-
 #: src/pages/HealthPage.tsx
 msgid "Refreshing"
 msgstr "Refreshing"
@@ -12336,7 +12340,6 @@ msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked t
 msgstr "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/HomePage.tsx
@@ -14090,10 +14093,6 @@ msgstr "Title language"
 #: src/components/CatalogueBrowser.tsx
 msgid "title match only, an admin can set up search by meaning"
 msgstr "title match only, an admin can set up search by meaning"
-
-#: src/components/CatalogueBrowser.tsx
-#~ msgid "title match only, build the recommendation index for search by meaning"
-#~ msgstr "title match only, build the recommendation index for search by meaning"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "title match only, search by meaning is off"

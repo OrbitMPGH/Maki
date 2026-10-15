@@ -4201,6 +4201,10 @@ msgstr "第{number}章"
 msgid "Change"
 msgstr "更改"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Change chapter languages for {sourceName}"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Change how individual titles affect recommendations."
@@ -6373,6 +6377,10 @@ msgstr "例如：连载中和落后"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "每个账户都有自己的登录信息、权限、内容分级和阅读历史。"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Each language adds its own chapter rows and files."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -13369,11 +13377,6 @@ msgstr "刷新已开始，如有新快照会在后台下载"
 msgid "Refresh the catalogue"
 msgstr "刷新目录"
 
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "Refreshed"
-msgstr "已刷新"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Refreshing"
@@ -15205,7 +15208,6 @@ msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked t
 msgstr "MangaBaka 与此内容关联的续作、前传、衍生作和外传。"
 
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/HomePage.tsx
@@ -17371,11 +17373,6 @@ msgstr "标题语言"
 #: src/components/CatalogueBrowser.tsx
 msgid "title match only, an admin can set up search by meaning"
 msgstr ""
-
-#: src/components/CatalogueBrowser.tsx
-#, fuzzy
-#~ msgid "title match only, build the recommendation index for search by meaning"
-#~ msgstr "仅匹配标题，建立推荐索引以按含义搜索"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "title match only, search by meaning is off"

@@ -6830,11 +6830,25 @@ body.reader-open {
    title and behind the link. */
 .mono-id {
   display: inline-block;
-  max-width: 18ch;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: bottom;
+}
+
+.sources-table th,
+.sources-table td {
+  padding-inline: 8px;
+}
+/* The panel-table header size, so translated labels fit the fixed columns. */
+.sources-table thead th {
+  overflow: hidden;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .figure-strip {

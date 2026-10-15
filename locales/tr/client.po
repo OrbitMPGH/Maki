@@ -4202,6 +4202,10 @@ msgstr "Bl.{number}"
 msgid "Change"
 msgstr "Değiştir"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Change chapter languages for {sourceName}"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Change how individual titles affect recommendations."
@@ -6374,6 +6378,10 @@ msgstr "örn. Devam ediyor ve geride"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "Her hesabın kendine ait girişi, izinleri, içerik derecesi ve okuma geçmişi vardır."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Each language adds its own chapter rows and files."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -13370,11 +13378,6 @@ msgstr "Yenileme başladı, yeni bir anlık görüntü varsa arka planda indiril
 msgid "Refresh the catalogue"
 msgstr "Kataloğu yenile"
 
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "Refreshed"
-msgstr "Yenilendi"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Refreshing"
@@ -15206,7 +15209,6 @@ msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked t
 msgstr "MangaBaka'nın buna bağladığı devam serileri, öncül seriler, türev seriler ve yan hikayeler."
 
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/HomePage.tsx
@@ -17372,11 +17374,6 @@ msgstr "Başlık dili"
 #: src/components/CatalogueBrowser.tsx
 msgid "title match only, an admin can set up search by meaning"
 msgstr ""
-
-#: src/components/CatalogueBrowser.tsx
-#, fuzzy
-#~ msgid "title match only, build the recommendation index for search by meaning"
-#~ msgstr "yalnızca başlık eşleşmesi, anlama göre arama için öneri dizinini oluşturun"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "title match only, search by meaning is off"
