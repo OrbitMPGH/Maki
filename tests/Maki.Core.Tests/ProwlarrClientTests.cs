@@ -53,6 +53,14 @@ public class ProwlarrClientTests
     }
 
     [Fact]
+    public async Task A_non_json_answer_is_a_failed_search()
+    {
+        var client = new ProwlarrClient(new Factory(new RecordingHandler("<html><body>Sign in")));
+
+        await Assert.ThrowsAsync<IndexerSearchException>(() => client.SearchAsync(Settings(), "berserk"));
+    }
+
+    [Fact]
     public async Task Indexers_come_back_with_string_ids_and_flattened_named_categories()
     {
         var handler = new RecordingHandler("""

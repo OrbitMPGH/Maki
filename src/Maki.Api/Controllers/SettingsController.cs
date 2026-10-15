@@ -1368,15 +1368,9 @@ public class SettingsController(
     [HttpGet("indexer")]
     public async Task<IActionResult> GetIndexer([FromQuery] string? backend, CancellationToken ct)
     {
-        IndexerBackend? chosen = null;
-        if (!string.IsNullOrWhiteSpace(backend))
+        if (!TryChooseBackend(backend, out var chosen))
         {
-            if (IndexerBackends.Parse(backend) is not { } parsed)
-            {
-                return this.Fail(localizer, "error.settings.indexerBackendInvalid");
-            }
-
-            chosen = parsed;
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
         }
 
         var stored = await IndexerSettingsStore.LoadAsync(settings, ct, chosen);
@@ -1407,13 +1401,37 @@ public class SettingsController(
         return Ok(request with { Backend = backend.Key() });
     }
 
-    public record IndexerOptions(string? IndexerIds, string? Categories);
+    /// <param name="Backend">The backend the options belong to; null is the active one.</param>
+    public record IndexerOptions(string? IndexerIds, string? Categories, string? Backend = null);
+
+    /// <summary>An empty name is no choice (the active backend); a name that is not a backend fails.</summary>
+    private static bool TryChooseBackend(string? backend, out IndexerBackend? chosen)
+    {
+        chosen = null;
+        if (string.IsNullOrWhiteSpace(backend))
+        {
+            return true;
+        }
+
+        if (IndexerBackends.Parse(backend) is not { } parsed)
+        {
+            return false;
+        }
+
+        chosen = parsed;
+        return true;
+    }
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("indexer/options")]
-    public async Task<IActionResult> GetIndexerOptions(CancellationToken ct)
+    public async Task<IActionResult> GetIndexerOptions([FromQuery] string? backend, CancellationToken ct)
     {
-        var keys = IndexerSettingsStore.KeysFor(await IndexerSettingsStore.ActiveBackendAsync(settings, ct));
+        if (!TryChooseBackend(backend, out var chosen))
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
+        var keys = IndexerSettingsStore.KeysFor(chosen ?? await IndexerSettingsStore.ActiveBackendAsync(settings, ct));
         return Ok(new IndexerOptions(
             await settings.GetAsync(keys.IndexerIds, ct),
             await settings.GetAsync(keys.Categories, ct)));
@@ -1423,18 +1441,31 @@ public class SettingsController(
     [HttpPut("indexer/options")]
     public async Task<IActionResult> SetIndexerOptions([FromBody] IndexerOptions request, CancellationToken ct)
     {
-        var keys = IndexerSettingsStore.KeysFor(await IndexerSettingsStore.ActiveBackendAsync(settings, ct));
+        if (!TryChooseBackend(request.Backend, out var chosen))
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
+        var keys = IndexerSettingsStore.KeysFor(chosen ?? await IndexerSettingsStore.ActiveBackendAsync(settings, ct));
         await settings.SetAsync(keys.IndexerIds, request.IndexerIds, ct);
         await settings.SetAsync(keys.Categories, request.Categories, ct);
         return Ok(request);
     }
 
-    /// <summary>The active backend's indexer list, with each one's categories, for the settings UI.</summary>
+    /// <summary>
+    /// A backend's indexer list, with each one's categories, for the settings UI. Without
+    /// <paramref name="backend"/> it is the active one.
+    /// </summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("indexer/indexers")]
-    public async Task<IActionResult> GetIndexerList(CancellationToken ct)
+    public async Task<IActionResult> GetIndexerList([FromQuery] string? backend, CancellationToken ct)
     {
-        var stored = await IndexerSettingsStore.LoadAsync(settings, ct);
+        if (!TryChooseBackend(backend, out var chosen))
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
+        var stored = await IndexerSettingsStore.LoadAsync(settings, ct, chosen);
         var service = stored.Backend.DisplayName();
         if (!stored.IsConfigured)
         {
@@ -1458,15 +1489,9 @@ public class SettingsController(
     [HttpPost("indexer/test")]
     public async Task<IActionResult> TestIndexer([FromBody] IndexerConnection request, CancellationToken ct)
     {
-        IndexerBackend? chosen = null;
-        if (!string.IsNullOrWhiteSpace(request.Backend))
+        if (!TryChooseBackend(request.Backend, out var chosen))
         {
-            if (IndexerBackends.Parse(request.Backend) is not { } parsed)
-            {
-                return this.Fail(localizer, "error.settings.indexerBackendInvalid");
-            }
-
-            chosen = parsed;
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
         }
 
         var stored = await IndexerSettingsStore.LoadAsync(settings, ct, chosen);

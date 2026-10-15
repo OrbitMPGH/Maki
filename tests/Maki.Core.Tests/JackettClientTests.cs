@@ -99,6 +99,41 @@ public class JackettClientTests
     }
 
     [Fact]
+    public async Task The_details_page_is_the_guid_before_the_key_carrying_proxy_link()
+    {
+        var (client, _, _) = Build(_ => Ok("""
+            {"Results":[{"Title":"Berserk v03","Guid":null,"Details":"https://nyaa.si/view/3",
+              "Link":"http://jackett.test:9117/dl/nyaasi/?jackett_apikey=secret&path=abc"}],"Indexers":[]}
+            """));
+
+        var release = Assert.Single(await client.SearchAsync(Settings(), "berserk"));
+
+        Assert.Equal("https://nyaa.si/view/3", release.Guid);
+    }
+
+    [Fact]
+    public async Task A_magnet_link_is_a_magnet_url_and_not_a_download_url()
+    {
+        const string magnet = "magnet:?xt=urn:btih:abc";
+        var (client, _, _) = Build(_ => Ok($$"""
+            {"Results":[{"Title":"Berserk v04","Guid":"g4","Link":"{{magnet}}","MagnetUri":null}],"Indexers":[]}
+            """));
+
+        var release = Assert.Single(await client.SearchAsync(Settings(), "berserk"));
+
+        Assert.Equal(magnet, release.MagnetUrl);
+        Assert.Null(release.DownloadUrl);
+    }
+
+    [Fact]
+    public async Task A_non_json_answer_is_a_failed_search()
+    {
+        var (client, _, _) = Build(_ => Ok("<html><body>Sign in"));
+
+        await Assert.ThrowsAsync<IndexerSearchException>(() => client.SearchAsync(Settings(), "berserk"));
+    }
+
+    [Fact]
     public async Task A_failing_indexer_is_logged_by_name_without_the_key_and_the_rest_are_kept()
     {
         var logger = new CapturingLogger();

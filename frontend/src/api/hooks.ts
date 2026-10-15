@@ -3148,20 +3148,19 @@ export function useTestIndexerSettings() {
   })
 }
 
-/** The indexer and category filter of the active backend. */
-export function useIndexerOptions() {
-  const { data: active } = useIndexerSettings()
+/** The indexer and category filter of one backend; the query key and the request name the same backend. */
+export function useIndexerOptions(backend: IndexerBackend | undefined) {
   return useQuery({
-    queryKey: ['settings', 'indexer-options', active?.backend],
-    queryFn: () => api<IndexerOptions>('/settings/indexer/options'),
-    enabled: active !== undefined,
+    queryKey: ['settings', 'indexer-options', backend],
+    queryFn: () => api<IndexerOptions>(`/settings/indexer/options?backend=${backend}`),
+    enabled: backend !== undefined,
   })
 }
 
 export function useSaveIndexerOptions() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (value: IndexerOptions) =>
+    mutationFn: (value: IndexerOptions & { backend: IndexerBackend }) =>
       api<IndexerOptions>('/settings/indexer/options', { method: 'PUT', body: JSON.stringify(value) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer-options'] })
@@ -3188,7 +3187,7 @@ export function useKavitaLibraries(enabled: boolean) {
 export function useIndexerList(backend: IndexerBackend | undefined, enabled: boolean) {
   return useQuery({
     queryKey: ['indexer-indexers', backend],
-    queryFn: () => api<IndexerEntry[]>('/settings/indexer/indexers'),
+    queryFn: () => api<IndexerEntry[]>(`/settings/indexer/indexers?backend=${backend}`),
     enabled: enabled && backend !== undefined,
     retry: false,
     staleTime: 5 * 60 * 1000,

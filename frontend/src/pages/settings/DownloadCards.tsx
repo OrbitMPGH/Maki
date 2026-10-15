@@ -855,7 +855,9 @@ export function VolumeReleasesSection() {
 
 /** The indexer and category filter of the active backend, which saves through its own endpoint beside the connection. */
 function useIndexerOptionsForm() {
-  const { data: options } = useIndexerOptions()
+  const { data: connection } = useIndexerSettings()
+  const backend = connection?.backend
+  const { data: options } = useIndexerOptions(backend)
   const save = useSaveIndexerOptions()
   const [selectedIndexers, setSelectedIndexers] = useState<Set<string>>(new Set())
   const [categories, setCategories] = useState<string[]>([])
@@ -883,10 +885,13 @@ function useIndexerOptionsForm() {
     saving: save.isPending,
     reset: discard,
     commit: () =>
-      save.mutateAsync({
-        indexerIds: sortedIds(selectedIndexers) || null,
-        categories: categories.join(',') || null,
-      }),
+      backend === undefined
+        ? Promise.resolve()
+        : save.mutateAsync({
+            backend,
+            indexerIds: sortedIds(selectedIndexers) || null,
+            categories: categories.join(',') || null,
+          }),
   }
 }
 

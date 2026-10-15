@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Maki.Core.Indexers;
@@ -58,7 +59,16 @@ public class ProwlarrClient(IHttpClientFactory httpClientFactory) : ReleaseIndex
         }
 
         var client = CreateClient(s);
-        var releases = await client.GetFromJsonAsync<List<ProwlarrRelease>>(url.ToString(), ct) ?? [];
+        List<ProwlarrRelease> releases;
+        try
+        {
+            releases = await client.GetFromJsonAsync<List<ProwlarrRelease>>(url.ToString(), ct) ?? [];
+        }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException)
+        {
+            throw new IndexerSearchException("Prowlarr answered with something other than search results", ex);
+        }
+
         return releases
             .Select(r => new IndexerRelease(
                 r.Guid, r.Title, r.Size, r.Indexer ?? string.Empty, r.Seeders, r.Leechers,

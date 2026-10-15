@@ -11,7 +11,7 @@ namespace Maki.Core.Indexers;
 /// <summary>
 /// Client for Jackett. Search goes through its native JSON results endpoint, which reports each
 /// indexer's own outcome; the indexer list and the ping use the Torznab API of the <c>all</c>
-/// aggregate, the only routes Jackett authenticates by API key rather than its admin cookie.
+/// aggregate. Both routes authenticate by API key, unlike the rest of the API, which needs the admin cookie.
 /// </summary>
 public class JackettClient(IHttpClientFactory httpClientFactory, ILogger<JackettClient> logger)
     : ReleaseIndexerBase(httpClientFactory, HttpClientName)
@@ -59,7 +59,16 @@ public class JackettClient(IHttpClientFactory httpClientFactory, ILogger<Jackett
             url.Append('&').Append(Uri.EscapeDataString("Tracker[]")).Append('=').Append(Uri.EscapeDataString(tracker));
         }
 
-        var response = await CreateClient(s).GetFromJsonAsync<JackettResponse>(url.ToString(), Json, ct);
+        JackettResponse? response;
+        try
+        {
+            response = await CreateClient(s).GetFromJsonAsync<JackettResponse>(url.ToString(), Json, ct);
+        }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException)
+        {
+            throw new IndexerSearchException("Jackett answered with something other than search results", ex);
+        }
+
         var indexers = response?.Indexers ?? [];
         var failed = indexers.Where(i => !string.IsNullOrWhiteSpace(i.Error)).ToList();
         foreach (var indexer in failed)
@@ -82,7 +91,7 @@ public class JackettClient(IHttpClientFactory httpClientFactory, ILogger<Jackett
 
     private static IndexerRelease? ToRelease(JackettResult r)
     {
-        var guid = r.Guid ?? r.Link ?? r.MagnetUri;
+        var guid = r.Guid ?? r.Details ?? r.MagnetUri ?? r.Link;
         if (string.IsNullOrWhiteSpace(r.Title) || string.IsNullOrWhiteSpace(guid))
         {
             return null;
@@ -90,9 +99,10 @@ public class JackettClient(IHttpClientFactory httpClientFactory, ILogger<Jackett
 
         // Torznab's peers counts seeders too.
         int? leechers = r is { Peers: { } peers, Seeders: { } seeders } ? Math.Max(0, peers - seeders) : null;
+        var linkIsMagnet = r.MagnetUri is null && r.Link?.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase) == true;
         return new IndexerRelease(
             guid, r.Title, r.Size ?? 0, r.Tracker ?? r.TrackerId ?? string.Empty, r.Seeders, leechers,
-            r.Link, r.MagnetUri, string.IsNullOrWhiteSpace(r.InfoHash) ? null : r.InfoHash, "torrent", r.Details);
+            linkIsMagnet ? null : r.Link, linkIsMagnet ? r.Link : r.MagnetUri, string.IsNullOrWhiteSpace(r.InfoHash) ? null : r.InfoHash, "torrent", r.Details);
     }
 
     /// <summary>Jackett's configured indexers, each with the categories its caps declare.</summary>
@@ -171,4 +181,5 @@ public class JackettClient(IHttpClientFactory httpClientFactory, ILogger<Jackett
 }
 
 /// <summary>The backend answered, but every indexer it asked failed.</summary>
-public sealed class IndexerSearchException(string message) : InvalidOperationException(message);
+public sealed class IndexerSearchException(string message, Exception? inner = null)
+    : InvalidOperationException(message, inner);

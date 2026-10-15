@@ -64,7 +64,7 @@ public sealed class IndexerSettingsTests : IDisposable
         Assert.Equal("http://jackett:9117", await settings.GetAsync(SettingKeys.JackettUrl));
         Assert.Equal("http://prowlarr:9696", await settings.GetAsync(SettingKeys.ProwlarrUrl));
         Assert.Equal(new SettingsController.IndexerOptions(null, null),
-            Body<SettingsController.IndexerOptions>(await controller.GetIndexerOptions(default)));
+            Body<SettingsController.IndexerOptions>(await controller.GetIndexerOptions(null, default)));
 
         await controller.SetIndexerOptions(new SettingsController.IndexerOptions("nyaasi", "7030"), default);
         Assert.Equal("nyaasi", await settings.GetAsync(SettingKeys.JackettIndexerIds));
@@ -92,8 +92,52 @@ public sealed class IndexerSettingsTests : IDisposable
         _db.SetConfig((SettingKeys.IndexerBackend, "jackett"), (SettingKeys.ProwlarrUrl, "http://prowlarr:9696"),
             (SettingKeys.ProwlarrApiKey, "pkey"));
 
-        var result = await Controller(new SettingsService(_db.ScopeFactory())).GetIndexerList(default);
+        var result = await Controller(new SettingsService(_db.ScopeFactory())).GetIndexerList(null, default);
 
         Assert.Equal(400, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Options_read_and_write_the_named_backend_without_touching_the_active_one()
+    {
+        _db.SetConfig(
+            (SettingKeys.IndexerBackend, "jackett"),
+            (SettingKeys.ProwlarrIndexerIds, "1,2"), (SettingKeys.ProwlarrCategories, "7030"),
+            (SettingKeys.JackettIndexerIds, "nyaasi"));
+        var settings = new SettingsService(_db.ScopeFactory());
+        var controller = Controller(settings);
+
+        Assert.Equal(new SettingsController.IndexerOptions("1,2", "7030"),
+            Body<SettingsController.IndexerOptions>(await controller.GetIndexerOptions("prowlarr", default)));
+        Assert.Equal("nyaasi",
+            Body<SettingsController.IndexerOptions>(await controller.GetIndexerOptions("", default)).IndexerIds);
+
+        await controller.SetIndexerOptions(new SettingsController.IndexerOptions("5", "8000", "prowlarr"), default);
+
+        Assert.Equal("5", await settings.GetAsync(SettingKeys.ProwlarrIndexerIds));
+        Assert.Equal("8000", await settings.GetAsync(SettingKeys.ProwlarrCategories));
+        Assert.Equal("nyaasi", await settings.GetAsync(SettingKeys.JackettIndexerIds));
+    }
+
+    [Fact]
+    public async Task An_unknown_backend_is_refused_by_the_options_and_list_routes()
+    {
+        var controller = Controller(new SettingsService(_db.ScopeFactory()));
+
+        Assert.Equal(400, Assert.IsAssignableFrom<ObjectResult>(await controller.GetIndexerOptions("torznab", default)).StatusCode);
+        Assert.Equal(400, Assert.IsAssignableFrom<ObjectResult>(
+            await controller.SetIndexerOptions(new SettingsController.IndexerOptions("1", null, "torznab"), default)).StatusCode);
+        Assert.Equal(400, Assert.IsAssignableFrom<ObjectResult>(await controller.GetIndexerList("torznab", default)).StatusCode);
+    }
+
+    [Fact]
+    public async Task The_list_of_a_non_active_backend_uses_that_backends_connection()
+    {
+        _db.SetConfig((SettingKeys.IndexerBackend, "jackett"), (SettingKeys.ProwlarrUrl, "http://prowlarr:9696"),
+            (SettingKeys.ProwlarrApiKey, "pkey"));
+
+        var result = await Controller(new SettingsService(_db.ScopeFactory())).GetIndexerList("prowlarr", default);
+
+        Assert.Empty(Assert.IsAssignableFrom<IReadOnlyList<Maki.Core.Indexers.IndexerInfo>>(Assert.IsType<OkObjectResult>(result).Value));
     }
 }

@@ -556,6 +556,7 @@ export const SETTINGS_ENTRY_ALIASES: Record<string, string> = {
   account: 'sign-in',
   'source-languages': 'languages',
   backups: 'backup',
+  prowlarr: 'indexer',
 }
 
 /** Old `tab` values. `connections` is still emitted by stored health notifications. */
