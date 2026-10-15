@@ -1721,6 +1721,12 @@ body::before {
   border-radius: var(--radius-pill);
   background: var(--brand);
 }
+/* A rail card whose cover lends a colour (`--series-accent`, set inline by ReadingRail) fills its
+   bar with it, matching the lead tiles above. The chapter chip stays on the theme accent: a row of
+   nine differently coloured chips would read as nine states. */
+.reading-card.has-accent .home-resume-fill {
+  background: var(--series-accent);
+}
 /* Recently added's jump-to-reader button, top-right. A sibling of the card link inside a
    .reading-card wrapper, which owns the hover lift. */
 .home-read-button {
@@ -7652,6 +7658,11 @@ body.reader-open {
 }
 
 .continue-tile {
+  /* The theme accent by default; a tile whose cover lends a colour (`--series-accent`, set inline
+     by ContinueLead) switches both to it. The text tint is the fill lifted toward white so it reads
+     on the tile's dark ground; the light theme pulls it toward black instead. */
+  --tile-accent: var(--brand);
+  --tile-accent-fg: var(--brand-fg);
   position: relative;
   overflow: hidden;
   /* The backdrop's layers are absolutely positioned; without a stacking context of its own the
@@ -7749,8 +7760,20 @@ body.reader-open {
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
+.continue-tile.has-accent {
+  --tile-accent: var(--series-accent);
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 68%, white);
+}
+:root[data-theme='light'] .continue-tile.has-accent {
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
+}
+.continue-tile.has-accent .continue-tile-action {
+  --button-bg: var(--tile-accent);
+  --button-hover: color-mix(in oklab, var(--tile-accent) 86%, black);
+  --button-color: #ffffff;
+}
 .continue-tile-unread {
-  color: var(--brand-fg);
+  color: var(--tile-accent-fg);
 }
 .continue-tile-title {
   display: -webkit-box;
@@ -7799,7 +7822,7 @@ body.reader-open {
 }
 .continue-tile-fill {
   height: 100%;
-  background: var(--brand);
+  background: var(--tile-accent);
 }
 .continue-tile-pages {
   color: var(--ink-3);

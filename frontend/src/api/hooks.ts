@@ -887,6 +887,8 @@ export interface HomeReadingItem {
   pageCount: number
   lastReadAt: string
   unreadChapters: number
+  /** The colour the cover lends to the card's bar and button, `#rrggbb`; null keeps the theme accent. */
+  coverAccent: string | null
 }
 
 export interface HomeReadingResponse {

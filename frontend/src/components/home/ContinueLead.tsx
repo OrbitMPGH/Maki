@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@mantine/core'
 import { IconPlayerPlay } from '@tabler/icons-react'
@@ -55,8 +55,14 @@ const ContinueTile = memo(function ContinueTile({
   const { seriesTitle, chapterLabel, unreadChapters, pageCount } = item
   const pageNumber = item.page + 1
 
+  // The cover's own colour, when it has one, drives the bar, the unread count and the button
+  // (`.continue-tile.has-accent`), so each tile belongs to its series rather than to the theme.
+  const accentStyle = item.coverAccent
+    ? ({ '--series-accent': item.coverAccent } as CSSProperties)
+    : undefined
+
   return (
-    <div className="continue-tile">
+    <div className={item.coverAccent ? 'continue-tile has-accent' : 'continue-tile'} style={accentStyle}>
       <HeroBackdrop coverUrl={item.coverUrl} />
       <ReadingCardMenu item={item} rail={rail} className="continue-tile-menu" />
 

@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { IconPlayerPlayFilled } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
@@ -18,7 +18,11 @@ export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: R
   return (
     <Rail>
       {items.map((item) => (
-        <div key={item.chapterId} className="discover-rail-item reading-card">
+        <div
+          key={item.chapterId}
+          className={item.coverAccent ? 'discover-rail-item reading-card has-accent' : 'discover-rail-item reading-card'}
+          style={item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined}
+        >
           <ReadingCard item={item} />
           <ReadingCardMenu item={item} rail={rail} className="reading-card-menu" />
         </div>
