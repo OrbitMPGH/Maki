@@ -5,12 +5,12 @@ using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Download;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SixLabors.ImageSharp;
 
 namespace Maki.Api.Controllers;
 
@@ -116,7 +116,7 @@ public class MediaCoverController(
         {
             series.CoverPath = await covers.StoreUploadedCoverAsync(series.Id, buffer, ct);
         }
-        catch (ImageFormatException ex)
+        catch (NetVips.VipsException ex)
         {
             logger.LogInformation(ex, "Rejected an uploaded cover for series {SeriesId}", series.Id);
             return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
@@ -144,7 +144,7 @@ public class MediaCoverController(
     }
 
     /// <summary>
-    /// A JPEG, PNG, GIF or WebP by its header (AVIF sniffs as an image but does not decode here),
+    /// A JPEG, PNG, GIF or WebP by its header (AVIF is refused: older browsers cannot show the poster),
     /// whose dimensions read back within <see cref="MaxCoverDimension"/>. Identify reads only the
     /// header, so an image claiming to be enormous is refused before anything allocates its pixels.
     /// </summary>
@@ -156,15 +156,8 @@ public class MediaCoverController(
             return false;
         }
 
-        try
-        {
-            buffer.Position = 0;
-            var info = Image.Identify(buffer);
-            return info.Width is > 0 and <= MaxCoverDimension && info.Height is > 0 and <= MaxCoverDimension;
-        }
-        catch (Exception ex) when (ex is ImageFormatException or NotSupportedException)
-        {
-            return false;
-        }
+        buffer.Position = 0;
+        return ImageCodec.TryIdentify(buffer.ToArray()) is { } info &&
+               info.Width is > 0 and <= MaxCoverDimension && info.Height is > 0 and <= MaxCoverDimension;
     }
 }

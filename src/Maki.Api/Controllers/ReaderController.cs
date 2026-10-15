@@ -13,10 +13,6 @@ using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Processing;
 
 namespace Maki.Api.Controllers;
 
@@ -74,29 +70,10 @@ public class ReaderController(
     private const int ThumbnailWidth = 200;
 
     /// <summary>
-    /// Asks the decoder for the thumbnail's own size, which a JPEG honours by scaling in the DCT: a
-    /// 2000x3000 scan then decodes into ~1 MB of pixels instead of ~24 MB, up to four at a time
-    /// under the gate. The exact height comes from the header so the shape matches a full decode
-    /// and resize. A stream that cannot rewind, or a page already narrower, decodes as before.
+    /// A strip thumbnail at quality 80. A narrower page is scaled up so the strip stays even, and a
+    /// JPEG shrinks while it decodes, so a 2000x3000 scan never exists as full-size pixels.
     /// </summary>
-    internal static async Task<DecoderOptions> ThumbnailDecoderAsync(Stream source, CancellationToken ct)
-    {
-        if (!source.CanSeek)
-        {
-            return new DecoderOptions();
-        }
-
-        var start = source.Position;
-        var info = await Image.IdentifyAsync(source, ct);
-        source.Position = start;
-        if (info.Width <= ThumbnailWidth)
-        {
-            return new DecoderOptions();
-        }
-
-        var height = Math.Max(1, (int)Math.Round((double)info.Height * ThumbnailWidth / info.Width));
-        return new DecoderOptions { TargetSize = new Size(ThumbnailWidth, height) };
-    }
+    internal static byte[] ReaderThumbnail(byte[] page) => ImageCodec.JpegThumbnail(page, ThumbnailWidth, 80, enlarge: true);
 
     /// <summary>
     /// Loads (creating on demand) this user's state row for a series, or null when the series is not
@@ -357,14 +334,15 @@ public class ReaderController(
                         return;
                     }
 
-                    await using var _ = source;
-
-                    using var image = await Image.LoadAsync(await ThumbnailDecoderAsync(source, ct), source, ct);
-                    image.Mutate(x => x.Resize(new ResizeOptions
+                    byte[] bytes;
+                    await using (source)
                     {
-                        Size = new Size(ThumbnailWidth, 0),
-                        Mode = ResizeMode.Max
-                    }));
+                        using var copy = new MemoryStream();
+                        await source.CopyToAsync(copy, ct);
+                        bytes = copy.ToArray();
+                    }
+
+                    var thumbnail = ReaderThumbnail(bytes);
 
                     // Written aside and moved into place: an aborted request would otherwise leave a
                     // truncated JPEG at the final path, served as immutable for a year.
@@ -372,7 +350,7 @@ public class ReaderController(
                     var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
                     try
                     {
-                        await image.SaveAsJpegAsync(tmp, new JpegEncoder { Quality = 80 }, ct);
+                        await System.IO.File.WriteAllBytesAsync(tmp, thumbnail, ct);
                         try
                         {
                             System.IO.File.Move(tmp, cached, overwrite: true);
@@ -399,7 +377,7 @@ public class ReaderController(
             }
             catch (Exception e)
             {
-                // AVIF in particular cannot be decoded by the pinned ImageSharp build.
+                // A page format libvips is not allowed to open (BMP among them) has no thumbnail.
                 logger.LogDebug(e, "Thumbnail failed for chapter {ChapterId} page {Page}", id, page);
                 return NotFound();
             }

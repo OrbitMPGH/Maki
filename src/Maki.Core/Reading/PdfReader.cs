@@ -1,10 +1,6 @@
 using Docnet.Core;
 using Docnet.Core.Models;
 using Maki.Core.Images;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 
 namespace Maki.Core.Reading;
 
@@ -15,7 +11,7 @@ namespace Maki.Core.Reading;
 /// <para>
 /// PDFium is not thread-safe, so every call into Docnet - open, count, render, dispose - happens
 /// under one process-wide lock. The lock is held only until the BGRA buffer is out of PDFium's
-/// hands; the ImageSharp work that follows runs outside it, so callers do not queue on PDFium
+/// hands; the flattening and encoding that follow run outside it, so callers do not queue on PDFium
 /// while someone else encodes a JPEG.
 /// </para>
 /// <para>
@@ -109,16 +105,30 @@ public static class PdfReader
 
     private static MemoryStream Encode(RawPage raw)
     {
-        // Wrapped, not loaded: LoadPixelData copied PDFium's buffer into a second full page of
-        // pixels (~11 MB at the default edge). The buffer is this method's alone to overwrite.
-        using var image = Image.WrapMemory<Bgra32>(raw.Bgra.AsMemory(), raw.Width, raw.Height);
-        // PDFium leaves anything the page did not paint transparent, and JPEG has no alpha to
-        // carry it, so an unflattened page encodes as black.
-        image.Mutate(x => x.BackgroundColor(Color.White));
-        var stream = new MemoryStream(raw.Width * raw.Height / 4);
-        image.Save(stream, new JpegEncoder { Quality = 90 });
-        stream.Position = 0;
-        return stream;
+        // Flattened in place onto white, BGRA to RGB, inside PDFium's own buffer rather than a
+        // second full page of pixels (~11 MB at the default edge). The buffer is this method's alone
+        // to overwrite. PDFium leaves anything the page did not paint transparent, and JPEG has no
+        // alpha to carry it, so an unflattened page encodes as black.
+        var bgra = raw.Bgra;
+        var pixels = raw.Width * raw.Height;
+        for (int i = 0, o = 0; i < pixels; i++, o += 3)
+        {
+            var s = i * 4;
+            var alpha = bgra[s + 3];
+            var white = 255 - alpha;
+            var b = bgra[s];
+            var g = bgra[s + 1];
+            var r = bgra[s + 2];
+            bgra[o] = (byte)((r * alpha + 255 * white + 127) / 255);
+            bgra[o + 1] = (byte)((g * alpha + 255 * white + 127) / 255);
+            bgra[o + 2] = (byte)((b * alpha + 255 * white + 127) / 255);
+        }
+
+        using var image = ImageCodec.FromMemory(bgra, raw.Width, raw.Height, 3);
+        using var rgb = image.Copy(interpretation: NetVips.Enums.Interpretation.Srgb);
+        var jpeg = ImageCodec.SaveJpeg(rgb, 90);
+        // Publicly visible: the health analyzer hashes the page straight out of GetBuffer().
+        return new MemoryStream(jpeg, 0, jpeg.Length, writable: true, publiclyVisible: true);
     }
 
     /// <summary>Synthetic page name for a zero-based index, padded to the digits of <paramref name="count"/>.</summary>

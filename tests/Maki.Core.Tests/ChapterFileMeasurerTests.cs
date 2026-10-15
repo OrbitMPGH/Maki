@@ -1,11 +1,6 @@
 using System.IO.Compression;
+using Maki.Core.Images;
 using Maki.Core.Quality;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace Maki.Core.Tests;
 
@@ -14,21 +9,9 @@ public class ChapterFileMeasurerTests : IDisposable
     private readonly string _root = Directory.CreateTempSubdirectory("maki-chapter-measurer-").FullName;
     public void Dispose() => Directory.Delete(_root, true);
 
-    private static byte[] Png(int width, int height)
-    {
-        using var image = new Image<Rgba32>(width, height);
-        using var stream = new MemoryStream();
-        image.Save(stream, new PngEncoder());
-        return stream.ToArray();
-    }
+    private static byte[] Png(int width, int height) => new Raster(width, height).EncodePng();
 
-    private static byte[] Jpeg(int width, int height)
-    {
-        using var image = new Image<Rgb24>(width, height);
-        using var stream = new MemoryStream();
-        image.Save(stream, new JpegEncoder());
-        return stream.ToArray();
-    }
+    private static byte[] Jpeg(int width, int height) => new Raster(width, height, bands: 3).EncodeJpeg(75);
 
     // Not a decodable image, just enough of an ISO base media "ftyp" box to sniff as AVIF:
     // 4 filler bytes, "ftyp", then the "avif" brand, then more filler.
@@ -210,28 +193,16 @@ public class ChapterFileMeasurerTests : IDisposable
     public void A_page_larger_than_the_header_budget_is_still_measured(string format)
     {
         // Noise does not compress, so each page runs well past the bytes MeasureArchive reads.
-        using var image = new Image<Rgba32>(900, 1300);
-        var random = new Random(7);
-        image.ProcessPixelRows(rows =>
+        var image = new Raster(900, 1300, bands: 3);
+        new Random(7).NextBytes(image.Pixels);
+        var encoded = format switch
         {
-            for (var y = 0; y < rows.Height; y++)
-            {
-                foreach (ref var pixel in rows.GetRowSpan(y))
-                {
-                    pixel = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
-                }
-            }
-        });
-        using var encoded = new MemoryStream();
-        IImageEncoder encoder = format switch
-        {
-            "png" => new PngEncoder(),
-            "jpg" => new JpegEncoder { Quality = 95 },
-            _ => new WebpEncoder { FileFormat = WebpFileFormatType.Lossless }
+            "png" => image.EncodePng(),
+            "jpg" => image.EncodeJpeg(95),
+            _ => image.EncodeWebpLossless()
         };
-        image.Save(encoded, encoder);
         Assert.True(encoded.Length > ChapterFileMeasurer.HeaderBytes);
-        var path = WriteZip("large.cbz", ($"001.{format}", encoded.ToArray()));
+        var path = WriteZip("large.cbz", ($"001.{format}", encoded));
 
         var result = ChapterFileMeasurer.MeasureArchive(path, 0, CancellationToken.None);
 

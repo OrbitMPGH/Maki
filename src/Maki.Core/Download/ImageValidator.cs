@@ -1,4 +1,4 @@
-using SixLabors.ImageSharp;
+using Maki.Core.Images;
 
 namespace Maki.Core.Download;
 
@@ -12,7 +12,7 @@ public static class ImageValidator
     /// <summary>
     /// Floor for the AVIF/HEIF branch only, which trusts the container magic without decoding and so
     /// has nothing else to catch a truncated file with. Every other format is judged by whether
-    /// ImageSharp can actually read a header out of it, never by byte count: some sources pad a
+    /// libvips can actually read a header out of it, never by byte count: some sources pad a
     /// chapter with separator pages that are genuinely a few dozen bytes, and failing the whole
     /// download over an image that decodes fine is the wrong answer.
     /// </summary>
@@ -48,11 +48,12 @@ public static class ImageValidator
                     return false;
                 }
 
-                return true; // ImageSharp can't identify AVIF; trust the container magic.
+                return true; // Not every AVIF the browser renders decodes here; trust the container magic.
             }
 
-            var imageInfo = await Image.IdentifyAsync(filePath, ct);
-            return imageInfo.Width > 0 && imageInfo.Height > 0;
+            ct.ThrowIfCancellationRequested();
+            var size = ImageCodec.IdentifyFile(filePath);
+            return size.Width > 0 && size.Height > 0;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

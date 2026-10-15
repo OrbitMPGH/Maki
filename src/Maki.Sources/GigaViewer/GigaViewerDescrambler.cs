@@ -1,6 +1,4 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 
 namespace Maki.Sources.GigaViewer;
 
@@ -17,7 +15,7 @@ public static class GigaViewerDescrambler
     /// is too small for a 4x4 grid (bw or bh floors to 0) rather than a pointless re-encode.</summary>
     public static byte[] Descramble(byte[] bytes)
     {
-        using var source = Image.Load<Rgba32>(bytes);
+        var source = Raster.Decode(bytes, bands: 3);
         var blockWidth = source.Width / 32 * 8;
         var blockHeight = source.Height / 32 * 8;
         if (blockWidth == 0 || blockHeight == 0)
@@ -26,13 +24,11 @@ public static class GigaViewerDescrambler
         }
 
         TransposeInPlace(source, blockWidth, blockHeight);
-        using var stream = new MemoryStream();
-        source.SaveAsJpeg(stream, new JpegEncoder { Quality = 90 });
-        return stream.ToArray();
+        return source.EncodeJpeg(90);
     }
 
     /// <summary>The pixel transform alone, for unit testing without a lossy JPEG round trip.</summary>
-    public static Image<Rgba32> Descramble(Image<Rgba32> source)
+    public static Raster Descramble(Raster source)
     {
         var result = source.Clone();
         var blockWidth = source.Width / 32 * 8;
@@ -49,34 +45,32 @@ public static class GigaViewerDescrambler
     /// Swaps each block (row, col) with (col, row) through one block-sized buffer. The diagonal
     /// stays put. Drawing into a clone held a second full page of pixels for every descramble.
     /// </summary>
-    private static void TransposeInPlace(Image<Rgba32> image, int blockWidth, int blockHeight)
+    private static void TransposeInPlace(Raster image, int blockWidth, int blockHeight)
     {
-        var block = new Rgba32[blockWidth * blockHeight];
-        image.ProcessPixelRows(rows =>
+        var rowBytes = blockWidth * image.Bands;
+        var block = new byte[rowBytes * blockHeight];
+        for (var row = 0; row < 4; row++)
         {
-            for (var row = 0; row < 4; row++)
+            for (var col = row + 1; col < 4; col++)
             {
-                for (var col = row + 1; col < 4; col++)
+                for (var y = 0; y < blockHeight; y++)
                 {
-                    for (var y = 0; y < blockHeight; y++)
-                    {
-                        rows.GetRowSpan(row * blockHeight + y).Slice(col * blockWidth, blockWidth)
-                            .CopyTo(block.AsSpan(y * blockWidth, blockWidth));
-                    }
+                    image.Row(row * blockHeight + y).Slice(col * rowBytes, rowBytes)
+                        .CopyTo(block.AsSpan(y * rowBytes, rowBytes));
+                }
 
-                    for (var y = 0; y < blockHeight; y++)
-                    {
-                        rows.GetRowSpan(col * blockHeight + y).Slice(row * blockWidth, blockWidth)
-                            .CopyTo(rows.GetRowSpan(row * blockHeight + y).Slice(col * blockWidth, blockWidth));
-                    }
+                for (var y = 0; y < blockHeight; y++)
+                {
+                    image.Row(col * blockHeight + y).Slice(row * rowBytes, rowBytes)
+                        .CopyTo(image.Row(row * blockHeight + y).Slice(col * rowBytes, rowBytes));
+                }
 
-                    for (var y = 0; y < blockHeight; y++)
-                    {
-                        block.AsSpan(y * blockWidth, blockWidth)
-                            .CopyTo(rows.GetRowSpan(col * blockHeight + y).Slice(row * blockWidth, blockWidth));
-                    }
+                for (var y = 0; y < blockHeight; y++)
+                {
+                    block.AsSpan(y * rowBytes, rowBytes)
+                        .CopyTo(image.Row(col * blockHeight + y).Slice(row * rowBytes, rowBytes));
                 }
             }
-        });
+        }
     }
 }

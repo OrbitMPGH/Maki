@@ -1,6 +1,4 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using Maki.Core.Images;
 
 namespace Maki.Sources.MangaDenizi;
 
@@ -17,7 +15,7 @@ public static class MangaDeniziDescrambler
     private const uint Vo = 2654435769;
     private const uint Bo = 2246822507;
 
-    public static Image<Rgb24> Descramble(Image<Rgb24> source, int grid, uint seed)
+    public static Raster Descramble(Raster source, int grid, uint seed)
     {
         if (grid < 1)
         {
@@ -35,23 +33,17 @@ public static class MangaDeniziDescrambler
         var scrambledColumns = MapSlices(columns, columnOrder);
         var scrambledRows = MapSlices(rows, rowOrder);
 
-        var result = new Image<Rgb24>(width, height);
-        result.Mutate(ctx =>
+        var result = new Raster(width, height, source.Bands);
+        for (var row = 0; row < l; row++)
         {
-            for (var row = 0; row < l; row++)
+            for (var col = 0; col < l; col++)
             {
-                for (var col = 0; col < l; col++)
-                {
-                    var sourceRect = new Rectangle(
-                        scrambledColumns[col].Offset,
-                        scrambledRows[row].Offset,
-                        scrambledColumns[col].Length,
-                        scrambledRows[row].Length);
-                    var destination = new Point(columns[columnOrder[col]].Offset, rows[rowOrder[row]].Offset);
-                    ctx.DrawImage(source, destination, sourceRect, 1f);
-                }
+                result.CopyFrom(source,
+                    scrambledColumns[col].Offset, scrambledRows[row].Offset,
+                    scrambledColumns[col].Length, scrambledRows[row].Length,
+                    columns[columnOrder[col]].Offset, rows[rowOrder[row]].Offset);
             }
-        });
+        }
 
         return result;
     }

@@ -13,8 +13,7 @@ using Maki.Api.Hubs;
 using Maki.Core.Reading;
 using Maki.Core.Tests;
 using Microsoft.Extensions.DependencyInjection;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 namespace Maki.Api.Tests;
 public class HealthWorkspaceTests : IDisposable
 {
@@ -101,13 +100,13 @@ public class HealthWorkspaceTests : IDisposable
             for (var i = 0; i < pages; i++)
             {
                 using var stream = zip.CreateEntry($"{i:000}.png").Open();
-                using var image = new Image<Rgba32>(16, 16);
+                var image = new Raster(16, 16);
                 // Distinct pages get their own gradient; the copies share one. 99 is outside the
                 // range the distinct pages use.
                 var seed = i >= pages - copies ? 99 : i + 1;
                 for (var y = 0; y < 16; y++)
-                for (var x = 0; x < 16; x++) image[x,y] = new Rgba32((byte)(x*seed), (byte)(y*seed), (byte)(seed*9));
-                image.SaveAsPng(stream);
+                for (var x = 0; x < 16; x++) image[x,y] = new Rgba((byte)(x*seed), (byte)(y*seed), (byte)(seed*9));
+                stream.Write(image.EncodePng());
             }
         }
         var file = new HealthFile { RootFolderId=folder.Id, RelativePath=name };
@@ -377,7 +376,7 @@ public class HealthWorkspaceTests : IDisposable
             var relative=$".maki/health/{op.Id}/chapter-{chapter.Id}.cbz";
             var path=Path.Combine(root,relative);Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             using(var zip=ZipFile.Open(path,ZipArchiveMode.Create))
-            { using var stream=zip.CreateEntry("001.png").Open(); using var image=new Image<Rgba32>(8,8); image.SaveAsPng(stream); }
+            { using var stream=zip.CreateEntry("001.png").Open(); stream.Write(new Raster(8,8).EncodePng()); }
             var analysis=await ArchiveHealthAnalyzer.AnalyzeAsync(path,default,null,null,verify:true);
             candidates.Add(new(chapter.Id,relative,analysis.Hash!,analysis));
         }

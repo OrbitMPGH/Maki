@@ -1,8 +1,6 @@
 using System.IO.Compression;
+using Maki.Core.Images;
 using Maki.Core.Reading;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Formats.Png;
 namespace Maki.Core.Tests;
 public class ArchiveHealthAnalyzerTests : IDisposable
 {
@@ -15,12 +13,27 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         foreach (var (name, bytes) in entries) { using var stream = zip.CreateEntry(name).Open(); stream.Write(bytes); }
         return path;
     }
-    private static byte[] Png(PngCompressionLevel level = PngCompressionLevel.DefaultCompression)
+    private static byte[] Png(int compression = 6)
     {
-        using var image = new Image<Rgba32>(32, 48);
+        var image = new Raster(32, 48);
         for (var y = 0; y < image.Height; y++)
-        for (var x = 0; x < image.Width; x++) image[x,y] = new Rgba32((byte)(x*7), (byte)(y*5), (byte)((x+y)*3));
-        using var bytes = new MemoryStream(); image.Save(bytes, new PngEncoder { CompressionLevel = level }); return bytes.ToArray();
+        for (var x = 0; x < image.Width; x++) image[x,y] = new Rgba((byte)(x*7), (byte)(y*5), (byte)((x+y)*3));
+        return image.EncodePng(compression);
+    }
+    /// <summary>A 24-bit BMP written by hand: libvips has no BMP saver.</summary>
+    private static byte[] Bmp(int width, int height)
+    {
+        var stride = (width * 3 + 3) & ~3;
+        var bytes = new byte[54 + stride * height];
+        bytes[0] = (byte)'B'; bytes[1] = (byte)'M';
+        BitConverter.GetBytes(bytes.Length).CopyTo(bytes, 2);
+        BitConverter.GetBytes(54).CopyTo(bytes, 10);
+        BitConverter.GetBytes(40).CopyTo(bytes, 14);
+        BitConverter.GetBytes(width).CopyTo(bytes, 18);
+        BitConverter.GetBytes(height).CopyTo(bytes, 22);
+        BitConverter.GetBytes((short)1).CopyTo(bytes, 26);
+        BitConverter.GetBytes((short)24).CopyTo(bytes, 28);
+        return bytes;
     }
     [Fact] public async Task Detects_empty_and_missing_files()
     {
@@ -37,7 +50,7 @@ public class ArchiveHealthAnalyzerTests : IDisposable
     }
     [Fact] public async Task Reencoded_pages_match_decoded_hash_and_reader_order()
     {
-        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("z.png",Png(level:PngCompressionLevel.Level1)),("a.png",Png(level:PngCompressionLevel.Level9))), default, null, null, verify: true);
+        var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("z.png",Png(compression:1)),("a.png",Png(compression:9))), default, null, null, verify: true);
         Assert.Equal("complete",result.Status); Assert.Empty(result.Problems);
         Assert.Equal("a.png",result.Pages[0].Name);
         Assert.Equal(2,result.Pages.Count);
@@ -113,15 +126,12 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         var result = await ArchiveHealthAnalyzer.AnalyzeAsync(archive, default, null, null, verify: true);
         Assert.Contains(result.Problems,p=>p.Kind=="damagedImage");
     }
-    [Fact] public async Task A_header_ImageSharp_fails_on_oddly_is_reported_not_thrown()
+    [Fact] public async Task A_truncated_header_is_reported_not_thrown()
     {
-        // Truncated BMP, JPEG and WebP data makes Identify throw ImageFormatException,
-        // NotSupportedException, NullReferenceException and similar, not only the two types it documents.
-        using var image = new Image<Rgba32>(40, 30);
-        using var bmp = new MemoryStream(); image.Save(bmp, new SixLabors.ImageSharp.Formats.Bmp.BmpEncoder());
-        using var jpg = new MemoryStream(); image.Save(jpg, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder());
-        using var webp = new MemoryStream(); image.Save(webp, new SixLabors.ImageSharp.Formats.Webp.WebpEncoder());
-        foreach (var (name, good) in new[] { ("1.bmp", bmp.ToArray()), ("1.jpg", jpg.ToArray()), ("1.webp", webp.ToArray()) })
+        // Every cut of a BMP, JPEG and WebP header must come back as a page, damaged or not,
+        // never as an exception that aborts the archive's analysis.
+        var image = new Raster(40, 30);
+        foreach (var (name, good) in new[] { ("1.bmp", Bmp(40, 30)), ("1.jpg", image.EncodeJpeg(75)), ("1.webp", image.EncodeWebp(75)) })
         {
             for (var cut = 4; cut < Math.Min(good.Length, 120); cut += 2)
             {

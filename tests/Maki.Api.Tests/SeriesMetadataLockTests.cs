@@ -13,8 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 
 namespace Maki.Api.Tests;
 
@@ -218,7 +217,7 @@ public class SeriesMetadataLockTests : IDisposable
         Assert.False(await new SeriesMetadataRefreshService([new Provider(ProviderValues())], covers)
             .RefreshCoverAsync(series));
 
-        Assert.Equal(8, Image.Identify(covers.CoverPathFor(series.Id)).Width);
+        Assert.Equal(8, ImageCodec.IdentifyFile(covers.CoverPathFor(series.Id)).Width);
     }
 
     [Fact]
@@ -235,7 +234,7 @@ public class SeriesMetadataLockTests : IDisposable
         await Controller(db, ProviderValues()).Reset(
             id, new SeriesMetadataController.ResetMetadataRequest(["cover"]), CancellationToken.None);
 
-        Assert.Equal(4, Image.Identify(Covers().CoverPathFor(id)).Width);
+        Assert.Equal(4, ImageCodec.IdentifyFile(Covers().CoverPathFor(id)).Width);
         Assert.Equal(SeriesMetadataField.None, (await Reload(id)).LockedFields);
     }
 
@@ -260,7 +259,7 @@ public class SeriesMetadataLockTests : IDisposable
         var state = Assert.IsType<SeriesMetadataController.MetadataStateDto>(Assert.IsType<OkObjectResult>(result).Value);
         Assert.True(state.Refreshed);
         Assert.False(state.CoverRestored);
-        Assert.Equal(8, Image.Identify(Covers().CoverPathFor(id)).Width);
+        Assert.Equal(8, ImageCodec.IdentifyFile(Covers().CoverPathFor(id)).Width);
     }
 
     [Fact]
@@ -286,7 +285,7 @@ public class SeriesMetadataLockTests : IDisposable
 
         Assert.True(await rebuild.RunAsync(force: true, CancellationToken.None));
 
-        Assert.Equal(8, Image.Identify(covers.CoverPathFor(locked)).Width);
+        Assert.Equal(8, ImageCodec.IdentifyFile(covers.CoverPathFor(locked)).Width);
         Assert.False(File.Exists(covers.CoverPathFor(missing)));
         Assert.Equal(2, status.Snapshot().Skipped);
     }
@@ -303,9 +302,9 @@ public class SeriesMetadataLockTests : IDisposable
         var series = await Reload(id);
         Assert.True(series.IsLocked(SeriesMetadataField.Cover));
         Assert.Equal(Covers().CoverPathFor(id), series.CoverPath);
-        var stored = Image.Identify(series.CoverPath!);
+        var stored = ImageCodec.IdentifyFile(series.CoverPath!);
         Assert.Equal(400, stored.Width);
-        Assert.Equal("JPEG", stored.Metadata.DecodedImageFormat?.Name);
+        Assert.Equal(ImageFormat.Jpeg, stored.Format);
 
         await using var read = _db.NewContext();
         var change = Assert.Single(read.SeriesMetadataChanges.Where(c => c.SeriesId == id));
@@ -410,21 +409,9 @@ public class SeriesMetadataLockTests : IDisposable
     private static IFormFile FormFile(byte[] bytes) =>
         new FormFile(new MemoryStream(bytes), 0, bytes.Length, "file", "cover.png");
 
-    private static byte[] Jpeg(int size)
-    {
-        using var image = new Image<Rgba32>(size, size);
-        using var buffer = new MemoryStream();
-        image.SaveAsJpeg(buffer);
-        return buffer.ToArray();
-    }
+    private static byte[] Jpeg(int size) => new Raster(size, size).EncodeJpeg(75);
 
-    private static byte[] Png(int width, int height)
-    {
-        using var image = new Image<Rgba32>(width, height);
-        using var buffer = new MemoryStream();
-        image.SaveAsPng(buffer);
-        return buffer.ToArray();
-    }
+    private static byte[] Png(int width, int height) => new Raster(width, height).EncodePng();
 
     private sealed class Provider(SeriesMetadata metadata) : IMetadataProvider
     {

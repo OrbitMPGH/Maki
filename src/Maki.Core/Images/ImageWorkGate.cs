@@ -4,9 +4,8 @@ namespace Maki.Core.Images;
 /// Process-wide ceiling on how many images are being decoded at once.
 ///
 /// <para>
-/// A decoded page is uncompressed pixels, not the file on disk: ImageSharp's default
-/// <c>Rgba32</c> makes a 2000×3000 scan ~24 MB, and a descramble holds two of them. Nothing used to
-/// bound how many of those existed together, because the limits that do exist are about something
+/// A decoded page is uncompressed pixels, not the file on disk: RGBA makes a 2000×3000 scan
+/// ~24 MB, and a descramble holds two of them. Nothing used to bound how many of those existed together, because the limits that do exist are about something
 /// else — <c>PageDownloader</c> caps pages per chapter, the download worker caps chapters, the
 /// reader's thumbnail endpoint caps nothing at all — and they multiply rather than compose. Raising
 /// the chapter-concurrency setting therefore bought a proportional rise in peak RSS that no

@@ -5,9 +5,6 @@ using Maki.Core.Http;
 using Maki.Core.Images;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.PixelFormats;
 using Maki.Sources.Common;
 
 namespace Maki.Sources.MangaDenizi;
@@ -248,18 +245,15 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
                 $"Unexpected scramble grid {grid} for page {url}: must be between 1 and {MaxGrid}");
         }
 
-        return await ImageWorkGate.RunAsync(async () =>
+        return await ImageWorkGate.RunAsync(() =>
         {
-            using var source = Image.Load<Rgb24>(raw);
-            using var descrambled = MangaDeniziDescrambler.Descramble(source, grid, seed);
+            var source = Raster.Decode(raw, bands: 3);
+            var descrambled = MangaDeniziDescrambler.Descramble(source, grid, seed);
 
             // PageDownloader names the saved file from PageRequest.Url's own extension, and every
             // MangaDenizi image URL ends in .webp - re-encoding to JPEG here would write JPEG bytes
             // under a .webp name, which Maki would then serve back as image/webp.
-            using var output = new MemoryStream();
-            await descrambled.SaveAsWebpAsync(
-                output, new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = 90 }, ct);
-            return output.ToArray();
+            return Task.FromResult(descrambled.EncodeWebp(90));
         }, ct);
     }
 

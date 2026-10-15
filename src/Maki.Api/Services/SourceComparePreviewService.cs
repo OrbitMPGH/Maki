@@ -7,7 +7,6 @@ using Maki.Core.Http;
 using Maki.Core.Images;
 using Maki.Core.Quality;
 using Maki.Core.Sources;
-using SixLabors.ImageSharp;
 
 namespace Maki.Api.Services;
 
@@ -16,8 +15,8 @@ public record SourceCompareCandidate(int MappingId, string SourceName, string So
 
 /// <summary>
 /// One sampled page. <paramref name="Width"/>/<paramref name="Height"/> are null when the format
-/// could not be read for measurement — AVIF, which browsers display happily and ImageSharp cannot
-/// decode at all. The image is still shown; only its caption is thinner.
+/// could not be read for measurement, such as a BMP, which browsers display happily and libvips is
+/// not allowed to open. The image is still shown; only its caption is thinner.
 /// </summary>
 /// <param name="Format">jpg, png, webp and so on; null when the page could not be decoded.</param>
 public record ComparePage(string Url, int? Width, int? Height, long Bytes, string? Format = null);
@@ -420,9 +419,8 @@ public sealed class SourceComparePreviewService(
             var hashes = new List<ulong?>();
             for (var i = 0; i < files.Count; i++)
             {
-                // Measuring and hashing are best-effort. ImageSharp cannot decode AVIF at all (see
-                // ImageValidator, which trusts the container magic for exactly this reason) while
-                // every browser renders it fine — so a format we can't read costs the page its
+                // Measuring and hashing are best-effort. A page libvips cannot read (a BMP, an AVIF
+                // feature libheif lacks) still renders in the browser, so it costs the page its
                 // dimensions and its place in the alignment, never its place in the comparison.
                 int? width = null;
                 int? height = null;
@@ -430,11 +428,12 @@ public sealed class SourceComparePreviewService(
                 ulong? hash = null;
                 try
                 {
-                    var info = await Image.IdentifyAsync(files[i], ct);
+                    ct.ThrowIfCancellationRequested();
+                    var info = ImageCodec.IdentifyFile(files[i]);
                     width = info.Width;
                     height = info.Height;
-                    format = ChapterFileMeasurer.FormatName(info.Metadata.DecodedImageFormat);
-                    hash = await PerceptualHash.OfFileAsync(files[i], ct);
+                    format = ChapterFileMeasurer.FormatName(info.Format);
+                    hash = PerceptualHash.OfFile(files[i]);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {

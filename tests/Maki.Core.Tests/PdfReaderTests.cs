@@ -1,8 +1,7 @@
 using System.IO.Compression;
+using Maki.Core.Images;
 using Maki.Core.Parsing;
 using Maki.Core.Reading;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace Maki.Core.Tests;
 
@@ -12,6 +11,13 @@ public class PdfReaderTests : IDisposable
     public void Dispose() => Directory.Delete(root, true);
 
     private string Pdf(int pages = 3) => PdfFixture.Write(Path.Combine(root, Guid.NewGuid() + ".pdf"), pages);
+
+    private static ImageHeader Identify(Stream stream)
+    {
+        using var copy = new MemoryStream();
+        stream.CopyTo(copy);
+        return ImageCodec.Identify(copy.ToArray());
+    }
 
     private string Garbage()
     {
@@ -32,15 +38,14 @@ public class PdfReaderTests : IDisposable
     public void Renders_a_page_as_a_decodable_jpeg_keeping_its_aspect()
     {
         using var stream = PdfReader.RenderPage(Pdf(), 1);
-        var info = Image.Identify(stream);
-        Assert.Equal("JPEG", info.Metadata.DecodedImageFormat?.Name);
+        var info = Identify(stream);
+        Assert.Equal(ImageFormat.Jpeg, info.Format);
         Assert.True(Math.Max(info.Width, info.Height) <= PdfReader.MaxEdge);
         Assert.Equal(300d / 450d, (double)info.Width / info.Height, 2);
 
         // PDFium leaves unpainted area transparent; unflattened it would encode as black.
-        stream.Position = 0;
-        using var image = Image.Load<Rgb24>(stream);
-        Assert.Equal(new Rgb24(255, 255, 255), image[image.Width / 2, image.Height / 2]);
+        var image = Raster.Decode(stream.ToArray(), bands: 3);
+        Assert.Equal(new Rgba(255, 255, 255), image[image.Width / 2, image.Height / 2]);
     }
 
     [Fact]
@@ -56,7 +61,7 @@ public class PdfReaderTests : IDisposable
     {
         using var stream = PdfReader.RenderPage(Pdf(), 0, 800);
         Assert.Equal(0, stream.Position);
-        var info = Image.Identify(stream);
+        var info = Identify(stream);
         Assert.Equal(800, Math.Max(info.Width, info.Height));
         Assert.Equal(300d / 450d, (double)info.Width / info.Height, 2);
     }
@@ -68,9 +73,9 @@ public class PdfReaderTests : IDisposable
         var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Task.Run(async () =>
         {
             await using var stream = await PdfReader.RenderPageAsync(path, i % 3);
-            return Image.Identify(stream).Metadata.DecodedImageFormat?.Name;
+            return Identify(stream).Format;
         })));
-        Assert.All(results, name => Assert.Equal("JPEG", name));
+        Assert.All(results, format => Assert.Equal(ImageFormat.Jpeg, format));
     }
 
     [Fact]
@@ -103,7 +108,7 @@ public class PdfReaderTests : IDisposable
 
         using var page = CbzReader.OpenPage(path, "0002.jpg");
         Assert.NotNull(page);
-        Assert.Equal("JPEG", Image.Identify(page).Metadata.DecodedImageFormat?.Name);
+        Assert.Equal(ImageFormat.Jpeg, Identify(page).Format);
         Assert.Null(CbzReader.OpenPage(path, "nope.jpg"));
         Assert.Empty(CbzReader.PageNames(Garbage()));
     }
@@ -121,7 +126,7 @@ public class PdfReaderTests : IDisposable
     {
         await using var pdfPage = await CbzReader.OpenPageAsync(Pdf(), "0002.jpg");
         Assert.NotNull(pdfPage);
-        Assert.Equal("JPEG", Image.Identify(pdfPage).Metadata.DecodedImageFormat?.Name);
+        Assert.Equal(ImageFormat.Jpeg, Identify(pdfPage).Format);
 
         Assert.Null(await CbzReader.OpenPageAsync(Pdf(), "0009.jpg"));
         Assert.Null(await CbzReader.OpenPageAsync(Garbage(), "0001.jpg"));

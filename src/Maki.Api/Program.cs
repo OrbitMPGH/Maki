@@ -101,16 +101,6 @@ catch (Exception ex) when (ex is not HostAbortedException)
     return;
 }
 
-// ImageSharp's default allocator pools every buffer it hands out and never gives one back to the
-// OS, so RSS ratcheted to the high-water mark of whatever burst of concurrent decodes happened
-// last - a download night or a health scan - and stayed there for the life of the process. Capping
-// the pool means anything above it is an ordinary managed allocation the GC can reclaim. This is a
-// retention limit, not an allocation limit: a page larger than the pool still decodes, it just is
-// not kept afterwards.
-SixLabors.ImageSharp.Configuration.Default.MemoryAllocator =
-    SixLabors.ImageSharp.Memory.MemoryAllocator.Create(
-        new SixLabors.ImageSharp.Memory.MemoryAllocatorOptions { MaximumPoolSizeMegabytes = 48 });
-
 try
 {
     var builder = WebApplication.CreateBuilder(args);

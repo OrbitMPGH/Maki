@@ -1,7 +1,5 @@
 using Maki.Core.Download;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.PixelFormats;
+using Maki.Core.Images;
 
 namespace Maki.Core.Tests;
 
@@ -25,10 +23,7 @@ public class ImageValidatorTests : IDisposable
 
     private string WritePng(string name, int width, int height)
     {
-        var path = Path.Combine(dir, name);
-        using var image = new Image<Rgba32>(width, height);
-        image.Save(path, new PngEncoder());
-        return path;
+        return Write(name, new Raster(width, height).EncodePng());
     }
 
     /// <summary>
@@ -101,7 +96,7 @@ public class ImageValidatorTests : IDisposable
     }
 
     /// <summary>
-    /// AVIF is trusted on container magic alone (ImageSharp cannot identify it), so the length floor
+    /// AVIF is trusted on container magic alone (not every AVIF decodes here), so the length floor
     /// still applies there — it is the only thing standing in for a decode.
     /// </summary>
     [Fact]
