@@ -2638,6 +2638,12 @@ msgstr ""
 msgid "error.settings.labelInvalid"
 msgstr ""
 
+#. Deluge's Label plugin rejects anything else, so Maki checks before saving.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Deluge labels can only use letters, digits, dot, dash and underscore
+msgid "error.settings.labelInvalidDeluge"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Kavita did not respond (check URL/API key)
 #, fuzzy

@@ -1837,6 +1837,11 @@ msgstr "Unknown download client"
 msgid "error.settings.labelInvalid"
 msgstr "The label cannot start or end with a space, contain control characters, or be longer than 64 characters"
 
+#. Deluge's Label plugin rejects anything else, so Maki checks before saving.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.labelInvalidDeluge"
+msgstr "Deluge labels can only use letters, digits, dot, dash and underscore"
+
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.kavitaNoResponse"
 msgstr "Kavita did not respond (check URL/API key)"

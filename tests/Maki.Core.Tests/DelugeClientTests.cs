@@ -279,7 +279,7 @@ public class DelugeClientTests
     }
 
     [Fact]
-    public async Task A_failed_label_call_turns_labels_off_and_the_next_listing_is_unfiltered()
+    public async Task A_torrent_that_cannot_be_labelled_fails_the_grab_and_listing_keeps_filtering()
     {
         var (client, handler) = Create();
         handler.Replies["label.set_torrent"] = _ => new Reply(null, 3, "Unknown torrent");
@@ -287,25 +287,33 @@ public class DelugeClientTests
         handler.Replies["web.update_ui"] = args =>
         {
             sent = args;
-            return new Reply(new
-            {
-                torrents = new Dictionary<string, object>
-                {
-                    [Hash] = new { hash = Hash, name = "A", progress = 10.0, state = "Downloading", download_location = "/d" },
-                    ["feedfeedfeedfeedfeedfeedfeedfeedfeedfeed"] = new
-                    {
-                        hash = "feedfeedfeedfeedfeedfeedfeedfeedfeedfeed", name = "B", progress = 20.0, state = "Downloading",
-                        download_location = "/d",
-                    },
-                },
-            });
+            return new Reply(new { torrents = new { } });
         };
 
-        await client.AddAsync(Settings, "magnet:?xt=urn:btih:" + Hash);
-        var torrents = await client.ListAsync(Settings);
+        var ex = await Assert.ThrowsAsync<TorrentClientException>(
+            () => client.AddAsync(Settings, "magnet:?xt=urn:btih:" + Hash));
+        await client.ListAsync(Settings);
 
-        Assert.Equal("{}", sent!.Value[1].GetRawText());
-        Assert.Equal(2, torrents.Count);
+        Assert.Equal(TorrentClientFailure.Rejected, ex.Failure);
+        Assert.Equal("{\"label\":\"maki\"}", sent!.Value[1].GetRawText());
+    }
+
+    [Fact]
+    public async Task A_label_another_grab_created_first_is_used_rather_than_failing()
+    {
+        var (client, handler) = Create();
+        var created = false;
+        handler.Replies["label.get_labels"] = _ => new Reply(created ? new[] { "maki" } : Array.Empty<string>());
+        handler.Replies["label.add"] = _ =>
+        {
+            created = true;
+            return new Reply(null, 3, "Label already exists");
+        };
+
+        var hash = await client.AddAsync(Settings, "magnet:?xt=urn:btih:" + Hash);
+
+        Assert.Equal(Hash, hash);
+        Assert.Equal($"[\"{Hash}\",\"maki\"]", handler.Calls.Single(c => c.Method == "label.set_torrent").Params);
     }
 
     [Fact]

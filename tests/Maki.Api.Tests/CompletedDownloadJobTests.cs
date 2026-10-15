@@ -25,7 +25,7 @@ public class CompletedDownloadJobTests : IDisposable
     {
         _db.SetConfig((SettingKeys.DownloadClientUrl, "http://qbt.test"));
         _seriesId = _db.SeedSeries("Berserk");
-        CompletedDownloadJob.ErroredSince.Clear();
+        CompletedDownloadJob.ErrorLogged.Clear();
     }
 
     public void Dispose() => _db.Dispose();
@@ -126,54 +126,41 @@ public class CompletedDownloadJobTests : IDisposable
         hash, "Berserk v01 (Digital)", 1.0, false, "/dl/Berserk v01", DateTimeOffset.UtcNow, true, "Missing files");
 
     [Fact]
-    public async Task A_torrent_in_the_clients_error_state_is_left_alone_inside_the_grace()
+    public async Task A_torrent_in_the_clients_error_state_keeps_its_row_and_shows_the_clients_message()
     {
         var id = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1));
         _client.Torrents.Add(ErroredTorrent("abc123"));
 
         await RunAsync();
-        await RunAsync();
-
-        Assert.Equal(QueueStatus.Downloading, Reload(id).Status);
-        Assert.Empty(_notifications.Sent);
-    }
-
-    [Fact]
-    public async Task A_torrent_that_stays_in_the_clients_error_state_past_the_grace_fails_with_the_clients_message()
-    {
-        var id = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1));
-        _client.Torrents.Add(ErroredTorrent("abc123"));
-        CompletedDownloadJob.ErroredSince[id] = DateTime.UtcNow - CompletedDownloadJob.ErroredTorrentGrace - TimeSpan.FromMinutes(1);
-
         await RunAsync();
 
         var item = Reload(id);
-        Assert.Equal(QueueStatus.Failed, item.Status);
-        Assert.Equal("error.download.torrentClientError", item.ErrorKey);
+        Assert.Equal(QueueStatus.Downloading, item.Status);
+        Assert.Equal(CompletedDownloadJob.ClientErrorKey, item.ErrorKey);
         Assert.Equal("Missing files", item.ErrorMessage);
-        Assert.Single(_notifications.Sent);
+        Assert.Empty(_notifications.Sent);
 
         using var db = _db.NewContext();
         Assert.Empty(db.TorrentProposals);
     }
 
     [Fact]
-    public async Task A_torrent_whose_error_clears_before_the_grace_starts_over()
+    public async Task A_torrent_that_recovers_from_an_error_clears_the_reason_and_still_imports()
     {
         var id = SeedItem(QueueStatus.Downloading, "abc123", DateTime.UtcNow.AddHours(-1));
-        CompletedDownloadJob.ErroredSince[id] = DateTime.UtcNow - CompletedDownloadJob.ErroredTorrentGrace - TimeSpan.FromMinutes(1);
-        _client.Torrents.Add(Torrent("abc123", 0.4, DateTime.UtcNow.AddHours(-1)));
-
-        await RunAsync();
-
-        Assert.Equal(QueueStatus.Downloading, Reload(id).Status);
-        Assert.False(CompletedDownloadJob.ErroredSince.ContainsKey(id));
-
-        _client.Torrents.Clear();
         _client.Torrents.Add(ErroredTorrent("abc123"));
         await RunAsync();
 
-        Assert.Equal(QueueStatus.Downloading, Reload(id).Status);
+        _client.Torrents.Clear();
+        _client.Torrents.Add(Torrent("abc123", 0.4, DateTime.UtcNow.AddHours(-1)));
+        await RunAsync();
+
+        var item = Reload(id);
+        Assert.Equal(QueueStatus.Downloading, item.Status);
+        Assert.Null(item.ErrorKey);
+        Assert.Null(item.ErrorMessage);
+        Assert.Equal(40, item.PagesDone);
+        Assert.False(CompletedDownloadJob.ErrorLogged.ContainsKey(id));
     }
 
     [Theory]
