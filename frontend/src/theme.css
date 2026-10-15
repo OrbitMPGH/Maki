@@ -120,12 +120,12 @@
   --dur-medium: 0.18s;
   --dur-slow: 0.35s;
 
-  --font-display: 'Bricolage Grotesque Variable', 'Inter Variable', ui-sans-serif, -apple-system,
+  --font-display: 'Bricolage Grotesque Variable', 'Onest Variable', ui-sans-serif, -apple-system,
     'Segoe UI', Roboto, sans-serif;
 }
 
 /* Titles only: a series, a page or the product names itself in the display face. Everything read
-   or operated stays in Inter. No Cyrillic or CJK in Bricolage, so those titles fall through to Inter. */
+   or operated stays in Onest. No Cyrillic or CJK in Bricolage, so those titles fall through to Onest. */
 .series-hero-title,
 .page-header .mantine-Title-root,
 .auth-panel-title,
@@ -347,7 +347,6 @@ body {
     radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
     radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 8%, transparent), transparent 55%);
   background-attachment: fixed;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -3433,7 +3432,7 @@ body::before {
   flex-shrink: 0;
 }
 /* Anton is the only face that takes the distress. It is a poster face carrying the identity of the
-   thing on screen, and a poster is printed; Inter has to stay legible at 12.5px and gets none of it.
+   thing on screen, and a poster is printed; the text face has to stay legible at 12.5px and gets none of it.
 
    A mask rather than `background-clip: text`: it erodes the edge and speckles the fill in one pass,
    it leaves `color` on the token where the theme can still reach it, and it fails safe. A browser

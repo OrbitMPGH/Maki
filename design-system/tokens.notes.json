@@ -221,9 +221,9 @@
   "type": {
     "fonts": [
       {
-        "family": "Inter Variable",
-        "file": "fonts/InterVariable-latin.woff2",
-        "source": "frontend/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2",
+        "family": "Onest Variable",
+        "file": "fonts/OnestVariable-latin.woff2",
+        "source": "frontend/node_modules/@fontsource-variable/onest/files/onest-latin-wght-normal.woff2",
         "weight": "100 900",
         "style": "normal"
       },

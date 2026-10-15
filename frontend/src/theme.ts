@@ -251,7 +251,7 @@ const themeBase: MantineThemeOverride = {
   colors: { brand, dark },
   defaultRadius: 'md',
   fontFamily:
-    '"Inter Variable", InterVariable, Inter, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    '"Onest Variable", Onest, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   fontFamilyMonospace:
     'ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo, monospace',
   headings: {

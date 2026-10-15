@@ -39,7 +39,7 @@ Content ratings run green to red on purpose: Safe `ok`, Suggestive `suggestive`,
 
 ## Type
 
-Two families. **Bricolage Grotesque** (`display`) is for titles and figures: a series, a page, the product naming itself, and the headline numbers. **Inter** (`sans`) sets everything that is read or operated. Bricolage has no Cyrillic or CJK, so those titles fall through to Inter by the stack. Inter runs with character variants `cv02 cv03 cv04 cv11` and antialiasing on.
+Two families. **Bricolage Grotesque** (`display`) is for titles and figures: a series, a page, the product naming itself, and the headline numbers. **Onest** (`sans`) sets everything that is read or operated, and carries Cyrillic, so the Russian locale sets in the same face. Bricolage has no Cyrillic or CJK, so those titles fall through to Onest by the stack. Antialiasing is on.
 
 - Display: `display` (series hero, Rewind), `route`, `page-title` (every `PageHeader`), `section-title` (every `SectionHeader`), `wordmark`. All at 700 with -0.025em tracking (-0.02em for section titles).
 - Headings: `h1` to `h4`, Mantine's Title scale (1.9rem 800, 1.5rem 800, 1.2rem 700, 1rem 700).
