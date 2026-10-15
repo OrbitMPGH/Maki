@@ -1268,7 +1268,7 @@ msgstr "Este arquivo ainda está sendo movido para a lixeira. Tente de novo em i
 msgid "error.recycleBin.targetInvalid"
 msgstr "O local original está fora da pasta raiz ou atrás de um link, então o arquivo não pode voltar para lá."
 
-#. The Prowlarr or download client call failed; the cause is in the server log.
+#. The indexer or download client call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: Could not send the release to the download client. Details are in the server log.
 #, fuzzy
@@ -1282,10 +1282,9 @@ msgid "error.release.noDownloadLink"
 msgstr "Este lançamento não tem link de download"
 
 #: src/Maki.Api/Services/ReleaseService.cs
-#. English: Prowlarr is not configured (Settings → Downloads → Prowlarr)
-#, fuzzy
-msgid "error.release.prowlarrNotConfigured"
-msgstr "O Prowlarr não está configurado (Configurações → Downloads → Prowlarr)"
+#. English: No indexer is configured (Settings → Downloads → Indexer)
+msgid "error.release.indexerNotConfigured"
+msgstr ""
 
 #. The download client rejected the username or password Maki has stored for it.
 #: src/Maki.Api/Controllers/ReleaseController.cs
@@ -1310,7 +1309,7 @@ msgstr ""
 msgid "error.release.downloadClientUnreachable"
 msgstr ""
 
-#. The Prowlarr call failed; the cause is in the server log.
+#. The indexer call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: The release search failed. Details are in the server log.
 #, fuzzy
@@ -2359,7 +2358,7 @@ msgstr "Esse capítulo não tem arquivo para receber upgrade"
 msgid "error.upgrades.proposalNotFound"
 msgstr "Essa proposta de lançamento de volume não existe"
 
-#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#. {detail} is the torrent client's or the indexer's own error text, shown as it is.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 #. English: Could not grab the release: {detail}
 #, fuzzy
@@ -2584,13 +2583,18 @@ msgstr "Código(s) de idioma desconhecido(s): {codes}"
 msgid "error.settings.noSourceLanguageEnabled"
 msgstr "Pelo menos um idioma deve permanecer ativado"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr is not configured
-#, fuzzy
-msgid "error.settings.prowlarrNotConfigured"
-msgstr "O Prowlarr não está configurado"
+#. English: {service} is not configured
+msgid "error.settings.indexerNotConfigured"
+msgstr ""
 
-#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown indexer
+msgid "error.settings.indexerBackendInvalid"
+msgstr ""
+
+#. Shared by the indexer and Kavita connection tests, both of which need the pair.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL and API key are required
 #, fuzzy
@@ -2611,11 +2615,11 @@ msgstr "A URL é obrigatória"
 msgid "error.settings.userCannotSignIn"
 msgstr "Esse usuário não existe ou não pode entrar"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr did not respond (check URL/API key)
-#, fuzzy
-msgid "error.settings.prowlarrNoResponse"
-msgstr "O Prowlarr não respondeu (verifique a URL/chave da API)"
+#. English: {service} did not respond (check the URL and API key)
+msgid "error.settings.indexerNoResponse"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The download client rejected the login (check username/password)
@@ -4865,7 +4869,7 @@ msgstr "Uma migração de inicialização anterior falhou ({error}). Verifique o
 msgid "health.check.diagnosticsUnavailable"
 msgstr "Não foi possível concluir os diagnósticos do banco de dados ou do agendador"
 
-#. {service} is a product name (Prowlarr, Kavita, qBittorrent, FlareSolverr), never translated.
+#. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {service}: not configured
 #, fuzzy

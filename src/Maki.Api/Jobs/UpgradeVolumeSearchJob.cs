@@ -5,7 +5,7 @@ using Quartz;
 namespace Maki.Api.Jobs;
 
 /// <summary>
-/// Searches Prowlarr for volume releases once per local day, an hour after <c>upgrades.scanHour</c>, for
+/// Searches the indexer for volume releases once per local day, an hour after <c>upgrades.scanHour</c>, for
 /// at most <c>upgrades.volumeSearchesPerRun</c> series, least recently searched first. Each series is
 /// searched at most weekly. Also expires pending proposals past <c>upgrades.proposalExpiryDays</c>.
 /// <c>force=true</c> skips the hour and the marker, for the admin's "Search now".
@@ -46,7 +46,7 @@ public class UpgradeVolumeSearchJob(
             var run = await torrents.LoadSettingsAsync(ct);
             var searched = 0;
             // Every series would answer the same instance-wide refusal, so there is nothing to walk.
-            var candidates = run is { ProwlarrConfigured: true, Options: { Enabled: true, VolumeSearch: true } }
+            var candidates = run is { IndexerConfigured: true, Options: { Enabled: true, VolumeSearch: true } }
                 ? await torrents.CandidateSeriesAsync(ct)
                 : [];
             foreach (var seriesId in candidates)

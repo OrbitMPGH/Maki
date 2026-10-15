@@ -4,6 +4,7 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Inbox;
+using Maki.Core.Indexers;
 using Maki.Core.Notifications;
 using Maki.Core.Security;
 using Maki.Core.Sources;
@@ -214,6 +215,13 @@ internal sealed class StubHttpClientFactory(string body, HttpStatusCode status =
             return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body) });
         }
     }
+}
+
+/// <summary>Both real indexer clients over one stubbed HTTP factory.</summary>
+internal static class TestIndexers
+{
+    public static IndexerRegistry Registry(IHttpClientFactory http) =>
+        new([new ProwlarrClient(http), new JackettClient(http, NullLogger<JackettClient>.Instance)]);
 }
 
 /// <summary>An <see cref="ITorrentClient"/> that records adds and lists <see cref="Torrents"/>.</summary>

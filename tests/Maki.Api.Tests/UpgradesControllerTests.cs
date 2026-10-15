@@ -254,8 +254,8 @@ public class UpgradesControllerTests : IDisposable
         if (withSeries)
         {
             var dto = Assert.IsType<SeriesVolumeSearchResultDto>(Assert.IsType<OkObjectResult>(result).Value);
-            // The manual search skips the instance switches, so the missing Prowlarr is what stops it.
-            Assert.Equal(VolumeSearchReasons.NoProwlarr, dto.Reason);
+            // The manual search skips the instance switches, so the missing indexer is what stops it.
+            Assert.Equal(VolumeSearchReasons.NoIndexer, dto.Reason);
         }
         else if (allowed)
         {

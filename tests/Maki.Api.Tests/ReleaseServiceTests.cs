@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Maki.Api.Tests;
 
 /// <summary>
-/// <see cref="ReleaseService"/>: config-getter guards, Prowlarr search (torrent filter + seeder
+/// <see cref="ReleaseService"/>: config-getter guards, indexer search (torrent filter + seeder
 /// ordering) over a stubbed HTTP client, and grab (magnet-hash extraction + queue persistence)
 /// over a fake download client.
 /// </summary>
@@ -42,10 +42,10 @@ public class ReleaseServiceTests : IDisposable
         }
     }
 
-    private ReleaseService Build(string prowlarrJson = "[]") => Build(new StubHttpClientFactory(prowlarrJson));
+    private ReleaseService Build(string indexerJson = "[]") => Build(new StubHttpClientFactory(indexerJson));
 
-    private ReleaseService Build(IHttpClientFactory prowlarrHttp) =>
-        new(_db.NewContext(), new ProwlarrClient(prowlarrHttp), _client.Registry(), _settings, NullLogger<ReleaseService>.Instance);
+    private ReleaseService Build(IHttpClientFactory indexerHttp) =>
+        new(_db.NewContext(), TestIndexers.Registry(indexerHttp), _client.Registry(), _settings, NullLogger<ReleaseService>.Instance);
 
     private async Task ConfigureProwlarr()
     {
@@ -63,17 +63,61 @@ public class ReleaseServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Prowlarr_config_throws_until_both_url_and_key_are_set()
+    public async Task Indexer_config_throws_until_both_url_and_key_are_set()
     {
-        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetProwlarrConfigAsync(CancellationToken.None));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetIndexerSettingsAsync(CancellationToken.None));
 
         await _settings.SetAsync(SettingKeys.ProwlarrUrl, "http://prowlarr.test");
-        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetProwlarrConfigAsync(CancellationToken.None));
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetIndexerSettingsAsync(CancellationToken.None));
 
         await _settings.SetAsync(SettingKeys.ProwlarrApiKey, "key");
-        var (url, apiKey) = await Build().GetProwlarrConfigAsync(CancellationToken.None);
-        Assert.Equal("http://prowlarr.test", url);
-        Assert.Equal("key", apiKey);
+        var config = await Build().GetIndexerSettingsAsync(CancellationToken.None);
+        Assert.Equal(IndexerBackend.Prowlarr, config.Backend);
+        Assert.Equal("http://prowlarr.test", config.Url);
+        Assert.Equal("key", config.ApiKey);
+    }
+
+    [Fact]
+    public async Task Indexer_config_reads_the_active_backends_own_keys()
+    {
+        await ConfigureProwlarr();
+        await _settings.SetAsync(SettingKeys.ProwlarrIndexerIds, "1,2");
+        await _settings.SetAsync(SettingKeys.IndexerBackend, "jackett");
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() => Build().GetIndexerSettingsAsync(CancellationToken.None));
+
+        await _settings.SetAsync(SettingKeys.JackettUrl, "http://jackett.test:9117");
+        await _settings.SetAsync(SettingKeys.JackettApiKey, "jkey");
+        await _settings.SetAsync(SettingKeys.JackettIndexerIds, "nyaasi, animebytes");
+        await _settings.SetAsync(SettingKeys.JackettCategories, "7030,x,8000");
+        var config = await Build().GetIndexerSettingsAsync(CancellationToken.None);
+
+        Assert.Equal(IndexerBackend.Jackett, config.Backend);
+        Assert.Equal("http://jackett.test:9117", config.Url);
+        Assert.Equal(["nyaasi", "animebytes"], config.IndexerIds);
+        Assert.Equal([7030, 8000], config.Categories);
+    }
+
+    [Fact]
+    public async Task Search_goes_to_jackett_when_it_is_the_active_backend()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.IndexerBackend, "jackett");
+        await _settings.SetAsync(SettingKeys.JackettUrl, "http://jackett.test:9117");
+        await _settings.SetAsync(SettingKeys.JackettApiKey, "jkey");
+        var http = new StubHttpClientFactory("""
+            {"Results":[{"Title":"Berserk v01","Guid":"http://nyaa/1","Link":"http://jackett.test:9117/dl/nyaasi/?jackett_apikey=jkey&path=x",
+              "Size":1000,"Seeders":7,"Peers":10,"InfoHash":"0123456789ABCDEF0123456789ABCDEF01234567","Tracker":"Nyaa.si"}],
+             "Indexers":[{"ID":"nyaasi","Name":"Nyaa.si","Status":2,"Results":1,"Error":null}]}
+            """);
+
+        var result = await Build(http).SearchAsync(seriesId, "berserk");
+
+        var release = Assert.Single(result.Releases);
+        Assert.Equal(IndexerBackend.Jackett, result.Backend);
+        Assert.Equal("Nyaa.si", release.Indexer);
+        Assert.Equal(3, release.Leechers);
+        Assert.Equal("0123456789ABCDEF0123456789ABCDEF01234567", release.InfoHash);
+        Assert.StartsWith("http://jackett.test:9117/api/v2.0/indexers/all/results?", http.LastRequestUri);
     }
 
     [Fact]
@@ -291,6 +335,46 @@ public class ReleaseServiceTests : IDisposable
         Assert.IsType<OkObjectResult>(result);
         Assert.Equal([magnet], _client.AddedLinks);
         Assert.Equal("g title", db.DownloadQueue.Single(q => q.SeriesId == seriesId).Title);
+    }
+
+    [Fact]
+    public async Task Grab_falls_back_to_the_indexers_hash_when_the_url_add_reports_none()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
+        var release = new ReleaseDto("g", "Berserk v01", 1000, "Nyaa", 10, 1, "torrent", "http://jackett.test/dl/nyaasi", null, null,
+            InfoHash: "0123456789ABCDEF0123456789ABCDEF01234567");
+
+        var item = await Build(new DownloadLinkFactory("<html>busy</html>"u8.ToArray()))
+            .GrabAsync(seriesId, release, DownloadOrigin.Manual, null, null);
+
+        Assert.Equal([release.DownloadUrl!], _client.AddedLinks);
+        Assert.Equal("0123456789abcdef0123456789abcdef01234567",
+            System.Text.Json.JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
+    }
+
+    [Fact]
+    public async Task Grab_endpoint_refuses_a_release_the_previous_backend_returned()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        await ConfigureProwlarr();
+        await _settings.SetAsync(SettingKeys.DownloadClientUrl, "http://qbt.test");
+        var service = Build("[" + Release("g", "torrent", 5, magnet: "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567") + "]");
+        var controller = new ReleaseController(
+            service, new ReleaseSearchCache(new MemoryCache(new MemoryCacheOptions())), new TestLocalizer(),
+            NullLogger<ReleaseController>.Instance);
+
+        using var db = _db.NewContext();
+        var torrents = new TorrentUpgradeService(db, new UpgradeEvaluationService(db, TestQuality.Create()), service,
+            null!, new FakeAppSettings(), TimeProvider.System, new FakeRelatedTitles(), NullLogger<TorrentUpgradeService>.Instance);
+        Assert.IsType<OkObjectResult>(await controller.Search(seriesId, "berserk", torrents, CancellationToken.None));
+        await _settings.SetAsync(SettingKeys.IndexerBackend, "jackett");
+        var result = await controller.Grab(
+            new ReleaseController.GrabRequest(seriesId, new ReleaseDto("g", "", 0, "", 0, 0, "torrent", null, null, null)),
+            new TestCurrentUser(1), db, CancellationToken.None);
+
+        Assert.Equal(400, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
+        Assert.Empty(_client.AddedLinks);
     }
 
     [Fact]

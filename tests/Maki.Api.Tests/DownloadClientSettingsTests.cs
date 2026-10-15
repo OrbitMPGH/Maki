@@ -16,7 +16,7 @@ public sealed class DownloadClientSettingsTests : IDisposable
 
     private SettingsController Controller(SettingsService settings, ITorrentClient? client = null) => new(
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
-        settings: settings, naming: null!, flareSolverr: null!, prowlarr: null!,
+        settings: settings, naming: null!, flareSolverr: null!, indexers: null!,
         torrentClients: new TorrentClientRegistry([client ?? new FakeTorrentClient()]),
         kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
         mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,

@@ -32,7 +32,7 @@ in Maki's built-in reader or over OPDS.
 - **Local metadata.** A local copy of the [MangaBaka](https://mangabaka.org) database gives
   instant search with no API rate limits, and links each series to its MyAnimeList, AniList,
   MangaUpdates, and Kitsu IDs.
-- **Torrents alongside scrapers.** Search releases through Prowlarr and send them to qBittorrent, Transmission and Deluge.
+- **Torrents alongside scrapers.** Search releases through Prowlarr or Jackett and send them to qBittorrent, Transmission and Deluge.
   Maki imports each one when it finishes, repacking anything that is not already CBZ.
 - **Built for a household.** Per-user history, preferences, tracker accounts, and library access
   over one shared set of files. It also supports two-factor authentication, API keys, and OpenID
@@ -91,7 +91,7 @@ in Maki's built-in reader or over OPDS.
   and can be re-run or fixed by hand. Sources are drag-ordered by preference and can be disabled
   globally, and the series page can compare linked sources side by side on sampled page quality.
   A single chapter can also be re-fetched from whichever linked source has the better copy.
-- **Torrents.** Search releases through Prowlarr, grab them with qBittorrent, Transmission and Deluge, and auto-import on
+- **Torrents.** Search releases through Prowlarr or Jackett, grab them with qBittorrent, Transmission and Deluge, and auto-import on
   completion. Files are hardlinked into the library where possible, and torrents share the queue
   with scraper downloads. Anything that is not already CBZ is converted on the way in: `.zip` is
   placed unchanged (a CBZ is a zip), `.cbr`/`.rar`/`.7z`/`.tar` are repacked, and a folder of

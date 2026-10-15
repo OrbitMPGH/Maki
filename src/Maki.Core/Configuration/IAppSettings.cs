@@ -30,12 +30,20 @@ public static class SettingKeys
     /// download the prebuilt index never need it.
     /// </summary>
     public const string MangaBakaUseFullDump = "mangabaka.usefulldump";
+    /// <summary>Which indexer backend searches: an <c>IndexerBackends.Key</c>; unset reads as Prowlarr.</summary>
+    public const string IndexerBackend = "indexer.backend";
     public const string ProwlarrUrl = "prowlarr.url";
     public const string ProwlarrApiKey = "prowlarr.apikey";
     /// <summary>CSV of Prowlarr indexer ids to search; empty/unset = all indexers.</summary>
     public const string ProwlarrIndexerIds = "prowlarr.indexerids";
     /// <summary>CSV of Torznab category ids to search; empty/unset = all categories.</summary>
     public const string ProwlarrCategories = "prowlarr.categories";
+    public const string JackettUrl = "jackett.url";
+    public const string JackettApiKey = "jackett.apikey";
+    /// <summary>CSV of Jackett indexer ids (<c>nyaasi</c>); empty/unset = all configured indexers.</summary>
+    public const string JackettIndexerIds = "jackett.indexerids";
+    /// <summary>CSV of Torznab category ids to search; empty/unset = all categories.</summary>
+    public const string JackettCategories = "jackett.categories";
     /// <summary>Which driver talks to the download client: a <c>TorrentClientKinds.Key</c>; unset reads as qBittorrent.</summary>
     public const string DownloadClientKind = "downloadclient.kind";
     public const string DownloadClientUrl = "downloadclient.url";

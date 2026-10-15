@@ -59,6 +59,7 @@ import { useLanguageChoice } from '../i18n-context'
 import { AppearancePicker } from './AppearancePicker'
 import { ConnectionForm, type ConnectionFields } from './ConnectionSettingsCard'
 import { useDownloadClientFields } from './settings/downloadClientFields'
+import { IndexerForm } from './settings/IndexerForm'
 import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
 import { DumpProgressBar } from './MetadataDumpProgress'
@@ -479,7 +480,8 @@ interface ServiceSpec {
   name: ConnectionName
   title: string
   description: string
-  fields: ConnectionFields
+  /** Left out for the indexer, which has its own form. */
+  fields?: ConnectionFields
 }
 
 function useServices(): ServiceSpec[] {
@@ -493,18 +495,14 @@ function useServices(): ServiceSpec[] {
       fields: [{ key: 'url', label: t`URL`, placeholder: 'http://localhost:8191' }],
     },
     {
-      name: 'prowlarr',
-      title: 'Prowlarr',
-      description: t`Searches your indexers for manga releases to download as torrents.`,
-      fields: [
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
-        { key: 'apiKey', label: t`API key`, secret: true },
-      ],
+      name: 'indexer',
+      title: t`Indexer`,
+      description: t`Searches your indexers for manga releases to download as torrents. Works through Prowlarr or Jackett.`,
     },
     {
       name: 'downloadclient',
       title: t`Download client`,
-      description: t`Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker.`,
+      description: t`Downloads what the indexer finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker.`,
       fields: downloadClientFields,
     },
     {
@@ -532,7 +530,7 @@ function useConnectedTitles(): string[] {
   const services = useServices()
   const connected: Record<ConnectionName, boolean> = {
     flaresolverr: useConnected('flaresolverr'),
-    prowlarr: useConnected('prowlarr'),
+    indexer: useConnected('indexer'),
     downloadclient: useConnected('downloadclient'),
     kavita: useConnected('kavita'),
   }
@@ -563,7 +561,11 @@ function ServiceRow({ service }: { service: ServiceSpec }) {
       </UnstyledButton>
       <Collapse expanded={open} id={bodyId}>
         <div className="setup-service-body">
-          <ConnectionForm name={service.name} title={service.title} fields={service.fields} />
+          {service.fields ? (
+            <ConnectionForm name={service.name} title={service.title} fields={service.fields} />
+          ) : (
+            <IndexerForm />
+          )}
         </div>
       </Collapse>
     </div>

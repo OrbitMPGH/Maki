@@ -15,7 +15,7 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/release")]
-// Both actions: the search hits the instance's Prowlarr indexers, and the grab pushes a torrent to
+// Both actions: the search hits the instance's indexers, and the grab pushes a torrent to
 // the download client. Neither is something a read-only account should reach.
 [Authorize(Policy = Policies.DownloadChapters)]
 public class ReleaseController(
@@ -36,7 +36,7 @@ public class ReleaseController(
         try
         {
             var result = await releaseService.SearchAsync(seriesId, query, ct);
-            searches.Remember(seriesId, result.Releases);
+            searches.Remember(seriesId, result.Backend, result.Releases);
             var views = await torrents.EvaluateAsync(seriesId, result.Releases, ct);
             var byGuid = views
                 .Where(v => !v.Verdict.Reasons.Contains(SpanVerdictReasons.NoProfile))
@@ -54,7 +54,7 @@ public class ReleaseController(
         {
             return this.Fail(localizer, ex.Key);
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException)
         {
             logger.LogWarning(ex, "Release search failed for series {SeriesId}", seriesId);
             return this.BadGateway(localizer, "error.release.searchFailed");
@@ -67,7 +67,8 @@ public class ReleaseController(
         CancellationToken ct)
     {
         // Only the guid is taken from the request: the link, title and indexer come from the search.
-        if (searches.Find(request.SeriesId, request.Release.Guid) is not { } release)
+        var backend = await releaseService.ActiveBackendAsync(ct);
+        if (searches.Find(request.SeriesId, backend, request.Release.Guid) is not { } release)
         {
             return this.Fail(localizer, "error.release.searchExpired");
         }

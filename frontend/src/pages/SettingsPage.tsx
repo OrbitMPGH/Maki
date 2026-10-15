@@ -43,7 +43,7 @@ import {
 import {
   DownloadQueueSection,
   FlareSolverrCard,
-  ProwlarrSection,
+  IndexerSection,
   DownloadClientCard,
   SmartDownloadSection,
   ReadFileCleanupSection,
@@ -100,7 +100,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       languages: <SourceLanguageSection />,
       sources: <SourcePrioritySection />,
       flaresolverr: <FlareSolverrCard />,
-      prowlarr: <ProwlarrSection />,
+      indexer: <IndexerSection />,
       downloadclient: <DownloadClientCard />,
       profiles: <UpgradeProfilesSection />,
       formats: <QualityFormatsSection />,

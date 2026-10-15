@@ -19,7 +19,7 @@ public sealed class ScrobbleSettingsSecretTests : IDisposable
         var current = new TestCurrentUser(userId, permissions: MakiPermission.UseTrackers);
         return new SettingsController(
             localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
-            settings: new SettingsService(_db.ScopeFactory()), naming: null!, flareSolverr: null!, prowlarr: null!,
+            settings: new SettingsService(_db.ScopeFactory()), naming: null!, flareSolverr: null!, indexers: null!,
             torrentClients: null!, kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
             mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
             embeddingIndexer: null!, prebuiltIndex: null!, recoGraph: null!,

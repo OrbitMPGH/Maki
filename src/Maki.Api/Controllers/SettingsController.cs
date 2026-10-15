@@ -9,6 +9,7 @@ using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
+using Maki.Core.Indexers;
 using Maki.Core.Parsing;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -35,13 +36,13 @@ namespace Maki.Api.Controllers;
 // database, the reader's display defaults. Those are listed explicitly below and require only a
 // signed-in user; every other endpoint — and every write without exception — is admin-only.
 //
-// Reads matter as much as writes on the rest: these endpoints return the Prowlarr and Kavita API keys,
+// Reads matter as much as writes on the rest: these endpoints return the indexer and Kavita API keys,
 // the download client password and the tracker client secrets, all stored in plaintext by design.
 //
 // "reader", "ui", "discover", "opds" and the per-tracker halves of "scrobble" are per-user, stored in
 // UserSettings and read through the scoped IUserSettings — so their writes need no admin policy: a
 // caller can only ever change their own. Everything else here describes the deployment (paths,
-// Prowlarr/download client/Kavita connections, source priority, updates) or an app registration shared by
+// indexer/download client/Kavita connections, source priority, updates) or an app registration shared by
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
     ILocalizer localizer,
@@ -49,7 +50,7 @@ public class SettingsController(
     SettingsService settings,
     NamingService naming,
     FlareSolverrClient flareSolverr,
-    Maki.Core.Indexers.ProwlarrClient prowlarr,
+    Maki.Core.Indexers.IndexerRegistry indexers,
     Maki.Core.Download.TorrentClientRegistry torrentClients,
     Maki.Core.Kavita.KavitaClient kavita,
     SourceRegistry sourceRegistry,
@@ -81,7 +82,7 @@ public class SettingsController(
     AccountSecurityAlerts? alerts = null) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
-    public record ProwlarrSettings(string? Url, string? ApiKey);
+    public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
     public record DownloadClientSettings(
         string? Kind, string? Url, string? Username, string? Password, string? Label, string? PathMapFrom, string? PathMapTo);
     public record MetadataSettings(bool UseLocalDb);
@@ -1359,89 +1360,134 @@ public class SettingsController(
         return await GetSourceLanguages(ct);
     }
 
+    /// <summary>
+    /// A backend's connection. Without <paramref name="backend"/> it is the active one; naming another
+    /// reads that backend's stored values without switching, so the card can fill its fields.
+    /// </summary>
     [Authorize(Policy = Policies.Admin)]
-    [HttpGet("prowlarr")]
-    public async Task<IActionResult> GetProwlarr(CancellationToken ct) => Ok(new ProwlarrSettings(
-        await settings.GetAsync(SettingKeys.ProwlarrUrl, ct),
-        await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct)));
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpPut("prowlarr")]
-    public async Task<IActionResult> SetProwlarr([FromBody] ProwlarrSettings request, CancellationToken ct)
+    [HttpGet("indexer")]
+    public async Task<IActionResult> GetIndexer([FromQuery] string? backend, CancellationToken ct)
     {
+        IndexerBackend? chosen = null;
+        if (!string.IsNullOrWhiteSpace(backend))
+        {
+            if (IndexerBackends.Parse(backend) is not { } parsed)
+            {
+                return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+            }
+
+            chosen = parsed;
+        }
+
+        var stored = await IndexerSettingsStore.LoadAsync(settings, ct, chosen);
+        var keys = IndexerSettingsStore.KeysFor(stored.Backend);
+        return Ok(new IndexerConnection(
+            stored.Backend.Key(), await settings.GetAsync(keys.Url, ct), await settings.GetAsync(keys.ApiKey, ct)));
+    }
+
+    /// <summary>Makes <c>backend</c> the active one and stores its connection; the other backend's values stay.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("indexer")]
+    public async Task<IActionResult> SetIndexer([FromBody] IndexerConnection request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Backend) || IndexerBackends.Parse(request.Backend) is not { } backend)
+        {
+            return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+        }
+
         if (!IsValidServiceUrl(request.Url))
         {
-            return UrlError("Prowlarr");
+            return UrlError(backend.DisplayName());
         }
 
-        await settings.SetAsync(SettingKeys.ProwlarrUrl, request.Url, ct);
-        await settings.SetAsync(SettingKeys.ProwlarrApiKey, request.ApiKey, ct);
+        var keys = IndexerSettingsStore.KeysFor(backend);
+        await settings.SetAsync(SettingKeys.IndexerBackend, backend.Key(), ct);
+        await settings.SetAsync(keys.Url, request.Url, ct);
+        await settings.SetAsync(keys.ApiKey, request.ApiKey, ct);
+        return Ok(request with { Backend = backend.Key() });
+    }
+
+    public record IndexerOptions(string? IndexerIds, string? Categories);
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("indexer/options")]
+    public async Task<IActionResult> GetIndexerOptions(CancellationToken ct)
+    {
+        var keys = IndexerSettingsStore.KeysFor(await IndexerSettingsStore.ActiveBackendAsync(settings, ct));
+        return Ok(new IndexerOptions(
+            await settings.GetAsync(keys.IndexerIds, ct),
+            await settings.GetAsync(keys.Categories, ct)));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("indexer/options")]
+    public async Task<IActionResult> SetIndexerOptions([FromBody] IndexerOptions request, CancellationToken ct)
+    {
+        var keys = IndexerSettingsStore.KeysFor(await IndexerSettingsStore.ActiveBackendAsync(settings, ct));
+        await settings.SetAsync(keys.IndexerIds, request.IndexerIds, ct);
+        await settings.SetAsync(keys.Categories, request.Categories, ct);
         return Ok(request);
     }
 
-    public record ProwlarrOptions(string? IndexerIds, string? Categories);
-
+    /// <summary>The active backend's indexer list, with each one's categories, for the settings UI.</summary>
     [Authorize(Policy = Policies.Admin)]
-    [HttpGet("prowlarr/options")]
-    public async Task<IActionResult> GetProwlarrOptions(CancellationToken ct) => Ok(new ProwlarrOptions(
-        await settings.GetAsync(SettingKeys.ProwlarrIndexerIds, ct),
-        await settings.GetAsync(SettingKeys.ProwlarrCategories, ct)));
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpPut("prowlarr/options")]
-    public async Task<IActionResult> SetProwlarrOptions([FromBody] ProwlarrOptions request, CancellationToken ct)
+    [HttpGet("indexer/indexers")]
+    public async Task<IActionResult> GetIndexerList(CancellationToken ct)
     {
-        await settings.SetAsync(SettingKeys.ProwlarrIndexerIds, request.IndexerIds, ct);
-        await settings.SetAsync(SettingKeys.ProwlarrCategories, request.Categories, ct);
-        return Ok(request);
-    }
-
-    /// <summary>Proxies Prowlarr's indexer list (with category capabilities) for the settings UI.</summary>
-    [Authorize(Policy = Policies.Admin)]
-    [HttpGet("prowlarr/indexers")]
-    public async Task<IActionResult> GetProwlarrIndexers(CancellationToken ct)
-    {
-        var url = await settings.GetAsync(SettingKeys.ProwlarrUrl, ct);
-        var apiKey = await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
-        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        var stored = await IndexerSettingsStore.LoadAsync(settings, ct);
+        var service = stored.Backend.DisplayName();
+        if (!stored.IsConfigured)
         {
-            return this.Fail(localizer, "error.settings.prowlarrNotConfigured");
+            return this.Fail(localizer, "error.settings.indexerNotConfigured", new { service });
         }
 
-        var indexers = await prowlarr.GetIndexersAsync(url, apiKey, ct);
-        return Ok(indexers.Select(i => new
+        try
         {
-            i.Id,
-            i.Name,
-            i.Enable,
-            i.Protocol,
-            Categories = Flatten(i.Capabilities?.Categories)
-                .Where(c => c.Name is not null)
-                .Select(c => new { c.Id, c.Name })
-                .DistinctBy(c => c.Id)
-                .OrderBy(c => c.Id)
-        }));
-
-        static IEnumerable<Maki.Core.Indexers.ProwlarrClient.ProwlarrCategory> Flatten(
-            IEnumerable<Maki.Core.Indexers.ProwlarrClient.ProwlarrCategory>? categories) =>
-            categories?.SelectMany(c => new[] { c }.Concat(Flatten(c.SubCategories))) ?? [];
+            return Ok(await indexers.For(stored.Backend).GetIndexersAsync(stored, ct));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or System.Text.Json.JsonException
+                                       or System.Xml.XmlException ||
+                                   (ex is TaskCanceledException && !ct.IsCancellationRequested))
+        {
+            logger.LogInformation("Listing {Service} indexers failed: {Error}", service, ex.Message);
+            return this.BadGateway(localizer, "error.settings.indexerNoResponse", new { service });
+        }
     }
 
     [Authorize(Policy = Policies.Admin)]
-    [HttpPost("prowlarr/test")]
-    public async Task<IActionResult> TestProwlarr([FromBody] ProwlarrSettings request, CancellationToken ct)
+    [HttpPost("indexer/test")]
+    public async Task<IActionResult> TestIndexer([FromBody] IndexerConnection request, CancellationToken ct)
     {
-        var url = request.Url ?? await settings.GetAsync(SettingKeys.ProwlarrUrl, ct);
-        var apiKey = request.ApiKey ?? await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
-        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        IndexerBackend? chosen = null;
+        if (!string.IsNullOrWhiteSpace(request.Backend))
+        {
+            if (IndexerBackends.Parse(request.Backend) is not { } parsed)
+            {
+                return this.Fail(localizer, "error.settings.indexerBackendInvalid");
+            }
+
+            chosen = parsed;
+        }
+
+        var stored = await IndexerSettingsStore.LoadAsync(settings, ct, chosen);
+        var candidate = stored with
+        {
+            Url = request.Url ?? stored.Url,
+            ApiKey = request.ApiKey ?? stored.ApiKey,
+        };
+        if (!candidate.IsConfigured)
         {
             return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
-        return await prowlarr.PingAsync(url, apiKey, ct)
-            ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway,
-                new { success = false, code = "error.settings.prowlarrNoResponse", error = localizer.Get("error.settings.prowlarrNoResponse") });
+        if (await indexers.For(candidate.Backend).PingAsync(candidate, ct))
+        {
+            return Ok(new { success = true });
+        }
+
+        const string code = "error.settings.indexerNoResponse";
+        return StatusCode(StatusCodes.Status502BadGateway,
+            new { success = false, code, error = localizer.Get(code, new { service = candidate.Backend.DisplayName() }) });
     }
 
     [Authorize(Policy = Policies.Admin)]
