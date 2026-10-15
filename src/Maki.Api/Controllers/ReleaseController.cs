@@ -22,7 +22,10 @@ public class ReleaseController(
     ReleaseService releaseService, ReleaseSearchCache searches, ILocalizer localizer, ILogger<ReleaseController> logger)
     : ControllerBase
 {
-    public record GrabRequest(int SeriesId, ReleaseDto Release);
+    /// <summary>The release is named by its guid alone; the link, title and indexer come from the search.</summary>
+    public record GrabRelease(string Guid);
+
+    public record GrabRequest(int SeriesId, GrabRelease Release);
 
     /// <summary>
     /// Each row carries <c>parsed</c>: its span, tier, score and what the volume search would do with
@@ -42,13 +45,8 @@ public class ReleaseController(
                 .Where(v => !v.Verdict.Reasons.Contains(SpanVerdictReasons.NoProfile))
                 .GroupBy(v => v.Release.Guid)
                 .ToDictionary(g => g.Key, g => g.First());
-            return Ok(result with
-            {
-                Releases = [.. result.Releases.Select(r => r with
-                {
-                    Parsed = byGuid.TryGetValue(r.Guid, out var v) ? Parsed(v) : null
-                })]
-            });
+            return Ok(new ReleaseSearchResponse(result.Query, [.. result.Releases.Select(r =>
+                ReleaseResultDto.From(r, byGuid.TryGetValue(r.Guid, out var v) ? Parsed(v) : null))]));
         }
         catch (ReleaseRefusedException ex)
         {
@@ -66,7 +64,6 @@ public class ReleaseController(
         [FromBody] GrabRequest request, [FromServices] ICurrentUser user, [FromServices] MakiDbContext db,
         CancellationToken ct)
     {
-        // Only the guid is taken from the request: the link, title and indexer come from the search.
         var backend = await releaseService.ActiveBackendAsync(ct);
         if (searches.Find(request.SeriesId, backend, request.Release.Guid) is not { } release)
         {
@@ -80,7 +77,7 @@ public class ReleaseController(
 
             // Grabbed by hand from the search: a pending proposal for the same release is settled by it.
             if (await db.TorrentProposals.FirstOrDefaultAsync(p => p.SeriesId == request.SeriesId &&
-                    p.ReleaseGuid == request.Release.Guid && p.Status == TorrentProposalStatus.Pending, ct) is { } proposal)
+                    p.ReleaseGuid == release.Guid && p.Status == TorrentProposalStatus.Pending, ct) is { } proposal)
             {
                 proposal.Status = TorrentProposalStatus.Accepted;
                 proposal.QueueItemId = item.Id;

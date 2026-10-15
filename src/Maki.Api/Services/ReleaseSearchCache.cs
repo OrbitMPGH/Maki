@@ -7,7 +7,8 @@ namespace Maki.Api.Services;
 /// Releases an indexer search returned, per series and backend, so a grab can only send the download client a link the
 /// server itself was handed. Taking the link from the request let any account with DownloadChapters
 /// make the download client fetch an arbitrary URL from its own network position. Switching backend
-/// strands what the old one returned, since its links go through the old backend's proxy.
+/// strands what the old one returned, since its links go through the old backend's proxy. Entries are
+/// keyed by the guid as clients see it, which has any API key query parameter removed.
 /// </summary>
 public class ReleaseSearchCache(IMemoryCache cache)
 {
@@ -25,5 +26,5 @@ public class ReleaseSearchCache(IMemoryCache cache)
         cache.TryGetValue(Key(seriesId, backend, guid), out ReleaseDto? release) ? release : null;
 
     private static (string, int, IndexerBackend, string) Key(int seriesId, IndexerBackend backend, string guid) =>
-        ("release-search", seriesId, backend, guid);
+        ("release-search", seriesId, backend, IndexerLinks.WithoutApiKey(guid)!);
 }

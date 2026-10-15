@@ -28,6 +28,31 @@ public record ReleaseDto(
     public Dtos.ReleaseParsedDto? Parsed { get; init; }
 }
 
+/// <summary>
+/// A release as a client sees it. The download link is the indexer's proxy URL and carries its API key,
+/// so it stays on the server; a grab names the release by guid and the server resolves the link.
+/// </summary>
+public record ReleaseResultDto(
+    string Guid,
+    string Title,
+    long Size,
+    string Indexer,
+    int? Seeders,
+    int? Leechers,
+    string Protocol,
+    string? MagnetUrl,
+    string? InfoUrl,
+    string? InfoHash,
+    Dtos.ReleaseParsedDto? Parsed)
+{
+    public static ReleaseResultDto From(ReleaseDto release, Dtos.ReleaseParsedDto? parsed) => new(
+        IndexerLinks.WithoutApiKey(release.Guid)!, release.Title, release.Size, release.Indexer, release.Seeders,
+        release.Leechers, release.Protocol, release.MagnetUrl, IndexerLinks.WithoutApiKey(release.InfoUrl),
+        release.InfoHash, parsed);
+}
+
+public record ReleaseSearchResponse(string Query, IReadOnlyList<ReleaseResultDto> Releases);
+
 /// <summary>Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson).</summary>
 public record ReleaseInfo(
     string Guid,

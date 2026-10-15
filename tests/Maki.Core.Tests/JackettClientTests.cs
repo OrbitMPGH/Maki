@@ -112,6 +112,20 @@ public class JackettClientTests
     }
 
     [Fact]
+    public async Task A_guid_that_falls_back_to_the_proxy_link_drops_the_key_and_the_download_url_keeps_it()
+    {
+        var (client, _, _) = Build(_ => Ok("""
+            {"Results":[{"Title":"Berserk v05","Guid":null,"Details":null,
+              "Link":"http://jackett.test:9117/dl/nyaasi/?jackett_apikey=secret&path=abc"}],"Indexers":[]}
+            """));
+
+        var release = Assert.Single(await client.SearchAsync(Settings(), "berserk"));
+
+        Assert.Equal("http://jackett.test:9117/dl/nyaasi/?path=abc", release.Guid);
+        Assert.Equal("http://jackett.test:9117/dl/nyaasi/?jackett_apikey=secret&path=abc", release.DownloadUrl);
+    }
+
+    [Fact]
     public async Task A_magnet_link_is_a_magnet_url_and_not_a_download_url()
     {
         const string magnet = "magnet:?xt=urn:btih:abc";

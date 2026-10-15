@@ -3202,7 +3202,6 @@ export interface ReleaseDto {
   seeders: number | null
   leechers: number | null
   protocol: string
-  downloadUrl: string | null
   magnetUrl: string | null
   infoUrl: string | null
 }
@@ -3234,10 +3233,10 @@ export function useReleaseSearch(seriesId: number, enabled: boolean, query?: str
 export function useGrabRelease() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { seriesId: number; release: ReleaseDto }) =>
+    mutationFn: (payload: { seriesId: number; release: Pick<ReleaseDto, 'guid'> }) =>
       api<{ queueItemId: number }>('/release/grab', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ seriesId: payload.seriesId, release: { guid: payload.release.guid } }),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })

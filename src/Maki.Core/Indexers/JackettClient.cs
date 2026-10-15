@@ -91,7 +91,7 @@ public class JackettClient(IHttpClientFactory httpClientFactory, ILogger<Jackett
 
     private static IndexerRelease? ToRelease(JackettResult r)
     {
-        var guid = r.Guid ?? r.Details ?? r.MagnetUri ?? r.Link;
+        var guid = IndexerLinks.WithoutApiKey(r.Guid ?? r.Details ?? r.MagnetUri ?? r.Link);
         if (string.IsNullOrWhiteSpace(r.Title) || string.IsNullOrWhiteSpace(guid))
         {
             return null;
