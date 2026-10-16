@@ -7278,14 +7278,6 @@ msgstr "Languages to download, most preferred first. Auto-match tries sources th
 msgid "Languages to read markers in"
 msgstr "Languages to read markers in"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#~ msgid "Large tiles"
-#~ msgstr "Large tiles"
-
-#: src/components/layout/SectionProperties.tsx
-#~ msgid "Large tiles for the first three"
-#~ msgstr "Large tiles for the first three"
-
 #: src/pages/settings/DownloadCards.tsx
 msgid "Larger releases become proposals you approve by hand."
 msgstr "Larger releases become proposals you approve by hand."
@@ -7413,10 +7405,6 @@ msgstr "Layout saved"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr "Lead with a hero"
-
-#: src/components/layout/SectionProperties.tsx
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "Lead with big cover tiles instead of a plain row."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Leaderboard"

@@ -8940,16 +8940,6 @@ msgstr "Langues à télécharger, de la plus prioritaire à la moins prioritaire
 msgid "Languages to read markers in"
 msgstr "Langues des marqueurs à lire"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-#~ msgid "Large tiles"
-#~ msgstr "Grandes vignettes"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Large tiles for the first three"
-#~ msgstr "Grandes vignettes pour les trois premières"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9106,11 +9096,6 @@ msgstr "Mise en page enregistrée"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr ""
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "Commencez par de grandes vignettes de couverture plutôt que par une simple ligne."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

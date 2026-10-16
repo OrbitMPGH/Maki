@@ -8940,16 +8940,6 @@ msgstr "Языки для загрузки, сначала наиболее пр
 msgid "Languages to read markers in"
 msgstr "Языки для распознавания обозначений"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-#~ msgid "Large tiles"
-#~ msgstr "Крупные плитки"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Large tiles for the first three"
-#~ msgstr "Крупные плитки для первых трёх"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9106,11 +9096,6 @@ msgstr "Макет сохранён"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr ""
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "Вместо обычного ряда сначала показывать крупные плитки с обложками."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

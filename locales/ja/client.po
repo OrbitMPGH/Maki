@@ -8939,16 +8939,6 @@ msgstr "ダウンロードする言語です。一番上が最優先です。自
 msgid "Languages to read markers in"
 msgstr "マーカーを読み取る言語"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-#~ msgid "Large tiles"
-#~ msgstr "大きなタイル"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Large tiles for the first three"
-#~ msgstr "最初の3件を大きなタイルで表示"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9105,11 +9095,6 @@ msgstr "レイアウトを保存しました"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr ""
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "通常の横一列ではなく、大きな表紙タイルから始めます。"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

@@ -8940,16 +8940,6 @@ msgstr "Języki do pobrania, od najbardziej preferowanego. Automatyczne dopasowa
 msgid "Languages to read markers in"
 msgstr "Języki do rozpoznawania oznaczeń"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-#~ msgid "Large tiles"
-#~ msgstr "Duże kafelki"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Large tiles for the first three"
-#~ msgstr "Duże kafelki dla pierwszych trzech"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9106,11 +9096,6 @@ msgstr "Układ został zapisany"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr ""
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "Pokaż na początku duże kafelki z okładkami zamiast zwykłego wiersza."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

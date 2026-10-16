@@ -8940,16 +8940,6 @@ msgstr "Idiomas que se descargarán, de mayor a menor preferencia. Auto-match pr
 msgid "Languages to read markers in"
 msgstr "Idiomas en los que leer indicadores"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-#~ msgid "Large tiles"
-#~ msgstr "Tarjetas grandes"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Large tiles for the first three"
-#~ msgstr "Tarjetas grandes para las tres primeras"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9106,11 +9096,6 @@ msgstr "Diseño guardado"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr ""
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "Mostrar portadas grandes en lugar de una fila sencilla."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

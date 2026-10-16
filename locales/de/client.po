@@ -8940,16 +8940,6 @@ msgstr "Sprachen für Downloads, bevorzugte zuerst. Beim Auto-Abgleich werden zu
 msgid "Languages to read markers in"
 msgstr "Sprachen für Markierungen"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-#~ msgid "Large tiles"
-#~ msgstr "Große Kacheln"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Large tiles for the first three"
-#~ msgstr "Große Kacheln für die ersten drei"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9106,11 +9096,6 @@ msgstr "Layout gespeichert"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr ""
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "Mit großen Cover-Kacheln beginnen statt mit einer einfachen Reihe."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

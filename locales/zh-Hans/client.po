@@ -8939,16 +8939,6 @@ msgstr "按偏好从高到低排列要下载的语言。自动匹配会优先尝
 msgid "Languages to read markers in"
 msgstr "读取标记的语言"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-#~ msgid "Large tiles"
-#~ msgstr "大尺寸卡片"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Large tiles for the first three"
-#~ msgstr "前三个使用大尺寸卡片"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9105,11 +9095,6 @@ msgstr "布局已保存"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr ""
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "使用大型封面卡片展示重点，而不是普通横排。"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

@@ -8940,16 +8940,6 @@ msgstr "İndirilecek diller, en çok tercih edilenden başlayarak. Otomatik eşl
 msgid "Languages to read markers in"
 msgstr "İşaretlerin okunacağı diller"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-#~ msgid "Large tiles"
-#~ msgstr "Büyük kutucuklar"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Large tiles for the first three"
-#~ msgstr "İlk üçü büyük kutucuklarla göster"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9106,11 +9096,6 @@ msgstr "Düzen kaydedildi"
 #: src/components/layout/SectionProperties.tsx
 msgid "Lead with a hero"
 msgstr ""
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-#~ msgid "Lead with big cover tiles instead of a plain row."
-#~ msgstr "Düz bir satır yerine büyük kapak kutucuklarıyla başlatın."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
