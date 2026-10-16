@@ -513,8 +513,10 @@ public class ReaderController(
 
     /// <summary>
     /// The manifest's <c>pageVersion</c> for each requested chapter the caller can still read, so a
-    /// device can check the chapters it saved offline in one call. A chapter outside the caller's
-    /// root folders, without a file, or whose file is gone is left out, and the device drops it.
+    /// device can check the chapters it saved offline in one call. A chapter that does not exist,
+    /// has no file record, or is outside the caller's root folders is left out, and the device
+    /// drops it. A chapter whose file cannot be read right now (an unmounted root) comes back with
+    /// a null <c>pageVersion</c>, so a storage outage never wipes the device's copies.
     /// </summary>
     [HttpPost("chapters/versions")]
     public async Task<IActionResult> ChapterVersions(ChapterVersionsRequest req, CancellationToken ct)
@@ -526,7 +528,7 @@ public class ReaderController(
         }
 
         var versions = await reader.ArchiveVersionsAsync(ids, ct);
-        return Ok(versions.Select(v => new { id = v.ChapterId, pageVersion = PageVersion(v.ChapterFileId, v.ArchiveVersion) }));
+        return Ok(versions.Select(v => new { id = v.ChapterId, pageVersion = v.ArchiveVersion is null ? null : PageVersion(v.ChapterFileId, v.ArchiveVersion) }));
     }
 
     /// <summary>

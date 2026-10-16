@@ -215,12 +215,13 @@ public class ReaderService(
     }
 
     /// <summary>
-    /// The archive version behind each chapter the caller can see that has a file on disk, for a
+    /// The archive version behind each chapter the caller can see that has a file record, for a
     /// device checking whether the chapters it saved offline are still current. Same filters and
     /// same version as <see cref="SliceAsync"/>, but one query and one stat per file: the archive
-    /// itself is not opened.
+    /// itself is not opened. A null version means the file cannot be read right now (an unmounted
+    /// root, a failed stat): the chapter is still the caller's, so the device must keep its copy.
     /// </summary>
-    public async Task<List<(int ChapterId, int ChapterFileId, string ArchiveVersion)>> ArchiveVersionsAsync(
+    public async Task<List<(int ChapterId, int ChapterFileId, string? ArchiveVersion)>> ArchiveVersionsAsync(
         IReadOnlyCollection<int> chapterIds, CancellationToken ct)
     {
         if (chapterIds.Count == 0)
@@ -242,24 +243,18 @@ public class ReaderService(
             .ToListAsync(ct);
 
         var stamps = new Dictionary<int, long?>();
-        var versions = new List<(int, int, string)>();
+        var versions = new List<(int, int, string?)>();
         foreach (var row in rows)
         {
-            if (string.IsNullOrEmpty(row.RootPath))
-            {
-                continue;
-            }
-
             if (!stamps.TryGetValue(row.FileId, out var stamp))
             {
-                stamp = LibraryPaths.Resolve(row.RootPath, row.RelativePath) is { } absolute ? StampOf(absolute) : null;
+                stamp = !string.IsNullOrEmpty(row.RootPath) && LibraryPaths.Resolve(row.RootPath, row.RelativePath) is { } absolute
+                    ? StampOf(absolute)
+                    : null;
                 stamps[row.FileId] = stamp;
             }
 
-            if (stamp is { } known)
-            {
-                versions.Add((row.Id, row.FileId, ArchiveVersionOf(row.Size, known)));
-            }
+            versions.Add((row.Id, row.FileId, stamp is { } known ? ArchiveVersionOf(row.Size, known) : null));
         }
 
         return versions;
@@ -570,7 +565,8 @@ public class ReaderService(
         // was completed, which for an abandoned one is never.
         if (justCompleted || time.Final || row.ReadSeconds - row.ReportedSeconds >= ReadingTimeFlushSeconds)
         {
-            StageReadingTime(row, slice.Series, at);
+            // A replay dates only its own seconds: whatever else is banked was read live, after `at`.
+            StageReadingTime(row, slice.Series, at, clientTime is null ? null : reportedSeconds);
         }
 
         var sessionStaged = await StageSessionAsync(slice.Series, reportedSeconds, justCompleted, at, ct);
@@ -643,15 +639,20 @@ public class ReaderService(
     /// dump the whole hidden backlog into Rewind on the next page turn.
     /// </para>
     /// </summary>
-    private void StageReadingTime(ChapterProgress row, Series series, DateTime at)
+    private void StageReadingTime(ChapterProgress row, Series series, DateTime at, int? onlySeconds = null)
     {
         var unreported = row.ReadSeconds - row.ReportedSeconds;
+        if (onlySeconds is { } own)
+        {
+            unreported = Math.Min(unreported, own);
+        }
+
         if (unreported <= 0)
         {
             return;
         }
 
-        row.ReportedSeconds = row.ReadSeconds;
+        row.ReportedSeconds += unreported;
 
         if (series.Incognito != IncognitoMode.Full)
         {

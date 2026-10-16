@@ -158,9 +158,10 @@ Chapters on a shared volume file have different page URLs and are stored twice. 
 
 ### Revalidation
 
-At most once an hour per device while online (on start and after the queue drains), the manager posts all saved chapter ids to a new endpoint, `POST /api/v1/reader/chapters/versions` (lane C), which returns `{ id, pageVersion }` for each chapter the caller can still read. One cheap query instead of a full manifest per chapter.
+At most once an hour per device while online (on start and after the queue drains), the manager posts all saved chapter ids to a new endpoint, `POST /api/v1/reader/chapters/versions` (lane C), which returns `{ id, pageVersion }` for each chapter the caller can still read. `pageVersion` is null when the chapter has a file record but the file cannot be read right now (unmounted root, failed stat). One cheap query instead of a full manifest per chapter.
 
-- Id missing from the response (gone, no file, or no access): delete the record and its pages.
+- Id missing from the response (chapter deleted, no file record, or no access): delete the record and its pages.
+- `pageVersion` null (file unreadable at the moment): keep the copy and change nothing, so a briefly unmounted NAS never wipes saved chapters.
 - `pageVersion` changed: mark `stale` and re-download.
 
 This is also how revocation reaches the device. Offline, a revoked user can keep reading what is saved until the next online check. Accepted and documented.
@@ -236,7 +237,7 @@ Rows for another user id stay until that user signs in again. A row found in `se
 - Chapter-read stats events from `TrackNativeAsync` and `RecordUnnumberedReadAsync` get an `at` parameter if that is a matter of passing it through. If it needs restructuring, they stay dated at replay and the rule file says so.
 - Reading-session stitching (`ReadingSessionService.Stitch`): when the report carries a `clientTime`, it only joins the latest sitting if its interval `[clientTime - seconds, clientTime]` overlaps or comes within the gap of that sitting on either side. Otherwise it becomes its own row, even though it is older than the latest. A morning's offline reading must not merge into the afternoon's live sitting as one long row.
 
-New endpoint `POST /api/v1/reader/chapters/versions`: body `{ ids: int[] }` (max 500), returns `[{ id, pageVersion }]` for chapters the caller can see that have a readable file, using the same scoping and `pageVersion` formula as the manifest. Entry in `ControllerAuthorizationInventoryTests`.
+New endpoint `POST /api/v1/reader/chapters/versions`: body `{ ids: int[] }` (max 500), returns `[{ id, pageVersion }]` for chapters the caller can see that have a file record (`pageVersion` is null when the file cannot be stat'ed right now), using the same scoping and `pageVersion` formula as the manifest. Entry in `ControllerAuthorizationInventoryTests`.
 
 Tests in `Maki.Api.Tests`:
 
@@ -248,7 +249,7 @@ Tests in `Maki.Api.Tests`:
 - A live write after a queued completion does not un-complete (completion is sticky).
 - `Stitch` with a report older than the latest sitting by more than the gap makes a new row.
 - Absent fields behave exactly as before.
-- `chapters/versions` omits chapters outside the caller's scope and chapters without a file.
+- `chapters/versions` omits chapters outside the caller's scope and chapters without a file record, and returns a null `pageVersion` for an unreadable file.
 
 `.claude/rules/reader-progress.md` gets a short section on `clientTime`, `opId` and the stitching rule.
 

@@ -46,4 +46,4 @@ Design and rationale: `docs/design-pwa.md`. Push server side is in `stats-notifi
 ## Saved chapters
 
 - Pages are stored under exactly the URLs the reader requests, `?v={pageVersion}` included. A new `pageVersion` means a re-download, not a cache hit.
-- Revalidation goes through `POST reader/chapters/versions`, at most hourly. A missing id means gone or no access: delete the copy. This is the only way revocation reaches a device.
+- Revalidation goes through `POST reader/chapters/versions`, at most hourly. A missing id means gone or no access: delete the copy. A null `pageVersion` means the file is unreadable right now (unmounted root): keep the copy. This is the only way revocation reaches a device.

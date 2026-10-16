@@ -647,6 +647,33 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task AReplayDatesOnlyItsOwnSecondsAndLeavesLiveBankedTimeForTheNextFlush()
+    {
+        var (reader, slice) = await ThreePagesAsync("replaytime.cbz");
+        var yesterday = DateTime.UtcNow.AddDays(-1);
+
+        await reader.SaveProgressAsync(slice, 0, null, new(100, false), None);
+        Assert.Empty(Events());
+
+        await reader.SaveProgressAsync(slice, 0, null, new(200, true), None, yesterday, "q1");
+
+        var replayed = Assert.Single(Events(), e => e.Type == StatsEventType.ReadingTime);
+        Assert.Equal(200, replayed.Value);
+        Assert.Equal(yesterday, replayed.Timestamp);
+        Assert.Equal(200, Row().ReportedSeconds);
+
+        var before = DateTime.UtcNow;
+        await reader.SaveProgressAsync(slice, 1, null, new(30, true), None);
+
+        var times = Events().Where(e => e.Type == StatsEventType.ReadingTime).OrderBy(e => e.Timestamp).ToList();
+        Assert.Equal(2, times.Count);
+        Assert.Equal(130, times[1].Value);
+        Assert.True(times[1].Timestamp >= before.AddSeconds(-1));
+        Assert.Equal(330, Row().ReportedSeconds);
+        Assert.Equal(330, Row().ReadSeconds);
+    }
+
+    [Fact]
     public async Task AClientTimeIsClampedToTheAcceptedWindow()
     {
         var (reader, slice) = await ThreePagesAsync("clamp.cbz");
@@ -753,7 +780,7 @@ public sealed class ReaderServiceTests : IDisposable
     // ---- offline copies ----
 
     [Fact]
-    public async Task ArchiveVersionsCoverOnlyReadableChaptersTheCallerCanSee()
+    public async Task ArchiveVersionsOmitChaptersTheCallerCannotSeeAndNullTheUnreadableOnes()
     {
         var (seriesId, shared) = SeedFromCbz("granted.cbz", ["S - c001 - p001.png", "S - c002 - p001.png"],
             [(1m, null), (2m, null)]);
@@ -781,8 +808,13 @@ public sealed class ReaderServiceTests : IDisposable
             [shared[1m], shared[2m], hidden[1m], gone, noFile, 999_999], None);
 
         var slice = await Reader().SliceAsync(shared[1m], None);
+        var goneFileId = _db.NewContext().Chapters.Single(c => c.Id == gone).ChapterFileId!.Value;
         Assert.Equal(
-            [(shared[1m], slice!.ChapterFileId, slice.ArchiveVersion), (shared[2m], slice.ChapterFileId, slice.ArchiveVersion)],
+            [
+                (shared[1m], slice!.ChapterFileId, (string?)slice.ArchiveVersion),
+                (shared[2m], slice.ChapterFileId, slice.ArchiveVersion),
+                (gone, goneFileId, null)
+            ],
             versions.OrderBy(v => v.ChapterId).ToList());
     }
 
