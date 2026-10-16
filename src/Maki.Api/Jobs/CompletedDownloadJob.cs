@@ -126,15 +126,42 @@ public class CompletedDownloadJob(
         // Only a hashless item ever consults the set, so the history is read only while one is pending
         // instead of on every poll.
         var claimedHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // Claimed hashes whose every owner failed or was cancelled, with the series those owners were for.
+        var abandonedHashes = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
         if (pending.Any(q => ReleaseInfoOf(q) is { TorrentHash: null }))
         {
-            var claimedJson = await db.DownloadQueue
+            var owners = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Torrent && q.ReleaseInfoJson != null)
-                .Select(q => q.ReleaseInfoJson!)
+                .Select(q => new { q.SeriesId, q.Status, q.ReleaseInfoJson })
                 .ToListAsync(ct);
-            claimedHashes.UnionWith(claimedJson
-                .Select(j => JsonSerializer.Deserialize<ReleaseInfo>(j)?.TorrentHash)
-                .OfType<string>());
+            var liveHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var owner in owners)
+            {
+                if (JsonSerializer.Deserialize<ReleaseInfo>(owner.ReleaseInfoJson!)?.TorrentHash is not { } hash)
+                {
+                    continue;
+                }
+
+                claimedHashes.Add(hash);
+                if (owner.Status is QueueStatus.Failed or QueueStatus.Cancelled)
+                {
+                    if (!abandonedHashes.TryGetValue(hash, out var series))
+                    {
+                        abandonedHashes[hash] = series = [];
+                    }
+
+                    series.Add(owner.SeriesId);
+                }
+                else
+                {
+                    liveHashes.Add(hash);
+                }
+            }
+
+            foreach (var live in liveHashes)
+            {
+                abandonedHashes.Remove(live);
+            }
         }
 
         // Sent after the poll's single save, so a failed save cannot announce the same row twice.
@@ -169,7 +196,7 @@ public class CompletedDownloadJob(
 
             var torrent = info.TorrentHash != null
                 ? torrents.FirstOrDefault(t => t.Hash.Equals(info.TorrentHash, StringComparison.OrdinalIgnoreCase))
-                : ClaimTorrent(item, torrents, claimedHashes);
+                : ClaimTorrent(item, info, torrents, claimedHashes, abandonedHashes);
 
             if (torrent is null)
             {
@@ -231,6 +258,7 @@ public class CompletedDownloadJob(
                 info = info with { TorrentHash = torrent.Hash };
                 item.ReleaseInfoJson = JsonSerializer.Serialize(info);
                 claimedHashes.Add(torrent.Hash);
+                abandonedHashes.Remove(torrent.Hash);
             }
 
             var previousPagesDone = item.PagesDone;
@@ -405,18 +433,41 @@ public class CompletedDownloadJob(
     /// <summary>
     /// Best guess at the client's torrent for an item with no infohash, which since grabs resolve
     /// the hash themselves means one whose .torrent file Maki could not fetch (or a row from before
-    /// that): an unclaimed torrent added around the grab time. A torrent the client already had is
-    /// never found this way, since another row owns it. Among those,
-    /// one whose name carries the series' title is strongly preferred, so a new item can't
-    /// adopt an unrelated torrent that merely shares the time window. Falls back to the
-    /// oldest in-window torrent (the original guess) when nothing matches, so an
-    /// odd-naming indexer still resolves rather than stranding the download.
+    /// that).
+    /// <para>
+    /// A torrent named exactly like the release wins, whenever it was added: the client may have had
+    /// it before the grab (added by hand, or left behind by a removed row), and a retried row is older
+    /// than its window. It may also be one a failed or cancelled row of the same series still holds
+    /// the hash of, which is what a torrent that went invisible to a label filter leaves behind.
+    /// </para>
+    /// <para>
+    /// Otherwise an unclaimed torrent added around the grab time, one whose name carries the series'
+    /// title strongly preferred, so a new item can't adopt an unrelated torrent that merely shares the
+    /// window. Falls back to the oldest in-window torrent when nothing matches, so an odd-naming
+    /// indexer still resolves rather than stranding the download.
+    /// </para>
     /// </summary>
     private static ClientTorrent? ClaimTorrent(
         DownloadQueueItem item,
+        ReleaseInfo info,
         IReadOnlyList<ClientTorrent> torrents,
-        HashSet<string> claimedHashes)
+        HashSet<string> claimedHashes,
+        Dictionary<string, HashSet<int>> abandonedHashes)
     {
+        var releaseName = ComparableName(info.Title ?? item.Title);
+        if (releaseName.Length > 0)
+        {
+            var sameName = torrents
+                .Where(t => ComparableName(t.Name) == releaseName &&
+                            (!claimedHashes.Contains(t.Hash) ||
+                             (abandonedHashes.TryGetValue(t.Hash, out var series) && series.All(id => id == item.SeriesId))))
+                .MaxBy(t => t.AddedAt);
+            if (sameName is not null)
+            {
+                return sameName;
+            }
+        }
+
         var earliest = new DateTimeOffset(item.QueuedAt).AddSeconds(-120);
         var eligible = torrents
             .Where(t => !claimedHashes.Contains(t.Hash) && t.AddedAt >= earliest)
@@ -427,7 +478,7 @@ public class CompletedDownloadJob(
             return null;
         }
 
-        var seriesTokens = PrimaryTitleTokens(item.Series?.Title ?? ReleaseInfoOf(item)?.Title);
+        var seriesTokens = PrimaryTitleTokens(item.Series?.Title ?? info.Title);
         var named = eligible.FirstOrDefault(t => MatchesSeries(t.Name, seriesTokens));
         return named ?? eligible[0];
     }
@@ -450,6 +501,29 @@ public class CompletedDownloadJob(
     /// </summary>
     private static HashSet<string> PrimaryTitleTokens(string? title) =>
         string.IsNullOrWhiteSpace(title) ? [] : Tokenize(SearchQuery.Candidates(title).Last());
+
+    private static readonly HashSet<string> SingleFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".cbz", ".cbr", ".cb7", ".zip", ".rar", ".7z", ".pdf", ".epub",
+    };
+
+    /// <summary>A release or torrent name with case, punctuation and a single file's extension evened out.</summary>
+    internal static string ComparableName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = name.Trim();
+        var extension = Path.GetExtension(trimmed);
+        if (SingleFileExtensions.Contains(extension))
+        {
+            trimmed = trimmed[..^extension.Length];
+        }
+
+        return string.Join(' ', Regex.Split(trimmed.ToLowerInvariant(), @"[^\p{L}\p{N}]+").Where(t => t.Length > 0));
+    }
 
     private static HashSet<string> Tokenize(string value) =>
         Regex.Split(value.ToLowerInvariant(), "[^a-z0-9]+")

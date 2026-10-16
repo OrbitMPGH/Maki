@@ -30,8 +30,8 @@ public class CompletedDownloadJobTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private static ClientTorrent Torrent(string hash, double progress, DateTime addedAt) => new(
-        hash, "Berserk v01 (Digital)", progress, progress >= 1.0, "/dl/Berserk v01", new DateTimeOffset(addedAt), false, null);
+    private static ClientTorrent Torrent(string hash, double progress, DateTime addedAt, string name = "Berserk v01 (Digital)") => new(
+        hash, name, progress, progress >= 1.0, "/dl/" + name, new DateTimeOffset(addedAt), false, null);
 
     private int SeedItem(QueueStatus status, string? hash, DateTime queuedAt, string title = "Berserk v01")
     {
@@ -247,6 +247,65 @@ public class CompletedDownloadJobTests : IDisposable
         Assert.Null(JsonSerializer.Deserialize<ReleaseInfo>(item.ReleaseInfoJson!)!.TorrentHash);
         Assert.Equal(QueueStatus.Downloading, item.Status);
     }
+
+    private const string PackName = "Berserk v01-05 (2024-2026) (Digital) (1r0n)";
+
+    private string? HashOf(int id) =>
+        JsonSerializer.Deserialize<ReleaseInfo>(Reload(id).ReleaseInfoJson!)!.TorrentHash;
+
+    [Fact]
+    public async Task A_hashless_grab_claims_a_torrent_named_like_its_release_that_the_client_already_had()
+    {
+        var id = SeedItem(QueueStatus.Downloading, hash: null, DateTime.UtcNow.AddHours(-3), PackName);
+        _client.Torrents.Add(Torrent("abc123", 0.5, DateTime.UtcNow.AddDays(-2), PackName));
+
+        await RunAsync();
+
+        Assert.Equal("abc123", HashOf(id));
+        Assert.Equal(QueueStatus.Downloading, Reload(id).Status);
+    }
+
+    [Fact]
+    public async Task A_torrent_left_behind_by_a_failed_row_of_the_same_series_is_claimed_by_name()
+    {
+        SeedItem(QueueStatus.Failed, hash: "abc123", DateTime.UtcNow.AddDays(-1), PackName);
+        var id = SeedItem(QueueStatus.Downloading, hash: null, DateTime.UtcNow.AddHours(-3), PackName);
+        _client.Torrents.Add(Torrent("abc123", 0.5, DateTime.UtcNow.AddDays(-1), PackName));
+
+        await RunAsync();
+
+        Assert.Equal("abc123", HashOf(id));
+    }
+
+    [Theory]
+    [InlineData(QueueStatus.Completed, false)]
+    [InlineData(QueueStatus.Failed, true)]
+    public async Task A_torrent_another_row_holds_is_not_claimed_by_name(QueueStatus ownerStatus, bool otherSeries)
+    {
+        var owner = SeedItem(ownerStatus, hash: "abc123", DateTime.UtcNow.AddDays(-1), PackName);
+        if (otherSeries)
+        {
+            using var db = _db.NewContext();
+            db.DownloadQueue.Single(q => q.Id == owner).SeriesId = _db.SeedSeries("Vagabond");
+            db.SaveChanges();
+        }
+
+        var id = SeedItem(QueueStatus.Downloading, hash: null, DateTime.UtcNow.AddMinutes(-10), PackName);
+        _client.Torrents.Add(Torrent("abc123", 1.0, DateTime.UtcNow.AddDays(-1), PackName));
+
+        await RunAsync();
+
+        Assert.Null(HashOf(id));
+        Assert.Equal(QueueStatus.Downloading, Reload(id).Status);
+    }
+
+    [Theory]
+    [InlineData("Berserk v01-05 (2024-2026) (Digital) (1r0n)", "berserk v01 05 2024 2026 digital 1r0n")]
+    [InlineData("Berserk_v01.cbz", "berserk v01")]
+    [InlineData("Berserk v01.5", "berserk v01 5")]
+    [InlineData("  ", "")]
+    public void Names_compare_without_case_punctuation_or_a_file_extension(string name, string expected) =>
+        Assert.Equal(expected, CompletedDownloadJob.ComparableName(name));
 
     [Fact]
     public async Task A_finished_torrent_waiting_for_an_import_decision_is_not_advanced()
