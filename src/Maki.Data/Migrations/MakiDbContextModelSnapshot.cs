@@ -254,6 +254,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("ReadSeconds")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("RecentOpIds")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("ReportedSeconds")
                         .HasColumnType("INTEGER");
 

@@ -363,21 +363,66 @@ public class ReaderService(
     /// otherwise throw away the position they were recording. The retry re-reads and updates the
     /// row the winner created.
     /// </para>
+    /// <para>
+    /// <paramref name="clientTime"/> and <paramref name="opId"/> come from a write that may have been
+    /// queued offline and replayed. A known <paramref name="opId"/> is acknowledged without changing
+    /// anything. A <paramref name="clientTime"/> older than the row's last change adds its time and
+    /// its completion but leaves the position alone; otherwise it dates the write.
+    /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct)
+        TimeReport time, CancellationToken ct, DateTime? clientTime = null, string? opId = null)
     {
         try
         {
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, ct);
         }
         catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
             db.ChangeTracker.Clear();
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, ct);
         }
+    }
+
+    /// <summary>How many applied op ids a progress row remembers. See <see cref="ChapterProgress.RecentOpIds"/>.</summary>
+    internal const int RecentOpIdLimit = 32;
+
+    internal const int MaxOpIdLength = 64;
+
+    /// <summary>How far back a queued write may date itself. Older claims are pinned to this.</summary>
+    internal static readonly TimeSpan MaxClientTimeAge = TimeSpan.FromDays(30);
+
+    public static bool IsValidOpId(string? opId) =>
+        opId is null || (opId.Length is > 0 and <= MaxOpIdLength && !opId.Any(char.IsWhiteSpace));
+
+    /// <summary>A client's claim of when a write happened, in UTC and inside the accepted window.</summary>
+    internal static DateTime ClampClientTime(DateTime clientTime, DateTime now)
+    {
+        var utc = clientTime.Kind switch
+        {
+            DateTimeKind.Local => clientTime.ToUniversalTime(),
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(clientTime, DateTimeKind.Utc),
+            _ => clientTime
+        };
+        var floor = now - MaxClientTimeAge;
+        return utc < floor ? floor : utc > now ? now : utc;
+    }
+
+    private static bool HasOpId(ChapterProgress row, string opId) =>
+        row.RecentOpIds is { } ids && ids.Split(' ').Contains(opId, StringComparer.Ordinal);
+
+    private static void RememberOpId(ChapterProgress row, string? opId)
+    {
+        if (opId is null)
+        {
+            return;
+        }
+
+        var ids = (row.RecentOpIds ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+        ids.Add(opId);
+        row.RecentOpIds = string.Join(' ', ids.Skip(Math.Max(0, ids.Count - RecentOpIdLimit)));
     }
 
     /// <summary>The page that is actually stored for a reported one: inside the chapter's own slice.</summary>
@@ -385,11 +430,18 @@ public class ReaderService(
         Math.Clamp(pageIndex, 0, Math.Max(0, pageCount - 1));
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct)
+        TimeReport time, DateTime? clientTime, string? opId, CancellationToken ct)
     {
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
-        var now = DateTime.UtcNow;
+        if (row is not null && opId is not null && HasOpId(row, opId))
+        {
+            return false;
+        }
+
+        var at = clientTime is { } claimed ? ClampClientTime(claimed, DateTime.UtcNow) : DateTime.UtcNow;
+        // Made offline before the row's latest change: read further elsewhere, or marked unread since.
+        var stale = clientTime is not null && row is not null && at < row.UpdatedAt;
         // A watched row is deliberately not "already completed" here: it was ticked off without
         // being read, so finishing it must fire the completion branch below and become a genuine
         // read. Once Watched clears, the flag is sticky again and a re-read emits nothing.
@@ -401,52 +453,64 @@ public class ReaderService(
             {
                 SeriesId = chapter.SeriesId,
                 ChapterId = chapter.Id,
-                StartedAt = now
+                StartedAt = at
             };
             db.ChapterProgress.Add(row);
         }
 
-        // The resume position is free to move backwards; completion is not.
-        row.PageIndex = ClampPage(pageIndex, slice.PageCount);
-        row.PageCount = slice.PageCount;
-
         // A watched row stays ticked off while it is merely opened: a reader that
         // saves a position without finishing and an OPDS app that prefetches pages are not reads. Only a
         // save that completes the chapter (last page or an explicit completed) turns it into one.
-        var finishing = completed ?? row.PageIndex >= slice.PageCount - 1;
+        var finishing = completed ?? ClampPage(pageIndex, slice.PageCount) >= slice.PageCount - 1;
         var stillWatched = row.Watched && !finishing;
-        if (!stillWatched)
+
+        // A stale write keeps only its time and its completion, and not a completion that a
+        // mark-unread made after it has taken back. Its position is older than the stored one.
+        var applies = !stillWatched && (!stale || (finishing && !(row.UnreadAt > at)));
+        if (!stale)
+        {
+            // The resume position is free to move backwards; completion is not.
+            row.PageIndex = ClampPage(pageIndex, slice.PageCount);
+            row.UpdatedAt = at;
+        }
+
+        if (!stale || applies)
+        {
+            row.PageCount = slice.PageCount;
+        }
+
+        if (applies)
         {
             // A watched tick is not a start: the first genuine read dates the series, not the tick.
-            // Its Completed never went false, so the read date has to be stamped here as well.
             if (row.Watched)
             {
-                row.StartedAt = now;
-                row.CompletedAt = now;
+                row.StartedAt = at;
             }
 
             // An explicit false never un-completes a finished row; only marking unread does that.
-            row.Completed = completed switch
-            {
-                true => true,
-                false => row.Completed,
-                null => row.Completed || row.PageIndex >= slice.PageCount - 1
-            };
+            row.Completed = row.Completed || finishing;
             // Read here, so it is no longer external, deliberately un-read, or merely watched.
             row.External = false;
             row.UnreadAt = null;
             row.Watched = false;
         }
 
-        var justCompleted = !stillWatched && row.Completed && !wasCompleted;
-        if (!stillWatched && row.Completed && finishing)
+        var justCompleted = applies && row.Completed && !wasCompleted;
+        if (applies && row.Completed && finishing)
         {
             row.BulkMarked = false;
         }
 
+        // Set here rather than left to MakiDbContext: a queued write dates the read to when it
+        // happened, and a watched row's Completed never went false for the context to notice.
+        if (justCompleted)
+        {
+            row.CompletedAt = at;
+        }
+
         var reportedSeconds = Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
         row.ReadSeconds += reportedSeconds;
-        row.UpdatedAt = now;
+        RememberOpId(row, opId);
 
         // Flush on completion too: the leftover under the threshold is time spent on this chapter,
         // and waiting for a threshold that will never be crossed again would lose it for good. The
@@ -455,15 +519,15 @@ public class ReaderService(
         // was completed, which for an abandoned one is never.
         if (justCompleted || time.Final || row.ReadSeconds - row.ReportedSeconds >= ReadingTimeFlushSeconds)
         {
-            StageReadingTime(row, slice.Series);
+            StageReadingTime(row, slice.Series, at);
         }
 
-        var sessionStaged = await StageSessionAsync(slice.Series, reportedSeconds, justCompleted, now, ct);
+        var sessionStaged = await StageSessionAsync(slice.Series, reportedSeconds, justCompleted, at, ct);
         await SaveWithSessionAsync(sessionStaged, ct);
 
         if (justCompleted)
         {
-            await OnChapterCompletedAsync(slice.Series, chapter, row, CancellationToken.None);
+            await OnChapterCompletedAsync(slice.Series, chapter, row, at, CancellationToken.None);
         }
 
         return justCompleted;
@@ -528,7 +592,7 @@ public class ReaderService(
     /// dump the whole hidden backlog into Rewind on the next page turn.
     /// </para>
     /// </summary>
-    private void StageReadingTime(ChapterProgress row, Series series)
+    private void StageReadingTime(ChapterProgress row, Series series, DateTime at)
     {
         var unreported = row.ReadSeconds - row.ReportedSeconds;
         if (unreported <= 0)
@@ -546,7 +610,7 @@ public class ReaderService(
             {
                 Type = StatsEventType.ReadingTime,
                 UserId = UserId,
-                Timestamp = DateTime.UtcNow,
+                Timestamp = at,
                 SeriesId = series.Id,
                 SeriesKey = SeriesIdentity.For(series),
                 SeriesTitle = series.Title,
@@ -866,7 +930,8 @@ public class ReaderService(
     // The completion is already committed by the time this runs, so a failure here (the progress
     // gate timing out under a long Kavita pass, say) must not turn a saved read into an error, and
     // a client that hangs up mid-wait must not lose the event.
-    private async Task OnChapterCompletedAsync(Series series, Chapter chapter, ChapterProgress row, CancellationToken ct)
+    private async Task OnChapterCompletedAsync(Series series, Chapter chapter, ChapterProgress row, DateTime at,
+        CancellationToken ct)
     {
         try
         {
@@ -882,7 +947,7 @@ public class ReaderService(
                 // See ReadingProgressService.RecordUnnumberedReadAsync for why inventing a number
                 // is wrong.
                 if (row.CountedAt is null &&
-                    await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct))
+                    await progress.RecordUnnumberedReadAsync(UserId, series.Id, series.Title, ct, at))
                 {
                     row.CountedAt = DateTime.UtcNow;
                     await db.SaveChangesAsync(ct);
@@ -892,7 +957,7 @@ public class ReaderService(
             }
 
             var (maxChapter, maxVolume) = await RecomputeMarksAsync(series.Id, ct);
-            await progress.TrackNativeAsync(UserId, series.Id, series.Title, maxChapter, maxVolume, ct);
+            await progress.TrackNativeAsync(UserId, series.Id, series.Title, maxChapter, maxVolume, ct, at);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

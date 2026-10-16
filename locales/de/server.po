@@ -1059,6 +1059,12 @@ msgstr "Kapitel hat keine lesbare Datei"
 msgid "error.reader.importAlreadyRunning"
 msgstr "Ein Import läuft bereits"
 
+#. A reading-progress write carried an operation id that is empty, longer than 64 characters or contains spaces.
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: The operation id must be 1 to 64 characters with no spaces
+msgid "error.reader.invalidOpId"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: State must be one of read, watched, unread
 #, fuzzy

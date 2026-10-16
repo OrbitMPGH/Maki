@@ -1059,6 +1059,12 @@ msgstr "챕터에 읽을 수 있는 파일이 없습니다"
 msgid "error.reader.importAlreadyRunning"
 msgstr "이미 가져오기가 실행 중입니다"
 
+#. A reading-progress write carried an operation id that is empty, longer than 64 characters or contains spaces.
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: The operation id must be 1 to 64 characters with no spaces
+msgid "error.reader.invalidOpId"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: State must be one of read, watched, unread
 #, fuzzy

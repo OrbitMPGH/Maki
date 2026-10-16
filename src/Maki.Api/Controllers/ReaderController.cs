@@ -22,8 +22,14 @@ namespace Maki.Api.Controllers;
 /// does not. Absent or zero simply records no time. <paramref name="Final"/> marks the write that
 /// ends a sitting (tab hidden, reader closed, chapter changed), which flushes the chapter's banked
 /// time instead of waiting for a report that is not coming.
+/// <para>
+/// <paramref name="ClientTime"/> (UTC) is when the write was made, sent by a write replayed from the
+/// offline queue. <paramref name="OpId"/> identifies the write so a replay of one that already landed
+/// changes nothing. Both are optional; see <see cref="ReaderService.SaveProgressAsync"/>.
+/// </para>
 /// </summary>
-public record SaveProgressRequest(int PageIndex, bool? Completed, int? Seconds, bool? Final);
+public record SaveProgressRequest(
+    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null);
 
 /// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
@@ -404,9 +410,15 @@ public class ReaderController(
             return this.Fail(localizer, "error.reader.pageOutOfRange");
         }
 
+        if (!ReaderService.IsValidOpId(request.OpId))
+        {
+            return this.Fail(localizer, "error.reader.invalidOpId");
+        }
+
         var finished = await reader.SaveProgressAsync(
             slice, request.PageIndex, request.Completed,
-            new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct);
+            new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct,
+            request.ClientTime, request.OpId);
 
         // After the save, so the evaluation sees the finished chapter. Whatever it unlocks reaches
         // the reader through the inbox push rather than this response.
