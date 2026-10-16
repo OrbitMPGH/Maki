@@ -25,5 +25,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // The service worker runs against WebWorker globals; tsconfig.sw.json checks it.
+  "exclude": ["src/sw"]
 }
