@@ -10,6 +10,8 @@ import { SETTINGS_ENTRY_ALIASES, SETTINGS_TAB_ALIASES, SETTINGS_TABS } from './s
 import { useVisibleSettingsEntries } from './settings/useVisibleSettingsEntries'
 import { ApiKeysSection, SignInSection } from '../components/settings/AccountSection'
 import { NotificationPrefsSection } from '../components/settings/NotificationPrefsSection'
+import { PushNotificationsSection } from '../components/settings/PushNotificationsSection'
+import { OfflineReadingSection } from '../components/settings/OfflineReadingSection'
 import { NetworkSection, OidcSection, SecuritySection } from '../components/settings/SecuritySection'
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
@@ -79,10 +81,12 @@ function useSectionNodes(): Record<string, ReactNode> {
       'home-screen': <HomeSectionsSection />,
       'series-page': <SeriesPageSection />,
       'notification-prefs': <NotificationPrefsSection />,
+      'push-notifications': <PushNotificationsSection />,
 
       reader: <ReadingProfilesSection />,
       progress: <ProgressSection />,
       opds: <OpdsSection />,
+      'offline-reading': <OfflineReadingSection />,
       'kavita-sync': <KavitaSyncSection />,
 
       'root-folders': <RootFoldersSection />,

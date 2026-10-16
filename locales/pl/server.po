@@ -1005,6 +1005,17 @@ msgstr "Nieznany okres lub metryka"
 msgid "error.progress.unknownTimeZone"
 msgstr "Nieznana strefa czasowa"
 
+#. The browser sent a push subscription without an https endpoint on a public address or without valid keys.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This browser's push subscription is not valid
+msgid "error.push.invalidSubscription"
+msgstr ""
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: No device has push notifications turned on for this account
+msgid "error.push.noSubscription"
+msgstr ""
+
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: Item has no chapter to resolve
 #, fuzzy
@@ -1058,6 +1069,12 @@ msgstr "Rozdział nie ma czytelnego pliku"
 #, fuzzy
 msgid "error.reader.importAlreadyRunning"
 msgstr "Import jest już w trakcie"
+
+#. A reading-progress write carried an operation id that is empty, longer than 64 characters or contains spaces.
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: The operation id must be 1 to 64 characters with no spaces
+msgid "error.reader.invalidOpId"
+msgstr ""
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: State must be one of read, watched, unread
@@ -2999,6 +3016,17 @@ msgstr "Nie udało się utworzyć kopii zapasowej. Sprawdź szczegóły w logach
 #, fuzzy
 msgid "inbox.unknownSeries"
 msgstr "Nieznana seria"
+
+#. Sent by the "Send a test" button in the push notification settings.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: Push notifications work
+msgid "inbox.pushTest.title"
+msgstr ""
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This device will get Maki notifications.
+msgid "inbox.pushTest.body"
+msgstr ""
 
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished

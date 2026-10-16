@@ -25,6 +25,7 @@ import {
 import {
   IconBookmark,
   IconDeviceFloppy,
+  IconDeviceMobileCheck,
   IconEye,
   IconStars,
   IconFileText,
@@ -102,6 +103,7 @@ import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } from '../components/ui/viewPrefs'
 import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
+import { useOfflineSeriesIds } from '../pwa/offlineChapters'
 
 const SORT_VALUES = ['added', 'title', 'incomplete', 'status', 'read', 'rating', 'downloaded'] as const
 
@@ -414,6 +416,10 @@ export default function LibraryPage() {
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
   const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
+  // Local to this device, so it is not part of a saved filter.
+  const [onDeviceOnly, setOnDeviceOnly] = usePageState(`${MEM}:on-device`, false)
+  const offlineSeries = useOfflineSeriesIds()
+  const onDevice = onDeviceOnly && offlineSeries.size > 0
   const [tagManagerOpen, setTagManagerOpen] = useState(false)
   const [tagModalOpen, setTagModalOpen] = useState(false)
   const [tagsToAdd, setTagsToAdd] = useState<string[]>([])
@@ -448,6 +454,7 @@ export default function LibraryPage() {
           s.altTitles.some((alt) => alt.title.toLowerCase().includes(q)),
       )
     }
+    if (onDevice) list = list.filter((s) => offlineSeries.has(s.id))
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
     if (typeFilter.length > 0) list = list.filter((s) => s.type != null && typeFilter.includes(s.type))
     if (untaggedOnly) {
@@ -526,6 +533,7 @@ export default function LibraryPage() {
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, sortDir, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter, ratingState, ratingRange, communityRange,
+    onDevice, offlineSeries,
   ])
 
   // Hidden when nothing carries a score (no dump, or no MangaBaka links), unless a saved filter
@@ -704,7 +712,8 @@ export default function LibraryPage() {
     (fileSourceFilter.length > 0 ? 1 : 0) +
     (qualityProfileFilter !== 'all' ? 1 : 0)
 
-  const filtersActive = query.trim() !== '' || activeFilterCount > 0
+  const specActive = query.trim() !== '' || activeFilterCount > 0
+  const filtersActive = specActive || onDevice
 
   // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure,
   // which is why the card takes the id as an argument rather than closing over it.
@@ -1283,12 +1292,20 @@ export default function LibraryPage() {
         </Panel>
       )}
 
-      {showChrome && !selectMode && ((savedFilters ?? []).length > 0 || filtersActive) && (
+      {showChrome && !selectMode && ((savedFilters ?? []).length > 0 || filtersActive || offlineSeries.size > 0) && (
         <Group
           className="library-saved-filters"
           gap="xs"
           wrap="wrap"
         >
+          {offlineSeries.size > 0 && (
+            <TagChip active={onDevice} aria-pressed={onDevice} onClick={() => setOnDeviceOnly(!onDeviceOnly)}>
+              <Group gap={4} wrap="nowrap" component="span">
+                <IconDeviceMobileCheck size={13} />
+                <Trans>Saved on this device</Trans>
+              </Group>
+            </TagChip>
+          )}
           {(savedFilters ?? []).length > 0 && (
             <span className="library-saved-label">
               <IconBookmark size={14} />
@@ -1314,7 +1331,7 @@ export default function LibraryPage() {
               </ActionIcon>
             </Group>
           ))}
-          {filtersActive && (
+          {specActive && (
             <Button
               size="compact-xs"
               variant="subtle"
@@ -1334,7 +1351,10 @@ export default function LibraryPage() {
               variant="subtle"
               color="var(--neutral)"
               leftSection={<IconX size={14} />}
-              onClick={() => applySpec(DEFAULT_SPEC, null)}
+              onClick={() => {
+                applySpec(DEFAULT_SPEC, null)
+                setOnDeviceOnly(false)
+              }}
             >
               <Trans>Clear</Trans>
             </Button>

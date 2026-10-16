@@ -77,6 +77,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     /// which is the instance-wide list of outbound Discord/webhook connections.
     /// </summary>
     public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
@@ -360,6 +361,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
             e.HasOne<MakiUser>().WithMany().HasForeignKey(n => n.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(n => _scope.Unrestricted || n.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<PushSubscription>(e =>
+        {
+            e.HasIndex(p => p.Endpoint).IsUnique();
+            e.HasIndex(p => p.UserId);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ReadingGoal>(e =>

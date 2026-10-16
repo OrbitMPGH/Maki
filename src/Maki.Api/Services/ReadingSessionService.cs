@@ -49,10 +49,13 @@ public class ReadingSessionService(MakiDbContext db)
             return false;
         }
 
-        // Explicit user and no filters: the ambient scope is not always the reader's own.
+        // Explicit user and no filters: the ambient scope is not always the reader's own. A report
+        // dated by the client can be older than the latest sitting, so the candidate is the latest
+        // one that started early enough to neighbour it; for a live report that is simply the latest.
+        var latestStart = nowUtc + Gap;
         var latest = await db.ReadingSessions
             .IgnoreQueryFilters()
-            .Where(s => s.UserId == userId)
+            .Where(s => s.UserId == userId && s.StartedAt <= latestStart)
             .OrderByDescending(s => s.EndedAt)
             .FirstOrDefaultAsync(ct);
 
@@ -75,6 +78,12 @@ public class ReadingSessionService(MakiDbContext db)
     /// user's latest sitting. Returns <paramref name="latest"/> when extended, a new unsaved row when
     /// the gap was too long, or null when there was nothing to record (a zero-second completion
     /// with no sitting close enough to credit it to).
+    /// <para>
+    /// A report joins only when its span <c>[nowUtc - seconds, nowUtc]</c> overlaps the sitting or
+    /// comes within <see cref="Gap"/> of it on either side. Live reports always end after the latest
+    /// sitting started; a replayed offline report can end long before it, and a morning's reading
+    /// must not merge into the afternoon's sitting.
+    /// </para>
     /// </summary>
     internal static ReadingSession? Stitch(ReadingSession? latest, int userId, int seconds,
         bool completedChapter, DateTime nowUtc)
@@ -82,7 +91,7 @@ public class ReadingSessionService(MakiDbContext db)
         seconds = Math.Max(0, seconds);
         var start = nowUtc.AddSeconds(-seconds);
 
-        if (latest is not null && latest.EndedAt >= start - Gap)
+        if (latest is not null && latest.EndedAt >= start - Gap && nowUtc >= latest.StartedAt - Gap)
         {
             if (nowUtc > latest.EndedAt)
             {

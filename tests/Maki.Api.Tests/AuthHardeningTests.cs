@@ -104,7 +104,7 @@ public sealed class AuthHardeningTests : IDisposable
     {
         var scopes = _db.ScopeFactory();
         return new Maki.Api.Services.InboxService(scopes, new Maki.Api.Services.InboxAudienceResolver(scopes),
-            new Maki.Api.Hubs.EventBroadcaster(new NoopHubContext(), scopes), _clock,
+            new Maki.Api.Hubs.EventBroadcaster(new NoopHubContext(), scopes), new RecordingPushSender(scopes), _clock,
             NullLogger<Maki.Api.Services.InboxService>.Instance);
     }
 

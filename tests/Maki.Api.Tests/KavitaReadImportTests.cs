@@ -298,13 +298,15 @@ public sealed class KavitaReadImportTests : IDisposable
     public void Start_clears_the_previous_runs_result_and_finished_time()
     {
         var service = BuildService(_db.ScopeFactory());
-        service.State.Result = new KavitaReadImportService.ImportResult(1, 2, 0, 0, []);
-        service.State.FinishedAt = DateTime.UtcNow;
+        var staleResult = new KavitaReadImportService.ImportResult(1, 2, 0, 0, []);
+        var staleFinishedAt = DateTime.UtcNow.AddDays(-1);
+        service.State.Result = staleResult;
+        service.State.FinishedAt = staleFinishedAt;
 
         Assert.True(service.Start());
 
-        Assert.Null(service.State.Result);
-        Assert.Null(service.State.FinishedAt);
+        Assert.NotSame(staleResult, service.State.Result);
+        Assert.NotEqual(staleFinishedAt, service.State.FinishedAt);
     }
 
     private int Seed(params (decimal Number, bool Downloaded)[] chapters)

@@ -6,6 +6,7 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import { lingui, linguiTransformerBabelPreset } from '@lingui/vite-plugin'
+import { serviceWorker } from './vite/sw-plugin.ts'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -54,6 +55,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      // Before precompress: both run in closeBundle, in array order, and sw.js wants a .br and .gz too.
+      serviceWorker(),
       precompress(),
       // Turns an imported `.po` into runtime messages, so there is no `lingui compile` step and no
       // generated catalogs to keep in step with the source ones.
