@@ -36,6 +36,7 @@ import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { LoginPage } from './pages/LoginPage'
 import { OfflineStartPage } from './auth/OfflineStartPage'
 import { OfflineBanner } from './components/OfflineBanner'
+import { OfflineSync } from './pwa/OfflineSync'
 import { SetupAccountPage } from './pages/SetupAccountPage'
 import CommandPalette from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
@@ -313,6 +314,7 @@ function AuthGate() {
   return (
     <DocumentTitleProvider>
       <LiveEvents />
+      <OfflineSync />
       <DocumentTitle />
       {inReader ? (
         <RouteErrorBoundary>
