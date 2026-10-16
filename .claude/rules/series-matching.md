@@ -14,6 +14,7 @@ paths:
   - "frontend/src/components/discover/*Preview*.tsx"
   - "src/Maki.Api/Controllers/Tags*.cs"
   - "src/Maki.Core/Naming/**"
+  - "src/Maki.Core/Mihon/**"
   - "src/Maki.Core/Entities/LocalizedTitle.cs"
   - "src/Maki.Core/ComicInfo/**"
   - "src/Maki.Metadata/MangaBaka/**"

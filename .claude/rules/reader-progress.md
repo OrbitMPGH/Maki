@@ -15,6 +15,7 @@ paths:
   - "frontend/src/pages/reader/**"
   - "frontend/src/api/reader.ts"
   - "src/Maki.Core/Reading/CbzReader.cs"
+  - "src/Maki.Core/Mihon/**"
   - "src/Maki.Core/Reading/PdfReader.cs"
   - "src/Maki.Api/Services/ReadCounts.cs"
 ---
