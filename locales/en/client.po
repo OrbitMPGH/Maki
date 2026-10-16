@@ -552,9 +552,17 @@ msgstr "{count, plural, one {I confirm permanent deletion of # archive.} other {
 msgid "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
 msgstr "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{count, plural, one {Saving # chapter for offline} other {Saving # chapters for offline}}"
+msgstr "{count, plural, one {Saving # chapter for offline} other {Saving # chapters for offline}}"
+
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Show # affected series} other {Show # affected series}}"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{count, plural, one {The next unread chapter} other {The next # unread chapters}}"
+msgstr "{count, plural, one {The next unread chapter} other {The next # unread chapters}}"
 
 #: src/components/import/RecentImports.tsx
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
@@ -1538,6 +1546,10 @@ msgstr "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}
 msgid "{unsavedCount, plural, one {A card on this page has changes that are not saved. Leaving drops them.} other {# cards on this page have changes that are not saved. Leaving drops them.}}"
 msgstr "{unsavedCount, plural, one {A card on this page has changes that are not saved. Leaving drops them.} other {# cards on this page have changes that are not saved. Leaving drops them.}}"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{unsent, plural, one {# reading position has not reached the server yet and will be lost.} other {# reading positions have not reached the server yet and will be lost.}}"
+msgstr "{unsent, plural, one {# reading position has not reached the server yet and will be lost.} other {# reading positions have not reached the server yet and will be lost.}}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
 msgstr "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
@@ -1553,6 +1565,10 @@ msgstr "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 #: src/api/upgrades.ts
 msgid "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{used} of {quota} used"
+msgstr "{used} of {quota} used"
 
 #: src/pages/rewind/slides.tsx
 msgid "{value, plural, one {chapter downloaded} other {chapters downloaded}}"
@@ -2635,6 +2651,10 @@ msgstr "Applies the series folder format and chapter file format above to all {s
 msgid "Applies to chapters released later."
 msgstr "Applies to chapters released later."
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
+msgstr "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
+
 #: src/pages/settings/LibraryCards.tsx
 msgid "Applies to torrent grabs and reviewed imports. Off keeps the release's own file name, which often says more than the format can. Series imported from disk keep their file names either way."
 msgstr "Applies to torrent grabs and reviewed imports. Off keeps the release's own file name, which often says more than the format can. Series imported from disk keep their file names either way."
@@ -2712,6 +2732,10 @@ msgstr "Ask for this"
 msgid "Ask or suggest"
 msgstr "Ask or suggest"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Ask to keep them"
+msgstr "Ask to keep them"
+
 #: src/pages/ScrobblePage.tsx
 msgid "Assign"
 msgstr "Assign"
@@ -2788,6 +2812,7 @@ msgstr "Auto-matching is already running."
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "Auto-matching is still running. It'll be free in a moment."
 
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Automatic"
 msgstr "Automatic"
@@ -3006,6 +3031,10 @@ msgstr "Biggest day"
 msgid "Biggest on disk"
 msgstr "Biggest on disk"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
+msgstr "Blocked for Maki in your browser settings. Allow notifications there, then come back."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Blocked while a download for this series is in flight, unless Maki isn't touching the files itself."
 msgstr "Blocked while a download for this series is in flight, unless Maki isn't touching the files itself."
@@ -3026,6 +3055,10 @@ msgstr "Bookmark this page"
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Bookmarks"
 msgstr "Bookmarks"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Bookmarks need a connection"
+msgstr "Bookmarks need a connection"
 
 #: src/components/NotificationsSection.tsx
 msgid "Bot token"
@@ -3468,6 +3501,11 @@ msgstr "Channel"
 msgid "Chapter"
 msgstr "Chapter"
 
+#. placeholder {0}: record.chapterId
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Chapter {0}"
+msgstr "Chapter {0}"
+
 #: src/pages/HealthPage.tsx
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
@@ -3612,6 +3650,10 @@ msgstr "Chapters read"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Chapters read in this series"
 msgstr "Chapters read in this series"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Chapters saved on this device, to read without a connection."
+msgstr "Chapters saved on this device, to read without a connection."
 
 #: src/components/SeriesFilesSection.tsx
 msgid "Chapters that share a volume archive will also lose their file."
@@ -5461,6 +5503,10 @@ msgid "Every source that isn't linked yet is searched again for each series, whi
 msgstr "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Every unread chapter is already on this device"
+msgstr "Every unread chapter is already on this device"
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "Every wanted chapter is already on disk"
 msgstr "Every wanted chapter is already on disk"
 
@@ -6006,6 +6052,10 @@ msgstr "Follows the default on your notification settings."
 #: src/components/QueuePause.tsx
 msgid "For 1 hour"
 msgstr "For 1 hour"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
+msgstr "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
 
 #: src/components/SetupWizard.tsx
 msgid "For readers like Komga and Kavita that pick up a poster from the folder."
@@ -6937,6 +6987,10 @@ msgstr "Invert"
 msgid "Invite people"
 msgstr "Invite people"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
+msgstr "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
+
 #: src/components/CatalogueFilters.tsx
 msgid "Isekai"
 msgstr "Isekai"
@@ -7085,6 +7139,10 @@ msgstr "Keep the screen awake"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Keep the screen awake while reading"
 msgstr "Keep the screen awake while reading"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Keep upcoming chapters"
+msgstr "Keep upcoming chapters"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Keeps chapters read in Maki and in Kavita in step. Kavita's reading belongs to one Maki account, chosen by an admin under Integrations."
@@ -7753,6 +7811,10 @@ msgstr "Maki asks Kavita to scan a series after its files change and sends it po
 msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings, 3rd Party Clients in Kavita."
 msgstr "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings, 3rd Party Clients in Kavita."
 
+#: src/auth/OfflineStartPage.tsx
+msgid "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
+msgstr "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
+
 #: src/components/SetupWizard.tsx
 msgid "Maki can't reach this folder"
 msgstr "Maki can't reach this folder"
@@ -7764,6 +7826,10 @@ msgstr "Maki checked the folder against the chapter list. Tick what to trust and
 #: src/pages/settings/SystemCards.tsx
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki is restarting to apply it. Reload in a moment."
+
+#: src/pwa/offlineChapters.ts
+msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
+msgstr "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
 
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki speaks your language"
@@ -9045,6 +9111,11 @@ msgstr "Not an upgrade: {reason}"
 msgid "Not analyzed"
 msgstr "Not analyzed"
 
+#: src/api/client.ts
+#: src/pages/reader/ReaderPage.tsx
+msgid "Not available offline"
+msgstr "Not available offline"
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Not checked yet"
 msgstr "Not checked yet"
@@ -9069,6 +9140,10 @@ msgstr "Not connected."
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Not enough genre data yet"
 msgstr "Not enough genre data yet"
+
+#: src/pwa/offlineChapters.ts
+msgid "Not enough space on this device"
+msgstr "Not enough space on this device"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Not enough timed chapters yet."
@@ -9141,6 +9216,11 @@ msgstr "Not sampled"
 #: src/api/upgrades.ts
 msgid "Not sampled: this source's recent chapters wouldn't score higher"
 msgstr "Not sampled: this source's recent chapters wouldn't score higher"
+
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Not saved"
+msgstr "Not saved"
 
 #: src/pages/HealthPage.tsx
 msgid "Not scanned"
@@ -9256,6 +9336,10 @@ msgstr "Nothing in your library yet"
 #: src/components/SetupWizard.tsx
 msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "Nothing is renamed and everything stays in the folder you had."
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
+msgstr "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
 
 #: src/components/NotificationsSection.tsx
 msgid "Nothing is sent to it any more. This can't be undone."
@@ -9396,10 +9480,18 @@ msgstr "Notification URLs"
 msgid "Notifications"
 msgstr "Notifications"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications are blocked for this site. Change the permission in your browser's site settings to turn them on."
+msgstr "Notifications are blocked for this site. Change the permission in your browser's site settings to turn them on."
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 msgid "Notifications muted"
 msgstr "Notifications muted"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications on this device, even when Maki is closed."
+msgstr "Notifications on this device, even when Maki is closed."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Notifications: {notificationMode}"
@@ -9408,6 +9500,10 @@ msgstr "Notifications: {notificationMode}"
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Notify"
 msgstr "Notify"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notify this device"
+msgstr "Notify this device"
 
 #: src/pages/RequestsPage.tsx
 msgid "Now {range}"
@@ -9442,6 +9538,7 @@ msgid "of reading time"
 msgstr "of reading time"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Off"
@@ -9454,6 +9551,10 @@ msgstr "Off answers from the API instead and turns Discover off. The copy on dis
 #: src/components/settings/SecuritySection.tsx
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
 msgstr "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Off for this device. Turning it on asks your browser for permission."
+msgstr "Off for this device. Turning it on asks your browser for permission."
 
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Off for this series"
@@ -9479,6 +9580,21 @@ msgstr "Off: only series switched on from their own menu are cleaned up."
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Official"
 msgstr "Official"
+
+#: src/components/OfflineBanner.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Offline reading"
+msgstr "Offline reading"
+
+#: src/components/settings/SecureContextNote.tsx
+msgid "Offline reading and push notifications need Maki to be opened over HTTPS. Browsers switch them off on plain HTTP addresses other than localhost. Put Maki behind a reverse proxy with a certificate to use them."
+msgstr "Offline reading and push notifications need Maki to be opened over HTTPS. Browsers switch them off on plain HTTP addresses other than localhost. Put Maki behind a reverse proxy with a certificate to use them."
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "offline, save for offline, download to device, read offline, storage, install app, home screen, pwa"
+msgstr "offline, save for offline, download to device, read offline, storage, install app, home screen, pwa"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -9526,6 +9642,10 @@ msgstr "On disk"
 msgid "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
 msgstr "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "On for this device."
+msgstr "On for this device."
+
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "On for this series"
 msgstr "On for this series"
@@ -9537,6 +9657,10 @@ msgstr "On hold"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "On shelf"
 msgstr "On shelf"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "On this device"
+msgstr "On this device"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "On your shelf, not used for ranking"
@@ -10315,6 +10439,16 @@ msgstr "pull the new image and recreate the container"
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
 msgstr "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
 
+#: src/components/settings/PushNotificationsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Push notifications"
+msgstr "Push notifications"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "push, push notifications, phone notifications, desktop notifications, new chapters, notify this device"
+msgstr "push, push notifications, phone notifications, desktop notifications, new chapters, notify this device"
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "pushes down titles close to it"
 msgstr "pushes down titles close to it"
@@ -10981,9 +11115,17 @@ msgstr "Remove"
 msgid "Remove {label}"
 msgstr "Remove {label}"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove {label} from this device"
+msgstr "Remove {label} from this device"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove {removingSourceName}?"
 msgstr "Remove {removingSourceName}?"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove {seriesTitle} from this device"
+msgstr "Remove {seriesTitle} from this device"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove and clean up"
@@ -11008,6 +11150,18 @@ msgstr "Remove chapters?"
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Remove condition"
 msgstr "Remove condition"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything"
+msgstr "Remove everything"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything from this device"
+msgstr "Remove everything from this device"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything from this device?"
+msgstr "Remove everything from this device?"
 
 #: src/components/FailedQueueActions.tsx
 msgid "Remove failed"
@@ -11038,6 +11192,10 @@ msgstr "Remove from library"
 msgid "Remove from queue"
 msgstr "Remove from queue"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Remove from this device"
+msgstr "Remove from this device"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Remove goal"
 msgstr "Remove goal"
@@ -11045,6 +11203,10 @@ msgstr "Remove goal"
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove mapping"
 msgstr "Remove mapping"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Remove offline copies"
+msgstr "Remove offline copies"
 
 #: src/pages/RequestsPage.tsx
 msgid "Remove request"
@@ -11075,6 +11237,10 @@ msgstr "Remove single sign-on"
 msgid "Remove single sign-on for {editName}?"
 msgstr "Remove single sign-on for {editName}?"
 
+#: src/pwa/offlineChapters.ts
+msgid "Remove some saved chapters and try again."
+msgstr "Remove some saved chapters and try again."
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove source only"
 msgstr "Remove source only"
@@ -11099,6 +11265,10 @@ msgstr "Remove this reading goal?"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Remove this root folder?"
 msgstr "Remove this root folder?"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove this series from the device"
+msgstr "Remove this series from the device"
 
 #: src/pages/ActivityPage.tsx
 msgid "Remove this torrent?"
@@ -11530,6 +11700,10 @@ msgstr "Retrying…"
 msgid "Reusing the name of the active preset overwrites it."
 msgstr "Reusing the name of the active preset overwrites it."
 
+#: src/components/settings/SecureContextNote.tsx
+msgid "Reverse proxy setup"
+msgstr "Reverse proxy setup"
+
 #: src/pages/LibraryPage.tsx
 msgid "Reverse sort order"
 msgstr "Reverse sort order"
@@ -11680,6 +11854,10 @@ msgstr "Running"
 msgid "Russian"
 msgstr "Russian"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Safari clears what a website saved after seven days without a visit. Add Maki to your home screen and save chapters from there to keep them."
+msgstr "Safari clears what a website saved after seven days without a visit. Add Maki to your home screen and save chapters from there to keep them."
+
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Safe"
@@ -11720,6 +11898,10 @@ msgstr "Sample chapter"
 msgid "Save"
 msgstr "Save"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Save {label} again"
+msgstr "Save {label} again"
+
 #: src/components/SetupWizard.tsx
 msgid "Save a cover.jpg into each series folder"
 msgstr "Save a cover.jpg into each series folder"
@@ -11757,6 +11939,10 @@ msgstr "Save filter"
 msgid "Save filters"
 msgstr "Save filters"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Save for offline"
+msgstr "Save for offline"
+
 #: src/pages/HealthPage.tsx
 msgid "Save health settings"
 msgstr "Save health settings"
@@ -11776,6 +11962,10 @@ msgstr "Save these filters…"
 #: src/pages/LibraryPage.tsx
 msgid "Save this filter"
 msgstr "Save this filter"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Save unread chapters for offline"
+msgstr "Save unread chapters for offline"
 
 #: src/components/settings/AccountSection.tsx
 msgid "Save your recovery codes"
@@ -11802,10 +11992,30 @@ msgstr "Saved"
 msgid "Saved as your default"
 msgstr "Saved as your default"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved by Keep upcoming chapters, removed once read"
+msgstr "Saved by Keep upcoming chapters, removed once read"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved chapters"
+msgstr "Saved chapters"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved chapters, the copies of pages kept for browsing offline and this device's settings for offline reading all go. Nothing changes on the server."
+msgstr "Saved chapters, the copies of pages kept for browsing offline and this device's settings for offline reading all go. Nothing changes on the server."
+
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Saved filters"
 msgstr "Saved filters"
+
+#: src/pages/LibraryPage.tsx
+msgid "Saved on this device"
+msgstr "Saved on this device"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saved on this device for offline reading"
+msgstr "Saved on this device for offline reading"
 
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Saved. Leave empty to keep it."
@@ -11814,6 +12024,23 @@ msgstr "Saved. Leave empty to keep it."
 #: src/pages/LibraryPage.tsx
 msgid "Saves the current search, sort and every filter in the panel as a named preset."
 msgstr "Saves the current search, sort and every filter in the panel as a named preset."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving"
+msgstr "Saving"
+
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saving {done}/{total}"
+msgstr "Saving {done}/{total}"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving for offline failed. Try again from the chapter's menu."
+msgstr "Saving for offline failed. Try again from the chapter's menu."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving on this device for offline reading"
+msgstr "Saving on this device for offline reading"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Savoured"
@@ -12321,6 +12548,10 @@ msgstr "Send request"
 msgid "Send silently"
 msgstr "Send silently"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Send test"
+msgstr "Send test"
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 msgid "Sent to qBittorrent: {title}"
@@ -12348,6 +12579,10 @@ msgstr "Sequels, prequels, spin-offs and side stories that MangaBaka has linked 
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Series"
 msgstr "Series"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Series {seriesId}"
+msgstr "Series {seriesId}"
 
 #: src/components/NotificationsSection.tsx
 msgid "Series added"
@@ -12710,6 +12945,10 @@ msgstr "Signed in as"
 #: src/components/settings/AccountSection.tsx
 msgid "Signed in as <0>{oidcUserName}</0> on {displayName}."
 msgstr "Signed in as <0>{oidcUserName}</0> on {displayName}."
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Signing out keeps saved chapters on this device. They come back when you sign in again."
+msgstr "Signing out keeps saved chapters on this device. They come back when you sign in again."
 
 #: src/components/settings/AccountSection.tsx
 msgid "Signs out every other browser and device. This one stays signed in."
@@ -13185,6 +13424,10 @@ msgstr "Stopped before finishing"
 msgid "Stopping"
 msgstr "Stopping"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Storage on this device"
+msgstr "Storage on this device"
+
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -13384,6 +13627,10 @@ msgstr "Test failed"
 msgid "Test notification sent"
 msgstr "Test notification sent"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Test notification sent."
+msgstr "Test notification sent."
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Thai"
 msgstr "Thai"
@@ -13439,6 +13686,14 @@ msgstr "The approved repair source is no longer available, request a new replace
 #: src/api/queue.ts
 msgid "The approved source no longer has these pages"
 msgstr "The approved source no longer has these pages"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "The browser keeps saved chapters even when space runs low."
+msgstr "The browser keeps saved chapters even when space runs low."
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "The browser may clear saved chapters when the device runs low on space."
+msgstr "The browser may clear saved chapters when the device runs low on space."
 
 #: src/pages/settings/registry.ts
 msgid "The built-in reader, progress and achievements, the OPDS catalogue and read sync with Kavita."
@@ -13613,6 +13868,10 @@ msgstr "The provider assigns these chapters to this volume. Usually right, compi
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "The push service did not accept the test notification."
+msgstr "The push service did not accept the test notification."
+
 #: src/pages/settings/LibraryCards.tsx
 msgid "The recycle bin is empty."
 msgstr "The recycle bin is empty."
@@ -13666,6 +13925,7 @@ msgid "The server logs will say why."
 msgstr "The server logs will say why."
 
 #: src/api/client.ts
+#: src/api/reader.ts
 msgid "The server returned an error ({status})."
 msgstr "The server returned an error ({status})."
 
@@ -13843,6 +14103,10 @@ msgstr "This archive has only been indexed: what it says it holds is known, whet
 msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 msgstr "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "This browser does not support push notifications."
+msgstr "This browser does not support push notifications."
+
 #: src/components/SourceCompareModal.tsx
 msgid "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
 msgstr "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
@@ -13851,9 +14115,21 @@ msgstr "This chapter as each source scans it, heaviest first. Pick the one that 
 msgid "This chapter has no readable file."
 msgstr "This chapter has no readable file."
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "This chapter isn't saved on this device."
+msgstr "This chapter isn't saved on this device."
+
 #: src/api/upgrades.ts
 msgid "This chapter was added or upgraded too recently"
 msgstr "This chapter was added or upgraded too recently"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "This device"
+msgstr "This device"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "This device could not subscribe to push notifications."
+msgstr "This device could not subscribe to push notifications."
 
 #: src/pages/HealthPage.tsx
 msgid "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
@@ -14289,6 +14565,8 @@ msgstr "Trusted proxies"
 msgid "Try a shorter or alternative query."
 msgstr "Try a shorter or alternative query."
 
+#: src/auth/OfflineStartPage.tsx
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
@@ -15096,6 +15374,7 @@ msgstr "Volumes: {volumes}"
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "vs {fromLabel} to {toLabel}"
 
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 msgid "Waiting"
 msgstr "Waiting"
@@ -15224,6 +15503,10 @@ msgstr "What to download"
 #: src/components/QueuePause.tsx
 msgid "What to pause"
 msgstr "What to pause"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "What to push"
+msgstr "What to push"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "What you read"
@@ -15551,6 +15834,14 @@ msgstr "You vs the crowd"
 #: src/pages/reader/ChapterEnd.tsx
 msgid "You're caught up"
 msgstr "You're caught up"
+
+#: src/auth/OfflineStartPage.tsx
+msgid "You're offline"
+msgstr "You're offline"
+
+#: src/components/OfflineBanner.tsx
+msgid "You're offline. Showing what's saved on this device."
+msgstr "You're offline. Showing what's saved on this device."
 
 #: src/components/SetupWizard.tsx
 msgid "You're set"

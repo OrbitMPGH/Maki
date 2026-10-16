@@ -668,10 +668,18 @@ msgstr "{count, plural, other {アーカイブ#件を完全に削除すること
 msgid "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
 msgstr "{count, plural, other {測定した#章の中央値：幅{width}px、ピクセルあたり{bpp}ビット（JPG換算）。}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{count, plural, one {Saving # chapter for offline} other {Saving # chapters for offline}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, other {影響のあるシリーズを#件表示}}"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{count, plural, one {The next unread chapter} other {The next # unread chapters}}"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -1896,6 +1904,10 @@ msgstr "{unrecognizedCount, plural, other {#件を認識できません}}"
 msgid "{unsavedCount, plural, one {A card on this page has changes that are not saved. Leaving drops them.} other {# cards on this page have changes that are not saved. Leaving drops them.}}"
 msgstr "{unsavedCount, plural, other {このページには保存されていない変更が#件あります。離れると破棄されます。}}"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{unsent, plural, one {# reading position has not reached the server yet and will be lost.} other {# reading positions have not reached the server yet and will be lost.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
@@ -1915,6 +1927,10 @@ msgstr "{updated, plural, other {#シリーズにタグ付け}}"
 #, fuzzy
 msgid "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{upgradeCount, plural, other {#個のファイルを置き換え}}"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{used} of {quota} used"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -3252,6 +3268,10 @@ msgstr "上のシリーズフォルダー形式と章ファイル形式を、ラ
 msgid "Applies to chapters released later."
 msgstr "後で公開された章に適用"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Applies to torrent grabs and reviewed imports. Off keeps the release's own file name, which often says more than the format can. Series imported from disk keep their file names either way."
@@ -3347,6 +3367,10 @@ msgstr "これをリクエスト"
 msgid "Ask or suggest"
 msgstr "質問や提案をする"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Ask to keep them"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Assign"
@@ -3441,6 +3465,7 @@ msgstr "自動照合はすでに実行中です。"
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "自動照合はまだ実行中です。すぐに空きます。"
 
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Automatic"
@@ -3710,6 +3735,10 @@ msgstr "最多の日"
 msgid "Biggest on disk"
 msgstr "ディスク上の容量が大きい作品"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Blocked while a download for this series is in flight, unless Maki isn't touching the files itself."
@@ -3735,6 +3764,10 @@ msgstr "このページをブックマーク"
 #, fuzzy
 msgid "Bookmarks"
 msgstr "ブックマーク"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Bookmarks need a connection"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4276,6 +4309,11 @@ msgstr "チャンネル"
 msgid "Chapter"
 msgstr "章"
 
+#. placeholder {0}: record.chapterId
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Chapter {0}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
@@ -4453,6 +4491,10 @@ msgstr "読んだ章"
 #, fuzzy
 msgid "Chapters read in this series"
 msgstr "このシリーズで読んだ章"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Chapters saved on this device, to read without a connection."
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -6724,6 +6766,10 @@ msgid "Every source that isn't linked yet is searched again for each series, whi
 msgstr "まだリンクされていないすべてのソースをシリーズごとに再検索します。ソースが追加後にタイトルを取得している場合に実行する価値があります。"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Every unread chapter is already on this device"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "必要な章はすべてディスク上にあります"
@@ -7397,6 +7443,10 @@ msgstr "通知設定の既定値に従います。"
 #, fuzzy
 msgid "For 1 hour"
 msgstr "1時間"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8547,6 +8597,10 @@ msgstr "反転"
 msgid "Invite people"
 msgstr "ユーザーを招待"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Isekai"
@@ -8731,6 +8785,10 @@ msgstr "画面をスリープさせない"
 #, fuzzy
 msgid "Keep the screen awake while reading"
 msgstr "読書中は画面をスリープさせない"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Keep upcoming chapters"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -9554,6 +9612,10 @@ msgstr "ファイルの変更後、MakiはKavitaにシリーズのスキャン�
 msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings, 3rd Party Clients in Kavita."
 msgstr "Makiは、ファイルが変わるとKavitaにシリーズのスキャンを依頼し、その後ポスター、リンク、状態を送信します。Kavitaで設定した表紙は残ります。APIキーはKavitaのユーザー設定、サードパーティクライアントにあります。"
 
+#: src/auth/OfflineStartPage.tsx
+msgid "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Maki can't reach this folder"
@@ -9568,6 +9630,10 @@ msgstr "Makiがフォルダーを章の一覧と照合しました。信頼す�
 #, fuzzy
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "適用のためMakiを再起動しています。しばらくしてから再読み込みしてください。"
+
+#: src/pwa/offlineChapters.ts
+msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -11149,6 +11215,11 @@ msgstr "アップグレードではありません：{reason}"
 msgid "Not analyzed"
 msgstr "未分析"
 
+#: src/api/client.ts
+#: src/pages/reader/ReaderPage.tsx
+msgid "Not available offline"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
@@ -11179,6 +11250,10 @@ msgstr "未接続です。"
 #, fuzzy
 msgid "Not enough genre data yet"
 msgstr "ジャンルのデータが足りません"
+
+#: src/pwa/offlineChapters.ts
+msgid "Not enough space on this device"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -11268,6 +11343,11 @@ msgstr "サンプル未取得"
 #, fuzzy
 msgid "Not sampled: this source's recent chapters wouldn't score higher"
 msgstr "サンプル未取得：このソースの最近の章はスコアが高くならないため"
+
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Not saved"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11411,6 +11491,10 @@ msgstr "ライブラリにはまだ何もありません"
 #, fuzzy
 msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "名前は変更されず、すべて既存のフォルダーに残ります。"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -11584,11 +11668,19 @@ msgstr "通知 URL"
 msgid "Notifications"
 msgstr "通知"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications are blocked for this site. Change the permission in your browser's site settings to turn them on."
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "Notifications muted"
 msgstr "通知をミュート中"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications on this device, even when Maki is closed."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -11599,6 +11691,10 @@ msgstr "通知：{notificationMode}"
 #, fuzzy
 msgid "Notify"
 msgstr "通知"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notify this device"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -11641,6 +11737,7 @@ msgid "of reading time"
 msgstr "読書時間の"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -11656,6 +11753,10 @@ msgstr "オフにすると、代わりにAPIから応答を受け、「見つけ
 #, fuzzy
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
 msgstr "既定ではオフです。オンにすると、プロバイダーが認証した人は全員Makiアカウントを取得します。新しいアカウントは、ルートフォルダーの権限を付与されるまでライブラリにアクセスできません。オフのままでも、確認済みのメールアドレスが一致する既存アカウントには、初回サインインがリンクされます。"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Off for this device. Turning it on asks your browser for permission."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -11687,6 +11788,21 @@ msgstr "オフ：それぞれのメニューでオンにしたシリーズだけ
 #, fuzzy
 msgid "Official"
 msgstr "公式"
+
+#: src/components/OfflineBanner.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Offline reading"
+msgstr ""
+
+#: src/components/settings/SecureContextNote.tsx
+msgid "Offline reading and push notifications need Maki to be opened over HTTPS. Browsers switch them off on plain HTTP addresses other than localhost. Put Maki behind a reverse proxy with a certificate to use them."
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "offline, save for offline, download to device, read offline, storage, install app, home screen, pwa"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -11744,6 +11860,10 @@ msgstr "ディスク上"
 msgid "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
 msgstr "すべての端末で。「見つける」にはローカルのMangaBakaデータベースが必要で、管理者がライブラリの下でオンにします。"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "On for this device."
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "On for this series"
@@ -11758,6 +11878,10 @@ msgstr "中断中"
 #, fuzzy
 msgid "On shelf"
 msgstr "棚にあり"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "On this device"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -12719,6 +12843,16 @@ msgstr "新しいイメージを取得してコンテナを再作成"
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
 msgstr "トラッカーのリストを定期的に取り込み、一致するシリーズをライブラリに追加します。自分でシリーズを追加できない場合は、リクエストとして登録します。先にScrobbleページでトラッカーを接続してください。ローカルのMangaBakaデータベースが必要です。"
 
+#: src/components/settings/PushNotificationsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Push notifications"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "push, push notifications, phone notifications, desktop notifications, new chapters, notify this device"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "pushes down titles close to it"
@@ -13537,10 +13671,18 @@ msgstr "削除"
 msgid "Remove {label}"
 msgstr "{label} を削除"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove {label} from this device"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove {removingSourceName}?"
 msgstr "{removingSourceName}を削除しますか？"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove {seriesTitle} from this device"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -13571,6 +13713,18 @@ msgstr "章を削除しますか？"
 #, fuzzy
 msgid "Remove condition"
 msgstr "条件を削除"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything from this device"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything from this device?"
+msgstr ""
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -13608,6 +13762,10 @@ msgstr "ライブラリから削除"
 msgid "Remove from queue"
 msgstr "キューから削除"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Remove from this device"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Remove goal"
@@ -13617,6 +13775,10 @@ msgstr "目標を削除"
 #, fuzzy
 msgid "Remove mapping"
 msgstr "マッピングを削除"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Remove offline copies"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -13654,6 +13816,10 @@ msgstr "シングルサインオンを削除"
 msgid "Remove single sign-on for {editName}?"
 msgstr "{editName}のシングルサインオンを削除しますか？"
 
+#: src/pwa/offlineChapters.ts
+msgid "Remove some saved chapters and try again."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove source only"
@@ -13684,6 +13850,10 @@ msgstr "この読書目標を削除しますか？"
 #, fuzzy
 msgid "Remove this root folder?"
 msgstr "このルートフォルダーを削除しますか？"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove this series from the device"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14213,6 +14383,10 @@ msgstr "再試行中…"
 msgid "Reusing the name of the active preset overwrites it."
 msgstr "有効なプリセットと同じ名前を使うと上書きされます。"
 
+#: src/components/settings/SecureContextNote.tsx
+msgid "Reverse proxy setup"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Reverse sort order"
@@ -14398,6 +14572,10 @@ msgstr "実行中"
 msgid "Russian"
 msgstr "ロシア語"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Safari clears what a website saved after seven days without a visit. Add Maki to your home screen and save chapters from there to keep them."
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -14445,6 +14623,10 @@ msgstr "サンプル章"
 msgid "Save"
 msgstr "保存"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Save {label} again"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Save a cover.jpg into each series folder"
@@ -14491,6 +14673,10 @@ msgstr "フィルターを保存"
 msgid "Save filters"
 msgstr "フィルターを保存"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Save for offline"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Save health settings"
@@ -14515,6 +14701,10 @@ msgstr "このフィルターを保存…"
 #, fuzzy
 msgid "Save this filter"
 msgstr "このフィルターを保存"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Save unread chapters for offline"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -14544,11 +14734,31 @@ msgstr "保存済み"
 msgid "Saved as your default"
 msgstr "既定値として保存済み"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved by Keep upcoming chapters, removed once read"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved chapters"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved chapters, the copies of pages kept for browsing offline and this device's settings for offline reading all go. Nothing changes on the server."
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Saved filters"
 msgstr "保存済みフィルター"
+
+#: src/pages/LibraryPage.tsx
+msgid "Saved on this device"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saved on this device for offline reading"
+msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -14559,6 +14769,23 @@ msgstr "保存しました。空欄のままにすると、現在の値を保持
 #, fuzzy
 msgid "Saves the current search, sort and every filter in the panel as a named preset."
 msgstr "現在の検索、並べ替え、パネル内のすべてのフィルターを名前付きプリセットとして保存します。"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saving {done}/{total}"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving for offline failed. Try again from the chapter's menu."
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving on this device for offline reading"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -15185,6 +15412,10 @@ msgstr "リクエストを送信"
 msgid "Send silently"
 msgstr "音を鳴らさずに送信"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Send test"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 #, fuzzy
@@ -15217,6 +15448,10 @@ msgstr "MangaBakaがこれにリンクした続編、前日譚、スピンオフ
 #, fuzzy
 msgid "Series"
 msgstr "シリーズ"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Series {seriesId}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -15665,6 +15900,10 @@ msgstr "サインイン中のユーザー"
 #, fuzzy
 msgid "Signed in as <0>{oidcUserName}</0> on {displayName}."
 msgstr "{displayName}で<0>{oidcUserName}</0>としてサインインしています。"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Signing out keeps saved chapters on this device. They come back when you sign in again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -16248,6 +16487,10 @@ msgstr "完読前に中断"
 msgid "Stopping"
 msgstr "停止中"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Storage on this device"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16492,6 +16735,10 @@ msgstr "テストに失敗"
 msgid "Test notification sent"
 msgstr "テスト通知を送信しました"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Test notification sent."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Thai"
@@ -16561,6 +16808,14 @@ msgstr "承認された修復元のソースはもう利用できません。新
 #, fuzzy
 msgid "The approved source no longer has these pages"
 msgstr "承認したソースにはもうこれらのページがありません"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "The browser keeps saved chapters even when space runs low."
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "The browser may clear saved chapters when the device runs low on space."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16778,6 +17033,10 @@ msgstr "プロバイダーはこれらの章をこの巻に割り当てていま
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "プロバイダーの発行者URL。/.well-known/openid-configurationは含めません。Makiが自動で追加します。"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "The push service did not accept the test notification."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "The recycle bin is empty."
@@ -16844,6 +17103,7 @@ msgid "The server logs will say why."
 msgstr "理由はサーバーログで確認できます。"
 
 #: src/api/client.ts
+#: src/api/reader.ts
 #, fuzzy
 msgid "The server returned an error ({status})."
 msgstr "サーバーがエラーを返しました（{status}）。"
@@ -17064,6 +17324,10 @@ msgstr "このアーカイブはインデックス化されただけです。含
 msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 msgstr "このアーカイブはルート内のどのシリーズフォルダーにも入っていないため、インポート先のシリーズがありません。正しいフォルダーへ移動して再スキャンするか、Importページでアーカイブがあるフォルダーを取り込んでください。"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "This browser does not support push notifications."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
@@ -17074,10 +17338,22 @@ msgstr "各ソースがスキャンしたこの章のコピーを、容量が大
 msgid "This chapter has no readable file."
 msgstr "この章には読み取り可能なファイルがありません。"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "This chapter isn't saved on this device."
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "This chapter was added or upgraded too recently"
 msgstr "この章は追加またはアップグレードされてから日が浅すぎます"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "This device"
+msgstr ""
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "This device could not subscribe to push notifications."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -17613,6 +17889,8 @@ msgstr "信頼するプロキシ"
 msgid "Try a shorter or alternative query."
 msgstr "短い、または別のクエリを試してください。"
 
+#: src/auth/OfflineStartPage.tsx
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
@@ -18606,6 +18884,7 @@ msgstr "巻: {volumes}"
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "比較: {fromLabel}～{toLabel}"
 
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Waiting"
@@ -18766,6 +19045,10 @@ msgstr "何をダウンロードするか"
 #, fuzzy
 msgid "What to pause"
 msgstr "一時停止する対象"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "What to push"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -19173,6 +19456,14 @@ msgstr "全体との比較"
 #, fuzzy
 msgid "You're caught up"
 msgstr "最新話まで読みました"
+
+#: src/auth/OfflineStartPage.tsx
+msgid "You're offline"
+msgstr ""
+
+#: src/components/OfflineBanner.tsx
+msgid "You're offline. Showing what's saved on this device."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
