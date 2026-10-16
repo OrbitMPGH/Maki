@@ -6,6 +6,7 @@ using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Core.Inbox;
+using Maki.Core.Indexers;
 using Maki.Core.Notifications;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -118,8 +119,12 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             var needsFlare = sources.All.Any(s => !disabled.Contains(s.Name) && s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr));
             await Probe("FlareSolverr", SettingKeys.FlareSolverrUrl, null, needsFlare,
                 (url, _, token) => services.GetRequiredService<FlareSolverrClient>().PingAsync(url, token));
-            await Probe("Prowlarr", SettingKeys.ProwlarrUrl, SettingKeys.ProwlarrApiKey, false,
-                (url, key, token) => services.GetRequiredService<Maki.Core.Indexers.ProwlarrClient>().PingAsync(url, key!, token));
+            var indexer = await IndexerSettingsStore.LoadAsync(settings, ct);
+            var indexerKeys = IndexerSettingsStore.KeysFor(indexer.Backend);
+            await Probe("indexer", indexerKeys.Url, indexerKeys.ApiKey, false,
+                (url, key, token) => services.GetRequiredService<IndexerRegistry>().For(indexer.Backend)
+                    .PingAsync(indexer with { Url = url, ApiKey = key! }, token),
+                "indexer", indexer.Backend.DisplayName());
             await Probe("Kavita", SettingKeys.KavitaUrl, SettingKeys.KavitaApiKey, false,
                 (url, key, token) => services.GetRequiredService<Maki.Core.Kavita.KavitaClient>().PingAsync(url, key!, token));
             var client = await DownloadClientSettingsStore.LoadAsync(settings, ct);
@@ -267,8 +272,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
                     await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
             }
-            if (old.FirstOrDefault(r => r.Id == "qBittorrent") is { } legacyClientRow)
-                db.HealthChecks.Remove(legacyClientRow);
+            foreach (var legacyRow in old.Where(r => r.Id is "qBittorrent" or "Prowlarr").ToList())
+                db.HealthChecks.Remove(legacyRow);
             foreach (var cooled in old.Where(r => r.Id.StartsWith("cooldown:", StringComparison.Ordinal) && !checks.Any(c => c.Id == r.Id)).ToList())
                 db.HealthChecks.Remove(cooled);
             if (!checks.Any(c => c.Id == "migration-history") && old.FirstOrDefault(r => r.Id == "migration-history") is { } migrationRow)

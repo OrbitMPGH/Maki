@@ -5,7 +5,7 @@ namespace Maki.Core.Http;
 /// <summary>
 /// Retries transient failures — a dropped connection, a DNS blip, a 5xx from a service that's
 /// still starting up — with exponential backoff and jitter. Without it, every external call
-/// (MangaBaka, Prowlarr, the download client, Kavita, AniList, MAL) failed permanently on the first
+/// (MangaBaka, the indexer, the download client, Kavita, AniList, MAL) failed permanently on the first
 /// hiccup, surfacing as a hard error the user had to retry by hand.
 /// </summary>
 /// <remarks>

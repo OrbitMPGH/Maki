@@ -367,12 +367,12 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
-    id: 'prowlarr',
+    id: 'indexer',
     tab: 'downloads',
-    title: msg`Prowlarr`,
+    title: msg`Indexer`,
     admin: true,
     keywords: msg({
-      message: `indexer, torrent search, api key, releases, indexers, torznab, categories`,
+      message: `indexer, prowlarr, jackett, torrent search, api key, releases, indexers, torznab, categories`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -556,6 +556,7 @@ export const SETTINGS_ENTRY_ALIASES: Record<string, string> = {
   account: 'sign-in',
   'source-languages': 'languages',
   backups: 'backup',
+  prowlarr: 'indexer',
   qbittorrent: 'downloadclient',
 }
 

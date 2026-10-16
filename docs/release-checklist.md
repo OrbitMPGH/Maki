@@ -151,6 +151,11 @@ grows with the page number, so wrong page order is obvious in the reader.
       Transmission, Deluge) against a live instance: the row shows progress, the import runs on
       completion, and Settings > Download client > Test reports a bad password as a login failure.
       Recorded-handler tests cannot catch a wrong RPC field name.
+- [ ] **4.7** Point Settings > Indexer at a live Jackett (`linuxserver/jackett`) when the release
+      touches indexers: Test passes, the indexer checklist lists the configured trackers, a release
+      search returns results with seeders and leechers that match Jackett's own UI, and a grab of
+      a magnet-only result reaches the client. Then switch back to Prowlarr and check its indexer
+      selection is still there.
 
 ## 5. Reader [both]
 

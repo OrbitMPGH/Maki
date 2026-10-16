@@ -1268,7 +1268,7 @@ msgstr "该文件仍在移入回收站，请稍后再试。"
 msgid "error.recycleBin.targetInvalid"
 msgstr "原位置位于根文件夹之外或经过链接，因此无法将文件放回该处。"
 
-#. The Prowlarr or download client call failed; the cause is in the server log.
+#. The indexer or download client call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: Could not send the release to the download client. Details are in the server log.
 #, fuzzy
@@ -1282,10 +1282,9 @@ msgid "error.release.noDownloadLink"
 msgstr "此版本没有下载链接"
 
 #: src/Maki.Api/Services/ReleaseService.cs
-#. English: Prowlarr is not configured (Settings → Downloads → Prowlarr)
-#, fuzzy
-msgid "error.release.prowlarrNotConfigured"
-msgstr "尚未配置 Prowlarr（设置 → 下载 → Prowlarr）"
+#. English: No indexer is configured (Settings → Downloads → Indexer)
+msgid "error.release.indexerNotConfigured"
+msgstr ""
 
 #. The download client rejected the username or password Maki has stored for it.
 #: src/Maki.Api/Controllers/ReleaseController.cs
@@ -1310,7 +1309,7 @@ msgstr ""
 msgid "error.release.downloadClientUnreachable"
 msgstr ""
 
-#. The Prowlarr call failed; the cause is in the server log.
+#. The indexer call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: The release search failed. Details are in the server log.
 #, fuzzy
@@ -2359,7 +2358,7 @@ msgstr "该章节没有可升级的文件"
 msgid "error.upgrades.proposalNotFound"
 msgstr "该卷资源提议不存在"
 
-#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#. {detail} is the torrent client's or the indexer's own error text, shown as it is.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 #. English: Could not grab the release: {detail}
 #, fuzzy
@@ -2584,13 +2583,18 @@ msgstr "未知语言代码：{codes}"
 msgid "error.settings.noSourceLanguageEnabled"
 msgstr "必须至少启用一种语言"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr is not configured
-#, fuzzy
-msgid "error.settings.prowlarrNotConfigured"
-msgstr "未配置 Prowlarr"
+#. English: {service} is not configured
+msgid "error.settings.indexerNotConfigured"
+msgstr ""
 
-#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown indexer
+msgid "error.settings.indexerBackendInvalid"
+msgstr ""
+
+#. Shared by the indexer and Kavita connection tests, both of which need the pair.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL and API key are required
 #, fuzzy
@@ -2611,11 +2615,11 @@ msgstr "URL 不能为空"
 msgid "error.settings.userCannotSignIn"
 msgstr "该用户不存在或无法登录"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr did not respond (check URL/API key)
-#, fuzzy
-msgid "error.settings.prowlarrNoResponse"
-msgstr "Prowlarr 未响应（请检查 URL 或 API 密钥）"
+#. English: {service} did not respond (check the URL and API key)
+msgid "error.settings.indexerNoResponse"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The download client rejected the login (check username/password)
@@ -4871,7 +4875,7 @@ msgstr "之前的启动迁移失败（{error}）。请查看启动日志。"
 msgid "health.check.diagnosticsUnavailable"
 msgstr "无法完成数据库或调度器诊断"
 
-#. {service} is a product name (Prowlarr, Kavita, qBittorrent, FlareSolverr), never translated.
+#. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {service}: not configured
 #, fuzzy

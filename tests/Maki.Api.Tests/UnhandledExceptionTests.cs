@@ -120,7 +120,8 @@ public sealed class UnhandledExceptionTests : IDisposable
     {
         var armed = false;
         using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.ConfigureServices(s =>
-            s.Replace(ServiceDescriptor.Scoped<MakiDbContext>(sp => armed
+            s.Replace(ServiceDescriptor.Scoped<MakiDbContext>(sp =>
+                armed && sp.GetService<IHttpContextAccessor>()?.HttpContext is not null
                 ? throw new InvalidOperationException("probe-marker-minimal")
                 : (MakiDbContext)ActivatorUtilities.CreateInstance(sp, typeof(MakiDbContext))))));
         using var client = factory.CreateClient();

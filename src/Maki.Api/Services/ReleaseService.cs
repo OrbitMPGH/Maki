@@ -18,7 +18,8 @@ public record ReleaseDto(
     string Protocol,
     string? DownloadUrl,
     string? MagnetUrl,
-    string? InfoUrl)
+    string? InfoUrl,
+    string? InfoHash = null)
 {
     /// <summary>
     /// How the release reads against the series' upgrade profile. Filled only on search results, and
@@ -27,6 +28,31 @@ public record ReleaseDto(
     public Dtos.ReleaseParsedDto? Parsed { get; init; }
 }
 
+/// <summary>
+/// A release as a client sees it. The download link is the indexer's proxy URL and carries its API key,
+/// so it stays on the server; a grab names the release by guid and the server resolves the link.
+/// </summary>
+public record ReleaseResultDto(
+    string Guid,
+    string Title,
+    long Size,
+    string Indexer,
+    int? Seeders,
+    int? Leechers,
+    string Protocol,
+    string? MagnetUrl,
+    string? InfoUrl,
+    string? InfoHash,
+    Dtos.ReleaseParsedDto? Parsed)
+{
+    public static ReleaseResultDto From(ReleaseDto release, Dtos.ReleaseParsedDto? parsed) => new(
+        IndexerLinks.WithoutApiKey(release.Guid)!, release.Title, release.Size, release.Indexer, release.Seeders,
+        release.Leechers, release.Protocol, release.MagnetUrl, IndexerLinks.WithoutApiKey(release.InfoUrl),
+        release.InfoHash, parsed);
+}
+
+public record ReleaseSearchResponse(string Query, IReadOnlyList<ReleaseResultDto> Releases);
+
 /// <summary>Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson).</summary>
 public record ReleaseInfo(
     string Guid,
@@ -34,14 +60,19 @@ public record ReleaseInfo(
     string Indexer,
     string? TorrentHash);
 
-public record ReleaseSearchResult(string Query, IReadOnlyList<ReleaseDto> Releases);
+public record ReleaseSearchResult(string Query, IReadOnlyList<ReleaseDto> Releases)
+{
+    /// <summary>The backend that answered; release guids and links only mean something to it.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IndexerBackend Backend { get; init; }
+}
 
 /// <summary>A release search or grab refused for a reason the caller can show, with its catalogue key.</summary>
 public sealed class ReleaseRefusedException(string key, string message) : InvalidOperationException(message)
 {
     public const string SeriesNotFound = "error.release.seriesNotFound";
     public const string NoDownloadLink = "error.release.noDownloadLink";
-    public const string ProwlarrNotConfigured = "error.release.prowlarrNotConfigured";
+    public const string IndexerNotConfigured = "error.release.indexerNotConfigured";
     public const string DownloadClientNotConfigured = "error.release.downloadClientNotConfigured";
 
     public string Key { get; } = key;
@@ -49,7 +80,7 @@ public sealed class ReleaseRefusedException(string key, string message) : Invali
 
 public class ReleaseService(
     MakiDbContext db,
-    ProwlarrClient prowlarr,
+    IndexerRegistry indexers,
     TorrentClientRegistry torrentClients,
     SettingsService settings,
     ILogger<ReleaseService> logger)
@@ -59,9 +90,8 @@ public class ReleaseService(
         var series = await db.Series.FindAsync([seriesId], ct)
             ?? throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
 
-        var (url, apiKey) = await GetProwlarrConfigAsync(ct);
-        var indexerIds = ParseIds(await settings.GetAsync(SettingKeys.ProwlarrIndexerIds, ct));
-        var categories = ParseIds(await settings.GetAsync(SettingKeys.ProwlarrCategories, ct));
+        var indexerSettings = await GetIndexerSettingsAsync(ct);
+        var indexer = indexers.For(indexerSettings.Backend);
 
         var candidates = string.IsNullOrWhiteSpace(query)
             ? SearchQuery.WithFallbacks(series.Title, series.OriginalTitle, series.AltTitles).ToList()
@@ -72,13 +102,13 @@ public class ReleaseService(
         foreach (var candidate in candidates)
         {
             attempted = candidate;
-            var releases = await prowlarr.SearchAsync(url, apiKey, candidate, indexerIds, categories, ct);
+            var releases = await indexer.SearchAsync(indexerSettings, candidate, ct);
             results = releases
                 .Where(r => r.Protocol.Equals("torrent", StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(r => r.Seeders ?? 0)
                 .Select(r => new ReleaseDto(
                     r.Guid, r.Title, r.Size, r.Indexer, r.Seeders, r.Leechers,
-                    r.Protocol, r.DownloadUrl, r.MagnetUrl, r.InfoUrl))
+                    r.Protocol, r.DownloadUrl, r.MagnetUrl, r.InfoUrl, r.InfoHash))
                 .ToList();
             if (results.Count > 0)
             {
@@ -88,7 +118,7 @@ public class ReleaseService(
             logger.LogInformation("No releases for '{Query}'", candidate);
         }
 
-        return new ReleaseSearchResult(attempted, results);
+        return new ReleaseSearchResult(attempted, results) { Backend = indexerSettings.Backend };
     }
 
     /// <param name="origin">What asked for it; an unattended grab notifies, a click does not.</param>
@@ -148,12 +178,13 @@ public class ReleaseService(
         }
 
         var url = release.DownloadUrl!;
-        ProwlarrClient.TorrentLink? link = null;
+        TorrentLink? link = null;
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(TimeSpan.FromSeconds(30));
-            link = await prowlarr.FetchTorrentAsync(url, timeout.Token);
+            var indexer = indexers.For(await ActiveBackendAsync(ct));
+            link = await indexer.FetchTorrentAsync(url, timeout.Token);
         }
         catch (Exception ex) when (ex is HttpRequestException or InvalidDataException ||
                                    (ex is TaskCanceledException && !ct.IsCancellationRequested))
@@ -179,35 +210,28 @@ public class ReleaseService(
                 release.Title, client.Kind.DisplayName());
         }
 
-        return await driver.AddAsync(client, url, ct);
+        return await driver.AddAsync(client, url, ct) ?? NormalizedInfoHash(release.InfoHash);
     }
 
-    /// <summary>Parses a CSV of ids from the settings store; null/blank → null (no restriction).</summary>
-    private static List<int>? ParseIds(string? csv)
-    {
-        if (string.IsNullOrWhiteSpace(csv))
-        {
-            return null;
-        }
+    /// <summary>The indexer's own hash, for a URL add the client reported nothing for, in the form the clients list.</summary>
+    private static string? NormalizedInfoHash(string? hash) =>
+        string.IsNullOrWhiteSpace(hash) ? null : TorrentInfoHash.FromMagnet($"xt=urn:btih:{hash.Trim()}");
 
-        var ids = csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(part => int.TryParse(part, out var id) ? id : (int?)null)
-            .OfType<int>()
-            .ToList();
-        return ids.Count > 0 ? ids : null;
-    }
+    public virtual Task<IndexerBackend> ActiveBackendAsync(CancellationToken ct) =>
+        IndexerSettingsStore.ActiveBackendAsync(settings, ct);
 
-    public async Task<(string Url, string ApiKey)> GetProwlarrConfigAsync(CancellationToken ct)
+    /// <summary>The active backend's settings; refused when its URL or API key is missing.</summary>
+    public async Task<IndexerSettings> GetIndexerSettingsAsync(CancellationToken ct)
     {
-        var url = await settings.GetAsync(SettingKeys.ProwlarrUrl, ct);
-        var apiKey = await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
-        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        var indexerSettings = await IndexerSettingsStore.LoadAsync(settings, ct);
+        if (!indexerSettings.IsConfigured)
         {
             throw new ReleaseRefusedException(
-                ReleaseRefusedException.ProwlarrNotConfigured, "Prowlarr is not configured (Settings → Downloads → Prowlarr)");
+                ReleaseRefusedException.IndexerNotConfigured,
+                $"{indexerSettings.Backend.DisplayName()} is not configured (Settings, Downloads, Indexer)");
         }
 
-        return (url, apiKey);
+        return indexerSettings;
     }
 
     public async Task<TorrentClientSettings> GetClientSettingsAsync(CancellationToken ct)

@@ -1157,14 +1157,17 @@ msgid "{n}s"
 msgstr "{n} s"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "{name} (disabled in Prowlarr)"
-msgstr "{name} (wyłączone w Prowlarr)"
+msgid "{name} (disabled in {backendName})"
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "{name} {year}"
 msgstr "{name} {year}"
+
+#: src/components/settings/useIndexerForm.ts
+msgid "{name} is reachable"
+msgstr ""
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -3201,8 +3204,8 @@ msgid "Anything the admin should know"
 msgstr "Coś, o czym administrator powinien wiedzieć"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "API key"
@@ -5180,9 +5183,8 @@ msgid "Could not load anime signals: {reason}"
 msgstr "Nie udało się wczytać sygnałów z anime: {reason}"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
-msgstr "Nie udało się wczytać indekserów z Prowlarr: {indexersErrorMessage}"
+msgid "Could not load indexers from {backendName}: {indexersErrorMessage}"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -6351,7 +6353,7 @@ msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "Pobieranie najpierw próbuje źródła z najlepszym wynikiem. Priorytet rozstrzyga tylko remisy."
 
 #: src/components/SetupWizard.tsx
-msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
+msgid "Downloads what the indexer finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
 msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
@@ -8495,15 +8497,22 @@ msgid "indexed only"
 msgstr "tylko zindeksowane"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/settings/IndexerForm.tsx
+#: src/components/SetupWizard.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Indexer"
 msgstr "Indekser"
 
+#: src/api/upgrades.ts
+msgid "Indexer search failed"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "indexer, torrent search, api key, releases, indexers, torznab, categories"
-msgstr "indekser, wyszukiwanie torrentów, klucz api, wydania, indeksery, torznab, kategorie"
+msgid "indexer, prowlarr, jackett, torrent search, api key, releases, indexers, torznab, categories"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -9441,7 +9450,7 @@ msgid "Looking up chapters…"
 msgstr "Wyszukiwanie rozdziałów…"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and a download client, and runs an hour after the daily scan."
+msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs an indexer and a download client, and runs an hour after the daily scan."
 msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
@@ -10764,10 +10773,13 @@ msgstr "Brak historii"
 msgid "No index yet, the prebuilt vectors download automatically."
 msgstr "Brak jeszcze indeksu, gotowe wektory pobiorą się automatycznie."
 
+#: src/api/upgrades.ts
+msgid "No indexer is configured"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "No indexers configured in Prowlarr."
-msgstr "Brak skonfigurowanych indekserów w Prowlarr."
+msgid "No indexers configured in {backendName}."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -11847,6 +11859,10 @@ msgstr "Potrzebne tylko wtedy, gdy Kavita widzi bibliotekę pod inną ścieżką
 msgid "Only notify services with this tag."
 msgstr "Powiadamiaj tylko usługi z tym tagiem."
 
+#: src/components/settings/IndexerForm.tsx
+msgid "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
+msgstr ""
+
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
 msgid "Only safe titles"
@@ -12669,21 +12685,6 @@ msgstr "Chronione przed ulepszeniami"
 #, fuzzy
 msgid "Provider"
 msgstr "Dostawca"
-
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "Prowlarr"
-msgstr "Prowlarr"
-
-#: src/api/upgrades.ts
-#, fuzzy
-msgid "Prowlarr isn't configured"
-msgstr "Prowlarr nie jest skonfigurowany"
-
-#: src/api/upgrades.ts
-#, fuzzy
-msgid "Prowlarr search failed"
-msgstr "Wyszukiwanie w Prowlarr nie powiodło się"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14521,6 +14522,7 @@ msgstr "Zapisz kody odzyskiwania"
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
+#: src/components/settings/useIndexerForm.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -14555,6 +14557,10 @@ msgstr "Zapisano. Zostaw puste, aby zachować."
 #, fuzzy
 msgid "Saves the current search, sort and every filter in the panel as a named preset."
 msgstr "Zapisuje bieżące wyszukiwanie, sortowanie i wszystkie filtry w panelu jako nazwany preset."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Saving switches the indexer to {selectedName}. Its indexer and category lists load after that."
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -14922,15 +14928,11 @@ msgstr "Szukaj lub wklej identyfikator"
 msgid "Search query"
 msgstr "Zapytanie wyszukiwania"
 
+#: src/components/ReleaseSearchModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Search releases"
 msgstr "Szukaj wydań"
-
-#: src/components/ReleaseSearchModal.tsx
-#, fuzzy
-msgid "Search releases (Prowlarr)"
-msgstr "Szukaj wydań (Prowlarr)"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -14988,14 +14990,12 @@ msgid "searched as “{cleanedTitle}”"
 msgstr "wyszukano jako „{cleanedTitle}”"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Searches your indexers for manga releases to download as torrents."
-msgstr "Przeszukuje indexery w poszukiwaniu wydań mangi do pobrania jako torrentów."
+msgid "Searches your indexers for manga releases to download as torrents. Works through Prowlarr or Jackett."
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. No app sync needed."
-msgstr "Przeszukuje indeksatory torrentów w poszukiwaniu wydań mangi. Służy do ulepszania tomów i ręcznego pobierania wydań. Nie wymaga synchronizacji z aplikacjami."
+msgid "Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. Works through Prowlarr or Jackett, no app sync needed."
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -16471,6 +16471,7 @@ msgstr "Informuje o każdym nowym rozdziale, niezależnie od domyślnego ustawie
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/IndexerForm.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Test"
@@ -18171,6 +18172,7 @@ msgstr "Wielkie litery"
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/downloadClientFields.ts
+#: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx

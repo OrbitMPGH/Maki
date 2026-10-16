@@ -56,7 +56,7 @@ public class CompletedDownloadJobTests : IDisposable
         using var db = _db.NewContext();
         var settings = new SettingsService(_db.ScopeFactory());
         var releases = new ReleaseService(
-            db, new ProwlarrClient(new StubHttpClientFactory("[]")), _client.Registry(), settings, NullLogger<ReleaseService>.Instance);
+            db, TestIndexers.Registry(new StubHttpClientFactory("[]")), _client.Registry(), settings, NullLogger<ReleaseService>.Instance);
         var importer = new TorrentImportService(
             db, null!, null!, null!, null!, null!, settings, null!, new RecordingInbox(),
             NullLogger<TorrentImportService>.Instance);
