@@ -46,7 +46,7 @@ const SHOTS = [
   { name: 'desktop-series', device: 'desktop', path: `/series/${showcase.seriesId}`, accent: 'emerald', viewport: TILE, click: 'Chapters', scrollY: 300 },
   { name: 'desktop-stats', device: 'desktop', path: '/stats', accent: 'amber', viewport: TILE },
   { name: 'phone-home', device: 'phone', path: '/home', accent: 'rose' },
-  showcase.chapterId && { name: 'phone-reader', device: 'phone', path: `/read/${showcase.chapterId}`, accent: 'rose', settleMs: 3000 },
+  showcase.chapterId && { name: 'phone-reader', device: 'phone', path: `/read/${showcase.chapterId}`, accent: 'rose', settleMs: 1500, keys: ['ArrowLeft', 'ArrowLeft', 'ArrowLeft'] },
   { name: 'phone-discover', device: 'phone', path: '/discover/recommended', accent: 'rose', scrollY: 330 },
   { name: 'phone-stats', device: 'phone', path: '/stats', accent: 'amber' },
 ].filter(Boolean)
@@ -101,6 +101,10 @@ try {
       }
       window.scrollTo(0, 0)
     })
+    for (const key of shot.keys ?? []) {
+      await page.keyboard.press(key)
+      await new Promise((r) => setTimeout(r, 900))
+    }
     if (shot.click) {
       await page.evaluate((label) => {
         const tab = [...document.querySelectorAll('[role="tab"], button, a')].find((e) => e.textContent?.trim().startsWith(label))
