@@ -128,15 +128,46 @@ point Maki at it and its extensions appear next to the built-in sources.
 <details>
 <summary>Show all sources</summary>
 
-The full table, with notes on languages, FlareSolverr and mirror overrides, is in
-[docs/sources.md](docs/sources.md). A few examples:
+Notes on languages, FlareSolverr and mirror overrides are also in
+[docs/sources.md](docs/sources.md).
 
 | Source | Notes |
 |---|---|
 | MangaDex | Official API, language filter |
 | MANGA Plus | Official (Shueisha), language-specific mappings |
-| WEBTOON | Official (webtoons.com), ORIGINALS and CANVAS |
+| WEBTOON | Official (webtoons.com), ORIGINALS and CANVAS in en, id, th, es, fr, zh-Hant, de |
+| Naver Webtoon | Official (comic.naver.com), Korean, WEBTOON tier only |
+| GigaViewer sites | Official Japanese: Shonen Jump+, Comic Days, Sunday Webry, MAGCOMI, Tonari no Young Jump, Comic Zenon, Kurage Bunch (free episodes only) |
+| KadoComi (Comic Walker) | Official, Japanese |
+| MangaPill | |
+| Weeb Central | |
 | MangaFire | Language filter, requires [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) |
+| TCB Scans | Domain override via `MAKI_SOURCE_TCBSCANS_BASEURL` |
+| Asura Scans | Manhwa/manhua |
+| Flame Comics | Manhwa/manhua |
+| TopManhua | Manhwa/manhua, requires FlareSolverr |
+| MangaKatana | |
+| MangaKakalot | Requires FlareSolverr |
+| Atsumaru | atsu.moe |
+| Dynasty Scans | English, yuri |
+| Toonily | Manhwa, adult, requires FlareSolverr |
+| Manhwa18.net | Adult, requires FlareSolverr |
+| Baozi Manhua | Simplified Chinese manhua |
+| Manhuagui | Simplified Chinese, mirror override via `MAKI_SOURCE_MANHUAGUI_BASEURL` |
+| Manga Livre | Brazilian Portuguese |
+| Taiyō | Brazilian Portuguese |
+| ManhwaWeb | Spanish |
+| Olympus Scanlation | Spanish, requires FlareSolverr |
+| Anime-Sama | French, requires FlareSolverr |
+| Manga-Tube | German |
+| MangaWorld | Italian |
+| MangaLib | Russian |
+| MangaDenizi | Turkish |
+| Shinigami | Indonesian, manhwa/manhua/manga |
+| Cứu Truyện | Vietnamese, FlareSolverr when challenged, mirror override via `MAKI_SOURCE_CUUTRUYEN_BASEURL` |
+| Team-X | Arabic, requires FlareSolverr; the domain rotates, override it with `MAKI_SOURCE_TEAMX_BASEURL` |
+| Sen Manga | Japanese raws |
+| Rawkuma | Japanese raws, FlareSolverr when challenged, mirror override via `MAKI_SOURCE_RAWKUMA_BASEURL` |
 
 </details>
 
