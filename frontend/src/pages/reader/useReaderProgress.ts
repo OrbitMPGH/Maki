@@ -28,13 +28,14 @@ const HEARTBEAT_MS = 60_000
  */
 export function useReaderProgress(
   chapterId: number | undefined,
+  seriesId: number | undefined,
   page: number,
   complete: boolean,
   enabled: boolean,
   clock: ReadingClock,
   onFlushed?: () => void,
 ) {
-  const latest = useRef({ chapterId, page, complete })
+  const latest = useRef({ chapterId, seriesId, page, complete })
   const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const inflight = useRef<Promise<void>>(Promise.resolve())
@@ -47,7 +48,7 @@ export function useReaderProgress(
   const flushedHandler = useRef(onFlushed)
   flushedHandler.current = onFlushed
 
-  latest.current = { chapterId, page, complete }
+  latest.current = { chapterId, seriesId, page, complete }
 
   if (!enabled || !chapterId) {
     opened.current = undefined
@@ -60,21 +61,21 @@ export function useReaderProgress(
   // or after the final flush and regress the persisted position. Chaining serializes them, so
   // `settle()` draining `inflight.current` waits for every send still queued, in order.
   const send = useCallback(
-    (id: number, at: number, done: boolean) => {
+    (id: number, series: number, at: number, done: boolean) => {
       // Seconds are pulled from the clock now, at the moment this send is decided, not once its
       // turn in the chain comes up: waiting would let time banked while queued behind an earlier
       // request bleed into this send instead of a later one.
       const seconds = clock.take()
       if (opened.current?.chapterId === id) opened.current.written = true
       inflight.current = inflight.current
-        .then(() => saveProgress(id, at, done || undefined, seconds))
+        .then(() => saveProgress(id, series, at, done || undefined, seconds))
         .catch(() => {})
     },
     [clock],
   )
 
   useEffect(() => {
-    if (!enabled || !chapterId) return
+    if (!enabled || !chapterId || seriesId === undefined) return
 
     const start = opened.current
     if (start && !start.written && start.page === page && !complete) {
@@ -86,19 +87,19 @@ export function useReaderProgress(
     timer.current = setTimeout(() => {
       if (!pending.current) return
       pending.current = false
-      send(chapterId, page, complete)
+      send(chapterId, seriesId, page, complete)
     }, DEBOUNCE_MS)
 
     return () => clearTimeout(timer.current)
-  }, [chapterId, page, complete, enabled, send])
+  }, [chapterId, seriesId, page, complete, enabled, send])
 
   useEffect(() => {
     if (!enabled) return
 
     const timer = setInterval(() => {
-      const { chapterId: id, page: at, complete: done } = latest.current
-      if (!id || clock.pending() === 0) return
-      send(id, at, done)
+      const { chapterId: id, seriesId: series, page: at, complete: done } = latest.current
+      if (!id || series === undefined || clock.pending() === 0) return
+      send(id, series, at, done)
     }, HEARTBEAT_MS)
 
     return () => clearInterval(timer)
@@ -108,17 +109,17 @@ export function useReaderProgress(
     if (!enabled) return
 
     const flush = (direct: boolean) => {
-      const { chapterId: id, page: at, complete: done } = latest.current
+      const { chapterId: id, seriesId: series, page: at, complete: done } = latest.current
       // Banked seconds are worth a write on their own: this is the last chance to report the
       // stretch since the previous one, and a hidden tab may never come back.
-      if (!id || (!pending.current && clock.pending() === 0)) return
+      if (!id || series === undefined || (!pending.current && clock.pending() === 0)) return
       // The flush carries the latest position, so a debounce still armed would only repeat it.
       clearTimeout(timer.current)
       pending.current = false
       const seconds = clock.take()
       if (opened.current?.chapterId === id) opened.current.written = true
       const run = () =>
-        flushProgress(id, at, done || undefined, seconds)
+        flushProgress(id, series, at, done || undefined, seconds)
           .then(() => {
             // Only now has the write committed, so a refetch started any earlier could read the old state.
             flushedHandler.current?.()

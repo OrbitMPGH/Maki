@@ -68,6 +68,7 @@ export default function ReaderToolbar({
   onIncognito,
   readingCounted,
   bookmarked,
+  bookmarkDisabled,
   onToggleBookmark,
   stripOpen,
   onToggleStrip,
@@ -102,6 +103,8 @@ export default function ReaderToolbar({
   /** Whether this chapter is being counted as read on screen; ReaderPage owns the rule. */
   readingCounted: boolean
   bookmarked: boolean
+  /** Offline: a toggle cannot be queued and replayed safely. */
+  bookmarkDisabled: boolean
   onToggleBookmark: () => void
   stripOpen: boolean
   onToggleStrip: () => void
@@ -265,7 +268,13 @@ export default function ReaderToolbar({
             </Tooltip>
           )}
           <Tooltip
-            label={bookmarked ? t`Remove bookmark` : t`Bookmark this page`}
+            label={
+              bookmarkDisabled
+                ? t`Bookmarks need a connection`
+                : bookmarked
+                  ? t`Remove bookmark`
+                  : t`Bookmark this page`
+            }
             withArrow
             zIndex={OVERLAY_Z}
           >
@@ -273,6 +282,7 @@ export default function ReaderToolbar({
               variant="subtle"
               color={bookmarked ? 'var(--warn)' : 'gray'}
               onClick={onToggleBookmark}
+              disabled={bookmarkDisabled}
               aria-label={t`Toggle bookmark`}
             >
               {bookmarked ? <IconBookmarkFilled size={18} /> : <IconBookmark size={18} />}
