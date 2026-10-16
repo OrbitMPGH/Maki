@@ -1005,6 +1005,17 @@ msgstr "Période ou métrique inconnue"
 msgid "error.progress.unknownTimeZone"
 msgstr "Fuseau horaire inconnu"
 
+#. The browser sent a push subscription without an https endpoint on a public address or without valid keys.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This browser's push subscription is not valid
+msgid "error.push.invalidSubscription"
+msgstr ""
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: No device has push notifications turned on for this account
+msgid "error.push.noSubscription"
+msgstr ""
+
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: Item has no chapter to resolve
 #, fuzzy
@@ -2978,6 +2989,17 @@ msgstr "Impossible de créer la sauvegarde. Consultez les journaux du serveur po
 #, fuzzy
 msgid "inbox.unknownSeries"
 msgstr "Série inconnue"
+
+#. Sent by the "Send a test" button in the push notification settings.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: Push notifications work
+msgid "inbox.pushTest.title"
+msgstr ""
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This device will get Maki notifications.
+msgid "inbox.pushTest.body"
+msgstr ""
 
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished

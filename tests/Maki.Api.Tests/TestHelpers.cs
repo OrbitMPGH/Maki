@@ -35,6 +35,7 @@ internal sealed class RecordingInbox() : InboxService(
     new ServiceCollection().BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
     null!,
     null!,
+    null!,
     TimeProvider.System,
     NullLogger<InboxService>.Instance)
 {

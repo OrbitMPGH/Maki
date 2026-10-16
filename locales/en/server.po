@@ -701,6 +701,15 @@ msgstr "Unknown period or metric"
 msgid "error.progress.unknownTimeZone"
 msgstr "Unknown time zone"
 
+#. The browser sent a push subscription without an https endpoint on a public address or without valid keys.
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "error.push.invalidSubscription"
+msgstr "This browser's push subscription is not valid"
+
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "error.push.noSubscription"
+msgstr "No device has push notifications turned on for this account"
+
 #: src/Maki.Api/Controllers/QueueController.cs
 msgid "error.queue.noChapterToResolve"
 msgstr "Item has no chapter to resolve"
@@ -2065,6 +2074,15 @@ msgstr "Could not create the backup. Check the server logs for details."
 #: src/Maki.Api/Localization/InboxRenderer.cs
 msgid "inbox.unknownSeries"
 msgstr "Unknown series"
+
+#. Sent by the "Send a test" button in the push notification settings.
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "inbox.pushTest.title"
+msgstr "Push notifications work"
+
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "inbox.pushTest.body"
+msgstr "This device will get Maki notifications."
 
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 msgid "inbox.libraryImport.finished.title"

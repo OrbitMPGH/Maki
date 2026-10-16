@@ -335,6 +335,23 @@ public static class SettingKeys
     public const string NotificationsInbox = "notifications.inbox";
 
     /// <summary>
+    /// Per user: which inbox event types also go out as Web Push, a JSON array of event type keys
+    /// (see <see cref="Inbox.PushPrefs"/>). Unset = new chapters available and chapters downloaded.
+    /// Only rows the inbox prefs already let through are pushed.
+    /// </summary>
+    public const string NotificationsPush = "notifications.push";
+
+    /// <summary>
+    /// The instance's VAPID key pair for Web Push, base64url, generated on first use. Instance-wide and
+    /// in backups, so a restore keeps every browser's subscription working. The private key is
+    /// credential material like the other plaintext secrets here.
+    /// </summary>
+    public const string PushVapidPublicKey = "push.vapid.publickey";
+
+    /// <inheritdoc cref="PushVapidPublicKey"/>
+    public const string PushVapidPrivateKey = "push.vapid.privatekey";
+
+    /// <summary>
     /// Per user: the level they were last told they reached. Levels are derived arithmetic and are
     /// never stored (see <c>LevelMath</c>), so without somewhere to remember the last announcement
     /// there is nothing to diff a level-up against.

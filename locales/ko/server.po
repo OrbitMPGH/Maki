@@ -1005,6 +1005,17 @@ msgstr "알 수 없는 기간 또는 지표"
 msgid "error.progress.unknownTimeZone"
 msgstr "알 수 없는 시간대"
 
+#. The browser sent a push subscription without an https endpoint on a public address or without valid keys.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This browser's push subscription is not valid
+msgid "error.push.invalidSubscription"
+msgstr ""
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: No device has push notifications turned on for this account
+msgid "error.push.noSubscription"
+msgstr ""
+
 #: src/Maki.Api/Controllers/QueueController.cs
 #. English: Item has no chapter to resolve
 #, fuzzy
@@ -2978,6 +2989,17 @@ msgstr "백업을 만들지 못했습니다. 자세한 내용은 서버 로그�
 #, fuzzy
 msgid "inbox.unknownSeries"
 msgstr "알 수 없는 시리즈"
+
+#. Sent by the "Send a test" button in the push notification settings.
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: Push notifications work
+msgid "inbox.pushTest.title"
+msgstr ""
+
+#: src/Maki.Api/Controllers/PushController.cs
+#. English: This device will get Maki notifications.
+msgid "inbox.pushTest.body"
+msgstr ""
 
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: Library import finished
