@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { postToWorker } from './pwa/serviceWorker'
+import { syncPushSubscription } from '../api/push'
 
 const PREFIX = 'maki-page:'
 export const SCROLL_PREFIX = 'maki-scroll:'
@@ -38,6 +39,7 @@ const USER_KEY = 'maki-user'
 export function noteSignedInUser(id: number): void {
   // Every sign-in path ends here, so this is where the service worker learns whose data it keeps.
   void postToWorker({ type: 'user', userId: id })
+  void syncPushSubscription(id)
   try {
     const previous = sessionStorage.getItem(USER_KEY)
     if (previous !== null && previous !== String(id)) clearTabState()

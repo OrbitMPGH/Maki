@@ -4,6 +4,7 @@ import { api, beginSession, invalidateInitialize } from './client'
 import { noteSignedInUser, noteSignedOut } from '../lib/pageState'
 import { useSaveSettingsRecord } from './settingsRecord'
 import { postToWorker } from '../lib/pwa/serviceWorker'
+import { dropPushSubscription } from './push'
 
 type SetupDoneHandler = () => void
 let onSetupDone: SetupDoneHandler | null = null
@@ -202,7 +203,10 @@ export function useSetup() {
 export function useLogout() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
+    mutationFn: async () => {
+      await dropPushSubscription()
+      return api<void>('/auth/logout', { method: 'POST' })
+    },
     onSuccess: () => {
       // Browsing caches go with an explicit sign-out; saved chapters and queued progress stay,
       // keyed by user, for when the same person signs back in.
