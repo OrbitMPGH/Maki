@@ -45,5 +45,8 @@ write('icon-512.png', compose(512, 1), 512)
 write('icon-maskable-512.png', compose(512, 0.6, dark), 512)
 write('apple-touch-icon-180.png', compose(180, 0.8, dark), 180)
 
-const silhouette = inner.replace(/#[0-9a-fA-F]{3,8}\b/g, '#ffffff')
-write('badge-96.png', compose(96, 0.9, null, silhouette), 96)
+// Android badges use alpha only, so the outlines, eyes and smile become holes in a white roll.
+const cut = { '#1a1a1a': '#000000', '#fff': '#000000' }
+const maskBody = inner.replace(/#[0-9a-fA-F]{3,8}\b/g, (c) => cut[c.toLowerCase()] ?? '#ffffff')
+const badge = `<mask id="m" maskUnits="userSpaceOnUse" x="17" y="17" width="62" height="62">${maskBody}</mask><rect x="17" y="17" width="62" height="62" fill="#ffffff" mask="url(#m)"/>`
+write('badge-96.png', compose(96, 0.9, null, badge), 96)
