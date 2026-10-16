@@ -3,6 +3,7 @@ import { stopConnection } from './signalr'
 import { api, beginSession, invalidateInitialize } from './client'
 import { noteSignedInUser, noteSignedOut } from '../lib/pageState'
 import { useSaveSettingsRecord } from './settingsRecord'
+import { postToWorker } from '../lib/pwa/serviceWorker'
 
 type SetupDoneHandler = () => void
 let onSetupDone: SetupDoneHandler | null = null
@@ -203,6 +204,10 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
     onSuccess: () => {
+      // Browsing caches go with an explicit sign-out; saved chapters and queued progress stay,
+      // keyed by user, for when the same person signs back in.
+      const userId = qc.getQueryData<Me | null>(ME_QUERY_KEY)?.id
+      if (userId !== undefined) void postToWorker({ type: 'purge-browse', userId })
       noteSignedOut()
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, null)

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
+import { postToWorker } from './pwa/serviceWorker'
 
 const PREFIX = 'maki-page:'
 export const SCROLL_PREFIX = 'maki-scroll:'
@@ -35,6 +36,8 @@ const USER_KEY = 'maki-user'
  * same person keeps their filters, scroll and back links), a reload, and the SSO redirect.
  */
 export function noteSignedInUser(id: number): void {
+  // Every sign-in path ends here, so this is where the service worker learns whose data it keeps.
+  void postToWorker({ type: 'user', userId: id })
   try {
     const previous = sessionStorage.getItem(USER_KEY)
     if (previous !== null && previous !== String(id)) clearTabState()
@@ -44,6 +47,7 @@ export function noteSignedInUser(id: number): void {
 
 /** An explicit sign-out: the next person to sign in starts clean even if it is the same account. */
 export function noteSignedOut(): void {
+  void postToWorker({ type: 'user', userId: null })
   try {
     sessionStorage.removeItem(USER_KEY)
   } catch { /* see noteSignedInUser */ }
