@@ -116,7 +116,7 @@ library, history and tracker connections are already attached to that account.
 | Platform | Status | Get it |
 |---|---|---|
 | Docker (amd64, arm64) | Supported | `ghcr.io/orbitmpgh/maki:latest` |
-| Unraid | Template | [distribution/unraid](distribution/unraid) |
+| Unraid | Supported | Search for Maki in the Apps tab on your Unraid server |
 | From source | Supported | .NET 10 and Node 24, see [docs/development.md](docs/development.md) |
 
 ## Sources
