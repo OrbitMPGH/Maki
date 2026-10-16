@@ -30,12 +30,13 @@ export function useReaderProgress(
   chapterId: number | undefined,
   seriesId: number | undefined,
   page: number,
+  pageCount: number,
   complete: boolean,
   enabled: boolean,
   clock: ReadingClock,
   onFlushed?: () => void,
 ) {
-  const latest = useRef({ chapterId, seriesId, page, complete })
+  const latest = useRef({ chapterId, seriesId, page, pageCount, complete })
   const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const inflight = useRef<Promise<void>>(Promise.resolve())
@@ -48,7 +49,7 @@ export function useReaderProgress(
   const flushedHandler = useRef(onFlushed)
   flushedHandler.current = onFlushed
 
-  latest.current = { chapterId, seriesId, page, complete }
+  latest.current = { chapterId, seriesId, page, pageCount, complete }
 
   if (!enabled || !chapterId) {
     opened.current = undefined
@@ -66,9 +67,10 @@ export function useReaderProgress(
       // turn in the chain comes up: waiting would let time banked while queued behind an earlier
       // request bleed into this send instead of a later one.
       const seconds = clock.take()
+      const count = latest.current.pageCount
       if (opened.current?.chapterId === id) opened.current.written = true
       inflight.current = inflight.current
-        .then(() => saveProgress(id, series, at, done || undefined, seconds))
+        .then(() => saveProgress(id, series, at, done || undefined, seconds, count))
         .catch(() => {})
     },
     [clock],
@@ -109,7 +111,7 @@ export function useReaderProgress(
     if (!enabled) return
 
     const flush = (direct: boolean) => {
-      const { chapterId: id, seriesId: series, page: at, complete: done } = latest.current
+      const { chapterId: id, seriesId: series, page: at, pageCount: count, complete: done } = latest.current
       // Banked seconds are worth a write on their own: this is the last chance to report the
       // stretch since the previous one, and a hidden tab may never come back.
       if (!id || series === undefined || (!pending.current && clock.pending() === 0)) return
@@ -119,7 +121,7 @@ export function useReaderProgress(
       const seconds = clock.take()
       if (opened.current?.chapterId === id) opened.current.written = true
       const run = () =>
-        flushProgress(id, series, at, done || undefined, seconds)
+        flushProgress(id, series, at, done || undefined, seconds, count)
           .then(() => {
             // Only now has the write committed, so a refetch started any earlier could read the old state.
             flushedHandler.current?.()

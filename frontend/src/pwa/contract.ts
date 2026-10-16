@@ -10,6 +10,8 @@ export const CHANNEL_NAME = 'maki-pwa'
 export const OFFLINE_HEADER = 'X-Maki-Offline'
 /** Added by the SW to a progress write it could not send and queued instead. */
 export const QUEUED_HEADER = 'X-Maki-Queued'
+/** Sent by the page's replay of a queued row, which the SW passes through rather than captures again. */
+export const REPLAY_HEADER = 'X-Maki-Replay'
 /** The `code` of the SW's synthetic 503. The page branches on this, never on the status. */
 export const OFFLINE_CODE = 'offline.unavailable'
 
@@ -65,6 +67,8 @@ export interface ProgressRow {
   /** Page-side offline writes merge into the newest mergeable pending row; SW captures never do. */
   mergeable: boolean
   state: ProgressRowState
+  /** Sends the server refused with a 4xx that may not be final. Absent on rows from before it existed. */
+  attempts?: number
 }
 
 /** A row as read back from the queue, id always present. */

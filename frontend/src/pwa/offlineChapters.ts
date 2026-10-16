@@ -307,17 +307,7 @@ async function save(job: Job): Promise<Outcome> {
     if (servedOffline) return 'offline'
     if (job.cancelled) return 'cancelled'
 
-    const init = await getInitialize()
-    await cachePut(
-      cacheName,
-      `${init.apiRoot}/reader/chapter/${chapterId}`,
-      new Response(JSON.stringify(manifest), { headers: { 'Content-Type': 'application/json' } }),
-    )
-    const record = await updateOfflineChapter(userId, chapterId, {
-      seriesId: manifest.seriesId,
-      pageVersion: manifest.pageVersion,
-      pageCount: manifest.pageCount,
-    })
+    const record = await updateOfflineChapter(userId, chapterId, { seriesId: manifest.seriesId })
     if (!record || job.cancelled) return 'cancelled'
     showRecord(record)
 
@@ -347,13 +337,22 @@ async function save(job: Job): Promise<Outcome> {
     if (job.cancelled) return 'cancelled'
 
     await warm(manifest)
-    await deleteOtherVersions(userId, chapterId, manifest.pageVersion)
+    // Only now that every page is stored: until then an older saved copy keeps opening offline.
+    const init = await getInitialize()
+    await cachePut(
+      cacheName,
+      `${init.apiRoot}/reader/chapter/${chapterId}`,
+      new Response(JSON.stringify(manifest), { headers: { 'Content-Type': 'application/json' } }),
+    )
     const saved = await updateOfflineChapter(userId, chapterId, {
       state: 'saved',
+      pageVersion: manifest.pageVersion,
+      pageCount: manifest.pageCount,
       bytes,
       savedAt: new Date().toISOString(),
     })
     if (!saved) return 'cancelled'
+    await deleteOtherVersions(userId, chapterId, manifest.pageVersion)
     showRecord(saved)
     return 'done'
   } catch (err) {
@@ -373,10 +372,10 @@ async function save(job: Job): Promise<Outcome> {
     return 'failed'
   } finally {
     showProgress(chapterId, null)
-    // A removal that landed mid-download deleted the pages already stored, but not the ones after.
-    if (job.cancelled && !(await getOfflineChapter(userId, chapterId).catch(() => undefined))) {
-      await deletePages(userId, new Set([chapterId])).catch(() => {})
-    }
+    // A removal that landed mid-download, here or in another tab, deleted what was stored by then
+    // but not what came after.
+    const kept = await getOfflineChapter(userId, chapterId).catch(() => null)
+    if (kept === undefined) await deletePages(userId, new Set([chapterId])).catch(() => {})
   }
 }
 
@@ -515,7 +514,7 @@ export async function resumeOfflineSaves(): Promise<void> {
 /**
  * At most hourly: asks which saved chapters this user can still read, and at what version. A
  * chapter left out is gone (deleted, no file, access revoked) and goes from the device too; a
- * changed version is downloaded again.
+ * changed version is downloaded again; a null version leaves the copy alone.
  */
 async function revalidate(userId: number): Promise<void> {
   const last = await getPref<number>(userId, PREF_LAST_CHECK)
@@ -525,7 +524,7 @@ async function revalidate(userId: number): Promise<void> {
   const stale: OfflineChapter[] = []
   for (let i = 0; i < records.length; i += VERSIONS_BATCH) {
     const batch = records.slice(i, i + VERSIONS_BATCH)
-    const { data, servedOffline } = await apiWithOrigin<{ id: number; pageVersion: string }[]>(
+    const { data, servedOffline } = await apiWithOrigin<{ id: number; pageVersion: string | null }[]>(
       '/reader/chapters/versions',
       { method: 'POST', body: JSON.stringify({ ids: batch.map((r) => r.chapterId) }) },
     )
@@ -534,7 +533,8 @@ async function revalidate(userId: number): Promise<void> {
     for (const record of batch) {
       const version = versions.get(record.chapterId)
       if (version === undefined) gone.push(record.chapterId)
-      else if (record.state === 'saved' && version !== record.pageVersion) stale.push(record)
+      // Null: the file cannot be read right now, so the copy on the device is kept as it is.
+      else if (version !== null && record.state === 'saved' && version !== record.pageVersion) stale.push(record)
     }
   }
   if (userId !== snapshot.userId) return

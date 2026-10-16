@@ -1,4 +1,4 @@
-import { CHANNEL_NAME, cacheNames, QUEUED_HEADER, type WorkerToPage } from '../pwa/contract'
+import { CHANNEL_NAME, cacheNames, QUEUED_HEADER, REPLAY_HEADER, type WorkerToPage } from '../pwa/contract'
 import { insertCapturedProgress } from '../pwa/db'
 import { randomUUID } from '../lib/uuid'
 import { isUnreachable, matchIn, tryFetch } from './net'
@@ -13,6 +13,7 @@ interface ProgressBody {
   seconds?: unknown
   opId?: unknown
   seriesId?: unknown
+  clientTime?: unknown
 }
 
 export function progressChapterId(url: URL): number | null {
@@ -44,6 +45,12 @@ function broadcast(message: WorkerToPage): void {
  * server did answer, 401 and other errors included, goes back to the page as it came.
  */
 export async function captureProgress(event: FetchEvent, url: URL, chapterId: number): Promise<Response> {
+  // The page's replay of a queued row keeps that row itself when this fails.
+  if (event.request.headers.get(REPLAY_HEADER) === '1') {
+    const res = await fetch(event.request)
+    noteStatus(res)
+    return res
+  }
   // Read before the attempt, which consumes the body.
   const text = await event.request.clone().text()
   const res = await tryFetch(event.request)
@@ -69,7 +76,7 @@ export async function captureProgress(event: FetchEvent, url: URL, chapterId: nu
       pageIndex: body.pageIndex,
       completed: body.completed === true,
       seconds: typeof body.seconds === 'number' && body.seconds > 0 ? body.seconds : 0,
-      clientTime: new Date().toISOString(),
+      clientTime: typeof body.clientTime === 'string' && body.clientTime ? body.clientTime : new Date().toISOString(),
       opId: typeof body.opId === 'string' && body.opId ? body.opId : randomUUID(),
     })
   } catch {

@@ -8,8 +8,24 @@ const PAGE = /^reader\/chapter\/\d+\/page\/\d+$/
 const THUMB = /^reader\/chapter\/\d+\/thumb\/\d+$/
 
 /**
+ * A saved copy is replaced only by a live one of the same file version, so a chapter whose file
+ * changed keeps opening against the pages stored with it until the re-download finishes.
+ */
+async function refreshSaved(cacheName: string, url: string, live: Response): Promise<void> {
+  const saved = await matchIn(cacheName, url)
+  if (!saved) return
+  try {
+    const [before, now] = (await Promise.all([saved.json(), live.clone().json()])) as { pageVersion?: unknown }[]
+    if (before.pageVersion === now.pageVersion) await store(cacheName, url, live)
+  } catch {
+    // Not the shape expected; the saved copy stays.
+  }
+}
+
+/**
  * The manifest is network first. A live copy refreshes the data cache and, when the chapter is
  * saved on this device, the saved copy too, so a later offline open resumes where reading stopped.
+ * Offline, only a saved chapter opens: anything else would show pages that cannot load.
  */
 async function manifest(event: FetchEvent): Promise<Response> {
   const { request } = event
@@ -19,18 +35,15 @@ async function manifest(event: FetchEvent): Promise<Response> {
     noteStatus(res)
     const userId = await currentUser()
     if (userId !== null && userId === before && res.status === 200 && isJson(res)) {
-      const saved = await matchIn(cacheNames.chapters(userId), request.url)
       event.waitUntil(store(cacheNames.data(userId), request.url, res.clone()))
-      if (saved) event.waitUntil(store(cacheNames.chapters(userId), request.url, res.clone()))
+      event.waitUntil(refreshSaved(cacheNames.chapters(userId), request.url, res.clone()))
     }
     return res
   }
   const userId = await currentUser()
   if (userId !== null) {
-    const cached =
-      (await matchIn(cacheNames.data(userId), request.url)) ??
-      (await matchIn(cacheNames.chapters(userId), request.url))
-    if (cached) return markOffline(cached)
+    const saved = await matchIn(cacheNames.chapters(userId), request.url)
+    if (saved) return markOffline(saved)
   }
   return offlineResponse()
 }

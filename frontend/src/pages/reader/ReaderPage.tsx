@@ -6,7 +6,7 @@ import { IconCloudOff } from '@tabler/icons-react'
 import { api, ApiError, isOfflineUnavailable } from '../../api/client'
 import { Trans } from '@lingui/react/macro'
 import { useDocumentTitle } from '../../lib/documentTitle'
-import { useConnectivity } from '../../lib/connectivity'
+import { getConnectivity, useConnectivity } from '../../lib/connectivity'
 import { settleQueuedProgress } from '../../pwa/progressQueue'
 import {
   flushProgress,
@@ -75,8 +75,8 @@ export default function ReaderPage() {
   /** The chapter whose saved position has been applied; gates every progress write. */
   const [resumedFor, setResumedFor] = useState<number | null>(null)
   /**
-   * Where to resume once this device's queued progress for the chapter is accounted for. A queued
-   * row is newer than anything the server has, so it wins whenever one is still waiting.
+   * Where to resume once this device's queued progress for the chapter is accounted for. Offline, a
+   * queued row is newer than anything the manifest says, so it wins.
    */
   const [queued, setQueued] = useState<{ chapterId: number; resumePage: number; finished: boolean } | null>(null)
   // Set just before navigating to a *previous* chapter: stepping backward off page 1 should land
@@ -180,6 +180,7 @@ export default function ReaderPage() {
     manifest?.chapterId,
     manifest?.seriesId,
     finished ? pageCount - 1 : shownTo,
+    pageCount,
     finished,
     tracking,
     clock,
@@ -187,10 +188,9 @@ export default function ReaderPage() {
   )
 
   /**
-   * Before resuming, lets the chapter's queued offline progress reach the server (briefly), then
-   * folds in whatever is still waiting. Without this, reopening a chapter right after reconnecting
-   * resumes from the server's older position and writes it back live, and the queued completion
-   * then arrives as stale.
+   * Before resuming, lets the chapter's queued offline progress reach the server (briefly). While
+   * offline, whatever is still waiting is folded in. Online it is left to the replay: the server
+   * keeps a queued completion that arrives stale unless the chapter was marked unread since.
    */
   useEffect(() => {
     if (!manifest || isFetching || isError || resumedFor === manifest.chapterId) return
@@ -209,10 +209,11 @@ export default function ReaderPage() {
         }
       }
       if (cancelled) return
+      const waiting = getConnectivity() === 'offline' ? rows : []
       setQueued({
         chapterId: opened.chapterId,
-        resumePage: rows.reduce((furthest, row) => Math.max(furthest, row.pageIndex), base.resumePage),
-        finished: rows.some((row) => row.completed),
+        resumePage: waiting.reduce((furthest, row) => Math.max(furthest, row.pageIndex), base.resumePage),
+        finished: waiting.some((row) => row.completed),
       })
     })()
     return () => {
@@ -301,7 +302,7 @@ export default function ReaderPage() {
         // lands, and settle-then-flush stays in order.
         const flushed = (async () => {
           await settleProgress()
-          await flushProgress(leftId, seriesId, at, done || undefined, seconds).catch(() => {})
+          await flushProgress(leftId, seriesId, at, done || undefined, seconds, pageCount).catch(() => {})
           invalidateProgress(seriesId)
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])

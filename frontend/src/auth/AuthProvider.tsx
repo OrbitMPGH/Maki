@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useQueryClient } from '@tanstack/react-query'
 import { getInitialize, isOfflineUnavailable, setUnauthorizedHandler } from '../api/client'
 import { dropAccountData, ME_QUERY_KEY, setSetupDoneHandler, useMe, type Me, type Permission } from '../api/auth'
+import { clearQueueUser } from '../pwa/progressQueue'
 
 interface AuthState {
   me: Me | null
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // An expired session takes the rest of the cache with it, or the next account to sign in on
     // this tab would see the previous one's data until each query refetched.
     setUnauthorizedHandler(() => {
+      clearQueueUser()
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, null)
     })

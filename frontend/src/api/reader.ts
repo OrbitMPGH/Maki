@@ -168,7 +168,8 @@ export function useContinueReading(seriesId: number, enabled = true) {
  *
  * Every write carries an `opId`, so a copy the service worker queued after the connection dropped
  * mid-send is recognised as a repeat, and `seriesId`, which the worker files a queued copy under.
- * While offline the write goes straight to this device's queue.
+ * While offline the write goes straight to this device's queue, which needs `pageCount` to keep a
+ * completion the server would have derived from the position.
  */
 export async function saveProgress(
   chapterId: number,
@@ -176,8 +177,9 @@ export async function saveProgress(
   pageIndex: number,
   completed?: boolean,
   seconds?: number,
+  pageCount = 0,
 ): Promise<void> {
-  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds)) return
+  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount)) return
   await api(`/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     body: JSON.stringify({ pageIndex, completed, seconds, opId: randomUUID(), seriesId }),
@@ -199,8 +201,9 @@ export async function flushProgress(
   pageIndex: number,
   completed?: boolean,
   seconds?: number,
+  pageCount = 0,
 ): Promise<void> {
-  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds)) return
+  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount)) return
   const init = await getInitialize()
   const res = await trackedFetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
@@ -221,9 +224,12 @@ function queuedOffline(
   pageIndex: number,
   completed: boolean | undefined,
   seconds: number | undefined,
+  pageCount: number,
 ): Promise<boolean> {
   if (getConnectivity() !== 'offline') return Promise.resolve(false)
-  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed === true, seconds ?? 0).catch(() => false)
+  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed === true, seconds ?? 0, pageCount).catch(
+    () => false,
+  )
 }
 
 export interface ReaderSettings {

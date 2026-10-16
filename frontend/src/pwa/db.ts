@@ -97,33 +97,32 @@ function byId(a: QueuedProgress, b: QueuedProgress): number {
 
 /**
  * Splits seconds into rows no larger than the server's per-report clamp. Every row but the last is
- * closed; the last stays open for merging when `mergeable` is asked for.
+ * closed; the last stays open for merging.
  */
-function freshRows(write: ProgressWrite, seconds: number, opId: string | null, mergeable: boolean): ProgressRow[] {
+function freshRows(write: ProgressWrite, seconds: number): ProgressRow[] {
   const rows: ProgressRow[] = []
   let left = Math.max(0, seconds)
   do {
     const take = Math.min(left, MAX_REPORT_SECONDS)
     left -= take
-    rows.push({
-      ...write,
-      seconds: take,
-      opId: rows.length === 0 && opId ? opId : randomUUID(),
-      mergeable: mergeable && left === 0,
-      state: 'pending',
-    })
+    rows.push({ ...write, seconds: take, opId: randomUUID(), mergeable: left === 0, state: 'pending', attempts: 0 })
   } while (left > 0)
   return rows
 }
 
 /**
- * A live write the SW captured on its way out. Never merged into or with anything: it keeps the
- * write's own op id, because the write may have reached the server before the connection dropped.
+ * A live write the SW captured on its way out, as one row. Never merged into or with anything: it
+ * keeps the write's own op id, because the write may have reached the server before the connection
+ * dropped. Its seconds stay whole; the server clamps them.
  */
 export async function insertCapturedProgress(write: ProgressWrite & { opId: string }): Promise<void> {
-  const tx = (await db()).transaction('progressQueue', 'readwrite')
-  const { opId, ...rest } = write
-  await Promise.all([...freshRows(rest, rest.seconds, opId, false).map((row) => tx.store.add(row)), tx.done])
+  await (await db()).add('progressQueue', {
+    ...write,
+    seconds: Math.max(0, write.seconds),
+    mergeable: false,
+    state: 'pending',
+    attempts: 0,
+  })
 }
 
 /**
@@ -155,7 +154,7 @@ export async function mergeProgress(write: ProgressWrite): Promise<void> {
     }))
   } else {
     if (open) writes.push(tx.store.put({ ...open, mergeable: false }))
-    for (const row of freshRows(write, seconds, null, true)) writes.push(tx.store.add(row))
+    for (const row of freshRows(write, seconds)) writes.push(tx.store.add(row))
   }
   await Promise.all([...writes, tx.done])
 }
@@ -177,15 +176,16 @@ export async function progressForChapter(userId: number, chapterId: number): Pro
 }
 
 /**
- * Moves a row between pending and sending. Leaves its op id alone. False when the row is gone.
- * A row once handed to the network is closed for merging: a send that failed by timing out may
- * still have landed, and only its unchanged op id lets the server recognise the retry.
+ * Moves a row between pending and sending, and records refused sends when `attempts` is given.
+ * Leaves its op id alone. False when the row is gone. A row once handed to the network is closed
+ * for merging: a send that failed by timing out may still have landed, and only its unchanged op
+ * id lets the server recognise the retry.
  */
-export async function setProgressState(id: number, state: ProgressRowState): Promise<boolean> {
+export async function setProgressState(id: number, state: ProgressRowState, attempts?: number): Promise<boolean> {
   const tx = (await db()).transaction('progressQueue', 'readwrite')
   const row = await tx.store.get(id)
   const mergeable = row ? row.mergeable && state !== 'sending' : false
-  await Promise.all([row && tx.store.put({ ...row, state, mergeable }), tx.done])
+  await Promise.all([row && tx.store.put({ ...row, state, mergeable, attempts: attempts ?? row.attempts }), tx.done])
   return row !== undefined
 }
 

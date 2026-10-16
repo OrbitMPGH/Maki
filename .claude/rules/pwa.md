@@ -35,15 +35,17 @@ Design and rationale: `docs/design-pwa.md`. Push server side is in `stats-notifi
 ## Per-user data
 
 - Caches and IDB rows are keyed by user id; the cache is per origin, not per user. The SW learns the user from the page (`noteSignedInUser`/`noteSignedOut` post to it, after `serviceWorker.ready`) and cross-checks a live `/auth/me`. With no user it serves and stores nothing user-specific.
-- A 401 clears the SW's user but keeps every cache: an expired session must not wipe saved chapters or queued progress. Explicit logout purges browse caches (data, covers) only. "Remove everything" (`purge-user`) also drops queued progress, so drain or warn first.
+- A 401 clears the SW's user and the page's queue user (`clearQueueUser`, also on `noteSignedOut`) but keeps every cache: an expired session must not wipe saved chapters or queued progress. Explicit logout purges browse caches (data, covers) only. "Remove everything" (`purge-user`) also drops queued progress, so drain or warn first.
 
 ## Progress queue
 
-- Two writers share the merge rules in `pwa/db.ts`: the SW captures a failed live PUT as a non-mergeable row that keeps the write's `opId` (it may have landed), and the page writes mergeable rows directly while offline. No row exceeds 900 s.
-- Replay runs in the page (the SW cannot read the XSRF cookie), one at a time across tabs. It sends `completed: completed || undefined`, never `false`, and deletes a row only on 2xx, 404, or 400 `error.reader.pageOutOfRange`. Other 400s stay queued so a binding bug cannot eat the queue.
-- The reader prefers a queued row over the manifest whenever one exists, online or offline, and seeds its finished state from it. Without that, reopening a chapter right after reconnecting writes the stale server position live and the queued completion arrives as stale.
+- Two writers share the merge rules in `pwa/db.ts`: the SW captures a failed live PUT as a non-mergeable row that keeps the write's `opId` (it may have landed), and the page writes mergeable rows directly while offline. A page row never exceeds 900 s; a captured row is one row as sent (the server clamps). A page write at or past the last page is stored as `completed`, since a later merge moves the position the server would derive it from.
+- Replay runs in the page (the SW cannot read the XSRF cookie), one at a time across tabs. It first checks that a live `/auth/me` (not served offline) is the rows' user, and sends nothing otherwise. Replays carry `X-Maki-Replay: 1`, which the SW passes through without capturing. It sends `completed: completed || undefined`, never `false`, and deletes a row on 2xx, 403, 404, 410, or 400 `error.reader.pageOutOfRange`. Other 4xx keep the row and bump `attempts`; the fifth such refusal drops it. The reader's settle wait skips rows already refused.
+- The reader seeds its resume page and finished state from queued rows only while offline. Online it relies on the replay: the server applies a stale completion unless the chapter was marked unread after it.
 
 ## Saved chapters
 
 - Pages are stored under exactly the URLs the reader requests, `?v={pageVersion}` included. A new `pageVersion` means a re-download, not a cache hit.
+- The manifest goes into `chapters` only after every page is stored, then older versions' pages are deleted, so a stale re-download leaves the old copy readable until the new one is complete. A live manifest overwrites the saved one only at the same `pageVersion`.
+- The offline manifest fallback reads only `chapters`, never `data`: an unsaved chapter gets the synthetic 503 and the reader says "Not available offline" rather than showing pages that cannot load.
 - Revalidation goes through `POST reader/chapters/versions`, at most hourly. A missing id means gone or no access: delete the copy. A null `pageVersion` means the file is unreadable right now (unmounted root): keep the copy. This is the only way revocation reaches a device.

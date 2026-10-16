@@ -90,7 +90,7 @@ Only same-origin requests are considered. Everything not listed passes through u
 | `/api/v1/auth/me` | Network first, offline fallback; a live 200 also sets `userId` | data |
 | Allowlisted read endpoints (below) | Network first, offline fallback | data, cap 2000 entries |
 | `/api/v1/mediacover/*` | Cache first by full URL (the `?v=` busts it), store on miss | covers, cap 3000 entries |
-| `GET /api/v1/reader/chapter/{id}` (manifest) | Network first. A live 200 is stored in `data` and, if `chapters` already holds that URL, overwritten there too. Offline fallback: `data`, then `chapters`. | data, chapters |
+| `GET /api/v1/reader/chapter/{id}` (manifest) | Network first. A live 200 is stored in `data` and, if `chapters` already holds that URL at the same `pageVersion`, overwritten there too. Offline fallback: `chapters` only, so an unsaved chapter answers the synthetic 503. | data, chapters |
 | `/api/v1/reader/chapter/{id}/page/{n}` | Cache first from `chapters`, network on miss, never stored by the router | chapters |
 | `/api/v1/reader/chapter/{id}/thumb/{n}` | Network. Unreachable: the full page `/page/{n}` with the same `v` from `chapters` if present. | none |
 | `PUT /api/v1/reader/chapter/{id}/progress` | See "Progress while offline" | IDB |
@@ -124,7 +124,7 @@ The precache list: `/index.html`, `/manifest.webmanifest`, `/theme-init.js`, `/f
 
 ### Connectivity (`frontend/src/lib/connectivity.ts`)
 
-A small store with `useConnectivity()`: `'online' | 'offline'`. The API client sets it offline when a response carries `X-Maki-Offline` or a fetch rejects, and online when a live API response arrives. `online`/`offline` window events feed it too. AppShell shows a slim banner while offline: "You're offline. Showing what's saved on this device." with a link to the offline settings card.
+A small store with `useConnectivity()`: `'online' | 'offline'`. The API client sets it offline when a response carries `X-Maki-Offline` or a fetch rejects, and online when a live API response arrives. `online`/`offline` window events feed it too. While offline, the client probes `auth/me` every 15 s and when the tab becomes visible, so a live answer flips it back even on a page that sends nothing else; probing stops once online. AppShell shows a slim banner while offline: "You're offline. Showing what's saved on this device." with a link to the offline settings card.
 
 ### React Query
 
@@ -147,10 +147,10 @@ Runs in the page, not the SW. A SW can be killed mid-download, and the SPA keeps
 
 Saving a chapter:
 
-1. Fetch the manifest live (`GET /reader/chapter/{id}`) and store it in `maki-u{id}-chapters` under its URL.
-2. Fetch every page `/reader/chapter/{id}/page/{n}?v={pageVersion}` with concurrency 3 and store each response in the same cache. Pages already present are skipped.
+1. Fetch the manifest live (`GET /reader/chapter/{id}`).
+2. Fetch every page `/reader/chapter/{id}/page/{n}?v={pageVersion}` with concurrency 3 and store each response in `maki-u{id}-chapters`. Pages already present are skipped.
 3. Warm the data cache for the chapter's series with plain `api()` calls: `series/{id}`, `chapter?seriesId={id}`, and the cover URL.
-4. Mark the record `saved` with the byte total.
+4. Store the manifest in the same cache under its URL, mark the record `saved` with the byte total and version, then delete other versions' pages. Until then a stale chapter's old manifest and pages stay readable. If the record vanished meanwhile (removed in this or another tab), delete what was stored.
 
 Before the first save, `requestPersistence()`. A `QuotaExceededError` stops the job, marks the record `error`, and shows one toast with the storage estimate.
 
@@ -181,7 +181,7 @@ Per device, per user, in IDB `prefs`: off, or keep the next 1, 3, 5 or 10 unread
 ## Reader changes
 
 - With the SW, the manifest fetch succeeds offline, so `ReaderPage`'s `!isFetching && !isError` gate passes.
-- **Queued progress wins whenever it exists, online or offline.** When the progress queue holds a row for the chapter, the reader first waits for an in-flight drain of that chapter (bounded at 3 s). If a row is still there, the resume page is `max(manifest.resumePage, row.pageIndex)` and completion is `manifest.completed || row.completed`. When the row has `completed`, the reader seeds `finishedFor = chapterId` so its own live writes carry `completed` too. Without this, reopening a chapter right after reconnecting writes the stale server position live, and the queued completion then arrives as stale and is dropped.
+- **Queued progress wins while offline.** When the progress queue holds a row for the chapter, the reader first waits for an in-flight drain of that chapter (bounded at 3 s, skipped when every row was already refused once). While offline, the resume page is `max(manifest.resumePage, row.pageIndex)` and a row with `completed` seeds `finishedFor = chapterId` so later writes carry `completed` too. Online the rows are left to the replay: the server applies a stale completion unless the chapter was marked unread after it.
 - The bookmark toggle is disabled while offline (it is a toggle, so replaying it is unsafe).
 - `flushProgress` currently ignores the response status. It must check `res.ok`, as `saveProgress` does.
 - Every live progress write carries an `opId` (`randomUUID()` from `lib/uuid`).
@@ -196,7 +196,8 @@ Per device, per user, in IDB `prefs`: off, or keep the next 1, 3, 5 or 10 unread
 - A row created by the **page's offline write** is mergeable and gets a fresh `opId`. Later offline writes for the same chapter merge into the newest mergeable `pending` row:
   - `pageIndex` = the latest value.
   - `completed` = OR of all values.
-  - `seconds` += the new value. If the sum would pass 900, the row is closed (no longer mergeable) at its value and a new row takes the remainder, so no row exceeds the server's per-report clamp.
+  - `seconds` += the new value. If the sum would pass 900, the row is closed (no longer mergeable) at its value and a new row takes the remainder, so no page row exceeds the server's per-report clamp.
+  - A write at or past the last page is stored with `completed` set, because the merged position may later move off the last page.
   - `clientTime` = the time of the latest write.
   - A merge regenerates `opId` (the row has never been sent, or its last send is known to have failed).
 
@@ -206,7 +207,9 @@ For `PUT /api/v1/reader/chapter/{id}/progress` the fetch handler calls `respondW
 
 1. Reads `const body = await event.request.clone().text()` before the network attempt (the attempt consumes the body).
 2. Tries the network. A response that is not 502 or 504 is returned as is, including 401 and other errors, as today.
-3. Unreachable (rejected, 502, 504): if `session.current.userId` is set, inserts a non-mergeable row with the write's `opId` and `clientTime = now`, answers `202` with `X-Maki-Queued: 1`, and broadcasts `{ type: 'queued' }`. Otherwise passes the failure through.
+3. Unreachable (rejected, 502, 504): if `session.current.userId` is set, inserts one non-mergeable row with the write's `opId`, its seconds as sent (the server clamps) and the body's `clientTime` or now, answers `202` with `X-Maki-Queued: 1`, and broadcasts `{ type: 'queued' }`. Otherwise passes the failure through.
+
+A request carrying `X-Maki-Replay: 1` (the page's own replay) is passed through untouched: a failure rejects to the page, which keeps its row.
 
 Whether a `keepalive` fetch from a page in `pagehide` reaches the SW and completes there is checked during verification. The page-side offline write above means correctness does not depend on it once the connectivity store has flipped.
 
@@ -214,11 +217,11 @@ Whether a `keepalive` fetch from a page in `pagehide` reaches the SW and complet
 
 Triggered once `me` resolves live, on the `online` event, when the connectivity store flips to online, and when the reader asks for a chapter (above). One replay at a time: a module-level lock plus `navigator.locks` where available, so two tabs do not double-send.
 
-For each row of the current user, oldest first:
+First, a live `GET /auth/me` (not served offline) must return the rows' user id; otherwise nothing is sent. The queue user is cleared on sign-out and on any 401, with its retry timer. Then, for each row of the current user, oldest first:
 
 1. Set `state: 'sending'` and persist.
 2. `PUT .../progress` through `api()` with `{ pageIndex, completed: completed || undefined, seconds, final: true, clientTime, opId }`. `completed` is never sent as `false`, because the server derives completion from a last-page position only when the field is absent.
-3. 2xx: delete the row. 401: set back to `pending`, stop, resume after sign-in. 404, or a 400 with `code === 'error.reader.pageOutOfRange'` (file gone, page count changed): delete the row. Any other 400 stays `pending` and is reported once to the console, so a binding bug cannot silently eat the queue. 5xx, 502, 504 or network failure: set back to `pending`, keep the same `opId`, stop and retry later with backoff.
+3. 2xx: delete the row. 401: set back to `pending`, stop, resume after sign-in. 403, 404, 410, or a 400 with `code === 'error.reader.pageOutOfRange'` (no access, file gone, page count changed): delete the row. Any other 4xx (but 408 and 429) stays `pending` with `attempts` bumped and is reported once to the console, so a binding bug cannot silently eat the queue; the fifth such refusal drops it. 5xx, 502, 504 or network failure: set back to `pending`, keep the same `opId`, stop and retry later with backoff.
 
 Rows for another user id stay until that user signs in again. A row found in `sending` at startup (tab closed mid-send) goes back to `pending` with its `opId` unchanged. After a drain, invalidate the progress queries (`series`, `home`, `reader-progress`, `reader-continue`).
 

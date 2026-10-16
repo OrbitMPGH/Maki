@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { postToWorker } from './pwa/serviceWorker'
 import { syncPushSubscription } from '../api/push'
+import { clearQueueUser } from '../pwa/progressQueue'
 
 const PREFIX = 'maki-page:'
 export const SCROLL_PREFIX = 'maki-scroll:'
@@ -50,6 +51,7 @@ export function noteSignedInUser(id: number): void {
 /** An explicit sign-out: the next person to sign in starts clean even if it is the same account. */
 export function noteSignedOut(): void {
   void postToWorker({ type: 'user', userId: null })
+  clearQueueUser()
   try {
     sessionStorage.removeItem(USER_KEY)
   } catch { /* see noteSignedInUser */ }

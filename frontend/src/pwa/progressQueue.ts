@@ -2,7 +2,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { ApiError, apiWithOrigin, UnauthorizedError } from '../api/client'
 import { getConnectivity } from '../lib/connectivity'
 import { pwaSupported } from '../lib/pwa/serviceWorker'
-import type { QueuedProgress } from './contract'
+import { REPLAY_HEADER, type QueuedProgress } from './contract'
 import {
   deleteProgress,
   listProgress,
@@ -24,6 +24,8 @@ const PAGE_OUT_OF_RANGE = 'error.reader.pageOutOfRange'
 const READER_WAIT_MS = 3000
 const RETRY_BASE_MS = 5000
 const RETRY_MAX_MS = 300_000
+/** Refusals with a 4xx that might yet change before a row is given up on. */
+const MAX_ATTEMPTS = 5
 
 let userId: number | null = null
 let queryClient: QueryClient | null = null
@@ -39,6 +41,13 @@ export function setQueueUser(id: number | null, client: QueryClient): void {
   queryClient = client
   if (id === userId) return
   userId = id
+  failures = 0
+  clearTimeout(retryTimer)
+}
+
+/** Signed out, or the session ended: nothing more is written to or sent from anybody's queue. */
+export function clearQueueUser(): void {
+  userId = null
   failures = 0
   clearTimeout(retryTimer)
 }
@@ -65,6 +74,7 @@ export async function queueOfflineWrite(
   pageIndex: number,
   completed: boolean,
   seconds: number,
+  pageCount: number,
 ): Promise<boolean> {
   const user = userId
   if (user === null || !pwaSupported()) return false
@@ -73,7 +83,8 @@ export async function queueOfflineWrite(
     chapterId,
     seriesId,
     pageIndex,
-    completed,
+    // A later merge moves the position, so the completion the server would derive from it is kept here.
+    completed: completed || (pageCount > 0 && pageIndex >= pageCount - 1),
     seconds,
     clientTime: new Date().toISOString(),
   })
@@ -87,16 +98,6 @@ function withLock<T>(task: () => Promise<T>): Promise<T> {
 }
 
 type Outcome = 'sent' | 'dropped' | 'kept' | 'stop'
-
-/**
- * A replay that could not reach the server comes back from the worker as queued, and the worker
- * has filed its own copy under the same op id. The original row keeps its place in the order.
- */
-async function dropWorkerCopy(row: QueuedProgress): Promise<void> {
-  for (const copy of await progressForChapter(row.userId, row.chapterId)) {
-    if (copy.id !== row.id && copy.opId === row.opId) await deleteProgress(copy.id)
-  }
-}
 
 async function sendRow(row: QueuedProgress): Promise<Outcome> {
   if (!(await setProgressState(row.id, 'sending'))) return 'dropped'
@@ -115,10 +116,10 @@ async function sendRow(row: QueuedProgress): Promise<Outcome> {
   try {
     const { servedOffline } = await apiWithOrigin(`/reader/chapter/${current.chapterId}/progress`, {
       method: 'PUT',
+      headers: { [REPLAY_HEADER]: '1' },
       body: JSON.stringify(body),
     })
     if (servedOffline) {
-      await dropWorkerCopy(current)
       await setProgressState(current.id, 'pending')
       return 'stop'
     }
@@ -129,14 +130,23 @@ async function sendRow(row: QueuedProgress): Promise<Outcome> {
       await setProgressState(current.id, 'pending')
       return 'stop'
     }
-    // The chapter or its file is gone, or the page count changed under the queued position.
-    if (err instanceof ApiError && (err.status === 404 || (err.status === 400 && err.code === PAGE_OUT_OF_RANGE))) {
+    // The chapter or its file is gone, out of this account's reach, or the page count changed under
+    // the queued position.
+    if (
+      err instanceof ApiError &&
+      (err.status === 404 || err.status === 403 || err.status === 410 || (err.status === 400 && err.code === PAGE_OUT_OF_RANGE))
+    ) {
       await deleteProgress(current.id)
       return 'dropped'
     }
     if (err instanceof ApiError && err.status >= 400 && err.status < 500 && err.status !== 408 && err.status !== 429) {
-      // Kept rather than dropped, so a binding bug cannot quietly eat the queue.
-      await setProgressState(current.id, 'pending')
+      // Kept for a few tries rather than dropped at once, so a binding bug cannot quietly eat the queue.
+      const attempts = (current.attempts ?? 0) + 1
+      if (attempts >= MAX_ATTEMPTS) {
+        await deleteProgress(current.id)
+        return 'dropped'
+      }
+      await setProgressState(current.id, 'pending', attempts)
       if (!reported.has(current.opId)) {
         reported.add(current.opId)
         console.error('The server refused a queued reading position', current, err)
@@ -148,11 +158,23 @@ async function sendRow(row: QueuedProgress): Promise<Outcome> {
   }
 }
 
+/** Who the server says this session belongs to, or null when it was not the server answering. */
+async function liveUser(): Promise<number | null> {
+  const { data, servedOffline } = await apiWithOrigin<{ id: number }>('/auth/me')
+  return servedOffline ? null : data.id
+}
+
 async function drain(user: number): Promise<{ changed: boolean; stopped: boolean }> {
   // Under the lock nobody else is sending, so a row still marked sending was left by a closed tab.
   await resetSendingProgress()
   let changed = false
-  for (const row of await listProgress(user)) {
+  const rows = await listProgress(user)
+  if (rows.length === 0) return { changed, stopped: false }
+  // The rows are sent under whatever session the browser holds now, which must be theirs.
+  const live = await liveUser()
+  if (live === null) return { changed, stopped: true }
+  if (live !== user) return { changed, stopped: false }
+  for (const row of rows) {
     if (user !== userId) return { changed, stopped: true }
     const outcome = await sendRow(row)
     if (outcome === 'sent' || outcome === 'dropped') changed = true
@@ -183,13 +205,15 @@ export function replayProgress(): Promise<void> {
   clearTimeout(retryTimer)
   const run = withLock(() => drain(user))
     .then(({ changed, stopped }) => {
-      if (stopped) scheduleRetry()
+      if (stopped && userId === user) scheduleRetry()
       else failures = 0
       if (!changed) return
       invalidateProgress()
       for (const listener of drainedListeners) listener()
     })
-    .catch(() => scheduleRetry())
+    .catch(() => {
+      if (userId === user) scheduleRetry()
+    })
     .finally(() => {
       if (running === run) running = null
     })
@@ -208,7 +232,8 @@ export async function settleQueuedProgress(chapterId: number): Promise<{ rows: Q
   try {
     const before = await progressForChapter(user, chapterId)
     if (before.length === 0) return { rows: [], sent: false }
-    if (getConnectivity() === 'online') {
+    // A row the server already refused would only be refused again; it does not hold the reader up.
+    if (getConnectivity() === 'online' && before.some((row) => !row.attempts)) {
       await Promise.race([replayProgress(), new Promise((resolve) => setTimeout(resolve, READER_WAIT_MS))])
     }
     const after = await progressForChapter(user, chapterId)

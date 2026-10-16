@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core'
 import { t } from '@lingui/core/macro'
 import { OFFLINE_CODE, OFFLINE_HEADER, QUEUED_HEADER } from '../pwa/contract'
 import { isUnreachable } from '../sw/net'
-import { setConnectivity } from '../lib/connectivity'
+import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 
 interface InitializeInfo {
   apiRoot: string
@@ -183,6 +183,35 @@ export async function trackedFetch(input: string, init: RequestInit): Promise<Re
   }
   setConnectivity(servedOffline(res) || isUnreachable(res) ? 'offline' : 'online')
   return res
+}
+
+const PROBE_MS = 15_000
+let probeTimer: ReturnType<typeof setInterval> | undefined
+
+/** While offline, asks the server whether it is back: a quiet page may send nothing that would tell. */
+function probeServer(): void {
+  if (getConnectivity() !== 'offline') return
+  void getInitialize()
+    .then((init) => trackedFetch(`${init.apiRoot}/auth/me`, { credentials: 'same-origin', headers: authHeaders() }))
+    .then((res) => res.body?.cancel())
+    .catch(() => {})
+}
+
+function watchConnectivity(): void {
+  if (getConnectivity() === 'offline') {
+    probeTimer ??= setInterval(probeServer, PROBE_MS)
+  } else {
+    clearInterval(probeTimer)
+    probeTimer = undefined
+  }
+}
+
+if (typeof window !== 'undefined') {
+  onConnectivityChange(watchConnectivity)
+  watchConnectivity()
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') probeServer()
+  })
 }
 
 /** The service worker had no offline copy of what was asked for. */
