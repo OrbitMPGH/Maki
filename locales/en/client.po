@@ -1530,7 +1530,7 @@ msgstr "{unread, plural, one {# unread} other {# unread}}"
 msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, one {# new} other {# new}}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# unread} other {# unread}}"
 
@@ -6374,6 +6374,10 @@ msgstr "Helps Kavita and other readers group and name chapters. Off leaves torre
 msgid "Here is what Maki starts with. You can come back to this guide from the top of Settings."
 msgstr "Here is what Maki starts with. You can come back to this guide from the top of Settings."
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Hero"
+msgstr "Hero"
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #: src/pages/stats/labels.ts
@@ -7217,12 +7221,12 @@ msgid "Languages to read markers in"
 msgstr "Languages to read markers in"
 
 #: src/components/layout/PageLayoutEditor.tsx
-msgid "Large tiles"
-msgstr "Large tiles"
+#~ msgid "Large tiles"
+#~ msgstr "Large tiles"
 
 #: src/components/layout/SectionProperties.tsx
-msgid "Large tiles for the first three"
-msgstr "Large tiles for the first three"
+#~ msgid "Large tiles for the first three"
+#~ msgstr "Large tiles for the first three"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Larger releases become proposals you approve by hand."
@@ -7275,6 +7279,10 @@ msgstr "Last page"
 #: src/pages/HealthPage.tsx
 msgid "Last partial scan: {partialScanError}"
 msgstr "Last partial scan: {partialScanError}"
+
+#: src/components/home/ContinueHero.tsx
+msgid "Last read {lastRead}"
+msgstr "Last read {lastRead}"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
@@ -7345,8 +7353,12 @@ msgid "Layout saved"
 msgstr "Layout saved"
 
 #: src/components/layout/SectionProperties.tsx
-msgid "Lead with big cover tiles instead of a plain row."
-msgstr "Lead with big cover tiles instead of a plain row."
+msgid "Lead with a hero"
+msgstr "Lead with a hero"
+
+#: src/components/layout/SectionProperties.tsx
+#~ msgid "Lead with big cover tiles instead of a plain row."
+#~ msgstr "Lead with big cover tiles instead of a plain row."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Leaderboard"
@@ -8620,6 +8632,10 @@ msgstr "Next source"
 msgid "Next tier at {nextValue}"
 msgstr "Next tier at {nextValue}"
 
+#: src/components/home/ContinueHero.tsx
+msgid "Next up"
+msgstr "Next up"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Next..."
 msgstr "Next..."
@@ -9722,6 +9738,7 @@ msgstr "Open on {label}"
 msgid "Open Recommended with these filters from now on"
 msgstr "Open Recommended with these filters from now on"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/HealthPage.tsx
@@ -9837,7 +9854,7 @@ msgstr "Page"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Page {pageIndex}/{pageCount}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/pages/reader/ReaderPage.tsx
 msgid "Page {pageNumber} of {pageCount}"
@@ -10674,7 +10691,7 @@ msgstr "Reading mode"
 msgid "Reading profile"
 msgstr "Reading profile"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 msgid "Reading progress"
 msgstr "Reading progress"
 
@@ -11464,14 +11481,14 @@ msgstr "Restored from the provider"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Resume"
 msgstr "Resume"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "Resume {seriesTitle}, {chapterLabel}"
 
@@ -12016,6 +12033,7 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr "Scroll"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 msgid "Scroll back"
 msgstr "Scroll back"
@@ -12024,6 +12042,7 @@ msgstr "Scroll back"
 msgid "Scroll for next chapter"
 msgstr "Scroll for next chapter"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 msgid "Scroll forward"
 msgstr "Scroll forward"
@@ -12590,6 +12609,12 @@ msgstr "Show again"
 msgid "Show all"
 msgstr "Show all"
 
+#. placeholder {0}: items.length
+#: src/components/home/ContinueHero.tsx
+msgid "Show all {0}"
+msgstr "Show all {0}"
+
+#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 msgid "Show fewer"
 msgstr "Show fewer"
@@ -12642,6 +12667,10 @@ msgstr "Show source text"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Show the Home page"
 msgstr "Show the Home page"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+msgstr "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
 
 #: src/pages/CreatorPage.tsx
 msgid "Show their newest titles in a rail on Home and Discover"
@@ -13078,11 +13107,11 @@ msgstr "Star on GitHub"
 msgid "Start"
 msgstr "Start"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "Start {seriesTitle}, {chapterLabel}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 msgid "Start chapter"
 msgstr "Start chapter"
 

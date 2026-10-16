@@ -1884,7 +1884,7 @@ msgstr "{unread, plural, other {# 个未读}}"
 msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, other {新增 #}}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, other {# 个未读}}"
@@ -7842,6 +7842,10 @@ msgstr "帮助 Kavita 等阅读器对章节进行分组和命名。关闭后，�
 msgid "Here is what Maki starts with. You can come back to this guide from the top of Settings."
 msgstr "以下是 Maki 的初始配置。你可以随时从“设置”顶部重新打开此指南。"
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Hero"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #: src/pages/stats/labels.ts
@@ -8879,13 +8883,13 @@ msgstr "读取标记的语言"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
-msgid "Large tiles"
-msgstr "大尺寸卡片"
+#~ msgid "Large tiles"
+#~ msgstr "大尺寸卡片"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
-msgid "Large tiles for the first three"
-msgstr "前三个使用大尺寸卡片"
+#~ msgid "Large tiles for the first three"
+#~ msgstr "前三个使用大尺寸卡片"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -8951,6 +8955,10 @@ msgstr "最后一页"
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
 msgstr "上次部分扫描：{partialScanError}"
+
+#: src/components/home/ContinueHero.tsx
+msgid "Last read {lastRead}"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -9037,9 +9045,13 @@ msgid "Layout saved"
 msgstr "布局已保存"
 
 #: src/components/layout/SectionProperties.tsx
+msgid "Lead with a hero"
+msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
 #, fuzzy
-msgid "Lead with big cover tiles instead of a plain row."
-msgstr "使用大型封面卡片展示重点，而不是普通横排。"
+#~ msgid "Lead with big cover tiles instead of a plain row."
+#~ msgstr "使用大型封面卡片展示重点，而不是普通横排。"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10605,6 +10617,10 @@ msgstr "下一个来源"
 msgid "Next tier at {nextValue}"
 msgstr "下一层级：{nextValue}"
 
+#: src/components/home/ContinueHero.tsx
+msgid "Next up"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Next..."
@@ -11968,6 +11984,7 @@ msgstr "在 {label} 中打开"
 msgid "Open Recommended with these filters from now on"
 msgstr "以后使用这些筛选条件打开推荐内容"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/HealthPage.tsx
@@ -12110,7 +12127,7 @@ msgstr "页面"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "第 {pageIndex}/{pageCount} 页"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -13139,7 +13156,7 @@ msgstr "阅读模式"
 msgid "Reading profile"
 msgstr "阅读配置文件"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "阅读进度"
@@ -14116,7 +14133,7 @@ msgstr "已从提供方恢复"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "将版本搜索限制在特定索引器和分类中。未选择任何项时，搜索所有索引器和分类。"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -14124,7 +14141,7 @@ msgstr "将版本搜索限制在特定索引器和分类中。未选择任何项
 msgid "Resume"
 msgstr "继续阅读"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "继续阅读 {seriesTitle}，{chapterLabel}"
@@ -14787,6 +14804,7 @@ msgstr "阅读记录"
 msgid "Scroll"
 msgstr "滚动"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
@@ -14797,6 +14815,7 @@ msgstr "向后滚动"
 msgid "Scroll for next chapter"
 msgstr "滚动以阅读下一章"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll forward"
@@ -15492,6 +15511,12 @@ msgstr "再次显示"
 msgid "Show all"
 msgstr "显示全部"
 
+#. placeholder {0}: items.length
+#: src/components/home/ContinueHero.tsx
+msgid "Show all {0}"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
@@ -15555,6 +15580,10 @@ msgstr "显示来源文本"
 #, fuzzy
 msgid "Show the Home page"
 msgstr "显示首页"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -16092,12 +16121,12 @@ msgstr "在 GitHub 上点星"
 msgid "Start"
 msgstr "开始"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "开始阅读 {seriesTitle}，{chapterLabel}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
 msgstr "开始阅读本章"

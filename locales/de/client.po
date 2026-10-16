@@ -1885,7 +1885,7 @@ msgstr "{unread, plural, one {# ungelesen} other {# ungelesen}}"
 msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, one {# neu} other {# neu}}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# ungelesen} other {# ungelesen}}"
@@ -7843,6 +7843,10 @@ msgstr "Hilft Kavita und anderen Readern dabei, Kapitel zu gruppieren und zu ben
 msgid "Here is what Maki starts with. You can come back to this guide from the top of Settings."
 msgstr "Das sind die Grundeinstellungen von Maki. Du kannst diesen Leitfaden später oben in den Einstellungen wieder öffnen."
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Hero"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #: src/pages/stats/labels.ts
@@ -8880,13 +8884,13 @@ msgstr "Sprachen für Markierungen"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
-msgid "Large tiles"
-msgstr "Große Kacheln"
+#~ msgid "Large tiles"
+#~ msgstr "Große Kacheln"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
-msgid "Large tiles for the first three"
-msgstr "Große Kacheln für die ersten drei"
+#~ msgid "Large tiles for the first three"
+#~ msgstr "Große Kacheln für die ersten drei"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -8952,6 +8956,10 @@ msgstr "Letzte Seite"
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
 msgstr "Letzter partieller Scan: {partialScanError}"
+
+#: src/components/home/ContinueHero.tsx
+msgid "Last read {lastRead}"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -9038,9 +9046,13 @@ msgid "Layout saved"
 msgstr "Layout gespeichert"
 
 #: src/components/layout/SectionProperties.tsx
+msgid "Lead with a hero"
+msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
 #, fuzzy
-msgid "Lead with big cover tiles instead of a plain row."
-msgstr "Mit großen Cover-Kacheln beginnen statt mit einer einfachen Reihe."
+#~ msgid "Lead with big cover tiles instead of a plain row."
+#~ msgstr "Mit großen Cover-Kacheln beginnen statt mit einer einfachen Reihe."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10606,6 +10618,10 @@ msgstr "Nächste Quelle"
 msgid "Next tier at {nextValue}"
 msgstr "Nächste Stufe bei {nextValue}"
 
+#: src/components/home/ContinueHero.tsx
+msgid "Next up"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Next..."
@@ -11969,6 +11985,7 @@ msgstr "Auf {label} öffnen"
 msgid "Open Recommended with these filters from now on"
 msgstr "Empfohlene Suche ab jetzt mit diesen Filtern öffnen"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/HealthPage.tsx
@@ -12111,7 +12128,7 @@ msgstr "Seite"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Seite {pageIndex}/{pageCount}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -13140,7 +13157,7 @@ msgstr "Lesemodus"
 msgid "Reading profile"
 msgstr "Leseprofil"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "Lesefortschritt"
@@ -14117,7 +14134,7 @@ msgstr "Vom Anbieter wiederhergestellt"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "Suchen nach Veröffentlichungen auf bestimmte Indexer und Kategorien beschränken. Ohne Auswahl werden alle Indexer und Kategorien durchsucht."
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -14125,7 +14142,7 @@ msgstr "Suchen nach Veröffentlichungen auf bestimmte Indexer und Kategorien bes
 msgid "Resume"
 msgstr "Weiterlesen"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "Weiterlesen: {seriesTitle}, {chapterLabel}"
@@ -14788,6 +14805,7 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr "Scrollen"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
@@ -14798,6 +14816,7 @@ msgstr "Zurückscrollen"
 msgid "Scroll for next chapter"
 msgstr "Für das nächste Kapitel scrollen"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll forward"
@@ -15493,6 +15512,12 @@ msgstr "Erneut anzeigen"
 msgid "Show all"
 msgstr "Alle anzeigen"
 
+#. placeholder {0}: items.length
+#: src/components/home/ContinueHero.tsx
+msgid "Show all {0}"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
@@ -15556,6 +15581,10 @@ msgstr "Quellentext anzeigen"
 #, fuzzy
 msgid "Show the Home page"
 msgstr "Die Seite Start anzeigen"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -16093,12 +16122,12 @@ msgstr "Stern auf GitHub vergeben"
 msgid "Start"
 msgstr "Starten"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "Mit {seriesTitle}, {chapterLabel} starten"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
 msgstr "Kapitel starten"

@@ -339,7 +339,7 @@ function SectionCard({
               )}
               {section.hero && (
                 <span className="layout-edit-badge" data-tone="brand">
-                  <Trans>Large tiles</Trans>
+                  <Trans>Hero</Trans>
                 </span>
               )}
               {panelsTotal != null && panelsOn !== panelsTotal && (

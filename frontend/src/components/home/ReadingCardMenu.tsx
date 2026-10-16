@@ -17,10 +17,15 @@ export function ReadingCardMenu({
   item,
   rail,
   className,
+  variant = 'filled',
+  size = 28,
 }: {
   item: HomeReadingItem
   rail: ReadingRailKind
   className: string
+  /** `default` sits it in a row of buttons; the filled round default floats over a cover. */
+  variant?: 'filled' | 'default'
+  size?: number
 }) {
   const { t } = useLingui()
   const navigate = useNavigate()
@@ -68,9 +73,9 @@ export function ReadingCardMenu({
       <Menu.Target>
         <ActionIcon
           className={className}
-          variant="filled"
-          radius="xl"
-          size={28}
+          variant={variant}
+          radius={variant === 'filled' ? 'xl' : 'md'}
+          size={size}
           aria-label={t`More options for ${seriesTitle}`}
         >
           <IconDots size={16} />

@@ -1884,7 +1884,7 @@ msgstr "{unread, plural, other {읽지 않음 #개}}"
 msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, other {새 챕터 #개}}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, other {읽지 않음 #개}}"
@@ -7842,6 +7842,10 @@ msgstr "Kavita와 다른 리더 앱에서 챕터를 그룹화하고 이름을 �
 msgid "Here is what Maki starts with. You can come back to this guide from the top of Settings."
 msgstr "Maki의 기본 설정입니다. 나중에 설정 상단에서 이 가이드로 돌아올 수 있습니다."
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Hero"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #: src/pages/stats/labels.ts
@@ -8879,13 +8883,13 @@ msgstr "마커를 읽을 언어"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
-msgid "Large tiles"
-msgstr "큰 타일"
+#~ msgid "Large tiles"
+#~ msgstr "큰 타일"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
-msgid "Large tiles for the first three"
-msgstr "처음 세 개를 큰 타일로 표시"
+#~ msgid "Large tiles for the first three"
+#~ msgstr "처음 세 개를 큰 타일로 표시"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -8951,6 +8955,10 @@ msgstr "마지막 페이지"
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
 msgstr "마지막 부분 스캔: {partialScanError}"
+
+#: src/components/home/ContinueHero.tsx
+msgid "Last read {lastRead}"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -9037,9 +9045,13 @@ msgid "Layout saved"
 msgstr "레이아웃 저장됨"
 
 #: src/components/layout/SectionProperties.tsx
+msgid "Lead with a hero"
+msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
 #, fuzzy
-msgid "Lead with big cover tiles instead of a plain row."
-msgstr "일반 행 대신 큰 표지 타일을 먼저 표시합니다."
+#~ msgid "Lead with big cover tiles instead of a plain row."
+#~ msgstr "일반 행 대신 큰 표지 타일을 먼저 표시합니다."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10605,6 +10617,10 @@ msgstr "다음 소스"
 msgid "Next tier at {nextValue}"
 msgstr "{nextValue}에서 다음 등급"
 
+#: src/components/home/ContinueHero.tsx
+msgid "Next up"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Next..."
@@ -11968,6 +11984,7 @@ msgstr "{label}에서 열기"
 msgid "Open Recommended with these filters from now on"
 msgstr "앞으로 이 필터로 Recommended 열기"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/HealthPage.tsx
@@ -12110,7 +12127,7 @@ msgstr "페이지"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "페이지 {pageIndex}/{pageCount}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -13139,7 +13156,7 @@ msgstr "읽기 모드"
 msgid "Reading profile"
 msgstr "읽기 프로필"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "읽기 진행 상황"
@@ -14116,7 +14133,7 @@ msgstr "제공자에서 복원됨"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "릴리스 검색을 특정 인덱서와 카테고리로 제한합니다. 아무것도 선택하지 않으면 모든 인덱서와 카테고리를 검색합니다."
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -14124,7 +14141,7 @@ msgstr "릴리스 검색을 특정 인덱서와 카테고리로 제한합니다.
 msgid "Resume"
 msgstr "이어 읽기"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "{seriesTitle} 이어 읽기, {chapterLabel}"
@@ -14787,6 +14804,7 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr "스크롤"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
@@ -14797,6 +14815,7 @@ msgstr "뒤로 스크롤"
 msgid "Scroll for next chapter"
 msgstr "다음 챕터를 보려면 스크롤"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll forward"
@@ -15492,6 +15511,12 @@ msgstr "다시 표시"
 msgid "Show all"
 msgstr "전체 보기"
 
+#. placeholder {0}: items.length
+#: src/components/home/ContinueHero.tsx
+msgid "Show all {0}"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
@@ -15555,6 +15580,10 @@ msgstr "소스 텍스트 표시"
 #, fuzzy
 msgid "Show the Home page"
 msgstr "홈 페이지 보이기"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -16092,12 +16121,12 @@ msgstr "GitHub에서 별 누르기"
 msgid "Start"
 msgstr "시작"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "{seriesTitle} 읽기 시작, {chapterLabel}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
 msgstr "챕터 시작"

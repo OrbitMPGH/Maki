@@ -1002,7 +1002,7 @@ export const HOME_GLANCE_PANEL_LABELS: Record<HomeGlancePanel, MessageDescriptor
   toread: msg`Waiting to read`,
 }
 
-/** Sections that can lead with large tiles, and whether they do by default. Mirrors the server. */
+/** Sections that can lead with a hero, and whether they do by default. Mirrors the server. */
 export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
 
 /** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
@@ -1055,7 +1055,7 @@ export interface LayoutPanel {
 export interface PageSection<K extends string = string> {
   key: K | RailKey
   enabled: boolean
-  /** Leads with large tiles. Set on sections that support it, null elsewhere. */
+  /** Leads with a hero. Set on sections that support it, null elsewhere. */
   hero?: boolean | null
   /** The parts of a multi-panel section, in order. Null elsewhere. */
   panels?: LayoutPanel[] | null

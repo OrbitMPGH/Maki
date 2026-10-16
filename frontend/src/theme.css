@@ -1797,8 +1797,7 @@ body::before {
   border-color: var(--border-strong);
   box-shadow: var(--mantine-shadow-lg);
 }
-.reading-card-menu,
-.continue-tile-menu {
+.reading-card-menu {
   position: absolute;
   z-index: 3;
   color: #fff;
@@ -1806,8 +1805,7 @@ body::before {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   transition: opacity var(--dur-base) var(--ease), transform var(--dur-medium) var(--ease), background var(--dur-base) var(--ease);
 }
-.reading-card-menu:hover,
-.continue-tile-menu:hover {
+.reading-card-menu:hover {
   background: rgba(6, 7, 11, 0.85);
 }
 .reading-card-menu {
@@ -1817,21 +1815,13 @@ body::before {
 .reading-card:hover > .reading-card-menu {
   transform: translateY(-4px);
 }
-.continue-tile-menu {
-  top: 10px;
-  right: 10px;
-}
 @media (hover: hover) and (pointer: fine) {
-  .reading-card-menu,
-  .continue-tile-menu {
+  .reading-card-menu {
     opacity: 0;
   }
   .reading-card:hover > .reading-card-menu,
   .reading-card-menu:focus-visible,
-  .reading-card-menu[data-expanded],
-  .continue-tile:hover > .continue-tile-menu,
-  .continue-tile-menu:focus-visible,
-  .continue-tile-menu[data-expanded] {
+  .reading-card-menu[data-expanded] {
     opacity: 1;
   }
 }
@@ -7624,217 +7614,445 @@ body.reader-open {
 
 /* --- home page (ported from redesignv2) --- */
 
-/* ── Home: Continue reading lead ─────────────────────────────────────────────
-   Ported from redesignv2. The mount reveal is CSS-only: no JS motion wrapper, so
-   `prefers-reduced-motion` is honoured without a guard in the component. */
+/* ── Home: Continue reading hero ──────────────────────────────────────────────
+   One contained hero card for the series in focus and a Next up list beside it. The card's
+   backdrop is the series-hero recipe (`HeroBackdrop`), inside a rounded card rather than bleeding
+   to the page edges: Home's hero leads a section, not the page. */
 
-@keyframes continue-tile-reveal {
+.continue-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(290px, 27%, 352px);
+  gap: var(--mantine-spacing-md);
+}
+.continue-hero-grid[data-solo] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.continue-hero {
+  position: relative;
+  overflow: clip;
+  /* The backdrop's layers are absolutely positioned; without a stacking context of its own the
+     art escapes the card's rounded corners. */
+  isolation: isolate;
+  display: flex;
+  min-height: 400px;
+  align-items: flex-end;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-overlay);
+  /* The vertical scrim ends on --app-bg, so the card's ground has to match or the fade lands on
+     a visible step. */
+  background: var(--app-bg);
+}
+.continue-hero-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+  gap: clamp(18px, 2.4vw, 30px);
+  padding: clamp(20px, 2.6vw, 36px);
+  animation: continue-hero-in 0.4s var(--ease) both;
+}
+@keyframes continue-hero-in {
   from {
     opacity: 0;
-    transform: scale(0.92);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-
-.continue-lead-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--lead-cols, 3), minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 0.875rem;
-}
-.continue-lead-grid[data-count='1'] {
-  --lead-cols: 1;
-}
-.continue-lead-grid[data-count='2'] {
-  --lead-cols: 2;
-}
-@media (max-width: 1200px) {
-  .continue-lead-grid {
-    --lead-cols: 2;
-  }
-  .continue-lead-grid[data-count='1'] {
-    --lead-cols: 1;
-  }
-}
-@media (max-width: 760px) {
-  .continue-lead-grid,
-  .continue-lead-grid[data-count='2'] {
-    --lead-cols: 1;
-  }
-}
-
-.continue-tile {
-  position: relative;
-  overflow: hidden;
-  /* The backdrop's layers are absolutely positioned; without a stacking context of its own the
-     art escapes the tile's rounded corners. */
-  isolation: isolate;
-  display: flex;
-  min-height: 188px;
-  align-items: stretch;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-overlay);
-  background: var(--surface-raised);
-}
-.continue-tile .series-hero-art {
-  background-position: 82% 22%;
-  background-size: 118%;
-}
-.continue-tile-content {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: clamp(0.75rem, 1.2vw, 1.125rem);
-  padding: clamp(0.75rem, 1vw, 1rem);
-}
-.continue-tile-motion {
-  position: relative;
-  flex: 0 0 auto;
-}
-.continue-tile-motion img {
-  transform-origin: center;
-  animation: continue-tile-reveal 0.6s cubic-bezier(0.215, 0.61, 0.355, 1) both;
-}
-.continue-lead-grid > :nth-child(2) .continue-tile-motion img {
-  animation-delay: 70ms;
-}
-.continue-lead-grid > :nth-child(3) .continue-tile-motion img {
-  animation-delay: 140ms;
-}
-.continue-tile-poster {
+.continue-hero-poster {
   position: relative;
   display: block;
+  flex: none;
   overflow: hidden;
-  width: clamp(72px, 6vw, 96px);
+  width: clamp(132px, 14vw, 204px);
   aspect-ratio: 2 / 3;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-control);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-hero);
   background: var(--surface-sunken);
-  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
-  transition:
-    border-color var(--dur-medium) var(--ease),
-    box-shadow var(--dur-medium) var(--ease);
+  box-shadow: 0 26px 58px -16px rgba(0, 0, 0, 0.9);
+  transition: transform var(--dur-medium) var(--ease);
 }
-.continue-tile-poster img {
+.continue-hero-poster:hover {
+  transform: translateY(-2px);
+}
+.continue-hero-poster img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--dur-slow) var(--ease);
 }
-.continue-tile-poster:hover {
-  border-color: var(--brand);
-  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
-}
-.continue-tile-poster:hover img {
-  transform: scale(1.04);
-}
-.continue-tile-placeholder {
-  position: absolute;
-  inset: 0;
+.continue-hero-placeholder {
   display: grid;
+  height: 100%;
   place-items: center;
-  padding: 0.4rem;
+  padding: 0.5rem;
   color: var(--ink-3);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   text-align: center;
 }
-.continue-tile-body {
+.continue-hero-copy {
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.3rem;
 }
-.continue-tile-meta {
+.continue-hero-eyebrow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--ink-3);
-  font-size: var(--type-badge);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
-}
-.continue-tile-unread {
+  gap: 9px;
+  margin-bottom: 10px;
   color: var(--brand-fg);
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
-.continue-tile-title {
+.continue-hero-eyebrow::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.continue-hero-title {
   display: -webkit-box;
   overflow: hidden;
+  margin: 0;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.6vw, 3.5rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.025em;
+  line-height: 0.96;
+  overflow-wrap: anywhere;
+}
+.continue-hero-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--dur-base) var(--ease);
+}
+.continue-hero-title a:hover {
+  color: var(--brand-fg);
+}
+.continue-hero-chapter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: 14px;
+  color: var(--ink-hi);
+  font-size: var(--type-subhead);
+  font-weight: var(--fw-strong);
+}
+.continue-hero-pages {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
+}
+.continue-hero-bar {
+  overflow: hidden;
+  width: min(440px, 100%);
+  height: 4px;
+  margin-top: 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink-3) 30%, transparent);
+}
+.continue-hero-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+.continue-hero-unread {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  margin-top: 14px;
+  padding: 0 10px;
+  border-radius: var(--radius-control);
+  color: var(--brand-fg);
+  background: color-mix(in srgb, var(--brand) 15%, transparent);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.continue-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-xs);
+  margin-top: 20px;
+}
+
+/* Next up. Size-contained on wide screens so the hero alone sets the row's height and the list
+   scrolls inside whatever that leaves; stacked, it is an ordinary block again. */
+.continue-queue {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  contain: size;
+  padding: 14px 12px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-overlay);
+  background: var(--surface);
+}
+.continue-queue-head {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 10px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.continue-queue-title {
+  margin: 0 auto 0 0;
   color: var(--ink-hi);
   font-family: var(--font-display);
   font-size: var(--type-section);
-  font-weight: var(--fw-strong);
-  letter-spacing: -0.015em;
-  line-height: 1.18;
-  text-decoration: none;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
 }
-.continue-tile-title:hover {
-  color: var(--brand-fg);
-}
-.continue-lead-grid[data-count='1'] .continue-tile {
-  min-height: 212px;
-}
-.continue-lead-grid[data-count='1'] .continue-tile-title {
-  font-size: var(--type-feature);
-}
-.continue-lead-grid[data-count='1'] .continue-tile-poster {
-  width: clamp(96px, 8vw, 128px);
-}
-.continue-tile-chapter {
-  color: var(--ink-2);
-  font-size: var(--type-meta);
-  font-variant-numeric: tabular-nums;
-}
-.continue-tile-progress {
+.continue-queue-arrows {
   display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
 }
-.continue-tile-bar {
-  overflow: hidden;
+.continue-queue-list {
+  --queue-fade-start: 0px;
+  --queue-fade-end: 0px;
+  display: flex;
+  min-height: 0;
   flex: 1 1 auto;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  /* The tile's own ground shows through here, not poster art, so this track is themed rather
-     than the fixed light-on-dark that .home-resume-bar uses over a scrim. */
-  background: color-mix(in srgb, var(--ink-3) 30%, transparent);
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y proximity;
+  /* Matches the padding, or snapping parks the first row 6px down and the top never reads as reached. */
+  scroll-padding: 6px 0 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
-.continue-tile-fill {
+.continue-queue-list > * {
+  scroll-snap-align: start;
+}
+.continue-queue-list[data-fade-start] {
+  --queue-fade-start: 28px;
+}
+.continue-queue-list[data-fade-end] {
+  --queue-fade-end: 48px;
+}
+.continue-queue-list[data-fade-start],
+.continue-queue-list[data-fade-end] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--queue-fade-start),
+    #000 calc(100% - var(--queue-fade-end)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--queue-fade-start),
+    #000 calc(100% - var(--queue-fade-end)),
+    transparent
+  );
+}
+.continue-queue-row {
+  display: grid;
+  flex: none;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-thumb);
+  transition:
+    background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease);
+}
+.continue-queue-row:hover {
+  background: var(--surface-hover);
+}
+.continue-queue-row[data-selected] {
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.continue-queue-pick {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 6px;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.continue-queue-pick:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.continue-queue-thumb {
+  display: block;
+  overflow: hidden;
+  width: 40px;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--mantine-radius-xs);
+  background: var(--surface-2);
+}
+.continue-queue-thumb img {
+  display: block;
+  width: 100%;
   height: 100%;
-  background: var(--brand);
+  object-fit: cover;
 }
-.continue-tile-pages {
-  color: var(--ink-3);
-  font-size: var(--type-badge);
+.continue-queue-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.continue-queue-name {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-strong);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.continue-tile-action {
-  margin-top: 0.35rem;
+.continue-queue-meta {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-label);
+  white-space: nowrap;
 }
-
-/* The global reduced-motion rule already collapses every transition-duration, so only the hover
-   transform and the stagger need cancelling here: an animation reduced to 0.001ms still waits
-   out its delay before appearing. */
-@media (prefers-reduced-motion: reduce) {
-  .continue-tile-poster:hover img {
+.continue-queue-meta > * + *::before {
+  content: '·';
+  margin-right: 6px;
+}
+.continue-queue-progress {
+  display: flex;
+  min-height: 12px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+.continue-queue-bar {
+  overflow: hidden;
+  flex: 1 1 auto;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink-3) 24%, transparent);
+}
+.continue-queue-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+.continue-queue-unread {
+  margin-left: auto;
+  color: var(--brand-fg);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+/* The row's own resume button: one click to the reader from any row, while a click on the rest
+   of the row only swaps the hero. Revealed on hover and focus; always shown on touch. */
+.continue-queue-play {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--brand-on);
+  background: var(--brand);
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity var(--dur-base) var(--ease),
+    transform var(--dur-base) var(--ease),
+    background var(--dur-base) var(--ease);
+}
+.continue-queue-play:hover {
+  background: var(--brand-hover);
+}
+.continue-queue-play:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.continue-queue-row:hover .continue-queue-play,
+.continue-queue-row:focus-within .continue-queue-play {
+  opacity: 1;
+  transform: none;
+}
+.continue-queue-more {
+  height: 44px;
+  margin-top: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-surface);
+  background: transparent;
+  color: var(--brand-fg);
+  font: inherit;
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+.continue-queue-more:hover {
+  background: var(--surface-hover);
+}
+@media (hover: none) {
+  .continue-queue-play {
+    opacity: 1;
     transform: none;
   }
-  .continue-lead-grid > :nth-child(2) .continue-tile-motion img,
-  .continue-lead-grid > :nth-child(3) .continue-tile-motion img {
-    animation-delay: 0ms;
+  .continue-queue-arrows {
+    display: none;
+  }
+}
+
+/* Keep in step with STACKED_QUERY in ContinueHero.tsx. */
+@media (max-width: 56.25em) {
+  .continue-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .continue-queue {
+    contain: none;
+    padding-bottom: 12px;
+  }
+  .continue-queue-list {
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+}
+@media (max-width: 36em) {
+  .continue-hero {
+    min-height: 0;
+  }
+  .continue-hero-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .continue-hero-body {
+    animation: none;
+  }
+  .continue-hero-poster:hover {
+    transform: none;
   }
 }
 
