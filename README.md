@@ -2,6 +2,8 @@
   <a href="docs/readme/banner.png"><img src="docs/readme/banner.png" alt="Maki: add a series once and it keeps it complete" width="100%"></a>
 </p>
 
+---
+
 <h1 align="center"><img src="https://github.com/OrbitMPGH/Maki/blob/main/frontend/public/favicon.svg?raw=true" width="50" alt=""> Maki</h1>
 
 <p align="center">
@@ -25,6 +27,8 @@
   <a href="#documentation">Documentation</a> ·
   <a href="#languages">Languages</a>
 </p>
+
+---
 
 <p align="center">
   <a href="docs/readme/recommendations.png"><img src="docs/readme/recommendations.png" width="49%" alt="Recommendations from your own library"></a>
