@@ -9,6 +9,10 @@ import {
   IconChevronDown,
   IconCircleCheck,
   IconClock,
+  IconDeviceMobileCheck,
+  IconDeviceMobileDown,
+  IconDeviceMobileOff,
+  IconDeviceMobileX,
   IconDeviceTv,
   IconDotsVertical,
   IconDownload,
@@ -28,6 +32,8 @@ import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
 import type { ChapterDto, QueueItemDto } from '../../api/types'
 import { formatCalendarDate } from '../../format'
+import type { OfflineChapter } from '../../pwa/contract'
+import type { SaveProgress } from '../../pwa/offlineChapters'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
@@ -48,6 +54,8 @@ export type ChapterRowActions = {
   upgradeNow: (id: number) => void
   setTrusted: (fileId: number, trusted: boolean) => void
   deleteFile: (id: number) => void
+  saveOffline: (id: number) => void
+  removeOffline: (id: number) => void
   toggleSpanFold: (key: string) => void
   setMarkerRef: (key: string, el: HTMLElement | null) => void
 }
@@ -75,6 +83,12 @@ type ChapterRowProps = {
   canDownload: boolean
   canDelete: boolean
   canFindBetterCopy: boolean
+  /** This browser can keep chapters for offline reading (a secure context with a service worker). */
+  canSaveOffline: boolean
+  /** This device's copy of the chapter, if it keeps one. */
+  offline: OfflineChapter | undefined
+  /** Pages stored so far while the copy is being made. */
+  offlineSaving: SaveProgress | undefined
   wantedPending: boolean
   readPending: boolean
   upgradePending: boolean
@@ -98,6 +112,9 @@ export const ChapterRow = memo(function ChapterRow({
   canDownload,
   canDelete,
   canFindBetterCopy,
+  canSaveOffline,
+  offline,
+  offlineSaving,
   wantedPending,
   readPending,
   upgradePending,
@@ -325,6 +342,7 @@ export const ChapterRow = memo(function ChapterRow({
                   <Trans>Missing</Trans>
                 </LightBadge>
             )}
+            {offline && <OfflineBadge record={offline} saving={offlineSaving} />}
             {read && (
                 <HoverTooltip
                     label={
@@ -414,7 +432,7 @@ export const ChapterRow = memo(function ChapterRow({
                   </LightActionIcon>
                 </HoverTooltip>
             )}
-            {(canDownload || canDelete) && c.hasFile && (
+            {(canDownload || canDelete || canSaveOffline) && c.hasFile && (
                 <Menu shadow="md" position="bottom-end" withinPortal>
                   <Menu.Target>
                     <ActionIcon
@@ -426,6 +444,23 @@ export const ChapterRow = memo(function ChapterRow({
                     </ActionIcon>
                   </Menu.Target>
                   <Menu.Dropdown>
+                    {canSaveOffline && (!offline || offline.state === 'error') && (
+                        <Menu.Item
+                            leftSection={<IconDeviceMobileDown size={14} />}
+                            onClick={() => actions.saveOffline(c.id)}
+                        >
+                          <Trans>Save for offline</Trans>
+                        </Menu.Item>
+                    )}
+                    {canSaveOffline && offline && (
+                        <Menu.Item
+                            leftSection={<IconDeviceMobileOff size={14} />}
+                            onClick={() => actions.removeOffline(c.id)}
+                        >
+                          <Trans>Remove from this device</Trans>
+                        </Menu.Item>
+                    )}
+                    {canSaveOffline && (canDownload || canDelete) && <Menu.Divider />}
                     {canDownload && c.number !== null && canFindBetterCopy && (
                         <Menu.Item
                             leftSection={<IconPhotoSearch size={14} />}
@@ -484,6 +519,38 @@ export const ChapterRow = memo(function ChapterRow({
       </Table.Tr>
   )
 })
+
+/** This device's copy of a chapter: being saved, saved, or failed. */
+function OfflineBadge({ record, saving }: { record: OfflineChapter; saving: SaveProgress | undefined }) {
+  const { t } = useLingui()
+  if (record.state === 'error') {
+    return (
+        <HoverTooltip label={t`Saving for offline failed. Try again from the chapter's menu.`} withArrow>
+          <LightBadge color="var(--danger)" leftSection={<IconDeviceMobileX size={12} />}>
+            <Trans>Not saved</Trans>
+          </LightBadge>
+        </HoverTooltip>
+    )
+  }
+  if (record.state === 'saving' || record.state === 'stale') {
+    const done = saving?.done ?? 0
+    const total = saving?.total ?? 0
+    return (
+        <HoverTooltip label={t`Saving on this device for offline reading`} withArrow>
+          <LightBadge color="var(--info)" className="tnum" leftSection={<IconDeviceMobileDown size={12} />}>
+            {total > 0 ? <Trans>Saving {done}/{total}</Trans> : <Trans>Saving</Trans>}
+          </LightBadge>
+        </HoverTooltip>
+    )
+  }
+  return (
+      <HoverTooltip label={t`Saved on this device for offline reading`} withArrow>
+        <LightBadge color="var(--info)" leftSection={<IconDeviceMobileCheck size={12} />}>
+          <Trans>On this device</Trans>
+        </LightBadge>
+      </HoverTooltip>
+  )
+}
 
 /** "Ch.1–270", or "Ch.315+" for a season with no end marker yet. */
 const spanRangeLabel = (span: AnimeSpan) => {
