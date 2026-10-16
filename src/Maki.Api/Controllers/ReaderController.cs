@@ -47,6 +47,9 @@ public record SeriesReadingProfileRequest(int? ProfileId);
 /// </summary>
 public record SetChaptersStateRequest(int[] ChapterIds, string State);
 
+/// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
+public record ChapterVersionsRequest(int[]? Ids);
+
 /// <summary>
 /// Serves pages out of the library's CBZ files and records what has been read.
 /// <para>
@@ -503,6 +506,27 @@ public class ReaderController(
         }
 
         return Ok(new { updated = await reader.MarkReadAsync(visible, ct) });
+    }
+
+    /// <summary>Largest set one <see cref="ChapterVersions"/> call answers.</summary>
+    internal const int MaxVersionChapters = 500;
+
+    /// <summary>
+    /// The manifest's <c>pageVersion</c> for each requested chapter the caller can still read, so a
+    /// device can check the chapters it saved offline in one call. A chapter outside the caller's
+    /// root folders, without a file, or whose file is gone is left out, and the device drops it.
+    /// </summary>
+    [HttpPost("chapters/versions")]
+    public async Task<IActionResult> ChapterVersions(ChapterVersionsRequest req, CancellationToken ct)
+    {
+        var ids = (req.Ids ?? []).Distinct().ToArray();
+        if (ids.Length > MaxVersionChapters)
+        {
+            return this.Fail(localizer, "error.reader.tooManyChapters", new { max = MaxVersionChapters });
+        }
+
+        var versions = await reader.ArchiveVersionsAsync(ids, ct);
+        return Ok(versions.Select(v => new { id = v.ChapterId, pageVersion = PageVersion(v.ChapterFileId, v.ArchiveVersion) }));
     }
 
     /// <summary>

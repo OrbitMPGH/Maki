@@ -214,6 +214,57 @@ public class ReaderService(
         return slices;
     }
 
+    /// <summary>
+    /// The archive version behind each chapter the caller can see that has a file on disk, for a
+    /// device checking whether the chapters it saved offline are still current. Same filters and
+    /// same version as <see cref="SliceAsync"/>, but one query and one stat per file: the archive
+    /// itself is not opened.
+    /// </summary>
+    public async Task<List<(int ChapterId, int ChapterFileId, string ArchiveVersion)>> ArchiveVersionsAsync(
+        IReadOnlyCollection<int> chapterIds, CancellationToken ct)
+    {
+        if (chapterIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await db.Chapters
+            .AsNoTracking()
+            .Where(c => chapterIds.Contains(c.Id) && c.ChapterFileId != null)
+            .Select(c => new
+            {
+                c.Id,
+                FileId = c.ChapterFile!.Id,
+                c.ChapterFile.RelativePath,
+                c.ChapterFile.Size,
+                RootPath = c.Series!.RootFolder!.Path,
+            })
+            .ToListAsync(ct);
+
+        var stamps = new Dictionary<int, long?>();
+        var versions = new List<(int, int, string)>();
+        foreach (var row in rows)
+        {
+            if (string.IsNullOrEmpty(row.RootPath))
+            {
+                continue;
+            }
+
+            if (!stamps.TryGetValue(row.FileId, out var stamp))
+            {
+                stamp = LibraryPaths.Resolve(row.RootPath, row.RelativePath) is { } absolute ? StampOf(absolute) : null;
+                stamps[row.FileId] = stamp;
+            }
+
+            if (stamp is { } known)
+            {
+                versions.Add((row.Id, row.FileId, ArchiveVersionOf(row.Size, known)));
+            }
+        }
+
+        return versions;
+    }
+
     /// <summary>The file's write time in ticks, or null when it is not on disk. One stat, shared with the existence check.</summary>
     private static long? StampOf(string absolute)
     {

@@ -3,7 +3,9 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Reading;
+using Maki.Core.Security;
 using Maki.Data;
+using Maki.Data.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -40,10 +42,10 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     private ReaderService Reader(ReadingSessionService? sessions = null, InertKavitaPusher? pusher = null,
-        Func<MakiDbContext, ReadingProgressService>? progress = null)
+        Func<MakiDbContext, ReadingProgressService>? progress = null, MakiDbContext? scoped = null)
     {
         // Narrowed the way a request is: ReaderService reads its owner off the scope.
-        var context = _db.NewContext(TestUser);
+        var context = scoped ?? _db.NewContext(TestUser);
         // A real pusher would query the database from its fire-and-forget task and race Dispose;
         // see InertKavitaPusher.
         pusher ??= InertKavitaPusher.For(_db.ScopeFactory());
@@ -747,6 +749,42 @@ public sealed class ReaderServiceTests : IDisposable
     [Fact]
     public void AnOverlongOpIdIsInvalid() =>
         Assert.False(ReaderService.IsValidOpId(new string('a', ReaderService.MaxOpIdLength + 1)));
+
+    // ---- offline copies ----
+
+    [Fact]
+    public async Task ArchiveVersionsCoverOnlyReadableChaptersTheCallerCanSee()
+    {
+        var (seriesId, shared) = SeedFromCbz("granted.cbz", ["S - c001 - p001.png", "S - c002 - p001.png"],
+            [(1m, null), (2m, null)]);
+        var (_, hidden) = SeedFromCbz("hidden.cbz", ["001.jpg"], [(1m, null)]);
+        var gonePath = WriteCbz("gone.cbz", "001.jpg");
+        var gone = LinkChapters(seriesId, gonePath, [(4m, null)]).Single().Id;
+        File.Delete(gonePath);
+        var restricted = _db.SeedUser("restricted", MakiPermission.None, allRootFolders: false);
+        int noFile;
+        using (var db = _db.NewContext())
+        {
+            var chapter = new Chapter { SeriesId = seriesId, Number = 3m, Language = "en" };
+            db.Chapters.Add(chapter);
+            db.UserRootFolders.Add(new UserRootFolder
+            {
+                UserId = restricted,
+                RootFolderId = db.Series.Single(s => s.Id == seriesId).RootFolderId
+            });
+            db.SaveChanges();
+            noFile = chapter.Id;
+        }
+
+        var reader = Reader(scoped: _db.NewContext(restricted, allRootFolders: false));
+        var versions = await reader.ArchiveVersionsAsync(
+            [shared[1m], shared[2m], hidden[1m], gone, noFile, 999_999], None);
+
+        var slice = await Reader().SliceAsync(shared[1m], None);
+        Assert.Equal(
+            [(shared[1m], slice!.ChapterFileId, slice.ArchiveVersion), (shared[2m], slice.ChapterFileId, slice.ArchiveVersion)],
+            versions.OrderBy(v => v.ChapterId).ToList());
+    }
 
     // ---- reading time ----
 
