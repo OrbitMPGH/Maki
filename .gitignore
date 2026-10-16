@@ -54,3 +54,7 @@ skills-lock.json
 /.github/agents
 /.claude/agents
 /.impeccable
+
+# README image captures (scripts/readme-images)
+scripts/readme-images/raw/
+.screenshots/
