@@ -278,9 +278,26 @@ public class CompletedDownloadJobTests : IDisposable
     }
 
     [Theory]
-    [InlineData(QueueStatus.Completed, false)]
-    [InlineData(QueueStatus.Failed, true)]
-    public async Task A_torrent_another_row_holds_is_not_claimed_by_name(QueueStatus ownerStatus, bool otherSeries)
+    [InlineData(QueueStatus.Completed)]
+    [InlineData(QueueStatus.Cancelled)]
+    public async Task A_torrent_a_finished_row_of_the_same_series_holds_is_claimed_by_name(QueueStatus ownerStatus)
+    {
+        SeedItem(ownerStatus, hash: "abc123", DateTime.UtcNow.AddDays(-1), PackName);
+        var id = SeedItem(QueueStatus.Queued, hash: null, DateTime.UtcNow.AddHours(-3), PackName);
+        _client.Torrents.Add(Torrent("abc123", 0.5, DateTime.UtcNow.AddDays(-1), PackName));
+
+        await RunAsync();
+
+        Assert.Equal("abc123", HashOf(id));
+        Assert.Equal(QueueStatus.Queued, Reload(id).Status);
+    }
+
+    [Theory]
+    [InlineData(QueueStatus.Failed, true, "Vagabond")]
+    [InlineData(QueueStatus.Completed, true, "Vagabond")]
+    [InlineData(QueueStatus.Downloading, false, "Berserk")]
+    public async Task A_torrent_another_series_or_a_live_row_holds_is_not_claimed_and_the_failure_names_it(
+        QueueStatus ownerStatus, bool otherSeries, string ownerSeries)
     {
         var owner = SeedItem(ownerStatus, hash: "abc123", DateTime.UtcNow.AddDays(-1), PackName);
         if (otherSeries)
@@ -290,8 +307,33 @@ public class CompletedDownloadJobTests : IDisposable
             db.SaveChanges();
         }
 
+        var id = SeedItem(QueueStatus.Queued, hash: null, DateTime.UtcNow.AddHours(-3), PackName);
+        _client.Torrents.Add(Torrent("abc123", 0.5, DateTime.UtcNow.AddDays(-1), PackName));
+
+        await RunAsync();
+
+        var item = Reload(id);
+        Assert.Null(HashOf(id));
+        Assert.Equal(QueueStatus.Failed, item.Status);
+        Assert.Equal(CompletedDownloadJob.HeldElsewhereKey, item.ErrorKey);
+        Assert.Contains(ownerSeries, item.ErrorParamsJson);
+        Assert.False(CompletedDownloadJob.BlamesRelease(item.ErrorKey));
+    }
+
+    [Fact]
+    public async Task A_held_torrent_is_not_swapped_for_another_one_added_in_the_window()
+    {
+        var other = _db.SeedSeries("Vagabond");
+        var owner = SeedItem(QueueStatus.Downloading, hash: "abc123", DateTime.UtcNow.AddDays(-1), PackName);
+        using (var db = _db.NewContext())
+        {
+            db.DownloadQueue.Single(q => q.Id == owner).SeriesId = other;
+            db.SaveChanges();
+        }
+
         var id = SeedItem(QueueStatus.Downloading, hash: null, DateTime.UtcNow.AddMinutes(-10), PackName);
-        _client.Torrents.Add(Torrent("abc123", 1.0, DateTime.UtcNow.AddDays(-1), PackName));
+        _client.Torrents.Add(Torrent("abc123", 0.5, DateTime.UtcNow.AddDays(-1), PackName));
+        _client.Torrents.Add(Torrent("def456", 0.5, DateTime.UtcNow.AddMinutes(-9), "Berserk v02 (Digital)"));
 
         await RunAsync();
 

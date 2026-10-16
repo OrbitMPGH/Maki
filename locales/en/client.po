@@ -13753,6 +13753,11 @@ msgstr "The titles climbing fastest in popularity right now."
 msgid "The token @BotFather gave you."
 msgstr "The token @BotFather gave you."
 
+#. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
+#: src/api/queue.ts
+msgid "The torrent is in the download client, but another download for {series} owns it"
+msgstr "The torrent is in the download client, but another download for {series} owns it"
+
 #: src/api/queue.ts
 msgid "The torrent is no longer in the download client"
 msgstr "The torrent is no longer in the download client"

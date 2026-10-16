@@ -47,6 +47,11 @@ public class CompletedDownloadJob(
 
     internal const string ClientErrorKey = "error.download.torrentClientError";
 
+    internal const string HeldElsewhereKey = "error.download.torrentHeldElsewhere";
+
+    /// <summary>A queue row that recorded a torrent's hash, as a hashless row sees it.</summary>
+    private sealed record TorrentHolder(int SeriesId, string? SeriesTitle, QueueStatus Status);
+
     // The job instance is created per run, so state that must outlive a poll is static. In memory
     // only: after a restart the grace period for a missing torrent starts over, which errs on waiting.
     private static readonly ConcurrentDictionary<int, DateTime> MissingSince = new();
@@ -125,42 +130,19 @@ public class CompletedDownloadJob(
         //
         // Only a hashless item ever consults the set, so the history is read only while one is pending
         // instead of on every poll.
-        var claimedHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        // Claimed hashes whose every owner failed or was cancelled, with the series those owners were for.
-        var abandonedHashes = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
+        var holders = new Dictionary<string, List<TorrentHolder>>(StringComparer.OrdinalIgnoreCase);
         if (pending.Any(q => ReleaseInfoOf(q) is { TorrentHash: null }))
         {
             var owners = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Torrent && q.ReleaseInfoJson != null)
-                .Select(q => new { q.SeriesId, q.Status, q.ReleaseInfoJson })
+                .Select(q => new { q.SeriesId, SeriesTitle = q.Series!.Title, q.Status, q.ReleaseInfoJson })
                 .ToListAsync(ct);
-            var liveHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var owner in owners)
             {
-                if (JsonSerializer.Deserialize<ReleaseInfo>(owner.ReleaseInfoJson!)?.TorrentHash is not { } hash)
+                if (JsonSerializer.Deserialize<ReleaseInfo>(owner.ReleaseInfoJson!)?.TorrentHash is { } hash)
                 {
-                    continue;
+                    HoldersOf(holders, hash).Add(new TorrentHolder(owner.SeriesId, owner.SeriesTitle, owner.Status));
                 }
-
-                claimedHashes.Add(hash);
-                if (owner.Status is QueueStatus.Failed or QueueStatus.Cancelled)
-                {
-                    if (!abandonedHashes.TryGetValue(hash, out var series))
-                    {
-                        abandonedHashes[hash] = series = [];
-                    }
-
-                    series.Add(owner.SeriesId);
-                }
-                else
-                {
-                    liveHashes.Add(hash);
-                }
-            }
-
-            foreach (var live in liveHashes)
-            {
-                abandonedHashes.Remove(live);
             }
         }
 
@@ -194,9 +176,10 @@ public class CompletedDownloadJob(
                 continue;
             }
 
+            TorrentHolder? heldBy = null;
             var torrent = info.TorrentHash != null
                 ? torrents.FirstOrDefault(t => t.Hash.Equals(info.TorrentHash, StringComparison.OrdinalIgnoreCase))
-                : ClaimTorrent(item, info, torrents, claimedHashes, abandonedHashes);
+                : ClaimTorrent(item, info, torrents, holders, out heldBy);
 
             if (torrent is null)
             {
@@ -204,7 +187,21 @@ public class CompletedDownloadJob(
                 if (DateTime.UtcNow - item.QueuedAt > TimeSpan.FromHours(2) && info.TorrentHash is null)
                 {
                     item.Status = QueueStatus.Failed;
-                    item.SetError("error.download.torrentMissing");
+                    if (heldBy is not null)
+                    {
+                        logger.LogWarning(
+                            "{Client} has a torrent named '{Title}', but a {Status} download for '{Series}' owns it",
+                            clientName, info.Title, heldBy.Status, heldBy.SeriesTitle);
+                        item.SetError(HeldElsewhereKey, new { series = heldBy.SeriesTitle ?? string.Empty });
+                    }
+                    else
+                    {
+                        logger.LogWarning(
+                            "No torrent named '{Title}' among the {Count} {Client} lists under '{Label}', and none added since it was grabbed",
+                            info.Title, torrents.Count, clientName, client.Label);
+                        item.SetError("error.download.torrentMissing");
+                    }
+
                     await BroadcastAsync(item);
                     announcements.Add((item, false));
                 }
@@ -257,8 +254,7 @@ public class CompletedDownloadJob(
             {
                 info = info with { TorrentHash = torrent.Hash };
                 item.ReleaseInfoJson = JsonSerializer.Serialize(info);
-                claimedHashes.Add(torrent.Hash);
-                abandonedHashes.Remove(torrent.Hash);
+                HoldersOf(holders, torrent.Hash).Add(new TorrentHolder(item.SeriesId, item.Series?.Title, item.Status));
             }
 
             var previousPagesDone = item.PagesDone;
@@ -437,8 +433,11 @@ public class CompletedDownloadJob(
     /// <para>
     /// A torrent named exactly like the release wins, whenever it was added: the client may have had
     /// it before the grab (added by hand, or left behind by a removed row), and a retried row is older
-    /// than its window. It may also be one a failed or cancelled row of the same series still holds
-    /// the hash of, which is what a torrent that went invisible to a label filter leaves behind.
+    /// than its window. Another row may hold its hash as long as every such row is finished with it
+    /// and was for this series: a failed one (a torrent that went invisible to a label filter leaves
+    /// that behind), a cancelled one, or a completed one whose files are already in the library.
+    /// When only rows for another series or still in flight hold it, nothing is guessed, and
+    /// <paramref name="heldBy"/> names one of them so the failure can say so.
     /// </para>
     /// <para>
     /// Otherwise an unclaimed torrent added around the grab time, one whose name carries the series'
@@ -451,26 +450,36 @@ public class CompletedDownloadJob(
         DownloadQueueItem item,
         ReleaseInfo info,
         IReadOnlyList<ClientTorrent> torrents,
-        HashSet<string> claimedHashes,
-        Dictionary<string, HashSet<int>> abandonedHashes)
+        Dictionary<string, List<TorrentHolder>> holders,
+        out TorrentHolder? heldBy)
     {
+        heldBy = null;
         var releaseName = ComparableName(info.Title ?? item.Title);
-        if (releaseName.Length > 0)
+        var sameName = releaseName.Length == 0
+            ? []
+            : torrents.Where(t => ComparableName(t.Name) == releaseName).OrderByDescending(t => t.AddedAt).ToList();
+        foreach (var candidate in sameName)
         {
-            var sameName = torrents
-                .Where(t => ComparableName(t.Name) == releaseName &&
-                            (!claimedHashes.Contains(t.Hash) ||
-                             (abandonedHashes.TryGetValue(t.Hash, out var series) && series.All(id => id == item.SeriesId))))
-                .MaxBy(t => t.AddedAt);
-            if (sameName is not null)
+            if (!holders.TryGetValue(candidate.Hash, out var owners) ||
+                owners.All(o => o.SeriesId == item.SeriesId &&
+                                o.Status is QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled))
             {
-                return sameName;
+                return candidate;
             }
+        }
+
+        if (sameName.Count > 0)
+        {
+            heldBy = holders[sameName[0].Hash]
+                .OrderBy(o => o.SeriesId == item.SeriesId)
+                .First(o => o.SeriesId != item.SeriesId ||
+                            o.Status is not (QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled));
+            return null;
         }
 
         var earliest = new DateTimeOffset(item.QueuedAt).AddSeconds(-120);
         var eligible = torrents
-            .Where(t => !claimedHashes.Contains(t.Hash) && t.AddedAt >= earliest)
+            .Where(t => !holders.ContainsKey(t.Hash) && t.AddedAt >= earliest)
             .OrderBy(t => t.AddedAt)
             .ToList();
         if (eligible.Count == 0)
@@ -481,6 +490,16 @@ public class CompletedDownloadJob(
         var seriesTokens = PrimaryTitleTokens(item.Series?.Title ?? info.Title);
         var named = eligible.FirstOrDefault(t => MatchesSeries(t.Name, seriesTokens));
         return named ?? eligible[0];
+    }
+
+    private static List<TorrentHolder> HoldersOf(Dictionary<string, List<TorrentHolder>> holders, string hash)
+    {
+        if (!holders.TryGetValue(hash, out var list))
+        {
+            holders[hash] = list = [];
+        }
+
+        return list;
     }
 
     /// <summary>Whether a torrent name carries every one of the series' primary title tokens.</summary>

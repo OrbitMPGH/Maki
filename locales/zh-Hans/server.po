@@ -4040,6 +4040,14 @@ msgstr "导入被拒绝，库保持不变"
 msgid "error.download.torrentMissing"
 msgstr "torrent 从未出现在 qBittorrent 中"
 
+#. A torrent named like this release is in the download client, but another Maki download (for the
+#. named series, possibly this one) already recorded it as its own. {series} is a series title and
+#. is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The torrent is in the download client, but another download for {series} owns it
+msgid "error.download.torrentHeldElsewhere"
+msgstr ""
+
 #. The torrent had been seen in the download client before and has been gone for hours: deleted there,
 #. moved to another category or label, or dropped.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs

@@ -66,6 +66,10 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.noChapterToResolve': msg`This queue item has no chapter to find a source for`,
   'error.download.importRejected': msg`Import rejected, the library was left as it was`,
   'error.download.torrentMissing': msg`The torrent never appeared in the download client`,
+  'error.download.torrentHeldElsewhere': msg({
+    message: `The torrent is in the download client, but another download for {series} owns it`,
+    comment: `{series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.`,
+  }),
   'error.download.upgradeTargetGone': msg`The file this upgrade was meant to replace is gone`,
   'error.download.upgradeMoveFailed': msg`The old file could not be moved aside for the upgrade`,
   'error.download.pickedSourceUnavailable': msg`The source you picked could not provide this chapter`,
