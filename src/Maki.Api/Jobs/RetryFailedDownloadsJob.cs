@@ -14,7 +14,7 @@ namespace Maki.Api.Jobs;
 /// otherwise leaves an item reading "Fetching" until somebody restarts the app.</item>
 /// </list>
 /// Torrent items are left alone in both; <see cref="CompletedDownloadJob"/> tracks those against
-/// qBittorrent directly.
+/// the download client directly.
 /// <para>
 /// The orphan sweep deliberately runs before the retry setting is consulted: an unowned row is a
 /// broken state to repair, not a retry policy somebody can switch off.

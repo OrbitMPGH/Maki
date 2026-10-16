@@ -2012,8 +2012,7 @@ msgstr "{year}, {status}"
 msgid "{zone} (this browser)"
 msgstr "{zone} (este navegador)"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #, fuzzy
 msgid "/downloads (optional)"
 msgstr "/downloads (opcional)"
@@ -3997,10 +3996,9 @@ msgstr "Catálogo no disponible"
 msgid "Categories"
 msgstr "Categorías"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Category"
-msgstr "Categoría"
+#: src/components/settings/downloadClientFields.ts
+msgid "Category or label given to torrents Maki adds. Defaults to maki. Deluge lowercases it and allows only letters, digits, dot, dash and underscore."
+msgstr ""
 
 #: src/components/discover/DiscoverSeedStrip.tsx
 #, fuzzy
@@ -4411,9 +4409,8 @@ msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files i
 msgstr "Los capítulos que no contiene {winnerDisplayName} se dejan tal cual, al igual que los archivos importados del disco."
 
 #: src/components/QueuePause.tsx
-#, fuzzy
-msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
-msgstr "Los capítulos que ya se están descargando terminan. Los torrents que ya se enviaron a qBittorrent siguen descargándose."
+msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4667,6 +4664,10 @@ msgstr "Haz clic en un token para insertarlo."
 #, fuzzy
 msgid "click one to keep it where it is"
 msgstr "haz clic en uno para dejarlo donde está"
+
+#: src/components/settings/downloadClientFields.ts
+msgid "Client"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -6195,10 +6196,16 @@ msgstr "Descargar candidato para revisar"
 msgid "Download chapters"
 msgstr "Descargar capítulos"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
-msgstr "Cliente de descargas para los lanzamientos encontrados. Los torrents terminados se importan automáticamente a la biblioteca. Configura el mapeo de rutas solo si qBittorrent informa de rutas a las que Maki no puede acceder, por ejemplo, /downloads en Docker, que Maki ve como Z:\\downloads."
+#: src/pages/settings/registry.ts
+msgid "Download client"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -6344,9 +6351,8 @@ msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "Las descargas prueban primero la fuente con mejor puntuación. La prioridad solo desempata."
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker."
-msgstr "Descarga lo que encuentre Prowlarr. Los torrents terminados se importan solos a la biblioteca. Configura el mapeo de rutas solo si qBittorrent detecta rutas a las que Maki no puede acceder, como ocurre en Docker."
+msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -8002,9 +8008,8 @@ msgid "Hover a cell for its number."
 msgstr "Pasa el cursor sobre una celda para ver su número."
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "How chapters from scraper sources move through the queue. Torrents are handled by qBittorrent below."
-msgstr "Cómo se mueven por la cola los capítulos de las fuentes de scraping. Los torrents los gestiona qBittorrent, más abajo."
+msgid "How chapters from scraper sources move through the queue. Torrents are handled by the download client below."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8790,6 +8795,10 @@ msgstr "Tipos"
 msgid "Korean"
 msgstr "Coreano"
 
+#: src/components/settings/downloadClientFields.ts
+msgid "Label"
+msgstr ""
+
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -9432,9 +9441,8 @@ msgid "Looking up chapters…"
 msgstr "Buscando capítulos…"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the daily scan."
-msgstr "Busca packs de volúmenes en torrent que puedan reemplazar archivos de un solo capítulo, en series cuyo perfil apunta a volúmenes. Necesita Prowlarr y qBittorrent, y se ejecuta una hora después del escaneo diario."
+msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and a download client, and runs an hour after the daily scan."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -9576,9 +9584,8 @@ msgid "Maki speaks your language"
 msgstr "Maki habla tu idioma"
 
 #: src/components/QueuePause.tsx
-#, fuzzy
-msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
-msgstr "Maki deja de iniciar descargas nuevas. Los capítulos que ya se descargan terminan, y no se quita nada de la cola. Los torrents que ya se enviaron a qBittorrent siguen descargándose."
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -12178,10 +12185,9 @@ msgid "Passed over: {reasons}"
 msgstr "Descartado: {reasons}"
 
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
@@ -12231,16 +12237,15 @@ msgstr "Ruta"
 msgid "Path as Kavita sees it"
 msgstr "Ruta tal como la ve Kavita"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Path as Maki sees it"
 msgstr "Ruta tal como la ve Maki"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Path as qBittorrent reports it"
-msgstr "Ruta tal como la informa qBittorrent"
+#: src/components/settings/downloadClientFields.ts
+msgid "Path as the download client reports it"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -12251,11 +12256,6 @@ msgstr "Asignación de rutas, lado de Kavita"
 #, fuzzy
 msgid "Path mapping - Maki side"
 msgstr "Asignación de rutas, lado de Maki"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Path mapping - qBittorrent side"
-msgstr "Asignación de rutas, lado de qBittorrent"
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -12744,11 +12744,6 @@ msgstr "Ponlo detrás de HTTPS y luego activa Ajustes → Sistema → Red → Ex
 #, fuzzy
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Coloca estas fuentes, en este orden, al principio de la lista de prioridad global que se usa cuando una serie nueva obtiene coincidencia automática."
-
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "qBittorrent"
-msgstr "qBittorrent"
 
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -15186,11 +15181,14 @@ msgstr "Enviar solicitud"
 msgid "Send silently"
 msgstr "Enviar sin sonido"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
-#, fuzzy
-msgid "Sent to qBittorrent: {title}"
-msgstr "Enviado a qBittorrent: {title}"
+msgid "Sent to the download client: {title}"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -16411,11 +16409,6 @@ msgstr "Problemas del sistema"
 msgid "Tag"
 msgstr "Etiqueta"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Tag given to torrents Maki adds. Defaults to maki."
-msgstr "Etiqueta que se da a los torrents que añade Maki. Por defecto, maki."
-
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
@@ -16614,9 +16607,12 @@ msgid "The default for every series event: new chapters, downloads, upgrades. An
 msgstr "El valor predeterminado para cada evento de serie: capítulos nuevos, descargas, mejoras. Cualquier serie se puede configurar de otra forma desde su propia página, o varias a la vez desde el modo Seleccionar de la Biblioteca."
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The download is no longer in qBittorrent"
-msgstr "La descarga ya no está en qBittorrent"
+msgid "The download client reports an error on this torrent"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The download is no longer in the download client"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16929,9 +16925,8 @@ msgid "The token @BotFather gave you."
 msgstr "El token que te dio @BotFather."
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The torrent is no longer in qBittorrent"
-msgstr "El torrent ya no está en qBittorrent"
+msgid "The torrent is no longer in the download client"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -16939,9 +16934,8 @@ msgid "The torrent keeps seeding whichever you pick."
 msgstr "El torrent sigue compartiendo el que elijas."
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The torrent never appeared in qBittorrent"
-msgstr "El torrent nunca apareció en qBittorrent"
+msgid "The torrent never appeared in the download client"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -17508,12 +17502,6 @@ msgstr "ID del tema"
 #, fuzzy
 msgid "Torrent"
 msgstr "Torrent"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "torrent client, category, path mapping, download client"
-msgstr "cliente torrent, categoría, asignación de rutas, cliente de descargas"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -18182,6 +18170,7 @@ msgid "Upper Case"
 msgstr "Mayúsculas"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -18312,10 +18301,9 @@ msgstr "Usuario actualizado"
 msgid "User, group or channel ID. Public channels can use @name."
 msgstr "ID de usuario, grupo o canal. En los canales públicos puedes usar @nombre."
 
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -19343,11 +19331,9 @@ msgstr "Tu clave de usuario o de grupo."
 msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr "Solo para ti: esto cambia lo que llega a tu campana, no a la de nadie más."
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
+#: src/components/settings/downloadClientFields.ts
 msgid "Z:\\downloads (optional)"
-msgstr "Z:\\downloads (opcional)"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

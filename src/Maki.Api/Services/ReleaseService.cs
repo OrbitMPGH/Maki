@@ -42,7 +42,7 @@ public sealed class ReleaseRefusedException(string key, string message) : Invali
     public const string SeriesNotFound = "error.release.seriesNotFound";
     public const string NoDownloadLink = "error.release.noDownloadLink";
     public const string ProwlarrNotConfigured = "error.release.prowlarrNotConfigured";
-    public const string QBittorrentNotConfigured = "error.release.qbittorrentNotConfigured";
+    public const string DownloadClientNotConfigured = "error.release.downloadClientNotConfigured";
 
     public string Key { get; } = key;
 }
@@ -50,7 +50,7 @@ public sealed class ReleaseRefusedException(string key, string message) : Invali
 public class ReleaseService(
     MakiDbContext db,
     ProwlarrClient prowlarr,
-    QBittorrentClient qbittorrent,
+    TorrentClientRegistry torrentClients,
     SettingsService settings,
     ILogger<ReleaseService> logger)
 {
@@ -103,13 +103,13 @@ public class ReleaseService(
             throw new ReleaseRefusedException(ReleaseRefusedException.SeriesNotFound, "Series not found");
         }
 
-        var qbt = await GetQbtConfigAsync(ct);
+        var client = await GetClientSettingsAsync(ct);
         if (release.MagnetUrl is null && release.DownloadUrl is null)
         {
             throw new ReleaseRefusedException(ReleaseRefusedException.NoDownloadLink, "Release has no download link");
         }
 
-        var hash = await AddToQbittorrentAsync(release, qbt, ct);
+        var hash = await AddToClientAsync(release, client, ct);
 
         var item = new DownloadQueueItem
         {
@@ -134,18 +134,17 @@ public class ReleaseService(
 
     /// <summary>
     /// Adds the release and returns its infohash, so the completed-download job can find the torrent by
-    /// hash. A .torrent link is fetched and uploaded rather than handed to qBittorrent as a URL, because
-    /// a URL leaves the hash unknown and the job then has to guess which torrent is this one by when it
-    /// was added, which fails when qBittorrent already had it. Only when the fetch fails does the URL go
-    /// over as before, with no hash.
+    /// hash. A .torrent link is fetched and uploaded rather than handed to the client as a URL, because
+    /// a URL may leave the hash unknown and the job then has to guess which torrent is this one by when
+    /// it was added, which fails when the client already had it. Only when the fetch fails does the URL
+    /// go over as before, with whatever hash the client reports for it.
     /// </summary>
-    private async Task<string?> AddToQbittorrentAsync(
-        ReleaseDto release, (string Url, string Username, string Password, string Category) qbt, CancellationToken ct)
+    private async Task<string?> AddToClientAsync(ReleaseDto release, TorrentClientSettings client, CancellationToken ct)
     {
+        var driver = torrentClients.For(client.Kind);
         if (release.MagnetUrl is { } magnet)
         {
-            await qbittorrent.AddAsync(qbt.Url, qbt.Username, qbt.Password, magnet, qbt.Category, ct);
-            return TorrentInfoHash.FromMagnet(magnet);
+            return await driver.AddAsync(client, magnet, ct) ?? TorrentInfoHash.FromMagnet(magnet);
         }
 
         var url = release.DownloadUrl!;
@@ -159,30 +158,28 @@ public class ReleaseService(
         catch (Exception ex) when (ex is HttpRequestException or InvalidDataException ||
                                    (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
-            logger.LogWarning("Could not fetch the torrent file for '{Title}' ({Error}); handing qBittorrent the link instead",
-                release.Title, ex.Message);
+            logger.LogWarning("Could not fetch the torrent file for '{Title}' ({Error}); handing {Client} the link instead",
+                release.Title, ex.Message, client.Kind.DisplayName());
         }
 
         if (link?.Magnet is { } redirected)
         {
-            await qbittorrent.AddAsync(qbt.Url, qbt.Username, qbt.Password, redirected, qbt.Category, ct);
-            return TorrentInfoHash.FromMagnet(redirected);
+            return await driver.AddAsync(client, redirected, ct) ?? TorrentInfoHash.FromMagnet(redirected);
         }
 
         if (link?.File is { } file && TorrentInfoHash.FromTorrentFile(file) is { } hash)
         {
-            await qbittorrent.AddFileAsync(qbt.Url, qbt.Username, qbt.Password, file, hash, qbt.Category, ct);
+            await driver.AddFileAsync(client, file, hash, ct);
             return hash;
         }
 
         if (link is not null)
         {
-            logger.LogWarning("The download link for '{Title}' did not serve a torrent file; handing qBittorrent the link instead",
-                release.Title);
+            logger.LogWarning("The download link for '{Title}' did not serve a torrent file; handing {Client} the link instead",
+                release.Title, client.Kind.DisplayName());
         }
 
-        await qbittorrent.AddAsync(qbt.Url, qbt.Username, qbt.Password, url, qbt.Category, ct);
-        return null;
+        return await driver.AddAsync(client, url, ct);
     }
 
     /// <summary>Parses a CSV of ids from the settings store; null/blank → null (no restriction).</summary>
@@ -213,27 +210,23 @@ public class ReleaseService(
         return (url, apiKey);
     }
 
-    public async Task<(string Url, string Username, string Password, string Category)> GetQbtConfigAsync(CancellationToken ct)
+    public async Task<TorrentClientSettings> GetClientSettingsAsync(CancellationToken ct)
     {
-        var url = await settings.GetAsync(SettingKeys.QBittorrentUrl, ct);
-        if (string.IsNullOrWhiteSpace(url))
+        var client = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        if (string.IsNullOrWhiteSpace(client.Url))
         {
             throw new ReleaseRefusedException(
-                ReleaseRefusedException.QBittorrentNotConfigured, "qBittorrent is not configured (Settings → Downloads → qBittorrent)");
+                ReleaseRefusedException.DownloadClientNotConfigured, "No download client is configured (Settings, Downloads)");
         }
 
-        return (
-            url,
-            await settings.GetAsync(SettingKeys.QBittorrentUsername, ct) ?? string.Empty,
-            await settings.GetAsync(SettingKeys.QBittorrentPassword, ct) ?? string.Empty,
-            await settings.GetAsync(SettingKeys.QBittorrentCategory, ct) ?? "maki");
+        return client;
     }
 
     /// <summary>
-    /// Optional prefix rewrite from the download path qBittorrent reports to the one
-    /// Maki can read — for when qBittorrent runs in a container with different mounts.
+    /// Optional prefix rewrite from the download path the client reports to the one Maki can
+    /// read, for when the client runs in a container with different mounts.
     /// </summary>
-    public async Task<(string? From, string? To)> GetQbtPathMapAsync(CancellationToken ct) => (
-        await settings.GetAsync(SettingKeys.QBittorrentPathMapFrom, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentPathMapTo, ct));
+    public async Task<(string? From, string? To)> GetClientPathMapAsync(CancellationToken ct) => (
+        await settings.GetAsync(SettingKeys.DownloadClientPathMapFrom, ct),
+        await settings.GetAsync(SettingKeys.DownloadClientPathMapTo, ct));
 }

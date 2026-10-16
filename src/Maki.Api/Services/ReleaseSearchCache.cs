@@ -3,9 +3,9 @@ using Microsoft.Extensions.Caching.Memory;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// Releases a Prowlarr search returned, per series, so a grab can only send qBittorrent a link the
+/// Releases a Prowlarr search returned, per series, so a grab can only send the download client a link the
 /// server itself was handed. Taking the link from the request let any account with DownloadChapters
-/// make qBittorrent fetch an arbitrary URL from its own network position.
+/// make the download client fetch an arbitrary URL from its own network position.
 /// </summary>
 public class ReleaseSearchCache(IMemoryCache cache)
 {

@@ -33,6 +33,7 @@ import {
   useSources,
 } from '../../api/hooks'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
+import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { languageName } from '../../api/titles'
@@ -259,7 +260,7 @@ export function DownloadQueueSection() {
       description={
         <Trans>
           How chapters from scraper sources move through the queue. Torrents are handled by
-          qBittorrent below.
+          the download client below.
         </Trans>
       }
       dirty={dirty}
@@ -487,7 +488,7 @@ export function ReadFileCleanupSection() {
   )
 }
 
-/** The hardlink switch inside the qBittorrent card. Part of the download settings record, saved on change. */
+/** The hardlink switch inside the download client card. Part of the download settings record, saved on change. */
 function HardlinkField() {
   const { t } = useLingui()
   const { data: settings } = useDownloadSettings()
@@ -531,26 +532,15 @@ export function FlareSolverrCard() {
   )
 }
 
-export function QbittorrentCard() {
+export function DownloadClientCard() {
   const { t } = useLingui()
+  const fields = useDownloadClientFields()
   return (
     <ConnectionSettingsCard
-      name="qbittorrent"
-      title="qBittorrent"
-      description={t`Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
-      fields={[
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
-        { key: 'username', label: t`Username` },
-        { key: 'password', label: t`Password`, secret: true },
-        {
-          key: 'category',
-          label: t`Category`,
-          placeholder: 'maki',
-          description: t`Tag given to torrents Maki adds. Defaults to maki.`,
-        },
-        { key: 'pathMapFrom', label: t`Path as qBittorrent reports it`, placeholder: t`/downloads (optional)` },
-        { key: 'pathMapTo', label: t`Path as Maki sees it`, placeholder: t`Z:\\downloads (optional)` },
-      ]}
+      name="downloadclient"
+      title={t`Download client`}
+      description={t`Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
+      fields={fields}
     >
       <HardlinkField />
     </ConnectionSettingsCard>
@@ -789,7 +779,7 @@ export function VolumeReleasesSection() {
       description={
         <Trans>
           Looks for torrent volume packs that could replace single-chapter files, for series whose
-          profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the
+          profile aims for volumes. Needs Prowlarr and a download client, and runs an hour after the
           daily scan.
         </Trans>
       }

@@ -190,7 +190,7 @@ export function ReleaseSearchModal({
                             {
                               onSuccess: () => {
                                 notifications.show({
-                                  message: now`Sent to qBittorrent: ${title}`,
+                                  message: now`Sent to the download client: ${title}`,
                                   color: 'var(--ok)',
                                 })
                                 onClose()

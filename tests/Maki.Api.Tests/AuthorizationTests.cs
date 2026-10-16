@@ -548,7 +548,7 @@ public class AuthorizationTests
         var controller = new Maki.Api.Controllers.SettingsController(
             localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
             settings: new Maki.Api.Services.SettingsService(db.ScopeFactory()), naming: null!, flareSolverr: null!,
-            prowlarr: null!, qbittorrent: null!, kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
+            prowlarr: null!, torrentClients: null!, kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
             mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
             embeddingIndexer: null!, prebuiltIndex: null!, recoGraph: null!,
             recoGraphCache: null!, coReadInstaller: null!, coReadCache: null!, readerCohortInstaller: null!,

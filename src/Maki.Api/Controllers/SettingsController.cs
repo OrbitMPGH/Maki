@@ -8,6 +8,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Download;
 using Maki.Core.Parsing;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -35,12 +36,12 @@ namespace Maki.Api.Controllers;
 // signed-in user; every other endpoint — and every write without exception — is admin-only.
 //
 // Reads matter as much as writes on the rest: these endpoints return the Prowlarr and Kavita API keys,
-// the qBittorrent password and the tracker client secrets, all stored in plaintext by design.
+// the download client password and the tracker client secrets, all stored in plaintext by design.
 //
 // "reader", "ui", "discover", "opds" and the per-tracker halves of "scrobble" are per-user, stored in
 // UserSettings and read through the scoped IUserSettings — so their writes need no admin policy: a
 // caller can only ever change their own. Everything else here describes the deployment (paths,
-// Prowlarr/qBittorrent/Kavita connections, source priority, updates) or an app registration shared by
+// Prowlarr/download client/Kavita connections, source priority, updates) or an app registration shared by
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
     ILocalizer localizer,
@@ -49,7 +50,7 @@ public class SettingsController(
     NamingService naming,
     FlareSolverrClient flareSolverr,
     Maki.Core.Indexers.ProwlarrClient prowlarr,
-    Maki.Core.Download.QBittorrentClient qbittorrent,
+    Maki.Core.Download.TorrentClientRegistry torrentClients,
     Maki.Core.Kavita.KavitaClient kavita,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
@@ -81,8 +82,8 @@ public class SettingsController(
 {
     public record FlareSolverrSettings(string? Url);
     public record ProwlarrSettings(string? Url, string? ApiKey);
-    public record QBittorrentSettings(
-        string? Url, string? Username, string? Password, string? Category, string? PathMapFrom, string? PathMapTo);
+    public record DownloadClientSettings(
+        string? Kind, string? Url, string? Username, string? Password, string? Label, string? PathMapFrom, string? PathMapTo);
     public record MetadataSettings(bool UseLocalDb);
     public record MetadataSettingsResponse(bool UseLocalDb, bool DumpPresent, long? DumpSizeBytes, DateTime? DumpRefreshedAt);
     /// <summary>Both fields optional on PUT: a null leaves that setting as it is.</summary>
@@ -1444,51 +1445,114 @@ public class SettingsController(
     }
 
     [Authorize(Policy = Policies.Admin)]
-    [HttpGet("qbittorrent")]
-    public async Task<IActionResult> GetQBittorrent(CancellationToken ct) => Ok(new QBittorrentSettings(
-        await settings.GetAsync(SettingKeys.QBittorrentUrl, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentUsername, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentPassword, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentCategory, ct) ?? "maki",
-        await settings.GetAsync(SettingKeys.QBittorrentPathMapFrom, ct),
-        await settings.GetAsync(SettingKeys.QBittorrentPathMapTo, ct)));
-
-    [Authorize(Policy = Policies.Admin)]
-    [HttpPut("qbittorrent")]
-    public async Task<IActionResult> SetQBittorrent([FromBody] QBittorrentSettings request, CancellationToken ct)
+    [HttpGet("downloadclient")]
+    public async Task<IActionResult> GetDownloadClient(CancellationToken ct)
     {
-        if (!IsValidServiceUrl(request.Url))
-        {
-            return UrlError("qBittorrent");
-        }
-
-        await settings.SetAsync(SettingKeys.QBittorrentUrl, request.Url, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentUsername, request.Username, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentPassword, request.Password, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentCategory, request.Category, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentPathMapFrom, request.PathMapFrom, ct);
-        await settings.SetAsync(SettingKeys.QBittorrentPathMapTo, request.PathMapTo, ct);
-        return Ok(request);
+        var stored = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        return Ok(new DownloadClientSettings(
+            stored.Kind.Key(),
+            await settings.GetAsync(SettingKeys.DownloadClientUrl, ct),
+            await settings.GetAsync(SettingKeys.DownloadClientUsername, ct),
+            await settings.GetAsync(SettingKeys.DownloadClientPassword, ct),
+            stored.Label,
+            await settings.GetAsync(SettingKeys.DownloadClientPathMapFrom, ct),
+            await settings.GetAsync(SettingKeys.DownloadClientPathMapTo, ct)));
     }
 
     [Authorize(Policy = Policies.Admin)]
-    [HttpPost("qbittorrent/test")]
-    public async Task<IActionResult> TestQBittorrent([FromBody] QBittorrentSettings request, CancellationToken ct)
+    [HttpPut("downloadclient")]
+    public async Task<IActionResult> SetDownloadClient([FromBody] DownloadClientSettings request, CancellationToken ct)
     {
-        var url = request.Url ?? await settings.GetAsync(SettingKeys.QBittorrentUrl, ct);
+        if (string.IsNullOrWhiteSpace(request.Kind) || TorrentClientKinds.Parse(request.Kind) is not { } kind)
+        {
+            return this.Fail(localizer, "error.settings.downloadClientKindInvalid");
+        }
+
+        if (!IsValidServiceUrl(request.Url))
+        {
+            return UrlError(kind.DisplayName());
+        }
+
+        if (request.Label is { Length: > 0 } label &&
+            (label.Length > 64 || label != label.Trim() || label.Any(char.IsControl)))
+        {
+            return this.Fail(localizer, "error.settings.labelInvalid");
+        }
+
+        // Deluge would refuse it, and the driver would then label nothing and list every torrent.
+        if (kind == TorrentClientKind.Deluge && !DelugeClient.IsValidLabel(DownloadClientSettingsStore.LabelOrDefault(request.Label)))
+        {
+            return this.Fail(localizer, "error.settings.labelInvalidDeluge");
+        }
+
+        await settings.SetAsync(SettingKeys.DownloadClientKind, kind.Key(), ct);
+        await settings.SetAsync(SettingKeys.DownloadClientUrl, request.Url, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientUsername, request.Username, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientPassword, request.Password, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientLabel, request.Label, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientPathMapFrom, request.PathMapFrom, ct);
+        await settings.SetAsync(SettingKeys.DownloadClientPathMapTo, request.PathMapTo, ct);
+        return Ok(request with { Kind = kind.Key() });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("downloadclient/test")]
+    public async Task<IActionResult> TestDownloadClient([FromBody] DownloadClientSettings request, CancellationToken ct)
+    {
+        var stored = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        TorrentClientKind kind;
+        if (request.Kind is null)
+        {
+            kind = stored.Kind;
+        }
+        else if (TorrentClientKinds.Parse(request.Kind) is { } chosen)
+        {
+            kind = chosen;
+        }
+        else
+        {
+            return this.Fail(localizer, "error.settings.downloadClientKindInvalid");
+        }
+
+        var url = request.Url ?? stored.Url;
         if (string.IsNullOrWhiteSpace(url))
         {
             return this.Fail(localizer, "error.settings.urlRequired");
         }
 
-        var username = request.Username ?? await settings.GetAsync(SettingKeys.QBittorrentUsername, ct) ?? string.Empty;
-        var password = request.Password ?? await settings.GetAsync(SettingKeys.QBittorrentPassword, ct) ?? string.Empty;
+        if (!IsValidServiceUrl(url))
+        {
+            return UrlError(kind.DisplayName());
+        }
 
-        return await qbittorrent.PingAsync(url, username, password, ct)
-            ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway,
-                new { success = false, code = "error.settings.qbittorrentLoginFailed", error = localizer.Get("error.settings.qbittorrentLoginFailed") });
+        var client = new TorrentClientSettings(
+            kind,
+            url,
+            request.Username ?? stored.Username,
+            request.Password ?? stored.Password,
+            request.Label is null ? stored.Label : DownloadClientSettingsStore.LabelOrDefault(request.Label));
+
+        try
+        {
+            await torrentClients.For(kind).PingAsync(client, ct);
+            return Ok(new { success = true });
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogInformation("Download client test against {Client} at {Url} failed: {Error}", kind.DisplayName(), url, ex.Message);
+            var code = ex is TorrentClientException { Failure: TorrentClientFailure.LoginFailed }
+                ? "error.settings.downloadClientLoginFailed"
+                : "error.settings.downloadClientNoResponse";
+            return StatusCode(StatusCodes.Status502BadGateway, new { success = false, code, error = localizer.Get(code) });
+        }
     }
+
+    /// <summary>The drivers this build has, for the kind select: what each is called and whether it takes a username.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("downloadclient/kinds")]
+    public IActionResult GetDownloadClientKinds() => Ok(torrentClients.All
+        .OrderBy(c => c.Kind)
+        .Select(c => new { kind = c.Kind.Key(), name = c.Kind.DisplayName(), usesUsername = c.UsesUsername, defaultUrl = c.DefaultUrl }));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("kavita")]

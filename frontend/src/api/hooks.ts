@@ -3041,14 +3041,34 @@ export interface ProwlarrSettings {
   apiKey: string | null
 }
 
-export interface QBittorrentSettings {
+export type DownloadClientKind = 'qbittorrent' | 'transmission' | 'deluge'
+
+export interface DownloadClientSettings {
+  kind: string | null
   url: string | null
   username: string | null
   password: string | null
-  category: string | null
+  label: string | null
+  pathMapFrom: string | null
+  pathMapTo: string | null
 }
 
-export type ConnectionName = 'prowlarr' | 'qbittorrent' | 'kavita' | 'flaresolverr'
+export interface DownloadClientKindInfo {
+  kind: DownloadClientKind
+  name: string
+  usesUsername: boolean
+  defaultUrl: string
+}
+
+export function useDownloadClientKinds() {
+  return useQuery({
+    queryKey: ['downloadclient-kinds'],
+    queryFn: () => api<DownloadClientKindInfo[]>('/settings/downloadclient/kinds'),
+    staleTime: Infinity,
+  })
+}
+
+export type ConnectionName = 'prowlarr' | 'downloadclient' | 'kavita' | 'flaresolverr'
 
 export function useConnectionSettings<T>(name: ConnectionName) {
   return useQuery({

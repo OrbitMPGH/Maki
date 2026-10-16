@@ -2011,8 +2011,7 @@ msgstr "{year}，{status}"
 msgid "{zone} (this browser)"
 msgstr "{zone}（此浏览器）"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #, fuzzy
 msgid "/downloads (optional)"
 msgstr "/downloads（可选）"
@@ -3996,10 +3995,9 @@ msgstr "目录不可用"
 msgid "Categories"
 msgstr "类别"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Category"
-msgstr "类别"
+#: src/components/settings/downloadClientFields.ts
+msgid "Category or label given to torrents Maki adds. Defaults to maki. Deluge lowercases it and allows only letters, digits, dot, dash and underscore."
+msgstr ""
 
 #: src/components/discover/DiscoverSeedStrip.tsx
 #, fuzzy
@@ -4410,9 +4408,8 @@ msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files i
 msgstr "{winnerDisplayName} 没有的章节会保持不变，从磁盘导入的文件也一样。"
 
 #: src/components/QueuePause.tsx
-#, fuzzy
-msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
-msgstr "已在下载中的章节会继续完成。已交给 qBittorrent 的种子会继续下载。"
+msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4666,6 +4663,10 @@ msgstr "点击令牌以插入。"
 #, fuzzy
 msgid "click one to keep it where it is"
 msgstr "点击某个章节，将其保留在当前位置"
+
+#: src/components/settings/downloadClientFields.ts
+msgid "Client"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -6194,10 +6195,16 @@ msgstr "下载候选项以供审核"
 msgid "Download chapters"
 msgstr "下载章节"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
-msgstr "用于下载已抓取的资源。种子下载完成后会自动导入资料库。只有 qBittorrent 报告的路径 Maki 无法访问时，才需要填写路径映射，例如 Docker 中的 /downloads，而 Maki 看到的是 Z:\\downloads。"
+#: src/pages/settings/registry.ts
+msgid "Download client"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -6343,9 +6350,8 @@ msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "下载会优先尝试分数最高的来源。优先级只用于分数相同时的排序。"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker."
-msgstr "下载 Prowlarr 找到的内容。种子下载完成后会自动导入资料库。只有 qBittorrent 看到的路径无法被 Maki 访问时（例如使用 Docker），才需要填写路径映射。"
+msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -8001,9 +8007,8 @@ msgid "Hover a cell for its number."
 msgstr "将鼠标悬停在单元格上可查看章节编号。"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "How chapters from scraper sources move through the queue. Torrents are handled by qBittorrent below."
-msgstr "来自抓取来源的章节如何在队列中流转。种子由下方的 qBittorrent 处理。"
+msgid "How chapters from scraper sources move through the queue. Torrents are handled by the download client below."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8789,6 +8794,10 @@ msgstr "类型"
 msgid "Korean"
 msgstr "韩语"
 
+#: src/components/settings/downloadClientFields.ts
+msgid "Label"
+msgstr ""
+
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -9431,9 +9440,8 @@ msgid "Looking up chapters…"
 msgstr "正在查找章节……"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the daily scan."
-msgstr "为目标是卷的系列查找可能替换单章文件的种子卷包。需要 Prowlarr 和 qBittorrent，并在每日扫描一小时后运行。"
+msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and a download client, and runs an hour after the daily scan."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -9575,9 +9583,8 @@ msgid "Maki speaks your language"
 msgstr "Maki 支持你的语言"
 
 #: src/components/QueuePause.tsx
-#, fuzzy
-msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
-msgstr "Maki 将停止开始新的下载。正在下载的章节会继续完成，队列中的任何内容都不会被移除。已交给 qBittorrent 的种子会继续下载。"
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -12177,10 +12184,9 @@ msgid "Passed over: {reasons}"
 msgstr "已跳过：{reasons}"
 
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
@@ -12230,16 +12236,15 @@ msgstr "路径"
 msgid "Path as Kavita sees it"
 msgstr "Kavita 所见的路径"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Path as Maki sees it"
 msgstr "Maki 所见的路径"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Path as qBittorrent reports it"
-msgstr "qBittorrent 报告的路径"
+#: src/components/settings/downloadClientFields.ts
+msgid "Path as the download client reports it"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -12250,11 +12255,6 @@ msgstr "路径映射 - Kavita 端"
 #, fuzzy
 msgid "Path mapping - Maki side"
 msgstr "路径映射 - Maki 端"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Path mapping - qBittorrent side"
-msgstr "路径映射 - qBittorrent 端"
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -12743,11 +12743,6 @@ msgstr "请将它放在 HTTPS 之后，然后开启 设置 → 系统 → 网络
 #, fuzzy
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "按此顺序将这些来源置于新系列自动匹配时使用的全局优先级列表前端。"
-
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "qBittorrent"
-msgstr "qBittorrent"
 
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -15185,11 +15180,14 @@ msgstr "发送请求"
 msgid "Send silently"
 msgstr "静默发送"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
-#, fuzzy
-msgid "Sent to qBittorrent: {title}"
-msgstr "已发送到 qBittorrent：{title}"
+msgid "Sent to the download client: {title}"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -16410,11 +16408,6 @@ msgstr "系统问题"
 msgid "Tag"
 msgstr "标签"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Tag given to torrents Maki adds. Defaults to maki."
-msgstr "添加到 Maki 所添加种子上的标签。默认为 maki。"
-
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
@@ -16613,9 +16606,12 @@ msgid "The default for every series event: new chapters, downloads, upgrades. An
 msgstr "每个系列事件的默认设置：新章节、下载、升级。任何系列都可以在自己的页面中单独设置，也可以在资料库的「选择」模式中批量设置。"
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The download is no longer in qBittorrent"
-msgstr "该下载已不在 qBittorrent 中"
+msgid "The download client reports an error on this torrent"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The download is no longer in the download client"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16928,9 +16924,8 @@ msgid "The token @BotFather gave you."
 msgstr "@BotFather 提供给你的令牌。"
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The torrent is no longer in qBittorrent"
-msgstr "该种子已不在 qBittorrent 中"
+msgid "The torrent is no longer in the download client"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -16938,9 +16933,8 @@ msgid "The torrent keeps seeding whichever you pick."
 msgstr "无论选择哪个，种子都会继续做种。"
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The torrent never appeared in qBittorrent"
-msgstr "种子从未出现在 qBittorrent 中"
+msgid "The torrent never appeared in the download client"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -17507,12 +17501,6 @@ msgstr "主题 ID"
 #, fuzzy
 msgid "Torrent"
 msgstr "种子"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "torrent client, category, path mapping, download client"
-msgstr "种子客户端，类别，路径映射，下载客户端"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -18181,6 +18169,7 @@ msgid "Upper Case"
 msgstr "大写"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -18311,10 +18300,9 @@ msgstr "用户已更新"
 msgid "User, group or channel ID. Public channels can use @name."
 msgstr "用户、群组或频道 ID。公开频道可使用 @name。"
 
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -19342,11 +19330,9 @@ msgstr "你的用户或群组密钥。"
 msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr "仅你可见 - 这会改变出现在你铃铛中的内容，不会影响其他人。"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
+#: src/components/settings/downloadClientFields.ts
 msgid "Z:\\downloads (optional)"
-msgstr "Z:\\downloads（可选）"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

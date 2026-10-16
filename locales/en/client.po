@@ -1630,8 +1630,7 @@ msgstr "{year}, {status}"
 msgid "{zone} (this browser)"
 msgstr "{zone} (this browser)"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 msgid "/downloads (optional)"
 msgstr "/downloads (optional)"
 
@@ -3242,9 +3241,9 @@ msgstr "Catalogue unavailable"
 msgid "Categories"
 msgstr "Categories"
 
-#: src/pages/settings/DownloadCards.tsx
-msgid "Category"
-msgstr "Category"
+#: src/components/settings/downloadClientFields.ts
+msgid "Category or label given to torrents Maki adds. Defaults to maki. Deluge lowercases it and allows only letters, digits, dot, dash and underscore."
+msgstr "Category or label given to torrents Maki adds. Defaults to maki. Deluge lowercases it and allows only letters, digits, dot, dash and underscore."
 
 #: src/components/discover/DiscoverSeedStrip.tsx
 msgid "Caught up"
@@ -3577,8 +3576,8 @@ msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files i
 msgstr "Chapters {winnerDisplayName} doesn't carry are left alone, as are files imported from disk."
 
 #: src/components/QueuePause.tsx
-msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
-msgstr "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
+msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
+msgstr "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -3785,6 +3784,10 @@ msgstr "Click a token to insert it."
 #: src/components/RelinkFilesModal.tsx
 msgid "click one to keep it where it is"
 msgstr "click one to keep it where it is"
+
+#: src/components/settings/downloadClientFields.ts
+msgid "Client"
+msgstr "Client"
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -5029,9 +5032,16 @@ msgstr "Download candidate for review"
 msgid "Download chapters"
 msgstr "Download chapters"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
-msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
-msgstr "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+#: src/pages/settings/registry.ts
+msgid "Download client"
+msgstr "Download client"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
+msgstr "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
 
 #: src/components/NotificationsSection.tsx
 msgid "Download failed"
@@ -5152,8 +5162,8 @@ msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "Downloads try the best-scoring source first. Priority only breaks ties."
 
 #: src/components/SetupWizard.tsx
-msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker."
-msgstr "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker."
+msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
+msgstr "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
 
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "Drag to reorder. Click a section to change it."
@@ -6496,8 +6506,8 @@ msgid "Hover a cell for its number."
 msgstr "Hover a cell for its number."
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "How chapters from scraper sources move through the queue. Torrents are handled by qBittorrent below."
-msgstr "How chapters from scraper sources move through the queue. Torrents are handled by qBittorrent below."
+msgid "How chapters from scraper sources move through the queue. Torrents are handled by the download client below."
+msgstr "How chapters from scraper sources move through the queue. Torrents are handled by the download client below."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "How close each quarter sat to where you started."
@@ -7132,6 +7142,10 @@ msgstr "Kinds"
 msgid "Korean"
 msgstr "Korean"
 
+#: src/components/settings/downloadClientFields.ts
+msgid "Label"
+msgstr "Label"
+
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -7654,8 +7668,8 @@ msgid "Looking up chapters…"
 msgstr "Looking up chapters…"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the daily scan."
-msgstr "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the daily scan."
+msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and a download client, and runs an hour after the daily scan."
+msgstr "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and a download client, and runs an hour after the daily scan."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "loose"
@@ -7770,8 +7784,8 @@ msgid "Maki speaks your language"
 msgstr "Maki speaks your language"
 
 #: src/components/QueuePause.tsx
-msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
-msgstr "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
+msgstr "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
 
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
@@ -9876,10 +9890,9 @@ msgid "Passed over: {reasons}"
 msgstr "Passed over: {reasons}"
 
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
@@ -9920,14 +9933,14 @@ msgstr "Path"
 msgid "Path as Kavita sees it"
 msgstr "Path as Kavita sees it"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Path as Maki sees it"
 msgstr "Path as Maki sees it"
 
-#: src/pages/settings/DownloadCards.tsx
-msgid "Path as qBittorrent reports it"
-msgstr "Path as qBittorrent reports it"
+#: src/components/settings/downloadClientFields.ts
+msgid "Path as the download client reports it"
+msgstr "Path as the download client reports it"
 
 #: src/components/SetupWizard.tsx
 msgid "Path mapping - Kavita side"
@@ -9936,10 +9949,6 @@ msgstr "Path mapping - Kavita side"
 #: src/components/SetupWizard.tsx
 msgid "Path mapping - Maki side"
 msgstr "Path mapping - Maki side"
-
-#: src/components/SetupWizard.tsx
-msgid "Path mapping - qBittorrent side"
-msgstr "Path mapping - qBittorrent side"
 
 #: src/components/QueuePause.tsx
 msgid "Pause"
@@ -10334,10 +10343,6 @@ msgstr "Put it behind HTTPS, then turn on Settings → System → Network → Re
 #: src/components/SourceCompareModal.tsx
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
-
-#: src/pages/settings/registry.ts
-msgid "qBittorrent"
-msgstr "qBittorrent"
 
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -12321,10 +12326,14 @@ msgstr "Send request"
 msgid "Send silently"
 msgstr "Send silently"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+msgstr "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
-msgid "Sent to qBittorrent: {title}"
-msgstr "Sent to qBittorrent: {title}"
+msgid "Sent to the download client: {title}"
+msgstr "Sent to the download client: {title}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -13317,10 +13326,6 @@ msgstr "System issues"
 msgid "Tag"
 msgstr "Tag"
 
-#: src/pages/settings/DownloadCards.tsx
-msgid "Tag given to torrents Maki adds. Defaults to maki."
-msgstr "Tag given to torrents Maki adds. Defaults to maki."
-
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
@@ -13481,8 +13486,12 @@ msgid "The default for every series event: new chapters, downloads, upgrades. An
 msgstr "The default for every series event: new chapters, downloads, upgrades. Any series can be set differently from its own page, or many at once from the Library's Select mode."
 
 #: src/api/queue.ts
-msgid "The download is no longer in qBittorrent"
-msgstr "The download is no longer in qBittorrent"
+msgid "The download client reports an error on this torrent"
+msgstr "The download client reports an error on this torrent"
+
+#: src/api/queue.ts
+msgid "The download is no longer in the download client"
+msgstr "The download is no longer in the download client"
 
 #: src/pages/settings/registry.ts
 msgid "The download queue, Smart Download, sources and languages, the torrent clients, and the quality rules that decide when a file is replaced."
@@ -13734,16 +13743,16 @@ msgid "The token @BotFather gave you."
 msgstr "The token @BotFather gave you."
 
 #: src/api/queue.ts
-msgid "The torrent is no longer in qBittorrent"
-msgstr "The torrent is no longer in qBittorrent"
+msgid "The torrent is no longer in the download client"
+msgstr "The torrent is no longer in the download client"
 
 #: src/components/ImportReviewModal.tsx
 msgid "The torrent keeps seeding whichever you pick."
 msgstr "The torrent keeps seeding whichever you pick."
 
 #: src/api/queue.ts
-msgid "The torrent never appeared in qBittorrent"
-msgstr "The torrent never appeared in qBittorrent"
+msgid "The torrent never appeared in the download client"
+msgstr "The torrent never appeared in the download client"
 
 #: src/pages/ActivityPage.tsx
 msgid "The trashed copy is gone"
@@ -14203,11 +14212,6 @@ msgstr "Topic ID"
 #: src/sourceLabels.ts
 msgid "Torrent"
 msgstr "Torrent"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-msgid "torrent client, category, path mapping, download client"
-msgstr "torrent client, category, path mapping, download client"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -14751,6 +14755,7 @@ msgid "Upper Case"
 msgstr "Upper Case"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -14856,10 +14861,9 @@ msgstr "User updated"
 msgid "User, group or channel ID. Public channels can use @name."
 msgstr "User, group or channel ID. Public channels can use @name."
 
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
 msgid "Username"
@@ -15687,8 +15691,7 @@ msgstr "Your user or group key."
 msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr "Yours alone - this changes what lands in your bell, not anybody else's."
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (optional)"
 

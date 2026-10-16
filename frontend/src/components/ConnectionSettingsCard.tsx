@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Button, Group, PasswordInput, TextInput } from '@mantine/core'
+import { Button, Group, PasswordInput, Select, TextInput } from '@mantine/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { SaveButton } from './settings/SaveButton'
 import { notifications } from '@mantine/notifications'
@@ -19,7 +19,14 @@ export interface ConnectionField {
   placeholder?: string
   description?: string
   secret?: boolean
+  /** Renders a Select instead of a text input. */
+  options?: { value: string; label: string }[]
 }
+
+type FieldValues = Record<string, string | null>
+
+/** A static list, or one that depends on the current form values (a field that appears or changes placeholder with another field). */
+export type ConnectionFields = ConnectionField[] | ((values: FieldValues) => ConnectionField[])
 
 export interface SaveGroup {
   dirty: boolean
@@ -43,7 +50,7 @@ export function ConnectionSettingsCard({
   name: ConnectionName
   title: string
   description: string
-  fields: ConnectionField[]
+  fields: ConnectionFields
   /** A second set of fields in the same card that saves through its own endpoint. */
   extra?: SaveGroup
   children?: ReactNode
@@ -67,7 +74,7 @@ export function ConnectionSettingsCard({
         extra?.reset()
       }}
     >
-      <ConnectionFields form={form} fields={fields} />
+      <ConnectionFieldRow form={form} />
       {children}
     </SettingsSection>
   )
@@ -81,27 +88,29 @@ export function ConnectionForm({
 }: {
   name: ConnectionName
   title: string
-  fields: ConnectionField[]
+  fields: ConnectionFields
 }) {
   const form = useConnectionForm(name, title, fields)
   return (
-    <ConnectionFields form={form} fields={fields}>
+    <ConnectionFieldRow form={form}>
       <SaveButton dirty={form.dirty} loading={form.saving} onClick={form.save} />
-    </ConnectionFields>
+    </ConnectionFieldRow>
   )
 }
 
-function useConnectionForm(name: ConnectionName, title: string, fields: ConnectionField[]) {
+function useConnectionForm(name: ConnectionName, title: string, allFields: ConnectionFields) {
   const { data: saved } = useConnectionSettings<Record<string, string | null>>(name)
   const save = useSaveConnectionSettings<Record<string, string | null>>(name)
   const test = useTestConnectionSettings<Record<string, string | null>>(name)
   const [values, setValues] = useState<Record<string, string>>({})
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
+  const resolve = (v: FieldValues) => (typeof allFields === 'function' ? allFields(v) : allFields)
+  const fields = resolve(values)
 
   useEffect(() => {
     if (saved) {
       const next: Record<string, string> = {}
-      for (const f of fields) next[f.key] = saved[f.key] ?? ''
+      for (const f of resolve(saved)) next[f.key] = saved[f.key] ?? ''
       setValues(next)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,6 +122,7 @@ function useConnectionForm(name: ConnectionName, title: string, fields: Connecti
     Object.fromEntries(fields.map((f) => [f.key, values[f.key] || null]))
 
   return {
+    fields,
     values,
     setValue: (key: string, value: string) => setValues((v) => ({ ...v, [key]: value })),
     dirty,
@@ -128,19 +138,29 @@ function useConnectionForm(name: ConnectionName, title: string, fields: Connecti
   }
 }
 
-function ConnectionFields({
+function ConnectionFieldRow({
   form,
-  fields,
   children,
 }: {
   form: ReturnType<typeof useConnectionForm>
-  fields: ConnectionField[]
   children?: ReactNode
 }) {
   return (
     <Group align="flex-end" wrap="wrap">
-      {fields.map((f) =>
-        f.secret ? (
+      {form.fields.map((f) =>
+        f.options ? (
+          <Select
+            key={f.key}
+            label={f.label}
+            description={f.description}
+            placeholder={f.placeholder}
+            data={f.options}
+            value={form.values[f.key] || null}
+            allowDeselect={false}
+            onChange={(v) => form.setValue(f.key, v ?? '')}
+            style={{ flex: 1, minWidth: 180 }}
+          />
+        ) : f.secret ? (
           <PasswordInput
             key={f.key}
             autoComplete="new-password"

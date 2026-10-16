@@ -417,7 +417,7 @@ public class TorrentUpgradeService(
         }
         finally
         {
-            // A Prowlarr or qBittorrent outage must not push the series out by the whole interval.
+            // A Prowlarr or download client outage must not push the series out by the whole interval.
             await StampSearchedAsync(seriesId, failed ? RetryAfterFailure - SearchInterval : TimeSpan.Zero);
         }
     }
