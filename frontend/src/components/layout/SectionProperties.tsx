@@ -74,8 +74,8 @@ export function SectionProperties({
 
             {def?.hero && (
               <Switch
-                label={t`Large tiles for the first three`}
-                description={t`Lead with big cover tiles instead of a plain row.`}
+                label={t`Lead with a hero`}
+                description={t`Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row.`}
                 checked={section.hero ?? false}
                 onChange={(e) => onChange({ hero: e.currentTarget.checked })}
               />

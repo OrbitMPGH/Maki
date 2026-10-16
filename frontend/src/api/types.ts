@@ -444,7 +444,7 @@ export interface QueuePauseEntry {
   until: string | null
 }
 
-/** What is paused on scraper downloads. Torrents already handed to qBittorrent are never part of it. */
+/** What is paused on scraper downloads. Torrents already handed to the download client are never part of it. */
 export interface QueuePauseDto {
   all: QueuePauseEntry | null
   sources: { sourceName: string; until: string | null }[]

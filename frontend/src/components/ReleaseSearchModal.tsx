@@ -57,7 +57,7 @@ export function ReleaseSearchModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Search releases (Prowlarr)`} size="min(1180px, calc(100vw - 3rem))">
+    <Modal opened={opened} onClose={onClose} title={t`Search releases`} size="min(1180px, calc(100vw - 3rem))">
       <Group gap="xs" mb="md" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
@@ -190,7 +190,7 @@ export function ReleaseSearchModal({
                             {
                               onSuccess: () => {
                                 notifications.show({
-                                  message: now`Sent to qBittorrent: ${title}`,
+                                  message: now`Sent to the download client: ${title}`,
                                   color: 'var(--ok)',
                                 })
                                 onClose()

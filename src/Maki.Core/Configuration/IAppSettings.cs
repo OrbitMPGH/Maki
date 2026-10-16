@@ -30,20 +30,31 @@ public static class SettingKeys
     /// download the prebuilt index never need it.
     /// </summary>
     public const string MangaBakaUseFullDump = "mangabaka.usefulldump";
+    /// <summary>Which indexer backend searches: an <c>IndexerBackends.Key</c>; unset reads as Prowlarr.</summary>
+    public const string IndexerBackend = "indexer.backend";
     public const string ProwlarrUrl = "prowlarr.url";
     public const string ProwlarrApiKey = "prowlarr.apikey";
     /// <summary>CSV of Prowlarr indexer ids to search; empty/unset = all indexers.</summary>
     public const string ProwlarrIndexerIds = "prowlarr.indexerids";
     /// <summary>CSV of Torznab category ids to search; empty/unset = all categories.</summary>
     public const string ProwlarrCategories = "prowlarr.categories";
-    public const string QBittorrentUrl = "qbittorrent.url";
-    public const string QBittorrentUsername = "qbittorrent.username";
-    public const string QBittorrentPassword = "qbittorrent.password";
-    public const string QBittorrentCategory = "qbittorrent.category";
-    /// <summary>qBittorrent-side download path prefix (e.g. "/downloads" in Docker) rewritten to...</summary>
-    public const string QBittorrentPathMapFrom = "qbittorrent.pathmapfrom";
+    public const string JackettUrl = "jackett.url";
+    public const string JackettApiKey = "jackett.apikey";
+    /// <summary>CSV of Jackett indexer ids (<c>nyaasi</c>); empty/unset = all configured indexers.</summary>
+    public const string JackettIndexerIds = "jackett.indexerids";
+    /// <summary>CSV of Torznab category ids to search; empty/unset = all categories.</summary>
+    public const string JackettCategories = "jackett.categories";
+    /// <summary>Which driver talks to the download client: a <c>TorrentClientKinds.Key</c>; unset reads as qBittorrent.</summary>
+    public const string DownloadClientKind = "downloadclient.kind";
+    public const string DownloadClientUrl = "downloadclient.url";
+    public const string DownloadClientUsername = "downloadclient.username";
+    public const string DownloadClientPassword = "downloadclient.password";
+    /// <summary>The category, label or tag that marks a torrent as Maki's.</summary>
+    public const string DownloadClientLabel = "downloadclient.label";
+    /// <summary>Client-side download path prefix (e.g. "/downloads" in Docker) rewritten to...</summary>
+    public const string DownloadClientPathMapFrom = "downloadclient.pathmapfrom";
     /// <summary>...the path Maki can actually read (e.g. @"Z:\downloads"). Empty = no rewrite.</summary>
-    public const string QBittorrentPathMapTo = "qbittorrent.pathmapto";
+    public const string DownloadClientPathMapTo = "downloadclient.pathmapto";
     public const string KavitaUrl = "kavita.url";
     public const string KavitaApiKey = "kavita.apikey";
     public const string KavitaPathMapFrom = "kavita.pathmapfrom";

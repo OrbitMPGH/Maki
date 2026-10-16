@@ -165,7 +165,7 @@ public record TorrentImportOutcome(
 public class TorrentImportService(
     MakiDbContext db,
     ReleaseService releaseService,
-    QBittorrentClient qbittorrent,
+    TorrentClientRegistry torrentClients,
     CbzLinkService cbzLinkService,
     SeriesRenameService seriesRenameService,
     ReaderArchiveCache archives,
@@ -200,8 +200,8 @@ public class TorrentImportService(
     public const string SeriesChangedKey = "error.torrentImport.seriesChanged";
 
     /// <summary>
-    /// Where qBittorrent put this item's data, as Maki sees it. Null when the torrent is gone, or
-    /// its path isn't reachable from here (qBittorrent in a container with a different mount).
+    /// Where the download client put this item's data, as Maki sees it. Null when the torrent is gone,
+    /// or its path isn't reachable from here (the client in a container with a different mount).
     /// </summary>
     public async Task<string?> ResolveContentPathAsync(DownloadQueueItem item, CancellationToken ct)
     {
@@ -211,24 +211,24 @@ public class TorrentImportService(
             return null;
         }
 
-        (string Url, string Username, string Password, string Category) qbt;
+        TorrentClientSettings client;
         try
         {
-            qbt = await releaseService.GetQbtConfigAsync(ct);
+            client = await releaseService.GetClientSettingsAsync(ct);
         }
         catch (InvalidOperationException)
         {
             return null;
         }
 
-        var torrents = await qbittorrent.ListAsync(qbt.Url, qbt.Username, qbt.Password, qbt.Category, ct);
+        var torrents = await torrentClients.For(client.Kind).ListAsync(client, ct);
         var torrent = torrents.FirstOrDefault(t => t.Hash.Equals(hash, StringComparison.OrdinalIgnoreCase));
         if (torrent is null)
         {
             return null;
         }
 
-        var pathMap = await releaseService.GetQbtPathMapAsync(ct);
+        var pathMap = await releaseService.GetClientPathMapAsync(ct);
         return PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To);
     }
 
@@ -242,7 +242,7 @@ public class TorrentImportService(
         var releaseName = ReleaseInfoOf(item)?.Title ?? item.Title ?? "Release";
         if (contentPath is null)
         {
-            return Empty("error.torrentImport.notInQbittorrent");
+            return Empty("error.torrentImport.notInClient");
         }
 
         if (!Directory.Exists(contentPath) && !File.Exists(contentPath))
@@ -404,7 +404,7 @@ public class TorrentImportService(
             .Select(s => s!)
             .ToList();
 
-        // Never a move — qBittorrent keeps seeding from where it downloaded. A hardlink gives the
+        // Never a move: the client keeps seeding from where it downloaded. A hardlink gives the
         // library its own name for the same bytes; the copy is the fallback when the two folders
         // can't share an inode (different volumes, a share, a filesystem without hardlinks).
         var seriesDir = Path.Combine(rootFolder.Path, series.FolderName);

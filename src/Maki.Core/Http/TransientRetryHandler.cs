@@ -5,7 +5,7 @@ namespace Maki.Core.Http;
 /// <summary>
 /// Retries transient failures — a dropped connection, a DNS blip, a 5xx from a service that's
 /// still starting up — with exponential backoff and jitter. Without it, every external call
-/// (MangaBaka, Prowlarr, qBittorrent, Kavita, AniList, MAL) failed permanently on the first
+/// (MangaBaka, the indexer, the download client, Kavita, AniList, MAL) failed permanently on the first
 /// hiccup, surfacing as a hard error the user had to retry by hand.
 /// </summary>
 /// <remarks>
@@ -13,7 +13,7 @@ namespace Maki.Core.Http;
 /// <list type="bullet">
 /// <item>
 /// Only GET/HEAD are retried. The others aren't safe to repeat blind — a resend can't tell
-/// "never arrived" from "arrived, reply lost", and replaying a qBittorrent add or a Kavita scan
+/// "never arrived" from "arrived, reply lost", and replaying a download client add or a Kavita scan
 /// would duplicate real work.
 /// </item>
 /// <item>

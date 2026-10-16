@@ -6,7 +6,7 @@ namespace Maki.Data.Identity;
 /// One key/value setting belonging to one user, keyed <c>(UserId, Key)</c>.
 /// <para>
 /// Deliberately a separate table rather than widening <c>AppConfig</c>'s key with a user prefix:
-/// that keyspace holds the instance's secrets (qBittorrent password, tracker client secrets, Kavita
+/// that keyspace holds the instance's secrets (download client password, tracker client secrets, Kavita
 /// API key) and mixing per-user rows into it would mean every "list the settings" query had to
 /// filter them apart by string shape. It also keeps the cascade honest — deleting a user takes their
 /// settings with them, which a flat prefix could not express.

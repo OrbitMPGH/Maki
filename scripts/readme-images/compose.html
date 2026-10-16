@@ -1,0 +1,112 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@500;600&display=swap">
+<style>
+  body { margin: 0; padding: 40px; background: #1a1a1a; display: flex; flex-direction: column; gap: 40px; width: max-content; }
+  .art {
+    --ab: #0b0d13; --s1: #161922; --s2: #1f2330; --bd: #262b36; --hi: #f1f3f5; --ink: #c7cad4; --i3: #a6adbb;
+    --br: #6d7dff; --brf: #b8c1ff;
+    position: relative; overflow: hidden; container-type: inline-size; background: var(--ab); color: var(--ink);
+    font-family: 'Inter', sans-serif;
+  }
+  .ban { width: 1600px; aspect-ratio: 5 / 2; background: linear-gradient(100deg, var(--ab) 0 40%, #10131c 40%); }
+  .t43 { width: 1200px; aspect-ratio: 20 / 17; background: linear-gradient(180deg, color-mix(in srgb, var(--br) 13%, var(--ab)), var(--ab) 42%); }
+  .t916 { width: 720px; aspect-ratio: 9 / 17; background: linear-gradient(180deg, color-mix(in srgb, var(--br) 13%, var(--ab)), var(--ab) 42%); }
+
+  .cap { position: absolute; left: 7cqw; right: 7cqw; top: 7cqw; z-index: 5; }
+  .cap .k { font: 600 2.8cqw/1 'Inter', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--brf); }
+  .cap .h { font: 800 7.4cqw/1.04 'Bricolage Grotesque', sans-serif; color: var(--hi); letter-spacing: -.02em; margin-top: 2.2cqw; text-wrap: balance; }
+  .t916 .cap { left: 8cqw; right: 8cqw; top: 9cqw; }
+  .t916 .cap .k { font-size: 5.4cqw; }
+  .t916 .cap .h { font-size: 11.5cqw; margin-top: 4cqw; }
+
+  .win { position: absolute; left: 0; right: 0; bottom: 0; top: calc(var(--wt) * 1cqw); overflow: hidden; }
+  .dk { position: absolute; display: block; height: auto; border-radius: 1.2cqw 0 0 0; box-shadow: 0 2cqw 5cqw rgba(0, 0, 0, .55); }
+  .dk.bn { border-radius: .8cqw; }
+  .phone { position: absolute; background: #07080c; overflow: hidden; box-shadow: 0 2cqw 5cqw rgba(0, 0, 0, .6), 0 0 0 .12cqw #2a2f3c; }
+  .phone img { display: block; width: 100%; height: auto; }
+
+  .bt { position: absolute; left: 4.6cqw; top: 0; bottom: 0; width: 35cqw; display: flex; flex-direction: column; justify-content: center; gap: 2cqw; z-index: 5; }
+  .bt .k { font: 600 1.15cqw/1 'Inter', sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--brf); }
+  .bt h1 { font: 800 3.6cqw/1.02 'Bricolage Grotesque', sans-serif; color: var(--hi); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+  .bt .ch { display: flex; flex-wrap: wrap; gap: .6cqw; }
+  .bt .ch span { font: 500 1.15cqw/1 'Inter', sans-serif; color: var(--ink); border: 1px solid #2f3544; border-radius: 99px; padding: .6cqw 1.1cqw; background: #141822; }
+
+  .files { position: absolute; left: 0; top: 4cqw; width: 100cqw; font-size: 1cqw; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2.4em; padding: 0 3em; }
+  .fc { background: var(--s1); border: .1em solid var(--bd); border-radius: 1.4em; padding: 2em 2.2em; min-width: 0; }
+  .fh { font: 600 1.5em/1 'Inter', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--i3); margin-bottom: 1.1em; }
+  .fc pre { margin: 0; font: 500 1.7em/1.6 Consolas, 'Cascadia Mono', ui-monospace, monospace; color: var(--ink); }
+  .fc pre i { font-style: normal; color: var(--brf); }
+  .fc pre b { font-weight: 500; color: var(--hi); }
+  .rdrs { display: flex; flex-wrap: wrap; align-items: center; gap: 1.1em; padding: 2.6em 3em 0; }
+  .rdrs em { font: 600 1.5em/1 'Inter', sans-serif; font-style: normal; letter-spacing: .1em; text-transform: uppercase; color: var(--i3); margin-right: .6em; }
+  .rdrs span { font: 600 2em/1 'Inter', sans-serif; background: var(--s2); border: .08em solid var(--bd); border-radius: 9em; padding: .5em 1.1em; color: var(--hi); }
+  .rdrs span.on { background: color-mix(in srgb, var(--br) 22%, var(--s2)); border-color: var(--br); color: var(--brf); }
+</style>
+<div id="root"></div>
+<script>
+  const C = window.CAPTIONS
+  const ACCENTS = {
+    indigo: ['#6d7dff', '#b8c1ff'],
+    rose: ['#f52069', '#ff9fbd'],
+    emerald: ['#1bc97a', '#96efc4'],
+    amber: ['#f0ad14', '#ffdf85'],
+  }
+  const tint = (name) => {
+    const [br, brf] = ACCENTS[name] ?? ACCENTS.indigo
+    return `--br:${br};--brf:${brf}`
+  }
+  const raw = (n) => `raw/${n}.png`
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  const cap = (t) => `<div class="cap"><div class="k">${esc(t.kicker)}</div><div class="h">${esc(t.headline)}</div></div>`
+
+  const desktop = (s) => `<img class="dk" src="${raw(s.shot)}" style="left:${s.x}cqw;top:${s.y}cqw;width:${s.w}cqw">`
+  const phone = (shot, x, y, w) =>
+    `<div class="phone" style="left:${x}cqw;top:${y}cqw;width:${w}cqw;border:${w * 0.02}cqw solid #07080c;border-radius:${w * 0.135}cqw"><img src="${raw(shot)}"></div>`
+
+  function files(t) {
+    const names = t.chapters.map((n) => `${t.series} Vol.${t.volume} Ch.${n}.cbz`)
+    const last = t.chapters[t.chapters.length - 1]
+    const tree = [
+      `<i>/library</i>`,
+      `└─ <b>${esc(t.series)}</b>`,
+      `   ├─ cover.jpg`,
+      ...names.map((n, i) => `   ${i === names.length - 1 ? '└' : '├'}─ ${esc(n)}`),
+    ].join('\n')
+    const xml = [
+      '&lt;ComicInfo&gt;',
+      `  &lt;Series&gt;<b>${esc(t.series)}</b>&lt;/Series&gt;`,
+      `  &lt;Number&gt;<b>${last}</b>&lt;/Number&gt;`,
+      `  &lt;Volume&gt;<b>${t.volume}</b>&lt;/Volume&gt;`,
+      `  &lt;Writer&gt;<b>${esc(t.writer)}</b>&lt;/Writer&gt;`,
+      `  &lt;Genre&gt;<b>${esc(t.genre)}</b>&lt;/Genre&gt;`,
+      `  &lt;LanguageISO&gt;<b>${esc(t.language)}</b>&lt;/LanguageISO&gt;`,
+      `  &lt;Manga&gt;<b>${esc(t.manga)}</b>&lt;/Manga&gt;`,
+      '&lt;/ComicInfo&gt;',
+    ].join('\n')
+    const readers = t.readers.map((r, i) => `<span class="${i === 0 ? 'on' : ''}">${esc(r)}</span>`).join('')
+    return `<div class="files"><div class="cols">
+      <div class="fc"><div class="fh">On disk</div><pre>${tree}</pre></div>
+      <div class="fc"><div class="fh">Inside every .cbz</div><pre>${xml}</pre></div></div>
+      <div class="rdrs"><em>Opens in</em>${readers}</div></div>`
+  }
+
+  const parts = []
+  const b = C.banner
+  parts.push(`<section class="art ban" data-image="${b.id}" style="${tint(b.accent)}">
+    <div class="bt"><div class="k">${esc(b.kicker)}</div><h1>${esc(b.headline)}</h1>
+      <div class="ch">${b.chips.map((c) => `<span>${esc(c)}</span>`).join('')}</div></div>
+    ${desktop(b.desktop).replace('class="dk"', 'class="dk bn"')}
+    ${phone(b.phone.shot, b.phone.x, b.phone.y, b.phone.w)}</section>`)
+
+  for (const t of C.tiles) {
+    parts.push(`<section class="art t43" data-image="${t.id}" style="${tint(t.accent)}">${cap(t)}
+      <div class="win" style="--wt:31">${t.type === 'files' ? files(t) : desktop(t)}</div></section>`)
+  }
+  for (const p of C.phones) {
+    parts.push(`<section class="art t916" data-image="${p.id}" style="${tint(p.accent)}">${cap(p)}
+      <div class="win" style="--wt:40">${phone(p.shot, 10, 0, 80)}</div></section>`)
+  }
+  document.getElementById('root').innerHTML = parts.join('')
+</script>

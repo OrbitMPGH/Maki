@@ -17,7 +17,7 @@ public record PagePanel(string Key, bool Enabled = true);
 /// <param name="Key">A section key from the page's definition, or a custom rail's <c>rail:{id}</c>.</param>
 /// <param name="Enabled">False hides the section without forgetting where it sat.</param>
 /// <param name="Hero">
-/// Whether the section leads with large tiles. Only meaningful on sections whose definition lists a
+/// Whether the section leads with a hero. Only meaningful on sections whose definition lists a
 /// hero default; <see cref="PageLayouts.Merge"/> resolves it to a value there and to null elsewhere.
 /// </param>
 /// <param name="Panels">The parts of a multi-panel section, in the user's order. Null elsewhere.</param>
@@ -29,7 +29,7 @@ public record PageSection(
 
 /// <summary>What one page knows about its sections, which is everything <see cref="PageLayouts.Merge"/> needs.</summary>
 /// <param name="Keys">Every built-in section, in the order the page ships in.</param>
-/// <param name="HeroDefaults">Sections that can lead with large tiles, and whether they do by default.</param>
+/// <param name="HeroDefaults">Sections that can lead with a hero, and whether they do by default.</param>
 /// <param name="Panels">Sections made of panels, and their panels in shipping order.</param>
 /// <param name="RailAnchor">
 /// Where a custom rail the layout has never seen goes: after the last rail already placed, or, with

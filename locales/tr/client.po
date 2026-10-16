@@ -1165,14 +1165,17 @@ msgid "{n}s"
 msgstr "{n}sn"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "{name} (disabled in Prowlarr)"
-msgstr "{name} (Prowlarr'da devre dışı)"
+msgid "{name} (disabled in {backendName})"
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "{name} {year}"
 msgstr "{name} {year}"
+
+#: src/components/settings/useIndexerForm.ts
+msgid "{name} is reachable"
+msgstr ""
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -1890,7 +1893,7 @@ msgstr "{unread, plural, one {# okunmamış} other {# okunmamış}}"
 msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, one {# yeni} other {# yeni}}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# okunmamış} other {# okunmamış}}"
@@ -2028,8 +2031,7 @@ msgstr "{year}, {status}"
 msgid "{zone} (this browser)"
 msgstr "{zone} (bu tarayıcı)"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #, fuzzy
 msgid "/downloads (optional)"
 msgstr "/downloads (isteğe bağlı)"
@@ -3218,8 +3220,8 @@ msgid "Anything the admin should know"
 msgstr "Yöneticinin bilmesi gereken bir şey"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "API key"
@@ -4030,10 +4032,9 @@ msgstr "Katalog kullanılamıyor"
 msgid "Categories"
 msgstr "Kategoriler"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Category"
-msgstr "Kategori"
+#: src/components/settings/downloadClientFields.ts
+msgid "Category or label given to torrents Maki adds. Defaults to maki. Deluge lowercases it and allows only letters, digits, dot, dash and underscore."
+msgstr ""
 
 #: src/components/discover/DiscoverSeedStrip.tsx
 #, fuzzy
@@ -4449,9 +4450,8 @@ msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files i
 msgstr "{winnerDisplayName}'ın sahip olmadığı bölümler, diskten içe aktarılan dosyalar gibi olduğu gibi bırakılır."
 
 #: src/components/QueuePause.tsx
-#, fuzzy
-msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
-msgstr "Zaten inen bölümler tamamlanır. qBittorrent'e verilmiş torrentler indirmeye devam eder."
+msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4709,6 +4709,10 @@ msgstr "Eklemek için bir belirtece tıklayın."
 #, fuzzy
 msgid "click one to keep it where it is"
 msgstr "Olduğu yerde bırakmak için birine tıklayın"
+
+#: src/components/settings/downloadClientFields.ts
+msgid "Client"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -5221,9 +5225,8 @@ msgid "Could not load anime signals: {reason}"
 msgstr "Anime sinyalleri yüklenemedi: {reason}"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
-msgstr "Prowlarr'dan dizinleyiciler yüklenemedi: {indexersErrorMessage}"
+msgid "Could not load indexers from {backendName}: {indexersErrorMessage}"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -6237,10 +6240,16 @@ msgstr "İnceleme için indirme adayı"
 msgid "Download chapters"
 msgstr "Bölüm indirir"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
-msgstr "Bulunan sürümleri indiren istemci. Tamamlanan torrentler kitaplığa otomatik olarak aktarılır. Yol eşlemesini yalnızca qBittorrent, Docker'da Maki'nin Z:\\downloads olarak gördüğü /downloads gibi erişemediği yollar bildiriyorsa doldurun."
+#: src/pages/settings/registry.ts
+msgid "Download client"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -6386,9 +6395,8 @@ msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "İndirmeler önce en yüksek puanlı kaynağı dener. Öncelik yalnızca eşitliği bozar."
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker."
-msgstr "Prowlarr'ın bulduklarını indirir. Tamamlanan torrentler kitaplığa otomatik olarak aktarılır. Yol eşlemesini yalnızca qBittorrent, Docker'da olduğu gibi, Maki'nin erişemediği yolları görüyorsa doldurun."
+msgid "Downloads what the indexer finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -7885,6 +7893,10 @@ msgstr "Kavita ve diğer okuyucuların bölümleri gruplandırmasına ve adland�
 msgid "Here is what Maki starts with. You can come back to this guide from the top of Settings."
 msgstr "Maki başlangıçta böyle ayarlanır. Bu kılavuza daha sonra Ayarlar'ın üst kısmından dönebilirsiniz."
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Hero"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #: src/pages/stats/labels.ts
@@ -8052,9 +8064,8 @@ msgid "Hover a cell for its number."
 msgstr "Numarasını görmek için hücrenin üzerine gelin."
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "How chapters from scraper sources move through the queue. Torrents are handled by qBittorrent below."
-msgstr "Kazıyıcı kaynaklardaki bölümlerin kuyrukta nasıl ilerlediği. Torrentler aşağıda qBittorrent tarafından yönetilir."
+msgid "How chapters from scraper sources move through the queue. Torrents are handled by the download client below."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8540,15 +8551,22 @@ msgid "indexed only"
 msgstr "yalnızca dizinlenen"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/settings/IndexerForm.tsx
+#: src/components/SetupWizard.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Indexer"
 msgstr "Dizinleyici"
 
+#: src/api/upgrades.ts
+msgid "Indexer search failed"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "indexer, torrent search, api key, releases, indexers, torznab, categories"
-msgstr "dizinleyici, torrent araması, api anahtarı, sürümler, dizinleyiciler, torznab, kategoriler"
+msgid "indexer, prowlarr, jackett, torrent search, api key, releases, indexers, torznab, categories"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -8848,6 +8866,10 @@ msgstr "Kaynak türleri"
 msgid "Korean"
 msgstr "Korece"
 
+#: src/components/settings/downloadClientFields.ts
+msgid "Label"
+msgstr ""
+
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -8920,13 +8942,13 @@ msgstr "İşaretlerin okunacağı diller"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
-msgid "Large tiles"
-msgstr "Büyük kutucuklar"
+#~ msgid "Large tiles"
+#~ msgstr "Büyük kutucuklar"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
-msgid "Large tiles for the first three"
-msgstr "İlk üçü büyük kutucuklarla göster"
+#~ msgid "Large tiles for the first three"
+#~ msgstr "İlk üçü büyük kutucuklarla göster"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -8992,6 +9014,10 @@ msgstr "Son sayfa"
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
 msgstr "Son kısmi tarama: {partialScanError}"
+
+#: src/components/home/ContinueHero.tsx
+msgid "Last read {lastRead}"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -9078,9 +9104,13 @@ msgid "Layout saved"
 msgstr "Düzen kaydedildi"
 
 #: src/components/layout/SectionProperties.tsx
+msgid "Lead with a hero"
+msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
 #, fuzzy
-msgid "Lead with big cover tiles instead of a plain row."
-msgstr "Düz bir satır yerine büyük kapak kutucuklarıyla başlatın."
+#~ msgid "Lead with big cover tiles instead of a plain row."
+#~ msgstr "Düz bir satır yerine büyük kapak kutucuklarıyla başlatın."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -9490,9 +9520,8 @@ msgid "Looking up chapters…"
 msgstr "Bölümler aranıyor…"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the daily scan."
-msgstr "Profili cilt hedefleyen seriler için tek bölümlük dosyaların yerini alabilecek torrent cilt paketlerini arar. Prowlarr ve qBittorrent gerektirir ve günlük taramadan bir saat sonra çalışır."
+msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs an indexer and a download client, and runs an hour after the daily scan."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -9642,9 +9671,8 @@ msgid "Maki speaks your language"
 msgstr "Maki sizin dilinizi konuşuyor"
 
 #: src/components/QueuePause.tsx
-#, fuzzy
-msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
-msgstr "Maki yeni indirmeler başlatmayı durdurur. Zaten inen bölümler tamamlanır ve kuyruktan hiçbir şey kaldırılmaz. qBittorrent'e verilmiş torrentler indirmeye devam eder."
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -10656,6 +10684,10 @@ msgstr "Sonraki kaynak"
 msgid "Next tier at {nextValue}"
 msgstr "Sonraki kademe: {nextValue}"
 
+#: src/components/home/ContinueHero.tsx
+msgid "Next up"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Next..."
@@ -10823,10 +10855,13 @@ msgstr "Henüz geçmiş yok"
 msgid "No index yet, the prebuilt vectors download automatically."
 msgstr "Henüz dizin yok, hazır vektörler otomatik olarak indirilir."
 
+#: src/api/upgrades.ts
+msgid "No indexer is configured"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "No indexers configured in Prowlarr."
-msgstr "Prowlarr'da yapılandırılmış dizinleyici yok."
+msgid "No indexers configured in {backendName}."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -11964,6 +11999,10 @@ msgstr "Yalnızca Kavita kitaplığı farklı bir yolda gördüğünde gerekir, 
 msgid "Only notify services with this tag."
 msgstr "Yalnızca bu etikete sahip hizmetlere bildirim gönder."
 
+#: src/components/settings/IndexerForm.tsx
+msgid "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
+msgstr ""
+
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
 msgid "Only safe titles"
@@ -12070,6 +12109,7 @@ msgstr "{label} üzerinde aç"
 msgid "Open Recommended with these filters from now on"
 msgstr "Bundan sonra Önerilenler'i bu filtrelerle aç"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/HealthPage.tsx
@@ -12212,7 +12252,7 @@ msgstr "Sayfa"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Sayfa {pageIndex}/{pageCount}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -12302,10 +12342,9 @@ msgid "Passed over: {reasons}"
 msgstr "Atlandı: {reasons}"
 
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
@@ -12355,16 +12394,15 @@ msgstr "Yol"
 msgid "Path as Kavita sees it"
 msgstr "Kavita'nın gördüğü yol"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Path as Maki sees it"
 msgstr "Maki'nin gördüğü yol"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Path as qBittorrent reports it"
-msgstr "qBittorrent'in bildirdiği yol"
+#: src/components/settings/downloadClientFields.ts
+msgid "Path as the download client reports it"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -12375,11 +12413,6 @@ msgstr "Yol eşleme - Kavita tarafı"
 #, fuzzy
 msgid "Path mapping - Maki side"
 msgstr "Yol eşleme - Maki tarafı"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Path mapping - qBittorrent side"
-msgstr "Yol eşleme - qBittorrent tarafı"
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -12794,21 +12827,6 @@ msgstr "Yükseltmelerden korunuyor"
 msgid "Provider"
 msgstr "Sağlayıcı"
 
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "Prowlarr"
-msgstr "Prowlarr"
-
-#: src/api/upgrades.ts
-#, fuzzy
-msgid "Prowlarr isn't configured"
-msgstr "Prowlarr yapılandırılmadı"
-
-#: src/api/upgrades.ts
-#, fuzzy
-msgid "Prowlarr search failed"
-msgstr "Prowlarr araması başarısız oldu"
-
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Psychological"
@@ -12878,11 +12896,6 @@ msgstr "HTTPS'in arkasına yerleştirin, ardından Ayarlar → Sistem → Ağ �
 #, fuzzy
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Bu kaynakları bu sırayla, yeni seriler otomatik eşleştiğinde kullanılan genel öncelik listesinin başına koyar."
-
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "qBittorrent"
-msgstr "qBittorrent"
 
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -13278,7 +13291,7 @@ msgstr "Okuma modu"
 msgid "Reading profile"
 msgstr "Okuma profili"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "Okuma ilerlemesi"
@@ -14291,7 +14304,7 @@ msgstr "Sağlayıcıdan geri yüklendi"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "Sürüm aramalarını belirli dizinleyicilere ve kategorilere sınırlayın. Hiçbir şey seçilmezse tüm dizinleyiciler ve kategoriler aranır."
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -14299,7 +14312,7 @@ msgstr "Sürüm aramalarını belirli dizinleyicilere ve kategorilere sınırlay
 msgid "Resume"
 msgstr "Devam et"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "{seriesTitle}, {chapterLabel} konumundan devam et"
@@ -14716,6 +14729,7 @@ msgstr "Kurtarma kodlarınızı kaydedin"
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
+#: src/components/settings/useIndexerForm.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -14786,6 +14800,10 @@ msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Saving on this device for offline reading"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Saving switches the indexer to {selectedName}. Its indexer and category lists load after that."
 msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -15014,6 +15032,7 @@ msgstr "Senkronize ediliyor"
 msgid "Scroll"
 msgstr "Kaydırma"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
@@ -15024,6 +15043,7 @@ msgstr "Geri kaydır"
 msgid "Scroll for next chapter"
 msgstr "Sonraki bölüm için kaydırın"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll forward"
@@ -15154,15 +15174,11 @@ msgstr "Ara veya bir kimlik yapıştır"
 msgid "Search query"
 msgstr "Arama sorgusu"
 
+#: src/components/ReleaseSearchModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Search releases"
 msgstr "Sürümlerde ara"
-
-#: src/components/ReleaseSearchModal.tsx
-#, fuzzy
-msgid "Search releases (Prowlarr)"
-msgstr "Sürüm ara (Prowlarr)"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -15220,14 +15236,12 @@ msgid "searched as “{cleanedTitle}”"
 msgstr "“{cleanedTitle}” olarak arandı"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Searches your indexers for manga releases to download as torrents."
-msgstr "Torrent olarak indirilecek manga sürümlerini bulmak için indexer'larınızda arama yapar."
+msgid "Searches your indexers for manga releases to download as torrents. Works through Prowlarr or Jackett."
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. No app sync needed."
-msgstr "Torrent dizinleyicilerinizde manga sürümlerini arar; cilt yükseltmeleri ve sürümleri elle almak için kullanılır. Uygulama eşitlemesi gerekmez."
+msgid "Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. Works through Prowlarr or Jackett, no app sync needed."
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -15417,11 +15431,14 @@ msgstr "Sessiz gönder"
 msgid "Send test"
 msgstr ""
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
-#, fuzzy
-msgid "Sent to qBittorrent: {title}"
-msgstr "qBittorrent'e gönderildi: {title}"
+msgid "Sent to the download client: {title}"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -15730,6 +15747,12 @@ msgstr "Yeniden göster"
 msgid "Show all"
 msgstr "Tümünü göster"
 
+#. placeholder {0}: items.length
+#: src/components/home/ContinueHero.tsx
+msgid "Show all {0}"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
@@ -15793,6 +15816,10 @@ msgstr "Kaynak metnini göster"
 #, fuzzy
 msgid "Show the Home page"
 msgstr "Ana Sayfa'yı göster"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -16334,12 +16361,12 @@ msgstr "GitHub'da yıldız ver"
 msgid "Start"
 msgstr "Başlat"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "Başlat: {seriesTitle}, {chapterLabel}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
 msgstr "Bölümü başlat"
@@ -16654,11 +16681,6 @@ msgstr "Sistem sorunları"
 msgid "Tag"
 msgstr "Etiket"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Tag given to torrents Maki adds. Defaults to maki."
-msgstr "Maki'nin eklediği torrentlere verilen etiket. Varsayılanı maki."
-
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
@@ -16721,6 +16743,7 @@ msgstr "Varsayılanınız ne olursa olsun her yeni bölüm hakkında bilgi verir
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/IndexerForm.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Test"
@@ -16869,9 +16892,12 @@ msgid "The default for every series event: new chapters, downloads, upgrades. An
 msgstr "Her seri olayı için varsayılan: yeni bölümler, indirmeler, yükseltmeler. Herhangi bir seri kendi sayfasından farklı ayarlanabilir ya da Kitaplık'ın Seç modundan birçok seri aynı anda ayarlanabilir."
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The download is no longer in qBittorrent"
-msgstr "İndirme artık qBittorrent'te değil"
+msgid "The download client reports an error on this torrent"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The download is no longer in the download client"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -17188,10 +17214,14 @@ msgstr "Şu anda popülerliği en hızlı artan başlıklar."
 msgid "The token @BotFather gave you."
 msgstr "@BotFather'ın verdiği belirteç."
 
+#. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
-#, fuzzy
-msgid "The torrent is no longer in qBittorrent"
-msgstr "Torrent artık qBittorrent'te değil"
+msgid "The torrent is in the download client, but another download for {series} owns it"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The torrent is no longer in the download client"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -17199,9 +17229,8 @@ msgid "The torrent keeps seeding whichever you pick."
 msgstr "Hangisini seçerseniz seçin torrent seed etmeye devam eder."
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The torrent never appeared in qBittorrent"
-msgstr "Torrent hiçbir zaman qBittorrent'te görünmedi"
+msgid "The torrent never appeared in the download client"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -17784,12 +17813,6 @@ msgstr "Konu kimliği"
 #, fuzzy
 msgid "Torrent"
 msgstr "Torrent"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "torrent client, category, path mapping, download client"
-msgstr "torrent istemcisi, kategori, yol eşleme, indirme istemcisi"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -18460,6 +18483,8 @@ msgid "Upper Case"
 msgstr "Büyük Harf"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/downloadClientFields.ts
+#: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -18590,10 +18615,9 @@ msgstr "Kullanıcı güncellendi"
 msgid "User, group or channel ID. Public channels can use @name."
 msgstr "Kullanıcı, grup veya kanal kimliği. Herkese açık kanallarda @ad kullanılabilir."
 
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -19634,11 +19658,9 @@ msgstr "Kullanıcı veya grup anahtarın."
 msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr "Yalnızca size özel, bu yalnızca sizin zilinize düşenleri değiştirir, başkasınınkini değil."
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
+#: src/components/settings/downloadClientFields.ts
 msgid "Z:\\downloads (optional)"
-msgstr "Z:\\downloads (isteğe bağlı)"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

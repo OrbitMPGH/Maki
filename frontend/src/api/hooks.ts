@@ -1002,7 +1002,7 @@ export const HOME_GLANCE_PANEL_LABELS: Record<HomeGlancePanel, MessageDescriptor
   toread: msg`Waiting to read`,
 }
 
-/** Sections that can lead with large tiles, and whether they do by default. Mirrors the server. */
+/** Sections that can lead with a hero, and whether they do by default. Mirrors the server. */
 export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
 
 /** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
@@ -1055,7 +1055,7 @@ export interface LayoutPanel {
 export interface PageSection<K extends string = string> {
   key: K | RailKey
   enabled: boolean
-  /** Leads with large tiles. Set on sections that support it, null elsewhere. */
+  /** Leads with a hero. Set on sections that support it, null elsewhere. */
   hero?: boolean | null
   /** The parts of a multi-panel section, in order. Null elsewhere. */
   panels?: LayoutPanel[] | null
@@ -3036,19 +3036,42 @@ export function useRemoveMapping() {
   })
 }
 
-export interface ProwlarrSettings {
+export type IndexerBackend = 'prowlarr' | 'jackett'
+
+export interface IndexerSettings {
+  backend: IndexerBackend
   url: string | null
   apiKey: string | null
 }
 
-export interface QBittorrentSettings {
+export type DownloadClientKind = 'qbittorrent' | 'transmission' | 'deluge'
+
+export interface DownloadClientSettings {
+  kind: string | null
   url: string | null
   username: string | null
   password: string | null
-  category: string | null
+  label: string | null
+  pathMapFrom: string | null
+  pathMapTo: string | null
 }
 
-export type ConnectionName = 'prowlarr' | 'qbittorrent' | 'kavita' | 'flaresolverr'
+export interface DownloadClientKindInfo {
+  kind: DownloadClientKind
+  name: string
+  usesUsername: boolean
+  defaultUrl: string
+}
+
+export function useDownloadClientKinds() {
+  return useQuery({
+    queryKey: ['downloadclient-kinds'],
+    queryFn: () => api<DownloadClientKindInfo[]>('/settings/downloadclient/kinds'),
+    staleTime: Infinity,
+  })
+}
+
+export type ConnectionName = 'indexer' | 'downloadclient' | 'kavita' | 'flaresolverr'
 
 export function useConnectionSettings<T>(name: ConnectionName) {
   return useQuery({
@@ -3083,33 +3106,64 @@ export function useTestConnectionSettings<T>(name: ConnectionName) {
   })
 }
 
-export interface ProwlarrOptions {
+export interface IndexerOptions {
   indexerIds: string | null
   categories: string | null
 }
 
-export interface ProwlarrIndexer {
-  id: number
+export interface IndexerEntry {
+  id: string
   name: string
-  enable: boolean
+  enabled: boolean
   protocol: string | null
   categories: { id: number; name: string }[]
 }
 
-export function useProwlarrOptions() {
+/** The saved connection for one backend, or for the active backend when none is named. */
+export function useIndexerSettings(backend?: IndexerBackend) {
   return useQuery({
-    queryKey: ['settings', 'prowlarr-options'],
-    queryFn: () => api<ProwlarrOptions>('/settings/prowlarr/options'),
+    queryKey: backend ? ['settings', 'indexer', backend] : ['settings', 'indexer'],
+    queryFn: () => api<IndexerSettings>(backend ? `/settings/indexer?backend=${backend}` : '/settings/indexer'),
   })
 }
 
-export function useSaveProwlarrOptions() {
+/** Saving makes `backend` the active one, so every list keyed on the active backend reloads. */
+export function useSaveIndexerSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (value: ProwlarrOptions) =>
-      api<ProwlarrOptions>('/settings/prowlarr/options', { method: 'PUT', body: JSON.stringify(value) }),
+    mutationFn: (value: IndexerSettings) =>
+      api<IndexerSettings>('/settings/indexer', { method: 'PUT', body: JSON.stringify(value) }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'prowlarr-options'] })
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer'] })
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer-options'] })
+      void queryClient.invalidateQueries({ queryKey: ['indexer-indexers'] })
+    },
+  })
+}
+
+export function useTestIndexerSettings() {
+  return useMutation({
+    mutationFn: (value: Partial<IndexerSettings>) =>
+      api<{ success: boolean }>('/settings/indexer/test', { method: 'POST', body: JSON.stringify(value) }),
+  })
+}
+
+/** The indexer and category filter of one backend; the query key and the request name the same backend. */
+export function useIndexerOptions(backend: IndexerBackend | undefined) {
+  return useQuery({
+    queryKey: ['settings', 'indexer-options', backend],
+    queryFn: () => api<IndexerOptions>(`/settings/indexer/options?backend=${backend}`),
+    enabled: backend !== undefined,
+  })
+}
+
+export function useSaveIndexerOptions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: IndexerOptions & { backend: IndexerBackend }) =>
+      api<IndexerOptions>('/settings/indexer/options', { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer-options'] })
     },
   })
 }
@@ -3130,11 +3184,11 @@ export function useKavitaLibraries(enabled: boolean) {
   })
 }
 
-export function useProwlarrIndexers(enabled: boolean) {
+export function useIndexerList(backend: IndexerBackend | undefined, enabled: boolean) {
   return useQuery({
-    queryKey: ['prowlarr-indexers'],
-    queryFn: () => api<ProwlarrIndexer[]>('/settings/prowlarr/indexers'),
-    enabled,
+    queryKey: ['indexer-indexers', backend],
+    queryFn: () => api<IndexerEntry[]>(`/settings/indexer/indexers?backend=${backend}`),
+    enabled: enabled && backend !== undefined,
     retry: false,
     staleTime: 5 * 60 * 1000,
   })
@@ -3148,7 +3202,6 @@ export interface ReleaseDto {
   seeders: number | null
   leechers: number | null
   protocol: string
-  downloadUrl: string | null
   magnetUrl: string | null
   infoUrl: string | null
 }
@@ -3180,10 +3233,10 @@ export function useReleaseSearch(seriesId: number, enabled: boolean, query?: str
 export function useGrabRelease() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { seriesId: number; release: ReleaseDto }) =>
+    mutationFn: (payload: { seriesId: number; release: Pick<ReleaseDto, 'guid'> }) =>
       api<{ queueItemId: number }>('/release/grab', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ seriesId: payload.seriesId, release: { guid: payload.release.guid } }),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })

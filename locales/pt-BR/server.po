@@ -1285,9 +1285,9 @@ msgstr "Este arquivo ainda está sendo movido para a lixeira. Tente de novo em i
 msgid "error.recycleBin.targetInvalid"
 msgstr "O local original está fora da pasta raiz ou atrás de um link, então o arquivo não pode voltar para lá."
 
-#. The Prowlarr or qBittorrent call failed; the cause is in the server log.
+#. The indexer or download client call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: Could not send the release to qBittorrent. Details are in the server log.
+#. English: Could not send the release to the download client. Details are in the server log.
 #, fuzzy
 msgid "error.release.grabFailed"
 msgstr "Não foi possível enviar o lançamento para o qBittorrent. Os detalhes estão no log do servidor."
@@ -1299,32 +1299,34 @@ msgid "error.release.noDownloadLink"
 msgstr "Este lançamento não tem link de download"
 
 #: src/Maki.Api/Services/ReleaseService.cs
-#. English: Prowlarr is not configured (Settings → Downloads → Prowlarr)
-#, fuzzy
-msgid "error.release.prowlarrNotConfigured"
-msgstr "O Prowlarr não está configurado (Configurações → Downloads → Prowlarr)"
+#. English: No indexer is configured (Settings → Downloads → Indexer)
+msgid "error.release.indexerNotConfigured"
+msgstr ""
 
-#. qBittorrent rejected the username or password Maki has stored for it.
+#. The download client rejected the username or password Maki has stored for it.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: qBittorrent rejected the login. Check the username and password in Settings → Downloads.
-#, fuzzy
-msgid "error.release.qbittorrentLoginFailed"
-msgstr "O qBittorrent recusou o login. Verifique o usuário e a senha em Configurações → Downloads."
+#. English: The download client rejected the login. Check the username and password in Settings → Downloads.
+msgid "error.release.downloadClientLoginFailed"
+msgstr ""
 
 #: src/Maki.Api/Services/ReleaseService.cs
-#. English: qBittorrent is not configured (Settings → Downloads → qBittorrent)
-#, fuzzy
-msgid "error.release.qbittorrentNotConfigured"
-msgstr "O qBittorrent não está configurado (Configurações → Downloads → qBittorrent)"
+#. English: No download client is configured (Settings → Downloads → Download client)
+msgid "error.release.downloadClientNotConfigured"
+msgstr ""
 
-#. qBittorrent answered but refused to add the torrent.
+#. The download client answered but refused to add the torrent.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-#. English: qBittorrent refused to add the torrent.
-#, fuzzy
-msgid "error.release.qbittorrentRejected"
-msgstr "O qBittorrent recusou adicionar o torrent."
+#. English: The download client refused to add the torrent.
+msgid "error.release.downloadClientRejected"
+msgstr ""
 
-#. The Prowlarr call failed; the cause is in the server log.
+#. The download client did not answer, or answered with something that was not its API.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+#. English: The download client did not respond. Check its URL in Settings → Downloads.
+msgid "error.release.downloadClientUnreachable"
+msgstr ""
+
+#. The indexer call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 #. English: The release search failed. Details are in the server log.
 #, fuzzy
@@ -2157,10 +2159,9 @@ msgid "error.torrentImport.noRootFolder"
 msgstr "A série não tem uma pasta raiz"
 
 #: src/Maki.Api/Services/TorrentImportService.cs
-#. English: The download is no longer in qBittorrent
-#, fuzzy
-msgid "error.torrentImport.notInQbittorrent"
-msgstr "O download não está mais no qBittorrent"
+#. English: The download is no longer in the download client
+msgid "error.torrentImport.notInClient"
+msgstr ""
 
 #. {path} is a filesystem path and is never translated.
 #: src/Maki.Api/Services/TorrentImportService.cs
@@ -2374,7 +2375,7 @@ msgstr "Esse capítulo não tem arquivo para receber upgrade"
 msgid "error.upgrades.proposalNotFound"
 msgstr "Essa proposta de lançamento de volume não existe"
 
-#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#. {detail} is the torrent client's or the indexer's own error text, shown as it is.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 #. English: Could not grab the release: {detail}
 #, fuzzy
@@ -2599,13 +2600,18 @@ msgstr "Código(s) de idioma desconhecido(s): {codes}"
 msgid "error.settings.noSourceLanguageEnabled"
 msgstr "Pelo menos um idioma deve permanecer ativado"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr is not configured
-#, fuzzy
-msgid "error.settings.prowlarrNotConfigured"
-msgstr "O Prowlarr não está configurado"
+#. English: {service} is not configured
+msgid "error.settings.indexerNotConfigured"
+msgstr ""
 
-#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown indexer
+msgid "error.settings.indexerBackendInvalid"
+msgstr ""
+
+#. Shared by the indexer and Kavita connection tests, both of which need the pair.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: URL and API key are required
 #, fuzzy
@@ -2626,17 +2632,38 @@ msgstr "A URL é obrigatória"
 msgid "error.settings.userCannotSignIn"
 msgstr "Esse usuário não existe ou não pode entrar"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: Prowlarr did not respond (check URL/API key)
-#, fuzzy
-msgid "error.settings.prowlarrNoResponse"
-msgstr "O Prowlarr não respondeu (verifique a URL/chave da API)"
+#. English: {service} did not respond (check the URL and API key)
+msgid "error.settings.indexerNoResponse"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs
-#. English: qBittorrent login failed
-#, fuzzy
-msgid "error.settings.qbittorrentLoginFailed"
-msgstr "Falha no login do qBittorrent"
+#. English: The download client rejected the login (check username/password)
+msgid "error.settings.downloadClientLoginFailed"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The download client did not respond (check the URL)
+msgid "error.settings.downloadClientNoResponse"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Unknown download client
+msgid "error.settings.downloadClientKindInvalid"
+msgstr ""
+
+#. The label, category or tag Maki puts on its torrents.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The label cannot start or end with a space, contain control characters, or be longer than 64 characters
+msgid "error.settings.labelInvalid"
+msgstr ""
+
+#. Deluge's Label plugin rejects anything else, so Maki checks before saving.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Deluge labels can only use letters, digits, dot, dash and underscore
+msgid "error.settings.labelInvalidDeluge"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Kavita did not respond (check URL/API key)
@@ -4036,18 +4063,32 @@ msgid "error.download.importRejected"
 msgstr "Importação rejeitada, a biblioteca permaneceu como estava"
 
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
-#. English: The torrent never appeared in qBittorrent
+#. English: The torrent never appeared in the download client
 #, fuzzy
 msgid "error.download.torrentMissing"
 msgstr "O torrent nunca apareceu no qBittorrent"
 
-#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
-#. another category, or dropped.
+#. A torrent named like this release is in the download client, but another Maki download (for the
+#. named series, possibly this one) already recorded it as its own. {series} is a series title and
+#. is never translated.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
-#. English: The torrent is no longer in qBittorrent
+#. English: The torrent is in the download client, but another download for {series} owns it
+msgid "error.download.torrentHeldElsewhere"
+msgstr ""
+
+#. The torrent had been seen in the download client before and has been gone for hours: deleted there,
+#. moved to another category or label, or dropped.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The torrent is no longer in the download client
 #, fuzzy
 msgid "error.download.torrentRemoved"
 msgstr "O torrent não está mais no qBittorrent"
+
+#. The download client has held this torrent in an error state for half an hour. The client's own message follows.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The download client reports an error on this torrent
+msgid "error.download.torrentClientError"
+msgstr ""
 
 #. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
 #: src/Maki.Api/Services/DownloadWorkerHostedService.cs
@@ -4870,7 +4911,7 @@ msgstr "Uma migração de inicialização anterior falhou ({error}). Verifique o
 msgid "health.check.diagnosticsUnavailable"
 msgstr "Não foi possível concluir os diagnósticos do banco de dados ou do agendador"
 
-#. {service} is a product name (Prowlarr, Kavita, qBittorrent, FlareSolverr), never translated.
+#. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {service}: not configured
 #, fuzzy

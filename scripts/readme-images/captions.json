@@ -1,0 +1,116 @@
+{
+  "banner": {
+    "id": "banner",
+    "kicker": "Self-hosted manga manager",
+    "headline": "Add a series once. Maki keeps it complete.",
+    "chips": [
+      "Recommendations",
+      "Auto-monitoring",
+      "Scrobbling",
+      "35 sources",
+      "Plain CBZ",
+      "Built-in reader"
+    ],
+    "desktop": {
+      "shot": "desktop-library",
+      "x": 43,
+      "y": 8,
+      "w": 58
+    },
+    "phone": {
+      "shot": "phone-home",
+      "x": 80,
+      "y": 12,
+      "w": 16
+    },
+    "accent": "rose"
+  },
+  "tiles": [
+    {
+      "id": "recommendations",
+      "kicker": "Recommendations",
+      "headline": "Recommendations from your own library",
+      "shot": "desktop-discover",
+      "x": 0,
+      "y": 0,
+      "w": 100,
+      "accent": "rose"
+    },
+    {
+      "id": "scrobbling",
+      "kicker": "Scrobbling",
+      "headline": "Progress follows you to every tracker",
+      "shot": "desktop-scrobble",
+      "x": 0,
+      "y": 0,
+      "w": 100,
+      "accent": "indigo"
+    },
+    {
+      "id": "monitoring",
+      "kicker": "Monitoring",
+      "headline": "New chapters, queued on their own",
+      "shot": "desktop-series",
+      "x": 0,
+      "y": 0,
+      "w": 100,
+      "accent": "emerald"
+    },
+    {
+      "id": "files",
+      "type": "files",
+      "kicker": "Your files",
+      "headline": "Plain CBZ that any reader opens",
+      "series": "Ember Court",
+      "volume": 5,
+      "chapters": [
+        39,
+        40,
+        41
+      ],
+      "writer": "Mika Arai",
+      "genre": "Drama, Mystery",
+      "language": "en",
+      "manga": "YesAndRightToLeft",
+      "readers": [
+        "Maki",
+        "Kavita",
+        "KOReader",
+        "Panels",
+        "Chunky",
+        "Mihon"
+      ],
+      "accent": "rose"
+    }
+  ],
+  "phones": [
+    {
+      "id": "phone-home",
+      "kicker": "Home",
+      "headline": "Pick up where you left off",
+      "shot": "phone-home",
+      "accent": "rose"
+    },
+    {
+      "id": "phone-reader",
+      "kicker": "Reader",
+      "headline": "A reader built in",
+      "shot": "phone-reader",
+      "accent": "rose"
+    },
+    {
+      "id": "phone-discover",
+      "kicker": "Discover",
+      "headline": "What to read next",
+      "shot": "phone-discover",
+      "accent": "rose"
+    },
+    {
+      "id": "phone-stats",
+      "kicker": "Stats",
+      "headline": "Streaks you can see",
+      "shot": "phone-stats",
+      "accent": "amber"
+    }
+  ]
+}
