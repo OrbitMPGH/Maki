@@ -34,6 +34,8 @@
 - **Scrobbling.** Sends read progress to AniList, MyAnimeList, Kitsu, and MangaBaka, whether the
   reading happened in Maki, over OPDS, or in Kavita. Your lists on those trackers can also be
   imported into the library from Settings.
+- **Mihon backup import.** Upload a Mihon backup on the Import page to add its library, with
+  categories as tags and read chapters marked read. Needs the local MangaBaka database.
 - **Anime tie-in.** For a series with an anime adaptation, Maki can start you at the chapter where
   the anime ended.
 - **OPDS server.** OPDS 1.2 with page streaming (OPDS-PSE), so Panels, Chunky, KOReader, and

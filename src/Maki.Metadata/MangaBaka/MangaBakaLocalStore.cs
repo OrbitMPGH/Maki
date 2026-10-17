@@ -513,7 +513,7 @@ public class MangaBakaLocalStore(
         return matches;
     }
 
-    public async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
+    public virtual async Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
     {
         if (!long.TryParse(providerId, out var id))
         {
