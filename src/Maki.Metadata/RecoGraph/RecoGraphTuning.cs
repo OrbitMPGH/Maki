@@ -155,8 +155,17 @@ public sealed record RecoGraphTuning
     /// So pool entry requires corroboration — several seeds agreeing, or one very heavily voted
     /// link — while a weak signal can still nudge the order of things retrieval already believed in.
     /// On the real library this admits the well-connected picks (Bleach, Jujutsu Kaisen, Hunter x
-    /// Hunter, all reached from two seeds at 0.8 and up) and stops the one-shot, which scored 0.55.
+    /// Hunter, all reached from two seeds at 0.8 and up) and stopped the one-shot, which scored 0.55
+    /// on the 116k-pair artifact.
+    /// </para>
+    ///
+    /// <para>
+    /// Re-swept on the 151,882-pair artifact (distribution/CLAUDE.md, "v5.3"): 0.55 measures +0.0024
+    /// and +0.0035 nDCG@40 on MangaUpdates pairs at one and three seeds, is inert on held-out readers,
+    /// and moves median pick popularity under 3%. Read on real output, 0.55 and 0.50 change nothing on
+    /// a 104-series library and add one title (Golden Kamuy, carried by all three crowd channels) on
+    /// the 11-seed dev one. 0.50 gains a little more and pulls picks 5-8% more famous.
     /// </para>
     /// </summary>
-    public double MinInjectedScore { get; init; } = 0.60;
+    public double MinInjectedScore { get; init; } = 0.55;
 }
