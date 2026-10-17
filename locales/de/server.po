@@ -861,6 +861,59 @@ msgstr "Dieser Wert ist zu lang."
 msgid "error.metadata.unknownField"
 msgstr "Unbekanntes Metadatenfeld."
 
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The backup file is damaged and could not be read.
+msgid "error.mihon.corrupt"
+msgstr ""
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: Importing a Mihon backup needs the local MangaBaka database, which is not downloaded yet.
+msgid "error.mihon.dumpUnavailable"
+msgstr ""
+
+#. The series was added (or was already there), but its Mihon categories or read chapters could not be applied.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Added, but its tags or read chapters could not be applied.
+msgid "error.mihon.extrasFailed"
+msgstr ""
+
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Could not add this series.
+msgid "error.mihon.importFailed"
+msgstr ""
+
+#. The series exists in a root folder this user cannot see, so it was left alone.
+#: src/Maki.Api/Services/MihonImportService.cs
+#. English: Already in the library, in a folder you do not have access to.
+msgid "error.mihon.inLibraryElsewhere"
+msgstr ""
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: This is an old JSON backup. Create a new backup in Mihon (Settings, Data and storage) and upload that.
+msgid "error.mihon.jsonBackup"
+msgstr ""
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: This file is not a Mihon backup. Upload a .tachibk or .proto.gz file.
+msgid "error.mihon.notABackup"
+msgstr ""
+
+#. The client generates the run id; only a broken or outdated client sends none.
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The import request is missing its run id.
+msgid "error.mihon.runIdRequired"
+msgstr ""
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: The backup is too large to import.
+msgid "error.mihon.tooLarge"
+msgstr ""
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+#. English: Too many items in one request ({count}); send batches of {max} or fewer
+msgid "error.mihon.tooManyItems"
+msgstr ""
+
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 #. English: Set a config key or at least one notification URL.
 #, fuzzy

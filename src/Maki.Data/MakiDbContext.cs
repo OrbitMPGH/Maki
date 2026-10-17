@@ -66,6 +66,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<StatsEvent> StatsEvents => Set<StatsEvent>();
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
     public DbSet<ChapterProgress> ChapterProgress => Set<ChapterProgress>();
+    public DbSet<PendingReadImport> PendingReadImports => Set<PendingReadImport>();
     public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
     public DbSet<ReadingSession> ReadingSessions => Set<ReadingSession>();
     public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
@@ -774,6 +775,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
             e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Chapter>().WithMany().HasForeignKey(p => p.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<PendingReadImport>(e =>
+        {
+            e.HasIndex(p => new { p.SeriesId, p.UserId }).IsUnique();
+            e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(p => _scope.Unrestricted || p.UserId == _scope.UserId);
         });

@@ -603,6 +603,49 @@ msgstr "That value is too long."
 msgid "error.metadata.unknownField"
 msgstr "Unknown metadata field."
 
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.corrupt"
+msgstr "The backup file is damaged and could not be read."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.dumpUnavailable"
+msgstr "Importing a Mihon backup needs the local MangaBaka database, which is not downloaded yet."
+
+#. The series was added (or was already there), but its Mihon categories or read chapters could not be applied.
+#: src/Maki.Api/Services/MihonImportService.cs
+msgid "error.mihon.extrasFailed"
+msgstr "Added, but its tags or read chapters could not be applied."
+
+#: src/Maki.Api/Services/MihonImportService.cs
+msgid "error.mihon.importFailed"
+msgstr "Could not add this series."
+
+#. The series exists in a root folder this user cannot see, so it was left alone.
+#: src/Maki.Api/Services/MihonImportService.cs
+msgid "error.mihon.inLibraryElsewhere"
+msgstr "Already in the library, in a folder you do not have access to."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.jsonBackup"
+msgstr "This is an old JSON backup. Create a new backup in Mihon (Settings, Data and storage) and upload that."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.notABackup"
+msgstr "This file is not a Mihon backup. Upload a .tachibk or .proto.gz file."
+
+#. The client generates the run id; only a broken or outdated client sends none.
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.runIdRequired"
+msgstr "The import request is missing its run id."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.tooLarge"
+msgstr "The backup is too large to import."
+
+#: src/Maki.Api/Controllers/MihonImportController.cs
+msgid "error.mihon.tooManyItems"
+msgstr "Too many items in one request ({count}); send batches of {max} or fewer"
+
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 msgid "error.notifications.appriseTarget"
 msgstr "Set a config key or at least one notification URL."
