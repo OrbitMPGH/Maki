@@ -86,6 +86,8 @@ public static class UserSettingKeys
         SettingKeys.ScrobbleMangaBakaToken,
         SettingKeys.ScrobbleKitsuEmail,
         SettingKeys.ScrobbleKitsuPassword,
+        SettingKeys.ScrobbleMangaUpdatesUsername,
+        SettingKeys.ScrobbleMangaUpdatesPassword,
         SettingKeys.UserTimeZone,
         SettingKeys.UserGamification,
         SettingKeys.NotificationsInbox,

@@ -403,6 +403,71 @@ public class TrackerListTests
         await Assert.ThrowsAsync<TrackerException>(() => MangaBaka(handler).ListAsync(UserId, ReadingAndPlanned));
     }
 
+    // ---- MangaUpdates ----
+
+    private static MangaUpdatesTracker MangaUpdates(Handler handler) => new(
+        new Factory(handler),
+        new UserSettings(new Dictionary<string, string>
+        {
+            [SettingKeys.ScrobbleMangaUpdatesUsername] = "reader",
+            [SettingKeys.ScrobbleMangaUpdatesPassword] = "pw",
+        }),
+        new TokenStore("mangaupdates"),
+        Options with { MangaUpdatesApiUrl = "https://mu.test/v1" },
+        NullLogger<MangaUpdatesTracker>.Instance);
+
+    private static string MuRow(long id, string title) =>
+        $$$"""{"record":{"series":{"id":{{{id}}},"url":"https://www.mangaupdates.com/series/x","title":"{{{title}}}"},"list_id":0,"status":{"chapter":1}},"metadata":{"user_rating":null}}""";
+
+    [Fact]
+    public async Task MangaUpdates_pages_each_list_until_total_hits_or_an_empty_page()
+    {
+        var handler = new Handler()
+            .On((url, body) => url.EndsWith("/lists/0/search") && body.Contains("\"page\":1"),
+                $$"""{"total_hits":150,"page":1,"per_page":100,"results":[{{MuRow(55099564912, "One Piece")}}]}""")
+            .On((url, body) => url.EndsWith("/lists/0/search") && body.Contains("\"page\":2"),
+                $$"""{"total_hits":150,"page":2,"per_page":100,"results":[{{MuRow(36, "Berserk")}}]}""")
+            .On((url, body) => url.EndsWith("/lists/1/search") && body.Contains("\"page\":1"),
+                $$"""{"page":1,"per_page":100,"results":[{{MuRow(1295, "Later")}}]}""")
+            .On((url, body) => url.EndsWith("/lists/1/search") && body.Contains("\"page\":2"),
+                """{"page":2,"per_page":100,"results":[]}""");
+
+        var list = await MangaUpdates(handler).ListAsync(UserId, ReadingAndPlanned);
+
+        Assert.Equal(["pb8uwds", "10", "zz"], list.Select(e => e.RemoteId));
+        Assert.Equal(["pb8uwds", "10", "zz"], list.Select(e => e.MangaUpdatesId));
+        Assert.Equal(
+            [ScrobbleStatus.Reading, ScrobbleStatus.Reading, ScrobbleStatus.PlanToRead],
+            list.Select(e => e.Status));
+        Assert.Equal("One Piece", list[0].Title);
+        Assert.Equal(4, handler.Requests.Count);
+        Assert.Contains("\"perpage\":100", handler.Requests[0].Body);
+        Assert.DoesNotContain(handler.Requests, r => r.Url.Contains("/lists/2/") || r.Url.Contains("/lists/3/"));
+    }
+
+    [Fact]
+    public async Task MangaUpdates_other_reads_the_unfinished_and_on_hold_lists()
+    {
+        var handler = new Handler()
+            .On((url, _) => url.EndsWith("/lists/3/search"),
+                $$"""{"total_hits":1,"results":[{{MuRow(36, "Dropped")}}]}""")
+            .On((url, _) => url.EndsWith("/lists/4/search"),
+                $$"""{"total_hits":1,"results":[{{MuRow(1295, "Paused")}}]}""");
+
+        var list = await MangaUpdates(handler).ListAsync(UserId, [ScrobbleStatus.Other]);
+
+        Assert.Equal([ScrobbleStatus.Other, ScrobbleStatus.Other], list.Select(e => e.Status));
+        Assert.Equal(["Dropped", "Paused"], list.Select(e => e.Title));
+    }
+
+    [Fact]
+    public async Task MangaUpdates_401_is_a_tracker_exception()
+    {
+        var handler = new Handler().Always(HttpStatusCode.Unauthorized, """{"status":"exception","reason":"no"}""");
+
+        await Assert.ThrowsAnyAsync<TrackerException>(() => MangaUpdates(handler).ListAsync(UserId, ReadingAndPlanned));
+    }
+
     // ---- dead remote ids ----
 
     [Fact]

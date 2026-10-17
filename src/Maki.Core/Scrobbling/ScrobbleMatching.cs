@@ -22,11 +22,16 @@ public static partial class ScrobbleMatching
     [GeneratedRegex(@"^/(?:series/)?(\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex MangaBakaPath();
 
+    // The base36 slug form only; a legacy "/series.html?id=" link is a different numbering.
+    [GeneratedRegex(@"^/series/([0-9a-z]*[a-z][0-9a-z]*)(?:/|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex MangaUpdatesPath();
+
     private static readonly (string Service, string[] Hosts, Regex PathPattern)[] LinkPatterns =
     [
         ("anilist", ["anilist.co", "www.anilist.co"], AniListPath()),
         ("mal", ["myanimelist.net", "www.myanimelist.net"], MalPath()),
         ("mangabaka", ["mangabaka.org", "www.mangabaka.org", "mangabaka.dev", "www.mangabaka.dev"], MangaBakaPath()),
+        ("mangaupdates", ["mangaupdates.com", "www.mangaupdates.com"], MangaUpdatesPath()),
     ];
 
     /// <summary>
@@ -53,7 +58,7 @@ public static partial class ScrobbleMatching
                     hosts.Contains(uri.Host, StringComparer.OrdinalIgnoreCase) &&
                     pathPattern.Match(uri.AbsolutePath) is { Success: true } m)
                 {
-                    found[service] = m.Groups[1].Value;
+                    found[service] = m.Groups[1].Value.ToLowerInvariant();
                 }
             }
         }
