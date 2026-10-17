@@ -57,7 +57,7 @@ const GRANTABLE_DEFS: { value: Exclude<Permission, 'Admin'>; label: MessageDescr
   { value: 'EditMetadata', label: msg`Edit metadata`, hint: msg`Refresh metadata, rewrite ComicInfo, change monitoring` },
   { value: 'ManageTags', label: msg`Manage tags`, hint: msg`Create, rename and assign library tags` },
   { value: 'ChangeContentRating', label: msg`Change own content rating`, hint: msg`Raise or lower their own maximum rating` },
-  { value: 'UseTrackers', label: msg`Use trackers`, hint: msg`Connect their own AniList, MAL or Kitsu account` },
+  { value: 'UseTrackers', label: msg`Use trackers`, hint: msg`Connect their own AniList, MAL, Kitsu or MangaUpdates account` },
   { value: 'UseOpds', label: msg`Use OPDS`, hint: msg`Hold a feed token and read through an OPDS app` },
   { value: 'ImportLibrary', label: msg`Import library`, hint: msg`Scan root folders and adopt existing series` },
 ]
