@@ -59,8 +59,8 @@ export function ScrobbleSection() {
       title={<Trans>Trackers</Trans>}
       description={
         <Trans>
-          Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka and Kitsu. Connect
-          and disconnect accounts, and review matches, on the Scrobble page.
+          Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka, Kitsu and
+          MangaUpdates. Connect and disconnect accounts, and review matches, on the Scrobble page.
         </Trans>
       }
       dirty={dirty}
@@ -174,6 +174,31 @@ export function ScrobbleSection() {
           />
         </Group>
         <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
+
+        <Text size="sm" fw={600} mt="xs">
+          MangaUpdates
+        </Text>
+        <Group grow>
+          <TextInput
+            label={t`Username`}
+            autoComplete="off"
+            value={form?.mangaUpdatesUsername ?? ''}
+            onChange={(e) => set({ mangaUpdatesUsername: e.currentTarget.value })}
+          />
+          <TextInput
+            label={t`Password`}
+            type="password"
+            autoComplete="new-password"
+            placeholder={form?.mangaUpdatesPasswordSet ? t`Saved` : undefined}
+            value={form?.mangaUpdatesPassword ?? ''}
+            onChange={(e) => set({ mangaUpdatesPassword: e.currentTarget.value })}
+          />
+        </Group>
+        <TrackerSyncControls
+          service="mangaupdates"
+          label="MangaUpdates"
+          connection={conn('mangaupdates')}
+        />
 
         {isAdmin && (
           <SettingsNumberInput

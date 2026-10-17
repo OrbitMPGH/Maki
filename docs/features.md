@@ -5,8 +5,8 @@
 - **Automatic monitoring.** Maki checks its sources on a schedule, maps each series to every
   source that carries it, and downloads new chapters from your preferred one on the next check.
 - **Reader with progress sync.** Paged, double-page, or continuous scroll. Progress is merged
-  with Kavita and sent to AniList, MyAnimeList, Kitsu, and MangaBaka. Pages read over OPDS in
-  Panels, Chunky, KOReader, or Mihon count as read too.
+  with Kavita and sent to AniList, MyAnimeList, Kitsu, MangaBaka, and MangaUpdates. Pages read
+  over OPDS in Panels, Chunky, KOReader, or Mihon count as read too.
 - **Recommendations.** Local ONNX embeddings over the MangaBaka catalog find titles similar to
   what is already in your library, using more than shared genre tags. The Browse tab adds genre
   rails, blind spots, **Readers like you**, and a **Your Taste** view of how your reading has
@@ -31,8 +31,8 @@
   per-series overrides on top.
 - **Home.** **Continue reading**, **Recently added**, **Downloading now**, **Progress**, and other
   rails, drag-reorderable and switchable per user.
-- **Scrobbling.** Sends read progress to AniList, MyAnimeList, Kitsu, and MangaBaka, whether the
-  reading happened in Maki, over OPDS, or in Kavita. Your lists on those trackers can also be
+- **Scrobbling.** Sends read progress to AniList, MyAnimeList, Kitsu, MangaBaka, and
+  MangaUpdates, whether the reading happened in Maki, over OPDS, or in Kavita. Your lists on those trackers can also be
   imported into the library from Settings.
 - **Anime tie-in.** For a series with an anime adaptation, Maki can start you at the chapter where
   the anime ended.

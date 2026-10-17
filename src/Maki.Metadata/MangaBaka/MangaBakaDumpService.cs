@@ -173,7 +173,7 @@ public class MangaBakaDumpService(
     private static readonly string[] BrowseIndexNames =
     [
         "ix_browse_pop", "ix_browse_trend", "ix_browse_new", "ix_browse_rating", "ix_browse_type",
-        "ix_title_nocase", "ix_ext_anilist", "ix_ext_mal", "ix_ext_kitsu",
+        "ix_title_nocase", "ix_ext_anilist", "ix_ext_mal", "ix_ext_kitsu", "ix_ext_mangaupdates",
     ];
 
     /// <summary>
@@ -281,6 +281,13 @@ public class MangaBakaDumpService(
         ("ix_ext_kitsu", ["source_kitsu_id"], """
             CREATE INDEX IF NOT EXISTS ix_ext_kitsu ON series (source_kitsu_id)
             WHERE source_kitsu_id IS NOT NULL
+            """),
+
+        // MangaUpdates ids are text slugs, looked up lowercased (GetIdsByMangaUpdatesIdsAsync), so
+        // this indexes the lowercased value; a plain column index would not serve that query.
+        ("ix_ext_mangaupdates", ["source_manga_updates_id"], """
+            CREATE INDEX IF NOT EXISTS ix_ext_mangaupdates ON series (lower(source_manga_updates_id))
+            WHERE source_manga_updates_id IS NOT NULL
             """),
     ];
 

@@ -66,8 +66,8 @@ OPDS in Panels, Chunky, KOReader and Mihon.
   series and queues new chapters as they appear. More than 30 sources are built in, in over a
   dozen languages, and optional Suwayomi support adds its extensions on top. Torrents through
   Prowlarr or Jackett work the same way.
-- **Scrobbling.** Reading progress goes to AniList, MyAnimeList, Kitsu and MangaBaka, whether you
-  read in Maki, over OPDS or in Kavita.
+- **Scrobbling.** Reading progress goes to AniList, MyAnimeList, Kitsu, MangaBaka and
+  MangaUpdates, whether you read in Maki, over OPDS or in Kavita.
 - **Plain files, any reader.** Everything is saved as CBZ with ComicInfo.xml. Kavita, KOReader,
   Panels, Chunky, Mihon or any other comic reader can use the same folder, and nothing is locked
   inside Maki's database.

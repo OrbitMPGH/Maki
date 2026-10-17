@@ -2545,8 +2545,8 @@ msgstr "AniList"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
-msgstr "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
+msgid "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, trackers, oauth, client id, client secret, sync interval, plan to read"
+msgstr "anilist, myanimelist, mal, mangabaka, kitsu, mangaupdates, mu, trackers, oauth, client id, client secret, sync interval, plan to read"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "anime"
@@ -4059,8 +4059,8 @@ msgid "Connect one on the Scrobble page."
 msgstr "Connect one on the Scrobble page."
 
 #: src/components/settings/UsersSection.tsx
-msgid "Connect their own AniList, MAL or Kitsu account"
-msgstr "Connect their own AniList, MAL or Kitsu account"
+msgid "Connect their own AniList, MAL, Kitsu or MangaUpdates account"
+msgstr "Connect their own AniList, MAL, Kitsu or MangaUpdates account"
 
 #: src/components/SetupWizard.tsx
 msgid "Connect your trackers"
@@ -6759,8 +6759,8 @@ msgstr "Import list finished"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "import list, anilist, mal, kitsu, tracker, auto add"
-msgstr "import list, anilist, mal, kitsu, tracker, auto add"
+msgid "import list, anilist, mal, kitsu, mangaupdates, mu, tracker, auto add"
+msgstr "import list, anilist, mal, kitsu, mangaupdates, mu, tracker, auto add"
 
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
@@ -10070,8 +10070,8 @@ msgid "Paste id or URL"
 msgstr "Paste id or URL"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Paste series URL or numeric id…"
-msgstr "Paste series URL or numeric id…"
+msgid "Paste series URL or id…"
+msgstr "Paste series URL or id…"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -10480,8 +10480,8 @@ msgid "Pushes down titles close to this one"
 msgstr "Pushes down titles close to this one"
 
 #: src/pages/settings/IntegrationCards.tsx
-msgid "Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka and Kitsu. Connect and disconnect accounts, and review matches, on the Scrobble page."
-msgstr "Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka and Kitsu. Connect and disconnect accounts, and review matches, on the Scrobble page."
+msgid "Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka, Kitsu and MangaUpdates. Connect and disconnect accounts, and review matches, on the Scrobble page."
+msgstr "Pushes reading progress and ratings to AniList, MyAnimeList, MangaBaka, Kitsu and MangaUpdates. Connect and disconnect accounts, and review matches, on the Scrobble page."
 
 #: src/pages/SetupAccountPage.tsx
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
@@ -12559,8 +12559,8 @@ msgid "Send events to chat apps, push services or a webhook. Each connection pic
 msgstr "Send events to chat apps, push services or a webhook. Each connection picks its own events."
 
 #: src/components/SetupWizard.tsx
-msgid "Send reading progress to AniList, MyAnimeList, Kitsu or MangaBaka."
-msgstr "Send reading progress to AniList, MyAnimeList, Kitsu or MangaBaka."
+msgid "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
+msgstr "Send reading progress to AniList, MyAnimeList, Kitsu, MangaBaka or MangaUpdates."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Send request"
@@ -15176,6 +15176,7 @@ msgstr "User, group or channel ID. Public channels can use @name."
 #: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
 #: src/pages/LoginPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
 msgid "Username"
