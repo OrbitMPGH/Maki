@@ -84,8 +84,14 @@ public class MangaUpdatesTracker(
     /// <summary>
     /// The user's ratings across lists 0-4, read in one paged pass instead of one request per series.
     /// </summary>
-    private readonly ConcurrentDictionary<int, (DateTime BuiltAt, ConcurrentDictionary<long, double> Ratings)>
+    private readonly ConcurrentDictionary<int, (DateTime BuiltAt, Dictionary<long, double> Ratings)>
         _ratings = new();
+
+    /// <summary>
+    /// Bumped on every rating write. A snapshot whose rebuild overlapped a write is not kept, since it
+    /// may have read the score from before the write.
+    /// </summary>
+    private readonly ConcurrentDictionary<int, int> _ratingWrites = new();
 
     private DateTime _blockedUntil = DateTime.MinValue;
 
@@ -168,6 +174,9 @@ public class MangaUpdatesTracker(
         }
     }
 
+    private bool RecentlyFailed(int userId) =>
+        _authCache.TryGetValue(userId, out var cached) && !cached.Ok && Now - cached.CheckedAt < AuthFailureTtl;
+
     private bool IsUsable(ScrobbleToken? token) =>
         token is not null && token.AccessToken.Length > 0 &&
         (token.ExpiresAt is null || token.ExpiresAt > Now.AddMinutes(5));
@@ -176,9 +185,9 @@ public class MangaUpdatesTracker(
 
     /// <summary>
     /// Logs in and stores the session token. Serialized per user: a rating push runs alongside the
-    /// tick, and both seeing the same expired token should cost one login, not two. When
-    /// <paramref name="staleToken"/> is given and the stored token has already moved on, someone else
-    /// logged in while this caller waited and there is nothing left to do.
+    /// tick, and both seeing the same expired token should cost one login, not two. A usable stored
+    /// token other than <paramref name="staleToken"/> means someone else logged in while this caller
+    /// waited, and there is nothing left to do.
     /// </summary>
     private async Task LoginAsync(int userId, string? staleToken, CancellationToken ct)
     {
@@ -187,8 +196,7 @@ public class MangaUpdatesTracker(
         try
         {
             var existing = await tokens.GetAsync(userId, Name, ct);
-            if (staleToken is not null && existing is not null && existing.AccessToken != staleToken &&
-                IsUsable(existing))
+            if (IsUsable(existing) && (staleToken is null || existing!.AccessToken != staleToken))
             {
                 return;
             }
@@ -282,7 +290,7 @@ public class MangaUpdatesTracker(
             return token!.AccessToken;
         }
 
-        if (_authCache.TryGetValue(userId, out var cached) && !cached.Ok && Now - cached.CheckedAt < AuthFailureTtl)
+        if (RecentlyFailed(userId))
         {
             throw new TrackerException("MangaUpdates login failed recently; not retrying yet");
         }
@@ -350,7 +358,19 @@ public class MangaUpdatesTracker(
                 if (status == 401 && bearer is not null && !relogged && MayRelogin(userId, relogin))
                 {
                     relogged = true;
-                    await LoginAsync(userId, bearer, ct);
+                    try
+                    {
+                        await LoginAsync(userId, bearer, ct);
+                    }
+                    catch (TrackerException)
+                    {
+                        // Without this an unexpired but revoked token keeps AuthenticatedAsync saying
+                        // yes, and every series of every tick pays a 401 and a failed login.
+                        await tokens.DeleteAsync(userId, Name, ct);
+                        _authCache[userId] = (Now, false);
+                        throw;
+                    }
+
                     continue;
                 }
 
@@ -409,7 +429,7 @@ public class MangaUpdatesTracker(
         }
     }
 
-    private bool MayRelogin(int userId, Relogin relogin) => relogin switch
+    private bool MayRelogin(int userId, Relogin relogin) => !RecentlyFailed(userId) && relogin switch
     {
         Relogin.Always => true,
         Relogin.IfStale => !_loggedInAt.TryGetValue(userId, out var at) || Now - at > TimeSpan.FromMinutes(1),
@@ -481,14 +501,24 @@ public class MangaUpdatesTracker(
         }
 
         var progress = entry.TryGetProperty("status", out var s) && s.ValueKind == JsonValueKind.Object ? s : default;
-        var score = await RatingAsync(userId, seriesId, ct);
+        double? score = null;
+        try
+        {
+            score = await RatingAsync(userId, seriesId, ct);
+        }
+        catch (TrackerException e)
+        {
+            // The score only feeds the rating import; a failed snapshot must not fail the push.
+            logger.LogWarning("MangaUpdates rating snapshot failed for user {UserId}: {Error}", userId, e.Message);
+        }
+
         return new RemoteEntry(
             ProgressChapter: GetFloor(progress, "chapter") ?? 0,
             ProgressVolume: GetFloor(progress, "volume") ?? 0,
             Status: StatusOf(listId.Value),
             TotalChapters: TotalChapters(info),
             Title: info.Title,
-            Score: score is double rating and > 0 ? Math.Clamp((int)Math.Round(rating), 1, 10) : null,
+            Score: score is double rating and > 0 ? Math.Clamp((int)Math.Round(rating, MidpointRounding.AwayFromZero), 1, 10) : null,
             Releasing: !info.Completed);
     }
 
@@ -548,7 +578,8 @@ public class MangaUpdatesTracker(
     {
         if (!_ratings.TryGetValue(userId, out var snapshot) || Now - snapshot.BuiltAt >= RatingSnapshotTtl)
         {
-            var ratings = new ConcurrentDictionary<long, double>();
+            var writesBefore = _ratingWrites.GetValueOrDefault(userId);
+            var ratings = new Dictionary<long, double>();
             var seen = new HashSet<long>();
             foreach (var listId in FixedLists)
             {
@@ -569,6 +600,11 @@ public class MangaUpdatesTracker(
 
                     return true;
                 }, ct);
+            }
+
+            if (_ratingWrites.GetValueOrDefault(userId) != writesBefore)
+            {
+                return null;
             }
 
             snapshot = (Now, ratings);
@@ -657,17 +693,8 @@ public class MangaUpdatesTracker(
                 auth: true, relogin: Relogin.IfStale, ct: ct);
         }
 
-        if (_ratings.TryGetValue(userId, out var snapshot))
-        {
-            if (score <= 0)
-            {
-                snapshot.Ratings.TryRemove(seriesId, out _);
-            }
-            else
-            {
-                snapshot.Ratings[seriesId] = Math.Clamp(score, 1, 10);
-            }
-        }
+        _ratingWrites.AddOrUpdate(userId, 1, (_, n) => n + 1);
+        _ratings.TryRemove(userId, out _);
     }
 
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(
@@ -749,12 +776,15 @@ public class MangaUpdatesTracker(
     }
 
     /// <summary>
-    /// Pages <c>POST /lists/{id}/search</c> to the end: an empty page, <c>total_hits</c> reached, or a
-    /// page where <paramref name="onResult"/> took nothing new (an API ignoring <c>page</c> would
-    /// otherwise loop to the cap). A list the account does not have reads as empty.
+    /// Pages <c>POST /lists/{id}/search</c> to the end: an empty page, as many results read as
+    /// <c>total_hits</c> says there are (counted, not inferred from <c>perpage</c>, which the server may
+    /// cap), a short page when there is no <c>total_hits</c>, or a page where <paramref name="onResult"/>
+    /// took nothing new (an API ignoring <c>page</c> would otherwise loop to the cap). A list the
+    /// account does not have reads as empty.
     /// </summary>
     private async Task ReadListAsync(int userId, int listId, Func<JsonElement, bool> onResult, CancellationToken ct)
     {
+        long read = 0;
         for (var page = 1; page <= MaxPages; page++)
         {
             JsonElement data;
@@ -783,8 +813,9 @@ public class MangaUpdatesTracker(
                 }
             }
 
+            read += results.GetArrayLength();
             var total = GetLong(data, "total_hits");
-            if (took == 0 || (total is { } t && (long)page * PageSize >= t))
+            if (took == 0 || (total is { } t ? read >= t : results.GetArrayLength() < PageSize))
             {
                 return;
             }

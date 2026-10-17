@@ -13,7 +13,7 @@ paths:
 
 # Import lists
 
-Sonarr-style: per user, pull the AniList/MAL/Kitsu/MangaBaka list on a schedule, map to MangaBaka ids, add missing series monitored.
+Sonarr-style: per user, pull the AniList/MAL/Kitsu/MangaBaka/MangaUpdates list on a schedule, map to MangaBaka ids, add missing series monitored.
 
 - **`ImportListSkip` is provenance, not only skips** (`Reason` values are documented on `ImportListSkipReason`, append only). A run records every list entry already in the library (or pending as a request) as `Added`, and `SeriesController.Delete` flips every `Added` row for that MangaBaka id to `Removed` across users. That flip is the only thing stopping a deleted series from coming back on the next tick, so a series no run saw while it was in the library has no row and will come back if it is on the list.
 - **Permission split lives in the service, not the controller.** `AddSeries` holders go through `SeriesCreationService.CreateAsync` with `addedFrom: "importlist"` and a stable `clientMutationId` from (user, service, remoteId). Everyone else goes through `SeriesRequestSubmitter` (extracted from `SeriesRequestsController.Create`, keep both callers on it), still capped at `MaxPerRun` even on a full sync so one click cannot file hundreds of admin requests.

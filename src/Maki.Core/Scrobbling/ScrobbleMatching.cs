@@ -22,8 +22,8 @@ public static partial class ScrobbleMatching
     [GeneratedRegex(@"^/(?:series/)?(\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex MangaBakaPath();
 
-    // The base36 slug form only; a legacy "/series.html?id=" link is a different numbering.
-    [GeneratedRegex(@"^/series/([0-9a-z]*[a-z][0-9a-z]*)(?:/|$)", RegexOptions.IgnoreCase)]
+    // The base36 slug form, which may be all digits. Legacy "/series.html?id=" links never match.
+    [GeneratedRegex(@"^/series/([0-9a-z]+)(?:/|$)", RegexOptions.IgnoreCase)]
     private static partial Regex MangaUpdatesPath();
 
     private static readonly (string Service, string[] Hosts, Regex PathPattern)[] LinkPatterns =

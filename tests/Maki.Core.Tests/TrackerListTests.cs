@@ -420,13 +420,13 @@ public class TrackerListTests
         $$$"""{"record":{"series":{"id":{{{id}}},"url":"https://www.mangaupdates.com/series/x","title":"{{{title}}}"},"list_id":0,"status":{"chapter":1}},"metadata":{"user_rating":null}}""";
 
     [Fact]
-    public async Task MangaUpdates_pages_each_list_until_total_hits_or_an_empty_page()
+    public async Task MangaUpdates_pages_each_list_until_total_hits_or_a_short_page()
     {
         var handler = new Handler()
             .On((url, body) => url.EndsWith("/lists/0/search") && body.Contains("\"page\":1"),
-                $$"""{"total_hits":150,"page":1,"per_page":100,"results":[{{MuRow(55099564912, "One Piece")}}]}""")
+                $$"""{"total_hits":2,"page":1,"per_page":100,"results":[{{MuRow(55099564912, "One Piece")}}]}""")
             .On((url, body) => url.EndsWith("/lists/0/search") && body.Contains("\"page\":2"),
-                $$"""{"total_hits":150,"page":2,"per_page":100,"results":[{{MuRow(36, "Berserk")}}]}""")
+                $$"""{"total_hits":2,"page":2,"per_page":100,"results":[{{MuRow(36, "Berserk")}}]}""")
             .On((url, body) => url.EndsWith("/lists/1/search") && body.Contains("\"page\":1"),
                 $$"""{"page":1,"per_page":100,"results":[{{MuRow(1295, "Later")}}]}""")
             .On((url, body) => url.EndsWith("/lists/1/search") && body.Contains("\"page\":2"),
@@ -440,7 +440,7 @@ public class TrackerListTests
             [ScrobbleStatus.Reading, ScrobbleStatus.Reading, ScrobbleStatus.PlanToRead],
             list.Select(e => e.Status));
         Assert.Equal("One Piece", list[0].Title);
-        Assert.Equal(4, handler.Requests.Count);
+        Assert.Equal(3, handler.Requests.Count);
         Assert.Contains("\"perpage\":100", handler.Requests[0].Body);
         Assert.DoesNotContain(handler.Requests, r => r.Url.Contains("/lists/2/") || r.Url.Contains("/lists/3/"));
     }

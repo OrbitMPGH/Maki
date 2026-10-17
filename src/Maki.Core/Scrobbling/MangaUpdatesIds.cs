@@ -10,6 +10,7 @@ namespace Maki.Core.Scrobbling;
 public static class MangaUpdatesIds
 {
     private const string Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+    private const int SlugLength = 7;
 
     public static string ToSlug(long seriesId)
     {
@@ -67,7 +68,8 @@ public static class MangaUpdatesIds
 
     /// <summary>
     /// A slug from user input: a <c>mangaupdates.com/series/{slug}</c> URL, or a bare slug. A bare value
-    /// must contain a letter, so a pasted legacy numeric id is refused rather than read as base36.
+    /// must contain a letter or be at least <see cref="SlugLength"/> characters: legacy numeric ids are
+    /// at most six digits, while every current series id is seven base36 characters, some all digits.
     /// </summary>
     public static bool TryParse(string? input, out string slug)
     {
@@ -80,7 +82,7 @@ public static class MangaUpdatesIds
 
         if (text.All(char.IsAsciiLetterOrDigit))
         {
-            if (!text.Any(char.IsAsciiLetter) || !TryToSeriesId(text, out _))
+            if ((!text.Any(char.IsAsciiLetter) && text.Length < SlugLength) || !TryToSeriesId(text, out _))
             {
                 return false;
             }

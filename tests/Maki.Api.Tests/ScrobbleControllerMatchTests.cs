@@ -58,6 +58,7 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
     [InlineData("pb8uwds", "pb8uwds")]
     [InlineData("PB8UWDS", "pb8uwds")]
     [InlineData("https://www.mangaupdates.com/series/pb8uwds/one-piece", "pb8uwds")]
+    [InlineData("6028577", "6028577")]
     public async Task A_mangaupdates_slug_or_url_is_saved_lowercase(string input, string expected)
     {
         var userId = _db.SeedUser("reader", MakiPermission.UseTrackers);
@@ -70,6 +71,7 @@ public sealed class ScrobbleControllerMatchTests : IDisposable
 
     [Theory]
     [InlineData("12345")]
+    [InlineData("602857")]
     [InlineData("https://www.mangaupdates.com/series.html?id=12345")]
     [InlineData("not a slug!")]
     [InlineData("")]
