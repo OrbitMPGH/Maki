@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button, FileInput, Progress, Stack, Text } from '@mantine/core'
+import { Alert, Button, FileInput, Group, Progress, Stack, Text } from '@mantine/core'
 import { IconFileZip } from '@tabler/icons-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { ApiError } from '../../api/client'
 import { errorText } from '../../api/errorText'
 import { IMPORT_BATCH_SIZE } from '../../api/libraryImport'
 import {
@@ -22,9 +23,13 @@ import type { MihonGroup, MihonRow } from './mihonRows'
 type Phase =
   | { kind: 'pick' }
   | { kind: 'resolving'; done: number; total: number }
+  | { kind: 'resolveFailed'; done: number; total: number; message: string }
   | { kind: 'review' }
   | { kind: 'importing'; done: number; total: number }
   | { kind: 'done' }
+
+const MAX_BACKUP_MB = 100
+const MAX_BACKUP_BYTES = MAX_BACKUP_MB * 1024 * 1024
 
 /**
  * Importing a Mihon backup: upload, match every library manga to MangaBaka in batches, review, then
@@ -39,6 +44,10 @@ export function MihonImport() {
   const [rows, setRows] = useState<MihonRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [outcomes, setOutcomes] = useState<MihonOutcomeRow[]>([])
+  // What a failed resolve batch leaves behind: finished results and the offset to resume from.
+  const partialRef = useRef<{ data: MihonParseResponse; results: Map<number, MihonResolveResult>; offset: number } | null>(
+    null,
+  )
   // Bumped to abandon a resolve loop that is still awaiting a batch (cancel, restart or unmount).
   const runRef = useRef(0)
 
@@ -55,15 +64,43 @@ export function MihonImport() {
     setRows([])
     setOutcomes([])
     setError(null)
+    partialRef.current = null
     setPhase({ kind: 'pick' })
   }
 
-  const resolveAll = async (data: MihonParseResponse) => {
+  const sizeMessage = () =>
+    t`That backup is larger than the ${MAX_BACKUP_MB} MB limit, so it can't be imported.`
+
+  const finishResolve = (data: MihonParseResponse, results: Map<number, MihonResolveResult>) => {
+    partialRef.current = null
+    setRows(
+      data.manga.map((manga) => ({
+        manga,
+        result: results.get(manga.index) ?? {
+          index: manga.index,
+          status: 'notFound',
+          matchedBy: null,
+          match: null,
+          candidates: [],
+          library: 'none',
+          seriesId: null,
+        },
+      })),
+    )
+    setPhase({ kind: 'review' })
+  }
+
+  const resolveAll = async (
+    data: MihonParseResponse,
+    from = 0,
+    results = new Map<number, MihonResolveResult>(),
+  ) => {
     const token = ++runRef.current
-    const results = new Map<number, MihonResolveResult>()
-    setPhase({ kind: 'resolving', done: 0, total: data.manga.length })
+    const total = data.manga.length
+    setPhase({ kind: 'resolving', done: from, total })
+    let i = from
     try {
-      for (let i = 0; i < data.manga.length; i += IMPORT_BATCH_SIZE) {
+      for (; i < data.manga.length; i += IMPORT_BATCH_SIZE) {
         const batch = data.manga.slice(i, i + IMPORT_BATCH_SIZE)
         const res = await resolveMihon(
           batch.map(({ index, title, author, aniListId, malId, kitsuId, mangaBakaId }) => ({
@@ -78,21 +115,34 @@ export function MihonImport() {
         )
         if (token !== runRef.current) return
         for (const r of res) results.set(r.index, r)
-        setPhase({ kind: 'resolving', done: Math.min(i + batch.length, data.manga.length), total: data.manga.length })
+        setPhase({ kind: 'resolving', done: Math.min(i + batch.length, total), total })
       }
     } catch (e) {
       if (token !== runRef.current) return
-      setError(errorText(e))
-      setPhase({ kind: 'pick' })
+      partialRef.current = { data, results, offset: i }
+      setPhase({ kind: 'resolveFailed', done: i, total, message: errorText(e) })
       return
     }
-    setRows(
-      data.manga.flatMap((manga) => {
-        const result = results.get(manga.index)
-        return result ? [{ manga, result }] : []
-      }),
-    )
-    setPhase({ kind: 'review' })
+    finishResolve(data, results)
+  }
+
+  const retryResolve = () => {
+    const partial = partialRef.current
+    if (partial) void resolveAll(partial.data, partial.offset, partial.results)
+  }
+
+  const continueWithPartial = () => {
+    const partial = partialRef.current
+    if (partial) finishResolve(partial.data, partial.results)
+  }
+
+  const startParse = () => {
+    if (!file) return
+    if (file.size > MAX_BACKUP_BYTES) {
+      setError(sizeMessage())
+      return
+    }
+    parse.mutate(file)
   }
 
   const parse = useMutation({
@@ -107,7 +157,7 @@ export function MihonImport() {
       }
       void resolveAll(data)
     },
-    onError: (e) => setError(errorText(e)),
+    onError: (e) => setError(e instanceof ApiError && e.status === 413 ? sizeMessage() : errorText(e)),
   })
 
   const cancelResolve = () => {
@@ -162,6 +212,36 @@ export function MihonImport() {
 
   if (phase.kind === 'done') {
     return <MihonSummary results={outcomes} onReset={reset} />
+  }
+
+  if (phase.kind === 'resolveFailed') {
+    const { done, total, message } = phase
+    return (
+      <Panel>
+        <Stack gap="sm">
+          <Alert color="var(--danger)" variant="light">
+            {message}
+          </Alert>
+          <Text size="sm" c="var(--ink-2)">
+            <Trans>
+              {done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The
+              rest will show as not found, and you can match them by hand.
+            </Trans>
+          </Text>
+          <Group>
+            <Button onClick={retryResolve}>
+              <Trans>Retry</Trans>
+            </Button>
+            <Button variant="default" onClick={continueWithPartial}>
+              <Trans>Continue to review with what resolved</Trans>
+            </Button>
+            <Button variant="subtle" onClick={cancelResolve}>
+              <Trans>Cancel</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      </Panel>
+    )
   }
 
   if (phase.kind === 'resolving' || phase.kind === 'importing') {
@@ -226,7 +306,7 @@ export function MihonImport() {
           </Text>
         )}
         <div>
-          <Button disabled={!file} loading={parse.isPending} onClick={() => file && parse.mutate(file)}>
+          <Button disabled={!file} loading={parse.isPending} onClick={startParse}>
             <Trans>Read backup</Trans>
           </Button>
         </div>

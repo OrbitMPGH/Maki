@@ -202,6 +202,11 @@ msgstr "{0, plural, one {# selected} other {# selected}}"
 msgid "{0, plural, one {# series finished} other {# series finished}}"
 msgstr "{0, plural, one {# series finished} other {# series finished}}"
 
+#. placeholder {0}: withProblems.length
+#: src/components/import/MihonSummary.tsx
+msgid "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
+msgstr "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
+
 #. placeholder {0}: skipped.length
 #: src/components/import/MihonSummary.tsx
 msgid "{0, plural, one {# skipped} other {# skipped}}"
@@ -629,6 +634,10 @@ msgstr "{done} of {probes} chapter samples. The order below updates once it fini
 #: src/components/import/MihonImport.tsx
 msgid "{done} of {total}"
 msgstr "{done} of {total}"
+
+#: src/components/import/MihonImport.tsx
+msgid "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
+msgstr "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "{downloaded} of {total}"
@@ -4182,6 +4191,10 @@ msgstr "Continue reading"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Continue reading {nextChapter}"
 msgstr "Continue reading {nextChapter}"
+
+#: src/components/import/MihonImport.tsx
+msgid "Continue to review with what resolved"
+msgstr "Continue to review with what resolved"
 
 #: src/pages/LoginPage.tsx
 msgid "Continue with {displayName}"
@@ -11691,6 +11704,7 @@ msgstr "Retries"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
+#: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
@@ -13624,6 +13638,10 @@ msgstr "That account has not been set up yet"
 #: src/api/ssoErrors.ts
 msgid "That account is disabled"
 msgstr "That account is disabled"
+
+#: src/components/import/MihonImport.tsx
+msgid "That backup is larger than the {MAX_BACKUP_MB} MB limit, so it can't be imported."
+msgstr "That backup is larger than the {MAX_BACKUP_MB} MB limit, so it can't be imported."
 
 #: src/api/queue.ts
 msgid "That chapter no longer exists"

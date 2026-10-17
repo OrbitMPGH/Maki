@@ -238,6 +238,11 @@ msgstr "{0, plural, other {#개 선택됨}}"
 msgid "{0, plural, one {# series finished} other {# series finished}}"
 msgstr "{0, plural, other {완결된 시리즈 #개}}"
 
+#. placeholder {0}: withProblems.length
+#: src/components/import/MihonSummary.tsx
+msgid "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
+msgstr ""
+
 #. placeholder {0}: skipped.length
 #: src/components/import/MihonSummary.tsx
 msgid "{0, plural, one {# skipped} other {# skipped}}"
@@ -754,6 +759,10 @@ msgstr "챕터 샘플 {probes}개 중 {done}개 완료. 끝나면 아래 순서�
 
 #: src/components/import/MihonImport.tsx
 msgid "{done} of {total}"
+msgstr ""
+
+#: src/components/import/MihonImport.tsx
+msgid "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
 msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
@@ -5128,6 +5137,10 @@ msgstr "계속 읽기"
 #, fuzzy
 msgid "Continue reading {nextChapter}"
 msgstr "{nextChapter}을(를) 계속 읽기"
+
+#: src/components/import/MihonImport.tsx
+msgid "Continue to review with what resolved"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -14349,6 +14362,7 @@ msgstr "재시도"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
+#: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
@@ -16713,6 +16727,10 @@ msgstr "그 계정은 아직 설정되지 않았습니다"
 #, fuzzy
 msgid "That account is disabled"
 msgstr "그 계정은 비활성화되어 있습니다"
+
+#: src/components/import/MihonImport.tsx
+msgid "That backup is larger than the {MAX_BACKUP_MB} MB limit, so it can't be imported."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy

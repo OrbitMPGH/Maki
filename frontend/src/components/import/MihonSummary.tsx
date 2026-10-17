@@ -13,6 +13,7 @@ export function MihonSummary({ results, onReset }: { results: MihonOutcomeRow[];
   const existing = results.filter((r) => r.outcome === 'existing').length
   const skipped = results.filter((r) => r.outcome === 'skipped')
   const failed = results.filter((r) => r.outcome === 'failed')
+  const withProblems = results.filter((r) => (r.outcome === 'created' || r.outcome === 'existing') && r.reason)
 
   return (
     <Panel>
@@ -40,7 +41,16 @@ export function MihonSummary({ results, onReset }: { results: MihonOutcomeRow[];
             series has a chapter list.
           </Trans>
         </Text>
-        {[...skipped, ...failed].map((r) => {
+        {withProblems.length > 0 && (
+          <Text size="sm" c="var(--warn)" fw={600}>
+            <Plural
+              value={withProblems.length}
+              one="# series had problems applying tags or read marks"
+              other="# series had problems applying tags or read marks"
+            />
+          </Text>
+        )}
+        {[...withProblems, ...skipped, ...failed].map((r) => {
           const { title, reason } = r
           return (
             <Text

@@ -62,7 +62,8 @@ export interface MihonImportRequest {
   runId: string
   rootFolderId: number
   monitored: boolean
-  monitorNewItems: string
+  /** Null takes the server's default mode (`monitoring.defaultmode`). */
+  monitorNewItems: string | null
   applyTags: boolean
   applyReadState: boolean
   items: MihonImportItem[]

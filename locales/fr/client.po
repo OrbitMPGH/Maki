@@ -238,6 +238,11 @@ msgstr "{0, plural, one {# sélectionné} many {# sélectionnés} other {# séle
 msgid "{0, plural, one {# series finished} other {# series finished}}"
 msgstr "{0, plural, one {# série terminée} many {# séries terminées} other {# séries terminées}}"
 
+#. placeholder {0}: withProblems.length
+#: src/components/import/MihonSummary.tsx
+msgid "{0, plural, one {# series had problems applying tags or read marks} other {# series had problems applying tags or read marks}}"
+msgstr ""
+
 #. placeholder {0}: skipped.length
 #: src/components/import/MihonSummary.tsx
 msgid "{0, plural, one {# skipped} other {# skipped}}"
@@ -754,6 +759,10 @@ msgstr "{done} échantillons de chapitres sur {probes}. L'ordre ci-dessous se me
 
 #: src/components/import/MihonImport.tsx
 msgid "{done} of {total}"
+msgstr ""
+
+#: src/components/import/MihonImport.tsx
+msgid "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
 msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
@@ -5129,6 +5138,10 @@ msgstr "Continuer la lecture"
 #, fuzzy
 msgid "Continue reading {nextChapter}"
 msgstr "Continuer la lecture de {nextChapter}"
+
+#: src/components/import/MihonImport.tsx
+msgid "Continue to review with what resolved"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -14350,6 +14363,7 @@ msgstr "Nouvelles tentatives"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/FailedQueueActions.tsx
 #: src/components/home/AnimeResumeRail.tsx
+#: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ImportReviewModal.tsx
@@ -16714,6 +16728,10 @@ msgstr "Ce compte n'a pas encore été configuré"
 #, fuzzy
 msgid "That account is disabled"
 msgstr "Ce compte est désactivé"
+
+#: src/components/import/MihonImport.tsx
+msgid "That backup is larger than the {MAX_BACKUP_MB} MB limit, so it can't be imported."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy

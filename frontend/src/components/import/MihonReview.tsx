@@ -15,7 +15,7 @@ import {
 } from '@mantine/core'
 import { IconPackageImport, IconSearch } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { useRootFolders } from '../../api/hooks'
+import { useLibrarySettings, useRootFolders } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'
 import { useLabel } from '../../i18n-context'
 import type { MihonParseResponse } from '../../api/mihonImport'
@@ -43,7 +43,7 @@ const PAGE_SIZE = 100
 export interface MihonImportOptions {
   rootFolderId: number
   monitored: boolean
-  monitorNewItems: string
+  monitorNewItems: string | null
   applyTags: boolean
   applyReadState: boolean
 }
@@ -64,7 +64,8 @@ export function MihonReview({
   const { data: rootFolders } = useRootFolders()
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
-  const [monitorNewItems, setMonitorNewItems] = useState('All')
+  const { data: librarySettings } = useLibrarySettings()
+  const [monitorNewItems, setMonitorNewItems] = useState<string | null>(null)
   const [applyTags, setApplyTags] = useState(true)
   const [applyReadState, setApplyReadState] = useState(true)
   const [choices, setChoices] = useState<Record<number, MihonRowChoice>>({})
@@ -160,7 +161,7 @@ export function MihonReview({
             <Select
               label={t`New chapters`}
               data={MONITOR_OPTIONS.map((o) => ({ value: o.value, label: label(o.label) }))}
-              value={monitorNewItems}
+              value={monitorNewItems ?? librarySettings?.newSeriesMonitorMode ?? 'All'}
               onChange={(v) => v && setMonitorNewItems(v)}
               allowDeselect={false}
               size="xs"
@@ -294,7 +295,24 @@ export function MihonReview({
                         </Group>
                       </Table.Td>
                       <Table.Td>
-                        {match ? (
+                        {row.result.status === 'needsReview' && !choice?.manual ? (
+                          <Select
+                            aria-label={t`Match for ${title}`}
+                            placeholder={t`Choose a match`}
+                            data={row.result.candidates.map((c) => ({
+                              value: c.providerId,
+                              label: `${c.title}${c.year ? ` (${c.year})` : ''}`,
+                            }))}
+                            value={choice?.picked ?? null}
+                            onChange={(v) => patch(row.manga.index, { picked: v ?? undefined, checked: v !== null })}
+                            leftSection={
+                              match?.coverUrl ? (
+                                <Image src={match.coverUrl} w={20} h={30} radius="xs" fit="cover" alt="" />
+                              ) : undefined
+                            }
+                            leftSectionWidth={match?.coverUrl ? 36 : undefined}
+                          />
+                        ) : match ? (
                           <Group wrap="nowrap" gap="xs">
                             {match.coverUrl ? (
                               <Image src={match.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" loading="lazy" />
@@ -324,17 +342,6 @@ export function MihonReview({
                               </Group>
                             </div>
                           </Group>
-                        ) : row.result.status === 'needsReview' ? (
-                          <Select
-                            aria-label={t`Match for ${title}`}
-                            placeholder={t`Choose a match`}
-                            data={row.result.candidates.map((c) => ({
-                              value: c.providerId,
-                              label: `${c.title}${c.year ? ` (${c.year})` : ''}`,
-                            }))}
-                            value={choice?.picked ?? null}
-                            onChange={(v) => patch(row.manga.index, { picked: v ?? undefined, checked: v !== null })}
-                          />
                         ) : (
                           <Text size="sm" c="var(--danger)">
                             <Trans>No match found.</Trans>
