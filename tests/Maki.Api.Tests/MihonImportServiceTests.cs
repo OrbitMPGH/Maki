@@ -150,6 +150,23 @@ public sealed class MihonImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Resolve_ignores_an_id_match_above_the_content_rating_ceiling()
+    {
+        _store.Ratings["101"] = "pornographic";
+        _store.Ratings["202"] = "erotica";
+        _store.AniList[5001] = 101;
+        _store.Mal[6001] = 202;
+        var (service, _) = Build(SeedUser());
+
+        var results = await service.ResolveAsync(
+            [Row(0, mangaBaka: "101"), Row(1, aniList: 5001), Row(2, mal: 6001), Row(3, mangaBaka: "101", mal: 6001)], default);
+
+        Assert.Equal(["notFound", "notFound", "matched", "matched"], results.Select(r => r.Status));
+        Assert.Equal("202", results[2].Match!.ProviderId);
+        Assert.Equal("mal", results[3].MatchedBy);
+    }
+
+    [Fact]
     public async Task Resolve_by_title_accepts_a_single_strong_match_including_an_alt_title()
     {
         _metadata.Search["Shingeki no Kyojin"] = [Hit("501", "Attack on Titan"), Hit("502", "Attack on Titan: Junior High")];
@@ -481,6 +498,27 @@ public sealed class MihonImportServiceTests : IDisposable
         Assert.Empty(check.PendingReadImports.IgnoreQueryFilters());
     }
 
+    [Fact]
+    public async Task A_one_shot_series_gets_no_silent_mark_or_pending_row()
+    {
+        var existing = SeedSeries(101, _rootId);
+        AddChapters(existing, (decimal?)null);
+        var (service, _) = Build(SeedUser());
+
+        await service.ImportAsync(Request(Item("101", read: [1m, 2m], trackerLastRead: 5m)), default);
+
+        using var db = _db.NewContext();
+        Assert.Empty(db.ReadingStates.IgnoreQueryFilters());
+        Assert.Empty(db.PendingReadImports.IgnoreQueryFilters());
+    }
+
+    private void AddChapters(int seriesId, params decimal?[] numbers)
+    {
+        using var db = _db.NewContext();
+        db.Chapters.AddRange(numbers.Select(n => new Chapter { SeriesId = seriesId, Number = n, Language = "en" }));
+        db.SaveChanges();
+    }
+
     private static MetadataSearchResult Hit(string id, string title) =>
         new(id, title, null, 2020, SeriesStatus.Ongoing, null, null);
 
@@ -494,6 +532,7 @@ public sealed class MihonImportServiceTests : IDisposable
         public Dictionary<string, string> Merged { get; } = [];
         public HashSet<string> Novels { get; } = [];
         public Dictionary<string, string[]> AltTitles { get; } = [];
+        public Dictionary<string, string> Ratings { get; } = [];
 
         public override Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(Available);
 
@@ -520,6 +559,7 @@ public sealed class MihonImportServiceTests : IDisposable
                     ProviderId = id,
                     Title = $"Series {id}",
                     MangaBakaId = int.Parse(id),
+                    ContentRating = Ratings.GetValueOrDefault(id, "safe"),
                     AltTitles = [.. AltTitles.GetValueOrDefault(id, []).Select(t => new LocalizedTitle(t, "ja-ro"))],
                 });
         }

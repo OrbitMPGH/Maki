@@ -4,20 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-/// <summary>
-/// User tag writes shared by <c>TagsController</c> and the Mihon import, so both create a tag the
-/// same way: same default colour, same case-insensitive reuse, same answer to a race on the label.
-/// </summary>
+/// <summary>User tag writes shared by <c>TagsController</c> and the Mihon import.</summary>
 public class TagService(MakiDbContext db)
 {
     private static readonly string[] Palette =
         ["blue", "grape", "teal", "orange", "violet", "cyan", "pink", "lime", "indigo", "red"];
 
-    /// <summary>
-    /// The tag carrying <paramref name="label"/> (compared case-insensitively), created when there is
-    /// none. Two callers creating the same label at once both get the one row: the loser hits the
-    /// NOCASE unique index and re-reads the winner's.
-    /// </summary>
+    /// <summary>Finds the tag case-insensitively or creates it; a lost race re-reads the winner's row.</summary>
     public async Task<(Tag Tag, bool Created)> FindOrCreateAsync(string label, string? color, CancellationToken ct)
     {
         var existing = await db.Tags.FirstOrDefaultAsync(t => t.Label == label, ct);
@@ -40,7 +33,7 @@ public class TagService(MakiDbContext db)
         }
     }
 
-    /// <summary>Links the tags to the series, leaving every tag it already carries in place. Returns how many were added.</summary>
+    /// <summary>Links the tags without touching ones already on the series. Returns how many were added.</summary>
     public async Task<int> AddToSeriesAsync(int seriesId, IEnumerable<int> tagIds, CancellationToken ct)
     {
         var wanted = tagIds.Distinct().ToList();
@@ -72,11 +65,7 @@ public class TagService(MakiDbContext db)
         }
     }
 
-    /// <summary>
-    /// Picks a default colour from the label. Rolled by hand rather than via
-    /// <c>string.GetHashCode</c>, which is salted per process: the same label would otherwise
-    /// come out a different colour on every restart.
-    /// </summary>
+    // Not string.GetHashCode: it is salted per process, so the colour would change on restart.
     private static int ColorSlot(string label)
     {
         var sum = 0;

@@ -172,7 +172,7 @@ public sealed class PendingReadImportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task One_shots_and_numbers_with_no_chapter_are_not_marked()
+    public async Task One_shots_are_not_marked_and_numbers_with_no_chapter_wait_in_the_row()
     {
         var user = Reader();
         var seriesId = _db.SeedSeries();
@@ -184,6 +184,31 @@ public sealed class PendingReadImportServiceTests : IDisposable
 
         var row = Assert.Single(Progress());
         Assert.Equal(ids[1], row.ChapterId);
+        var waiting = Assert.Single(Pending());
+        Assert.Equal([0m, 7m], PendingReadImportService.Parse(waiting.NumbersJson));
+    }
+
+    [Fact]
+    public async Task Unmatched_numbers_are_marked_by_a_later_sync_and_the_row_goes_once_empty()
+    {
+        var user = Reader();
+        var seriesId = _db.SeedSeries();
+        var first = AddChapters(seriesId, 1, 2);
+        var service = Service();
+
+        await service.AddAsync(user, seriesId, [1m, 2m, 3m, 4m], default);
+        await service.ApplyAsync(seriesId, default);
+
+        Assert.Equal(2, Progress().Count);
+        Assert.Equal([3m, 4m], PendingReadImportService.Parse(Assert.Single(Pending()).NumbersJson));
+
+        var later = AddChapters(seriesId, 3, 4);
+        await service.ApplyAsync(seriesId, default);
+
+        var rows = Progress();
+        Assert.Equal(4, rows.Count);
+        Assert.All(rows, r => Assert.True(r.Completed));
+        Assert.Equivalent(first.Values.Concat(later.Values).ToList(), rows.Select(r => r.ChapterId).ToList());
         Assert.Empty(Pending());
     }
 

@@ -1,13 +1,11 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Maki.Core.Mihon;
 
-/// <summary>
-/// Reads a Mihon <c>.tachibk</c> / <c>.proto.gz</c> backup (gzipped or raw protobuf). Forks add their own
-/// fields and reuse retired numbers, so every field not named here is skipped.
-/// </summary>
+/// <summary>Reads a Mihon <c>.tachibk</c> / <c>.proto.gz</c> backup (gzipped or raw protobuf); fields not named here are skipped.</summary>
 public static class MihonBackupReader
 {
     public const long DefaultMaxBytes = 256L * 1024 * 1024;
@@ -19,36 +17,54 @@ public static class MihonBackupReader
 
     public static MihonBackup Read(Stream input) => Read(input, DefaultMaxBytes);
 
-    internal static MihonBackup Read(Stream input, long maxBytes)
+    internal static MihonBackup Read(Stream input, long maxBytes) => Read(ReadAll(input, maxBytes), maxBytes);
+
+    /// <summary>Reads from a buffer the caller already holds, without copying it.</summary>
+    public static MihonBackup Read(ReadOnlyMemory<byte> raw) => Read(raw, DefaultMaxBytes);
+
+    internal static MihonBackup Read(ReadOnlyMemory<byte> raw, long maxBytes)
     {
-        var raw = ReadAll(input, maxBytes);
         if (raw.Length == 0)
         {
             throw new MihonBackupException(MihonBackupFailure.NotABackup, "The file is empty.");
         }
 
-        var data = raw.Length >= 2 && raw[0] == 0x1F && raw[1] == 0x8B ? Gunzip(raw, maxBytes) : raw;
-        if (LooksLikeJson(data))
+        if (raw.Length > maxBytes)
+        {
+            throw new MihonBackupException(MihonBackupFailure.TooLarge, "The backup is too large.");
+        }
+
+        var span = raw.Span;
+        var data = span.Length >= 2 && span[0] == 0x1F && span[1] == 0x8B ? Gunzip(raw, maxBytes) : raw;
+        if (LooksLikeJson(data.Span))
         {
             throw new MihonBackupException(MihonBackupFailure.JsonBackup, "JSON backups are not supported.");
         }
 
-        return Parse(data);
+        return Parse(data.Span);
     }
 
-    private static byte[] ReadAll(Stream input, long maxBytes)
+    private static ReadOnlyMemory<byte> ReadAll(Stream input, long maxBytes)
     {
-        using var buffer = new MemoryStream();
+        if (input is MemoryStream { Position: var position } held && held.TryGetBuffer(out var segment))
+        {
+            return segment.AsMemory((int)Math.Min(position, segment.Count));
+        }
+
+        var buffer = new MemoryStream();
         Copy(input, buffer, maxBytes);
-        return buffer.ToArray();
+        return Held(buffer);
     }
 
-    private static byte[] Gunzip(byte[] compressed, long maxBytes)
+    private static ReadOnlyMemory<byte> Gunzip(ReadOnlyMemory<byte> compressed, long maxBytes)
     {
-        using var output = new MemoryStream();
+        var output = new MemoryStream();
         try
         {
-            using var gzip = new GZipStream(new MemoryStream(compressed), CompressionMode.Decompress);
+            var source = MemoryMarshal.TryGetArray(compressed, out var segment)
+                ? new MemoryStream(segment.Array!, segment.Offset, segment.Count, writable: false)
+                : new MemoryStream(compressed.ToArray(), writable: false);
+            using var gzip = new GZipStream(source, CompressionMode.Decompress);
             Copy(gzip, output, maxBytes);
         }
         catch (Exception e) when (e is InvalidDataException or EndOfStreamException)
@@ -56,8 +72,11 @@ public static class MihonBackupReader
             throw new MihonBackupException(MihonBackupFailure.Corrupt, "The gzip data is damaged.", e);
         }
 
-        return output.ToArray();
+        return Held(output);
     }
+
+    private static ReadOnlyMemory<byte> Held(MemoryStream stream) =>
+        stream.TryGetBuffer(out var segment) ? segment.AsMemory() : stream.ToArray();
 
     private static void Copy(Stream from, MemoryStream to, long maxBytes)
     {
@@ -76,7 +95,7 @@ public static class MihonBackupReader
         }
     }
 
-    private static bool LooksLikeJson(byte[] data)
+    private static bool LooksLikeJson(ReadOnlySpan<byte> data)
     {
         var i = data.Length >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF ? 3 : 0;
         while (i < data.Length && data[i] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n')
@@ -87,7 +106,7 @@ public static class MihonBackupReader
         return i < data.Length && data[i] == (byte)'{';
     }
 
-    private static MihonBackup Parse(byte[] data)
+    private static MihonBackup Parse(ReadOnlySpan<byte> data)
     {
         var mangaRanges = new List<(int Offset, int Length)>();
         var categoryNames = new Dictionary<long, string>();
@@ -126,7 +145,7 @@ public static class MihonBackupReader
         for (var index = 0; index < mangaRanges.Count; index++)
         {
             var (offset, length) = mangaRanges[index];
-            if (ParseManga(data.AsSpan(offset, length), index, categoryNames) is { } manga)
+            if (ParseManga(data.Slice(offset, length), index, categoryNames) is { } manga)
             {
                 library.Add(manga);
             }
@@ -267,7 +286,7 @@ public static class MihonBackupReader
     private static void ParseChapter(ReadOnlySpan<byte> message, ref int readCount, SortedSet<decimal> readNumbers)
     {
         var read = false;
-        var number = -1f;
+        var number = 0f;
         var reader = new ProtoReader(message);
         while (reader.Next(out var field, out var wire))
         {

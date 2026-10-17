@@ -71,11 +71,6 @@ public record MihonImportResult(string ProviderId, string Outcome, int? SeriesId
 
 public record MihonImportResponse(IReadOnlyList<MihonImportResult> Results);
 
-/// <summary>
-/// Brings a Mihon library into Maki: resolves each manga to a MangaBaka id, then adds it through
-/// <see cref="SeriesCreationService"/> like an import list does, with its categories as user tags
-/// and its read chapters as read state. Stateless between calls; the client drives the batches.
-/// </summary>
 public class MihonImportService(
     MakiDbContext db,
     MangaBakaLocalStore store,
@@ -90,7 +85,6 @@ public class MihonImportService(
 {
     public const string AddedFrom = "mihon";
 
-    /// <summary>Title search results scored per manga, and the most offered for review.</summary>
     public const int CandidateLimit = 5;
 
     public static Guid MutationId(int userId, string runId, string providerId) =>
@@ -98,7 +92,6 @@ public class MihonImportService(
 
     public Task<bool> DumpAvailableAsync(CancellationToken ct) => store.IsAvailableAsync(ct);
 
-    /// <summary>Same rule as the library import: the folder has to exist and be one the caller was granted.</summary>
     public async Task<bool> CanUseRootFolderAsync(int rootFolderId, CancellationToken ct) =>
         (currentUser.AllRootFolders || currentUser.RootFolderIds.Contains(rootFolderId)) &&
         await db.RootFolders.AnyAsync(r => r.Id == rootFolderId, ct);
@@ -169,15 +162,12 @@ public class MihonImportService(
     }
 
     private async Task<MetadataSearchResult?> LookupAsync(long mangaBakaId, CancellationToken ct) =>
-        await store.GetAsync(mangaBakaId.ToString(CultureInfo.InvariantCulture), ct) is { } m
+        await store.GetAsync(mangaBakaId.ToString(CultureInfo.InvariantCulture), ct) is { } m &&
+        ContentRating.Permits(m.ContentRating, currentUser.MaxContentRating)
             ? new MetadataSearchResult(m.ProviderId, m.Title, m.CoverUrl, m.Year, m.Status, m.Description, m.TotalChapters)
             : null;
 
-    /// <summary>
-    /// Scores the first few search hits against every title the dump holds for them. Accepted only
-    /// when exactly one passes <see cref="ScrobbleMatching.MatchThreshold"/> at the top score: two
-    /// works sharing a title are a question for the user, not a coin toss.
-    /// </summary>
+    /// <summary>Accepts a hit only when exactly one scores at the top; two works sharing a title are the user's call.</summary>
     private async Task<((MetadataSearchResult, string)? Match, IReadOnlyList<MetadataSearchResult> Candidates)> ByTitleAsync(
         string title, CancellationToken ct)
     {
@@ -212,10 +202,7 @@ public class MihonImportService(
         return (null, hits);
     }
 
-    /// <summary>
-    /// Where each MangaBaka id already lives: a series the caller can see, or one only in a root
-    /// folder they were not granted. Two queries, so the second never reveals which series it is.
-    /// </summary>
+    /// <summary>Where each id lives: a visible series, or only in a folder the caller was not granted (without saying which).</summary>
     private async Task<Dictionary<string, (string Where, int? SeriesId)>> LibraryStatusAsync(
         IEnumerable<string> providerIds, CancellationToken ct)
     {
@@ -253,11 +240,7 @@ public class MihonImportService(
         return result;
     }
 
-    /// <summary>
-    /// Adds each item in turn. Sequential on purpose: two Mihon sources of one work can resolve to
-    /// one MangaBaka id even after the client grouped them, and the second then lands on the
-    /// existing-series branch instead of racing the first.
-    /// </summary>
+    /// <summary>Sequential on purpose: two Mihon sources of one work can resolve to one id, and the second must land on the existing series.</summary>
     public async Task<IReadOnlyList<MihonImportResult>> ImportAsync(MihonImportRequest request, CancellationToken ct)
     {
         var results = new List<MihonImportResult>();
@@ -349,11 +332,7 @@ public class MihonImportService(
         MihonImportResult Failed(string key) => new(item.ProviderId, "failed", null, localizer.Get(key));
     }
 
-    /// <summary>
-    /// A copy of the same work the caller can see. <see cref="SeriesCreationService"/> reports the
-    /// first copy it finds with filters off, which may sit in a folder this caller was not granted
-    /// while another copy is in one they were.
-    /// </summary>
+    /// <summary>Creation reports the first copy with filters off, which may be one this caller cannot see.</summary>
     private async Task<(int Id, string Title)?> VisibleCopyAsync(int existingId, CancellationToken ct)
     {
         var mangaBakaId = await db.Series.IgnoreQueryFilters()
@@ -389,16 +368,20 @@ public class MihonImportService(
         await tags.AddToSeriesAsync(seriesId, ids, ct);
     }
 
-    /// <summary>
-    /// Raises the silent mark to the furthest read chapter (or the tracker's number when the backup
-    /// had no chapter rows for it), then stores the numbers to tick off once chapters exist.
-    /// </summary>
     private async Task ApplyReadStateAsync(int seriesId, string title, MihonImportItem item, CancellationToken ct)
     {
+        var chapters = db.Chapters.IgnoreQueryFilters().Where(c => c.SeriesId == seriesId);
+        if (await chapters.AnyAsync(ct) && !await chapters.AnyAsync(c => c.Number != null, ct))
+        {
+            return;
+        }
+
         var numbers = (item.ReadNumbers ?? []).Where(n => n >= 0).Distinct().ToList();
         var mark = numbers.Count > 0 ? numbers.Max() : item.TrackerLastRead;
         if (mark is > 0)
         {
+            // Silent on purpose: Mihon read dates would dump the back catalogue into Rewind.
+            // A tracker-only number may follow the tracker's numbering, not the source's.
             await progress.ImportSilentAsync(currentUser.UserId, seriesId, null, title, (double)mark.Value, 0, ct);
         }
 

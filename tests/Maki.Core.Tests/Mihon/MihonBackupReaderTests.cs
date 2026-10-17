@@ -257,6 +257,31 @@ public class MihonBackupReaderTests
     }
 
     [Fact]
+    public void A_read_chapter_without_a_number_field_is_chapter_zero()
+    {
+        var unnumbered = new ProtoWriter().String(1, "/c").String(2, "Prologue").Bool(4, true);
+
+        var manga = Assert.Single(Read(Backup(Manga("A", m => m
+            .Message(16, unnumbered)
+            .Message(16, Chapter(-1, true))))).Manga);
+
+        Assert.Equal([0m], manga.ReadNumbers);
+        Assert.Equal(2, manga.ReadCount);
+    }
+
+    [Fact]
+    public void A_backup_in_a_seekable_memory_stream_reads_from_its_position()
+    {
+        var data = Backup(Manga("Berserk"));
+        using var stream = new MemoryStream();
+        stream.Write([0x00, 0x00]);
+        stream.Write(data);
+        stream.Position = 2;
+
+        Assert.Equal("Berserk", Assert.Single(MihonBackupReader.Read(stream).Manga).Title);
+    }
+
+    [Fact]
     public void Tracker_progress_is_used_only_when_the_manga_has_no_chapter_rows()
     {
         var result = Read(Backup(

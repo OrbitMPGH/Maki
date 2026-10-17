@@ -7,18 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Controllers;
 
-/// <summary>
-/// Import a Mihon backup: <c>parse</c> reads the file, <c>resolve</c> maps its manga to MangaBaka,
-/// <c>import</c> adds them. Stateless; the client keeps the parsed list and sends batches, so a proxy
-/// timeout or a restart costs one batch rather than the run. Every call needs the local MangaBaka
-/// database, since tracker ids and titles are resolved against it.
-/// </summary>
+/// <summary>Stateless: the client keeps the parsed list and sends batches, so a restart costs one batch.</summary>
 [ApiController]
 [Route("api/v1/mihonimport")]
 [Authorize(Policy = Policies.ImportLibrary)]
 public class MihonImportController(ILocalizer localizer, MihonImportService mihon) : ControllerBase
 {
-    /// <summary>Items per resolve or import call; the client batches to this.</summary>
     public const int MaxItemsPerRequest = 50;
 
     public const long MaxUploadBytes = 100L * 1024 * 1024;
@@ -41,7 +35,8 @@ public class MihonImportController(ILocalizer localizer, MihonImportService miho
         MihonBackup backup;
         try
         {
-            using var buffer = new MemoryStream();
+            // Read async into one exact-size buffer; the reader parses it in place.
+            using var buffer = new MemoryStream((int)file.Length);
             await using (var upload = file.OpenReadStream())
             {
                 await upload.CopyToAsync(buffer, ct);
@@ -82,11 +77,6 @@ public class MihonImportController(ILocalizer localizer, MihonImportService miho
         return Ok(new MihonResolveResponse(await mihon.ResolveAsync(items, ct)));
     }
 
-    /// <summary>
-    /// Adds a batch. The client groups rows by MangaBaka id first, but duplicates are tolerated
-    /// rather than assumed absent: items run one at a time, a repeat of an id this run already added
-    /// replays that add, and a work added under another id comes back as <c>existing</c>.
-    /// </summary>
     [HttpPost("import")]
     public async Task<IActionResult> Import([FromBody] MihonImportRequest request, CancellationToken ct)
     {
@@ -106,7 +96,6 @@ public class MihonImportController(ILocalizer localizer, MihonImportService miho
             return this.Conflict(localizer, "error.mihon.dumpUnavailable");
         }
 
-        // Same answer as a folder that does not exist, as on the add form.
         if (!await mihon.CanUseRootFolderAsync(request.RootFolderId, ct))
         {
             return this.Fail(localizer, "error.series.rootFolderNotFound");

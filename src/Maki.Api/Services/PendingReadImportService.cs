@@ -6,21 +6,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// Per-chapter read marks brought in from a Mihon backup. They are stored first
-/// (<see cref="PendingReadImport"/>) and written to <see cref="ChapterProgress"/> once the series
-/// has chapter rows, which for a fresh add is after the deferred source match:
-/// <see cref="ChapterSyncService"/> calls <see cref="ApplyAsync"/> whenever a sync finds new chapters.
-/// <para>
-/// The rows take the Kavita import's shape (completed, bulk marked, external, page count 0) and raise
-/// no StatsEvent, XP or inbox row. Mihon does record when chapters were read, but imported reading
-/// stays out of Rewind on purpose, like the Kavita import. One-shots are never marked: there is no
-/// number to match them on. A fallback tracker number (<c>trackerLastRead</c>) only raises the
-/// silent mark and may follow the tracker's numbering rather than the source's.
-/// </para>
+/// Read marks from a Mihon backup, held in <see cref="PendingReadImport"/> until the series has chapter
+/// rows. The row keeps the numbers that matched no chapter yet, so a later sync can place them.
+/// Imported reading stays out of Rewind on purpose, like the Kavita import.
 /// </summary>
 public class PendingReadImportService(IServiceScopeFactory scopes, ILogger<PendingReadImportService> logger)
 {
-    /// <summary>Stores the numbers for this reader, merged into any row an earlier import left.</summary>
     public async Task AddAsync(int userId, int seriesId, IReadOnlyCollection<decimal> numbers, CancellationToken ct)
     {
         if (numbers.Count == 0)
@@ -61,10 +52,7 @@ public class PendingReadImportService(IServiceScopeFactory scopes, ILogger<Pendi
         }
     }
 
-    /// <summary>
-    /// Marks every pending number that now has a chapter, for every reader with a pending row, and
-    /// removes those rows. Does nothing while the series has no chapters at all.
-    /// </summary>
+    /// <summary>Marks every pending number that now has a chapter, for every reader. Does nothing while the series has none.</summary>
     public async Task ApplyAsync(int seriesId, CancellationToken ct)
     {
         List<PendingReadImport> pending;
@@ -94,8 +82,6 @@ public class PendingReadImportService(IServiceScopeFactory scopes, ILogger<Pendi
                 }
                 catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
                 {
-                    // A reader or Kavita wrote one of these chapters' rows in between; the re-run
-                    // reads it and leaves it alone.
                     await ApplyForUserAsync(row, ct);
                 }
             }
@@ -113,14 +99,15 @@ public class PendingReadImportService(IServiceScopeFactory scopes, ILogger<Pendi
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var numbers = Parse(pending.NumbersJson).ToHashSet();
 
-        // In memory: Chapter.Number is REAL and EF's SQLite provider cannot compare decimals.
-        var targets = (await db.Chapters.IgnoreQueryFilters().AsNoTracking()
+        // In memory: EF's SQLite provider cannot compare decimals.
+        var matched = (await db.Chapters.IgnoreQueryFilters().AsNoTracking()
                 .Where(c => c.SeriesId == pending.SeriesId && c.Number != null)
                 .Select(c => new { c.Id, c.Number })
                 .ToListAsync(ct))
             .Where(c => numbers.Contains(c.Number!.Value))
-            .Select(c => c.Id)
             .ToList();
+        var targets = matched.Select(c => c.Id).ToList();
+        var left = numbers.Except(matched.Select(c => c.Number!.Value)).ToList();
 
         var existing = await db.ChapterProgress.IgnoreQueryFilters()
             .Where(p => p.UserId == pending.UserId && p.SeriesId == pending.SeriesId && targets.Contains(p.ChapterId))
@@ -158,11 +145,18 @@ public class PendingReadImportService(IServiceScopeFactory scopes, ILogger<Pendi
 
         await db.SaveChangesAsync(ct);
 
-        // Matched on the numbers too: an import that merged more into the row since it was read
-        // leaves it in place, and its own apply picks the rest up.
-        await db.PendingReadImports.IgnoreQueryFilters()
-            .Where(p => p.Id == pending.Id && p.NumbersJson == pending.NumbersJson)
-            .ExecuteDeleteAsync(ct);
+        // Guarded on the numbers: an import that merged more into the row since it was read keeps it.
+        var current = db.PendingReadImports.IgnoreQueryFilters()
+            .Where(p => p.Id == pending.Id && p.NumbersJson == pending.NumbersJson);
+        if (left.Count == 0)
+        {
+            await current.ExecuteDeleteAsync(ct);
+        }
+        else if (left.Count < numbers.Count)
+        {
+            var rewritten = Serialize(left);
+            await current.ExecuteUpdateAsync(set => set.SetProperty(p => p.NumbersJson, rewritten), ct);
+        }
     }
 
     internal static IEnumerable<decimal> Parse(string json)
