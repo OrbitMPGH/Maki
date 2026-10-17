@@ -839,6 +839,14 @@ try
     // NotificationService is one — the raise sites are jobs, hosted services and other singletons.
     builder.Services.AddSingleton<InboxAudienceResolver>();
     builder.Services.AddSingleton<InboxService>();
+
+    // Web Push rides the inbox: one bounded queue and one consumer, so a raise never waits on a push
+    // service. The endpoint is a URL a browser supplied, so connections are held to public addresses.
+    builder.Services.AddSingleton<WebPushKeys>();
+    builder.Services.AddSingleton<WebPushSender>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<WebPushSender>());
+    builder.Services.AddHttpClient(WebPushSender.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(30))
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler);
     builder.Services.AddSingleton<AccountSecurityAlerts>();
     builder.Services.AddSingleton<FollowedCreatorReleaseService>();
 

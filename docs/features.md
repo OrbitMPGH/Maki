@@ -41,6 +41,11 @@
 - **OPDS server.** OPDS 1.2 with page streaming (OPDS-PSE), so Panels, Chunky, KOReader, and
   Mihon read straight from Maki. Off by default. Each user's feed URL carries its own rotatable
   token, and pages streamed this way count as read.
+- **Install as an app and read offline.** Maki installs to a phone or desktop home screen. Save
+  chapters or whole series to the device, or let it keep the next few unread chapters of what
+  you're reading. Library and series pages you have visited still open offline, and progress read
+  offline syncs when the connection returns. Push notifications can announce new chapters. See
+  [Offline reading](offline-reading.md).
 
 ## Discover
 

@@ -3,7 +3,9 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Reading;
+using Maki.Core.Security;
 using Maki.Data;
+using Maki.Data.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -40,10 +42,10 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     private ReaderService Reader(ReadingSessionService? sessions = null, InertKavitaPusher? pusher = null,
-        Func<MakiDbContext, ReadingProgressService>? progress = null)
+        Func<MakiDbContext, ReadingProgressService>? progress = null, MakiDbContext? scoped = null)
     {
         // Narrowed the way a request is: ReaderService reads its owner off the scope.
-        var context = _db.NewContext(TestUser);
+        var context = scoped ?? _db.NewContext(TestUser);
         // A real pusher would query the database from its fire-and-forget task and race Dispose;
         // see InertKavitaPusher.
         pusher ??= InertKavitaPusher.For(_db.ScopeFactory());
@@ -57,7 +59,7 @@ public sealed class ReaderServiceTests : IDisposable
         : ReadingProgressService(context, new ReadingProgressGate(), NullLogger<ReadingProgressService>.Instance)
     {
         public override Task<Marks> TrackNativeAsync(int userId, int seriesId, string title,
-            double maxChapter, double maxVolume, CancellationToken ct) =>
+            double maxChapter, double maxVolume, CancellationToken ct, DateTime? at = null) =>
             throw new TimeoutException("gate");
     }
 
@@ -545,6 +547,275 @@ public sealed class ReaderServiceTests : IDisposable
         using var after = _db.NewContext();
         Assert.Equal(11, after.ReadingStates.Single(r => r.KavitaSeriesId == 1).MaxChapter);
         Assert.Equal(5, after.ReadingStates.Single(r => r.KavitaSeriesId == 2).MaxChapter);
+    }
+
+    // ---- replayed offline writes ----
+
+    private static readonly CancellationToken None = CancellationToken.None;
+
+    private async Task<(ReaderService Reader, ReaderService.ChapterSlice Slice)> ThreePagesAsync(string name)
+    {
+        var (_, chapters) = SeedFromCbz(name, ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        return (reader, (await reader.SliceAsync(chapters[1m], None))!);
+    }
+
+    private ChapterProgress Row()
+    {
+        using var db = _db.NewContext();
+        return db.ChapterProgress.Single();
+    }
+
+    private void Backdate(TimeSpan by)
+    {
+        using var db = _db.NewContext();
+        var row = db.ChapterProgress.Single();
+        row.UpdatedAt -= by;
+        if (row.UnreadAt is { } unread)
+        {
+            row.UnreadAt = unread - by;
+        }
+
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task AReplayedOpIdChangesNothingEvenAfterALaterLiveWrite()
+    {
+        var (reader, slice) = await ThreePagesAsync("op-replay.cbz");
+
+        await reader.SaveProgressAsync(slice, 0, null, new(60, false), None, opId: "a");
+        await reader.SaveProgressAsync(slice, 1, null, new(30, false), None, opId: "b");
+        Assert.False(await reader.SaveProgressAsync(slice, 0, null, new(60, true), None,
+            DateTime.UtcNow.AddMinutes(-5), "a"));
+
+        var row = Row();
+        Assert.Equal(1, row.PageIndex);
+        Assert.Equal(90, row.ReadSeconds);
+        Assert.Equal("a b", row.RecentOpIds);
+    }
+
+    [Fact]
+    public async Task OnlyTheLatestOpIdsAreRemembered()
+    {
+        var (reader, slice) = await ThreePagesAsync("op-window.cbz");
+
+        for (var i = 0; i <= ReaderService.RecentOpIdLimit; i++)
+        {
+            await reader.SaveProgressAsync(slice, 0, null, new(1, false), None, opId: $"op{i}");
+        }
+
+        var ids = Row().RecentOpIds!.Split(' ');
+        Assert.Equal(ReaderService.RecentOpIdLimit, ids.Length);
+        Assert.DoesNotContain("op0", ids);
+        Assert.Equal($"op{ReaderService.RecentOpIdLimit}", ids[^1]);
+    }
+
+    [Fact]
+    public async Task AStaleWriteKeepsThePositionAndUpdatedAtButAddsItsTime()
+    {
+        var (reader, slice) = await ThreePagesAsync("stale.cbz");
+        await reader.SaveProgressAsync(slice, 1, null, ReaderService.TimeReport.None, None);
+        var before = Row();
+
+        await reader.SaveProgressAsync(slice, 0, null, new(120, true), None, DateTime.UtcNow.AddHours(-1), "q1");
+
+        var row = Row();
+        Assert.Equal(1, row.PageIndex);
+        Assert.Equal(before.UpdatedAt, row.UpdatedAt);
+        Assert.Equal(120, row.ReadSeconds);
+        Assert.False(row.Completed);
+    }
+
+    [Fact]
+    public async Task AFreshClientTimeDatesTheWrite()
+    {
+        var (reader, slice) = await ThreePagesAsync("fresh.cbz");
+        var at = DateTime.UtcNow.AddHours(-2);
+
+        Assert.True(await reader.SaveProgressAsync(slice, 2, true, new(300, true), None, at, "q1"));
+
+        var row = Row();
+        Assert.Equal(at, row.UpdatedAt);
+        Assert.Equal(at, row.StartedAt);
+        Assert.Equal(at, row.CompletedAt);
+        Assert.Equal(2, row.PageIndex);
+        var events = Events();
+        Assert.Equal(at, Assert.Single(events, e => e.Type == StatsEventType.ReadingTime).Timestamp);
+        Assert.Equal(at, Assert.Single(events, e => e.Type == StatsEventType.ChaptersRead).Timestamp);
+        Assert.Equal(at, Assert.Single(Sessions()).EndedAt);
+    }
+
+    [Fact]
+    public async Task AReplayDatesOnlyItsOwnSecondsAndLeavesLiveBankedTimeForTheNextFlush()
+    {
+        var (reader, slice) = await ThreePagesAsync("replaytime.cbz");
+        var yesterday = DateTime.UtcNow.AddDays(-1);
+
+        await reader.SaveProgressAsync(slice, 0, null, new(100, false), None);
+        Assert.Empty(Events());
+
+        await reader.SaveProgressAsync(slice, 0, null, new(200, true), None, yesterday, "q1");
+
+        var replayed = Assert.Single(Events(), e => e.Type == StatsEventType.ReadingTime);
+        Assert.Equal(200, replayed.Value);
+        Assert.Equal(yesterday, replayed.Timestamp);
+        Assert.Equal(200, Row().ReportedSeconds);
+
+        var before = DateTime.UtcNow;
+        await reader.SaveProgressAsync(slice, 1, null, new(30, true), None);
+
+        var times = Events().Where(e => e.Type == StatsEventType.ReadingTime).OrderBy(e => e.Timestamp).ToList();
+        Assert.Equal(2, times.Count);
+        Assert.Equal(130, times[1].Value);
+        Assert.True(times[1].Timestamp >= before.AddSeconds(-1));
+        Assert.Equal(330, Row().ReportedSeconds);
+        Assert.Equal(330, Row().ReadSeconds);
+    }
+
+    [Fact]
+    public async Task AClientTimeIsClampedToTheAcceptedWindow()
+    {
+        var (reader, slice) = await ThreePagesAsync("clamp.cbz");
+
+        await reader.SaveProgressAsync(slice, 0, null, ReaderService.TimeReport.None, None, DateTime.UtcNow.AddDays(1));
+        Assert.True(Row().UpdatedAt <= DateTime.UtcNow);
+
+        await reader.SaveProgressAsync(slice, 1, null, ReaderService.TimeReport.None, None, DateTime.UtcNow.AddDays(-90));
+        Assert.Equal(0, Row().PageIndex);
+    }
+
+    [Fact]
+    public async Task MarkingUnreadAfterTheOfflineCompletionWins()
+    {
+        var (reader, slice) = await ThreePagesAsync("unread-after.cbz");
+        var offline = DateTime.UtcNow.AddHours(-1);
+        await reader.SaveProgressAsync(slice, 1, null, ReaderService.TimeReport.None, None);
+        await reader.ClearProgressAsync(slice.Chapter.Id, None);
+
+        Assert.False(await reader.SaveProgressAsync(slice, 2, true, new(60, true), None, offline, "q1"));
+
+        var row = Row();
+        Assert.False(row.Completed);
+        Assert.NotNull(row.UnreadAt);
+        Assert.Equal(0, row.PageIndex);
+        Assert.Equal(60, row.ReadSeconds);
+    }
+
+    [Fact]
+    public async Task MarkingUnreadBeforeTheOfflineCompletionIsUndoneByIt()
+    {
+        var (reader, slice) = await ThreePagesAsync("unread-before.cbz");
+        await reader.SaveProgressAsync(slice, 1, null, ReaderService.TimeReport.None, None);
+        await reader.ClearProgressAsync(slice.Chapter.Id, None);
+        Backdate(TimeSpan.FromHours(2));
+
+        var replay = Reader();
+        Assert.True(await replay.SaveProgressAsync(slice, 2, true, new(60, true), None,
+            DateTime.UtcNow.AddHours(-1), "q1"));
+
+        var row = Row();
+        Assert.True(row.Completed);
+        Assert.Null(row.UnreadAt);
+    }
+
+    [Fact]
+    public async Task AStaleCompletingReplayCompletesTheChapterButKeepsTheLivePosition()
+    {
+        var (reader, slice) = await ThreePagesAsync("stale-complete.cbz");
+        var offline = DateTime.UtcNow.AddHours(-1);
+        await reader.SaveProgressAsync(slice, 0, null, ReaderService.TimeReport.None, None);
+        var before = Row();
+
+        Assert.True(await reader.SaveProgressAsync(slice, 2, true, new(60, true), None, offline, "q1"));
+
+        var row = Row();
+        Assert.True(row.Completed);
+        Assert.Equal(0, row.PageIndex);
+        Assert.Equal(before.UpdatedAt, row.UpdatedAt);
+        Assert.Equal(offline, row.CompletedAt);
+        Assert.Equal(offline, Assert.Single(Events(), e => e.Type == StatsEventType.ChaptersRead).Timestamp);
+    }
+
+    [Fact]
+    public async Task ALiveWriteAfterAQueuedCompletionDoesNotUncompleteIt()
+    {
+        var (reader, slice) = await ThreePagesAsync("sticky.cbz");
+        await reader.SaveProgressAsync(slice, 2, true, new(60, true), None, DateTime.UtcNow.AddHours(-1), "q1");
+
+        await reader.SaveProgressAsync(slice, 0, null, ReaderService.TimeReport.None, None, opId: "live");
+
+        var row = Row();
+        Assert.True(row.Completed);
+        Assert.Equal(0, row.PageIndex);
+    }
+
+    [Fact]
+    public async Task WritesWithoutClientTimeOrOpIdBehaveAsBefore()
+    {
+        var (reader, slice) = await ThreePagesAsync("plain.cbz");
+        await reader.SaveProgressAsync(slice, 1, null, ReaderService.TimeReport.None, None);
+
+        await reader.SaveProgressAsync(slice, 0, null, new(30, false), None);
+
+        var row = Row();
+        Assert.Equal(0, row.PageIndex);
+        Assert.Equal(30, row.ReadSeconds);
+        Assert.False(row.Completed);
+        Assert.Null(row.RecentOpIds);
+    }
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("3f2a9c1e-5b7d-4e8f-9a0b-1c2d3e4f5a6b", true)]
+    [InlineData("", false)]
+    [InlineData("two words", false)]
+    public void OpIdsAreValidated(string? opId, bool valid) =>
+        Assert.Equal(valid, ReaderService.IsValidOpId(opId));
+
+    [Fact]
+    public void AnOverlongOpIdIsInvalid() =>
+        Assert.False(ReaderService.IsValidOpId(new string('a', ReaderService.MaxOpIdLength + 1)));
+
+    // ---- offline copies ----
+
+    [Fact]
+    public async Task ArchiveVersionsOmitChaptersTheCallerCannotSeeAndNullTheUnreadableOnes()
+    {
+        var (seriesId, shared) = SeedFromCbz("granted.cbz", ["S - c001 - p001.png", "S - c002 - p001.png"],
+            [(1m, null), (2m, null)]);
+        var (_, hidden) = SeedFromCbz("hidden.cbz", ["001.jpg"], [(1m, null)]);
+        var gonePath = WriteCbz("gone.cbz", "001.jpg");
+        var gone = LinkChapters(seriesId, gonePath, [(4m, null)]).Single().Id;
+        File.Delete(gonePath);
+        var restricted = _db.SeedUser("restricted", MakiPermission.None, allRootFolders: false);
+        int noFile;
+        using (var db = _db.NewContext())
+        {
+            var chapter = new Chapter { SeriesId = seriesId, Number = 3m, Language = "en" };
+            db.Chapters.Add(chapter);
+            db.UserRootFolders.Add(new UserRootFolder
+            {
+                UserId = restricted,
+                RootFolderId = db.Series.Single(s => s.Id == seriesId).RootFolderId
+            });
+            db.SaveChanges();
+            noFile = chapter.Id;
+        }
+
+        var reader = Reader(scoped: _db.NewContext(restricted, allRootFolders: false));
+        var versions = await reader.ArchiveVersionsAsync(
+            [shared[1m], shared[2m], hidden[1m], gone, noFile, 999_999], None);
+
+        var slice = await Reader().SliceAsync(shared[1m], None);
+        var goneFileId = _db.NewContext().Chapters.Single(c => c.Id == gone).ChapterFileId!.Value;
+        Assert.Equal(
+            [
+                (shared[1m], slice!.ChapterFileId, (string?)slice.ArchiveVersion),
+                (shared[2m], slice.ChapterFileId, slice.ArchiveVersion),
+                (gone, goneFileId, null)
+            ],
+            versions.OrderBy(v => v.ChapterId).ToList());
     }
 
     // ---- reading time ----

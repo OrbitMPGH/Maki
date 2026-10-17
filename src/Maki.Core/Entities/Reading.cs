@@ -133,6 +133,14 @@ public class ChapterProgress : IUserOwned
     /// completion counts once.
     /// </summary>
     public DateTime? CountedAt { get; set; }
+
+    /// <summary>
+    /// The op ids of the last <c>ReaderService.RecentOpIdLimit</c> progress writes applied to this
+    /// row, space-separated, oldest first. A write whose id is already here is a replay of one that
+    /// landed (an offline queue resending a write the server got before the connection dropped)
+    /// and is acknowledged without changing anything. Null until a client sends op ids.
+    /// </summary>
+    public string? RecentOpIds { get; set; }
 }
 
 /// <summary>

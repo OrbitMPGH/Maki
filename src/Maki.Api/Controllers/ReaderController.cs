@@ -22,8 +22,14 @@ namespace Maki.Api.Controllers;
 /// does not. Absent or zero simply records no time. <paramref name="Final"/> marks the write that
 /// ends a sitting (tab hidden, reader closed, chapter changed), which flushes the chapter's banked
 /// time instead of waiting for a report that is not coming.
+/// <para>
+/// <paramref name="ClientTime"/> (UTC) is when the write was made, sent by a write replayed from the
+/// offline queue. <paramref name="OpId"/> identifies the write so a replay of one that already landed
+/// changes nothing. Both are optional; see <see cref="ReaderService.SaveProgressAsync"/>.
+/// </para>
 /// </summary>
-public record SaveProgressRequest(int PageIndex, bool? Completed, int? Seconds, bool? Final);
+public record SaveProgressRequest(
+    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null);
 
 /// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
@@ -40,6 +46,9 @@ public record SeriesReadingProfileRequest(int? ProfileId);
 /// </para>
 /// </summary>
 public record SetChaptersStateRequest(int[] ChapterIds, string State);
+
+/// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
+public record ChapterVersionsRequest(int[]? Ids);
 
 /// <summary>
 /// Serves pages out of the library's CBZ files and records what has been read.
@@ -404,9 +413,15 @@ public class ReaderController(
             return this.Fail(localizer, "error.reader.pageOutOfRange");
         }
 
+        if (!ReaderService.IsValidOpId(request.OpId))
+        {
+            return this.Fail(localizer, "error.reader.invalidOpId");
+        }
+
         var finished = await reader.SaveProgressAsync(
             slice, request.PageIndex, request.Completed,
-            new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct);
+            new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct,
+            request.ClientTime, request.OpId);
 
         // After the save, so the evaluation sees the finished chapter. Whatever it unlocks reaches
         // the reader through the inbox push rather than this response.
@@ -491,6 +506,29 @@ public class ReaderController(
         }
 
         return Ok(new { updated = await reader.MarkReadAsync(visible, ct) });
+    }
+
+    /// <summary>Largest set one <see cref="ChapterVersions"/> call answers.</summary>
+    internal const int MaxVersionChapters = 500;
+
+    /// <summary>
+    /// The manifest's <c>pageVersion</c> for each requested chapter the caller can still read, so a
+    /// device can check the chapters it saved offline in one call. A chapter that does not exist,
+    /// has no file record, or is outside the caller's root folders is left out, and the device
+    /// drops it. A chapter whose file cannot be read right now (an unmounted root) comes back with
+    /// a null <c>pageVersion</c>, so a storage outage never wipes the device's copies.
+    /// </summary>
+    [HttpPost("chapters/versions")]
+    public async Task<IActionResult> ChapterVersions(ChapterVersionsRequest req, CancellationToken ct)
+    {
+        var ids = (req.Ids ?? []).Distinct().ToArray();
+        if (ids.Length > MaxVersionChapters)
+        {
+            return this.Fail(localizer, "error.reader.tooManyChapters", new { max = MaxVersionChapters });
+        }
+
+        var versions = await reader.ArchiveVersionsAsync(ids, ct);
+        return Ok(versions.Select(v => new { id = v.ChapterId, pageVersion = v.ArchiveVersion is null ? null : PageVersion(v.ChapterFileId, v.ArchiveVersion) }));
     }
 
     /// <summary>
