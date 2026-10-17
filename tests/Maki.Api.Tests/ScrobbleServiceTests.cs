@@ -33,6 +33,7 @@ public class ScrobbleServiceTests
             mal: null!,
             mangaBaka: null!,
             kitsu: null!,
+            mangaUpdates: null!,
             logger: NullLogger<ScrobbleService>.Instance);
 
     /// <summary>
@@ -62,6 +63,8 @@ public class ScrobbleServiceTests
             mangaBaka: mangaBaka,
             kitsu: new KitsuTracker(
                 noopHttp, appSettings, userSettings, tokens, options, NullLogger<KitsuTracker>.Instance),
+            mangaUpdates: new MangaUpdatesTracker(
+                noopHttp, userSettings, tokens, options, NullLogger<MangaUpdatesTracker>.Instance),
             logger: NullLogger<ScrobbleService>.Instance);
     }
 
@@ -107,6 +110,73 @@ public class ScrobbleServiceTests
 
         Assert.Contains(tracker.Pushes, p => p.RemoteId == "100" && p.Chapter == 5);
         Assert.DoesNotContain(tracker.Pushes, p => p.RemoteId == "200");
+    }
+
+    [Fact]
+    public async Task NativePassAsync_PushesToMangaUpdatesFromTheSeriesSlug()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("Slugged", configure: s => s.MangaUpdatesId = "pb8uwds");
+        SeedReading(db, user, series, 12);
+
+        var tracker = new FakeScrobbleTracker { TrackerName = "mangaupdates" };
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Contains(tracker.Pushes, p => p.RemoteId == "pb8uwds" && p.Chapter == 12);
+    }
+
+    [Fact]
+    public async Task NativePassAsync_SkipsAMangaUpdatesTrackerForASeriesWithoutASlug()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("No slug", configure: s => s.MangaBakaId = 100);
+        SeedReading(db, user, series, 3);
+
+        var tracker = new FakeScrobbleTracker { TrackerName = "mangaupdates" };
+
+        await BuildService(db, new FakeUserSettingsStore(db))
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Empty(tracker.Pushes);
+    }
+
+    [Theory]
+    [InlineData(IncognitoMode.ScrobbleOnly)]
+    [InlineData(IncognitoMode.Full)]
+    public async Task NativePassAsync_NeverPushesAnIncognitoSeriesToMangaUpdates(IncognitoMode mode)
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("Private", configure: s =>
+        {
+            s.MangaUpdatesId = "pb8uwds";
+            s.Incognito = mode;
+        });
+        SeedReading(db, user, series, 9);
+
+        var userSettings = new FakeUserSettingsStore(db);
+        await userSettings.SetAsync(user, SettingKeys.ScrobblePlanToRead, "true");
+        var tracker = new FakeScrobbleTracker { TrackerName = "mangaupdates" };
+
+        await BuildService(db, userSettings)
+            .NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Empty(tracker.Pushes);
+    }
+
+    private static void SeedReading(TestDb db, int userId, int seriesId, double maxChapter)
+    {
+        using var seed = db.NewContext();
+        seed.ReadingStates.Add(new ReadingState
+        {
+            UserId = userId, SeriesId = seriesId, Title = "Seeded",
+            MaxChapter = maxChapter, LastProgressAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        seed.SaveChanges();
     }
 
     [Theory]
@@ -518,8 +588,9 @@ public class ScrobbleServiceTests
         public List<(string RemoteId, int Chapter, int Volume, ScrobbleStatus Status)> Pushes { get; } = [];
         public List<bool> KeptStatus { get; } = [];
         public RemoteEntry Entry { get; init; } = new();
+        public string TrackerName { get; init; } = "mangabaka";
 
-        public string Name => "mangabaka";
+        public string Name => TrackerName;
         public string Label => "MangaBaka";
         public bool UsesOAuth => false;
 

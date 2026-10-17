@@ -111,7 +111,8 @@ public class MangaBakaBrowseIndexTests : IDisposable
     }
 
     private const string ExternalIdColumns =
-        ", merged_with TEXT, source_anilist_id INTEGER, source_my_anime_list_id INTEGER, source_kitsu_id INTEGER";
+        ", merged_with TEXT, source_anilist_id INTEGER, source_my_anime_list_id INTEGER, source_kitsu_id INTEGER, " +
+        "source_manga_updates_id TEXT";
 
     private static long RootPage(SqliteConnection conn, string index)
     {
@@ -165,6 +166,52 @@ public class MangaBakaBrowseIndexTests : IDisposable
         }
 
         Assert.Contains(expected, string.Join(" | ", plan));
+    }
+
+    [Fact]
+    public void The_mangaupdates_lookup_uses_its_lowercase_expression_index()
+    {
+        using var conn = OpenWith(FullColumns + ExternalIdColumns);
+        MangaBakaDumpService.BuildBrowseIndexes(conn);
+
+        using var cmd = conn.CreateCommand();
+        // The shape MangaBakaLocalStore.GetIdsByMangaUpdatesIdsAsync sends.
+        cmd.CommandText = """
+            EXPLAIN QUERY PLAN
+            SELECT lower(source_manga_updates_id), id, state, merged_with, type FROM series
+            WHERE source_manga_updates_id IS NOT NULL AND lower(source_manga_updates_id) IN ($a, $b)
+            """;
+        cmd.Parameters.AddWithValue("$a", "pb8uwds");
+        cmd.Parameters.AddWithValue("$b", "ij97889");
+        var plan = new List<string>();
+        using (var reader = cmd.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                plan.Add(reader.GetString(3));
+            }
+        }
+
+        Assert.Contains("ix_ext_mangaupdates", string.Join(" | ", plan));
+    }
+
+    [Fact]
+    public async Task Repairing_the_live_file_backfills_the_mangaupdates_index()
+    {
+        using var conn = OpenWith(FullColumns + ExternalIdColumns);
+        MangaBakaDumpService.BuildBrowseIndexes(conn);
+        using (var drop = conn.CreateCommand())
+        {
+            drop.CommandText = "DROP INDEX ix_ext_mangaupdates";
+            drop.ExecuteNonQuery();
+        }
+
+        var service = new MangaBakaDumpService(null!,
+            new MangaBakaDumpOptions(conn.DataSource, _dir), new FakeAppSettings(),
+            new MangaBakaDumpStatus(), NullLogger<MangaBakaDumpService>.Instance);
+
+        Assert.True(await service.EnsureBrowseIndexesAsync());
+        Assert.True(RootPage(conn, "ix_ext_mangaupdates") > 0);
     }
 
     [Fact]

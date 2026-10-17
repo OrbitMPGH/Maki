@@ -1175,4 +1175,36 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         Assert.Equal([(8L, 1L), (9L, 2L)], ids.Select(kv => (kv.Key, kv.Value)).Order());
     }
+
+    [Fact]
+    public async Task MangaUpdates_slugs_resolve_whatever_their_casing()
+    {
+        _db.AddSeries(1, "One Piece", mangaUpdatesId: "pb8uwds")
+            .AddSeries(2, "Stray caps", mangaUpdatesId: "Ij97889")
+            .AddSeries(3, "A novel", mangaUpdatesId: "novel01", type: "novel")
+            .AddSeries(4, "Unrelated", mangaUpdatesId: "zzzzzzz");
+
+        var ids = await Store.GetIdsByMangaUpdatesIdsAsync(["PB8UWDS", "ij97889", "novel01", "missing"]);
+
+        Assert.Equal([("ij97889", 2L), ("pb8uwds", 1L)], ids.Select(kv => (kv.Key, kv.Value)).Order());
+    }
+
+    [Fact]
+    public async Task MangaUpdates_lookup_treats_a_quote_as_data_and_follows_merges()
+    {
+        _db.AddSeries(1, "Canonical")
+            .AddSeries(2, "Merged away", state: "merged", mergedWith: "1", mangaUpdatesId: "abc123")
+            .AddSeries(3, "Quoted", mangaUpdatesId: "o'brien");
+
+        var ids = await Store.GetIdsByMangaUpdatesIdsAsync(["abc123", "x' OR '1'='1", "o'brien"]);
+
+        Assert.Equal([("abc123", 1L), ("o'brien", 3L)], ids.Select(kv => (kv.Key, kv.Value)).Order());
+    }
+
+    [Fact]
+    public async Task MangaUpdates_lookup_with_no_slugs_returns_nothing()
+    {
+        Assert.Empty(await Store.GetIdsByMangaUpdatesIdsAsync([]));
+        Assert.Empty(await Store.GetIdsByMangaUpdatesIdsAsync(["", "  "]));
+    }
 }
