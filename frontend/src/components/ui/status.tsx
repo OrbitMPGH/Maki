@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react'
 import {
   IconAlertTriangle,
   IconBan,
@@ -71,11 +70,6 @@ export function statusColor(color: string): string {
 /** The foreground that sits on a `statusColor` fill; it flips with the theme, a fixed white fails on the dark ones. */
 export function statusOnColor(color: string): string {
   return `var(--${statusToken(color)}-on)`
-}
-
-/** Fill plus its own foreground; a fill alone leaves the label white, which fails on the dark themes. */
-export function badgeFill(color: string): CSSProperties {
-  return { background: statusColor(color), color: statusOnColor(color) }
 }
 
 /**

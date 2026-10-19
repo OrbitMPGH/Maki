@@ -586,11 +586,11 @@ export default function HealthPage() {
                               <Status value={file.status} hint={file.status === 'partial'} />
                             </Table.Td>
                             <Table.Td>
-                              <Group gap={4} className="health-finding-badges">
+                              <Group gap="xs">
                                 {file.findings.map((f) => (
-                                  <Badge key={f.id} color={color(f.severity)} variant="light">
+                                  <StatusDot key={f.id} tone={tone(f.severity)}>
                                     {renderLabel(FINDING_LABEL[f.kind] ?? f.kind)}
-                                  </Badge>
+                                  </StatusDot>
                                 ))}
                               </Group>
                             </Table.Td>

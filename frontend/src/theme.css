@@ -4632,6 +4632,24 @@ body.column-resizing * {
 .chapter-span-badge {
   cursor: pointer;
 }
+.chapter-status-note {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  white-space: nowrap;
+}
+/* The read state as a coloured word: the row's file state already carries the dot. */
+.chapter-read-mark {
+  color: var(--ok);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.chapter-read-mark[data-tone='watched'] {
+  color: var(--watched);
+}
+.chapter-read-mark[data-tone='info'] {
+  color: var(--info);
+}
 
 /* The row a folded span collapses to. Reads as a header for the run it stands
    in for rather than as another chapter. */
@@ -7120,11 +7138,6 @@ body.reader-open {
 }
 .health-filter-rail .mantine-InputWrapper-root {
   min-width: 12rem;
-}
-/* A badge clips its own label, so its min-content is only its padding and the table would size the
-   column to that and ellipsize every finding. */
-.health-finding-badges > .mantine-Badge-root {
-  min-width: max-content;
 }
 
 .settings-content {

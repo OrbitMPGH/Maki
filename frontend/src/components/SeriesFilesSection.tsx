@@ -24,6 +24,7 @@ import { plural, t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual, statusToken } from './ui/status'
+import { StatusDot } from './ui/StatusDot'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
@@ -301,14 +302,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           )}
                         </Table.Td>
                         <Table.Td>
-                          <Badge
-                            size="sm"
-                            color={`var(--${statusToken(v.color)})`}
-                            variant="light"
-                            leftSection={<v.Icon size={12} />}
-                          >
-                            {renderLabel(v.label)}
-                          </Badge>
+                          <StatusDot tone={statusToken(v.color)}>{renderLabel(v.label)}</StatusDot>
                         </Table.Td>
                         <Table.Td>
                           {f.isVolume && f.mappedChapters.length > 0 ? (
