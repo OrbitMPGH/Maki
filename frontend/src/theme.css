@@ -1605,7 +1605,17 @@ body {
   gap: var(--mantine-spacing-md);
 }
 .home-glance-panel {
-  padding: var(--mantine-spacing-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 16px;
+}
+/* One step down from the series band's figures: the glance is a summary, not the page's subject. */
+.home-glance .hero-stat-n {
+  font-size: var(--type-section);
+}
+.home-glance .hero-stat-l {
+  font-size: var(--type-micro);
 }
 
 /* A page header with something between the title and the actions (Home's glance). Narrow, the middle
@@ -1670,7 +1680,7 @@ body {
     container-type: normal;
   }
   .page-header-center .home-glance-panel {
-    padding: 8px 14px;
+    padding: 6px 12px;
   }
   .page-header-center .home-glance-progress,
   .page-header-center .home-glance .hero-stats {
@@ -1689,11 +1699,10 @@ body {
     padding-left: 10px;
   }
   .page-header-center .home-glance .hero-stat-n {
-    font-size: var(--type-section);
+    font-size: var(--type-body);
   }
   .page-header-center .home-glance .hero-stat-l {
     overflow: hidden;
-    font-size: var(--type-micro);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
