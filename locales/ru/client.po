@@ -148,7 +148,9 @@ msgstr "{0, plural, one {# файл, {totalSize}} few {# файла, {totalSize}
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}"
 
+#. placeholder {0}: counts[group]
 #. placeholder {0}: groupCounts[group]
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr ""
@@ -601,6 +603,10 @@ msgstr "{chaptersMarked, plural, one {Прочитано: # глава в {serie
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 msgstr "{chaptersMarked, plural, one {Прочитано: # глава в {seriesMatched, plural, one {# серии} few {# сериях} many {# сериях} other {# серии}}, не сопоставлено в Kavita: {seriesUnmatched, plural, one {# серия} few {# серии} many {# серий} other {# серии}}} few {Прочитано: # главы в {seriesMatched, plural, one {# серии} few {# сериях} many {# сериях} other {# серии}}, не сопоставлено в Kavita: {seriesUnmatched, plural, one {# серия} few {# серии} many {# серий} other {# серии}}} many {Прочитано: # глав в {seriesMatched, plural, one {# серии} few {# сериях} many {# сериях} other {# серии}}, не сопоставлено в Kavita: {seriesUnmatched, plural, one {# серия} few {# серии} many {# серий} other {# серии}}} other {Прочитано: # главы в {seriesMatched, plural, one {# серии} few {# сериях} many {# сериях} other {# серии}}, не сопоставлено в Kavita: {seriesUnmatched, plural, one {# серия} few {# серии} many {# серий} other {# серии}}}}"
+
+#: src/components/CatalogueFilters.tsx
+msgid "{chaptersMin}–{chaptersMax} chapters"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4491,6 +4497,10 @@ msgstr "Файлы других глав из того же архива том�
 msgid "Chapters to fetch each time"
 msgstr "Глав за одну загрузку"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters, year, minimum rating"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
@@ -5517,6 +5527,10 @@ msgstr "Создатели, на которых вы подписаны"
 #, fuzzy
 msgid "Creators you return to"
 msgstr "Авторы, к которым ты возвращаешься"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Creators, type, status, content rating"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -7049,6 +7063,10 @@ msgstr "Получение метаданных"
 msgid "Fetching pages…"
 msgstr "Получение страниц…"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Fewest chapters"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7596,6 +7614,7 @@ msgstr "скрытые жемчужины"
 msgid "Genres"
 msgstr "Жанры"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Genres and tags"
@@ -9135,6 +9154,10 @@ msgstr "слева направо"
 msgid "Left to right"
 msgstr "Слева направо"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Length, year and rating"
+msgstr ""
+
 #: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -10021,6 +10044,10 @@ msgid "Minimum pages"
 msgstr "Минимум страниц"
 
 #: src/components/CatalogueFilters.tsx
+msgid "Minimum rating"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Minimum rating: {ratingLabel}"
 msgstr "Минимальный рейтинг: {ratingLabel}"
@@ -10213,6 +10240,10 @@ msgstr "Больше способов настроить Maki под себя"
 #, fuzzy
 msgid "Moss"
 msgstr "Мох"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Most chapters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12958,6 +12989,10 @@ msgstr ""
 msgid "Rated {rating}/10"
 msgstr "Оценка: {rating}/10"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Rated {ratingLabel} or more"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14003,6 +14038,10 @@ msgstr "Требовать HTTPS"
 #, fuzzy
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "Требовать HTTPS при входе по адресу HTTP?"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Require or exclude genres and tags"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15273,6 +15312,7 @@ msgstr "Продолжение {relatedTo}"
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "Сиквелы, приквелы, спин-оффы и побочные истории, которые MangaBaka связала с этой серией."
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/nav.ts

@@ -148,7 +148,9 @@ msgstr "{0, plural, one {# fichier, {totalSize}} many {# fichiers, {totalSize}} 
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# fichier} many {# fichiers} other {# fichiers}}"
 
+#. placeholder {0}: counts[group]
 #. placeholder {0}: groupCounts[group]
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr ""
@@ -601,6 +603,10 @@ msgstr "{chaptersMarked, plural, one {# chapitre marqué comme lu} many {# chapi
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 msgstr "{chaptersMarked, plural, one {# chapitre marqué comme lu} many {# chapitres marqués comme lus} other {# chapitres marqués comme lus}} dans {seriesMatched, plural, one {# série} many {# séries} other {# séries}}, {seriesUnmatched, plural, one {# série Kavita sans correspondance} many {# séries Kavita sans correspondance} other {# séries Kavita sans correspondance}}"
+
+#: src/components/CatalogueFilters.tsx
+msgid "{chaptersMin}–{chaptersMax} chapters"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4491,6 +4497,10 @@ msgstr "Les chapitres qui partagent une archive de volume perdront également le
 msgid "Chapters to fetch each time"
 msgstr "Chapitres à récupérer à chaque fois"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters, year, minimum rating"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
@@ -5517,6 +5527,10 @@ msgstr "Créateurs que vous suivez"
 #, fuzzy
 msgid "Creators you return to"
 msgstr "Créateurs que vous retrouvez"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Creators, type, status, content rating"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -7049,6 +7063,10 @@ msgstr "Récupération des métadonnées"
 msgid "Fetching pages…"
 msgstr "Récupération des pages…"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Fewest chapters"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7596,6 +7614,7 @@ msgstr "trésors"
 msgid "Genres"
 msgstr "Genres"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Genres and tags"
@@ -9135,6 +9154,10 @@ msgstr "de gauche à droite"
 msgid "Left to right"
 msgstr "De gauche à droite"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Length, year and rating"
+msgstr ""
+
 #: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -10021,6 +10044,10 @@ msgid "Minimum pages"
 msgstr "Pages minimum"
 
 #: src/components/CatalogueFilters.tsx
+msgid "Minimum rating"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Minimum rating: {ratingLabel}"
 msgstr "Note minimale : {ratingLabel}"
@@ -10213,6 +10240,10 @@ msgstr "Plus de façons de personnaliser Maki"
 #, fuzzy
 msgid "Moss"
 msgstr "Mousse"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Most chapters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12958,6 +12989,10 @@ msgstr ""
 msgid "Rated {rating}/10"
 msgstr "Noté {rating}/10"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Rated {ratingLabel} or more"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14003,6 +14038,10 @@ msgstr "Exiger HTTPS"
 #, fuzzy
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "Exiger HTTPS depuis une adresse HTTP simple ?"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Require or exclude genres and tags"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15273,6 +15312,7 @@ msgstr "Suite de {relatedTo}"
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "Suites, préquelles, séries dérivées et histoires parallèles que MangaBaka a associées à celle-ci."
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/nav.ts

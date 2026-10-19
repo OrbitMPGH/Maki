@@ -148,7 +148,9 @@ msgstr "{0, plural, one {# Datei, {totalSize}} other {# Dateien, {totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# Datei} other {# Dateien}}"
 
+#. placeholder {0}: counts[group]
 #. placeholder {0}: groupCounts[group]
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr ""
@@ -601,6 +603,10 @@ msgstr "{chaptersMarked, plural, one {# Kapitel} other {# Kapitel}} als gelesen 
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 msgstr "{chaptersMarked, plural, one {# Kapitel} other {# Kapitel}} als gelesen markiert in {seriesMatched, plural, one {# Serie} other {# Serien}}, {seriesUnmatched, plural, one {# Kavita-Serie} other {# Kavita-Serien}} ohne Zuordnung"
+
+#: src/components/CatalogueFilters.tsx
+msgid "{chaptersMin}–{chaptersMax} chapters"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4491,6 +4497,10 @@ msgstr "Kapitel, die sich ein Sammelarchiv teilen, verlieren ebenfalls ihre Date
 msgid "Chapters to fetch each time"
 msgstr "Kapitel, die jedes Mal geholt werden"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters, year, minimum rating"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
@@ -5517,6 +5527,10 @@ msgstr "Creators, denen du folgst"
 #, fuzzy
 msgid "Creators you return to"
 msgstr "Creators, zu denen du zurückkehrst"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Creators, type, status, content rating"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -7049,6 +7063,10 @@ msgstr "Metadaten werden abgerufen"
 msgid "Fetching pages…"
 msgstr "Seiten werden abgerufen…"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Fewest chapters"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7596,6 +7614,7 @@ msgstr "Perlen"
 msgid "Genres"
 msgstr "Genres"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Genres and tags"
@@ -9135,6 +9154,10 @@ msgstr "von links nach rechts"
 msgid "Left to right"
 msgstr "Von links nach rechts"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Length, year and rating"
+msgstr ""
+
 #: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -10021,6 +10044,10 @@ msgid "Minimum pages"
 msgstr "Mindestseitenzahl"
 
 #: src/components/CatalogueFilters.tsx
+msgid "Minimum rating"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Minimum rating: {ratingLabel}"
 msgstr "Mindestbewertung: {ratingLabel}"
@@ -10213,6 +10240,10 @@ msgstr "Mehr Möglichkeiten, Maki anzupassen"
 #, fuzzy
 msgid "Moss"
 msgstr "Moos"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Most chapters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12958,6 +12989,10 @@ msgstr ""
 msgid "Rated {rating}/10"
 msgstr "Bewertung {rating}/10"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Rated {ratingLabel} or more"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14003,6 +14038,10 @@ msgstr "HTTPS erzwingen"
 #, fuzzy
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "HTTPS bei einer einfachen HTTP-Adresse erzwingen?"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Require or exclude genres and tags"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15273,6 +15312,7 @@ msgstr "Fortsetzung von {relatedTo}"
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "Fortsetzungen, Vorgeschichten, Spin-offs und Nebengeschichten, die MangaBaka mit diesem Titel verknüpft hat."
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/nav.ts

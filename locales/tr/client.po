@@ -148,7 +148,9 @@ msgstr "{0, plural, one {# dosya, {totalSize}} other {# dosya, {totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# dosya} other {# dosya}}"
 
+#. placeholder {0}: counts[group]
 #. placeholder {0}: groupCounts[group]
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr ""
@@ -601,6 +603,10 @@ msgstr "{chaptersMarked, plural, one {# bölüm} other {# bölüm}}, {seriesMatc
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 msgstr "{chaptersMarked, plural, one {# bölüm} other {# bölüm}}, {seriesMatched, plural, one {# seride} other {# seride}} okundu olarak işaretlendi, {seriesUnmatched, plural, one {# Kavita serisi} other {# Kavita serisi}} eşleşmedi"
+
+#: src/components/CatalogueFilters.tsx
+msgid "{chaptersMin}–{chaptersMax} chapters"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4491,6 +4497,10 @@ msgstr "Aynı cilt arşivini paylaşan bölümlerin dosyaları da silinecek."
 msgid "Chapters to fetch each time"
 msgstr "Her seferinde alınacak bölüm sayısı"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters, year, minimum rating"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
@@ -5517,6 +5527,10 @@ msgstr "Takip ettiğiniz yaratıcılar"
 #, fuzzy
 msgid "Creators you return to"
 msgstr "Tekrar okuduğun yaratıcılar"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Creators, type, status, content rating"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -7049,6 +7063,10 @@ msgstr "Üst veriler alınıyor"
 msgid "Fetching pages…"
 msgstr "Sayfalar getiriliyor…"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Fewest chapters"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7596,6 +7614,7 @@ msgstr "cevherler"
 msgid "Genres"
 msgstr "Türler"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Genres and tags"
@@ -9135,6 +9154,10 @@ msgstr "soldan sağa"
 msgid "Left to right"
 msgstr "Soldan sağa"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Length, year and rating"
+msgstr ""
+
 #: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -10021,6 +10044,10 @@ msgid "Minimum pages"
 msgstr "En az sayfa"
 
 #: src/components/CatalogueFilters.tsx
+msgid "Minimum rating"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Minimum rating: {ratingLabel}"
 msgstr "En düşük puan: {ratingLabel}"
@@ -10213,6 +10240,10 @@ msgstr "Maki'yi kendinize göre yapmanın daha fazla yolu"
 #, fuzzy
 msgid "Moss"
 msgstr "Yosun"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Most chapters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12958,6 +12989,10 @@ msgstr ""
 msgid "Rated {rating}/10"
 msgstr "{rating}/10 olarak puanlandı"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Rated {ratingLabel} or more"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14003,6 +14038,10 @@ msgstr "HTTPS zorunlu kıl"
 #, fuzzy
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "Düz bir HTTP adresinden HTTPS zorunlu kılınsın mı?"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Require or exclude genres and tags"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15273,6 +15312,7 @@ msgstr "{relatedTo} devam serisi"
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "MangaBaka'nın buna bağladığı devam serileri, öncül seriler, türev seriler ve yan hikayeler."
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/nav.ts

@@ -1,10 +1,10 @@
-import { useCallback, useMemo, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
-import { msg } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { usePageState } from '../lib/pageState'
-import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Stack, Text } from '@mantine/core'
+import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
 import {
   allowedContentRatings,
@@ -14,7 +14,8 @@ import {
   type CatalogueRule,
   type RecommendationFilters,
 } from '../api/hooks'
-import { TermFilters, useTermFilters } from './CatalogueRules'
+import { liveRules, TermFilters, useRuleChips, useTermFilters } from './CatalogueRules'
+import { Disclosure } from './ui/Disclosure'
 import { CreditPicker } from './CreditPicker'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
@@ -294,20 +295,30 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
 
 export type CatalogueFilterControls = ReturnType<typeof useCatalogueFilters>['controls']
 
-/** The inputs for `useCatalogueFilters`' state. Layout only; it owns nothing. */
+type FilterGroup = 'terms' | 'series' | 'range'
+
+/**
+ * The inputs for `useCatalogueFilters`' state, in the same three-heading disclosure the library's
+ * filter drawer uses. Layout only; it owns nothing but which groups are open, and that is not
+ * remembered: a closed group already says what it is doing.
+ */
 export function CatalogueFilters({
   controls,
-  cols = { base: 1, sm: 2, lg: 4 },
+  cols = { base: 1, sm: 2, lg: 3 },
+  collapsed = false,
 }: {
   controls: CatalogueFilterControls
   cols?: Record<string, number>
+  /** Starts with every group closed, for a panel sitting above the results it filters. */
+  collapsed?: boolean
 }) {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const { me } = useAuth()
   const renderLabel = useLabel()
-  const { i18n } = useLingui()
+  const ruleChips = useRuleChips()
   const typeOptions = useTypeOptions()
   const statusOptions = useStatusOptions()
+  const [open, setOpen] = useState<FilterGroup[]>(collapsed ? [] : ['terms'])
   const {
     terms,
     types, setTypes,
@@ -336,101 +347,163 @@ export function CatalogueFilters({
   const yearMax = years[1]
   const ratingLabel = minRating > 0 ? `★ ${formatFixedDecimal(minRating, 1)}` : t`any`
 
+  const rules = liveRules(terms.state)
+  const chaptersSet = chapters[0] > CHAPTER_MIN || chapters[1] < CHAPTER_MAX
+  const yearsSet = years[0] > YEAR_MIN || years[1] < YEAR_MAX
+  const counts: Record<FilterGroup, number> = {
+    terms: rules.length,
+    series:
+      (credits.length > 0 ? 1 : 0) +
+      (types.length > 0 ? 1 : 0) +
+      (statuses.length > 0 ? 1 : 0) +
+      (contentRatings.length > 0 ? 1 : 0),
+    range: (chaptersSet ? 1 : 0) + (yearsSet ? 1 : 0) + (minRating > 0 ? 1 : 0),
+  }
+
+  /** What a closed group is doing: its active values, or failing that, what it holds. */
+  const summary = (group: FilterGroup): ReactNode => {
+    const label = (options: { value: string; label: string }[], values: string[]) =>
+      values.map((v) => options.find((o) => o.value === v)?.label ?? v).join(', ')
+    const parts: string[] = []
+    if (group === 'terms') {
+      parts.push(...ruleChips(rules))
+    } else if (group === 'series') {
+      if (credits.length > 0) parts.push(credits.map((c) => c.name).join(', '))
+      if (types.length > 0) parts.push(label(typeOptions, types))
+      if (statuses.length > 0) parts.push(label(statusOptions, statuses))
+      if (contentRatings.length > 0) parts.push(label(contentRatingOptions, contentRatings))
+    } else {
+      if (chaptersSet) parts.push(t`${chaptersMin}–${chaptersMax} chapters`)
+      if (yearsSet) parts.push(`${yearMin}–${yearMax}`)
+      if (minRating > 0) parts.push(t`Rated ${ratingLabel} or more`)
+    }
+    if (parts.length > 0) return <span className="disclosure-summary-active">{parts.join(' · ')}</span>
+    return {
+      terms: t`Require or exclude genres and tags`,
+      series: t`Creators, type, status, content rating`,
+      range: t`Chapters, year, minimum rating`,
+    }[group]
+  }
+
+  const groupProps = (group: FilterGroup) => ({
+    opened: open.includes(group),
+    onToggle: () => setOpen((o) => (o.includes(group) ? o.filter((g) => g !== group) : [...o, group])),
+    count: counts[group],
+    countLabel: plural(counts[group], { one: '# filter active', other: '# filters active' }),
+    summary: summary(group),
+  })
+
   return (
-    <Stack gap="lg">
-      <TermFilters controls={terms} />
-      <CreditPicker value={credits} onChange={setCredits} />
-      <SimpleGrid cols={cols} spacing="lg">
-        <MultiSelect
-          label={t`Type`}
-          placeholder={types.length ? undefined : t`Any`}
-          data={typeOptions}
-          value={types}
-          onChange={setTypes}
-          clearable
-        />
-        <MultiSelect
-          label={t`Status`}
-          placeholder={statuses.length ? undefined : t`Any`}
-          data={statusOptions}
-          value={statuses}
-          onChange={setStatuses}
-          clearable
-        />
-        <MultiSelect
-          label={t`Content rating`}
-          placeholder={contentRatings.length ? undefined : t`Any`}
-          data={contentRatingOptions}
-          value={contentRatings}
-          onChange={setContentRatings}
-          clearable
-        />
-        <div>
-          <Text size="sm" fw={500} mb={4}>
-            <Trans>
-              Chapters: {chaptersMin}–{chaptersMax}
-            </Trans>
-          </Text>
-          <RangeSlider
-            min={CHAPTER_MIN}
-            max={CHAPTER_MAX}
-            step={5}
-            value={chapters}
-            onChange={setChapters}
-            label={(v) => (v >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : `${v}`)}
-            marks={[
-              { value: CHAPTER_MIN, label: '0' },
-              { value: 250, label: '250' },
-              { value: CHAPTER_MAX, label: '500+' },
-            ]}
+    <div>
+      <Disclosure title={t`Genres and tags`} {...groupProps('terms')}>
+        <TermFilters controls={terms} heading={false} />
+      </Disclosure>
+      <Disclosure title={t`Series`} {...groupProps('series')}>
+        <CreditPicker value={credits} onChange={setCredits} />
+        <SimpleGrid cols={cols} spacing="md">
+          <MultiSelect
+            label={t`Type`}
+            placeholder={types.length ? undefined : t`Any`}
+            data={typeOptions}
+            value={types}
+            onChange={setTypes}
+            clearable
           />
-        </div>
-        <div>
-          <Text size="sm" fw={500} mb={4}>
-            <Trans>
-              Year: {yearMin}–{yearMax}
-            </Trans>
-          </Text>
-          <RangeSlider
-            thumbFromLabel={t`Earliest year`} thumbToLabel={t`Latest year`}
-            min={YEAR_MIN}
-            max={YEAR_MAX}
-            value={years}
-            onChange={setYears}
-            marks={[
-              { value: YEAR_MIN, label: `${YEAR_MIN}` },
-              { value: YEAR_MAX, label: `${YEAR_MAX}` },
-            ]}
-            minRange={0}
+          <MultiSelect
+            label={t`Status`}
+            placeholder={statuses.length ? undefined : t`Any`}
+            data={statusOptions}
+            value={statuses}
+            onChange={setStatuses}
+            clearable
           />
-        </div>
-        <div>
-          <Text size="sm" fw={500} mb={4}>
-            <Trans>Minimum rating: {ratingLabel}</Trans>
-          </Text>
-          <Slider
-            min={0}
-            max={9.5}
-            step={0.5}
-            value={minRating}
-            onChange={setMinRating}
-            label={(v) => (v > 0 ? `★ ${formatFixedDecimal(v, 1)}` : t`any`)}
-            marks={[
-              { value: 0, label: t`any` },
-              { value: 7, label: '7' },
-              { value: 9, label: '9' },
-            ]}
+          <MultiSelect
+            label={t`Content rating`}
+            placeholder={contentRatings.length ? undefined : t`Any`}
+            data={contentRatingOptions}
+            value={contentRatings}
+            onChange={setContentRatings}
+            clearable
           />
-        </div>
-      </SimpleGrid>
-    </Stack>
+        </SimpleGrid>
+      </Disclosure>
+      <Disclosure title={t`Length, year and rating`} {...groupProps('range')}>
+        <SimpleGrid cols={cols} spacing="lg">
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              <Trans>
+                Chapters: {chaptersMin}–{chaptersMax}
+              </Trans>
+            </Text>
+            <RangeSlider
+              thumbFromLabel={t`Fewest chapters`}
+              thumbToLabel={t`Most chapters`}
+              min={CHAPTER_MIN}
+              max={CHAPTER_MAX}
+              step={5}
+              value={chapters}
+              onChange={setChapters}
+              label={(v) => (v >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : `${v}`)}
+              marks={[
+                { value: CHAPTER_MIN, label: '0' },
+                { value: 250, label: '250' },
+                { value: CHAPTER_MAX, label: '500+' },
+              ]}
+              mb="lg"
+            />
+          </div>
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              <Trans>
+                Year: {yearMin}–{yearMax}
+              </Trans>
+            </Text>
+            <RangeSlider
+              thumbFromLabel={t`Earliest year`}
+              thumbToLabel={t`Latest year`}
+              min={YEAR_MIN}
+              max={YEAR_MAX}
+              value={years}
+              onChange={setYears}
+              marks={[
+                { value: YEAR_MIN, label: `${YEAR_MIN}` },
+                { value: YEAR_MAX, label: `${YEAR_MAX}` },
+              ]}
+              minRange={0}
+              mb="lg"
+            />
+          </div>
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              <Trans>Minimum rating: {ratingLabel}</Trans>
+            </Text>
+            <Slider
+              aria-label={t`Minimum rating`}
+              min={0}
+              max={9.5}
+              step={0.5}
+              value={minRating}
+              onChange={setMinRating}
+              label={(v) => (v > 0 ? `★ ${formatFixedDecimal(v, 1)}` : t`any`)}
+              marks={[
+                { value: 0, label: t`any` },
+                { value: 7, label: '7' },
+                { value: 9, label: '9' },
+              ]}
+              mb="lg"
+            />
+          </div>
+        </SimpleGrid>
+      </Disclosure>
+    </div>
   )
 }
 
 /**
  * Reset/Apply pair, so the callers agree on wording and disabled state. "Save as default" only
  * appears where there is somewhere to save to: the rail modal's filters are scoped to the rail
- * that is open, so a default there would mean nothing.
+ * that is open, so a default there would mean nothing. Without `onApply` there is no Apply, for a
+ * panel that applies itself through {@link useLiveApply}.
  */
 export function CatalogueFilterActions({
   isCustomized,
@@ -442,7 +515,7 @@ export function CatalogueFilterActions({
 }: {
   isCustomized: boolean
   onReset: () => void
-  onApply: () => void
+  onApply?: () => void
   onSaveAsDefault?: () => void
   saving?: boolean
   /** Sits on the left: saved filters, the never-show list, the live count. */
@@ -473,10 +546,36 @@ export function CatalogueFilterActions({
         <Button variant="subtle" size="xs" onClick={onReset} disabled={!isCustomized}>
           {t`Reset`}
         </Button>
-        <Button size="xs" onClick={onApply}>
-          {t`Apply`}
-        </Button>
+        {onApply && (
+          <Button size="xs" onClick={onApply}>
+            {t`Apply`}
+          </Button>
+        )}
       </Group>
     </Group>
   )
+}
+
+/** Top-level keys sorted, so two builds of one filter compare equal whatever order set them. */
+function filterKey(f: RecommendationFilters): string {
+  return JSON.stringify(Object.fromEntries(Object.entries(f).sort(([a], [b]) => a.localeCompare(b))))
+}
+
+/**
+ * Applies the panel a beat after it stops changing. A slider drag would otherwise be one
+ * full-catalogue query per step. Reset, presets and the saved default still set `applied`
+ * themselves, at once, so a restored filter never runs one stale query first.
+ */
+export function useLiveApply(
+  build: () => RecommendationFilters,
+  setApplied: Dispatch<SetStateAction<RecommendationFilters>>,
+) {
+  const key = filterKey(build())
+  useEffect(() => {
+    const id = window.setTimeout(
+      () => setApplied((prev) => (filterKey(prev) === key ? prev : (JSON.parse(key) as RecommendationFilters))),
+      400,
+    )
+    return () => window.clearTimeout(id)
+  }, [key, setApplied])
 }

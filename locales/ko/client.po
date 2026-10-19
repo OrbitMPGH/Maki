@@ -148,7 +148,9 @@ msgstr "{0, plural, other {파일 #개, {totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {#개 파일}}"
 
+#. placeholder {0}: counts[group]
 #. placeholder {0}: groupCounts[group]
+#: src/components/CatalogueFilters.tsx
 #: src/pages/LibraryPage.tsx
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr ""
@@ -601,6 +603,10 @@ msgstr "{seriesMatched, plural, other {시리즈 #개}}에서 {chaptersMarked, p
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched, plural, one {# series} other {# series}}, {seriesUnmatched, plural, one {# Kavita series} other {# Kavita series}} unmatched"
 msgstr "{seriesMatched, plural, other {시리즈 #개}}에서 {chaptersMarked, plural, other {챕터 #개}}를 읽음으로 표시함, {seriesUnmatched, plural, other {Kavita 시리즈 #개}}는 일치하지 않음"
+
+#: src/components/CatalogueFilters.tsx
+msgid "{chaptersMin}–{chaptersMax} chapters"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4490,6 +4496,10 @@ msgstr "같은 권 아카이브를 공유하는 챕터의 파일도 삭제됩니
 msgid "Chapters to fetch each time"
 msgstr "매번 가져올 챕터 수"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters, year, minimum rating"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
@@ -5516,6 +5526,10 @@ msgstr "팔로우 중인 창작자"
 #, fuzzy
 msgid "Creators you return to"
 msgstr "다시 찾는 작가"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Creators, type, status, content rating"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -7048,6 +7062,10 @@ msgstr "메타데이터 가져오는 중"
 msgid "Fetching pages…"
 msgstr "페이지 가져오는 중…"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Fewest chapters"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7595,6 +7613,7 @@ msgstr "보석"
 msgid "Genres"
 msgstr "장르"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Genres and tags"
@@ -9134,6 +9153,10 @@ msgstr "왼쪽에서 오른쪽"
 msgid "Left to right"
 msgstr "왼쪽에서 오른쪽"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Length, year and rating"
+msgstr ""
+
 #: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
@@ -10020,6 +10043,10 @@ msgid "Minimum pages"
 msgstr "최소 페이지 수"
 
 #: src/components/CatalogueFilters.tsx
+msgid "Minimum rating"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Minimum rating: {ratingLabel}"
 msgstr "최소 등급: {ratingLabel}"
@@ -10212,6 +10239,10 @@ msgstr "Maki를 내 취향대로 꾸미는 더 많은 방법"
 #, fuzzy
 msgid "Moss"
 msgstr "모스"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Most chapters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -12957,6 +12988,10 @@ msgstr ""
 msgid "Rated {rating}/10"
 msgstr "{rating}/10점"
 
+#: src/components/CatalogueFilters.tsx
+msgid "Rated {ratingLabel} or more"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14002,6 +14037,10 @@ msgstr "HTTPS 필수"
 #, fuzzy
 msgid "Require HTTPS from a plain HTTP address?"
 msgstr "일반 HTTP 주소에서도 HTTPS를 요구할까요?"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Require or exclude genres and tags"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15272,6 +15311,7 @@ msgstr "{relatedTo}의 속편"
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
 msgstr "MangaBaka가 이 작품에 연결한 속편, 프리퀄, 스핀오프 및 외전입니다."
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/nav.ts

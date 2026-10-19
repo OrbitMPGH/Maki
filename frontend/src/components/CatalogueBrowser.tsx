@@ -51,6 +51,7 @@ import {
   filtersFromSpec,
   useBrowseSortOptions,
   useCatalogueFilters,
+  useLiveApply,
 } from './CatalogueFilters'
 import { FilterMatchCount } from './CatalogueRules'
 import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
@@ -152,13 +153,14 @@ export function CatalogueBrowser({
     onSearchingChange?.(searching)
   }, [searching, onSearchingChange])
 
-  // `applied` is separate from the live control state because a query re-runs on every change to
-  // it, and dragging a slider would otherwise fire one full-catalogue query per pixel.
+  // `applied` trails the live controls by a beat (see useLiveApply), so a slider drag is one
+  // query when it settles rather than one per step.
   const [filtersOpen, setFiltersOpen] = usePageState(memory('filters-open'), false)
   const [applied, setApplied] = usePageState<RecommendationFilters>(memory('applied'), {})
   const [sort, setSort] = usePageState<BrowseSort>(memory('sort'), 'popular')
   const [pages, setPages] = usePageState(memory('pages'), 1)
   const catalogue = useCatalogueFilters(undefined, memory('filters'))
+  useLiveApply(catalogue.build, setApplied)
 
   // Seeded from the saved default exactly once, and nothing queries until that has happened:
   // searching earlier fires an unfiltered request that the hydration then immediately replaces,
@@ -249,8 +251,7 @@ export function CatalogueBrowser({
 
   /**
    * Stores the panel as this user's default, so the next visit opens already constrained. Saves the
-   * live controls rather than `applied`, matching the Recommended tab: the button says what you are
-   * looking at, not what you last pressed Apply on.
+   * live controls rather than `applied`, which can trail them by a beat.
    */
   const saveAsDefault = () => {
     saveDefaults.mutate(catalogue.build(), {
@@ -359,7 +360,6 @@ export function CatalogueBrowser({
                     catalogue.reset()
                     setApplied({})
                   }}
-                  onApply={() => setApplied(catalogue.build())}
                   saving={saveDefaults.isPending}
                   onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
                   extra={
