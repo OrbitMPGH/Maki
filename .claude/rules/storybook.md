@@ -5,12 +5,14 @@ paths:
   - "frontend/vitest.config.ts"
   - "frontend/tsconfig.storybook.json"
   - "frontend/public/mockServiceWorker.js"
+  - "frontend/patches/@storybook+*.patch"
 ---
 
 # Storybook
 
 `npm run storybook` (port 6006) for the UI, `npm run test-storybook` to run every story as a Vitest browser test (Playwright Chromium, headless, 1280x800). Each story is a test: it fails if it throws, if its `play` fails, or if it made an API request nothing mocked.
 
+- **`patches/@storybook+addon-vitest+10.6.2.patch` keeps the Storybook UI's test runner from running the server out of heap.** Upstream, the runner's state carries every story's status, its full axe result and a duplicate `reports` map, and the vitest child re-sends all of it to the server on every update (500ms throttle), so a full run with "Accessibility" ticked grew past 5MB per message and died with a `ValueDeserializer` OOM ("connection lost" in the UI). The patch keeps those lists on the child and attaches them only to `TEST_RUN_COMPLETED` (the agent run-tests tool reads them there), slimmed to violations. Live updates stay at about 1.2MB, mostly the story index. On a Storybook upgrade, re-check whether this is still needed before regenerating the patch. If the server dies anyway, its vitest child and Chromium instances stay behind; kill them before retrying. `maxWorkers: 4` in `vitest.config.ts` caps the browsers (each one loads the whole app).
 - **Every story renders inside the app's real provider tree** (`.storybook/preview.tsx`: i18n, theme, QueryClient, MemoryRouter, AuthProvider, nav history, shell and document title). Don't add per-story providers; if a component needs a context the app gives it, add it to `StoryProviders` once.
 - **Story parameters:** `router: { path, initialEntries }` (`path` is the route pattern, so `useParams` works), `auth: 'admin' | 'reader' | 'signedOut'`, `msw: [...]` for per-story overrides, `allowUnmocked` to skip the unmocked check. Toolbar globals switch background, accent and language; the provider tree remounts on change because `AppThemeProvider` reads localStorage only on mount.
 - **Mocks live in `.storybook/mocks/`, one file per area** (`home.ts`, `series.ts`, ...), aggregated by `index.ts`, with the shell endpoints and the shared 12-series `catalogue` in `shared.ts`. First match wins in `defaultHandlers`. Fixtures are typed with `satisfies <Dto>` and `tsconfig.storybook.json` checks them in `tsc -b`, so a DTO change that breaks a fixture fails the build rather than a story silently rendering half a page.

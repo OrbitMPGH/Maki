@@ -16,6 +16,9 @@ export default defineConfig((env) =>
       include: ['@mantine/charts', 'recharts', 'motion/react', 'qrcode', '@microsoft/signalr', 'idb', 'msw', 'msw/browser'],
     },
     test: {
+      // Each worker is a Chromium instance loading the whole app; the default (up to 12 on a big
+      // machine) ran past 12GB of browsers.
+      maxWorkers: 4,
       projects: [
         {
           extends: true,
