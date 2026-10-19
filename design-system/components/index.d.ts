@@ -9,6 +9,8 @@ export declare function PageHeader(props: {
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
+  /** Between title and actions on one row when wide; its own row underneath when not. Home's glance only. */
+  center?: ReactNode
   /** Smaller title for operational pages. */
   compact?: boolean
 }): JSX.Element
