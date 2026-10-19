@@ -71,7 +71,21 @@ export const CoverCard = memo(function CoverCard({
     readTracking,
   )
   const { readChapterCount } = series
-  const totalLabel = total || '?'
+  // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
+  const countLabel =
+    total > 0
+      ? t`${have} of ${total}`
+      : have > 0
+        ? plural(have, { one: '# chapter', other: '# chapters' })
+        : t`No chapters listed`
+  const countTip = nothingWanted
+    ? plural(total, {
+        one: '# chapter listed, none wanted, nothing will download',
+        other: '# chapters listed, none wanted, nothing will download',
+      })
+    : total === 0
+      ? t`No source has listed this series' chapters yet, so there is no total to count against.`
+      : undefined
   const downloadTip = download ? renderLabel(download.label) : null
   const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
   const monitoredTip = series.monitored ? t`Monitored` : t`Not monitored`
@@ -181,18 +195,8 @@ export const CoverCard = memo(function CoverCard({
             />
           </div>
           <div className="cover-row">
-            <span
-              data-nothing-wanted={nothingWanted || undefined}
-              data-tip={
-                nothingWanted
-                  ? plural(total, {
-                      one: '# chapter listed, none wanted, nothing will download',
-                      other: '# chapters listed, none wanted, nothing will download',
-                    })
-                  : undefined
-              }
-            >
-              {t`${have} of ${totalLabel}`}
+            <span data-nothing-wanted={nothingWanted || undefined} data-tip={countTip}>
+              {countLabel}
             </span>
             {unread !== null && unread > 0 && (
               <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>

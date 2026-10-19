@@ -123,6 +123,9 @@ export function SeriesHero({
     // nothing about what goes in the slot. The defaults on the gap are never rendered, since every
     // use of them sits behind `sourceGap &&`; they are here to keep the destructure typed as numbers.
     const { have: haveCount, total: totalCount } = progress
+    // The total is the wanted chapters, so a series with unwanted ones read 100% here while the
+    // Chapters tab counted everything listed. Named, and the rest counted, so the two agree.
+    const notWanted = progress.nothingWanted ? 0 : Math.max(0, series.knownChapterCount - totalCount)
     const readCount = series.readChapterCount ?? 0
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
 
@@ -343,11 +346,18 @@ export function SeriesHero({
                                     {/* Two whole messages rather than one with a clause appended: a
                                         fragment glued onto a translated sentence lands in the wrong place
                                         in any language that does not order it the way English does. */}
-                                    {progress.nothingWanted ? (
+                                    {series.knownChapterCount === 0 ? (
+                                        <Trans>No chapters listed</Trans>
+                                    ) : progress.nothingWanted ? (
                                         <Trans>
                                             {haveCount} /{' '}
                                             <Plural value={totalCount} one="# chapter" other="# chapters" />{' '}
                                             listed, none wanted
+                                        </Trans>
+                                    ) : notWanted > 0 ? (
+                                        <Trans>
+                                            {haveCount} /{' '}
+                                            <Plural value={totalCount} one="# wanted chapter" other="# wanted chapters" />
                                         </Trans>
                                     ) : (
                                         <Trans>
@@ -356,9 +366,11 @@ export function SeriesHero({
                                         </Trans>
                                     )}
                                 </Text>
-                                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                    {Math.round(progress.pct)}%
-                                </Text>
+                                {series.knownChapterCount > 0 && (
+                                    <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
+                                        {Math.round(progress.pct)}%
+                                    </Text>
+                                )}
                             </Group>
                             {missingWanted > 0 && (
                                 <Text size="xs" c="var(--ink-4)" mt={7} className="tnum">
@@ -366,6 +378,15 @@ export function SeriesHero({
                                         value={missingWanted}
                                         one="# wanted, not fetched"
                                         other="# wanted, not fetched"
+                                    />
+                                </Text>
+                            )}
+                            {notWanted > 0 && (
+                                <Text size="xs" c="var(--ink-4)" mt={missingWanted > 0 ? 2 : 7} className="tnum">
+                                    <Plural
+                                        value={notWanted}
+                                        one="# more listed, not wanted"
+                                        other="# more listed, not wanted"
                                     />
                                 </Text>
                             )}

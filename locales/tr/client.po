@@ -885,9 +885,17 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# verildi} other {# verildi}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
 #, fuzzy
-msgid "{have} of {totalLabel}"
-msgstr "{totalLabel} içinde {have}"
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{totalLabel} içinde {have}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -898,6 +906,10 @@ msgstr "{haveCount} / {totalCount, plural, one {# bölüm} other {# bölüm}}"
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, one {# bölüm} other {# bölüm}} listelendi, hiçbiri istenmiyor"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -1236,6 +1248,10 @@ msgstr "{newChapterCount, plural, one {# yeni bölüm dosyası} other {# yeni b�
 #, fuzzy
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, one {Sahip olmadığınız # bölümü getirir} other {Sahip olmadığınız # bölümü getirir}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
@@ -10743,6 +10759,11 @@ msgstr "seride bu numarada bir bölüm yok"
 msgid "No chapters known."
 msgstr "Bilinen bölüm yok."
 
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "No chapters match that filter."
@@ -11070,6 +11091,11 @@ msgstr "Henüz indirilmiş anlık görüntü yok"
 msgid "No source could serve the first chapter."
 msgstr "Hiçbir kaynak ilk bölümü sunamadı."
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "No source has this chapter right now"
@@ -11192,6 +11218,10 @@ msgstr "Son bildirimlerde yok"
 #, fuzzy
 msgid "None linked"
 msgstr "Hiçbiri bağlı değil"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -11504,6 +11534,10 @@ msgstr "Hiçbir şeyin adı değiştirilmez ve her şey mevcut klasörünüzde k
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "Artık ona hiçbir şey gönderilmez. Bu geri alınamaz."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Nothing left to download"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

@@ -885,9 +885,17 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, other {已授予 # 个}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
 #, fuzzy
-msgid "{have} of {totalLabel}"
-msgstr "{have} / {totalLabel}"
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{have} / {totalLabel}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -898,6 +906,10 @@ msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}"
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}已列出，但没有想要的"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -1236,6 +1248,10 @@ msgstr "{newChapterCount, plural, other {最近新增的 # 个章节文件}}"
 #, fuzzy
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, other {包含你没有的 # 个章节}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
@@ -10742,6 +10758,11 @@ msgstr "系列中没有此编号的章节"
 msgid "No chapters known."
 msgstr "没有已知章节。"
 
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "No chapters match that filter."
@@ -11069,6 +11090,11 @@ msgstr "尚未下载快照"
 msgid "No source could serve the first chapter."
 msgstr "没有来源能提供第一章。"
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "No source has this chapter right now"
@@ -11191,6 +11217,10 @@ msgstr "最近的通知中没有内容"
 #, fuzzy
 msgid "None linked"
 msgstr "未关联任何内容"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -11503,6 +11533,10 @@ msgstr "不会重命名任何内容，所有文件仍留在原文件夹中。"
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "不再向它发送任何内容。此操作无法撤销。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Nothing left to download"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

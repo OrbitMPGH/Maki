@@ -2168,6 +2168,20 @@ body {
   background: var(--surface-2);
   box-shadow: var(--shadow-card);
 }
+/* The quiet stand-in for the download button once every wanted chapter is on disk. Button height,
+   so the action row keeps its line. */
+.series-actions-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding-inline: 4px;
+  color: var(--ink-3);
+}
+.series-actions-done svg {
+  flex-shrink: 0;
+  color: var(--ok);
+}
 .discover-hero-strip-label {
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);

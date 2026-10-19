@@ -885,9 +885,17 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, other {#개 허용됨}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
 #, fuzzy
-msgid "{have} of {totalLabel}"
-msgstr "{totalLabel} 중 {have}"
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{totalLabel} 중 {have}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -898,6 +906,10 @@ msgstr "{haveCount} / {totalCount, plural, other {# 챕터}}"
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, other {# 챕터}} 목록에 있지만, 원하는 챕터는 없음"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -1236,6 +1248,10 @@ msgstr "{newChapterCount, plural, other {최근 챕터 파일 #개}}"
 #, fuzzy
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, other {내게 없는 챕터 #개 추가}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
@@ -10742,6 +10758,11 @@ msgstr "시리즈에 이 번호의 챕터가 없습니다"
 msgid "No chapters known."
 msgstr "확인된 챕터 없음."
 
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "No chapters match that filter."
@@ -11069,6 +11090,11 @@ msgstr "아직 다운로드한 스냅샷 없음"
 msgid "No source could serve the first chapter."
 msgstr "첫 챕터를 제공할 수 있는 소스가 없습니다."
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "No source has this chapter right now"
@@ -11191,6 +11217,10 @@ msgstr "최근 알림에 없음"
 #, fuzzy
 msgid "None linked"
 msgstr "연결된 항목 없음"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -11503,6 +11533,10 @@ msgstr "이름을 변경하지 않고 모든 항목을 기존 폴더에 둡니�
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "더 이상 아무것도 보내지 않습니다. 되돌릴 수 없습니다."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Nothing left to download"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

@@ -885,9 +885,17 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# предоставлено} few {# предоставлено} many {# предоставлено} other {# предоставлено}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr ""
+
+#: src/components/ui/CoverCard.tsx
 #, fuzzy
-msgid "{have} of {totalLabel}"
-msgstr "{have} из {totalLabel}"
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{have} из {totalLabel}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -898,6 +906,10 @@ msgstr "{haveCount} / {totalCount, plural, one {# глава} few {# главы}
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, one {# глава} few {# главы} many {# глав} other {# главы}} в списке, ни одна не запрошена"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -1236,6 +1248,10 @@ msgstr "{newChapterCount, plural, one {# новый файл главы} few {# 
 #, fuzzy
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, one {Добавляет # отсутствующую у вас главу} few {Добавляет # отсутствующие у вас главы} many {Добавляет # отсутствующих у вас глав} other {Добавляет # отсутствующую у вас главу}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
@@ -10743,6 +10759,11 @@ msgstr "в серии нет главы с таким номером"
 msgid "No chapters known."
 msgstr "Известных глав нет."
 
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr ""
+
 #: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "No chapters match that filter."
@@ -11070,6 +11091,11 @@ msgstr "Снимок ещё не загружен"
 msgid "No source could serve the first chapter."
 msgstr "Ни один источник не смог отдать первую главу."
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "No source has this chapter right now"
@@ -11192,6 +11218,10 @@ msgstr "В последних уведомлениях ничего нет"
 #, fuzzy
 msgid "None linked"
 msgstr "Ничего не связано"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -11504,6 +11534,10 @@ msgstr "Ничего не переименовывается, все файлы 
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "Больше ничего не отправляется. Это нельзя отменить."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Nothing left to download"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

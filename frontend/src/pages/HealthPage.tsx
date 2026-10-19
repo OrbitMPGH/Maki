@@ -249,7 +249,10 @@ export default function HealthPage() {
   const error = queryError ?? action.error ?? quick.error ?? refresh.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
   // so they do not belong in a number whose job is to say "something needs you".
-  const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
+  const openChecks = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged) ?? []
+  const issues = openChecks.length
+  // Red is kept for something broken; a page of warnings reads as a page of failures otherwise.
+  const issuesTone = openChecks.some((c) => c.status !== 'warning') ? 'danger' : issues > 0 ? 'warn' : undefined
   const partialScanError = overview.data?.scans.find((s) => s.error)?.error
   const selectedCount = selected.size
   const deletedCount = deleteReport?.deleted ?? 0
@@ -331,7 +334,7 @@ export default function HealthPage() {
       <FigureStrip
         loading={overview.isPending}
         figures={[
-          { label: t`System issues`, value: issues, tone: 'danger' },
+          { label: t`System issues`, value: issues, tone: issuesTone },
           { label: t`Open file findings`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
           { label: t`Archives inventoried`, value: overview.data?.files ?? 0 },
         ]}

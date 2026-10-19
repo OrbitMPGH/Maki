@@ -730,8 +730,16 @@ msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# granted} other {# granted}}"
 
 #: src/components/ui/CoverCard.tsx
-msgid "{have} of {totalLabel}"
-msgstr "{have} of {totalLabel}"
+msgid "{have, plural, one {# chapter} other {# chapters}}"
+msgstr "{have, plural, one {# chapter} other {# chapters}}"
+
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {total}"
+msgstr "{have} of {total}"
+
+#: src/components/ui/CoverCard.tsx
+#~ msgid "{have} of {totalLabel}"
+#~ msgstr "{have} of {totalLabel}"
 
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -740,6 +748,10 @@ msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -1011,6 +1023,10 @@ msgstr "{newChapterCount, plural, one {# recent chapter file} other {# recent ch
 #: src/components/ImportReviewModal.tsx
 msgid "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
 msgstr "{newChapterCount, plural, one {Brings # chapter you do not have} other {Brings # chapters you do not have}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
+msgstr "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 
 #: src/components/series/SeriesHero.tsx
 #: src/components/TagBuckets.tsx
@@ -8733,6 +8749,11 @@ msgstr "no chapter with this number in the series"
 msgid "No chapters known."
 msgstr "No chapters known."
 
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/CoverCard.tsx
+msgid "No chapters listed"
+msgstr "No chapters listed"
+
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "No chapters match that filter."
 msgstr "No chapters match that filter."
@@ -8996,6 +9017,11 @@ msgstr "No snapshot downloaded yet"
 msgid "No source could serve the first chapter."
 msgstr "No source could serve the first chapter."
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No source has listed this series' chapters yet, so there is no total to count against."
+msgstr "No source has listed this series' chapters yet, so there is no total to count against."
+
 #: src/api/queue.ts
 msgid "No source has this chapter right now"
 msgstr "No source has this chapter right now"
@@ -9095,6 +9121,10 @@ msgstr "None in the latest notifications"
 #: src/pages/HealthPage.tsx
 msgid "None linked"
 msgstr "None linked"
+
+#: src/components/ui/SeriesRow.tsx
+msgid "None listed"
+msgstr "None listed"
 
 #: src/pages/CreatorPage.tsx
 msgid "None of their titles match these filters. Try loosening one of them."
@@ -9347,6 +9377,10 @@ msgstr "Nothing is renamed and everything stays in the folder you had."
 #: src/components/NotificationsSection.tsx
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "Nothing is sent to it any more. This can't be undone."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Nothing left to download"
+msgstr "Nothing left to download"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Nothing left to queue. Every wanted chapter is on disk or already queued."
