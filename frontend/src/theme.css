@@ -3401,6 +3401,36 @@ body {
   display: grid;
   grid-template-columns: minmax(70%, 2fr) 0.6fr
 }
+/* The tabs follow the Progress panel in the markup so a stacked band reads title, progress, tabs.
+   Side by side, the panel spans both rows and the tabs line up under the title, past the poster. */
+.series-hero-tabs {
+  min-width: 0;
+  margin-top: var(--mantine-spacing-md);
+}
+@media (min-width: 68.8125em) {
+  /* The empty first and last rows take whatever the panel is taller by, so the title and tabs stay
+     one block centred against it rather than splitting around the extra height. */
+  .series-hero:not([data-compact]) .series-hero-content {
+    grid-template-rows: 1fr auto auto 1fr;
+    row-gap: 0;
+  }
+  .series-hero:not([data-compact]) .series-hero-row {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .series-hero:not([data-compact]) .series-hero-panel {
+    grid-column: 2;
+    grid-row: 1 / -1;
+  }
+  .series-hero:not([data-compact]) .series-hero-tabs {
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: var(--mantine-spacing-xl);
+  }
+  .series-hero:not([data-compact]) .series-hero-content:has(.series-hero-poster) .series-hero-tabs {
+    padding-left: calc(224px + 32px);
+  }
+}
 
 .series-hero-poster {
   display: block;
@@ -3427,7 +3457,7 @@ body {
   color: var(--ink-hi);
   font-size: var(--type-display);
   line-height: 0.9;
-
+  hyphens: auto;
   overflow-wrap: anywhere;
 }
 .series-hero-status {
@@ -3860,12 +3890,20 @@ body {
 }
 
 /* --- Series tabs ---------------------------------------------------------- */
+/* One row that scrolls sideways. Mantine's list wraps by default, which on a phone stacked
+   Settings' eight tabs into three rows. */
 .series-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 32px;
   border-bottom: none;
   overflow-x: auto;
   scrollbar-width: none;
+}
+@media (max-width: 47.9375em) {
+  .series-tabs {
+    gap: 24px;
+  }
 }
 .series-tabs::-webkit-scrollbar {
   display: none;
@@ -3944,6 +3982,22 @@ body {
   margin-top: 44px;
   margin-bottom: 14px;
   min-width: 0;
+}
+/* Icon, title and count wrap as one unit, so a narrow row never strands the count on a line of its own. */
+.section-header-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.section-header-end {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+}
+.section-header-end:not(:has(> .section-header-action)):has(> .section-header-arrows:empty) {
+  display: none;
 }
 .section-header-icon {
   display: grid;
@@ -4051,18 +4105,28 @@ body {
   cursor: default;
 }
 
-/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the rule drops out and the row wraps naturally. */
+/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the
+   rule drops out and the action moves under the title, right-aligned, only when both cannot share a
+   line. A phone swipes rails, so it skips the arrows and keeps the header to one row. */
 @media (max-width: 36em) {
   .section-header {
     flex-wrap: wrap;
     row-gap: 6px;
   }
+  .section-header-lead {
+    max-width: 100%;
+  }
   .section-header-rule {
     display: none;
   }
-  .section-header-action,
-  .section-header-rule + .section-header-arrows {
+  .section-header-end {
     margin-left: auto;
+  }
+}
+@media (max-width: 36em) and (hover: none) {
+  .section-header-arrows,
+  .section-header-end:not(:has(> .section-header-action)) {
+    display: none;
   }
 }
 
@@ -4257,9 +4321,11 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
+/* Two columns only when each can hold the 132px label and a name beside it. A fixed pair inside
+   the narrower Metadata panel left a creator link 16px and pushed the page sideways. */
 .series-records {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
   gap: 0 var(--mantine-spacing-xl);
 }
 .series-record {
@@ -4279,18 +4345,35 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 }
 
 @media (max-width: 61.9375em) {
-  .series-split,
-  .series-records {
+  .series-split {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* The Progress panel gets its own line before it starts squeezing the title and actions.
-     `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
-     breakpoint below. */
+}
+/* The Progress panel gets its own line before it starts squeezing the title and actions: beside
+   them under ~1100px it was a 150px column, and the title broke inside its words. Stacked, the two
+   meters sit side by side so the panel stays one short band rather than a tall card.
+   `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
+   breakpoint below. */
+@media (max-width: 68.75em) {
   .series-hero:not([data-compact]) .series-hero-content {
     grid-template-columns: minmax(0, 1fr);
   }
   .series-hero:not([data-compact]) .series-hero-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    column-gap: var(--mantine-spacing-xl);
     margin-top: var(--mantine-spacing-lg);
+  }
+  .series-hero:not([data-compact]) .series-hero-panel > :not(.series-progress-meter),
+  .series-hero-panel:not(:has(.series-progress-meter + .series-progress-meter)) > .series-progress-meter {
+    grid-column: 1 / -1;
+  }
+  .series-hero:not([data-compact]) .series-progress-meter .mantine-Divider-root {
+    display: none;
+  }
+  .series-hero:not([data-compact]) .series-hero-poster {
+    width: 176px;
+    height: 264px;
   }
 }
 
@@ -7115,13 +7198,72 @@ body.reader-open {
   color: var(--ink-hi);
   font-weight: var(--fw-semibold);
 }
+/* Below the width the index fits beside the cards, the same list is a bar pinned under the header
+   that names the card being read. The dirty-card header that also sticks moves down to sit under it. */
+.settings-jump {
+  display: none;
+}
+.settings-entry {
+  scroll-margin-top: 80px;
+}
 @media (max-width: 74.9375em) {
   .settings-layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--mantine-spacing-md);
   }
   .settings-index {
     display: none;
   }
+  .settings-surface {
+    --settings-jump-h: 52px;
+  }
+  .settings-jump {
+    position: sticky;
+    top: var(--app-shell-header-height, 0px);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    height: var(--settings-jump-h);
+    background: var(--app-bg);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .settings-section[data-dirty] .settings-section-head {
+    top: calc(var(--app-shell-header-height, 0px) + var(--settings-jump-h));
+  }
+  .settings-entry {
+    scroll-margin-top: calc(var(--app-shell-header-height, 0px) + var(--settings-jump-h) + 16px);
+  }
+}
+.settings-jump-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 4px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.settings-jump-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.settings-jump-icon {
+  flex-shrink: 0;
+  color: var(--brand-fg);
+}
+.settings-jump-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-jump-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
 }
 
 /* --- Disclosure --------------------------------------------------------------
@@ -8159,8 +8301,8 @@ body.reader-open {
 }
 
 @media (max-width: 47.9375em) {
-  .activity-queue-table thead th,
-  .activity-history-table thead th {
+  .activity-queue-table thead th:nth-child(n),
+  .activity-history-table thead th:nth-child(n) {
     width: auto;
   }
   .mantine-TableScrollContainer-scrollContainerInner:has(> .activity-queue-table),

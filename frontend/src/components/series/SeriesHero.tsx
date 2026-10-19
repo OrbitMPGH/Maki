@@ -289,8 +289,6 @@ export function SeriesHero({
                             <Group gap="xs" mt="lg" wrap="wrap">
                                 {actions}
                             </Group>
-
-                            <Box mt="xl">{tabs}</Box>
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
@@ -299,7 +297,7 @@ export function SeriesHero({
                         </Title>
 
                         {readTracking && series.readChapterCount != null && progress.have > 0 && (
-                            <Box mt="md">
+                            <Box mt="md" className="series-progress-meter">
                                 <Group gap={9} c="var(--ink-3)">
                                     <IconBook size={17} />
                                     <Text size="sm" fw={600} c="var(--ink)">
@@ -327,7 +325,7 @@ export function SeriesHero({
                             </Box>
                         )}
 
-                        <Box mt="md">
+                        <Box mt="md" className="series-progress-meter">
                             <Group gap={9} c="var(--ink-3)">
                                 <IconDownload size={17} />
                                 <Text size="sm" fw={600} c="var(--ink)">
@@ -436,6 +434,9 @@ export function SeriesHero({
                             </Alert>
                         )}
                     </Paper>
+                    {/* After the panel, not inside the title column: once the panel stacks, the tabs
+                        have to sit on the content they switch, not above the panel. */}
+                    <Box className="series-hero-tabs">{tabs}</Box>
                 </Group>
             </div>
         </Box>
@@ -467,11 +468,6 @@ export function SeriesHeroSkeleton() {
                                 <Skeleton h={42} w={196} radius="md" />
                                 <Skeleton h={42} w={132} radius="md" />
                             </Group>
-                            <Group gap={28} mt="xl" pb={12}>
-                                {[72, 86, 64, 58, 70].map((w) => (
-                                    <Skeleton key={w} h={12} w={w} />
-                                ))}
-                            </Group>
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
@@ -483,6 +479,11 @@ export function SeriesHeroSkeleton() {
                         <Skeleton h={8} radius="xl" mt={14} />
                         <Skeleton h={12} w="30%" mt={12} />
                     </Paper>
+                    <Group gap={28} className="series-hero-tabs" pb={12}>
+                        {[72, 86, 64, 58, 70].map((w) => (
+                            <Skeleton key={w} h={12} w={w} />
+                        ))}
+                    </Group>
                 </Group>
             </div>
         </Box>

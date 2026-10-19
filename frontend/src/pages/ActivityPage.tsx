@@ -494,7 +494,7 @@ export default function ActivityPage() {
                           size="sm"
                           fw={600}
                           c="brand.4"
-                          lineClamp={1}
+                          lineClamp={2}
                         >
                           {q.seriesTitle}
                         </Text>
@@ -788,7 +788,7 @@ export default function ActivityPage() {
                               size="sm"
                               fw={600}
                               c="brand.4"
-                              lineClamp={1}
+                              lineClamp={2}
                             >
                               {q.seriesTitle}
                             </Text>
