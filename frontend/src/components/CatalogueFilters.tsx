@@ -403,6 +403,7 @@ export function CatalogueFilters({
         <SimpleGrid cols={cols} spacing="md">
           <MultiSelect
             label={t`Type`}
+            className="field-default-value"
             placeholder={types.length ? undefined : t`Any`}
             data={typeOptions}
             value={types}
@@ -411,6 +412,7 @@ export function CatalogueFilters({
           />
           <MultiSelect
             label={t`Status`}
+            className="field-default-value"
             placeholder={statuses.length ? undefined : t`Any`}
             data={statusOptions}
             value={statuses}
@@ -419,6 +421,7 @@ export function CatalogueFilters({
           />
           <MultiSelect
             label={t`Content rating`}
+            className="field-default-value"
             placeholder={contentRatings.length ? undefined : t`Any`}
             data={contentRatingOptions}
             value={contentRatings}

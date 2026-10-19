@@ -166,6 +166,7 @@ function HealthButton() {
           label={health.length}
           withBorder
           className="count-indicator"
+          data-tone={hasError ? 'danger' : 'warn'}
         >
           <ActionIcon
             variant="subtle"

@@ -255,7 +255,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
                       format={(i) => (
                         <span
                           className="stats-row-value"
-                          style={{ color: 'var(--brand)', cursor: 'pointer' }}
+                          style={{ color: 'var(--brand-fg)', cursor: 'pointer' }}
                         >
                           <SeriesLink id={i.seriesId} title={t`Resume`} />
                         </span>

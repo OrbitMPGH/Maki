@@ -2,6 +2,7 @@ import {
   Badge,
   Button,
   Card,
+  type CSSVariablesResolver,
   Drawer,
   type MantineColorScheme,
   type MantineColorsTuple,
@@ -196,8 +197,21 @@ const variantColorResolver: VariantColorsResolver = (input) => {
   const resolved = defaultVariantColorsResolver(input)
   const isBrand = !input.color || input.color === 'brand' || input.color === input.theme.primaryColor
   if (input.variant === 'filled' && isBrand) return { ...resolved, color: 'var(--brand-on)' }
+  // Danger text on its own 10% tint falls just under 4.5:1 in dark.
+  if (input.variant === 'light' && input.color === 'var(--danger)') return { ...resolved, color: 'var(--danger-fg)' }
   return resolved
 }
+
+/**
+ * Anchors take `--brand-fg`. Mantine colours them with the primary shade, a fill colour that
+ * emerald and amber cannot carry as text in Light. Set here because Mantine injects its own value
+ * after theme.css.
+ */
+export const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {},
+  light: { '--mantine-color-anchor': 'var(--brand-fg)' },
+  dark: { '--mantine-color-anchor': 'var(--brand-fg)' },
+})
 
 /**
  * Builds the Mantine theme for a given accent palette (defaults to indigo) and the active scheme.

@@ -48,6 +48,7 @@
   --info-on: #06142b;
   --danger: #f2554c;
   --danger-on: #2a0a08;
+  --danger-fg: #ff8b84;
   /* Filled danger buttons carry white text, which --danger is too light for in the dark themes. */
   --danger-fill: #c0322b;
   --watched: #b197fc;
@@ -94,7 +95,7 @@
   --type-meta: 0.8125rem;
   --type-micro: 0.75rem;
   --type-label: 0.6875rem;
-  --type-badge: 0.625rem;
+  --type-badge: 0.6875rem;
 
   /* Weight scale. Same rule as the type scale: a weight between two steps belongs on one of them. */
   --fw-regular: 400;
@@ -166,7 +167,7 @@
   --brand: #c4476e;
   --brand-hover: #b8436a;
   --brand-on: #ffffff;
-  --brand-fg: #b8496b;
+  --brand-fg: #ad4064;
   --brand-fg-on-art: #f5b6c8;
 }
 :root[data-theme='light'][data-accent='rose'] {
@@ -265,6 +266,7 @@
   --info-on: #ffffff;
   --danger: #c0322b;
   --danger-on: #ffffff;
+  --danger-fg: var(--danger);
   --watched: #7040bd;
   --watched-on: #ffffff;
   --suggestive: #657018;
@@ -320,6 +322,17 @@ body {
 :root[data-mantine-color-scheme='dark'],
 :root[data-mantine-color-scheme='light'] {
   --mantine-color-dimmed: var(--ink-3);
+  --mantine-color-placeholder: var(--ink-3);
+}
+.mantine-Slider-markLabel,
+.mantine-RangeSlider-markLabel {
+  color: var(--ink-3);
+}
+/* For fields whose empty state is a real answer ("Any", "Min"): the word is the value, so it reads
+   at value strength rather than as a hint. A disabled field keeps the quieter placeholder. */
+.field-default-value input:not(:disabled)::placeholder {
+  color: var(--mantine-color-text);
+  opacity: 1;
 }
 
 /* Elevate surfaces above the app body so cards/modals read as layers. */
@@ -698,8 +711,8 @@ body {
   flex-shrink: 0;
 }
 .nav-user-avatar .mantine-Avatar-placeholder {
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
 }
@@ -798,7 +811,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--type-badge);
   font-weight: 600;
   color: var(--ink-4);
   text-transform: uppercase;
@@ -809,7 +822,7 @@ body {
 .nav-footer .nav-footer-version-button {
   margin-left: -4px;
   padding: 2px 4px;
-  font-size: 10px;
+  font-size: var(--type-badge);
   font-weight: 600;
   border-radius: 4px;
   transition:
@@ -951,7 +964,7 @@ body {
   }
 }
 .nav-section-label {
-  font-size: 10.5px;
+  font-size: var(--type-label);
   font-weight: var(--fw-bold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -965,8 +978,8 @@ body {
   margin-left: auto;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   line-height: 18px;
@@ -978,8 +991,25 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+}
+/* Mantine's xs and sm badges and its xs pills set 9 and 10px type, under the floor every other label keeps. */
+.mantine-Badge-root {
+  --badge-fz-xs: var(--type-badge);
+  --badge-fz-sm: var(--type-badge);
+}
+.mantine-Pill-root {
+  --pill-fz-xs: var(--type-badge);
+}
+/* Mantine puts white on any colour it was handed as a CSS variable; on warn that is 2.3:1. */
+.count-indicator[data-tone='warn'] > .mantine-Indicator-indicator {
+  background: var(--warn);
+  color: var(--warn-on);
+}
+.count-indicator[data-tone='danger'] > .mantine-Indicator-indicator {
+  background: var(--danger);
+  color: var(--danger-on);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
@@ -1325,8 +1355,8 @@ body {
   height: 16px;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-badge);
   font-weight: var(--fw-bold);
   letter-spacing: 0.02em;
@@ -1348,8 +1378,8 @@ body {
   margin-bottom: 7px;
   padding: 0 8px 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
   letter-spacing: 0.02em;
@@ -1457,7 +1487,10 @@ body {
    containment on the cards it was switched off (the old rule here) and every one of the ~240
    posters stayed laid out, painted and image-decoded for as long as the tab was open.
    No scroll-snap: WebKit re-snaps after layout, and a contained rail coming on screen (or posters
-   replacing skeletons) left iOS Safari's rails parked mid-row on first load. */
+   replacing skeletons) left iOS Safari's rails parked mid-row on first load.
+   The 6px gutter, cancelled by the negative margin, keeps the cards where they were but gives the
+   focus ring and Trending's rank badge room inside the scroller, which clips both. Scroll padding
+   lands a focused card clear of the edge fade. */
 .discover-rail {
   --rail-fade-start: 0px;
   --rail-fade-end: 0px;
@@ -1465,14 +1498,16 @@ body {
   gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 8px;
+  margin: -6px -6px 0;
+  padding: 6px 6px 8px;
+  scroll-padding-inline: 30px;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   content-visibility: auto;
-  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the scrollbar
-     gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
-     first guess, so Discover's wider steps cost nothing more than a slightly stale one. */
-  contain-intrinsic-size: auto 233px;
+  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the gutters.
+     `auto` keeps the real measurement once a rail has been on screen; this is only the first
+     guess, so Discover's wider steps cost nothing more than a slightly stale one. */
+  contain-intrinsic-size: auto 239px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
@@ -1872,7 +1907,7 @@ body {
    clipped line: these rows are claims about the reader, so the grounds have to be readable. */
 .discover-rail[data-engine] {
   /* Poster at the wider item (2/3) plus the footer and the scrollbar gutter. */
-  contain-intrinsic-size: auto 330px;
+  contain-intrinsic-size: auto 336px;
 }
 .discover-rail[data-engine] .discover-rail-item {
   width: var(--rail-item-engine-w, 180px);
@@ -6442,9 +6477,13 @@ body.reader-open {
   border-radius: var(--mantine-radius-sm);
 }
 /* An acknowledged check is kept, not hidden: the decision was "stop telling me", not "this is
-   fine", and the row has to stay findable for whoever reverses it. */
-.health-check[data-acknowledged] {
-  opacity: 0.55;
+   fine", and the row has to stay findable for whoever reverses it. The dot and the quieter
+   message carry the state; dimming the whole row took its text and buttons under 4.5:1. */
+.health-check[data-acknowledged] .status-dot {
+  color: var(--ink-3);
+}
+.health-check[data-acknowledged] .status-dot::before {
+  opacity: 0.45;
 }
 
 /* The category heading is a label, not a title: it separates groups inside one panel and must not
@@ -7464,7 +7503,7 @@ body.reader-open {
   border-radius: 3px;
   border: 1px solid var(--border);
   background: var(--surface-2);
-  font-size: 9px;
+  font-size: var(--type-badge);
   font-weight: 600;
   color: var(--ink-4);
   display: grid;
@@ -7474,9 +7513,9 @@ body.reader-open {
   transition: background-color 0.25s, border-color 0.25s, color 0.25s;
 }
 .relink-cell.is-move {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  border-color: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
 }
 .relink-cell.is-fill {
   background: var(--ok);
@@ -8659,8 +8698,8 @@ body.reader-open {
   height: 18px;
   padding: 0 5px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
 }
