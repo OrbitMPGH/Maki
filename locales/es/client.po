@@ -5958,8 +5958,8 @@ msgstr "Densidad"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Density: {densityLabel}"
-msgstr "Densidad: {densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "Densidad: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10220,6 +10220,10 @@ msgstr "Más como esto"
 #, fuzzy
 msgid "More of this"
 msgstr "Más de esto"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -18564,6 +18568,7 @@ msgstr "muy compacto"
 msgid "Vietnamese"
 msgstr "Vietnamita"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy

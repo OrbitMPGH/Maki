@@ -5958,8 +5958,8 @@ msgstr "Dichte"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Density: {densityLabel}"
-msgstr "Dichte: {densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "Dichte: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10220,6 +10220,10 @@ msgstr "Mehr wie dieses"
 #, fuzzy
 msgid "More of this"
 msgstr "Mehr davon"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -18564,6 +18568,7 @@ msgstr "sehr eng"
 msgid "Vietnamese"
 msgstr "Vietnamesisch"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy

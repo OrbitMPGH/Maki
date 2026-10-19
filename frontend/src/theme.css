@@ -7225,10 +7225,24 @@ body.reader-open {
 }
 .library-toolbar-row .library-search {
   flex: 1 1 15rem;
-  min-width: min(18rem, 100%);
+  min-width: min(14rem, 100%);
 }
-.library-toolbar-row .library-sort {
-  flex: 0 0 10.625rem;
+/* Sort field and direction as one joined control. */
+.library-sort-control {
+  display: flex;
+  flex: none;
+}
+.library-sort-control .library-sort {
+  width: 10.625rem;
+}
+.library-sort-control .library-sort .mantine-Input-input {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+.library-sort-control > .mantine-ActionIcon-root {
+  margin-inline-start: -1px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }
 .library-toolbar-row > .tnum {
   flex: none;
@@ -7239,41 +7253,37 @@ body.reader-open {
 }
 .library-view-controls {
   flex: none;
+  margin-inline-start: auto;
 }
-.library-view-toggle {
+/* Grid / list, shared by every poster grid. */
+.view-mode-toggle {
   flex: none;
   padding: 2px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: transparent;
 }
-.library-view-toggle .mantine-SegmentedControl-indicator {
+.view-mode-toggle .mantine-SegmentedControl-indicator {
   border-radius: 4px;
   background: color-mix(in srgb, var(--brand) 18%, transparent);
   box-shadow: none;
 }
-.library-view-toggle .mantine-SegmentedControl-label {
+.view-mode-toggle .mantine-SegmentedControl-label {
   padding: 0;
   color: var(--ink-3);
 }
-.library-view-toggle .mantine-SegmentedControl-label:hover {
+.view-mode-toggle .mantine-SegmentedControl-label:hover {
   color: var(--ink-hi);
 }
-.library-view-toggle .mantine-SegmentedControl-label[data-active] {
+.view-mode-toggle .mantine-SegmentedControl-label[data-active] {
   color: var(--brand-fg);
 }
-.library-view-option {
+.view-mode-option {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 30px;
   height: 26px;
-}
-.library-density-button {
-  flex: none;
-  border-color: var(--border-strong);
-  background: transparent;
-  color: var(--ink-2);
 }
 .library-saved-filters {
   min-height: 1.75rem;
@@ -7349,6 +7359,27 @@ body.reader-open {
   .library-toolbar {
     gap: 0.5rem;
   }
+  /* The title shares its row with Select and Add series, the sentence runs full width under both,
+     so the first covers start higher on a phone. */
+  .library-page-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    row-gap: 2px;
+  }
+  .library-page-header > .mantine-Stack-root {
+    display: contents;
+  }
+  .library-page-header > .mantine-Stack-root > .mantine-Text-root {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .library-page-header > .mantine-Group-root {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  /* One row: search, the filter button, the dice and the menu. Sort, view and density live in the
+     menu here, so the first cover starts right under the bar. */
   .library-toolbar-row {
     flex-wrap: nowrap;
     gap: 0.5rem;
@@ -7357,8 +7388,9 @@ body.reader-open {
     flex: 1 1 0;
     min-width: 0;
   }
-  .library-toolbar-row .library-sort {
-    flex: 0 0 9.75rem;
+  .library-sort-control,
+  .library-toolbar-row > .tnum {
+    display: none;
   }
   /* One line that scrolls sideways, and gone entirely when it would hold only the tag gear: the
      Filters drawer carries "Manage tags" too. */

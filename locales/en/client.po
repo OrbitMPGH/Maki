@@ -4842,8 +4842,8 @@ msgid "Density"
 msgstr "Density"
 
 #: src/pages/LibraryPage.tsx
-msgid "Density: {densityLabel}"
-msgstr "Density: {densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "Density: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 msgid "Descending"
@@ -8307,6 +8307,10 @@ msgstr "More like this"
 #: src/pages/discover/TasteTab.tsx
 msgid "More of this"
 msgstr "More of this"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr "More options"
 
 #: src/components/home/ReadingCardMenu.tsx
 msgid "More options for {seriesTitle}"
@@ -15084,6 +15088,7 @@ msgstr "very tight"
 msgid "Vietnamese"
 msgstr "Vietnamese"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 msgid "View"

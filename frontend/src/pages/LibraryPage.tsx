@@ -4,10 +4,12 @@ import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
   Drawer,
   Group,
   Indicator,
+  Menu,
   Modal,
   MultiSelect,
   NumberInput,
@@ -24,6 +26,7 @@ import {
 } from '@mantine/core'
 import {
   IconBookmark,
+  IconCheck,
   IconDeviceFloppy,
   IconEye,
   IconStars,
@@ -31,18 +34,15 @@ import {
   IconFilter,
   IconFolderDown,
   IconFolderSymlink,
-  IconLayoutGrid,
-  IconLayoutList,
-  IconLineHeight,
   IconListCheck,
   IconPhoto,
   IconPlus,
   IconRefresh,
   IconSearch,
+  IconSettings,
   IconSortAscending,
   IconSortDescending,
   IconBell,
-  IconSettings,
   IconTag,
   IconTrash,
   IconWand,
@@ -100,7 +100,14 @@ import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
-import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } from '../components/ui/viewPrefs'
+import {
+  DensityMenuItems,
+  POSTER_COLS_BY_DENSITY,
+  readStored,
+  ToolbarMenuButton,
+  ViewModeToggle,
+  writeStored,
+} from '../components/ui/viewPrefs'
 import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
 
@@ -345,7 +352,6 @@ export default function LibraryPage() {
   const { i18n, _ } = useLingui()
   const { t } = useLinguiMacro()
   const notificationOptions = useSeriesNotificationOptions()
-  const densityOptions = useDensityOptions()
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error, refetch: refetchSeries, isRefetching: isRefetchingSeries } = useSeries()
@@ -1066,69 +1072,20 @@ export default function LibraryPage() {
     return () => observer.disconnect()
   }, [showChrome])
 
-  const densityLabel = densityOptions.find((o) => o.value === density)?.label ?? ''
-  const cycleDensity = () => {
-    const order: Density[] = ['compact', 'default', 'comfortable']
-    const next = order[(order.indexOf(density) + 1) % order.length]
-    setDensity(next)
-    writeStored(LS_DENSITY, next)
+  const reverseSort = () => {
+    const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc'
+    setSortDirOverride(next === SORT_DEFAULT_DIR[sort] ? '' : next)
   }
-
-  const viewControls = (
-    <>
-      <SegmentedControl
-        className="library-view-toggle"
-        size="xs"
-        value={viewMode}
-        onChange={(v) => {
-          setViewMode(v as ViewMode)
-          writeStored(LS_VIEW, v)
-        }}
-        aria-label={t`View`}
-        data={[
-          {
-            value: 'grid',
-            label: (
-              <span className="library-view-option" title={t`Grid view`} aria-label={t`Grid view`}>
-                <IconLayoutGrid size={16} />
-              </span>
-            ),
-          },
-          {
-            value: 'list',
-            label: (
-              <span className="library-view-option" title={t`List view`} aria-label={t`List view`}>
-                <IconLayoutList size={16} />
-              </span>
-            ),
-          },
-        ]}
-      />
-      <Tooltip label={t`Density: ${densityLabel}`} withArrow>
-        <ActionIcon
-          className="library-density-button"
-          variant="default"
-          size={34}
-          onClick={cycleDensity}
-          aria-label={t`Density: ${densityLabel}`}
-        >
-          <IconLineHeight size={16} />
-        </ActionIcon>
-      </Tooltip>
-    </>
-  )
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
+        className="library-page-header"
         title={t`Library`}
         description={t`Every series Maki watches: cover art, download progress and status at a glance.`}
         actions={
           showChrome && !selectMode ? (
             <>
-              <Group gap="xs" wrap="nowrap" hiddenFrom="sm">
-                {viewControls}
-              </Group>
               <Button
                 variant="default"
                 leftSection={<IconListCheck size={16} />}
@@ -1303,46 +1260,31 @@ export default function LibraryPage() {
                     <IconFilter size={16} />
                   </ActionIcon>
                 </Indicator>
-                <Tooltip label={t`Manage tags`} withArrow>
-                  <ActionIcon
-                    className="library-tags-button"
-                    variant="default"
-                    size={34}
-                    onClick={() => setTagManagerOpen(true)}
-                    aria-label={t`Manage tags`}
-                  >
-                    <IconSettings size={16} />
-                  </ActionIcon>
-                </Tooltip>
-                <Select
-                  aria-label={t`Sort by`}
-                  className="library-sort"
-                  data={sortOptions}
-                  value={sort}
-                  onChange={(v) => {
-                    setSort(v ?? 'added')
-                    setSortDirOverride('')
-                  }}
-                  comboboxProps={{ withinPortal: true }}
-                />
-                <Tooltip label={sortDir === 'asc' ? t`Ascending` : t`Descending`} withArrow>
-                  <ActionIcon
-                    variant="default"
-                    size="input-sm"
-                    aria-label={t`Reverse sort order`}
-                    onClick={() => {
-                      const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc'
-                      setSortDirOverride(next === SORT_DEFAULT_DIR[sort] ? '' : next)
+                {/* Field and direction as one control: the arrow only means something next to the field. */}
+                <div className="library-sort-control">
+                  <Select
+                    aria-label={t`Sort by`}
+                    className="library-sort"
+                    data={sortOptions}
+                    value={sort}
+                    onChange={(v) => {
+                      setSort(v ?? 'added')
+                      setSortDirOverride('')
                     }}
-                  >
-                    {sortDir === 'asc' ? <IconSortAscending size={16} /> : <IconSortDescending size={16} />}
-                  </ActionIcon>
-                </Tooltip>
-                <LuckyButton
-                  candidates={luckyPool}
-                  onPick={(id) => navigate(`/series/${id}`, { state: { lucky: true } })}
-                />
-                <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm" hidden={isLoading}>
+                    comboboxProps={{ withinPortal: true }}
+                  />
+                  <Tooltip label={sortDir === 'asc' ? t`Ascending` : t`Descending`} withArrow>
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label={t`Reverse sort order`}
+                      onClick={reverseSort}
+                    >
+                      {sortDir === 'asc' ? <IconSortAscending size={16} /> : <IconSortDescending size={16} />}
+                    </ActionIcon>
+                  </Tooltip>
+                </div>
+                <Text size="sm" c="var(--ink-3)" className="tnum library-toolbar-count" hidden={isLoading}>
                   {filtersActive ? (
                     plural(totalCount, {
                       one: `${visibleCount} of # series match`,
@@ -1352,8 +1294,79 @@ export default function LibraryPage() {
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
                 </Text>
-                <Group className="library-view-controls" gap="sm" wrap="nowrap" visibleFrom="sm">
-                  {viewControls}
+                <Group className="library-view-controls" gap="sm" wrap="nowrap">
+                  <Box visibleFrom="sm">
+                    <ViewModeToggle
+                      value={viewMode}
+                      onChange={(v) => {
+                        setViewMode(v)
+                        writeStored(LS_VIEW, v)
+                      }}
+                    />
+                  </Box>
+                  <LuckyButton
+                    candidates={luckyPool}
+                    onPick={(id) => navigate(`/series/${id}`, { state: { lucky: true } })}
+                  />
+                  <Menu position="bottom-end" withinPortal>
+                    <Menu.Target>
+                      <ToolbarMenuButton />
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item leftSection={<IconSettings size={14} />} onClick={() => setTagManagerOpen(true)}>
+                        <Trans>Manage tags</Trans>
+                      </Menu.Item>
+                      {/* A phone keeps search, Filters, the dice and this menu, so view and sort move in here. */}
+                      <Box hiddenFrom="sm">
+                        <Menu.Divider />
+                        <Menu.Label>{t`View`}</Menu.Label>
+                        {(['grid', 'list'] as const).map((mode) => (
+                          <Menu.Item
+                            key={mode}
+                            onClick={() => {
+                              setViewMode(mode)
+                              writeStored(LS_VIEW, mode)
+                            }}
+                            rightSection={viewMode === mode ? <IconCheck size={14} /> : undefined}
+                          >
+                            {mode === 'grid' ? t`Grid view` : t`List view`}
+                          </Menu.Item>
+                        ))}
+                        <Menu.Divider />
+                        <Menu.Label>{t`Sort by`}</Menu.Label>
+                        {sortOptions.map((o) => (
+                          <Menu.Item
+                            key={o.value}
+                            onClick={() => {
+                              setSort(o.value)
+                              setSortDirOverride('')
+                            }}
+                            rightSection={sort === o.value ? <IconCheck size={14} /> : undefined}
+                          >
+                            {o.label}
+                          </Menu.Item>
+                        ))}
+                        <Menu.Item
+                          onClick={reverseSort}
+                          rightSection={
+                            <Text size="xs" c="var(--ink-3)">
+                              {sortDir === 'asc' ? t`Ascending` : t`Descending`}
+                            </Text>
+                          }
+                        >
+                          {t`Reverse sort order`}
+                        </Menu.Item>
+                      </Box>
+                      <Menu.Divider />
+                      <DensityMenuItems
+                        value={density}
+                        onChange={(d) => {
+                          setDensity(d)
+                          writeStored(LS_DENSITY, d)
+                        }}
+                      />
+                    </Menu.Dropdown>
+                  </Menu>
                 </Group>
               </Group>
             </Stack>

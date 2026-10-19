@@ -5958,8 +5958,8 @@ msgstr "Yoğunluk"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Density: {densityLabel}"
-msgstr "Yoğunluk: {densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "Yoğunluk: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10220,6 +10220,10 @@ msgstr "Buna benzer"
 #, fuzzy
 msgid "More of this"
 msgstr "Bundan daha fazla"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -18564,6 +18568,7 @@ msgstr "çok sıkı"
 msgid "Vietnamese"
 msgstr "Vietnamca"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy

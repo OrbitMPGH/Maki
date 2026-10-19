@@ -5957,8 +5957,8 @@ msgstr "密度"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Density: {densityLabel}"
-msgstr "密度：{densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "密度：{densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10219,6 +10219,10 @@ msgstr "これに似た作品"
 #, fuzzy
 msgid "More of this"
 msgstr "これをもっと"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -18563,6 +18567,7 @@ msgstr "非常に密"
 msgid "Vietnamese"
 msgstr "ベトナム語"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy

@@ -5957,8 +5957,8 @@ msgstr "밀도"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Density: {densityLabel}"
-msgstr "밀도: {densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "밀도: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10219,6 +10219,10 @@ msgstr "이와 비슷한 항목"
 #, fuzzy
 msgid "More of this"
 msgstr "이 항목 더 보기"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -18563,6 +18567,7 @@ msgstr "매우 촘촘함"
 msgid "Vietnamese"
 msgstr "베트남어"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy

@@ -5958,8 +5958,8 @@ msgstr "Плотность"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Density: {densityLabel}"
-msgstr "Плотность: {densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "Плотность: {densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10220,6 +10220,10 @@ msgstr "Похожее"
 #, fuzzy
 msgid "More of this"
 msgstr "Ещё из этого"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -18564,6 +18568,7 @@ msgstr "очень близкие"
 msgid "Vietnamese"
 msgstr "Вьетнамский"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy

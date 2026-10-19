@@ -5957,8 +5957,8 @@ msgstr "密度"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Density: {densityLabel}"
-msgstr "密度：{densityLabel}"
+#~ msgid "Density: {densityLabel}"
+#~ msgstr "密度：{densityLabel}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10219,6 +10219,10 @@ msgstr "更多类似内容"
 #, fuzzy
 msgid "More of this"
 msgstr "更多此类内容"
+
+#: src/components/ui/viewPrefs.tsx
+msgid "More options"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -18563,6 +18567,7 @@ msgstr "非常紧密"
 msgid "Vietnamese"
 msgstr "越南语"
 
+#: src/components/ui/viewPrefs.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
