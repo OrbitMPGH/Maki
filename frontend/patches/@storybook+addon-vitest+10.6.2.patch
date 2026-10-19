@@ -1,0 +1,11 @@
+diff --git a/node_modules/@storybook/addon-vitest/dist/node/coverage-reporter.js b/node_modules/@storybook/addon-vitest/dist/node/coverage-reporter.js
+index 1ef5d11..70c79f5 100644
+--- a/node_modules/@storybook/addon-vitest/dist/node/coverage-reporter.js
++++ b/node_modules/@storybook/addon-vitest/dist/node/coverage-reporter.js
+@@ -1351,5 +1351,6 @@ var import_istanbul_lib_report = __toESM(require_istanbul_lib_report(), 1), Stor
+   }
+ };
+ export {
++  StorybookCoverageReporter as default,
+   StorybookCoverageReporter as "module.exports"
+ };
