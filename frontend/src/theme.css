@@ -7300,6 +7300,16 @@ body.reader-open {
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
 }
+/* Remove is the one action that cannot be taken back, so a rule keeps it out of the run of the rest. */
+.library-bulk-divider {
+  align-self: stretch;
+  margin-inline: 4px;
+}
+@media (min-width: 48em) {
+  .library-bulk-more-phone {
+    display: none;
+  }
+}
 /* On a phone the drawer covers the grid it filters, so the count and the way back to the grid sit
    in a footer that stays on screen however far the groups run. */
 .library-filter-footer {
@@ -7400,14 +7410,6 @@ body.reader-open {
     scrollbar-width: none;
   }
   .library-saved-filters > * {
-    flex-shrink: 0;
-  }
-  .library-selection-bar > .mantine-Group-root:last-child {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .library-selection-bar > .mantine-Group-root:last-child > * {
     flex-shrink: 0;
   }
 }

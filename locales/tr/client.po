@@ -2618,6 +2618,10 @@ msgstr "Görüldü"
 msgid "Action"
 msgstr "Aksiyon"
 
+#: src/pages/LibraryPage.tsx
+msgid "Actions"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Actions for {spanLabel}"
@@ -10177,6 +10181,7 @@ msgid "Month"
 msgstr "Ay"
 
 #: src/components/settings/SettingsHelp.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy

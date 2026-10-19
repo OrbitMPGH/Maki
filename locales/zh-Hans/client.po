@@ -2617,6 +2617,10 @@ msgstr "已确认"
 msgid "Action"
 msgstr "动作"
 
+#: src/pages/LibraryPage.tsx
+msgid "Actions"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Actions for {spanLabel}"
@@ -10176,6 +10180,7 @@ msgid "Month"
 msgstr "月"
 
 #: src/components/settings/SettingsHelp.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy

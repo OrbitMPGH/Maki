@@ -2123,6 +2123,10 @@ msgstr "Acknowledged"
 msgid "Action"
 msgstr "Action"
 
+#: src/pages/LibraryPage.tsx
+msgid "Actions"
+msgstr "Actions"
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "Actions for {spanLabel}"
 msgstr "Actions for {spanLabel}"
@@ -8272,6 +8276,7 @@ msgid "Month"
 msgstr "Month"
 
 #: src/components/settings/SettingsHelp.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/stats/charts/HourMatrix.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 msgid "More"
