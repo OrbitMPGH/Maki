@@ -290,6 +290,7 @@ export const ChapterRow = memo(function ChapterRow({
                                   radius="xl"
                                   animated={queueItem.status === 'Downloading'}
                                   color={queueItem.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                                  aria-label={t`Download progress`}
                               />
                           )}
                           <Badge
@@ -684,6 +685,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                   color={watchedCount > readCount ? 'var(--watched)' : 'var(--ok)'}
                   size="sm"
                   radius="xl"
+                  aria-label={t`Reading progress`}
               />
           )}
         </Table.Td>

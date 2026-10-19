@@ -908,7 +908,13 @@ body {
   border-color: var(--border-strong);
 }
 .command-palette-trigger-label {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .command-palette-trigger-kbd {
   display: none;
@@ -930,6 +936,11 @@ body {
     padding: 0 6px 0 12px;
   }
   .command-palette-trigger-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    clip: auto;
     display: inline;
     flex: 1;
     overflow: hidden;

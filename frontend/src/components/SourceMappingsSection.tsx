@@ -248,7 +248,7 @@ export function SourceMappingsSection({
       <Group justify="space-between">
         <Group gap={8}>
           <IconPlugConnected size={18} style={{ opacity: 0.7 }} />
-          <Title order={4}><Trans>Sources</Trans></Title>
+          <Title order={3} size="h4"><Trans>Sources</Trans></Title>
         </Group>
         {/* Both held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
             source that the matcher is about to add itself fails its whole batch of mappings. */}
@@ -464,7 +464,7 @@ export function SourceMappingsSection({
                 <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
                 <IconPower size={14} style={{ opacity: 0.7 }} aria-hidden />
               </Table.Th>
-              <Table.Th w={36} />
+              <Table.Th w={36}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>

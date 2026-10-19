@@ -64,7 +64,7 @@ export const ListRow: Story = {
     </div>
   ),
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: item.title }))
+    await userEvent.click(canvas.getByRole('button', { name: new RegExp(`^${item.title}`) }))
     await expect(args.onOpen).toHaveBeenCalledWith(item)
   },
 }

@@ -398,6 +398,7 @@ export function TermPicker({
 }) {
   const { t } = useLingui()
   const combobox = useCombobox({ onDropdownClose: () => combobox.resetSelectedOption() })
+  const fieldName = typeof label === 'string' ? label : kinds.includes('genre') ? t`Search genres and tags` : t`Search tags`
   const [search, setSearch] = useState('')
   const { data: tagOptions, isLoading } = useRecommendationTags()
   const genreOptions = useGenreOptions()
@@ -497,6 +498,7 @@ export function TermPicker({
               ))}
               <Combobox.EventsTarget>
                 <PillsInput.Field
+                  aria-label={fieldName}
                   value={search}
                   placeholder={value.length ? undefined : (placeholder ?? (kinds.includes('genre') ? t`Search genres and tags` : t`Search tags`))}
                   onFocus={() => combobox.openDropdown()}
@@ -519,7 +521,7 @@ export function TermPicker({
         </Combobox.DropdownTarget>
 
         <Combobox.Dropdown>
-          <Combobox.Options mah={300} style={{ overflowY: 'auto' }}>
+          <Combobox.Options mah={300} style={{ overflowY: 'auto' }} aria-label={fieldName}>
             {genres.length > 0 && (
               <Combobox.Group label={t`Genres`}>
                 {genres.map((g) => (
@@ -647,7 +649,15 @@ function TermPill({
   if (term.kind === 'genre') return pill
 
   return (
-    <Popover opened={opened} onChange={setOpened} position="bottom-start" withArrow shadow="md" width={260}>
+    <Popover
+      opened={opened}
+      onChange={setOpened}
+      position="bottom-start"
+      withArrow
+      shadow="md"
+      width={260}
+      withRoles={false}
+    >
       <Popover.Target>{pill}</Popover.Target>
       <Popover.Dropdown>
         <Stack gap="xs">

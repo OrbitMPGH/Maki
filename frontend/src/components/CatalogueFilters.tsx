@@ -481,7 +481,7 @@ export function CatalogueFilters({
               <Trans>Minimum rating: {ratingLabel}</Trans>
             </Text>
             <Slider
-              aria-label={t`Minimum rating`}
+              thumbLabel={t`Minimum rating`}
               min={0}
               max={9.5}
               step={0.5}

@@ -286,7 +286,7 @@ export function DiscoverHero({
                     variant="light"
                     rightSection={<IconArrowRight size={16} />}
                     onClick={() => navigate(`/series/${ownedSeriesId}`)}
-                    aria-label={t`View ${title} in library`}
+                    aria-label={t`View in library: ${title}`}
                   >
                     <Trans>View in library</Trans>
                   </Button>
@@ -294,7 +294,7 @@ export function DiscoverHero({
                   <Button
                     leftSection={<IconPlus size={16} />}
                     onClick={() => onOpen(item)}
-                    aria-label={t`Add ${title} to library`}
+                    aria-label={t`Add to library: ${title}`}
                   >
                     <Trans>Add to library</Trans>
                   </Button>
@@ -334,7 +334,6 @@ export function DiscoverHero({
                     type="button"
                     role="tab"
                     aria-selected={n === active}
-                    aria-label={p.title}
                     className="discover-hero-strip-item"
                     onClick={() => choose(n)}
                   >

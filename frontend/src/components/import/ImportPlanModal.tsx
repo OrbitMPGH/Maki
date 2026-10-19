@@ -210,7 +210,13 @@ export function ImportPlanModal({
   const deferred = plan.data?.some((p) => !p.error && p.linkDeferred) ?? false
 
   return (
-    <Modal opened onClose={onClose} title={t`Import preview`} size="xl">
+    <Modal
+      opened
+      onClose={onClose}
+      title={t`Import preview`}
+      size="xl"
+      attributes={{ body: { tabIndex: 0 } }}
+    >
       <Stack gap="sm">
         <Text size="sm" c="var(--ink-2)">
           <Trans>Nothing has been changed. This is what importing would do.</Trans>

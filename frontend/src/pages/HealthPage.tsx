@@ -22,6 +22,7 @@ import {
   Text,
   TextInput,
   Title,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconBooks,
@@ -322,6 +323,7 @@ export default function HealthPage() {
           color="var(--danger)"
           mb="lg"
           withCloseButton={!queryError}
+          closeButtonLabel={t`Dismiss`}
           onClose={() => {
             action.reset()
             quick.reset()
@@ -499,7 +501,12 @@ export default function HealthPage() {
             )}
 
             {deleteReport && failedCount > 0 && (
-              <Alert color="var(--danger)" withCloseButton onClose={() => setDeleteReport(null)}>
+              <Alert
+                color="var(--danger)"
+                withCloseButton
+                closeButtonLabel={t`Dismiss`}
+                onClose={() => setDeleteReport(null)}
+              >
                 <Text size="sm" mb="xs">
                   <Trans>
                     {deletedCount} deleted, {failedCount} refused:
@@ -552,7 +559,7 @@ export default function HealthPage() {
                           <Table.Th>
                             <Trans>Findings</Trans>
                           </Table.Th>
-                          <Table.Th />
+                          <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                         </Table.Tr>
                       </Table.Thead>
                       <Table.Tbody>
@@ -861,7 +868,7 @@ function ChecksPanel({
     <Panel className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
         <Group gap="sm" align="baseline" wrap="wrap">
-          <Title order={3} fz="var(--type-section)">
+          <Title order={2} size="h3" fz="var(--type-section)">
             <Trans>System checks</Trans>
           </Title>
           {unresolved.length > 0 && (
@@ -1299,7 +1306,7 @@ function FileReview({
 
             <div className="health-review-column">
               <Panel p="md">
-                <Title order={4} fz="var(--type-subhead)" mb="sm">
+                <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
                   <Trans>Request replacement</Trans>
                 </Title>
                 <Select
@@ -1359,7 +1366,7 @@ function FileReview({
               </Panel>
 
               <Panel p="md">
-                <Title order={4} fz="var(--type-subhead)" mb="sm">
+                <Title order={3} size="h4" fz="var(--type-subhead)" mb="sm">
                   {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
                 </Title>
                 <Text size="xs" c="var(--ink-4)" mb="sm">
@@ -1444,7 +1451,7 @@ function UnlinkedPanel({
   return (
     <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
-        <Title order={4} fz="var(--type-subhead)">
+        <Title order={3} size="h4" fz="var(--type-subhead)">
           <Trans>Not linked to any chapter</Trans>
         </Title>
         <Badge variant="light" color="var(--neutral)">
@@ -1901,7 +1908,7 @@ function OptionsPanel() {
   return (
     <Panel className="health-area-options" p="lg">
       <Stack>
-        <Title order={3} fz="var(--type-section)">
+        <Title order={2} size="h3" fz="var(--type-section)">
           <Trans>Health settings</Trans>
         </Title>
         {action.error && <Alert color="var(--danger)">{action.error.message}</Alert>}
@@ -1980,7 +1987,7 @@ function CachePanel() {
   return (
     <Panel className="health-area-cache" p="lg">
       <Stack>
-        <Title order={3} fz="var(--type-section)">
+        <Title order={2} size="h3" fz="var(--type-section)">
           <Trans>Image cache and backups</Trans>
         </Title>
         {cache.data && (

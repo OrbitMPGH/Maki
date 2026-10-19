@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { Alert, Badge, Button, Center, Group, Loader, Modal, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core'
+import { Alert, Badge, Button, Center, Group, Loader, Modal, Stack, Table, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -104,7 +104,7 @@ export function ReleaseSearchModal({
                 <Table.Th><Trans>Size</Trans></Table.Th>
                 <Table.Th><Trans>Seeds</Trans></Table.Th>
                 <Table.Th><Trans>Upgrade</Trans></Table.Th>
-                <Table.Th />
+                <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>

@@ -230,7 +230,7 @@ export function LinkFileToChaptersModal({
                     >
                       <Group justify="space-between" wrap="nowrap" gap="xs">
                         <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-                          <Checkbox checked={checked} readOnly tabIndex={-1} size="xs" aria-hidden />
+                          <Checkbox.Indicator checked={checked} size="xs" />
                           <Text size="sm" className="tnum" style={{ whiteSpace: 'nowrap' }}>
                             {chapterLabel(c)}
                           </Text>

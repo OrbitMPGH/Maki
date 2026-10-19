@@ -24,7 +24,7 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
   return (
     <Paper withBorder radius="lg" p="lg">
       <Group justify="space-between" align="baseline">
-        <Title order={3} fz="var(--type-section)">
+        <Title order={2} size="h3" fz="var(--type-section)">
           <Trans>Reviews</Trans>
         </Title>
         <Text size="xs" c="var(--ink-4)">
@@ -46,6 +46,7 @@ export function ReviewList({
   isLoading: boolean
 }) {
   const { t } = useLingui()
+  const reviewLabel = (author: string) => t`Review by ${author}`
 
   return (
     <>
@@ -100,7 +101,12 @@ export function ReviewList({
                 </Anchor>
               )}
             </Group>
-            <Spoiler maxHeight={72} showLabel={t`Show more`} hideLabel={t`Show less`}>
+            <Spoiler
+              maxHeight={72}
+              showLabel={t`Show more`}
+              hideLabel={t`Show less`}
+              attributes={{ content: { 'aria-label': reviewLabel(review.author) } }}
+            >
               <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
                 {review.text}
               </Text>

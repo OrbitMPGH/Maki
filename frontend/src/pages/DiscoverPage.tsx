@@ -20,7 +20,6 @@ import {
   Tabs,
   Text,
   ThemeIcon,
-  Title,
   Tooltip,
 } from '@mantine/core'
 import {
@@ -659,6 +658,8 @@ function RecommendedTab() {
                   <Trans>Chapters: {chapterRangeMin}–{chapterRangeMax}</Trans>
                 </Text>
                 <RangeSlider
+                  thumbFromLabel={t`Fewest chapters`}
+                  thumbToLabel={t`Most chapters`}
                   min={CHAPTER_MIN}
                   max={CHAPTER_MAX}
                   step={5}
@@ -699,6 +700,7 @@ function RecommendedTab() {
                   )}
                 </Text>
                 <Slider
+                  thumbLabel={t`Minimum rating`}
                   min={0}
                   max={9.5}
                   step={0.5}
@@ -1012,7 +1014,13 @@ function FeedExpandModal({
           <ThemeIcon variant="light" color="brand" size="md" radius="md">
             <IconSparkles size={16} />
           </ThemeIcon>
-          <Title order={4}>{rail?.title}</Title>
+          <Text
+            span
+            fz="var(--mantine-h4-font-size)"
+            fw="var(--mantine-h4-font-weight)"
+            lh="var(--mantine-h4-line-height)"
+            ff="var(--mantine-font-family-headings)"
+          >{rail?.title}</Text>
         </Group>
       }
       styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}

@@ -108,6 +108,7 @@ export function RecommendationModelSwitch({
           animated={running || switching}
           striped={running || switching}
           color={status?.lastError ? 'var(--danger)' : 'brand'}
+          aria-label={t`Model download progress`}
         />
       )}
 

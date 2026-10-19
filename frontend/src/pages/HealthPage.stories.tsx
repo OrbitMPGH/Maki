@@ -230,7 +230,7 @@ export const ReviewDamagedArchive: Story = {
     await userEvent.click((await canvas.findAllByRole('button', { name: 'Review' }))[0])
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Review archive' })
-    await waitFor(async () => expect(await within(dialog).findByText('Request replacement', { selector: 'h4' })).toBeVisible())
+    await waitFor(async () => expect(await within(dialog).findByText('Request replacement', { selector: 'h3' })).toBeVisible())
     await expect(within(dialog).getByRole('button', { name: 'Download candidate for review' })).toBeEnabled()
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Review permanent deletion' })).toBeVisible())
   },

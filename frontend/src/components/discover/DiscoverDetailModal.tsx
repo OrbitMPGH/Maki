@@ -163,6 +163,7 @@ export function DiscoverDetailModal({
       size="min(1180px, calc(100vw - 3rem))"
       radius="lg"
       title={null}
+      attributes={{ content: { 'aria-label': title || t`Series details` } }}
       padding={0}
       withCloseButton={false}
       zIndex={1000}
@@ -439,12 +440,17 @@ export function DiscoverDetailModal({
                       </Group>
                     )}
 
-                    <Title order={3} fz="var(--type-section)">
+                    <Title order={2} size="h3" fz="var(--type-section)">
                       <Trans>Synopsis</Trans>
                     </Title>
 
                     {(detail?.description || item.description) && (
-                      <Spoiler maxHeight={120} showLabel={t`Show more`} hideLabel={t`Show less`}>
+                      <Spoiler
+                        maxHeight={120}
+                        showLabel={t`Show more`}
+                        hideLabel={t`Show less`}
+                        attributes={{ content: { 'aria-label': t`Synopsis` } }}
+                      >
                         <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.66 }}>
                           {cleanSynopsis(detail?.description ?? item.description)}
                         </Text>
@@ -470,7 +476,7 @@ export function DiscoverDetailModal({
                     {(detail?.animeStart || detail?.animeEnd) && (
                         <>
                           <Divider color="var(--hairline)"/>
-                          <Title order={4} fz="var(--type-body)">
+                          <Title order={3} size="h4" fz="var(--type-body)">
                             <Trans>Anime coverage</Trans>
                           </Title>
                           <AnimeCoverageBar

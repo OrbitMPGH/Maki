@@ -73,7 +73,6 @@ export function ImportMatchFinder({
                   key={r.providerId}
                   onClick={() => onPick(r)}
                   className="import-match-option"
-                  aria-label={t`Use ${title}`}
                 >
                   <Group wrap="nowrap" gap="sm">
                     {r.coverUrl ? (

@@ -16,6 +16,7 @@ import {
   Text,
   Title,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconArrowBackUp,
@@ -463,7 +464,7 @@ export default function ActivityPage() {
                   <Table.Th>
                     <Trans>Status</Trans>
                   </Table.Th>
-                  <Table.Th />
+                  <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -541,6 +542,7 @@ export default function ActivityPage() {
                               radius="xl"
                               animated={q.status === 'Downloading'}
                               color={q.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                              aria-label={t`Download progress`}
                             />
                             <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">
                               {q.pagesDone}/{q.pagesTotal}
@@ -767,7 +769,7 @@ export default function ActivityPage() {
                       <Table.Th data-priority="low">
                         <Trans>Completed</Trans>
                       </Table.Th>
-                      <Table.Th />
+                      <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
@@ -987,7 +989,7 @@ export default function ActivityPage() {
                               <Table.Th><Trans>Chapter</Trans></Table.Th>
                               <Table.Th><Trans>Change</Trans></Table.Th>
                               <Table.Th data-priority="low"><Trans>When</Trans></Table.Th>
-                              <Table.Th />
+                              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>

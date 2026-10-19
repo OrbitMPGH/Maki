@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Group, Modal, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core'
+import { Group, Modal, SimpleGrid, Text, ThemeIcon } from '@mantine/core'
 import { IconDeviceTv, IconPlus } from '@tabler/icons-react'
 import { useHomeFromAnimeAll, type HomeAnimeResumeItem } from '../../api/animeResume'
 import type { RecommendationItem } from '../../api/hooks'
@@ -62,9 +62,15 @@ export function AnimeResumeExpandModal({
           <ThemeIcon variant="light" color="brand" size="md" radius="md">
             <IconDeviceTv size={16} />
           </ThemeIcon>
-          <Title order={4}>
+          <Text
+            span
+            fz="var(--mantine-h4-font-size)"
+            fw="var(--mantine-h4-font-weight)"
+            lh="var(--mantine-h4-line-height)"
+            ff="var(--mantine-font-family-headings)"
+          >
             <Trans>Continue from the anime</Trans>
-          </Title>
+          </Text>
         </Group>
       }
       styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}

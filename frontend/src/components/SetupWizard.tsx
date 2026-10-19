@@ -940,7 +940,7 @@ export default function SetupWizard() {
       padding={0}
       transitionProps={{ duration: 0 }}
       classNames={{ content: 'setup-modal', body: 'setup-modal-body' }}
-      aria-label={t`Setup guide`}
+      attributes={{ content: { 'aria-label': t`Setup guide` } }}
     >
       <UnsavedSettingsContext value={reportUnsaved}>
         <div className="setup-frame">

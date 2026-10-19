@@ -14,6 +14,7 @@ import {
   Table,
   Text,
   TextInput,
+  VisuallyHidden,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconPlus } from '@tabler/icons-react'
@@ -120,7 +121,7 @@ export function UsersSection() {
               <Table.Th><Trans>Permissions</Trans></Table.Th>
               <Table.Th><Trans>Rating</Trans></Table.Th>
               <Table.Th><Trans>Last sign-in</Trans></Table.Th>
-              <Table.Th />
+              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

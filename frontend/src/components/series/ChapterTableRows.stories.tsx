@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, within } from 'storybook/test'
-import { Table } from '@mantine/core'
+import { Table, VisuallyHidden } from '@mantine/core'
 import { chaptersFor, fileQuality, progressFor } from '../../../.storybook/mocks/series'
 import { hoursAgo } from '../../../.storybook/mocks/api'
 import { seriesMsw } from '../../../.storybook/mocks/series'
@@ -97,7 +97,7 @@ const meta = {
           <Table.Th>Released</Table.Th>
           <Table.Th>Source</Table.Th>
           <Table.Th>Status</Table.Th>
-          <Table.Th />
+          <Table.Th><VisuallyHidden>Actions</VisuallyHidden></Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>

@@ -28,7 +28,7 @@ export function DiscoverGlance({
 
   return (
     <Paper withBorder radius="lg" p="md">
-      <Title order={3} fz="var(--type-subhead)">
+      <Title order={2} size="h3" fz="var(--type-subhead)">
         <Trans>At a glance</Trans>
       </Title>
 

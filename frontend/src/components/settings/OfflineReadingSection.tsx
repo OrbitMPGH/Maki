@@ -130,7 +130,12 @@ function OfflineControls() {
           <Trans>Storage on this device</Trans>
         </Text>
         {usage && usage.quota > 0 && (
-          <Progress value={Math.min(100, (usage.usage / usage.quota) * 100)} size="sm" radius="xl" />
+          <Progress
+            value={Math.min(100, (usage.usage / usage.quota) * 100)}
+            size="sm"
+            radius="xl"
+            aria-label={t`Storage used`}
+          />
         )}
         {used && quota && (
           <Text size="xs" c="var(--ink-3)" className="tnum">

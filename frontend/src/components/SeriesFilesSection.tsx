@@ -107,14 +107,14 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const tableHead = (
     <Table.Thead>
       <Table.Tr>
-        {selectMode && <Table.Th w={40} />}
+        {selectMode && <Table.Th w={40}><VisuallyHidden><Trans>Select</Trans></VisuallyHidden></Table.Th>}
         <Table.Th><Trans>File</Trans></Table.Th>
         <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
         <Table.Th w={160}><Trans>Status</Trans></Table.Th>
         <Table.Th><Trans>Mapped to</Trans></Table.Th>
         <Table.Th w={90}><Trans>Size</Trans></Table.Th>
         <Table.Th w={180}><Trans>Quality</Trans></Table.Th>
-        {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)} />}
+        {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>}
       </Table.Tr>
     </Table.Thead>
   )

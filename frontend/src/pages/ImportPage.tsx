@@ -14,6 +14,7 @@ import {
   Table,
   Text,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import { IconEye, IconEyeOff, IconFolderSearch, IconPackageImport, IconSearch } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
@@ -577,7 +578,7 @@ export default function ImportPage() {
             <Table className="panel-table import-table">
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th w={40} />
+                  <Table.Th w={40}><VisuallyHidden><Trans>Select</Trans></VisuallyHidden></Table.Th>
                   <Table.Th>
                     <Trans>Folder</Trans>
                   </Table.Th>
@@ -696,6 +697,7 @@ export default function ImportPage() {
                                       : 'var(--danger)'
                                     : 'brand'
                                 }
+                                aria-label={t`Import progress`}
                               />
                               <Text
                                 size="xs"

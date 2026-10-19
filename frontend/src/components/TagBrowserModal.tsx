@@ -324,7 +324,6 @@ function BrowseRow({
         className="tag-browser-name"
         onClick={canOpen ? onOpen : onToggle}
         disabled={!canOpen && !row.addable}
-        aria-label={canOpen ? t`Open ${label}` : toggleLabel}
       >
         <div style={{ minWidth: 0, flex: 1 }}>
           <Text size="sm" truncate fw={row.addable ? 400 : 600} td={picked && tone === 'exclude' ? 'line-through' : undefined}>

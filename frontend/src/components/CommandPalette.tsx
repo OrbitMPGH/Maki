@@ -45,7 +45,6 @@ export default function CommandPalette({ navItems }: Props) {
   const listId = useId()
   const optionId = (i: number) => `${listId}-option-${i}`
   const isMac = useOs() === 'macos'
-  const shortcut = isMac ? '⌘K' : 'Ctrl+K'
   const visibleSettings = useVisibleSettingsEntries()
 
   useHotkeys([['mod+K', open]])
@@ -180,7 +179,7 @@ export default function CommandPalette({ navItems }: Props) {
         type="button"
         className="command-palette-trigger"
         onClick={open}
-        aria-label={t`Search (${shortcut})`}
+        aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
       >
         <IconSearch size={16} stroke={1.8} />
         <span className="command-palette-trigger-label">
@@ -203,6 +202,7 @@ export default function CommandPalette({ navItems }: Props) {
         centered
         transitionProps={{ transition: 'pop', duration: 120 }}
         zIndex={1100}
+        attributes={{ content: { 'aria-label': t`Search` } }}
       >
         <Stack gap={0}>
           <TextInput
