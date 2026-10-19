@@ -1601,10 +1601,19 @@ body::before {
 .home-glance .hero-stats {
   --hero-stat-pad: 14px;
 }
+/* Sentence case here, where a page of tracked uppercase labels read as a dashboard. The series band
+   and the Discover modal keep the uppercase. */
+.home-glance .hero-stat-l {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0;
+  text-transform: none;
+}
 
 /* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
    up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
-   instead, which the short uppercase labels take without complaint. */
+   instead, which the short labels take without complaint. */
 .home-figures {
   display: grid;
   grid-auto-flow: column;
@@ -1623,7 +1632,7 @@ body::before {
   padding-left: 14px;
   border-left: 1px solid var(--border-strong);
 }
-/* Too narrow for one row, the shrinking columns ran the uppercase labels into each other. Two
+/* Too narrow for one row, the shrinking columns ran the labels into each other. Two
    columns instead, with the hairline only between the pair on each line. Four figures need more
    room than three, hence the two thresholds. */
 .home-glance > :not(.home-glance-wide) {
