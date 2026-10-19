@@ -1618,9 +1618,10 @@ body {
   font-size: var(--type-micro);
 }
 
-/* A page header with something between the title and the actions (Home's glance). Narrow, the middle
-   drops to its own full-width row; wide enough for all three, they share one row so the content
-   below starts higher. The wrapper is the container because a grid cannot query its own width. */
+/* A page header with something between the title and the actions (Home's glance). When the middle
+   fits there at its natural width the three share one row, so the content below starts higher;
+   otherwise it drops to its own full-width row. `PageHeader` measures which and sets
+   `data-inline`. The wrapper stays a container so the glance panels' own queries resolve to it. */
 .page-header-wrap {
   container: page-header / inline-size;
   margin-bottom: var(--mantine-spacing-lg);
@@ -1645,67 +1646,69 @@ body {
 .page-header-split > .page-header-actions {
   grid-area: actions;
 }
-@container page-header (min-width: 100rem) {
-  .page-header-split {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: 'title center actions';
-    align-items: center;
-  }
-  /* The description would double the title's width for one line of flavour; the row needs it more. */
-  .page-header-split {
-    column-gap: var(--mantine-spacing-md);
-  }
-  .page-header-split > .page-header-title .mantine-Text-root {
-    display: none;
-  }
-  /* Edit layout keeps its icon and tooltip and gives its label's width to the glance. */
-  .page-header-actions .home-edit-layout {
-    padding-inline: 0;
-    width: var(--button-height);
-  }
-  .page-header-actions .home-edit-layout .mantine-Button-label {
-    display: none;
-  }
-  .page-header-actions .home-edit-layout .mantine-Button-section {
-    margin: 0;
-  }
-  /* The glance at title height: tighter panels, smaller figures, and every panel one row wide.
-     Labels ellipsise rather than clip if a longer translation still runs out of room. */
-  .page-header-center .home-glance {
-    flex-wrap: nowrap;
-    gap: 8px;
-  }
-  .page-header-center .home-glance > .home-glance-panel {
-    flex: 1 1 auto;
-    container-type: normal;
-  }
-  .page-header-center .home-glance-panel {
-    padding: 6px 12px;
-  }
-  .page-header-center .home-glance-progress,
-  .page-header-center .home-glance .hero-stats {
-    flex-wrap: nowrap;
-  }
-  .page-header-center .home-glance .hero-stats {
-    --hero-stat-pad: 10px;
-  }
-  .page-header-center .home-glance-progress .mantine-Text-root {
-    white-space: nowrap;
-  }
-  .page-header-center .home-figure {
-    padding-right: 10px;
-  }
-  .page-header-center .home-figure + .home-figure {
-    padding-left: 10px;
-  }
-  .page-header-center .home-glance .hero-stat-n {
-    font-size: var(--type-body);
-  }
-  .page-header-center .home-glance .hero-stat-l {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+.page-header-split[data-inline] {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'title center actions';
+  align-items: center;
+  column-gap: var(--mantine-spacing-md);
+}
+/* The description would double the title's width for one line of flavour; the row needs it more. */
+.page-header-split[data-inline] > .page-header-title .mantine-Text-root {
+  display: none;
+}
+/* Edit layout keeps its icon and tooltip and gives its label's width to the glance. */
+[data-inline] .page-header-actions .home-edit-layout {
+  padding-inline: 0;
+  width: var(--button-height);
+}
+[data-inline] .page-header-actions .home-edit-layout .mantine-Button-label {
+  display: none;
+}
+[data-inline] .page-header-actions .home-edit-layout .mantine-Button-section {
+  margin: 0;
+}
+/* The glance at title height: tighter panels, smaller figures, every panel one row wide and only
+   as wide as its figures, the group packed against the actions. */
+[data-inline] > .page-header-center {
+  display: flex;
+  justify-content: flex-end;
+}
+[data-inline] .page-header-center .home-glance {
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+[data-inline] .page-header-center .home-glance > .home-glance-panel {
+  flex: none;
+  container-type: normal;
+}
+[data-inline] .page-header-center .home-glance-panel {
+  padding: 6px 12px;
+}
+[data-inline] .page-header-center .home-glance-progress,
+[data-inline] .page-header-center .home-glance .hero-stats {
+  flex-wrap: nowrap;
+}
+[data-inline] .page-header-center .home-glance .hero-stats {
+  --hero-stat-pad: 10px;
+}
+[data-inline] .page-header-center .home-glance-progress .mantine-Text-root {
+  white-space: nowrap;
+}
+[data-inline] .page-header-center .home-figures {
+  grid-auto-columns: auto;
+}
+[data-inline] .page-header-center .home-figure {
+  padding-right: 10px;
+}
+[data-inline] .page-header-center .home-figure + .home-figure {
+  padding-left: 10px;
+}
+[data-inline] .page-header-center .home-glance .hero-stat-n {
+  font-size: var(--type-body);
+}
+[data-inline] .page-header-center .home-glance .hero-stat-l {
+  white-space: nowrap;
 }
 .home-glance > * {
   flex: 1 1 250px;
