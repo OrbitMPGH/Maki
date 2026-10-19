@@ -12345,6 +12345,10 @@ msgstr "Pausieren"
 msgid "Pause downloads"
 msgstr "Downloads pausieren"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Pause Rewind"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14242,6 +14246,10 @@ msgstr "Weiterlesen: {seriesTitle}, {chapterLabel}"
 msgid "Resume at"
 msgstr "Fortsetzen um"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Resume Rewind"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retried {retryCount}x"
@@ -15901,6 +15909,10 @@ msgstr "Specials bei neuen Serien überspringen"
 #, fuzzy
 msgid "Skip this file"
 msgstr "Diese Datei überspringen"
+
+#: src/App.tsx
+msgid "Skip to content"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

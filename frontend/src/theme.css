@@ -562,6 +562,28 @@ body {
   }
 }
 
+/* First tab stop on every page, out of sight until it has focus. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 300;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  transform: translateY(calc(-100% - 16px));
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+#main:focus {
+  outline: none;
+}
+
 /* Sits under the drawer and over the page; tapping it closes the drawer. Below the header (100)
    as well as the navbar (101), so the burger that opened the drawer still closes it. */
 .nav-scrim {
@@ -5407,7 +5429,7 @@ body.column-resizing * {
   position: absolute;
   top: 16px;
   left: 16px;
-  right: 64px;
+  right: 104px;
   display: flex;
   gap: 6px;
 }
@@ -5423,11 +5445,25 @@ body.column-resizing * {
   border-radius: var(--radius-pill);
   background: #fff;
 }
+/* A CSS animation rather than a motion one so pausing Rewind can freeze it where it is. */
+.rewind-progress-timed {
+  width: 0;
+  animation-name: rewind-progress-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes rewind-progress-fill {
+  to {
+    width: 100%;
+  }
+}
 
-.rewind-close {
+.rewind-controls {
   position: absolute;
   top: 10px;
   right: 12px;
+  display: flex;
+  gap: 4px;
 }
 
 .rewind-slide {
@@ -5533,7 +5569,7 @@ body.column-resizing * {
 }
 .rewind-slide,
 .rewind-progress,
-.rewind-close {
+.rewind-controls {
   z-index: 1;
 }
 .rewind-slide {
@@ -7898,7 +7934,7 @@ body.reader-open {
     left: 16px;
     right: 16px;
   }
-  .rewind-close {
+  .rewind-controls {
     top: auto;
     bottom: 34px;
     right: 8px;

@@ -12344,6 +12344,10 @@ msgstr "暂停"
 msgid "Pause downloads"
 msgstr "暂停下载"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Pause Rewind"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14241,6 +14245,10 @@ msgstr "继续阅读 {seriesTitle}，{chapterLabel}"
 msgid "Resume at"
 msgstr "恢复于"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Resume Rewind"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retried {retryCount}x"
@@ -15900,6 +15908,10 @@ msgstr "新作品跳过特别篇"
 #, fuzzy
 msgid "Skip this file"
 msgstr "跳过此文件"
+
+#: src/App.tsx
+msgid "Skip to content"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy

@@ -12344,6 +12344,10 @@ msgstr "一時停止"
 msgid "Pause downloads"
 msgstr "ダウンロードを一時停止"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Pause Rewind"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14241,6 +14245,10 @@ msgstr "「{seriesTitle}」の{chapterLabel}の続きを読む"
 msgid "Resume at"
 msgstr "再開時刻"
 
+#: src/pages/rewind/RewindIntro.tsx
+msgid "Resume Rewind"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retried {retryCount}x"
@@ -15900,6 +15908,10 @@ msgstr "新規シリーズの特別編をスキップ"
 #, fuzzy
 msgid "Skip this file"
 msgstr "このファイルをスキップ"
+
+#: src/App.tsx
+msgid "Skip to content"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
