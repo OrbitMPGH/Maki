@@ -7,6 +7,8 @@ import { ActionIcon, Badge, Group, Loader, Menu, Progress, Skeleton, Switch, Tab
 import {
   IconBook,
   IconChevronDown,
+  IconCircleCheck,
+  IconClock,
   IconDeviceMobileCheck,
   IconDeviceMobileDown,
   IconDeviceMobileOff,
@@ -35,8 +37,7 @@ import type { SaveProgress } from '../../pwa/offlineChapters'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
-import { queueStatusVisual, statusToken } from '../ui/status'
-import { StatusDot } from '../ui/StatusDot'
+import { queueStatusVisual, statusColor } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
 import { LightActionIcon, LightBadge, LightGroup, LightStack, LightSwitch, LightText } from './lightMantine'
@@ -269,8 +270,8 @@ export const ChapterRow = memo(function ChapterRow({
           )}
         </Table.Td>
         <Table.Td>
-          {/* Wraps rather than clipping: a re-read chapter carries a state, a read mark and a page. */}
-          <LightGroup gap={10} wrap="wrap">
+          {/* Wraps rather than clipping: a re-read chapter carries three badges. */}
+          <LightGroup gap={6} wrap="wrap">
             {queueItem ? (
                 (() => {
                   const visual = queueStatusVisual(queueItem.status)
@@ -291,24 +292,26 @@ export const ChapterRow = memo(function ChapterRow({
                                   color={queueItem.status === 'Failed' ? 'var(--danger)' : 'brand'}
                               />
                           )}
-                          <StatusDot
-                              tone={statusToken(visual.color)}
-                              live={queueItem.status === 'Downloading' || undefined}
+                          <Badge
+                              size="sm"
+                              color={statusColor(visual.color)}
+                              variant="light"
+                              leftSection={<visual.Icon size={12} />}
                               className="tnum"
                           >
                             {queueItem.pagesTotal > 0
                                 ? `${renderLabel(visual.label)} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
                                 : renderLabel(visual.label)}
-                          </StatusDot>
+                          </Badge>
                         </Group>
                       </Tooltip>
                   )
                 })()
             ) : c.hasFile ? (
                 <>
-                  <StatusDot tone="ok">
+                  <LightBadge color="var(--ok)" leftSection={<IconCircleCheck size={12} />}>
                     <Trans>Downloaded</Trans>
-                  </StatusDot>
+                  </LightBadge>
                   {c.fileDeleteDueAt && (() => {
                     const daysLeft = Math.max(
                         0,
@@ -316,28 +319,28 @@ export const ChapterRow = memo(function ChapterRow({
                     )
                     return (
                         <HoverTooltip label={t`Read file cleanup is on for this series`} withArrow>
-                          <span className="chapter-status-note">
+                          <LightBadge color="var(--neutral)" leftSection={<IconClock size={12} />}>
                             {daysLeft === 0
                                 ? t`File removed soon`
                                 : plural(daysLeft, {
                                   one: 'File removed in # day',
                                   other: 'File removed in # days',
                                 })}
-                          </span>
+                          </LightBadge>
                         </HoverTooltip>
                     )
                   })()}
                 </>
             ) : c.fileRemovedAt ? (
                 <HoverTooltip label={t`The file was deleted on purpose. Maki won't download it again unless you ask.`} withArrow>
-                  <StatusDot tone="neutral">
+                  <LightBadge color="var(--neutral)" leftSection={<IconTrash size={12} />}>
                     <Trans>File removed</Trans>
-                  </StatusDot>
+                  </LightBadge>
                 </HoverTooltip>
             ) : (
-                <StatusDot tone="neutral">
+                <LightBadge color="var(--neutral)">
                   <Trans>Missing</Trans>
-                </StatusDot>
+                </LightBadge>
             )}
             {offline && <OfflineBadge record={offline} saving={offlineSaving} />}
             {read && (
@@ -351,14 +354,21 @@ export const ChapterRow = memo(function ChapterRow({
                     }
                     withArrow
                 >
-                  <span className="chapter-read-mark" data-tone={watched ? 'watched' : 'ok'}>
+                  <LightBadge
+                      color={watched ? 'var(--watched)' : 'var(--ok)'}
+                      variant={watched || external ? 'light' : 'filled'}
+                      c={watched || external ? undefined : 'var(--ok-on)'}
+                      leftSection={
+                        watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
+                      }
+                  >
                     {watched ? <Trans>Watched</Trans> : <Trans>Read</Trans>}
-                  </span>
+                  </LightBadge>
                 </HoverTooltip>
             )}
             {/* Shown alongside Read when a finished chapter is being re-read. */}
             {inProgress && (
-                <span className="chapter-read-mark tnum" data-tone="info">
+                <LightBadge color="var(--info)" className="tnum">
                   {/* pageCount is 0 on rows imported from Kavita: the reader fills it
                       in on first open, so show a plain label until then. */}
                   {rowProgress && rowProgress.pageCount > 0 ? (
@@ -366,7 +376,7 @@ export const ChapterRow = memo(function ChapterRow({
                   ) : (
                       <Trans>Reading</Trans>
                   )}
-                </span>
+                </LightBadge>
             )}
           </LightGroup>
         </Table.Td>
