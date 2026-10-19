@@ -6470,6 +6470,19 @@ body.reader-open {
   gap: 4px;
   align-self: center;
 }
+/* A collapsed type's own rows, opened under its summary: indented to the message column so they
+   read as the group's members, each keeping its Open and Acknowledge. */
+.health-check-group-body {
+  margin-left: calc(104px + 14px);
+  border-left: 1px solid var(--hairline);
+  padding-left: 14px;
+}
+.health-check-group-body .health-check {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+.health-check-group-body .health-check > .status-dot {
+  display: none;
+}
 /* Sixty series behind one outage must not push the rest of the checks off the page. */
 .health-source-series {
   grid-column: 2 / -1;
@@ -6574,6 +6587,9 @@ body.reader-open {
   .health-check-actions,
   .health-source-series {
     grid-column: 1 / -1;
+  }
+  .health-check-group-body {
+    margin-left: 0;
   }
 }
 
@@ -7021,6 +7037,11 @@ body.reader-open {
 }
 .health-filter-rail .mantine-InputWrapper-root {
   min-width: 12rem;
+}
+/* A badge clips its own label, so its min-content is only its padding and the table would size the
+   column to that and ellipsize every finding. */
+.health-finding-badges > .mantine-Badge-root {
+  min-width: max-content;
 }
 
 .settings-content {

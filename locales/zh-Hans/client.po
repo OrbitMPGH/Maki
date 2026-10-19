@@ -453,6 +453,10 @@ msgstr "当前显示 {0} 行"
 msgid "{abs} pt"
 msgstr "{abs} 分"
 
+#: src/pages/HealthPage.tsx
+msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -648,10 +652,26 @@ msgstr "{connectedCount, plural, other {# 个已连接}}"
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, other {# 章}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, other {# 个作品匹配}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -692,6 +712,10 @@ msgstr "{count, plural, other {# 个已测量章节的中位数：宽 {width}px�
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, other {显示受影响的 # 部作品}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -2622,6 +2646,10 @@ msgstr "成就"
 #, fuzzy
 msgid "Acknowledge"
 msgstr "确认"
+
+#: src/pages/HealthPage.tsx
+msgid "Acknowledge all"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7981,6 +8009,10 @@ msgstr "隐藏来源名称"
 #, fuzzy
 msgid "Hide source text"
 msgstr "隐藏来源文本"
+
+#: src/pages/HealthPage.tsx
+msgid "Hide the list"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -13951,6 +13983,10 @@ msgstr "正在重命名文件夹"
 #, fuzzy
 msgid "Reopen"
 msgstr "重新打开"
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen all"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy

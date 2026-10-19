@@ -453,6 +453,10 @@ msgstr "{0} lignes actuellement"
 msgid "{abs} pt"
 msgstr "{abs} pt"
 
+#: src/pages/HealthPage.tsx
+msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -648,10 +652,26 @@ msgstr "{connectedCount, plural, one {# connecté} many {# connectés} other {# 
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# ch.} many {# ch.} other {# ch.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, one {# série correspondante} many {# séries correspondantes} other {# séries correspondantes}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -692,6 +712,10 @@ msgstr "{count, plural, one {Médiane de # chapitre mesuré : {width}px de large
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Afficher la série concernée (#)} many {Afficher les # séries concernées} other {Afficher les # séries concernées}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -2623,6 +2647,10 @@ msgstr "Succès"
 #, fuzzy
 msgid "Acknowledge"
 msgstr "Prendre en compte"
+
+#: src/pages/HealthPage.tsx
+msgid "Acknowledge all"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7982,6 +8010,10 @@ msgstr "Masquer les noms des sources"
 #, fuzzy
 msgid "Hide source text"
 msgstr "Masquer le texte de la source"
+
+#: src/pages/HealthPage.tsx
+msgid "Hide the list"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -13952,6 +13984,10 @@ msgstr "Renommage du dossier"
 #, fuzzy
 msgid "Reopen"
 msgstr "Rouvrir"
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen all"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy

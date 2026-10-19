@@ -5,6 +5,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Reflection;
@@ -233,6 +234,21 @@ public class HealthWorkspaceTests : IDisposable
         Assert.Equal(Policies.Admin,typeof(HealthController).GetCustomAttribute<AuthorizeAttribute>()?.Policy);
         Assert.DoesNotContain(typeof(HealthController).GetMethods(),m=>m.GetCustomAttribute<AllowAnonymousAttribute>()!=null);
         Assert.Equal(Policies.Admin,typeof(SystemController).GetMethod("Health")!.GetCustomAttribute<AuthorizeAttribute>()?.Policy);
+    }
+    [Fact] public async Task Bulk_acknowledge_touches_only_the_named_checks_and_can_reopen_them()
+    {
+        using var db=fixture.NewContext();
+        db.HealthChecks.AddRange(
+            new HealthCheckRecord{Id="legacy:series:1",Category="library",Status="warning"},
+            new HealthCheckRecord{Id="legacy:series:2",Category="library",Status="warning"},
+            new HealthCheckRecord{Id="legacy:series:3",Category="library",Status="warning"});
+        await db.SaveChangesAsync();
+        var controller=new HealthController(db,null!,null!,null!,null!,null!,null!,null!,null!,null!);
+        var done=Assert.IsType<OkObjectResult>(await controller.AcknowledgeMany(new HealthController.CheckReviewMany(["legacy:series:1","legacy:series:2","missing"],true),default));
+        Assert.Equal(2,done.Value!.GetType().GetProperty("updated")!.GetValue(done.Value));
+        Assert.Equal(["legacy:series:1","legacy:series:2"],db.HealthChecks.Where(c=>c.Acknowledged).OrderBy(c=>c.Id).Select(c=>c.Id).ToList());
+        await controller.AcknowledgeMany(new HealthController.CheckReviewMany(["legacy:series:1","legacy:series:2"],false),default);
+        Assert.DoesNotContain(db.HealthChecks,c=>c.Acknowledged);
     }
     [Fact] public async Task Ignores_survive_rescan_but_new_content_reopens()
     {

@@ -382,6 +382,10 @@ msgstr "{0} rows right now"
 msgid "{abs} pt"
 msgstr "{abs} pt"
 
+#: src/pages/HealthPage.tsx
+msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+msgstr "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "{actionError} Refresh the page and try again."
@@ -540,9 +544,25 @@ msgstr "{connectedCount, plural, one {# connected} other {# connected}}"
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# ch.} other {# ch.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+msgstr "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+
 #: src/components/CatalogueRules.tsx
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, one {# series matches} other {# series match}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+msgstr "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
+msgstr "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "{count, plural, one {# title matches} other {# titles match}}"
@@ -575,6 +595,10 @@ msgstr "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp}
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Show # affected series} other {Show # affected series}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr "{count, plural, one {Show # check} other {Show all # checks}}"
 
 #: src/components/import/RecentImports.tsx
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
@@ -2130,6 +2154,10 @@ msgstr "Achievements"
 #: src/pages/HealthPage.tsx
 msgid "Acknowledge"
 msgstr "Acknowledge"
+
+#: src/pages/HealthPage.tsx
+msgid "Acknowledge all"
+msgstr "Acknowledge all"
 
 #: src/pages/HealthPage.tsx
 msgid "Acknowledged"
@@ -6493,6 +6521,10 @@ msgstr "Hide source names"
 #: src/components/AnimeCoverageBar.tsx
 msgid "Hide source text"
 msgstr "Hide source text"
+
+#: src/pages/HealthPage.tsx
+msgid "Hide the list"
+msgstr "Hide the list"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Hide this and its franchise"
@@ -11341,6 +11373,10 @@ msgstr "Renaming folder"
 #: src/pages/HealthPage.tsx
 msgid "Reopen"
 msgstr "Reopen"
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen all"
+msgstr "Reopen all"
 
 #: src/components/SourceMeasurePanel.tsx
 msgid "Reorder priority to match"

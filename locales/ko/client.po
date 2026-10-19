@@ -453,6 +453,10 @@ msgstr "현재 {0}개 행"
 msgid "{abs} pt"
 msgstr "{abs}점"
 
+#: src/pages/HealthPage.tsx
+msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -648,10 +652,26 @@ msgstr "{connectedCount, plural, other {#개 연결됨}}"
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, other {#화}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# series is failing to refresh from its source} other {# series are failing to refresh from their sources}}"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr "{count, plural, other {#개 시리즈 일치}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source is no longer installed in Suwayomi} other {# sources are no longer installed in Suwayomi}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# source looks unstable} other {# sources look unstable}}"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -692,6 +712,10 @@ msgstr "{count, plural, other {측정한 챕터 #개의 중앙값: 너비 {width
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, other {영향을 받는 #개 시리즈 표시}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -2622,6 +2646,10 @@ msgstr "업적"
 #, fuzzy
 msgid "Acknowledge"
 msgstr "확인"
+
+#: src/pages/HealthPage.tsx
+msgid "Acknowledge all"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7981,6 +8009,10 @@ msgstr "소스 이름 숨기기"
 #, fuzzy
 msgid "Hide source text"
 msgstr "소스 텍스트 숨기기"
+
+#: src/pages/HealthPage.tsx
+msgid "Hide the list"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -13951,6 +13983,10 @@ msgstr "폴더 이름 변경 중"
 #, fuzzy
 msgid "Reopen"
 msgstr "다시 열기"
+
+#: src/pages/HealthPage.tsx
+msgid "Reopen all"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
