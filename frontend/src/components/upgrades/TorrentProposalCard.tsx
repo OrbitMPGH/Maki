@@ -51,7 +51,7 @@ export function TorrentProposalCard({
   const onGrab = () =>
     grab.mutate(
       { id, seriesId },
-      { onSuccess: () => notifications.show({ message: t`Sent to qBittorrent: ${title}`, color: 'var(--ok)' }) },
+      { onSuccess: () => notifications.show({ message: t`Sent to the download client: ${title}`, color: 'var(--ok)' }) },
     )
   const onDismiss = () =>
     dismiss.mutate(

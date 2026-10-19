@@ -351,7 +351,7 @@ try
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     // Page and image clients fetch URLs the scraped site chose, so they may only reach public
-    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, qBittorrent or Prowlarr.
+    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, the download client or the indexer.
     builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
@@ -840,6 +840,14 @@ try
     // NotificationService is one — the raise sites are jobs, hosted services and other singletons.
     builder.Services.AddSingleton<InboxAudienceResolver>();
     builder.Services.AddSingleton<InboxService>();
+
+    // Web Push rides the inbox: one bounded queue and one consumer, so a raise never waits on a push
+    // service. The endpoint is a URL a browser supplied, so connections are held to public addresses.
+    builder.Services.AddSingleton<WebPushKeys>();
+    builder.Services.AddSingleton<WebPushSender>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<WebPushSender>());
+    builder.Services.AddHttpClient(WebPushSender.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(30))
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler);
     builder.Services.AddSingleton<AccountSecurityAlerts>();
     builder.Services.AddSingleton<FollowedCreatorReleaseService>();
 
@@ -958,11 +966,21 @@ try
     builder.Services.AddScoped<OpdsAccessService>();
     builder.Services.AddSingleton<OpdsProgressWriter>().AddHostedService(sp => sp.GetRequiredService<OpdsProgressWriter>());
 
-    builder.Services.AddHttpClient(Maki.Core.Indexers.ProwlarrClient.HttpClientName,
-            client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers
-        .AddHttpMessageHandler(() => new TransientRetryHandler());
-    builder.Services.AddSingleton<Maki.Core.Indexers.ProwlarrClient>();
-    builder.Services.AddSingleton<Maki.Core.Download.QBittorrentClient>();
+    // Aggregated searches fan out to every indexer, hence the long timeout. Both are LAN services, so
+    // neither gets PublicAddressGuard.
+    foreach (var indexerClient in new[] { Maki.Core.Indexers.ProwlarrClient.HttpClientName, Maki.Core.Indexers.JackettClient.HttpClientName })
+    {
+        builder.Services.AddHttpClient(indexerClient, client => client.Timeout = TimeSpan.FromSeconds(100))
+            .AddHttpMessageHandler(() => new TransientRetryHandler());
+    }
+
+    builder.Services.AddSingleton<Maki.Core.Indexers.IReleaseIndexer, Maki.Core.Indexers.ProwlarrClient>();
+    builder.Services.AddSingleton<Maki.Core.Indexers.IReleaseIndexer, Maki.Core.Indexers.JackettClient>();
+    builder.Services.AddSingleton<Maki.Core.Indexers.IndexerRegistry>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.QBittorrentClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.TransmissionClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.ITorrentClient, Maki.Core.Download.DelugeClient>();
+    builder.Services.AddSingleton<Maki.Core.Download.TorrentClientRegistry>();
     builder.Services.AddHostedService<DownloadWorkerHostedService>();
 
     builder.Services.AddHttpClient(Maki.Core.Kavita.KavitaClient.HttpClientName,

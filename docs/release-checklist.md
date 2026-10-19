@@ -147,6 +147,15 @@ grows with the page number, so wrong page order is obvious in the reader.
 - [ ] **4.4** Force a failure (download a chapter, then block the source or pull the network).
       The item shows as failed with a readable reason and **Retry** works once the network is back.
 - [ ] **4.5** The chapter list's **Wanted** toggle and the series monitor mode stick after a reload.
+- [ ] **4.6** Grab a release with each torrent client kind the release touches (qBittorrent,
+      Transmission, Deluge) against a live instance: the row shows progress, the import runs on
+      completion, and Settings > Download client > Test reports a bad password as a login failure.
+      Recorded-handler tests cannot catch a wrong RPC field name.
+- [ ] **4.7** Point Settings > Indexer at a live Jackett (`linuxserver/jackett`) when the release
+      touches indexers: Test passes, the indexer checklist lists the configured trackers, a release
+      search returns results with seeders and leechers that match Jackett's own UI, and a grab of
+      a magnet-only result reaches the client. Then switch back to Prowlarr and check its indexer
+      selection is still there.
 
 ## 5. Reader [both]
 

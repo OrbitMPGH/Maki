@@ -17,7 +17,7 @@ public class DownloadSettingsValidationTests : IDisposable
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
         settings: Store(),
         naming: null!,
-        flareSolverr: null!, prowlarr: null!, qbittorrent: null!, kavita: null!,
+        flareSolverr: null!, indexers: null!, torrentClients: null!, kavita: null!,
         sourceRegistry: null!, sourceAvailability: null!, mangaBakaDump: null!, embeddingModel: null!,
         embeddingStore: null!, embeddingStatus: null!, embeddingIndexer: null!,
         prebuiltIndex: null!, recoGraph: null!, recoGraphCache: null!, coReadInstaller: null!,

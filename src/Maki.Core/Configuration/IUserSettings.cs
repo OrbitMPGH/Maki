@@ -51,7 +51,7 @@ public interface IUserSettingsStore
 /// person's preference to another.
 /// <para>
 /// The dividing line: an instance setting describes the deployment (ports, paths, connections to
-/// Prowlarr/qBittorrent/Kavita, source priority, update checks) or an app registration shared by
+/// indexer/download client/Kavita, source priority, update checks) or an app registration shared by
 /// everyone (a tracker's client id and secret). A user setting describes a person — what their reader
 /// looks like, which page they land on, which trackers they push to, and the OAuth token their
 /// registration was exchanged for.
@@ -89,6 +89,7 @@ public static class UserSettingKeys
         SettingKeys.UserTimeZone,
         SettingKeys.UserGamification,
         SettingKeys.NotificationsInbox,
+        SettingKeys.NotificationsPush,
         SettingKeys.ProgressLastNotifiedLevel,
         SettingKeys.ImportListPrefs,
     ];

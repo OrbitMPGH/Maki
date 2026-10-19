@@ -80,7 +80,7 @@ internal sealed class TestDb : IDisposable
     }
 
     /// <summary>A scope factory whose scopes each resolve a fresh context over this same DB.</summary>
-    public IServiceScopeFactory ScopeFactory()
+    public IServiceScopeFactory ScopeFactory(IUserLocaleResolver? locales = null)
     {
         var services = new ServiceCollection();
         services.AddScoped(_ => NewContext());
@@ -92,7 +92,7 @@ internal sealed class TestDb : IDisposable
         // in each test, because the failure is silent: RaiseAsync swallows its own exceptions so a
         // notification can never be the reason a download fails.
         services.AddSingleton<ILocalizer>(new TestLocalizer());
-        services.AddSingleton<IUserLocaleResolver>(new TestUserLocaleResolver());
+        services.AddSingleton(locales ?? new TestUserLocaleResolver());
         services.AddScoped<InboxRenderer>();
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }

@@ -50,7 +50,7 @@ import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../components/home/homeSe
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
-import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
+import { ContinueHero } from '../components/home/ContinueHero'
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
@@ -475,10 +475,7 @@ function glanceAfterContinue<T extends { key: string }>(sections: T[]): T[] {
   return rest
 }
 
-/**
- * A reading list, optionally led by large tiles: the first few as `ContinueLead`'s cover tiles and
- * the rest as a rail, or everything as a rail.
- */
+/** A reading list as a hero with its Next up list beside it, or as a plain rail. */
 function ReadingSection({
   items,
   rail,
@@ -488,15 +485,7 @@ function ReadingSection({
   rail: ReadingRailKind
   hero: boolean
 }) {
-  if (!hero) return <ContinueRail items={items} rail={rail} />
-  // Exactly one item spilling past the lead tiles would sit alone on its own row, so two lead tiles take that case instead of three.
-  const leadCount = items.length === CONTINUE_LEAD_MAX + 1 ? 2 : CONTINUE_LEAD_MAX
-  return (
-    <>
-      <ContinueLead items={items.slice(0, leadCount)} rail={rail} />
-      {items.length > leadCount && <ContinueRail items={items.slice(leadCount)} rail={rail} />}
-    </>
-  )
+  return hero ? <ContinueHero items={items} rail={rail} /> : <ContinueRail items={items} rail={rail} />
 }
 
 /** One panel on the glance row: a border, a padding, and a row of figures. */

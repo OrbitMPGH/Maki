@@ -174,6 +174,14 @@ import { useSeriesNotificationOptions } from '../components/ui/seriesNotificatio
 import { scrollBehavior } from '../lib/scrollBehavior'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from '../components/PermanentDeleteFallback'
+import { pwaSupported } from '../lib/pwa/serviceWorker'
+import {
+  removeChaptersOffline,
+  removeSeriesOffline,
+  saveChaptersOffline,
+  saveUnreadOffline,
+  useOfflineChapters,
+} from '../pwa/offlineChapters'
 
 /** A special is a decimal-numbered chapter (10.5 omake etc.). */
 const isSpecial = (c: ChapterDto) => c.number !== null && c.number % 1 !== 0
@@ -421,6 +429,12 @@ function SeriesDetailBody() {
   const readStateFor = useCallback(
       (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
       [readProgress],
+  )
+  const canSaveOffline = pwaSupported()
+  const { records: offlineRecords, progress: offlineProgress } = useOfflineChapters()
+  const offlineSaved = useMemo(
+      () => [...offlineRecords.values()].filter((r) => r.seriesId === seriesId).length,
+      [offlineRecords, seriesId],
   )
   const { data: queue } = useSeriesQueue(seriesId)
   const queueByChapterId = useMemo(
@@ -1190,6 +1204,8 @@ function SeriesDetailBody() {
       }),
     setTrusted: (fileId, trusted) => setFileTrusted.mutate({ fileId, trusted }),
     deleteFile: (chapterId) => setDeleteFileIds([chapterId]),
+    saveOffline: (chapterId) => void saveChaptersOffline([{ chapterId, seriesId }]),
+    removeOffline: (chapterId) => void removeChaptersOffline([chapterId]),
     toggleSpanFold,
     setMarkerRef,
   })
@@ -1757,6 +1773,22 @@ function SeriesDetailBody() {
                       setDeleteSeriesFiles(false)
                       setDeleteSeriesModalOpen(true)
                     }}
+                    offlineSaved={canSaveOffline ? offlineSaved : undefined}
+                    onSaveUnreadOffline={() =>
+                        void saveUnreadOffline(seriesId).then(
+                            (count) =>
+                                count > 0
+                                    ? notify.ok(
+                                        plural(count, {
+                                          one: 'Saving # chapter for offline',
+                                          other: 'Saving # chapters for offline',
+                                        }),
+                                    )
+                                    : notify.info(staticT`Every unread chapter is already on this device`),
+                            (error: unknown) => notify.err(error instanceof Error ? error.message : String(error)),
+                        )
+                    }
+                    onRemoveOffline={() => void removeSeriesOffline(seriesId)}
                 />
                 {/* A state, not a control: nothing here could enable a download button, so it stops posing as one. */}
                 {canDownload && allWantedOnDisk && chapters.length > 0 && (
@@ -2740,6 +2772,9 @@ function SeriesDetailBody() {
                                           canDownload={canDownload}
                                           canDelete={canDelete}
                                           canFindBetterCopy={enabledMappings > 1}
+                                          canSaveOffline={canSaveOffline}
+                                          offline={offlineRecords.get(c.id)}
+                                          offlineSaving={offlineProgress.get(c.id)}
                                           wantedPending={toggleWanted.isPending && toggleWanted.variables?.chapterId === c.id}
                                           readPending={setRead.isPending && setRead.variables?.chapterId === c.id}
                                           upgradePending={upgradeChapterNow.isPending}

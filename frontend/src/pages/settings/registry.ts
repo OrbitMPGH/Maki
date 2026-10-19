@@ -186,6 +186,15 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
+  {
+    id: 'push-notifications',
+    tab: 'preferences',
+    title: msg`Push notifications`,
+    keywords: msg({
+      message: `push, push notifications, phone notifications, desktop notifications, new chapters, notify this device`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
 
   {
     id: 'reader',
@@ -212,6 +221,15 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     permission: 'UseOpds',
     keywords: msg({
       message: `feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'offline-reading',
+    tab: 'reading',
+    title: msg`Offline reading`,
+    keywords: msg({
+      message: `offline, save for offline, download to device, read offline, storage, install app, home screen, pwa`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -367,22 +385,22 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
-    id: 'prowlarr',
+    id: 'indexer',
     tab: 'downloads',
-    title: msg`Prowlarr`,
+    title: msg`Indexer`,
     admin: true,
     keywords: msg({
-      message: `indexer, torrent search, api key, releases, indexers, torznab, categories`,
+      message: `indexer, prowlarr, jackett, torrent search, api key, releases, indexers, torznab, categories`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
-    id: 'qbittorrent',
+    id: 'downloadclient',
     tab: 'downloads',
-    title: msg`qBittorrent`,
+    title: msg`Download client`,
     admin: true,
     keywords: msg({
-      message: `torrent client, category, path mapping, download client`,
+      message: `download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -556,6 +574,8 @@ export const SETTINGS_ENTRY_ALIASES: Record<string, string> = {
   account: 'sign-in',
   'source-languages': 'languages',
   backups: 'backup',
+  prowlarr: 'indexer',
+  qbittorrent: 'downloadclient',
 }
 
 /** Old `tab` values. `connections` is still emitted by stored health notifications. */

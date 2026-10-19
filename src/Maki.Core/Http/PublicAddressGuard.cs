@@ -12,7 +12,7 @@ public class BlockedDestinationException(string message) : HttpRequestException(
 
 /// <summary>
 /// Keeps server-side fetches of site-supplied page and image URLs off the host's own network
-/// (SSRF). Only for page/image clients: FlareSolverr, Kavita, qBittorrent, Prowlarr and the
+/// (SSRF). Only for page/image clients: FlareSolverr, Kavita, the download client, the indexer and the
 /// metadata clients legitimately talk to the LAN and must not get this handler.
 /// <para>
 /// <see cref="EnsureAllowed(string)"/> is the cheap pre-check on the URL itself (scheme, literal

@@ -2,6 +2,8 @@ import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
 import { useState } from 'react'
 import {
     IconBell,
+    IconDeviceMobileDown,
+    IconDeviceMobileOff,
     IconDotsVertical,
     IconEyeOff,
     IconFileText,
@@ -73,6 +75,9 @@ export function SeriesActionsMenu({
                                       onSearchVolumes,
                                       canRemove,
                                       onRemove,
+                                      offlineSaved,
+                                      onSaveUnreadOffline,
+                                      onRemoveOffline,
                                   }: {
     monitorMode: string
     incognito: string
@@ -108,6 +113,10 @@ export function SeriesActionsMenu({
     onSearchVolumes: () => void
     canRemove: boolean
     onRemove: () => void
+    /** Chapters of this series saved on this device; undefined where the browser cannot save any. */
+    offlineSaved?: number
+    onSaveUnreadOffline?: () => void
+    onRemoveOffline?: () => void
 }) {
     const [opened, setOpened] = useState(false)
     const { t } = useLingui()
@@ -215,6 +224,23 @@ export function SeriesActionsMenu({
                                 </Menu.Sub.Dropdown>
                             </Menu.Sub>
                         )}
+
+                        <Menu.Divider />
+                    </>
+                )}
+                {offlineSaved !== undefined && (
+                    <>
+                        <Menu.Label><Trans>This device</Trans></Menu.Label>
+                        <Menu.Item leftSection={<IconDeviceMobileDown size={16} />} onClick={onSaveUnreadOffline}>
+                            <Trans>Save unread chapters for offline</Trans>
+                        </Menu.Item>
+                        <Menu.Item
+                            leftSection={<IconDeviceMobileOff size={16} />}
+                            disabled={offlineSaved === 0}
+                            onClick={onRemoveOffline}
+                        >
+                            <Trans>Remove offline copies</Trans>
+                        </Menu.Item>
 
                         <Menu.Divider />
                     </>

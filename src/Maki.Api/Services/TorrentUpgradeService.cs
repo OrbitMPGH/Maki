@@ -3,6 +3,7 @@ using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
+using Maki.Core.Indexers;
 using Maki.Core.Inbox;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
@@ -44,7 +45,7 @@ public static class VolumeSearchReasons
     public const string NothingBelowCutoff = "not_eligible_nothing_below_cutoff";
     public const string PendingProposal = "not_eligible_pending_proposal";
     public const string Incognito = "not_eligible_incognito";
-    public const string NoProwlarr = "not_eligible_no_prowlarr";
+    public const string NoIndexer = "not_eligible_no_indexer";
     public const string Recent = "not_eligible_recent";
     public const string NotFound = "not_eligible_not_found";
     public const string SearchFailed = "search_failed";
@@ -52,7 +53,7 @@ public static class VolumeSearchReasons
 }
 
 /// <summary>The instance settings a volume search reads, loaded once per job run rather than per series.</summary>
-public sealed record VolumeSearchSettings(UpgradeOptions Options, bool ProwlarrConfigured);
+public sealed record VolumeSearchSettings(UpgradeOptions Options, bool IndexerConfigured);
 
 public enum ProposalActionError
 {
@@ -327,7 +328,7 @@ public class TorrentUpgradeService(
     }
 
     /// <summary>
-    /// One Prowlarr search for the series, then the best auto-grab is queued or the best proposal left.
+    /// One indexer search for the series, then the best auto-grab is queued or the best proposal left.
     /// The manual trigger ignores the weekly interval and passes <paramref name="ignoreGlobalSwitch"/>
     /// so an admin can try a series with the instance switches off; the job passes neither.
     /// </summary>
@@ -417,15 +418,14 @@ public class TorrentUpgradeService(
         }
         finally
         {
-            // A Prowlarr or qBittorrent outage must not push the series out by the whole interval.
+            // An indexer or download client outage must not push the series out by the whole interval.
             await StampSearchedAsync(seriesId, failed ? RetryAfterFailure - SearchInterval : TimeSpan.Zero);
         }
     }
 
     public async Task<VolumeSearchSettings> LoadSettingsAsync(CancellationToken ct) => new(
         await UpgradeOptions.LoadAsync(settings, ct),
-        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrUrl, ct)) &&
-        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct)));
+        (await IndexerSettingsStore.LoadAsync(settings, ct)).IsConfigured);
 
     /// <param name="offset">Added to now; negative values make the series eligible again sooner.</param>
     private Task StampSearchedAsync(int seriesId, TimeSpan offset = default)
@@ -535,9 +535,9 @@ public class TorrentUpgradeService(
             return VolumeSearchReasons.Disabled;
         }
 
-        if (!run.ProwlarrConfigured)
+        if (!run.IndexerConfigured)
         {
-            return VolumeSearchReasons.NoProwlarr;
+            return VolumeSearchReasons.NoIndexer;
         }
 
         if (series.Incognito != IncognitoMode.Off && !options.ScanIncognito)

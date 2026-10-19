@@ -7,7 +7,7 @@ export interface SectionDef {
   icon: Icon
   label: MessageDescriptor
   description?: MessageDescriptor
-  /** Offers the "large tiles" switch. */
+  /** Offers the hero switch. */
   hero?: boolean
   /** The section's panels, each with its own switch. */
   panels?: readonly { key: string; label: MessageDescriptor }[]

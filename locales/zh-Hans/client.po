@@ -708,6 +708,10 @@ msgstr "{count, plural, other {我确认永久删除 # 个归档。}}"
 msgid "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
 msgstr "{count, plural, other {# 个已测量章节的中位数：宽 {width}px，每像素 {bpp} 位（按 JPG 折算）。}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{count, plural, one {Saving # chapter for offline} other {Saving # chapters for offline}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
@@ -715,6 +719,10 @@ msgstr "{count, plural, other {显示受影响的 # 部作品}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {Show # check} other {Show all # checks}}"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{count, plural, one {The next unread chapter} other {The next # unread chapters}}"
 msgstr ""
 
 #: src/components/import/RecentImports.tsx
@@ -1213,14 +1221,17 @@ msgid "{n}s"
 msgstr "{n} 秒"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "{name} (disabled in Prowlarr)"
-msgstr "{name}（已在 Prowlarr 中禁用）"
+msgid "{name} (disabled in {backendName})"
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "{name} {year}"
 msgstr "{name} {year}"
+
+#: src/components/settings/useIndexerForm.ts
+msgid "{name} is reachable"
+msgstr ""
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -1949,7 +1960,7 @@ msgstr "{unread, plural, other {# 个未读}}"
 msgid "{unreadChapters, plural, one {# new} other {# new}}"
 msgstr "{unreadChapters, plural, other {新增 #}}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, other {# 个未读}}"
@@ -1963,6 +1974,10 @@ msgstr "{unrecognizedCount, plural, other {# 个无法识别}}"
 #, fuzzy
 msgid "{unsavedCount, plural, one {A card on this page has changes that are not saved. Leaving drops them.} other {# cards on this page have changes that are not saved. Leaving drops them.}}"
 msgstr "{unsavedCount, plural, other {本页有 # 张卡片的更改尚未保存。离开将丢弃这些更改。}}"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{unsent, plural, one {# reading position has not reached the server yet and will be lost.} other {# reading positions have not reached the server yet and will be lost.}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1983,6 +1998,10 @@ msgstr "{updated, plural, other {已为 # 个系列添加标签}}"
 #, fuzzy
 msgid "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{upgradeCount, plural, other {替换 # 个文件}}"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "{used} of {quota} used"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -2079,8 +2098,7 @@ msgstr "{year}，{status}"
 msgid "{zone} (this browser)"
 msgstr "{zone}（此浏览器）"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #, fuzzy
 msgid "/downloads (optional)"
 msgstr "/downloads（可选）"
@@ -3277,8 +3295,8 @@ msgid "Anything the admin should know"
 msgstr "管理员需要了解的任何信息"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "API key"
@@ -3327,6 +3345,10 @@ msgstr "将系列文件夹格式和章节文件格式应用到资料库中的全
 #, fuzzy
 msgid "Applies to chapters released later."
 msgstr "适用于之后发布的章节。"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Applies to every device signed in as you. Turning a type off here only stops the push, it still lands in your bell."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -3422,6 +3444,10 @@ msgstr "请求添加"
 #, fuzzy
 msgid "Ask or suggest"
 msgstr "提问或建议"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Ask to keep them"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -3525,6 +3551,7 @@ msgstr "自动匹配已在运行。"
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "自动匹配仍在运行。很快就会空闲。"
 
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Automatic"
@@ -3794,6 +3821,10 @@ msgstr "最忙的一天"
 msgid "Biggest on disk"
 msgstr "磁盘占用最大"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Blocked while a download for this series is in flight, unless Maki isn't touching the files itself."
@@ -3819,6 +3850,10 @@ msgstr "为此页添加书签"
 #, fuzzy
 msgid "Bookmarks"
 msgstr "书签"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Bookmarks need a connection"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4088,10 +4123,9 @@ msgstr "目录不可用"
 msgid "Categories"
 msgstr "类别"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Category"
-msgstr "类别"
+#: src/components/settings/downloadClientFields.ts
+msgid "Category or label given to torrents Maki adds. Defaults to maki. Deluge lowercases it and allows only letters, digits, dot, dash and underscore."
+msgstr ""
 
 #: src/components/discover/DiscoverSeedStrip.tsx
 #, fuzzy
@@ -4304,6 +4338,10 @@ msgstr "第{number}章"
 msgid "Change"
 msgstr "更改"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Change chapter languages for {sourceName}"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Change how individual titles affect recommendations."
@@ -4374,6 +4412,11 @@ msgstr "频道"
 #, fuzzy
 msgid "Chapter"
 msgstr "章节"
+
+#. placeholder {0}: record.chapterId
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Chapter {0}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4509,9 +4552,8 @@ msgid "Chapters {winnerDisplayName} doesn't carry are left alone, as are files i
 msgstr "{winnerDisplayName} 没有的章节会保持不变，从磁盘导入的文件也一样。"
 
 #: src/components/QueuePause.tsx
-#, fuzzy
-msgid "Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading."
-msgstr "已在下载中的章节会继续完成。已交给 qBittorrent 的种子会继续下载。"
+msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -4552,6 +4594,10 @@ msgstr "已读章节"
 #, fuzzy
 msgid "Chapters read in this series"
 msgstr "此系列中已读章节"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Chapters saved on this device, to read without a connection."
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -4773,6 +4819,10 @@ msgstr "点击令牌以插入。"
 #, fuzzy
 msgid "click one to keep it where it is"
 msgstr "点击某个章节，将其保留在当前位置"
+
+#: src/components/settings/downloadClientFields.ts
+msgid "Client"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -5290,9 +5340,8 @@ msgid "Could not load anime signals: {reason}"
 msgstr "无法加载动画信号：{reason}"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
-msgstr "无法从 Prowlarr 加载索引器：{indexersErrorMessage}"
+msgid "Could not load indexers from {backendName}: {indexersErrorMessage}"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -6319,10 +6368,16 @@ msgstr "下载候选项以供审核"
 msgid "Download chapters"
 msgstr "下载章节"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
-msgstr "用于下载已抓取的资源。种子下载完成后会自动导入资料库。只有 qBittorrent 报告的路径 Maki 无法访问时，才需要填写路径映射，例如 Docker 中的 /downloads，而 Maki 看到的是 Z:\\downloads。"
+#: src/pages/settings/registry.ts
+msgid "Download client"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -6468,9 +6523,8 @@ msgid "Downloads try the best-scoring source first. Priority only breaks ties."
 msgstr "下载会优先尝试分数最高的来源。优先级只用于分数相同时的排序。"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker."
-msgstr "下载 Prowlarr 找到的内容。种子下载完成后会自动导入资料库。只有 qBittorrent 看到的路径无法被 Maki 访问时（例如使用 Docker），才需要填写路径映射。"
+msgid "Downloads what the indexer finds. Finished torrents import into the library on their own. Fill the path mapping only if the client sees paths Maki can't, as in Docker."
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
@@ -6502,6 +6556,10 @@ msgstr "例如：连载中和落后"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "每个账户都有自己的登录信息、权限、内容分级和阅读历史。"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Each language adds its own chapter rows and files."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -6847,6 +6905,10 @@ msgstr "此章节的所有来源都失败了"
 #, fuzzy
 msgid "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
 msgstr "每个尚未关联的来源都会为每个系列再次搜索。如果某个来源在你添加系列后收录了该标题，这样做很有用。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Every unread chapter is already on this device"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7527,6 +7589,10 @@ msgstr "遵循通知设置中的默认值。"
 msgid "For 1 hour"
 msgstr "1 小时"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "For readers like Komga and Kavita that pick up a poster from the folder."
@@ -7968,6 +8034,10 @@ msgstr "帮助 Kavita 等阅读器对章节进行分组和命名。关闭后，�
 msgid "Here is what Maki starts with. You can come back to this guide from the top of Settings."
 msgstr "以下是 Maki 的初始配置。你可以随时从“设置”顶部重新打开此指南。"
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Hero"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #: src/pages/stats/labels.ts
@@ -8139,9 +8209,8 @@ msgid "Hover a cell for its number."
 msgstr "将鼠标悬停在单元格上可查看章节编号。"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "How chapters from scraper sources move through the queue. Torrents are handled by qBittorrent below."
-msgstr "来自抓取来源的章节如何在队列中流转。种子由下方的 qBittorrent 处理。"
+msgid "How chapters from scraper sources move through the queue. Torrents are handled by the download client below."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8627,15 +8696,22 @@ msgid "indexed only"
 msgstr "仅已建立索引"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/settings/IndexerForm.tsx
+#: src/components/SetupWizard.tsx
+#: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Indexer"
 msgstr "索引器"
 
+#: src/api/upgrades.ts
+msgid "Indexer search failed"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "indexer, torrent search, api key, releases, indexers, torznab, categories"
-msgstr "索引器，种子搜索，API 密钥，发布内容，索引器，Torznab，类别"
+msgid "indexer, prowlarr, jackett, torrent search, api key, releases, indexers, torznab, categories"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -8684,6 +8760,10 @@ msgstr "反色"
 #, fuzzy
 msgid "Invite people"
 msgstr "邀请用户"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8870,6 +8950,10 @@ msgstr "保持屏幕常亮"
 msgid "Keep the screen awake while reading"
 msgstr "阅读时保持屏幕常亮"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Keep upcoming chapters"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Keeps chapters read in Maki and in Kavita in step. Kavita's reading belongs to one Maki account, chosen by an admin under Integrations."
@@ -8926,6 +9010,10 @@ msgstr "类型"
 #, fuzzy
 msgid "Korean"
 msgstr "韩语"
+
+#: src/components/settings/downloadClientFields.ts
+msgid "Label"
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
@@ -8997,16 +9085,6 @@ msgstr "按偏好从高到低排列要下载的语言。自动匹配会优先尝
 msgid "Languages to read markers in"
 msgstr "读取标记的语言"
 
-#: src/components/layout/PageLayoutEditor.tsx
-#, fuzzy
-msgid "Large tiles"
-msgstr "大尺寸卡片"
-
-#: src/components/layout/SectionProperties.tsx
-#, fuzzy
-msgid "Large tiles for the first three"
-msgstr "前三个使用大尺寸卡片"
-
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Larger releases become proposals you approve by hand."
@@ -9071,6 +9149,10 @@ msgstr "最后一页"
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
 msgstr "上次部分扫描：{partialScanError}"
+
+#: src/components/home/ContinueHero.tsx
+msgid "Last read {lastRead}"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -9157,9 +9239,8 @@ msgid "Layout saved"
 msgstr "布局已保存"
 
 #: src/components/layout/SectionProperties.tsx
-#, fuzzy
-msgid "Lead with big cover tiles instead of a plain row."
-msgstr "使用大型封面卡片展示重点，而不是普通横排。"
+msgid "Lead with a hero"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -9573,9 +9654,8 @@ msgid "Looking up chapters…"
 msgstr "正在查找章节……"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the daily scan."
-msgstr "为目标是卷的系列查找可能替换单章文件的种子卷包。需要 Prowlarr 和 qBittorrent，并在每日扫描一小时后运行。"
+msgid "Looks for torrent volume packs that could replace single-chapter files, for series whose profile aims for volumes. Needs an indexer and a download client, and runs an hour after the daily scan."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -9696,6 +9776,10 @@ msgstr "文件更改后，Maki 会让 Kavita 扫描作品，并向其发送海�
 msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings, 3rd Party Clients in Kavita."
 msgstr "Maki 在系列文件变化后请求 Kavita 扫描该系列，然后推送其海报、关联和状态。你在 Kavita 中设置的封面会保留。API 密钥位于 Kavita 的「用户设置」→「第三方客户端」中。"
 
+#: src/auth/OfflineStartPage.tsx
+msgid "Maki can't reach the server, and nothing is saved on this device yet. Once the connection is back, sign in and save chapters for offline reading."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Maki can't reach this folder"
@@ -9711,15 +9795,18 @@ msgstr "Maki 已将文件夹与章节列表进行比对。勾选要信任的文�
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki 正在重启以应用更改。稍后重新加载。"
 
+#: src/pwa/offlineChapters.ts
+msgid "Maki is using {used} of {quota} here. Remove some saved chapters and try again."
+msgstr ""
+
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
 msgid "Maki speaks your language"
 msgstr "Maki 支持你的语言"
 
 #: src/components/QueuePause.tsx
-#, fuzzy
-msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to qBittorrent keep downloading."
-msgstr "Maki 将停止开始新的下载。正在下载的章节会继续完成，队列中的任何内容都不会被移除。已交给 qBittorrent 的种子会继续下载。"
+msgid "Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the queue. Torrents already handed to the download client keep downloading."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -10752,6 +10839,10 @@ msgstr "下一个来源"
 msgid "Next tier at {nextValue}"
 msgstr "下一层级：{nextValue}"
 
+#: src/components/home/ContinueHero.tsx
+msgid "Next up"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Next..."
@@ -10924,10 +11015,13 @@ msgstr "暂无历史记录"
 msgid "No index yet, the prebuilt vectors download automatically."
 msgstr "尚无索引，预构建向量会自动下载。"
 
+#: src/api/upgrades.ts
+msgid "No indexer is configured"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "No indexers configured in Prowlarr."
-msgstr "Prowlarr 中未配置索引器。"
+msgid "No indexers configured in {backendName}."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -11330,6 +11424,11 @@ msgstr "不是升级：{reason}"
 msgid "Not analyzed"
 msgstr "未分析"
 
+#: src/api/client.ts
+#: src/pages/reader/ReaderPage.tsx
+msgid "Not available offline"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
@@ -11364,6 +11463,10 @@ msgstr "未连接。"
 #, fuzzy
 msgid "Not enough genre data yet"
 msgstr "类型数据还不够"
+
+#: src/pwa/offlineChapters.ts
+msgid "Not enough space on this device"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -11453,6 +11556,11 @@ msgstr "未采样"
 #, fuzzy
 msgid "Not sampled: this source's recent chapters wouldn't score higher"
 msgstr "未采样：此来源最近的章节分数不会更高"
+
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Not saved"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11608,6 +11716,10 @@ msgstr "你的资料库中暂无内容"
 #, fuzzy
 msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "不会重命名任何内容，所有文件仍留在原文件夹中。"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -11785,11 +11897,19 @@ msgstr "通知 URL"
 msgid "Notifications"
 msgstr "通知"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications are blocked for this site. Change the permission in your browser's site settings to turn them on."
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "Notifications muted"
 msgstr "通知已静音"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notifications on this device, even when Maki is closed."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -11800,6 +11920,10 @@ msgstr "通知：{notificationMode}"
 #, fuzzy
 msgid "Notify"
 msgstr "通知"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Notify this device"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -11842,6 +11966,7 @@ msgid "of reading time"
 msgstr "阅读时间的"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -11857,6 +11982,10 @@ msgstr "关闭后，Discover 将改从 API 获取内容，并随之关闭。磁�
 #, fuzzy
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder. Off still links a first sign-in to an existing account whose verified email matches."
 msgstr "默认关闭：开启后，你的登录提供方验证通过的任何人都会获得一个 Maki 账户。新账户在你授予根文件夹之前没有资料库访问权限。关闭时，首次登录仍会关联到已验证邮箱相符的现有账户。"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Off for this device. Turning it on asks your browser for permission."
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -11888,6 +12017,21 @@ msgstr "关闭：只清理在各自菜单中开启的系列。"
 #, fuzzy
 msgid "Official"
 msgstr "官方"
+
+#: src/components/OfflineBanner.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Offline reading"
+msgstr ""
+
+#: src/components/settings/SecureContextNote.tsx
+msgid "Offline reading and push notifications need Maki to be opened over HTTPS. Browsers switch them off on plain HTTP addresses other than localhost. Put Maki behind a reverse proxy with a certificate to use them."
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "offline, save for offline, download to device, read offline, storage, install app, home screen, pwa"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -11945,6 +12089,10 @@ msgstr "在磁盘上"
 msgid "On every device. Discover needs the local MangaBaka database, which an admin turns on under Library."
 msgstr "在所有设备上生效。Discover 需要本地 MangaBaka 数据库，管理员可在「资料库」中开启。"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "On for this device."
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "On for this series"
@@ -11959,6 +12107,10 @@ msgstr "搁置中"
 #, fuzzy
 msgid "On shelf"
 msgstr "在书架上"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "On this device"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -12039,6 +12191,10 @@ msgstr "只有当 Kavita 通过不同路径看到资料库时才需要，例如�
 #, fuzzy
 msgid "Only notify services with this tag."
 msgstr "仅通知带有此标签的服务。"
+
+#: src/components/settings/IndexerForm.tsx
+msgid "Only one indexer is used at a time. Switching makes release suggestions you dismissed earlier stop matching, because Prowlarr and Jackett number releases differently."
+msgstr ""
 
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
@@ -12146,6 +12302,7 @@ msgstr "在 {label} 中打开"
 msgid "Open Recommended with these filters from now on"
 msgstr "以后使用这些筛选条件打开推荐内容"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/HealthPage.tsx
@@ -12288,7 +12445,7 @@ msgstr "页面"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "第 {pageIndex}/{pageCount} 页"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -12378,10 +12535,9 @@ msgid "Passed over: {reasons}"
 msgstr "已跳过：{reasons}"
 
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
@@ -12431,16 +12587,15 @@ msgstr "路径"
 msgid "Path as Kavita sees it"
 msgstr "Kavita 所见的路径"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/downloadClientFields.ts
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Path as Maki sees it"
 msgstr "Maki 所见的路径"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Path as qBittorrent reports it"
-msgstr "qBittorrent 报告的路径"
+#: src/components/settings/downloadClientFields.ts
+msgid "Path as the download client reports it"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -12451,11 +12606,6 @@ msgstr "路径映射 - Kavita 端"
 #, fuzzy
 msgid "Path mapping - Maki side"
 msgstr "路径映射 - Maki 端"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Path mapping - qBittorrent side"
-msgstr "路径映射 - qBittorrent 端"
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -12873,21 +13023,6 @@ msgstr "已受保护，不会被升级"
 msgid "Provider"
 msgstr "提供方"
 
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "Prowlarr"
-msgstr "Prowlarr"
-
-#: src/api/upgrades.ts
-#, fuzzy
-msgid "Prowlarr isn't configured"
-msgstr "尚未配置 Prowlarr"
-
-#: src/api/upgrades.ts
-#, fuzzy
-msgid "Prowlarr search failed"
-msgstr "Prowlarr 搜索失败"
-
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Psychological"
@@ -12923,6 +13058,16 @@ msgstr "拉取新镜像并重新创建容器"
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you can't add series yourself. Connect trackers on the Scrobble page first. Needs the local MangaBaka database."
 msgstr "按计划拉取你的追踪器列表，并将匹配的系列添加到资料库；如果你无法自行添加系列，则会改为提交请求。请先在「记录」页面连接追踪器。需要本地 MangaBaka 数据库。"
 
+#: src/components/settings/PushNotificationsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Push notifications"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "push, push notifications, phone notifications, desktop notifications, new chapters, notify this device"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "pushes down titles close to it"
@@ -12947,11 +13092,6 @@ msgstr "请将它放在 HTTPS 之后，然后开启 设置 → 系统 → 网络
 #, fuzzy
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "按此顺序将这些来源置于新系列自动匹配时使用的全局优先级列表前端。"
-
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "qBittorrent"
-msgstr "qBittorrent"
 
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -13363,7 +13503,7 @@ msgstr "阅读模式"
 msgid "Reading profile"
 msgstr "阅读配置文件"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "阅读进度"
@@ -13597,11 +13737,6 @@ msgstr "刷新已开始，如有新快照会在后台下载"
 msgid "Refresh the catalogue"
 msgstr "刷新目录"
 
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "Refreshed"
-msgstr "已刷新"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Refreshing"
@@ -13762,10 +13897,18 @@ msgstr "移除"
 msgid "Remove {label}"
 msgstr "移除 {label}"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove {label} from this device"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove {removingSourceName}?"
 msgstr "移除 {removingSourceName}？"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove {seriesTitle} from this device"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -13796,6 +13939,18 @@ msgstr "要移除章节吗？"
 #, fuzzy
 msgid "Remove condition"
 msgstr "移除条件"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything from this device"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove everything from this device?"
+msgstr ""
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -13833,6 +13988,10 @@ msgstr "从资料库移除"
 msgid "Remove from queue"
 msgstr "从队列移除"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Remove from this device"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Remove goal"
@@ -13842,6 +14001,10 @@ msgstr "移除目标"
 #, fuzzy
 msgid "Remove mapping"
 msgstr "移除映射"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Remove offline copies"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -13879,6 +14042,10 @@ msgstr "移除单点登录"
 msgid "Remove single sign-on for {editName}?"
 msgstr "要移除 {editName} 的单点登录吗？"
 
+#: src/pwa/offlineChapters.ts
+msgid "Remove some saved chapters and try again."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove source only"
@@ -13909,6 +14076,10 @@ msgstr "要移除此阅读目标吗？"
 #, fuzzy
 msgid "Remove this root folder?"
 msgstr "要移除此根文件夹吗？"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Remove this series from the device"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14353,7 +14524,7 @@ msgstr "已从提供方恢复"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "将版本搜索限制在特定索引器和分类中。未选择任何项时，搜索所有索引器和分类。"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -14361,7 +14532,7 @@ msgstr "将版本搜索限制在特定索引器和分类中。未选择任何项
 msgid "Resume"
 msgstr "继续阅读"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Resume {seriesTitle}, {chapterLabel}"
 msgstr "继续阅读 {seriesTitle}，{chapterLabel}"
@@ -14449,6 +14620,10 @@ msgstr "正在重试…"
 #, fuzzy
 msgid "Reusing the name of the active preset overwrites it."
 msgstr "重新使用当前预设的名称会将其覆盖。"
+
+#: src/components/settings/SecureContextNote.tsx
+msgid "Reverse proxy setup"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14635,6 +14810,10 @@ msgstr "正在运行"
 msgid "Russian"
 msgstr "俄语"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Safari clears what a website saved after seven days without a visit. Add Maki to your home screen and save chapters from there to keep them."
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -14682,6 +14861,10 @@ msgstr "示例章节"
 msgid "Save"
 msgstr "保存"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Save {label} again"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Save a cover.jpg into each series folder"
@@ -14728,6 +14911,10 @@ msgstr "保存筛选条件"
 msgid "Save filters"
 msgstr "保存筛选条件"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Save for offline"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Save health settings"
@@ -14753,6 +14940,10 @@ msgstr "保存这些筛选条件…"
 msgid "Save this filter"
 msgstr "保存此筛选条件"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Save unread chapters for offline"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Save your recovery codes"
@@ -14762,6 +14953,7 @@ msgstr "保存你的恢复代码"
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
+#: src/components/settings/useIndexerForm.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/DownloadCards.tsx
@@ -14781,11 +14973,31 @@ msgstr "已保存"
 msgid "Saved as your default"
 msgstr "已保存为你的默认设置"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved by Keep upcoming chapters, removed once read"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved chapters"
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saved chapters, the copies of pages kept for browsing offline and this device's settings for offline reading all go. Nothing changes on the server."
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Saved filters"
 msgstr "已保存的筛选条件"
+
+#: src/pages/LibraryPage.tsx
+msgid "Saved on this device"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saved on this device for offline reading"
+msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -14796,6 +15008,27 @@ msgstr "已保存。留空则保留当前值。"
 #, fuzzy
 msgid "Saves the current search, sort and every filter in the panel as a named preset."
 msgstr "将面板中的当前搜索、排序和所有筛选条件保存为命名预设。"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Saving {done}/{total}"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving for offline failed. Try again from the chapter's menu."
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Saving on this device for offline reading"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Saving switches the indexer to {selectedName}. Its indexer and category lists load after that."
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -15024,6 +15257,7 @@ msgstr "阅读记录"
 msgid "Scroll"
 msgstr "滚动"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll back"
@@ -15034,6 +15268,7 @@ msgstr "向后滚动"
 msgid "Scroll for next chapter"
 msgstr "滚动以阅读下一章"
 
+#: src/components/home/ContinueHero.tsx
 #: src/components/ui/Rail.tsx
 #, fuzzy
 msgid "Scroll forward"
@@ -15164,15 +15399,11 @@ msgstr "搜索或粘贴 ID"
 msgid "Search query"
 msgstr "搜索查询"
 
+#: src/components/ReleaseSearchModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Search releases"
 msgstr "搜索发布内容"
-
-#: src/components/ReleaseSearchModal.tsx
-#, fuzzy
-msgid "Search releases (Prowlarr)"
-msgstr "搜索发布内容（Prowlarr）"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -15230,14 +15461,12 @@ msgid "searched as “{cleanedTitle}”"
 msgstr "已按“{cleanedTitle}”搜索"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Searches your indexers for manga releases to download as torrents."
-msgstr "在你的索引器中搜索可通过种子下载的漫画资源。"
+msgid "Searches your indexers for manga releases to download as torrents. Works through Prowlarr or Jackett."
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. No app sync needed."
-msgstr "在种子索引器中搜索漫画版本，用于卷的升级以及手动抓取版本。无需应用同步。"
+msgid "Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. Works through Prowlarr or Jackett, no app sync needed."
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -15423,11 +15652,18 @@ msgstr "发送请求"
 msgid "Send silently"
 msgstr "静默发送"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Send test"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
-#, fuzzy
-msgid "Sent to qBittorrent: {title}"
-msgstr "已发送到 qBittorrent：{title}"
+msgid "Sent to the download client: {title}"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -15447,7 +15683,6 @@ msgstr "MangaBaka 与此内容关联的续作、前传、衍生作和外传。"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/HomePage.tsx
@@ -15457,6 +15692,10 @@ msgstr "MangaBaka 与此内容关联的续作、前传、衍生作和外传。"
 #, fuzzy
 msgid "Series"
 msgstr "系列"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Series {seriesId}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -15738,6 +15977,12 @@ msgstr "再次显示"
 msgid "Show all"
 msgstr "显示全部"
 
+#. placeholder {0}: items.length
+#: src/components/home/ContinueHero.tsx
+msgid "Show all {0}"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
@@ -15801,6 +16046,10 @@ msgstr "显示来源文本"
 #, fuzzy
 msgid "Show the Home page"
 msgstr "显示首页"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Show the most recent series as a large card, with the rest in a list beside it, instead of a plain row."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -15909,6 +16158,10 @@ msgstr "登录身份"
 #, fuzzy
 msgid "Signed in as <0>{oidcUserName}</0> on {displayName}."
 msgstr "已在 {displayName} 上以 <0>{oidcUserName}</0> 身份登录。"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Signing out keeps saved chapters on this device. They come back when you sign in again."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -16342,12 +16595,12 @@ msgstr "在 GitHub 上点星"
 msgid "Start"
 msgstr "开始"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "开始阅读 {seriesTitle}，{chapterLabel}"
 
-#: src/components/home/ContinueLead.tsx
+#: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
 msgstr "开始阅读本章"
@@ -16498,6 +16751,10 @@ msgstr "读完前停下"
 #, fuzzy
 msgid "Stopping"
 msgstr "正在停止"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Storage on this device"
+msgstr ""
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -16661,11 +16918,6 @@ msgstr "系统问题"
 msgid "Tag"
 msgstr "标签"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Tag given to torrents Maki adds. Defaults to maki."
-msgstr "添加到 Maki 所添加种子上的标签。默认为 maki。"
-
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
@@ -16732,6 +16984,7 @@ msgstr "无论默认设置如何，都会通知你每个新章节。"
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/IndexerForm.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Test"
@@ -16746,6 +16999,10 @@ msgstr "测试失败"
 #, fuzzy
 msgid "Test notification sent"
 msgstr "测试通知已发送"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "Test notification sent."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16817,6 +17074,14 @@ msgstr "已批准的修复来源已不可用，请重新请求替换"
 msgid "The approved source no longer has these pages"
 msgstr "批准的来源不再有这些页面"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "The browser keeps saved chapters even when space runs low."
+msgstr ""
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "The browser may clear saved chapters when the device runs low on space."
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "The built-in reader, progress and achievements, the OPDS catalogue and read sync with Kavita."
@@ -16868,9 +17133,12 @@ msgid "The default for every series event: new chapters, downloads, upgrades. An
 msgstr "每个系列事件的默认设置：新章节、下载、升级。任何系列都可以在自己的页面中单独设置，也可以在资料库的「选择」模式中批量设置。"
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The download is no longer in qBittorrent"
-msgstr "该下载已不在 qBittorrent 中"
+msgid "The download client reports an error on this torrent"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The download is no longer in the download client"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -17033,6 +17301,10 @@ msgstr "元数据提供方将这些章节分配给此卷。通常准确，但合
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "提供方的签发者 URL，不要包含 /.well-known/openid-configuration。Maki 会自行追加该路径。"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "The push service did not accept the test notification."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "The recycle bin is empty."
@@ -17099,6 +17371,7 @@ msgid "The server logs will say why."
 msgstr "服务器日志会说明原因。"
 
 #: src/api/client.ts
+#: src/api/reader.ts
 #, fuzzy
 msgid "The server returned an error ({status})."
 msgstr "服务器返回了错误（{status}）。"
@@ -17182,10 +17455,14 @@ msgstr "当前人气上升最快的作品。"
 msgid "The token @BotFather gave you."
 msgstr "@BotFather 提供给你的令牌。"
 
+#. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
-#, fuzzy
-msgid "The torrent is no longer in qBittorrent"
-msgstr "该种子已不在 qBittorrent 中"
+msgid "The torrent is in the download client, but another download for {series} owns it"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The torrent is no longer in the download client"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -17193,9 +17470,8 @@ msgid "The torrent keeps seeding whichever you pick."
 msgstr "无论选择哪个，种子都会继续做种。"
 
 #: src/api/queue.ts
-#, fuzzy
-msgid "The torrent never appeared in qBittorrent"
-msgstr "种子从未出现在 qBittorrent 中"
+msgid "The torrent never appeared in the download client"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -17319,6 +17595,10 @@ msgstr "此归档仅建立了索引：我们知道它声称包含什么，但不
 msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 msgstr "此归档不在根目录中的任何系列文件夹内，因此没有可供导入的系列。将它移动到正确的文件夹并重新扫描，或使用导入页面导入它所在的文件夹。"
 
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "This browser does not support push notifications."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
@@ -17329,10 +17609,22 @@ msgstr "这里列出了各个来源扫描到的本章版本，按文件大小从
 msgid "This chapter has no readable file."
 msgstr "此章节没有可读取的文件。"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "This chapter isn't saved on this device."
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "This chapter was added or upgraded too recently"
 msgstr "此章节是最近才添加或升级的"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "This device"
+msgstr ""
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "This device could not subscribe to push notifications."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -17634,11 +17926,6 @@ msgid "title match only, an admin can set up search by meaning"
 msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
-#, fuzzy
-#~ msgid "title match only, build the recommendation index for search by meaning"
-#~ msgstr "仅匹配标题，建立推荐索引以按含义搜索"
-
-#: src/components/CatalogueBrowser.tsx
 msgid "title match only, search by meaning is off"
 msgstr ""
 
@@ -17772,12 +18059,6 @@ msgstr "主题 ID"
 msgid "Torrent"
 msgstr "种子"
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "torrent client, category, path mapping, download client"
-msgstr "种子客户端，类别，路径映射，下载客户端"
-
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -17878,6 +18159,8 @@ msgstr "受信任的代理"
 msgid "Try a shorter or alternative query."
 msgstr "尝试更短或不同的查询。"
 
+#: src/auth/OfflineStartPage.tsx
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
@@ -18446,6 +18729,8 @@ msgid "Upper Case"
 msgstr "大写"
 
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/downloadClientFields.ts
+#: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/IntegrationCards.tsx
@@ -18576,10 +18861,9 @@ msgstr "用户已更新"
 msgid "User, group or channel ID. Public channels can use @name."
 msgstr "用户、群组或频道 ID。公开频道可使用 @name。"
 
+#: src/components/settings/downloadClientFields.ts
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LoginPage.tsx
-#: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/SuwayomiCards.tsx
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -18872,6 +19156,7 @@ msgstr "卷：{volumes}"
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "与 {fromLabel} 至 {toLabel} 相比"
 
+#: src/components/settings/OfflineReadingSection.tsx
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Waiting"
@@ -19032,6 +19317,10 @@ msgstr "下载哪些内容"
 #, fuzzy
 msgid "What to pause"
 msgstr "暂停什么"
+
+#: src/components/settings/PushNotificationsSection.tsx
+msgid "What to push"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -19440,6 +19729,14 @@ msgstr "你与大众"
 msgid "You're caught up"
 msgstr "已全部追上"
 
+#: src/auth/OfflineStartPage.tsx
+msgid "You're offline"
+msgstr ""
+
+#: src/components/OfflineBanner.tsx
+msgid "You're offline. Showing what's saved on this device."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "You're set"
@@ -19616,11 +19913,9 @@ msgstr "你的用户或群组密钥。"
 msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr "仅你可见 - 这会改变出现在你铃铛中的内容，不会影响其他人。"
 
-#: src/components/SetupWizard.tsx
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
+#: src/components/settings/downloadClientFields.ts
 msgid "Z:\\downloads (optional)"
-msgstr "Z:\\downloads（可选）"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

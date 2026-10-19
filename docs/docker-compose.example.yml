@@ -1,0 +1,42 @@
+services:
+  maki:
+    image: ghcr.io/orbitmpgh/maki:latest
+    container_name: maki
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./maki-config:/config
+      - /path/to/manga-library:/library
+    ports:
+      - "8990:8990"
+    restart: unless-stopped
+
+  # Optional. Point a Kavita library at the same folder.
+  kavita:
+    image: jvmilazz0/kavita:latest
+    container_name: kavita
+    volumes:
+      - ./kavita-config:/kavita/config
+      - /path/to/manga-library:/library
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  # Optional. Needed for Cloudflare-protected sources (see docs/sources.md).
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+
+  # Optional. Extension sources through Suwayomi (see docs/sources.md). Install extensions in its own UI.
+  suwayomi:
+    image: ghcr.io/suwayomi/suwayomi-server:stable
+    container_name: suwayomi
+    volumes:
+      - ./suwayomi-data:/home/suwayomi/.local/share/Tachidesk
+    ports:
+      - "4567:4567"
+    restart: unless-stopped

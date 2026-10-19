@@ -18,7 +18,7 @@ using Quartz;
 namespace Maki.Api.Jobs;
 
 /// <summary>
-/// Tracks torrent queue items against qBittorrent: updates progress, claims hashes for .torrent
+/// Tracks torrent queue items against the download client: updates progress, claims hashes for .torrent
 /// grabs (magnets carry theirs), and hands finished downloads to <see cref="TorrentImportService"/>.
 /// <para>
 /// It imports on its own only when nothing is at stake. A download whose files cover chapters the
@@ -32,7 +32,7 @@ namespace Maki.Api.Jobs;
 public class CompletedDownloadJob(
     MakiDbContext db,
     ReleaseService releaseService,
-    QBittorrentClient qbittorrent,
+    TorrentClientRegistry torrentClients,
     TorrentImportService importer,
     EventBroadcaster events,
     ISchedulerFactory schedulerFactory,
@@ -42,13 +42,23 @@ public class CompletedDownloadJob(
     IUserLocaleResolver locales,
     ILogger<CompletedDownloadJob> logger) : IJob
 {
-    /// <summary>How long a torrent whose hash is known may be missing from qBittorrent before its row fails.</summary>
+    /// <summary>How long a torrent whose hash is known may be missing from the client before its row fails.</summary>
     internal static readonly TimeSpan MissingTorrentGrace = TimeSpan.FromHours(6);
+
+    internal const string ClientErrorKey = "error.download.torrentClientError";
+
+    internal const string HeldElsewhereKey = "error.download.torrentHeldElsewhere";
+
+    /// <summary>A queue row that recorded a torrent's hash, as a hashless row sees it.</summary>
+    private sealed record TorrentHolder(int SeriesId, string? SeriesTitle, QueueStatus Status);
 
     // The job instance is created per run, so state that must outlive a poll is static. In memory
     // only: after a restart the grace period for a missing torrent starts over, which errs on waiting.
     private static readonly ConcurrentDictionary<int, DateTime> MissingSince = new();
-    private static int _qbittorrentDown;
+    private static int _clientDown;
+
+    /// <summary>Rows whose torrent error has been logged, so a poll every 15 seconds logs it once.</summary>
+    internal static readonly ConcurrentDictionary<int, byte> ErrorLogged = new();
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -67,39 +77,40 @@ public class CompletedDownloadJob(
             return;
         }
 
-        (string Url, string Username, string Password, string Category) qbt;
+        TorrentClientSettings client;
         try
         {
-            qbt = await releaseService.GetQbtConfigAsync(ct);
+            client = await releaseService.GetClientSettingsAsync(ct);
         }
         catch (InvalidOperationException)
         {
             return; // not configured; nothing to poll
         }
 
-        var pathMap = await releaseService.GetQbtPathMapAsync(ct);
-        IReadOnlyList<QBittorrentClient.QbtTorrent> torrents;
+        var pathMap = await releaseService.GetClientPathMapAsync(ct);
+        var clientName = client.Kind.DisplayName();
+        IReadOnlyList<ClientTorrent> torrents;
         try
         {
-            torrents = await qbittorrent.ListAsync(qbt.Url, qbt.Username, qbt.Password, qbt.Category, ct);
+            torrents = await torrentClients.For(client.Kind).ListAsync(client, ct);
         }
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException ||
                                    (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
             // Polled every 15 seconds: logging each failure with its stack buried the log within a
-            // day of qBittorrent being down. One line when it goes, one when it comes back.
-            if (Interlocked.Exchange(ref _qbittorrentDown, 1) == 0)
+            // day of the client being down. One line when it goes, one when it comes back.
+            if (Interlocked.Exchange(ref _clientDown, 1) == 0)
             {
-                logger.LogWarning("qBittorrent at {Url} is not answering ({Error}); torrent progress is paused until it does",
-                    qbt.Url, ex.Message);
+                logger.LogWarning("{Client} at {Url} is not answering ({Error}); torrent progress is paused until it does",
+                    clientName, client.Url, ex.Message);
             }
 
             return;
         }
 
-        if (Interlocked.Exchange(ref _qbittorrentDown, 0) == 1)
+        if (Interlocked.Exchange(ref _clientDown, 0) == 1)
         {
-            logger.LogInformation("qBittorrent at {Url} is answering again", qbt.Url);
+            logger.LogInformation("{Client} at {Url} is answering again", clientName, client.Url);
         }
 
         foreach (var gone in MissingSince.Keys.Where(id => pending.All(q => q.Id != id)).ToList())
@@ -107,23 +118,32 @@ public class CompletedDownloadJob(
             MissingSince.TryRemove(gone, out _);
         }
 
+        foreach (var gone in ErrorLogged.Keys.Where(id => pending.All(q => q.Id != id)).ToList())
+        {
+            ErrorLogged.TryRemove(gone, out _);
+        }
+
         // Hashes already tied to any torrent item — including completed and failed ones,
-        // whose torrents keep seeding in qBittorrent. Excluding only pending items let a
+        // whose torrents keep seeding in the client. Excluding only pending items let a
         // finished previous download be re-claimed by a new hashless (.torrent) item and
         // imported into the wrong series' folder.
         //
         // Only a hashless item ever consults the set, so the history is read only while one is pending
         // instead of on every poll.
-        var claimedHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var holders = new Dictionary<string, List<TorrentHolder>>(StringComparer.OrdinalIgnoreCase);
         if (pending.Any(q => ReleaseInfoOf(q) is { TorrentHash: null }))
         {
-            var claimedJson = await db.DownloadQueue
+            var owners = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Torrent && q.ReleaseInfoJson != null)
-                .Select(q => q.ReleaseInfoJson!)
+                .Select(q => new { q.SeriesId, SeriesTitle = q.Series!.Title, q.Status, q.ReleaseInfoJson })
                 .ToListAsync(ct);
-            claimedHashes.UnionWith(claimedJson
-                .Select(j => JsonSerializer.Deserialize<ReleaseInfo>(j)?.TorrentHash)
-                .OfType<string>());
+            foreach (var owner in owners)
+            {
+                if (JsonSerializer.Deserialize<ReleaseInfo>(owner.ReleaseInfoJson!)?.TorrentHash is { } hash)
+                {
+                    HoldersOf(holders, hash).Add(new TorrentHolder(owner.SeriesId, owner.SeriesTitle, owner.Status));
+                }
+            }
         }
 
         // Sent after the poll's single save, so a failed save cannot announce the same row twice.
@@ -156,9 +176,10 @@ public class CompletedDownloadJob(
                 continue;
             }
 
+            TorrentHolder? heldBy = null;
             var torrent = info.TorrentHash != null
                 ? torrents.FirstOrDefault(t => t.Hash.Equals(info.TorrentHash, StringComparison.OrdinalIgnoreCase))
-                : ClaimTorrent(item, torrents, claimedHashes);
+                : ClaimTorrent(item, info, torrents, holders, out heldBy);
 
             if (torrent is null)
             {
@@ -166,14 +187,28 @@ public class CompletedDownloadJob(
                 if (DateTime.UtcNow - item.QueuedAt > TimeSpan.FromHours(2) && info.TorrentHash is null)
                 {
                     item.Status = QueueStatus.Failed;
-                    item.SetError("error.download.torrentMissing");
+                    if (heldBy is not null)
+                    {
+                        logger.LogWarning(
+                            "{Client} has a torrent named '{Title}', but a {Status} download for '{Series}' owns it",
+                            clientName, info.Title, heldBy.Status, heldBy.SeriesTitle);
+                        item.SetError(HeldElsewhereKey, new { series = heldBy.SeriesTitle ?? string.Empty });
+                    }
+                    else
+                    {
+                        logger.LogWarning(
+                            "No torrent named '{Title}' among the {Count} {Client} lists under '{Label}', and none added since it was grabbed",
+                            info.Title, torrents.Count, clientName, client.Label);
+                        item.SetError("error.download.torrentMissing");
+                    }
+
                     await BroadcastAsync(item);
                     announcements.Add((item, false));
                 }
                 else if (info.TorrentHash is not null && item.Status != QueueStatus.AwaitingImport &&
                          DateTime.UtcNow - MissingSince.GetOrAdd(item.Id, DateTime.UtcNow) > MissingTorrentGrace)
                 {
-                    // Deleted in qBittorrent, moved to another category, or dropped by it. Nothing else
+                    // Deleted in the client, moved to another category, or dropped by it. Nothing else
                     // settles a torrent row, so without this it read "Downloading" forever.
                     item.Status = QueueStatus.Failed;
                     item.SetError("error.download.torrentRemoved");
@@ -187,11 +222,39 @@ public class CompletedDownloadJob(
 
             MissingSince.TryRemove(item.Id, out _);
 
+            // An errored torrent keeps its row and shows the client's reason. It is never failed: the
+            // usual cause is the client losing its disk for a while (a mount that came up late), and a
+            // Failed row is never polled again, so the torrent would finish with nobody importing it.
+            var errorChanged = false;
+            if (torrent.IsErrored && item.Status != QueueStatus.AwaitingImport)
+            {
+                if (ErrorLogged.TryAdd(item.Id, 0))
+                {
+                    logger.LogWarning("{Client} reports an error on torrent '{Title}' ({Message})",
+                        clientName, item.Title, torrent.Message ?? "no detail");
+                }
+
+                if (item.ErrorKey != ClientErrorKey || item.ErrorMessage != torrent.Message)
+                {
+                    item.SetError(ClientErrorKey, detail: torrent.Message);
+                    errorChanged = true;
+                }
+            }
+            else
+            {
+                ErrorLogged.TryRemove(item.Id, out _);
+                if (item.ErrorKey == ClientErrorKey)
+                {
+                    item.ClearError();
+                    errorChanged = true;
+                }
+            }
+
             if (info.TorrentHash is null)
             {
                 info = info with { TorrentHash = torrent.Hash };
                 item.ReleaseInfoJson = JsonSerializer.Serialize(info);
-                claimedHashes.Add(torrent.Hash);
+                HoldersOf(holders, torrent.Hash).Add(new TorrentHolder(item.SeriesId, item.Series?.Title, item.Status));
             }
 
             var previousPagesDone = item.PagesDone;
@@ -227,7 +290,7 @@ public class CompletedDownloadJob(
             // Only on a real change. A finished torrent stays finished, so keying this on
             // IsComplete pushed the same row to every client on every poll for as long as it sat
             // there — which an item parked for an import decision does indefinitely.
-            if (item.PagesDone != previousPagesDone || item.Status != previousStatus)
+            if (errorChanged || item.PagesDone != previousPagesDone || item.Status != previousStatus)
             {
                 await BroadcastAsync(item);
             }
@@ -266,7 +329,7 @@ public class CompletedDownloadJob(
     /// <summary>
     /// Whether a failed row says something about the release, rather than about this machine: a
     /// torrent that never showed up or went away, or a download with no comic in it. Anything else
-    /// (an unreachable qBittorrent, a path Maki cannot read, a disk that refused the copy, an
+    /// (an unreachable download client, a path Maki cannot read, a disk that refused the copy, an
     /// unexpected exception with no key) would fail the next release the same way, and blocking this
     /// one would only hide it after the fix. An allow-list, so a key added later blocks nothing.
     /// </summary>
@@ -364,36 +427,82 @@ public class CompletedDownloadJob(
         events.QueueUpdated(QueueItemDto.FromEntity(item, chapter: null, item.Series!, "torrent"));
 
     /// <summary>
-    /// Best guess at the qBittorrent torrent for an item with no infohash, which since grabs resolve
+    /// Best guess at the client's torrent for an item with no infohash, which since grabs resolve
     /// the hash themselves means one whose .torrent file Maki could not fetch (or a row from before
-    /// that): an unclaimed torrent added around the grab time. A torrent qBittorrent already had is
-    /// never found this way, since another row owns it. Among those,
-    /// one whose name carries the series' title is strongly preferred, so a new item can't
-    /// adopt an unrelated torrent that merely shares the time window. Falls back to the
-    /// oldest in-window torrent (the original guess) when nothing matches, so an
-    /// odd-naming indexer still resolves rather than stranding the download.
+    /// that).
+    /// <para>
+    /// A torrent named exactly like the release wins, whenever it was added: the client may have had
+    /// it before the grab (added by hand, or left behind by a removed row), and a retried row is older
+    /// than its window. Another row may hold its hash as long as every such row is finished with it
+    /// and was for this series: a failed one (a torrent that went invisible to a label filter leaves
+    /// that behind), a cancelled one, or a completed one whose files are already in the library.
+    /// When only rows for another series or still in flight hold it, nothing is guessed, and
+    /// <paramref name="heldBy"/> names one of them so the failure can say so.
+    /// </para>
+    /// <para>
+    /// Otherwise an unclaimed torrent added around the grab time, one whose name carries the series'
+    /// title strongly preferred, so a new item can't adopt an unrelated torrent that merely shares the
+    /// window. Falls back to the oldest in-window torrent when nothing matches, so an odd-naming
+    /// indexer still resolves rather than stranding the download.
+    /// </para>
     /// </summary>
-    private static QBittorrentClient.QbtTorrent? ClaimTorrent(
+    private static ClientTorrent? ClaimTorrent(
         DownloadQueueItem item,
-        IReadOnlyList<QBittorrentClient.QbtTorrent> torrents,
-        HashSet<string> claimedHashes)
+        ReleaseInfo info,
+        IReadOnlyList<ClientTorrent> torrents,
+        Dictionary<string, List<TorrentHolder>> holders,
+        out TorrentHolder? heldBy)
     {
-        var queuedUnix = new DateTimeOffset(item.QueuedAt).ToUnixTimeSeconds();
+        heldBy = null;
+        var releaseName = ComparableName(info.Title ?? item.Title);
+        var sameName = releaseName.Length == 0
+            ? []
+            : torrents.Where(t => ComparableName(t.Name) == releaseName).OrderByDescending(t => t.AddedAt).ToList();
+        foreach (var candidate in sameName)
+        {
+            if (!holders.TryGetValue(candidate.Hash, out var owners) ||
+                owners.All(o => o.SeriesId == item.SeriesId &&
+                                o.Status is QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled))
+            {
+                return candidate;
+            }
+        }
+
+        if (sameName.Count > 0)
+        {
+            heldBy = holders[sameName[0].Hash]
+                .OrderBy(o => o.SeriesId == item.SeriesId)
+                .First(o => o.SeriesId != item.SeriesId ||
+                            o.Status is not (QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled));
+            return null;
+        }
+
+        var earliest = new DateTimeOffset(item.QueuedAt).AddSeconds(-120);
         var eligible = torrents
-            .Where(t => !claimedHashes.Contains(t.Hash) && t.AddedOn >= queuedUnix - 120)
-            .OrderBy(t => t.AddedOn)
+            .Where(t => !holders.ContainsKey(t.Hash) && t.AddedAt >= earliest)
+            .OrderBy(t => t.AddedAt)
             .ToList();
         if (eligible.Count == 0)
         {
             return null;
         }
 
-        var seriesTokens = PrimaryTitleTokens(item.Series?.Title ?? ReleaseInfoOf(item)?.Title);
+        var seriesTokens = PrimaryTitleTokens(item.Series?.Title ?? info.Title);
         var named = eligible.FirstOrDefault(t => MatchesSeries(t.Name, seriesTokens));
         return named ?? eligible[0];
     }
 
-    /// <summary>Whether a qBittorrent torrent name carries every one of the series' primary title tokens.</summary>
+    private static List<TorrentHolder> HoldersOf(Dictionary<string, List<TorrentHolder>> holders, string hash)
+    {
+        if (!holders.TryGetValue(hash, out var list))
+        {
+            holders[hash] = list = [];
+        }
+
+        return list;
+    }
+
+    /// <summary>Whether a torrent name carries every one of the series' primary title tokens.</summary>
     private static bool MatchesSeries(string torrentName, HashSet<string> seriesTokens)
     {
         if (seriesTokens.Count == 0)
@@ -412,13 +521,36 @@ public class CompletedDownloadJob(
     private static HashSet<string> PrimaryTitleTokens(string? title) =>
         string.IsNullOrWhiteSpace(title) ? [] : Tokenize(SearchQuery.Candidates(title).Last());
 
+    private static readonly HashSet<string> SingleFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".cbz", ".cbr", ".cb7", ".zip", ".rar", ".7z", ".pdf", ".epub",
+    };
+
+    /// <summary>A release or torrent name with case, punctuation and a single file's extension evened out.</summary>
+    internal static string ComparableName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = name.Trim();
+        var extension = Path.GetExtension(trimmed);
+        if (SingleFileExtensions.Contains(extension))
+        {
+            trimmed = trimmed[..^extension.Length];
+        }
+
+        return string.Join(' ', Regex.Split(trimmed.ToLowerInvariant(), @"[^\p{L}\p{N}]+").Where(t => t.Length > 0));
+    }
+
     private static HashSet<string> Tokenize(string value) =>
         Regex.Split(value.ToLowerInvariant(), "[^a-z0-9]+")
             .Where(t => t.Length > 0)
             .ToHashSet();
 
     private async Task ImportAsync(
-        DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
+        DownloadQueueItem item, ClientTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
     {
         TorrentImportService.BeginAutomaticImport(item.Id);
         try
@@ -432,12 +564,12 @@ public class CompletedDownloadJob(
     }
 
     private async Task ImportRegisteredAsync(
-        DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
+        DownloadQueueItem item, ClientTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
     {
         var series = item.Series!;
 
-        // qBittorrent reports the path as it sees it; rewrite it to how Maki does
-        // when the two run under different mounts (e.g. qBittorrent in Docker).
+        // The client reports the path as it sees it; rewrite it to how Maki does
+        // when the two run under different mounts (e.g. the client in Docker).
         var contentPath = PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To);
 
         var plan = await importer.PlanAsync(item, series, contentPath, ct);

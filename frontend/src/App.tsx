@@ -34,6 +34,9 @@ import { usePendingRequestCount } from './api/requests'
 import { useLiveEvents } from './api/signalr'
 import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { LoginPage } from './pages/LoginPage'
+import { OfflineStartPage } from './auth/OfflineStartPage'
+import { OfflineBanner } from './components/OfflineBanner'
+import { OfflineSync } from './pwa/OfflineSync'
 import { SetupAccountPage } from './pages/SetupAccountPage'
 import CommandPalette from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
@@ -289,7 +292,7 @@ function App() {
  */
 function AuthGate() {
   const location = useLocation()
-  const { me, loading, setupNeeded } = useAuth()
+  const { me, loading, setupNeeded, offline } = useAuth()
 
   if (loading) {
     return <RouteFallback />
@@ -300,7 +303,7 @@ function AuthGate() {
   }
 
   if (!me) {
-    return <LoginPage />
+    return offline ? <OfflineStartPage /> : <LoginPage />
   }
 
   // The reader owns the whole viewport, so it renders outside the AppShell rather than inside
@@ -312,6 +315,7 @@ function AuthGate() {
   return (
     <DocumentTitleProvider>
       <LiveEvents />
+      <OfflineSync />
       <DocumentTitle />
       {inReader ? (
         <RouteErrorBoundary>
@@ -467,6 +471,7 @@ function AppShellRoutes() {
         id="main"
         tabIndex={-1}
       >
+        <OfflineBanner />
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere.
             The error boundary sits inside the shell on purpose, so a page that throws leaves the

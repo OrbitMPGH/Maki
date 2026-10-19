@@ -58,6 +58,13 @@
 // A 70 from someone whose average is 85 is a complaint; the same 70 from someone averaging 60 is
 // praise. The distribution is also spiky at multiples of 10 (723,734 rows at exactly 70, 557,631 at
 // 80), so a raw threshold lands on a mode and moves a large block of rows at once.
+//
+// SHORT LISTS ARE LEFT OUT, AND LAMBDA MOVED WITH THEM
+// The readers fetched after 2026-08-31 average 76 finished titles against 182 before, and training
+// on all 53k of them measured -0.0112 nDCG@40 on held-out readers against the 22k-reader August
+// build. Dropping lists under 300 entries keeps 38% of the readers and 79% of the cells, and at
+// lambda 6 beats that August build by +0.0046 at the same median pick popularity. Numbers in
+// distribution/CLAUDE.md under "v5.3".
 
 using System.Diagnostics;
 using System.Globalization;
@@ -72,9 +79,12 @@ var dumpPath = Path.Combine(".artifacts", "mangabaka.full.db");
 var outPath = Path.Combine(".artifacts", "taste-vectors.db");
 var dims = 128;
 var iterations = 15;
-var lambda = 8.0f;
+var lambda = 6.0f;
 var alpha = 12.0f;
 var minInteractions = 5;
+// Readers whose whole list (every status) is shorter than this are left out of training. 0 keeps
+// everybody.
+var minReaderEntries = 300;
 var foldOut = -1;
 var foldCount = 0;
 var threads = Environment.ProcessorCount;
@@ -98,6 +108,7 @@ for (var i = 0; i < args.Length; i++)
         case "--lambda": lambda = float.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--alpha": alpha = float.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--min-interactions": minInteractions = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
+        case "--min-reader-entries": minReaderEntries = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--threads": threads = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--rng": seed = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         // Restores the original behaviour of training on every status. Measured WORSE - see the
@@ -197,6 +208,11 @@ using (var conn = new SqliteConnection($"Data Source={workPath};Mode=ReadOnly;Po
         {
             var user = (int)reader.GetInt64(0);
             if (foldCount > 0 && UserFold.Of(user, foldCount) == foldOut)
+            {
+                continue;
+            }
+
+            if (userSize.GetValueOrDefault(user) < minReaderEntries)
             {
                 continue;
             }
@@ -390,7 +406,7 @@ Console.WriteLine($"vectors  : {vectors.Count:N0} mapped to MangaBaka ids");
 Write(
     outPath, vectors, dims, foldCount, foldOut, users, items,
     string.Join(",", statuses.OrderBy(x => x, StringComparer.Ordinal)),
-    lambda, alpha, iterations, minInteractions);
+    lambda, alpha, iterations, minInteractions, minReaderEntries);
 
 Console.WriteLine();
 Console.WriteLine($"done     : {outPath} ({new FileInfo(outPath).Length / 1024.0 / 1024.0:F1} MB, {clock.Elapsed.TotalSeconds:F0}s total)");
@@ -442,7 +458,8 @@ static Dictionary<long, long> CrossReference(string dumpPath)
 static void Write(
     string outPath, List<(long Id, float Scale, byte[] Blob)> vectors, int dims,
     int foldCount, int foldOut, int users, int items,
-    string statusList, float lambda, float alpha, int iterations, int minInteractions)
+    string statusList, float lambda, float alpha, int iterations, int minInteractions,
+    int minReaderEntries)
 {
     if (File.Exists(outPath))
     {
@@ -520,6 +537,7 @@ static void Write(
             ("alpha", alpha.ToString(CultureInfo.InvariantCulture)),
             ("iterations", iterations.ToString(CultureInfo.InvariantCulture)),
             ("minInteractions", minInteractions.ToString(CultureInfo.InvariantCulture)),
+            ("minReaderEntries", minReaderEntries.ToString(CultureInfo.InvariantCulture)),
             ("source", "anilist-lists-ials"),
         })
         {

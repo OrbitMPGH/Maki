@@ -2,14 +2,18 @@ import { Button, Center, Group, Stack, Text, VisuallyHidden } from '@mantine/cor
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ApiError } from '../../api/client'
+import { IconCloudOff } from '@tabler/icons-react'
+import { api, ApiError, isOfflineUnavailable } from '../../api/client'
 import { Trans } from '@lingui/react/macro'
 import { useDocumentTitle } from '../../lib/documentTitle'
+import { getConnectivity, useConnectivity } from '../../lib/connectivity'
+import { settleQueuedProgress } from '../../pwa/progressQueue'
 import {
   flushProgress,
   useBookmarks,
   useReaderManifest,
   useToggleBookmark,
+  type ReaderManifest,
 } from '../../api/reader'
 import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
@@ -70,6 +74,11 @@ export default function ReaderPage() {
   }, [])
   /** The chapter whose saved position has been applied; gates every progress write. */
   const [resumedFor, setResumedFor] = useState<number | null>(null)
+  /**
+   * Where to resume once this device's queued progress for the chapter is accounted for. Offline, a
+   * queued row is newer than anything the manifest says, so it wins.
+   */
+  const [queued, setQueued] = useState<{ chapterId: number; resumePage: number; finished: boolean } | null>(null)
   // Set just before navigating to a *previous* chapter: stepping backward off page 1 should land
   // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
   const enterAtEndRef = useRef(false)
@@ -112,6 +121,8 @@ export default function ReaderPage() {
 
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
+  // A toggle cannot be replayed safely, so bookmarks wait for the connection.
+  const bookmarkOffline = useConnectivity() === 'offline'
   const bookmarkedPages = useMemo(
     () => new Set((bookmarks ?? []).map((b) => b.pageIndex)),
     [bookmarks],
@@ -167,12 +178,48 @@ export default function ReaderPage() {
   const clock = useReadingClock(tracking)
   const { settle: settleProgress } = useReaderProgress(
     manifest?.chapterId,
+    manifest?.seriesId,
     finished ? pageCount - 1 : shownTo,
+    pageCount,
     finished,
     tracking,
     clock,
     onFlushed,
   )
+
+  /**
+   * Before resuming, lets the chapter's queued offline progress reach the server (briefly). While
+   * offline, whatever is still waiting is folded in. Online it is left to the replay: the server
+   * keeps a queued completion that arrives stale unless the chapter was marked unread since.
+   */
+  useEffect(() => {
+    if (!manifest || isFetching || isError || resumedFor === manifest.chapterId) return
+    if (queued?.chapterId === manifest.chapterId) return
+    let cancelled = false
+    const opened = manifest
+    void (async () => {
+      const { rows, sent } = await settleQueuedProgress(opened.chapterId)
+      let base: ReaderManifest = opened
+      // What went out changed the server's copy since this manifest was fetched.
+      if (sent) {
+        const fresh = await api<ReaderManifest>(`/reader/chapter/${opened.chapterId}`).catch(() => null)
+        if (fresh && !cancelled) {
+          base = fresh
+          queryClient.setQueryData(['reader-manifest', opened.chapterId], fresh)
+        }
+      }
+      if (cancelled) return
+      const waiting = getConnectivity() === 'offline' ? rows : []
+      setQueued({
+        chapterId: opened.chapterId,
+        resumePage: waiting.reduce((furthest, row) => Math.max(furthest, row.pageIndex), base.resumePage),
+        finished: waiting.some((row) => row.completed),
+      })
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [manifest, isFetching, isError, resumedFor, queued, queryClient])
 
   /**
    * Resume where the chapter was left off, once per chapter, and only off a freshly fetched
@@ -183,17 +230,20 @@ export default function ReaderPage() {
     // A failed refetch leaves the cached manifest in place, and its resumePage is the previous
     // visit's snapshot: resuming from it would start writing that position back.
     if (!manifest || isFetching || isError || resumedFor === manifest.chapterId) return
+    if (queued?.chapterId !== manifest.chapterId) return
     setResumedFor(manifest.chapterId)
+    setQueued(null)
     const toEnd = enterAtEndRef.current
     enterAtEndRef.current = false
     const lastPage = Math.max(0, manifest.pageCount - 1)
-    const saved = manifest.resumePage <= lastPage ? Math.max(0, manifest.resumePage) : 0
+    const saved = queued.resumePage <= lastPage ? Math.max(0, queued.resumePage) : 0
     seekToPage(toEnd ? lastPage : saved)
     setZoom(1)
     setAtEnd(false)
-    setFinishedFor(null)
+    // A completion still in the queue rides along on this visit's own writes, as if finished here.
+    setFinishedFor(queued.finished ? manifest.chapterId : null)
     leavingRef.current = false
-  }, [manifest, isFetching, isError, resumedFor, seekToPage])
+  }, [manifest, isFetching, isError, resumedFor, queued, seekToPage])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
   useEffect(() => {
@@ -252,7 +302,7 @@ export default function ReaderPage() {
         // lands, and settle-then-flush stays in order.
         const flushed = (async () => {
           await settleProgress()
-          await flushProgress(leftId, at, done || undefined, seconds).catch(() => {})
+          await flushProgress(leftId, seriesId, at, done || undefined, seconds, pageCount).catch(() => {})
           invalidateProgress(seriesId)
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
@@ -401,7 +451,7 @@ export default function ReaderPage() {
         update({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })
         break
       case 'b':
-        toggleBookmark.mutate(page)
+        if (!bookmarkOffline) toggleBookmark.mutate(page)
         break
       case 't':
         setStripOpen((open) => !open)
@@ -533,13 +583,27 @@ export default function ReaderPage() {
       <div className="reader-root">
         <Center h="100dvh">
           <Stack align="center" gap="sm">
-            <Text c="var(--ink-3)">
-              {unreadable ? (
-                <Trans>This chapter has no readable file.</Trans>
-              ) : (
-                <Trans>Could not load this chapter.</Trans>
-              )}
-            </Text>
+            {isOfflineUnavailable(error) ? (
+              <Stack align="center" gap={4}>
+                <Group gap={8} wrap="nowrap">
+                  <IconCloudOff size={18} stroke={1.75} color="var(--warn)" aria-hidden />
+                  <Text c="var(--ink-2)" fw={600}>
+                    <Trans>Not available offline</Trans>
+                  </Text>
+                </Group>
+                <Text c="var(--ink-3)" size="sm">
+                  <Trans>This chapter isn't saved on this device.</Trans>
+                </Text>
+              </Stack>
+            ) : (
+              <Text c="var(--ink-3)">
+                {unreadable ? (
+                  <Trans>This chapter has no readable file.</Trans>
+                ) : (
+                  <Trans>Could not load this chapter.</Trans>
+                )}
+              </Text>
+            )}
             <Group gap="xs">
               {!unreadable && (
                 <Button variant="light" loading={isFetching} onClick={() => void refetch()}>
@@ -589,6 +653,7 @@ export default function ReaderPage() {
         onIncognito={setIncognito}
         readingCounted={readingCounted}
         bookmarked={bookmarked}
+        bookmarkDisabled={bookmarkOffline}
         onToggleBookmark={() => toggleBookmark.mutate(page)}
         stripOpen={stripOpen}
         onToggleStrip={() => setStripOpen((open) => !open)}

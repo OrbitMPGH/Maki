@@ -18,13 +18,13 @@ import {
 } from '../../api/upgrades'
 import { savedToast, useSliceSync } from './sharedRecord'
 import {
-  useConnectionSettings,
   useDownloadSettings,
-  useProwlarrIndexers,
-  useProwlarrOptions,
+  useIndexerList,
+  useIndexerOptions,
+  useIndexerSettings,
   useReadFileCleanupSettings,
   useSaveDownloadSettings,
-  useSaveProwlarrOptions,
+  useSaveIndexerOptions,
   useSaveReadFileCleanupSettings,
   useSaveSourceLanguages,
   type SourceOrderMode,
@@ -33,6 +33,9 @@ import {
   useSources,
 } from '../../api/hooks'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
+import { IndexerFieldRow } from '../../components/settings/IndexerForm'
+import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
+import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { languageName } from '../../api/titles'
@@ -259,7 +262,7 @@ export function DownloadQueueSection() {
       description={
         <Trans>
           How chapters from scraper sources move through the queue. Torrents are handled by
-          qBittorrent below.
+          the download client below.
         </Trans>
       }
       dirty={dirty}
@@ -487,7 +490,7 @@ export function ReadFileCleanupSection() {
   )
 }
 
-/** The hardlink switch inside the qBittorrent card. Part of the download settings record, saved on change. */
+/** The hardlink switch inside the download client card. Part of the download settings record, saved on change. */
 function HardlinkField() {
   const { t } = useLingui()
   const { data: settings } = useDownloadSettings()
@@ -531,26 +534,15 @@ export function FlareSolverrCard() {
   )
 }
 
-export function QbittorrentCard() {
+export function DownloadClientCard() {
   const { t } = useLingui()
+  const fields = useDownloadClientFields()
   return (
     <ConnectionSettingsCard
-      name="qbittorrent"
-      title="qBittorrent"
-      description={t`Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
-      fields={[
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
-        { key: 'username', label: t`Username` },
-        { key: 'password', label: t`Password`, secret: true },
-        {
-          key: 'category',
-          label: t`Category`,
-          placeholder: 'maki',
-          description: t`Tag given to torrents Maki adds. Defaults to maki.`,
-        },
-        { key: 'pathMapFrom', label: t`Path as qBittorrent reports it`, placeholder: t`/downloads (optional)` },
-        { key: 'pathMapTo', label: t`Path as Maki sees it`, placeholder: t`Z:\\downloads (optional)` },
-      ]}
+      name="downloadclient"
+      title={t`Download client`}
+      description={t`Sends grabbed releases to your torrent client. Finished torrents import into the library automatically. Fill the path mapping only if the client reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
+      fields={fields}
     >
       <HardlinkField />
     </ConnectionSettingsCard>
@@ -789,7 +781,7 @@ export function VolumeReleasesSection() {
       description={
         <Trans>
           Looks for torrent volume packs that could replace single-chapter files, for series whose
-          profile aims for volumes. Needs Prowlarr and qBittorrent, and runs an hour after the
+          profile aims for volumes. Needs an indexer and a download client, and runs an hour after the
           daily scan.
         </Trans>
       }
@@ -861,28 +853,27 @@ export function VolumeReleasesSection() {
   )
 }
 
-/** The indexer and category filter, which saves through its own endpoint beside the connection. */
-function useProwlarrOptionsForm() {
-  const { data: options } = useProwlarrOptions()
-  const save = useSaveProwlarrOptions()
-  const [selectedIndexers, setSelectedIndexers] = useState<Set<number>>(new Set())
+/** The indexer and category filter of the active backend, which saves through its own endpoint beside the connection. */
+function useIndexerOptionsForm() {
+  const { data: connection } = useIndexerSettings()
+  const backend = connection?.backend
+  const { data: options } = useIndexerOptions(backend)
+  const save = useSaveIndexerOptions()
+  const [selectedIndexers, setSelectedIndexers] = useState<Set<string>>(new Set())
   const [categories, setCategories] = useState<string[]>([])
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useEffect(() => {
     if (options) {
-      setSelectedIndexers(
-        new Set((options.indexerIds ?? '').split(',').filter(Boolean).map(Number)),
-      )
+      setSelectedIndexers(new Set((options.indexerIds ?? '').split(',').filter(Boolean)))
       setCategories((options.categories ?? '').split(',').filter(Boolean))
     }
   }, [options, discarded])
 
-  const sortedIds = (ids: Iterable<number>) => [...ids].sort((a, b) => a - b).join(',')
+  const sortedIds = (ids: Iterable<string>) => [...ids].sort().join(',')
   const dirty =
     options !== undefined &&
-    (sortedIds(selectedIndexers) !==
-      sortedIds((options.indexerIds ?? '').split(',').filter(Boolean).map(Number)) ||
+    (sortedIds(selectedIndexers) !== sortedIds((options.indexerIds ?? '').split(',').filter(Boolean)) ||
       categories.join(',') !== (options.categories ?? ''))
 
   return {
@@ -894,37 +885,62 @@ function useProwlarrOptionsForm() {
     saving: save.isPending,
     reset: discard,
     commit: () =>
-      save.mutateAsync({
-        indexerIds: [...selectedIndexers].sort((a, b) => a - b).join(',') || null,
-        categories: categories.join(',') || null,
-      }),
+      backend === undefined
+        ? Promise.resolve()
+        : save.mutateAsync({
+            backend,
+            indexerIds: sortedIds(selectedIndexers) || null,
+            categories: categories.join(',') || null,
+          }),
   }
 }
 
-export function ProwlarrSection() {
+export function IndexerSection() {
   const { t } = useLingui()
-  const options = useProwlarrOptionsForm()
+  const form = useIndexerForm()
+  const options = useIndexerOptionsForm()
+  const optionsDirty = options.dirty && !form.switching
+  const selectedName = indexerBackendName(form.selected)
+
   return (
-    <ConnectionSettingsCard
-      name="prowlarr"
-      title="Prowlarr"
-      description={t`Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. No app sync needed.`}
-      fields={[
-        { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
-        { key: 'apiKey', label: t`API key`, secret: true },
-      ]}
-      extra={options}
+    <SettingsSection
+      id="indexer"
+      title={t`Indexer`}
+      description={t`Searches your torrent indexers for manga releases, used for volume upgrades and for grabbing releases by hand. Works through Prowlarr or Jackett, no app sync needed.`}
+      dirty={form.dirty || optionsDirty}
+      saving={form.saving || options.saving}
+      onSave={() => {
+        const jobs = [form.dirty && form.commit(), optionsDirty && options.commit()].filter(
+          (j) => j instanceof Promise,
+        )
+        Promise.all(jobs).then(savedToast, () => {})
+      }}
+      onDiscard={() => {
+        form.reset()
+        options.reset()
+      }}
     >
-      <ProwlarrOptionsSection form={options} />
-    </ConnectionSettingsCard>
+      <IndexerFieldRow form={form} />
+      {form.switching ? (
+        <Text size="sm" c="var(--ink-3)" mt="md">
+          <Trans>
+            Saving switches the indexer to {selectedName}. Its indexer and
+            category lists load after that.
+          </Trans>
+        </Text>
+      ) : (
+        <IndexerOptionsSection form={options} />
+      )}
+    </SettingsSection>
   )
 }
 
-function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrOptionsForm> }) {
+function IndexerOptionsSection({ form }: { form: ReturnType<typeof useIndexerOptionsForm> }) {
   const { t } = useLingui()
-  const { data: connection } = useConnectionSettings<Record<string, string | null>>('prowlarr')
+  const { data: connection } = useIndexerSettings()
   const configured = Boolean(connection?.url && connection?.apiKey)
-  const { data: indexers, error: indexersError } = useProwlarrIndexers(configured)
+  const backendName = indexerBackendName(connection?.backend)
+  const { data: indexers, error: indexersError } = useIndexerList(connection?.backend, configured)
   const indexersErrorMessage = indexersError != null ? errorText(indexersError) : null
   const { selectedIndexers, setSelectedIndexers, categories, setCategories } = form
 
@@ -952,34 +968,34 @@ function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrO
       )}
       {configured && indexersErrorMessage != null && (
         <Text size="sm" c="var(--danger)">
-          <Trans>Could not load indexers from Prowlarr: {indexersErrorMessage}</Trans>
+          <Trans>Could not load indexers from {backendName}: {indexersErrorMessage}</Trans>
         </Text>
       )}
       {configured && indexers && (
         <Stack gap="sm">
           <Stack gap={6}>
             {indexers.map((indexer) => {
-              const { name, enable } = indexer
+              const { id, name, enabled } = indexer
               return (
-              <Checkbox
-                key={indexer.id}
-                label={enable ? name : t`${name} (disabled in Prowlarr)`}
-                checked={selectedIndexers.has(indexer.id)}
-                onChange={(e) => {
-                  const checked = e.currentTarget.checked
-                  setSelectedIndexers((prev) => {
-                    const next = new Set(prev)
-                    if (checked) next.add(indexer.id)
-                    else next.delete(indexer.id)
-                    return next
-                  })
-                }}
-              />
+                <Checkbox
+                  key={id}
+                  label={enabled ? name : t`${name} (disabled in ${backendName})`}
+                  checked={selectedIndexers.has(id)}
+                  onChange={(e) => {
+                    const checked = e.currentTarget.checked
+                    setSelectedIndexers((prev) => {
+                      const next = new Set(prev)
+                      if (checked) next.add(id)
+                      else next.delete(id)
+                      return next
+                    })
+                  }}
+                />
               )
             })}
             {indexers.length === 0 && (
               <Text size="sm" c="var(--ink-3)">
-                <Trans>No indexers configured in Prowlarr.</Trans>
+                <Trans>No indexers configured in {backendName}.</Trans>
               </Text>
             )}
           </Stack>
@@ -997,4 +1013,3 @@ function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrO
     </Stack>
   )
 }
-

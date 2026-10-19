@@ -130,7 +130,7 @@ public class QueueController(
             Failed: counts.GetValueOrDefault(QueueStatus.Failed)));
     }
 
-    /// <summary>What is paused right now. Torrents already handed to qBittorrent are not part of it.</summary>
+    /// <summary>What is paused right now. Torrents already handed to the download client are not part of it.</summary>
     [HttpGet("pause")]
     public async Task<IActionResult> GetPause(CancellationToken ct) =>
         Ok(QueuePauseDto.From(await pauses.ActiveAsync(ct)));

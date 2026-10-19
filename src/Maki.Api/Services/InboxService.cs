@@ -28,6 +28,7 @@ public class InboxService(
     IServiceScopeFactory scopeFactory,
     InboxAudienceResolver audiences,
     EventBroadcaster events,
+    WebPushSender push,
     TimeProvider time,
     ILogger<InboxService> logger)
 {
@@ -120,12 +121,18 @@ public class InboxService(
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
-        // One query for every recipient's prefs row rather than a scope+query per recipient
+        // One query for every recipient's prefs rows rather than a scope+query per recipient
         // (recipients.Count can be every admin, or every tracker of a popular series).
-        var prefsByUser = await db.UserSettings
+        var prefRows = await db.UserSettings
             .AsNoTracking()
-            .Where(s => recipients.Contains(s.UserId) && s.Key == SettingKeys.NotificationsInbox)
-            .ToDictionaryAsync(s => s.UserId, s => s.Value, ct);
+            .Where(s => recipients.Contains(s.UserId) &&
+                        (s.Key == SettingKeys.NotificationsInbox || s.Key == SettingKeys.NotificationsPush))
+            .Select(s => new { s.UserId, s.Key, s.Value })
+            .ToListAsync(ct);
+        var prefsByUser = prefRows.Where(s => s.Key == SettingKeys.NotificationsInbox)
+            .ToDictionary(s => s.UserId, s => s.Value);
+        var pushByUser = prefRows.Where(s => s.Key == SettingKeys.NotificationsPush)
+            .ToDictionary(s => s.UserId, s => s.Value);
 
         var specByUser = recipients.ToDictionary(
             userId => userId,
@@ -206,6 +213,12 @@ public class InboxService(
                 var locale = await locales.ResolveAsync(row.UserId, ct);
                 var (title, body) = renderer.Render(
                     locale, row.MessageKey, row.ParamsJson, row.Title, row.Body, seriesTitle);
+                if (PushPrefs.Parse(pushByUser.GetValueOrDefault(row.UserId)).Contains(type))
+                {
+                    push.Enqueue(new WebPushNotification(row.UserId, title, body, row.Url ?? "/notifications",
+                        row.SeriesId is { } pushSeries ? $"series-{pushSeries}" : null));
+                }
+
                 await events.InboxNotification(
                     row.UserId, InboxNotificationPush.From(row, unread) with { Title = title, Body = body });
             }

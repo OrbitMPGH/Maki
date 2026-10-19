@@ -19,7 +19,7 @@ not a replacement.
 - `Chapter.Number` is `REAL` in SQLite — never assume `ORDER BY` sorts it correctly.
 - MangaBaka has no MangaDex IDs; source matching is by normalized-title search, not shared UUID.
 - Series monitoring is only `Series.MonitorNewItems` — there is no separate `Monitored` flag.
-- Settings secrets (qBittorrent, Kavita, Prowlarr, MAL, tracker tokens) are intentionally plaintext
+- Settings secrets (qBittorrent, Transmission, Deluge, Kavita, Prowlarr, MAL, tracker tokens) are intentionally plaintext
   in the `AppConfig` table — don't "fix" this without reading why in CLAUDE.md.
 - `ImageSharp` is pinned to 3.1.12 — do not bump to 4.x (paid license required).
 - EF Core migrations auto-apply on startup; never suggest a manual migration step for users.

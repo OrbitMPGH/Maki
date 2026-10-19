@@ -701,6 +701,15 @@ msgstr "Unknown period or metric"
 msgid "error.progress.unknownTimeZone"
 msgstr "Unknown time zone"
 
+#. The browser sent a push subscription without an https endpoint on a public address or without valid keys.
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "error.push.invalidSubscription"
+msgstr "This browser's push subscription is not valid"
+
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "error.push.noSubscription"
+msgstr "No device has push notifications turned on for this account"
+
 #: src/Maki.Api/Controllers/QueueController.cs
 msgid "error.queue.noChapterToResolve"
 msgstr "Item has no chapter to resolve"
@@ -736,6 +745,11 @@ msgstr "Chapter has no readable file"
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.importAlreadyRunning"
 msgstr "An import is already running"
+
+#. A reading-progress write carried an operation id that is empty, longer than 64 characters or contains spaces.
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.invalidOpId"
+msgstr "The operation id must be 1 to 64 characters with no spaces"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.invalidState"
@@ -882,34 +896,39 @@ msgstr "This file is still being moved into the recycle bin. Try again in a mome
 msgid "error.recycleBin.targetInvalid"
 msgstr "The original location is outside the root folder or behind a link, so the file cannot go back there."
 
-#. The Prowlarr or qBittorrent call failed; the cause is in the server log.
+#. The indexer or download client call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.grabFailed"
-msgstr "Could not send the release to qBittorrent. Details are in the server log."
+msgstr "Could not send the release to the download client. Details are in the server log."
 
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.noDownloadLink"
 msgstr "This release has no download link"
 
 #: src/Maki.Api/Services/ReleaseService.cs
-msgid "error.release.prowlarrNotConfigured"
-msgstr "Prowlarr is not configured (Settings → Downloads → Prowlarr)"
+msgid "error.release.indexerNotConfigured"
+msgstr "No indexer is configured (Settings → Downloads → Indexer)"
 
-#. qBittorrent rejected the username or password Maki has stored for it.
+#. The download client rejected the username or password Maki has stored for it.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-msgid "error.release.qbittorrentLoginFailed"
-msgstr "qBittorrent rejected the login. Check the username and password in Settings → Downloads."
+msgid "error.release.downloadClientLoginFailed"
+msgstr "The download client rejected the login. Check the username and password in Settings → Downloads."
 
 #: src/Maki.Api/Services/ReleaseService.cs
-msgid "error.release.qbittorrentNotConfigured"
-msgstr "qBittorrent is not configured (Settings → Downloads → qBittorrent)"
+msgid "error.release.downloadClientNotConfigured"
+msgstr "No download client is configured (Settings → Downloads → Download client)"
 
-#. qBittorrent answered but refused to add the torrent.
+#. The download client answered but refused to add the torrent.
 #: src/Maki.Api/Controllers/ReleaseController.cs
-msgid "error.release.qbittorrentRejected"
-msgstr "qBittorrent refused to add the torrent."
+msgid "error.release.downloadClientRejected"
+msgstr "The download client refused to add the torrent."
 
-#. The Prowlarr call failed; the cause is in the server log.
+#. The download client did not answer, or answered with something that was not its API.
+#: src/Maki.Api/Controllers/ReleaseController.cs
+msgid "error.release.downloadClientUnreachable"
+msgstr "The download client did not respond. Check its URL in Settings → Downloads."
+
+#. The indexer call failed; the cause is in the server log.
 #: src/Maki.Api/Controllers/ReleaseController.cs
 msgid "error.release.searchFailed"
 msgstr "The release search failed. Details are in the server log."
@@ -1484,8 +1503,8 @@ msgid "error.torrentImport.noRootFolder"
 msgstr "Series has no root folder"
 
 #: src/Maki.Api/Services/TorrentImportService.cs
-msgid "error.torrentImport.notInQbittorrent"
-msgstr "The download is no longer in qBittorrent"
+msgid "error.torrentImport.notInClient"
+msgstr "The download is no longer in the download client"
 
 #. {path} is a filesystem path and is never translated.
 #: src/Maki.Api/Services/TorrentImportService.cs
@@ -1633,7 +1652,7 @@ msgstr "That chapter has no file to upgrade"
 msgid "error.upgrades.proposalNotFound"
 msgstr "That volume release proposal does not exist"
 
-#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#. {detail} is the torrent client's or the indexer's own error text, shown as it is.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 msgid "error.upgrades.grabFailed"
 msgstr "Could not grab the release: {detail}"
@@ -1792,11 +1811,16 @@ msgstr "Unknown language code(s): {codes}"
 msgid "error.settings.noSourceLanguageEnabled"
 msgstr "At least one language must stay enabled"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-msgid "error.settings.prowlarrNotConfigured"
-msgstr "Prowlarr is not configured"
+msgid "error.settings.indexerNotConfigured"
+msgstr "{service} is not configured"
 
-#. Shared by the Prowlarr and Kavita connection tests, both of which need the pair.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.indexerBackendInvalid"
+msgstr "Unknown indexer"
+
+#. Shared by the indexer and Kavita connection tests, both of which need the pair.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.urlAndApiKeyRequired"
 msgstr "URL and API key are required"
@@ -1811,13 +1835,32 @@ msgstr "URL is required"
 msgid "error.settings.userCannotSignIn"
 msgstr "That user does not exist, or cannot sign in"
 
+#. {service} is the indexer backend's product name (Prowlarr, Jackett), never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
-msgid "error.settings.prowlarrNoResponse"
-msgstr "Prowlarr did not respond (check URL/API key)"
+msgid "error.settings.indexerNoResponse"
+msgstr "{service} did not respond (check the URL and API key)"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
-msgid "error.settings.qbittorrentLoginFailed"
-msgstr "qBittorrent login failed"
+msgid "error.settings.downloadClientLoginFailed"
+msgstr "The download client rejected the login (check username/password)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.downloadClientNoResponse"
+msgstr "The download client did not respond (check the URL)"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.downloadClientKindInvalid"
+msgstr "Unknown download client"
+
+#. The label, category or tag Maki puts on its torrents.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.labelInvalid"
+msgstr "The label cannot start or end with a space, contain control characters, or be longer than 64 characters"
+
+#. Deluge's Label plugin rejects anything else, so Maki checks before saving.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.labelInvalidDeluge"
+msgstr "Deluge labels can only use letters, digits, dot, dash and underscore"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.kavitaNoResponse"
@@ -2060,6 +2103,15 @@ msgstr "Could not create the backup. Check the server logs for details."
 #: src/Maki.Api/Localization/InboxRenderer.cs
 msgid "inbox.unknownSeries"
 msgstr "Unknown series"
+
+#. Sent by the "Send a test" button in the push notification settings.
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "inbox.pushTest.title"
+msgstr "Push notifications work"
+
+#: src/Maki.Api/Controllers/PushController.cs
+msgid "inbox.pushTest.body"
+msgstr "This device will get Maki notifications."
 
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 msgid "inbox.libraryImport.finished.title"
@@ -2826,13 +2878,25 @@ msgstr "Import rejected, the library was left as it was"
 
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentMissing"
-msgstr "The torrent never appeared in qBittorrent"
+msgstr "The torrent never appeared in the download client"
 
-#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
-#. another category, or dropped.
+#. A torrent named like this release is in the download client, but another Maki download (for the
+#. named series, possibly this one) already recorded it as its own. {series} is a series title and
+#. is never translated.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentHeldElsewhere"
+msgstr "The torrent is in the download client, but another download for {series} owns it"
+
+#. The torrent had been seen in the download client before and has been gone for hours: deleted there,
+#. moved to another category or label, or dropped.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentRemoved"
-msgstr "The torrent is no longer in qBittorrent"
+msgstr "The torrent is no longer in the download client"
+
+#. The download client has held this torrent in an error state for half an hour. The client's own message follows.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentClientError"
+msgstr "The download client reports an error on this torrent"
 
 #. A download held its worker for the whole per-item time limit (Settings, Downloads) and was stopped.
 #: src/Maki.Api/Services/DownloadWorkerHostedService.cs
@@ -3426,7 +3490,7 @@ msgstr "A previous startup migration failed ({error}). Check the startup logs."
 msgid "health.check.diagnosticsUnavailable"
 msgstr "Database or scheduler diagnostics could not complete"
 
-#. {service} is a product name (Prowlarr, Kavita, qBittorrent, FlareSolverr), never translated.
+#. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.notConfigured"
 msgstr "{service}: not configured"

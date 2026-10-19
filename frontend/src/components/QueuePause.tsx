@@ -100,7 +100,7 @@ export function QueuePauseButton() {
           <Text size="sm">
             <Trans>
               Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the
-              queue. Torrents already handed to qBittorrent keep downloading.
+              queue. Torrents already handed to the download client keep downloading.
             </Trans>
           </Text>
           <Select
@@ -198,7 +198,7 @@ export function QueuePauseBanner({ canManage }: { canManage: boolean }) {
         ))}
         <Text size="xs" c="var(--ink-3)">
           <Trans>
-            Chapters already downloading finish. Torrents already handed to qBittorrent keep downloading.
+            Chapters already downloading finish. Torrents already handed to the download client keep downloading.
           </Trans>
         </Text>
       </Stack>

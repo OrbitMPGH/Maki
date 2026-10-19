@@ -195,6 +195,38 @@ public class UpgradesControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Proposals_never_send_the_stored_release_link_or_its_key()
+    {
+        var release = new ReleaseDto("g", "Series v01 (Digital) (1r0n)", 1, "Nyaa", 5, 0, "torrent",
+            "http://prowlarr.test/1/download?apikey=SECRETKEY&link=x", null, "http://nyaa.test/1?apikey=SECRETKEY");
+        using (var db = _world.Db.NewContext())
+        {
+            db.TorrentProposals.Add(new Maki.Core.Entities.TorrentProposal
+            {
+                SeriesId = _world.SeriesId, ReleaseGuid = "g", Title = release.Title, Indexer = release.Indexer,
+                ReleaseInfoJson = JsonSerializer.Serialize(release, QualitySnapshot.Json), CreatedAtUtc = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+
+        using var scoped = _world.Db.NewContext();
+        var result = await Controller(scoped).Proposals(null, "pending", CancellationToken.None);
+
+        var body = JsonSerializer.Serialize(Assert.IsType<OkObjectResult>(result).Value, QualitySnapshot.Json);
+        Assert.Contains("Series v01", body);
+        Assert.DoesNotContain("SECRETKEY", body);
+        Assert.DoesNotContain("apikey", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("downloadUrl", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("releaseInfo", body, StringComparison.OrdinalIgnoreCase);
+
+        _world.Chapter(1);
+        var id = scoped.TorrentProposals.Single().Id;
+        await Controller(scoped).GrabProposal(id, Torrents(scoped), new TestCurrentUser(5, permissions: MakiPermission.DownloadChapters),
+            CancellationToken.None);
+        Assert.Equal(release.DownloadUrl, Assert.Single(_releases.Grabs).Release.DownloadUrl);
+    }
+
+    [Fact]
     public async Task Grabbing_a_proposal_queues_it_as_the_users_upgrade_and_accepts_it()
     {
         _world.Chapter(1);
@@ -254,8 +286,8 @@ public class UpgradesControllerTests : IDisposable
         if (withSeries)
         {
             var dto = Assert.IsType<SeriesVolumeSearchResultDto>(Assert.IsType<OkObjectResult>(result).Value);
-            // The manual search skips the instance switches, so the missing Prowlarr is what stops it.
-            Assert.Equal(VolumeSearchReasons.NoProwlarr, dto.Reason);
+            // The manual search skips the instance switches, so the missing indexer is what stops it.
+            Assert.Equal(VolumeSearchReasons.NoIndexer, dto.Reason);
         }
         else if (allowed)
         {

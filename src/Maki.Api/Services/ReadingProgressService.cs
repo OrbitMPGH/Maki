@@ -111,12 +111,13 @@ public class ReadingProgressService(
     /// than the numeric gap: opening chapter 151 of a series added mid-way, or skipping from 5 to
     /// 100, is one chapter read, not a hundred. A first native read baselines silently at the
     /// highest completed chapter below the new mark, as the Kavita path does, and emits one.
+    /// <paramref name="at"/> dates the events when the read happened earlier (a replayed offline write).
     /// </summary>
     public virtual async Task<Marks> TrackNativeAsync(int userId, int seriesId, string title,
-        double maxChapter, double maxVolume, CancellationToken ct) =>
+        double maxChapter, double maxVolume, CancellationToken ct, DateTime? at = null) =>
         await WithGateAsync(async () =>
         {
-            var now = DateTime.UtcNow;
+            var now = at ?? DateTime.UtcNow;
 
             // Ordered by MaxChapter, because two Kavita series can legitimately resolve to one
             // local series and the pick has to be *stable*. UpdatedAt is not: the Kavita pass
@@ -245,10 +246,11 @@ public class ReadingProgressService(
     /// would falsely mark numbered chapters read in the library's progress ring.
     /// </para>
     /// </summary>
-    public async Task<bool> RecordUnnumberedReadAsync(int userId, int seriesId, string title, CancellationToken ct) =>
+    public async Task<bool> RecordUnnumberedReadAsync(int userId, int seriesId, string title, CancellationToken ct,
+        DateTime? at = null) =>
         await WithGateAsync(async () =>
         {
-            var now = DateTime.UtcNow;
+            var now = at ?? DateTime.UtcNow;
             // Same stable pick as everywhere else — see PickAsync.
             var kavitaSeriesId = (await PickAsync(userId, seriesId, ct))?.KavitaSeriesId;
 
@@ -354,7 +356,10 @@ public class ReadingProgressService(
         {
             state.MaxChapter = Math.Max(state.MaxChapter, maxChapter);
             state.MaxVolume = Math.Max(state.MaxVolume, maxVolume);
-            state.LastProgressAt = now;
+            if (now > state.LastProgressAt)
+            {
+                state.LastProgressAt = now;
+            }
         }
 
         state.SeriesId = seriesId ?? state.SeriesId;

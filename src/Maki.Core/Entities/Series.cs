@@ -76,7 +76,7 @@ public class Series
     /// <summary>Reason code to count, for why chapters or candidates were passed over in that scan.</summary>
     public string? LastUpgradeScanSkipsJson { get; set; }
 
-    /// <summary>When the torrent volume search last queried Prowlarr for this series.</summary>
+    /// <summary>When the torrent volume search last queried the indexer for this series.</summary>
     public DateTime? LastVolumeSearchUtc { get; set; }
 
     public int RootFolderId { get; set; }

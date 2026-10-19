@@ -79,7 +79,7 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
         new(UpgradeToOfficial, "Official releases", QualityTier.Official, true,
             "Keeps upgrading until each chapter comes from an official source such as MANGA Plus or Webtoons, replacing scanlations once an official copy exists."),
         new(UpgradeToVolumes, "Digital volumes", QualityTier.Volume, true,
-            "Keeps upgrading until chapters are covered by a digital volume release. Needs Prowlarr and a torrent client. Volumes come out months after chapters, so ongoing series keep being checked, and a volume file takes over the single chapter files it covers.")
+            "Keeps upgrading until chapters are covered by a digital volume release. Needs an indexer (Prowlarr or Jackett) and a torrent client. Volumes come out months after chapters, so ongoing series keep being checked, and a volume file takes over the single chapter files it covers.")
     ];
 
     public async Task RunOnceAsync(CancellationToken ct = default)

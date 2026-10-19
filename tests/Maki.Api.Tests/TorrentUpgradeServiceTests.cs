@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-/// <summary>A Prowlarr and qBittorrent stand-in: search answers from a list, a grab is recorded.</summary>
+/// <summary>An indexer and download client stand-in: search answers from a list, a grab is recorded.</summary>
 internal sealed class FakeReleases() : ReleaseService(null!, null!, null!, null!, NullLogger<ReleaseService>.Instance)
 {
     public List<ReleaseDto> Results { get; } = [];
@@ -444,8 +444,11 @@ public class TorrentUpgradeServiceTests : IDisposable
         }
 
         _world.Settings.Set(SettingKeys.ProwlarrApiKey, "");
-        Assert.Equal(VolumeSearchReasons.NoProwlarr, (await SearchAsync()).Reason);
+        Assert.Equal(VolumeSearchReasons.NoIndexer, (await SearchAsync()).Reason);
         _world.Settings.Set(SettingKeys.ProwlarrApiKey, "key");
+        _world.Settings.Set(SettingKeys.IndexerBackend, "jackett");
+        Assert.Equal(VolumeSearchReasons.NoIndexer, (await SearchAsync()).Reason);
+        _world.Settings.Set(SettingKeys.IndexerBackend, "prowlarr");
 
         using (var db = _world.Db.NewContext())
         {
@@ -506,7 +509,7 @@ public class TorrentUpgradeServiceTests : IDisposable
         }
 
         _world.Settings.Set(SettingKeys.ProwlarrUrl, "");
-        Assert.Equal(VolumeSearchReasons.NoProwlarr, (await SearchAsync(ignoreGlobalSwitch: true)).Reason);
+        Assert.Equal(VolumeSearchReasons.NoIndexer, (await SearchAsync(ignoreGlobalSwitch: true)).Reason);
         _world.Settings.Set(SettingKeys.ProwlarrUrl, "http://prowlarr.test");
         using (var db = _world.Db.NewContext())
         {

@@ -15,7 +15,7 @@ public sealed class KavitaSettingsTests : IDisposable
 
     private SettingsController Controller(SettingsService settings) => new(
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
-        settings: settings, naming: null!, flareSolverr: null!, prowlarr: null!, qbittorrent: null!,
+        settings: settings, naming: null!, flareSolverr: null!, indexers: null!, torrentClients: null!,
         kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
         mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
         embeddingIndexer: null!, prebuiltIndex: null!, recoGraph: null!,

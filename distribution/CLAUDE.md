@@ -685,3 +685,71 @@ next to any claim made about it. What a reader gets is a handful of near-clones 
 rejected pushed off the page, not a theme turned down: the Product blend is zero on all but a few
 rows by construction, which is also why the coefficient is 12 and costs nothing on nDCG. Anyone
 quoting "push less of this at me" as a shipped capability is quoting past the measurement.
+
+## v5.3: the 52k-reader artifacts, re-swept
+
+The artifacts published 2026-09-29 were built from a working database that had grown to 53,058 readers (co-read 52,383, taste 53,054, cohorts 50,546) and nothing was graded against them before publishing. Every knob below was tuned on 15k to 22k readers. Measured 2026-10-17 on `.simulated`, protocol as in "v4.1: doubling the reader population": fold-limited taste builds graded on reader fold 0 of 4 (400 held-out lists, 20% held out, `--csv ndcg`), and pair modes at 500 requests against mu-human, with reco as a cross-check. Logs and per-request CSVs are in `.artifacts/resweep/`.
+
+- **The 2026-09-29 taste artifact is a regression, and it is not a tuning problem.** Graded on the same held-out readers, the August artifact (22,181 readers fetched, 14,878 in training) beats the September one by **+0.0112 nDCG@40, 95% [+0.0075, +0.0151]** at the shipped lambda, and every retuned lambda still loses to it:
+
+  | build (fold 0 held out) | readers | cells | nDCG@40 | MRR | pop | franchise | vs Sept lambda 8 | vs August |
+  |---|---|---|---|---|---|---|---|---|
+  | August, lambda 8 | 14,878 | 3,162,726 | 0.209 | 0.463 | 964 | 16% | +0.0112 [+0.0075, +0.0151] | - |
+  | Sept, lambda 8 (shipped config) | 39,804 | 5,718,583 | 0.198 | 0.454 | 1,661 | 17% | - | -0.0112 [-0.0151, -0.0076] |
+  | Sept, lambda 12 | 39,804 | 5,718,583 | 0.203 | 0.459 | 1,136 | 16% | +0.0050 [+0.0023, +0.0078] | -0.0062 [-0.0092, -0.0033] |
+  | Sept, lambda 16 | 39,804 | 5,718,583 | 0.205 | 0.463 | 935 | 16% | +0.0063 [+0.0031, +0.0094] | -0.0049 [-0.0080, -0.0020] |
+  | Sept, lambda 24 | 39,804 | 5,718,583 | 0.204 | 0.462 | 941 | 16% | +0.0057 [+0.0025, +0.0091] | -0.0055 [-0.0086, -0.0025] |
+
+  v4.1 read 22k to 39k readers as neutral once lambda was retuned. 39k to 53k is negative even retuned, and the cause is which readers were added, not how many.
+
+- **The readers fetched after 2026-08-31 have much shorter lists.** 18,306 of them average 76 COMPLETED entries against 182 for the 34,751 fetched before; total entries per list fall 742 (before 08-27) to 450 (08-27 to 08-30) to 261 (after). `sample` round-robins seed pages, so later pages reach lighter readers. The builder's `log(257) / log(1 + size)` normalization was written to stop a completionist dominating, and it does nothing to stop a crowd of 30-title lists diluting the factorization. `--min-reader-entries` (a floor on a reader's whole list, every status; default 0, recorded in `meta.minReaderEntries`) is the test:
+
+  | build (fold 0 held out) | readers | cells | nDCG@40 | MRR | pop | franchise | vs Sept lambda 8 | vs August |
+  |---|---|---|---|---|---|---|---|---|
+  | floor 150, lambda 16 | 23,315 | 5,238,953 | 0.208 | 0.471 | 548 | 15% | +0.0099 [+0.0056, +0.0140] | -0.0013 [-0.0045, +0.0018] |
+  | floor 200, lambda 8 | 19,942 | 4,994,418 | 0.212 | 0.475 | 766 | 16% | +0.0133 [+0.0096, +0.0173] | +0.0021 [-0.0008, +0.0050] |
+  | floor 300, lambda 4 | 15,154 | 4,520,705 | 0.212 | 0.477 | 1,142 | 17% | +0.0139 [+0.0105, +0.0173] | +0.0027 [-0.0008, +0.0061] |
+  | **floor 300, lambda 6** | 15,154 | 4,520,705 | **0.214** | **0.479** | **945** | 16% | **+0.0158 [+0.0123, +0.0195]** | **+0.0046 [+0.0016, +0.0076]** |
+  | floor 300, lambda 8 | 15,154 | 4,520,705 | 0.214 | 0.479 | 790 | 15% | +0.0159 [+0.0117, +0.0201] | +0.0046 [+0.0018, +0.0076] |
+  | floor 300, lambda 16 | 15,154 | 4,520,705 | 0.208 | 0.469 | 371 | 14% | +0.0098 [+0.0051, +0.0147] | -0.0015 [-0.0049, +0.0020] |
+
+  Dropping the 62% of readers with under 300 entries removes only 21% of the cells. Lambda is the popularity dial here as it was in v4.1, and floor 300 at lambda 6 is the row that matches the August artifact's `pop` (945 against 964) while beating it.
+
+- **Graded on curated pairs, full builds (no fold) against the published artifact, mu-human:**
+
+  | full build | single nDCG@40 | paired | pop | small nDCG@40 | paired | pop |
+  |---|---|---|---|---|---|---|
+  | published 2026-09-29 | 0.132 | - | 15,051 | 0.131 | - | 11,018 |
+  | August, lambda 8 (19,934 readers) | 0.138 | +0.0058 [+0.0020, +0.0097] | 13,911 | 0.150 | +0.0193 [+0.0157, +0.0229] | 8,539 |
+  | Sept, lambda 16 | 0.136 | +0.0040 [+0.0025, +0.0057] | 14,461 | 0.141 | +0.0101 [+0.0080, +0.0123] | 9,621 |
+  | floor 300, lambda 6 (20,179 readers, 64,426 vectors) | 0.135 | +0.0034 [-0.0006, +0.0074] | 14,319 | 0.142 | +0.0105 [+0.0075, +0.0135] | 9,368 |
+
+  Against August directly, floor 300 / lambda 6 is -0.0024 [-0.0061, +0.0013] at one seed and **-0.0088 [-0.0122, -0.0055]** at three. So the two candidates split the graders the way the familiarity dial does: floor 300 wins readers by +0.0046 and loses three-seed pairs by 0.009, with August's pair gain partly bought with fame (8,539 against 9,368). Both are ahead of what is published on readers and on three-seed pairs and no worse at one seed. Nothing was republished; that is the owner's call.
+
+- **`TasteVectorTuning.Weight` stays 2.5, and the exchange rate got worse.** At the September density, 4.0 measures +0.0132 [+0.0102, +0.0165] on readers (pop 1,929, franchise 15%) against -0.0121 [-0.0156, -0.0088] and -0.0143 [-0.0171, -0.0115] on mu-human single and small. That is about 1:1, where v4 measured 1.3:1.
+
+- **`CoReadTuning.Weight` stays 0.15. The bigger graph did not make the channel louder this time.** The prediction from the 8.8k to 19.7k step was that 2.7x the readers would want the weight lowered. It wants the opposite, by a hair: paired against 0.15, 0.08 / 0.10 / 0.20 measure -0.0007 / -0.0003 / +0.0005 at one seed (all spanning zero), -0.0010 / -0.0009 / +0.0019 at three, and -0.0019 / -0.0014 / +0.0014 on reco, with `pop` moving under 1% across the band. Inert in practice. Switching the channel off still costs -0.0044 [-0.0065, -0.0025] single, -0.0066 [-0.0091, -0.0042] small and -0.0087 [-0.0121, -0.0056] on reco.
+- **The 52k co-read graph is no worse than the 19.7k one, unlike the taste vectors.** Rebuilt from the August backup (19,667 readers, 1,582,533 pairs) and graded with everything else fixed: -0.0003 [-0.0020, +0.0014] single and -0.0009 [-0.0018, +0.0001] small for the August graph. Pair support is a count of readers who finished both titles, so a 30-title list adds a few pairs and dilutes nothing; a factorization fits every list. The extra 8,872 series of coverage are free.
+
+- **The injection gates, re-swept as the header asks after every fetch:**
+  - `RecoGraphTuning.MinInjectedScore` is the one knob that moves, and lowering it is the direction this doc already warns about. 0.50 measures +0.0043 [+0.0020, +0.0070] single, +0.0061 [+0.0044, +0.0080] small and +0.0015 [+0.0001, +0.0031] on readers, with `pop` 5% to 8% more famous (10,473 against 11,018 small; 1,525 against 1,661 readers). 0.55 is +0.0024 [+0.0010, +0.0041] and +0.0035 [+0.0022, +0.0049], `pop` -3% at three seeds. 0.70 costs -0.0064 and -0.0075. The gate sits at 0.60 because an obscure one-shot with one 26-vote edge reached rank 1 on a real library below it, and an aggregate table cannot see that case. Do not lower it without reading the real `.simulated` output at 0.55 first.
+  - `RecoGraphTuning.MaxInjected` binds again, at the low end only: 10 costs -0.0016 [-0.0026, -0.0006] single and -0.0053 [-0.0076, -0.0033] small. 100 stays.
+  - `CoReadTuning.MaxInjected` 200 is byte-identical to 50 on every grader, still inert; 10 costs -0.0006. `MinInjectedScore` 0.60 is +0.0013 [-0.0000, +0.0029] single, +0.0017 [+0.0007, +0.0027] small (`pop` -4%) and +0.0024 [+0.0011, +0.0039] reco; 0.80 costs -0.0022 / -0.0019 / -0.0014. Same shape and the same caveat as the vote graph's gate, at half the size. 0.70 stays.
+  - `TasteVectorTuning.MaxInjected` keeps its knee at 100: 50 and 200 span zero on every grader (readers -0.0015 [-0.0037, +0.0007] and +0.0009 [-0.0010, +0.0029]). `MinInjectedScore` 0.50 is inert on readers (-0.0004 [-0.0010, +0.0003]).
+
+- **`ReaderCohortTuning.MinDivergence` stays 4.** Fold-0 cohorts built in the fold-0 lambda 8 taste space (39,806 readers, 37,905 placeable, 24 kept) and graded on 2,000 held-out readers. The cohort mean beats the item mean by -0.1369 [-0.1548, -0.1191] pooled. Gate 3 / 4 / 5 / 6 fires on 16.4% / 8.6% / 4.5% / 2.5% of predictions with direction agreement 61.6% / 63.7% / 65.0% / 65.7%, and at 4 the hint tail wins by -0.781 [-0.943, -0.613]. v5 measured 9.2% and -0.748 at the same gate, so the frequency held. The rail at gamma 0.5 reads recall 0.1035, `pop` 1,637, overlap 0.287 against v5's 0.1110 / 1,142 / 0.247 on a different request set, so it is a direction only. Cohorts were not tested with a reader floor.
+
+- **What to fetch next follows from the first two bullets.** More readers from the same sampler are now measurably harmful to the taste channel and neutral for co-read. A further `sample` / `fetch` should only go ahead with a list-size floor on who gets kept, and every future taste build should carry `--min-reader-entries` until a fold test says otherwise.
+
+### Shipped
+
+The builder defaults are now `--lambda 6` and `--min-reader-entries 300`, `RecoGraphTuning.MinInjectedScore` is 0.55 and `CoReadTuning.MinInjectedScore` is 0.60. The two gates were read on real output before moving, as the gate bullet above asks: on `.simulated`'s 104-series libraries the top 40 is identical at 0.60, 0.55 and 0.50, and on the 11-seed `.devconfig` library the pair adds Golden Kamuy and Hell's Paradise, both carried by all three crowd channels, and nothing obscure. Graded together against the new taste build alone:
+
+| grader | nDCG@40 | paired | pop |
+|---|---|---|---|
+| single / mu-human | 0.139 | +0.0036 [+0.0014, +0.0060] | 14,258 against 14,319 |
+| small / mu-human | 0.146 | +0.0046 [+0.0028, +0.0065] | 9,059 against 9,368 |
+| single / reco | 0.192 | +0.0022 [+0.0005, +0.0042] | 16,922 against 16,982 |
+| library, fold 0 | 0.215 | +0.0005 [-0.0006, +0.0021] | 942 against 945 |
+
+End to end on held-out readers that is **+0.0163 [+0.0126, +0.0202]** over the 2026-09-29 configuration and +0.0051 [+0.0019, +0.0084] over the August taste build. The rebuilt artifacts, against the 2026-10-17 full dump (564,649 series, 130,002 AniList ids cross-referenced): taste vectors 64,426 from 20,179 readers; reader cohorts 24 over 50,540 placed readers, built in that taste space with no list floor of their own; the prebuilt index 128,178 series, 8,844 re-embedded and 57 pruned. `reco-edges.db` and `coread-edges.db` are unchanged, since rebuilding them from the same working databases gives the same files. New series only reach the crowd artifacts through a fresh fetch, which is the open item: a `fetch-reco-graph.cs` pass for titles added since 2026-09-24, and re-fetching lists for readers already in `user_state`, which `fetch-coread-graph.cs` does not do today.

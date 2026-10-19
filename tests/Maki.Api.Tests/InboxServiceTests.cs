@@ -30,6 +30,7 @@ public class InboxServiceTests : IDisposable
             scopeFactory,
             new InboxAudienceResolver(scopeFactory),
             new EventBroadcaster(new NoopHubContext(), scopeFactory),
+            new RecordingPushSender(scopeFactory),
             new StoppedClock(T0),
             NullLogger<InboxService>.Instance);
     }
