@@ -574,6 +574,23 @@ body {
   [data-theme='light'] .app-navbar {
     background: var(--surface);
   }
+  /* Thumb-sized targets: the desktop sizes are mouse sizes. */
+  .app-header .mantine-Burger-root {
+    width: 44px;
+    height: 44px;
+    padding: 13px;
+  }
+  .app-header-actions .mantine-ActionIcon-root {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .app-header-actions .command-palette-trigger {
+    width: 40px;
+    height: 40px;
+    margin-inline: 2px;
+  }
 }
 
 /* Popovers carry a fixed pixel width (the inbox bell is 380, health is 340), which Mantine writes
@@ -811,6 +828,22 @@ body {
 .nav-footer .nav-footer-dismiss:hover {
   color: var(--ink-hi);
   background: var(--surface-hover);
+}
+/* The phone drawer is tapped, not clicked. */
+@media (max-width: 47.9375em) {
+  .nav-link,
+  .nav-footer-link {
+    height: 44px;
+  }
+  .nav-footer-link {
+    padding-right: 44px;
+  }
+  .nav-footer .nav-footer-dismiss {
+    right: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-control);
+  }
 }
 .nav-footer-row {
   display: flex;

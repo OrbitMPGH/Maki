@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Box, Button, Group, Paper } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import {
@@ -92,6 +93,7 @@ export default function HomePage() {
   const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
   const { can } = useAuth()
+  const phone = useMediaQuery('(max-width: 47.9375em)') ?? false
 
   // Opposite default to the nav's in App.tsx on purpose: there, assuming "available" while the
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
@@ -419,7 +421,7 @@ export default function HomePage() {
     ),
   }
 
-  const visible = layout.filter(sectionVisible)
+  const visible = phone ? glanceAfterContinue(layout.filter(sectionVisible)) : layout.filter(sectionVisible)
 
   // A custom rail's key only names it; the rail itself comes from the rails list. One whose source
   // is the catalogue waits on the local database like the borrowed Discover rails above.
@@ -458,6 +460,19 @@ export default function HomePage() {
       />
     </SurfaceFrame>
   )
+}
+
+/**
+ * On a phone the glance row fills the first screen by itself, so there it follows Continue reading
+ * instead of leading. Only the rendered order changes; the saved layout is left alone.
+ */
+function glanceAfterContinue<T extends { key: string }>(sections: T[]): T[] {
+  const glance = sections.findIndex((s) => s.key === 'glance')
+  const resume = sections.findIndex((s) => s.key === 'continue')
+  if (glance < 0 || resume < 0 || glance > resume) return sections
+  const rest = sections.filter((_, i) => i !== glance)
+  rest.splice(resume, 0, sections[glance])
+  return rest
 }
 
 /**
