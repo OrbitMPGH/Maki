@@ -75,7 +75,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
 
   return (
     <Panel p="md">
-      <Title order={4} mb="xs">
+      <Title order={3} size="h4" mb="xs">
         <Trans>Reading days</Trans>
       </Title>
       <Box style={{ overflowX: 'auto' }}>
@@ -84,7 +84,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
             {columns.map((_, i) => {
               const label = monthLabels.find((m) => m.index === i)
               return (
-                <Box key={i} style={{ width: 11, fontSize: 9, color: 'var(--ink-3)' }}>
+                <Box key={i} style={{ width: 11, fontSize: 'var(--type-micro)', whiteSpace: 'nowrap', color: 'var(--ink-3)' }}>
                   {label?.label ?? ''}
                 </Box>
               )

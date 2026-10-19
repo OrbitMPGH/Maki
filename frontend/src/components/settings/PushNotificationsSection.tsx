@@ -206,7 +206,7 @@ function PushFilter() {
       </div>
       {categories.map((category) => (
         <div key={category.id}>
-          <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb="xs" style={{ letterSpacing: '0.08em' }}>
+          <Text size="xs" fw={600} c="var(--ink-3)" mb="xs">
             {renderLabel(category.label)}
           </Text>
           <Stack gap="xs">

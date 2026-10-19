@@ -29,7 +29,6 @@ import {
 } from '@mantine/core'
 import {
   IconAlertTriangle,
-  IconCheck,
   IconColumns,
   IconRuler,
   IconExternalLink,
@@ -76,6 +75,7 @@ import { formatDateTime, formatRecentDate } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { EmptyState } from './ui/EmptyState'
+import { StatusDot } from './ui/StatusDot'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -494,9 +494,9 @@ export function SourceMappingsSection({
                           {sourceName}
                         </Text>
                         {sourceDisabled(m.sourceName) && (
-                          <Badge size="xs" color="var(--neutral)" variant="light" style={{ flexShrink: 0 }}>
+                          <StatusDot tone="neutral" style={{ flexShrink: 0 }}>
                             <Trans>Source off</Trans>
-                          </Badge>
+                          </StatusDot>
                         )}
                         {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
                           <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light" style={{ flexShrink: 0 }}>
@@ -656,29 +656,17 @@ export function SourceMappingsSection({
                             {sourceLabel(name)}
                           </Text>
                           {state === 'Matched' ? (
-                            <Badge
-                              size="xs"
-                              color="var(--ok)"
-                              variant="light"
-                              leftSection={<IconCheck size={10} />}
-                              style={{ flexShrink: 0 }}
-                            >
+                            <StatusDot tone="ok" style={{ flexShrink: 0 }}>
                               <Trans>Found</Trans>
-                            </Badge>
+                            </StatusDot>
                           ) : state === 'NoMatch' ? (
-                            <Badge size="xs" color="var(--neutral)" variant="light" style={{ flexShrink: 0 }}>
+                            <StatusDot tone="neutral" style={{ flexShrink: 0 }}>
                               <Trans>No match</Trans>
-                            </Badge>
+                            </StatusDot>
                           ) : state === 'Failed' ? (
-                            <Badge
-                              size="xs"
-                              color="var(--warn)"
-                              variant="light"
-                              leftSection={<IconAlertTriangle size={10} />}
-                              style={{ flexShrink: 0 }}
-                            >
+                            <StatusDot tone="warn" style={{ flexShrink: 0 }}>
                               <Trans>Search failed</Trans>
-                            </Badge>
+                            </StatusDot>
                           ) : (
                             <Loader size={12} />
                           )}

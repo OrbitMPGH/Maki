@@ -59,6 +59,7 @@ import {
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
+import { Disclosure } from '../components/ui/Disclosure'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
@@ -248,7 +249,10 @@ export default function HealthPage() {
   const error = queryError ?? action.error ?? quick.error ?? refresh.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
   // so they do not belong in a number whose job is to say "something needs you".
-  const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
+  const openChecks = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged) ?? []
+  const issues = openChecks.length
+  // Red is kept for something broken; a page of warnings reads as a page of failures otherwise.
+  const issuesTone = openChecks.some((c) => c.status !== 'warning') ? 'danger' : issues > 0 ? 'warn' : undefined
   const partialScanError = overview.data?.scans.find((s) => s.error)?.error
   const selectedCount = selected.size
   const deletedCount = deleteReport?.deleted ?? 0
@@ -330,7 +334,7 @@ export default function HealthPage() {
       <FigureStrip
         loading={overview.isPending}
         figures={[
-          { label: t`System issues`, value: issues, tone: 'danger' },
+          { label: t`System issues`, value: issues, tone: issuesTone },
           { label: t`Open file findings`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
           { label: t`Archives inventoried`, value: overview.data?.files ?? 0 },
         ]}
@@ -582,11 +586,11 @@ export default function HealthPage() {
                               <Status value={file.status} hint={file.status === 'partial'} />
                             </Table.Td>
                             <Table.Td>
-                              <Group gap={4}>
+                              <Group gap="xs">
                                 {file.findings.map((f) => (
-                                  <Badge key={f.id} color={color(f.severity)} variant="light">
+                                  <StatusDot key={f.id} tone={tone(f.severity)}>
                                     {renderLabel(FINDING_LABEL[f.kind] ?? f.kind)}
-                                  </Badge>
+                                  </StatusDot>
                                 ))}
                               </Group>
                             </Table.Td>
@@ -849,20 +853,23 @@ function ChecksPanel({
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
   const totalChecks = checks.length
-  // Coloured only while something needs attention; a healthy system is the plain panel.
+  // Shown only while something needs attention; a healthy system is the plain panel.
   const unresolved = checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged)
-  const edge = unresolved.some((c) => tone(c.status) === 'danger')
-    ? 'danger'
-    : unresolved.length > 0
-      ? 'warn'
-      : undefined
+  const severity = unresolved.some((c) => tone(c.status) === 'danger') ? 'danger' : 'warn'
 
   return (
-    <Panel edge={edge} className="health-area-checks" p="lg">
+    <Panel className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
-        <Title order={3} fz="var(--type-section)">
-          <Trans>System checks</Trans>
-        </Title>
+        <Group gap="sm" align="baseline" wrap="wrap">
+          <Title order={3} fz="var(--type-section)">
+            <Trans>System checks</Trans>
+          </Title>
+          {unresolved.length > 0 && (
+            <StatusDot tone={severity}>
+              <Plural value={unresolved.length} one="# needs attention" other="# need attention" />
+            </StatusDot>
+          )}
+        </Group>
         <Switch
           size="xs"
           label={t`Show passing`}
@@ -915,13 +922,129 @@ function ChecksPanel({
                 {rows.length}
               </Text>
             </Group>
-            {rows.map((check) => (
-              <CheckRow key={check.id} check={check} run={run} />
-            ))}
+            {collapseByType(rows).map((item) =>
+              Array.isArray(item) ? (
+                <CheckGroup key={checkType(item[0].id)} checks={item} run={run} />
+              ) : (
+                <CheckRow key={item.id} check={item} run={run} />
+              ),
+            )}
           </div>
         )
       })}
     </Panel>
+  )
+}
+
+/**
+ * Checks that repeat once per series or per source. Past `COLLAPSE_AT` live issues of one type they
+ * fold into a single row: eleven "monitored but has no enabled sources" rows read as eleven
+ * problems and took eleven clicks to acknowledge. The prefix is the check type; the rest of the id
+ * is the series, mapping or source it is about.
+ */
+const COLLAPSIBLE = ['legacy:series:', 'legacy:mapping:', 'legacy:source:', 'suwayomi:missing:'] as const
+const COLLAPSE_AT = 3
+
+function checkType(id: string): string | null {
+  return COLLAPSIBLE.find((prefix) => id.startsWith(prefix)) ?? null
+}
+
+/** The rows in order, with each collapsible type's live issues gathered where its first one stood. */
+function collapseByType(rows: HealthCheck[]): (HealthCheck | HealthCheck[])[] {
+  const issues = new Map<string, HealthCheck[]>()
+  for (const row of rows) {
+    const type = checkType(row.id)
+    if (type && ISSUE.includes(row.status)) issues.set(type, [...(issues.get(type) ?? []), row])
+  }
+  const out: (HealthCheck | HealthCheck[])[] = []
+  for (const row of rows) {
+    const type = checkType(row.id)
+    const group = type && ISSUE.includes(row.status) ? issues.get(type) : undefined
+    if (!group || group.length < COLLAPSE_AT) out.push(row)
+    else if (group[0] === row) out.push(group)
+  }
+  return out
+}
+
+function CheckGroup({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+  const [open, setOpen] = useState(false)
+  const count = checks.length
+  const type = checkType(checks[0].id)
+  const unsettled = checks.filter((c) => !c.acknowledged)
+  const acknowledged = count - unsettled.length
+  const worst = checks.find((c) => tone(c.status) === 'danger') ?? checks[0]
+  const latest = checks.reduce((a, b) => (a.checkedAt > b.checkedAt ? a : b)).checkedAt
+  const headline =
+    type === 'legacy:series:' ? (
+      <Plural
+        value={count}
+        one="# monitored series has no enabled sources"
+        other="# monitored series have no enabled sources"
+      />
+    ) : type === 'legacy:mapping:' ? (
+      <Plural
+        value={count}
+        one="# series is failing to refresh from its source"
+        other="# series are failing to refresh from their sources"
+      />
+    ) : type === 'legacy:source:' ? (
+      <Plural value={count} one="# source looks unstable" other="# sources look unstable" />
+    ) : (
+      <Plural value={count} one="# source is no longer installed in Suwayomi" other="# sources are no longer installed in Suwayomi" />
+    )
+
+  return (
+    <div className="health-check-group">
+      <div className="health-check" data-acknowledged={unsettled.length === 0 || undefined}>
+        <Status value={worst.status} />
+        <div style={{ minWidth: 0 }}>
+          <Text size="sm" c={unsettled.length === 0 ? 'var(--ink-3)' : 'var(--ink-2)'}>
+            {headline}
+          </Text>
+          <Text size="xs" c="var(--ink-4)" mt={2}>
+            {formatDateTime(latest)}
+            {acknowledged > 0 && (
+              <>
+                {' · '}
+                <Plural value={acknowledged} one="# acknowledged" other="# acknowledged" />
+              </>
+            )}
+          </Text>
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            mt={4}
+            px={0}
+            aria-expanded={open}
+            rightSection={<IconChevronDown size={12} style={{ transform: open ? 'rotate(180deg)' : undefined }} />}
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? <Trans>Hide the list</Trans> : <Plural value={count} one="Show # check" other="Show all # checks" />}
+          </Button>
+        </div>
+        <div className="health-check-actions">
+          <Button
+            size="xs"
+            variant="subtle"
+            onClick={() =>
+              run('/checks/acknowledge/bulk', {
+                ids: (unsettled.length > 0 ? unsettled : checks).map((c) => c.id),
+                acknowledged: unsettled.length > 0,
+              })
+            }
+          >
+            {unsettled.length > 0 ? <Trans>Acknowledge all</Trans> : <Trans>Reopen all</Trans>}
+          </Button>
+        </div>
+      </div>
+      {open && (
+        <div className="health-check-group-body">
+          {checks.map((check) => (
+            <CheckRow key={check.id} check={check} run={run} />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -944,7 +1067,7 @@ function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body
     <div className="health-check" data-acknowledged={check.acknowledged || undefined}>
       <Status value={check.status} />
       <div style={{ minWidth: 0 }}>
-        <Text size="sm" c="var(--ink-2)">
+        <Text size="sm" c={check.acknowledged ? 'var(--ink-3)' : 'var(--ink-2)'}>
           {check.message}
         </Text>
         <Text size="xs" c="var(--ink-4)" mt={2}>
@@ -1494,10 +1617,10 @@ function CompareArchives({
     <Panel p="md">
       <div className="health-compare">
         <div />
-        <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
+        <Text size="xs" fw={600} c="var(--ink-4)">
           <Trans>This archive</Trans>
         </Text>
-        <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
+        <Text size="xs" fw={600} c="var(--ink-4)">
           <Trans>Linked file</Trans>
         </Text>
         {rows.map(({ id, label, mine, theirs }) => (
@@ -1769,13 +1892,14 @@ function OptionsPanel() {
   const { t } = useLingui()
   const { data } = useHealthData<HealthOptions>('/options')
   const [draft, setDraft] = useState<HealthOptions | null>(null)
+  const [thresholdsOpen, setThresholdsOpen] = useState(false)
   const action = useHealthAction()
   const value = draft ?? data
   if (!value) return null
   const update = (patch: Partial<HealthOptions>) => setDraft({ ...value, ...patch })
 
   return (
-    <Panel edge="strong" className="health-area-options" p="lg">
+    <Panel className="health-area-options" p="lg">
       <Stack>
         <Title order={3} fz="var(--type-section)">
           <Trans>Health settings</Trans>
@@ -1786,7 +1910,7 @@ function OptionsPanel() {
           checked={value.automaticScanning}
           onChange={(e) => update({ automaticScanning: e.currentTarget.checked })}
         />
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <SimpleGrid cols={{ base: 1, sm: 2 }} style={{ alignItems: 'end' }}>
           <NumberInput
             label={t`Daily scan hour (0-23)`}
             min={0}
@@ -1807,24 +1931,33 @@ function OptionsPanel() {
             value={value.scanWorkers}
             onChange={(v) => update({ scanWorkers: Number(v) })}
           />
-          {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB', 'backupDays'] as const).map((key) => (
-            <NumberInput
-              key={key}
-              label={
-                {
-                  warningPercent: t`Low disk warning (%)`,
-                  errorPercent: t`Low disk error (%)`,
-                  warningGiB: t`Low disk warning (GiB)`,
-                  errorGiB: t`Low disk error (GiB)`,
-                  backupDays: t`Backup freshness (days)`,
-                }[key]
-              }
-              min={0}
-              value={value[key]}
-              onChange={(v) => update({ [key]: Number(v) })}
-            />
-          ))}
         </SimpleGrid>
+        <Disclosure
+          title={t`Thresholds`}
+          summary={t`Disk warning below ${value.warningPercent}% or ${value.warningGiB} GiB, error below ${value.errorPercent}% or ${value.errorGiB} GiB. Backups count as stale after ${value.backupDays} days.`}
+          opened={thresholdsOpen}
+          onToggle={() => setThresholdsOpen((o) => !o)}
+        >
+          <SimpleGrid cols={{ base: 1, sm: 2 }} style={{ alignItems: 'end' }}>
+            {(['warningPercent', 'errorPercent', 'warningGiB', 'errorGiB', 'backupDays'] as const).map((key) => (
+              <NumberInput
+                key={key}
+                label={
+                  {
+                    warningPercent: t`Low disk warning (%)`,
+                    errorPercent: t`Low disk error (%)`,
+                    warningGiB: t`Low disk warning (GiB)`,
+                    errorGiB: t`Low disk error (GiB)`,
+                    backupDays: t`Backup freshness (days)`,
+                  }[key]
+                }
+                min={0}
+                value={value[key]}
+                onChange={(v) => update({ [key]: Number(v) })}
+              />
+            ))}
+          </SimpleGrid>
+        </Disclosure>
         <Button
           disabled={!draft}
           loading={action.isPending}

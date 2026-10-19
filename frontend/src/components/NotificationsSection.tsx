@@ -612,7 +612,7 @@ export function NotificationsSection() {
             </Text>
             {EVENT_GROUPS.map((group) => (
               <Stack key={group.title.id} gap="xs">
-                <Text size="xs" fw={600} c="var(--ink-3)" tt="uppercase">
+                <Text size="xs" fw={600} c="var(--ink-3)">
                   {renderLabel(group.title)}
                 </Text>
                 {group.fields.map((f) => (

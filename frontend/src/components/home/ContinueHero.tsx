@@ -1,4 +1,4 @@
-import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { memo, useCallback, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
@@ -25,6 +25,10 @@ const STACKED_QUERY = '(max-width: 56.25em)'
  *
  * The backdrop is `HeroBackdrop`, the same recipe the series page and Discover use.
  */
+function accentStyle(item: HomeReadingItem): CSSProperties | undefined {
+  return item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined
+}
+
 export function ContinueHero({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
   const stacked = useMediaQuery(STACKED_QUERY) ?? false
   const [activeSeriesId, setActiveSeriesId] = useState<number | null>(null)
@@ -75,7 +79,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
   const pageNumber = item.page + 1
 
   return (
-    <div className="continue-hero">
+    <div className={item.coverAccent ? 'continue-hero has-accent' : 'continue-hero'} style={accentStyle(item)}>
       <HeroBackdrop coverUrl={item.coverUrl} />
 
       <div className="continue-hero-body">
@@ -289,7 +293,11 @@ const NextUpRow = memo(function NextUpRow({
   const { seriesTitle, chapterLabel, unreadChapters } = item
 
   return (
-    <div className="continue-queue-row" data-selected={selected || undefined}>
+    <div
+      className={item.coverAccent ? 'continue-queue-row has-accent' : 'continue-queue-row'}
+      style={accentStyle(item)}
+      data-selected={selected || undefined}
+    >
       <button
         type="button"
         className="continue-queue-pick"

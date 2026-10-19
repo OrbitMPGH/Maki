@@ -176,10 +176,12 @@ export const SeriesRow = memo(function SeriesRow({
                     one: '# chapter listed, none wanted, nothing will download',
                     other: '# chapters listed, none wanted, nothing will download',
                   })
-                : undefined
+                : total === 0
+                  ? t`No source has listed this series' chapters yet, so there is no total to count against.`
+                  : undefined
             }
           >
-            {have}/{total || '?'}
+            {total > 0 ? `${have}/${total}` : have > 0 ? have : t`None listed`}
           </span>
         </div>
       </div>

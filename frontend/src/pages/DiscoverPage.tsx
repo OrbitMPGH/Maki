@@ -605,7 +605,7 @@ function RecommendedTab() {
       </Group>
 
       <Collapse expanded={customizeOpen}>
-        <Panel p="md" mb="md" className="discover-recommended-customize" edge="brand" edgeSide="left">
+        <Panel p="md" mb="md" className="discover-recommended-customize">
           <Stack gap="md">
             <MultiSelect
               label={t`Seed from`}
@@ -627,6 +627,7 @@ function RecommendedTab() {
 
             <MultiSelect
                 label={t`Type`}
+                className="field-default-value"
                 placeholder={types.length ? undefined : t`Any`}
                 data={typeOptions}
                 value={types}
@@ -635,6 +636,7 @@ function RecommendedTab() {
             />
             <MultiSelect
                 label={t`Status`}
+                className="field-default-value"
                 placeholder={statuses.length ? undefined : t`Any`}
                 data={statusOptions}
                 value={statuses}
@@ -643,6 +645,7 @@ function RecommendedTab() {
             />
             <MultiSelect
                 label={t`Content rating`}
+                className="field-default-value"
                 placeholder={contentRatings.length ? undefined : t`Any`}
                 data={contentRatingOptions}
                 value={contentRatings}
@@ -1016,7 +1019,7 @@ function FeedExpandModal({
     >
       <Panel p="md" mb="md">
         <Stack gap="md">
-          <CatalogueFilters controls={catalogue.controls} />
+          <CatalogueFilters controls={catalogue.controls} collapsed />
           <CatalogueFilterActions
             isCustomized={catalogue.isCustomized || Object.keys(applied).length > 0}
             onReset={() => {

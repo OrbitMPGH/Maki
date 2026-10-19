@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Box, Button, Group, Paper } from '@mantine/core'
+import { Box, Button, Group, Paper, Tooltip } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import {
@@ -92,6 +93,7 @@ export default function HomePage() {
   const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
   const { can } = useAuth()
+  const phone = useMediaQuery('(max-width: 47.9375em)') ?? false
 
   // Opposite default to the nav's in App.tsx on purpose: there, assuming "available" while the
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
@@ -167,16 +169,25 @@ export default function HomePage() {
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
   const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
 
-  const header = (
+  const header = (center?: React.ReactNode) => (
     <PageHeader
       title={t`Home`}
       description={t`Pick up where you left off.`}
+      center={center}
       actions={
         editing ? undefined : (
           <>
-            <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
-              <Trans>Edit layout</Trans>
-            </Button>
+            <Tooltip label={t`Edit layout`} withArrow>
+              <Button
+                variant="default"
+                className="home-edit-layout"
+                aria-label={t`Edit layout`}
+                leftSection={<IconLayoutDashboard size={16} />}
+                onClick={enterEditing}
+              >
+                <Trans>Edit layout</Trans>
+              </Button>
+            </Tooltip>
             <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
               {can('AddSeries') ? <Trans>Add series</Trans> : <Trans>Request series</Trans>}
             </Button>
@@ -189,7 +200,7 @@ export default function HomePage() {
   if (editing) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        {header}
+        {header()}
         {ui && homeRails ? (
           <PageLayoutEditor
             page="home"
@@ -225,7 +236,7 @@ export default function HomePage() {
   if (!seriesLoading && seriesFailed) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        {header}
+        {header()}
         <EmptyState
           title={t`Couldn't load your library`}
           actionLabel={t`Retry`}
@@ -260,7 +271,7 @@ export default function HomePage() {
   if (uiLoading) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        {header}
+        {header()}
         <RailSkeleton title />
         <RailSkeleton title />
       </SurfaceFrame>
@@ -419,7 +430,11 @@ export default function HomePage() {
     ),
   }
 
-  const visible = layout.filter(sectionVisible)
+  const ordered = phone ? glanceAfterContinue(layout.filter(sectionVisible)) : layout.filter(sectionVisible)
+  // A glance that leads the page rides in the header row beside the title, so the first real
+  // section starts higher. Anywhere else in the user's order it stays a section of its own.
+  const glanceLeads = ordered[0]?.key === 'glance' && glanceShown.length > 0
+  const visible = glanceLeads ? ordered.slice(1) : ordered
 
   // A custom rail's key only names it; the rail itself comes from the rails list. One whose source
   // is the catalogue waits on the local database like the borrowed Discover rails above.
@@ -432,9 +447,11 @@ export default function HomePage() {
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
-      {header}
+      {header(
+        glanceLeads && <div className="home-glance">{glanceShown.map((p) => glancePanels[p.key])}</div>,
+      )}
 
-      {visible.length === 0 ? (
+      {visible.length === 0 && !glanceLeads ? (
         <EmptyState
           title={t`Every section is switched off`}
           description={t`Home has nothing to show. Turn some sections back on in the layout editor, or switch Home off entirely in Settings.`}
@@ -460,6 +477,19 @@ export default function HomePage() {
   )
 }
 
+/**
+ * On a phone the glance row fills the first screen by itself, so there it follows Continue reading
+ * instead of leading. Only the rendered order changes; the saved layout is left alone.
+ */
+function glanceAfterContinue<T extends { key: string }>(sections: T[]): T[] {
+  const glance = sections.findIndex((s) => s.key === 'glance')
+  const resume = sections.findIndex((s) => s.key === 'continue')
+  if (glance < 0 || resume < 0 || glance > resume) return sections
+  const rest = sections.filter((_, i) => i !== glance)
+  rest.splice(resume, 0, sections[glance])
+  return rest
+}
+
 /** A reading list as a hero with its Next up list beside it, or as a plain rail. */
 function ReadingSection({
   items,
@@ -476,7 +506,7 @@ function ReadingSection({
 /** One panel on the glance row: a border, a padding, and a row of figures. */
 function GlancePanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return (
-    <Paper withBorder radius="lg" p="md" className={wide ? 'home-glance-wide' : undefined}>
+    <Paper withBorder radius="lg" className={wide ? 'home-glance-panel home-glance-wide' : 'home-glance-panel'}>
       {wide ? children : <div className="home-figures">{children}</div>}
     </Paper>
   )

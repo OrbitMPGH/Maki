@@ -1,3 +1,4 @@
+using Maki.Api.Configuration;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -5,6 +6,7 @@ using Maki.Core.Recommendations;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
@@ -21,10 +23,30 @@ public class HomeControllerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
+    /// <summary>
+    /// A cover store pointed at an empty folder: these rails are about chapters, not art, so every
+    /// series resolves to "no cover, no colour" without reading a real config directory.
+    /// </summary>
+    private static CoverAccentCache Accents()
+    {
+        var previous = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
+        Environment.SetEnvironmentVariable(
+            "MAKI_CONFIG_DIR", Path.Combine(Path.GetTempPath(), "maki-tests", "home-controller-accents"));
+        try
+        {
+            var covers = new CoverService(null!, new AppPaths(), new FakeAppSettings(), NullLogger<CoverService>.Instance);
+            return new CoverAccentCache(covers, NullLogger<CoverAccentCache>.Instance);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", previous);
+        }
+    }
+
     private HomeController Controller()
     {
         var context = _db.NewContext();
-        return new HomeController(context, new ContinueReadingService(context));
+        return new HomeController(context, new ContinueReadingService(context), Accents());
     }
 
     /// <summary>Seeds a downloaded chapter (chapter + backing file) and returns its chapter id.</summary>
@@ -377,7 +399,7 @@ public class HomeControllerTests : IDisposable
     private HomeController UserController()
     {
         var context = _db.NewContext(userId: 1);
-        return new HomeController(context, new ContinueReadingService(context));
+        return new HomeController(context, new ContinueReadingService(context), Accents());
     }
 
     [Fact]
@@ -446,7 +468,7 @@ public class HomeControllerTests : IDisposable
         int userId = 1, bool allRootFolders = true, int limit = AnimeResumeService.RailLimit)
     {
         var context = _db.NewContext(userId, allRootFolders);
-        var controller = new HomeController(context, new ContinueReadingService(context))
+        var controller = new HomeController(context, new ContinueReadingService(context), Accents())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
         };

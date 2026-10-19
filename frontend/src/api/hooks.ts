@@ -204,6 +204,8 @@ export interface RecommendationItem {
   coRecommended?: boolean
   coRead?: boolean
   tasteMatch?: boolean
+  /** The reader's own title the co-read crowd paired this with. Only set alongside `coRead`. */
+  coReadWithTitle?: string | null
   /**
    * The same-work component this pick belongs to, or null when it is in no franchise, which is
    * most of the catalogue. Two nulls are unrelated, not siblings. The server already spaces a
@@ -887,6 +889,8 @@ export interface HomeReadingItem {
   pageCount: number
   lastReadAt: string
   unreadChapters: number
+  /** The colour the cover lends to the card's bar and button, `#rrggbb`; null keeps the theme accent. */
+  coverAccent: string | null
 }
 
 export interface HomeReadingResponse {

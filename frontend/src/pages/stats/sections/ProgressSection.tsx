@@ -200,13 +200,13 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
               roundCaps
               sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
               label={
-                <Text ta="center" fw={700} size="lg" className="tnum">
+                <Text ta="center" fw={700} size="lg" className="figure">
                   {level.level}
                 </Text>
               }
             />
             <Stack gap={2}>
-              <Title order={4}>
+              <Title order={3} size="h4">
                 <Trans>Level {currentLevel}</Trans>
               </Title>
               <Text size="sm" c="var(--ink-3)" className="tnum">

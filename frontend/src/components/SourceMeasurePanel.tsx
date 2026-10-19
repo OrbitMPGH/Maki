@@ -1,8 +1,9 @@
-import { Alert, Badge, Button, Group, Loader, Progress, Text, Tooltip } from '@mantine/core'
+import { Alert, Button, Group, Loader, Progress, Text, Tooltip } from '@mantine/core'
 import { IconCheck, IconRuler } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { ScoutSourceProgress, SourceOrderDto } from '../api/upgrades'
+import { StatusDot } from './ui/StatusDot'
 
 /** Why a source could not be sampled, in words. */
 function useProblemText() {
@@ -40,9 +41,9 @@ export function ScoutCell({ progress, needsFlareSolverr }: { progress: ScoutSour
   }
   return (
     <Tooltip label={problemText(progress, needsFlareSolverr)} withArrow multiline w={260}>
-      <Badge size="sm" variant="light" color={progress.state === 'skipped' ? 'var(--neutral)' : 'var(--danger)'}>
+      <StatusDot tone={progress.state === 'skipped' ? 'neutral' : 'danger'}>
         {progress.state === 'skipped' ? <Trans>Not sampled</Trans> : <Trans>Couldn't sample</Trans>}
-      </Badge>
+      </StatusDot>
     </Tooltip>
   )
 }

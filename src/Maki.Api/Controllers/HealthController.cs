@@ -171,6 +171,17 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     }
     public record CheckReview(string Id, bool Acknowledged);
 
+    /// <summary>A collapsed group of same-type checks, acknowledged or reopened in one go.</summary>
+    [HttpPost("checks/acknowledge/bulk")]
+    public async Task<IActionResult> AcknowledgeMany(CheckReviewMany request, CancellationToken ct)
+    {
+        var checks = await db.HealthChecks.Where(c => request.Ids.Contains(c.Id)).ToListAsync(ct);
+        foreach (var check in checks) check.Acknowledged = request.Acknowledged;
+        await db.SaveChangesAsync(ct);
+        return Ok(new { updated = checks.Count });
+    }
+    public record CheckReviewMany(IReadOnlyList<string> Ids, bool Acknowledged);
+
     /// <summary>The series behind a grouped source warning, and how far a refresh of them has got.</summary>
     [HttpGet("sources/{name}")]
     public async Task<IActionResult> SourceFailures(string name, CancellationToken ct)

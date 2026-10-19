@@ -37,6 +37,7 @@ import {
   IconArrowLeft,
   IconBook,
   IconChevronDown,
+  IconCircleCheck,
   IconDownload,
   IconEye,
   IconEyeCheck,
@@ -759,6 +760,7 @@ function SeriesDetailBody() {
       () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !c.fileRemovedAt && !queueByChapterId.has(c.id)).length,
       [chapters, queueByChapterId],
   )
+  const allWantedOnDisk = chapters !== undefined && missingWanted === 0
 
   // What "Delete files" will actually touch: a volume file backs several chapters, and the server
   // removes it from all of them, so the dialog has to say so before anyone confirms.
@@ -1598,13 +1600,7 @@ function SeriesDetailBody() {
                     which is what made the wanted switch double as a deferral tool and wrecked every
                     chapter count. This is the replacement: "all wanted" is the old Search missing,
                     "next N" queues in chapter-number order using the same selector Smart top-ups use. */}
-                      <Tooltip
-                          label={t`Every wanted chapter is already on disk`}
-                          withArrow
-                          disabled={!(chapters !== undefined && missingWanted === 0)}
-                      >
-                        {/* A disabled button fires no pointer events, so the tooltip hangs off a wrapper instead. */}
-                        <Box component="span" display="inline-flex">
+                      {!allWantedOnDisk && (
                         <Button.Group>
                         <Button
                             variant="default"
@@ -1612,7 +1608,6 @@ function SeriesDetailBody() {
                             radius="md"
                             leftSection={<IconDownload size={17} />}
                             loading={searchMissing.isPending || downloadNext.isPending}
-                            disabled={chapters !== undefined && missingWanted === 0}
                             onClick={requestQueueAllWanted}
                         >
                           {/* The count is the point of the label: it says what the click will actually
@@ -1631,7 +1626,7 @@ function SeriesDetailBody() {
                                 radius="md"
                                 px={10}
                                 aria-label={t`More download options`}
-                                disabled={(chapters !== undefined && missingWanted === 0) || searchMissing.isPending || downloadNext.isPending}
+                                disabled={searchMissing.isPending || downloadNext.isPending}
                             >
                               <IconChevronDown size={16} />
                             </Button>
@@ -1647,8 +1642,7 @@ function SeriesDetailBody() {
                           </Menu.Dropdown>
                         </Menu>
                         </Button.Group>
-                        </Box>
-                      </Tooltip>
+                      )}
                       <Button
                           variant="default"
                           size="md"
@@ -1796,6 +1790,15 @@ function SeriesDetailBody() {
                     }
                     onRemoveOffline={() => void removeSeriesOffline(seriesId)}
                 />
+                {/* A state, not a control: nothing here could enable a download button, so it stops posing as one. */}
+                {canDownload && allWantedOnDisk && chapters.length > 0 && (
+                    <Tooltip label={t`Every wanted chapter is already on disk`} withArrow>
+                      <Text component="span" size="sm" c="var(--ink-3)" className="series-actions-done">
+                        <IconCircleCheck size={16} />
+                        <Trans>Nothing left to download</Trans>
+                      </Text>
+                    </Tooltip>
+                )}
               </>
             }
             tabs={
@@ -1834,7 +1837,7 @@ function SeriesDetailBody() {
                 />
             )}
             <div className="series-split">
-              <Panel className="series-detail-synopsis" edge="brand">
+              <Panel className="series-detail-synopsis">
                 <Title order={2} size="h3" fz="var(--type-section)">
                   <Trans>Synopsis</Trans>
                   {series.lockedFields.includes('overview') && <>{' '}<MetadataLock /></>}
@@ -1928,7 +1931,7 @@ function SeriesDetailBody() {
               </Panel>
 
               <div className="series-split-row">
-                <Panel className="series-detail-source-panel" edge="info" edgeSide="left">
+                <Panel className="series-detail-source-panel">
                   {series.numberingClash && (
                       <Alert
                           mb="md"
@@ -1999,7 +2002,7 @@ function SeriesDetailBody() {
                     )}
                   </Text>
                 </Panel>
-                <Panel className="series-detail-metadata-panel" edge="strong" edgeSide="left">
+                <Panel className="series-detail-metadata-panel">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
                     <Title order={2} size="h3" fz="var(--type-section)">
                       <Trans>Metadata</Trans>

@@ -2,6 +2,7 @@ import { errorText } from '../api/errorText'
 import { useEffect, useState } from 'react'
 import {
   Alert,
+  Anchor,
   Badge,
   Box,
   Button,
@@ -20,7 +21,8 @@ import { IconRefresh } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../auth/AuthProvider'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
@@ -37,10 +39,14 @@ import {
   useScrobbleStatus,
   useScrobbleSyncNow,
   type ScrobbleConnection,
+  type ScrobbleSyncRow,
   type ScrobbleUnmatchedItem,
 } from '../api/hooks'
 import { formatDateTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+
+const TRACKER_SETTINGS = '/settings?tab=integrations&s=scrobbling'
+const KAVITA_SETTINGS = '/settings?tab=integrations&s=kavita'
 
 function fmtTime(iso: string | null | undefined): string {
   return iso ? formatDateTime(iso) : '-'
@@ -56,6 +62,23 @@ function dedupeKeys(keys: string[]): string[] {
   })
 }
 
+/**
+ * One entry per series, newest first, with each tracker's latest result under it. The rows are
+ * already one per series and tracker (sync state, not history), so nothing older is dropped.
+ */
+function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[]) {
+  const groups = new Map<string, { title: string; at: string; rows: ScrobbleSyncRow[] }>()
+  for (const r of rows) {
+    const group = groups.get(r.title)
+    if (!group) groups.set(r.title, { title: r.title, at: r.at, rows: [r] })
+    else if (!group.rows.some((x) => x.service === r.service)) group.rows.push(r)
+  }
+  // Trackers in the Connections order on every row, so a column of names lines up down the table.
+  const order = (service: string) => connections.findIndex((c) => c.service === service)
+  for (const group of groups.values()) group.rows.sort((a, b) => order(a.service) - order(b.service))
+  return [...groups.values()]
+}
+
 /** A tracker's display name from its connection card, falling back to the raw service key. */
 function serviceLabel(connections: ScrobbleConnection[] | undefined, service: string): string {
   return connections?.find((c) => c.service === service)?.label ?? service
@@ -64,15 +87,34 @@ function serviceLabel(connections: ScrobbleConnection[] | undefined, service: st
 function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   const authStart = useScrobbleAuthStart()
   const disconnect = useScrobbleDisconnect()
+  const { can } = useAuth()
+  const isAdmin = can('Admin')
+  const isKavita = connection.service === 'kavita'
 
   const dot = trackerConnectionVisual(connection.connected, connection.configured)
+  // Every state that is not connected says what to do next: connect, check the saved details, or
+  // set the tracker up. Setting one up is an admin job, so a reader is told who can.
   const state = connection.connected ? (
-    (connection.username ?? <Trans>connected</Trans>)
+    (connection.username ?? <Trans>Connected</Trans>)
+  ) : connection.configured && connection.oAuth ? (
+    <Trans>Not connected yet.</Trans>
   ) : connection.configured ? (
-    <Trans>configured, not connected</Trans>
+    isKavita ? (
+      <Trans>Can't reach Kavita with the saved address and API key.</Trans>
+    ) : (
+      <Trans>Can't sign in with the saved details.</Trans>
+    )
+  ) : isAdmin ? (
+    <Trans>Not set up yet.</Trans>
   ) : (
-    <Trans>not configured (see Settings)</Trans>
+    <Trans>Not set up yet. An admin can add it in Settings.</Trans>
   )
+  const settingsLink =
+    isAdmin && !connection.connected && !(connection.configured && connection.oAuth) ? (
+      <Button component={Link} to={isKavita ? KAVITA_SETTINGS : TRACKER_SETTINGS} size="compact-sm" variant="default">
+        {connection.configured ? <Trans>Check in Settings</Trans> : <Trans>Set up in Settings</Trans>}
+      </Button>
+    ) : null
 
   const connect = () => {
     authStart.mutate(connection.service, {
@@ -82,8 +124,10 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
     })
   }
 
+  // A column with the buttons pushed to the bottom, so a state that wraps to two lines in one card
+  // does not drop its button below the others in the row.
   return (
-    <Panel p="md">
+    <Panel p="md" style={{ display: 'flex', flexDirection: 'column' }}>
       <Group gap="xs">
         <Box
           w={10}
@@ -96,7 +140,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
         {state}
       </Text>
       {connection.oAuth && connection.configured && (
-        <Group mt="sm">
+        <Group mt="auto" pt="sm">
           {connection.connected ? (
             <Button
               size="compact-sm"
@@ -113,6 +157,11 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
               <Trans>Connect</Trans>
             </Button>
           )}
+        </Group>
+      )}
+      {settingsLink && (
+        <Group mt="auto" pt="sm">
+          {settingsLink}
         </Group>
       )}
     </Panel>
@@ -140,8 +189,9 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
   }
 
   return (
-    <Panel edge="warn" p="md">
+    <Panel p="md">
       <Group gap="xs">
+        <StatusDot tone="warn" aria-hidden />
         <Text fw={700}>{item.title}</Text>
         <TagChip size="sm">{serviceLabel(data?.connections, item.service)}</TagChip>
       </Group>
@@ -223,14 +273,19 @@ export default function ScrobblePage() {
       title={t`Scrobble`}
       description={
         <Trans>
-          Reads reading progress from Kavita and pushes forward-only updates to your trackers every{' '}
-          <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Remote progress is never
-          lowered and completed entries are never demoted. Configure credentials in Settings.
+          Every <Plural value={intervalMinutes} one="# minute" other="# minutes" />, sends what you have
+          read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is
+          connected. Remote progress is never lowered and completed entries are never demoted. Trackers are
+          set up in{' '}
+          <Anchor component={Link} to={TRACKER_SETTINGS}>
+            Settings
+          </Anchor>
+          .
         </Trans>
       }
       actions={
         <Group gap="sm">
-          <Text size="xs" c="var(--ink-3)" ta="right" className="tnum">
+          <Text size="xs" c="var(--ink-3)" ta={{ base: 'left', sm: 'right' }} className="tnum">
             {data?.running ? (
               <Trans>
                 sync running… · last {lastSync} · next {nextSync}
@@ -241,18 +296,24 @@ export default function ScrobblePage() {
               </Trans>
             )}
           </Text>
-          <Button
-            leftSection={<IconRefresh size={16} />}
-            loading={syncNow.isPending || data?.running}
-            disabled={!anyTrackerConnected}
-            onClick={() =>
-              syncNow.mutate(undefined, {
-                onSuccess: (r) => notifications.show({ message: r.message }),
-              })
-            }
-          >
-            <Trans>Sync now</Trans>
-          </Button>
+          {/* data-disabled rather than disabled: a disabled button gets no hover or focus, so the
+              tooltip saying why could never show. */}
+          <Tooltip label={t`Connect a tracker first`} disabled={anyTrackerConnected}>
+            <Button
+              leftSection={<IconRefresh size={16} />}
+              loading={syncNow.isPending || data?.running}
+              data-disabled={!anyTrackerConnected || undefined}
+              aria-disabled={!anyTrackerConnected}
+              onClick={() => {
+                if (!anyTrackerConnected) return
+                syncNow.mutate(undefined, {
+                  onSuccess: (r) => notifications.show({ message: r.message }),
+                })
+              }}
+            >
+              <Trans>Sync now</Trans>
+            </Button>
+          </Tooltip>
         </Group>
       }
     />
@@ -320,7 +381,7 @@ export default function ScrobblePage() {
       </Title>
       {!data ? (
         <Box mb="lg">
-          <TableSkeleton columns={5} rows={4} />
+          <TableSkeleton columns={3} rows={4} />
         </Box>
       ) : data.recent.length > 0 ? (
         <Panel p={0} className="table-panel" mb="lg">
@@ -331,14 +392,8 @@ export default function ScrobblePage() {
                   <Table.Th>
                     <Trans>Series</Trans>
                   </Table.Th>
-                  <Table.Th data-priority="low">
-                    <Trans>Service</Trans>
-                  </Table.Th>
                   <Table.Th>
-                    <Trans>Progress</Trans>
-                  </Table.Th>
-                  <Table.Th>
-                    <Trans>Status</Trans>
+                    <Trans>Trackers</Trans>
                   </Table.Th>
                   <Table.Th data-priority="low">
                     <Trans>When</Trans>
@@ -346,48 +401,54 @@ export default function ScrobblePage() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {dedupeKeys(data.recent.map((r) => `${r.at}-${r.service}-${r.title}`)).map((key, i) => {
-                  const r = data.recent[i]
-                  const { title, service, error, chapter, volume, status, at } = r
-                  return (
-                    <Table.Tr key={key}>
-                      <Table.Td>{title || '#'}</Table.Td>
-                      <Table.Td data-priority="low">{serviceLabel(data.connections, service)}</Table.Td>
-                      <Table.Td>
-                        {error ? (
-                          <Tooltip label={error} multiline maw={400}>
-                            <Text size="sm" c="var(--danger)" lineClamp={1} className="scrobble-error-text">
-                              {error}
-                            </Text>
-                          </Tooltip>
-                        ) : volume ? (
-                          <Trans>
-                            ch. {chapter} · vol. {volume}
-                          </Trans>
-                        ) : (
-                          <Trans>ch. {chapter}</Trans>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        {status ? (
-                          (() => {
-                            const visual = trackerStatusVisual(status)
-                            return (
-                              <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
-                            )
-                          })()
-                        ) : (
-                          '-'
-                        )}
-                      </Table.Td>
-                      <Table.Td data-priority="low">
-                        <Text size="sm" c="var(--ink-3)">
-                          {fmtTime(at)}
-                        </Text>
-                      </Table.Td>
-                    </Table.Tr>
-                  )
-                })}
+                {groupBySeries(data.recent, data.connections).map((group) => (
+                  <Table.Tr key={group.title}>
+                    <Table.Td className="scrobble-recent-series">{group.title || '#'}</Table.Td>
+                    <Table.Td>
+                      <ul className="scrobble-trackers">
+                        {group.rows.map((r) => (
+                          <li key={r.service} className="scrobble-tracker" data-failed={r.error ? true : undefined}>
+                            <span className="scrobble-tracker-name">{serviceLabel(data.connections, r.service)}</span>
+                            {r.error ? (
+                              // The tracker's own words: English and technical, so they follow the
+                              // plain statement rather than replace it.
+                              <span className="scrobble-tracker-error">
+                                <Text span size="sm" fw={600} c="var(--danger)">
+                                  <Trans>Not updated</Trans>
+                                </Text>
+                                <Text span size="sm" c="var(--ink-3)" className="scrobble-tracker-reason">
+                                  {r.error}
+                                </Text>
+                              </span>
+                            ) : (
+                              <>
+                                <Text span size="sm" className="tnum">
+                                  {r.volume ? (
+                                    <Trans>
+                                      ch. {r.chapter} · vol. {r.volume}
+                                    </Trans>
+                                  ) : (
+                                    <Trans>ch. {r.chapter}</Trans>
+                                  )}
+                                </Text>
+                                {r.status &&
+                                  (() => {
+                                    const visual = trackerStatusVisual(r.status)
+                                    return <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
+                                  })()}
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </Table.Td>
+                    <Table.Td data-priority="low">
+                      <Text size="sm" c="var(--ink-3)">
+                        {fmtTime(group.at)}
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>

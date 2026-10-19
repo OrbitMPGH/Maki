@@ -123,6 +123,9 @@ export function SeriesHero({
     // nothing about what goes in the slot. The defaults on the gap are never rendered, since every
     // use of them sits behind `sourceGap &&`; they are here to keep the destructure typed as numbers.
     const { have: haveCount, total: totalCount } = progress
+    // The total is the wanted chapters, so a series with unwanted ones read 100% here while the
+    // Chapters tab counted everything listed. Named, and the rest counted, so the two agree.
+    const notWanted = progress.nothingWanted ? 0 : Math.max(0, series.knownChapterCount - totalCount)
     const readCount = series.readChapterCount ?? 0
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
 
@@ -286,17 +289,15 @@ export function SeriesHero({
                             <Group gap="xs" mt="lg" wrap="wrap">
                                 {actions}
                             </Group>
-
-                            <Box mt="xl">{tabs}</Box>
                         </Stack>
                     </Group>
-                    <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
+                    <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
                         <Title order={2} size="h3" fz="var(--type-section)">
                             <Trans>Progress</Trans>
                         </Title>
 
                         {readTracking && series.readChapterCount != null && progress.have > 0 && (
-                            <Box mt="md">
+                            <Box mt="md" className="series-progress-meter">
                                 <Group gap={9} c="var(--ink-3)">
                                     <IconBook size={17} />
                                     <Text size="sm" fw={600} c="var(--ink)">
@@ -309,8 +310,8 @@ export function SeriesHero({
                                     color="brand"
                                     radius="xl"
                                 />
-                                <Group justify="space-between" mt={9}>
-                                    <Text size="sm" c="var(--ink-2)" className="tnum">
+                                <Group justify="space-between" align="flex-start" wrap="nowrap" mt={9}>
+                                    <Text size="sm" c="var(--ink-2)" className="tnum" style={{ flex: 1, minWidth: 0 }}>
                                         <Trans>
                                             {readCount} /{' '}
                                             <Plural value={haveCount} one="# chapter" other="# chapters" />
@@ -324,7 +325,7 @@ export function SeriesHero({
                             </Box>
                         )}
 
-                        <Box mt="md">
+                        <Box mt="md" className="series-progress-meter">
                             <Group gap={9} c="var(--ink-3)">
                                 <IconDownload size={17} />
                                 <Text size="sm" fw={600} c="var(--ink)">
@@ -338,16 +339,23 @@ export function SeriesHero({
                                 color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--brand)'}
                                 radius="xl"
                             />
-                            <Group justify="space-between" mt={9}>
-                                <Text size="sm" c="var(--ink-2)" className="tnum">
+                            <Group justify="space-between" align="flex-start" wrap="nowrap" mt={9}>
+                                <Text size="sm" c="var(--ink-2)" className="tnum" style={{ flex: 1, minWidth: 0 }}>
                                     {/* Two whole messages rather than one with a clause appended: a
                                         fragment glued onto a translated sentence lands in the wrong place
                                         in any language that does not order it the way English does. */}
-                                    {progress.nothingWanted ? (
+                                    {series.knownChapterCount === 0 ? (
+                                        <Trans>No chapters listed</Trans>
+                                    ) : progress.nothingWanted ? (
                                         <Trans>
                                             {haveCount} /{' '}
                                             <Plural value={totalCount} one="# chapter" other="# chapters" />{' '}
                                             listed, none wanted
+                                        </Trans>
+                                    ) : notWanted > 0 ? (
+                                        <Trans>
+                                            {haveCount} /{' '}
+                                            <Plural value={totalCount} one="# wanted chapter" other="# wanted chapters" />
                                         </Trans>
                                     ) : (
                                         <Trans>
@@ -356,9 +364,11 @@ export function SeriesHero({
                                         </Trans>
                                     )}
                                 </Text>
-                                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                    {Math.round(progress.pct)}%
-                                </Text>
+                                {series.knownChapterCount > 0 && (
+                                    <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
+                                        {Math.round(progress.pct)}%
+                                    </Text>
+                                )}
                             </Group>
                             {missingWanted > 0 && (
                                 <Text size="xs" c="var(--ink-4)" mt={7} className="tnum">
@@ -366,6 +376,15 @@ export function SeriesHero({
                                         value={missingWanted}
                                         one="# wanted, not fetched"
                                         other="# wanted, not fetched"
+                                    />
+                                </Text>
+                            )}
+                            {notWanted > 0 && (
+                                <Text size="xs" c="var(--ink-4)" mt={missingWanted > 0 ? 2 : 7} className="tnum">
+                                    <Plural
+                                        value={notWanted}
+                                        one="# more listed, not wanted"
+                                        other="# more listed, not wanted"
                                     />
                                 </Text>
                             )}
@@ -415,6 +434,9 @@ export function SeriesHero({
                             </Alert>
                         )}
                     </Paper>
+                    {/* After the panel, not inside the title column: once the panel stacks, the tabs
+                        have to sit on the content they switch, not above the panel. */}
+                    <Box className="series-hero-tabs">{tabs}</Box>
                 </Group>
             </div>
         </Box>
@@ -446,14 +468,9 @@ export function SeriesHeroSkeleton() {
                                 <Skeleton h={42} w={196} radius="md" />
                                 <Skeleton h={42} w={132} radius="md" />
                             </Group>
-                            <Group gap={28} mt="xl" pb={12}>
-                                {[72, 86, 64, 58, 70].map((w) => (
-                                    <Skeleton key={w} h={12} w={w} />
-                                ))}
-                            </Group>
                         </Stack>
                     </Group>
-                    <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
+                    <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
                         <Skeleton h={16} w={80} />
                         <Skeleton h={12} w="46%" mt="lg" />
                         <Skeleton h={8} radius="xl" mt={14} />
@@ -462,6 +479,11 @@ export function SeriesHeroSkeleton() {
                         <Skeleton h={8} radius="xl" mt={14} />
                         <Skeleton h={12} w="30%" mt={12} />
                     </Paper>
+                    <Group gap={28} className="series-hero-tabs" pb={12}>
+                        {[72, 86, 64, 58, 70].map((w) => (
+                            <Skeleton key={w} h={12} w={w} />
+                        ))}
+                    </Group>
                 </Group>
             </div>
         </Box>

@@ -21,7 +21,7 @@ import { useCompleteSetup } from '../api/hooks'
 import { useReaderUsed } from '../api/reader'
 import { UnsavedSettingsContext } from '../components/settings/SaveButton'
 import { useLeaveGuard, type LeaveTarget } from '../lib/useLeaveGuard'
-import { SettingsIndex } from '../components/settings/SettingsIndex'
+import { SettingsIndex, SettingsJump } from '../components/settings/SettingsIndex'
 import { NotificationsSection } from '../components/NotificationsSection'
 import {
   AppearanceSection,
@@ -165,6 +165,15 @@ export default function SettingsPage() {
     return tabs.some((x) => x.key === want) ? want! : (tabs[0]?.key ?? 'account')
   }
   const tabEntries = useMemo(() => visible.filter((e) => e.tab === activeTab), [visible, activeTab])
+  // The tab rail scrolls sideways on a phone; the open tab is brought into view, not left off the edge.
+  const tabListRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const list = tabListRef.current
+    const tab = list?.querySelector<HTMLElement>('[data-active]')
+    if (!list || !tab || list.scrollWidth <= list.clientWidth) return
+    const offset = tab.getBoundingClientRect().left - list.getBoundingClientRect().left
+    list.scrollTo({ left: list.scrollLeft + offset - (list.clientWidth - tab.offsetWidth) / 2, behavior: scrollBehavior() })
+  }, [activeTab])
 
   // Panels unmount on a tab change (`keepMounted={false}`), which used to drop half-typed edits
   // without a word. Cards report through SettingsSection; a switch away from unsaved edits asks first.
@@ -261,7 +270,7 @@ export default function SettingsPage() {
         }}
         keepMounted={false}
       >
-        <Tabs.List>
+        <Tabs.List ref={tabListRef}>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab.key} value={tab.key}>
               {renderLabel(tab.label)}
@@ -273,12 +282,13 @@ export default function SettingsPage() {
           {tabs.map((tab) => (
             <Tabs.Panel key={tab.key} value={tab.key}>
               <div className="settings-layout">
+                <SettingsJump entries={tabEntries} />
                 <Stack className="settings-content" gap="xl">
                   <Text size="sm" c="var(--ink-3)">
                     {renderLabel(tab.description)}
                   </Text>
                   {tabEntries.map((entry) => (
-                    <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
+                    <div key={entry.id} id={`setting-${entry.id}`} className="settings-entry">
                       {sectionNodes[entry.id]}
                     </div>
                   ))}

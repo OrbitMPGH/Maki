@@ -126,6 +126,22 @@ public class CoReadGraphTests : IDisposable
     }
 
     [Fact]
+    public async Task StrongestSeedIsTheLargestWeightedContribution()
+    {
+        // Seed 1 has the stronger edge to 5, but seed 2 carries four times the weight, so seed 2 is
+        // the title the card should name.
+        var graph = await Load((1, 5, 0.6f), (2, 5, 0.3f), (1, 4, 0.4f));
+        var strongest = new Dictionary<long, long>();
+
+        CoReadScorer.Score(
+            graph!, [1L, 2L], new Dictionary<long, double> { [1] = 0.5, [2] = 2.0 },
+            CoReadTuning.Default, strongest);
+
+        Assert.Equal(2L, strongest[5]);
+        Assert.Equal(1L, strongest[4]);
+    }
+
+    [Fact]
     public async Task DegreeDoesNotPenalize_BecauseTheStrengthAlreadyDividedByPopularity()
     {
         // This is the whole reason CoReadScorer exists rather than reusing RecoGraphScorer. The hub

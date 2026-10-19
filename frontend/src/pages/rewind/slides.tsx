@@ -50,7 +50,7 @@ function BigNumber({ value, suffix }: { value: number; suffix: ReactNode }) {
 }
 
 const eyebrow = (text: ReactNode) => (
-  <Text className="rewind-eyebrow" tt="uppercase">
+  <Text className="rewind-eyebrow">
     {text}
   </Text>
 )

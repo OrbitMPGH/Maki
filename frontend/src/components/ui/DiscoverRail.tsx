@@ -51,6 +51,14 @@ export function relationPhrase(kind: string, relatedTo: string): string {
   }
 }
 
+/** The co-read reason, naming the reader's own title the crowd finished alongside this one when known. */
+export function coReadPhrase(item: RecommendationItem): string {
+  const finished = item.coReadWithTitle
+  return finished
+    ? now`Readers who finished ${finished} also finished this`
+    : now`Readers like you also finished this`
+}
+
 function reasonFor(item: RecommendationItem): string {
   if (item.relationKind) {
     return relationPhrase(item.relationKind, item.relatedToTitle ?? '')
@@ -298,7 +306,7 @@ function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
   }
   // The crowd signals come after the item-specific ones on purpose: on the cohort rail every pick
   // has `coRead`, and a card repeating its own heading twenty times says nothing.
-  if (item.coRead) return { Glyph: IconUsers, text: now`Readers like you also finished this` }
+  if (item.coRead) return { Glyph: IconUsers, text: coReadPhrase(item) }
   if (item.coRecommended) return { Glyph: IconUsers, text: now`Readers like you also recommended this` }
   if (item.tasteMatch) return { Glyph: IconHeartFilled, text: now`Close to your taste` }
   return { Glyph: IconSparkles, text: now`Similar feel` }

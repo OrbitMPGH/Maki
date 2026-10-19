@@ -15,6 +15,8 @@ namespace Maki.Api.Controllers;
 /// <param name="PageCount">Slice length snapshotted on the progress row. 0 on Kavita-imported rows,
 /// which is what the UI keys off to hide the resume bar.</param>
 /// <param name="UnreadChapters">Downloaded chapters in this series still unread.</param>
+/// <param name="CoverAccent">The colour the cover lends to the card's bar and button, as
+/// <c>#rrggbb</c>; null when the art has none to lend, and the card keeps the theme accent.</param>
 public record HomeReadingItem(
     int SeriesId,
     string SeriesTitle,
@@ -24,7 +26,8 @@ public record HomeReadingItem(
     int Page,
     int PageCount,
     DateTime LastReadAt,
-    int UnreadChapters);
+    int UnreadChapters,
+    string? CoverAccent);
 
 public record HomeReadingResponse(
     IReadOnlyList<HomeReadingItem> ContinueReading,
@@ -56,7 +59,8 @@ public record HomeRecentSeriesItem(
 /// </summary>
 [ApiController]
 [Route("api/v1/home")]
-public class HomeController(MakiDbContext db, ContinueReadingService continueReading) : ControllerBase
+public class HomeController(MakiDbContext db, ContinueReadingService continueReading, CoverAccentCache accents)
+    : ControllerBase
 {
     /// <summary>
     /// How many of the newest chapter files to group for the recently-added rail. An index-ordered
@@ -189,7 +193,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                 row.PageIndex,
                 row.PageCount,
                 row.UpdatedAt,
-                next.GetValueOrDefault(entry.SeriesId)?.UnreadChapters ?? 0));
+                next.GetValueOrDefault(entry.SeriesId)?.UnreadChapters ?? 0,
+                accents.AccentFor(series.Id)));
         }
 
         // Resolved a chunk at a time, in the same newest-first order, so the chapter lists of the
@@ -215,7 +220,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                     0,
                     0,
                     entry.Last,
-                    upNext.UnreadChapters));
+                    upNext.UnreadChapters,
+                    accents.AccentFor(series.Id)));
 
                 if (jumpRail.Count == limit)
                 {

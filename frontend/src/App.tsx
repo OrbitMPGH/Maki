@@ -169,6 +169,7 @@ function HealthButton() {
           label={health.length}
           withBorder
           className="count-indicator"
+          data-tone={hasError ? 'danger' : 'warn'}
         >
           <ActionIcon
             variant="subtle"
@@ -390,6 +391,17 @@ function AppShellRoutes() {
       navbar={{ width: 232, breakpoint: 'sm', collapsed: { mobile: !opened } }}
       padding="lg"
     >
+      {/* Focuses rather than following the hash, which the router would keep in the URL. */}
+      <a
+        href="#main"
+        className="skip-link"
+        onClick={(e) => {
+          e.preventDefault()
+          document.getElementById('main')?.focus()
+        }}
+      >
+        <Trans>Skip to content</Trans>
+      </a>
       <AppShell.Header className="app-header">
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
@@ -408,7 +420,7 @@ function AppShellRoutes() {
             </Group>
             <ShellTitle />
           </Group>
-          <Group gap={4} wrap="nowrap">
+          <Group gap={4} wrap="nowrap" className="app-header-actions">
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <NotificationBell />
@@ -456,6 +468,8 @@ function AppShellRoutes() {
             ? 'app-main-hero'
             : undefined
         }
+        id="main"
+        tabIndex={-1}
       >
         <OfflineBanner />
         {/* One boundary around the whole switch rather than one per lazy route: only a single

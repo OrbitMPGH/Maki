@@ -4,10 +4,13 @@ import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
+  Divider,
   Drawer,
   Group,
   Indicator,
+  Menu,
   Modal,
   MultiSelect,
   NumberInput,
@@ -24,6 +27,8 @@ import {
 } from '@mantine/core'
 import {
   IconBookmark,
+  IconCheck,
+  IconChevronDown,
   IconDeviceFloppy,
   IconDeviceMobileCheck,
   IconEye,
@@ -32,18 +37,15 @@ import {
   IconFilter,
   IconFolderDown,
   IconFolderSymlink,
-  IconLayoutGrid,
-  IconLayoutList,
-  IconLineHeight,
   IconListCheck,
   IconPhoto,
   IconPlus,
   IconRefresh,
   IconSearch,
+  IconSettings,
   IconSortAscending,
   IconSortDescending,
   IconBell,
-  IconSettings,
   IconTag,
   IconTrash,
   IconWand,
@@ -90,6 +92,7 @@ import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
+import { Disclosure } from '../components/ui/Disclosure'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { FigureStrip } from '../components/ui/FigureStrip'
@@ -100,7 +103,14 @@ import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
-import { POSTER_COLS_BY_DENSITY, readStored, useDensityOptions, writeStored } from '../components/ui/viewPrefs'
+import {
+  DensityMenuItems,
+  POSTER_COLS_BY_DENSITY,
+  readStored,
+  ToolbarMenuButton,
+  ViewModeToggle,
+  writeStored,
+} from '../components/ui/viewPrefs'
 import { seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
 import { useOfflineSeriesIds } from '../pwa/offlineChapters'
@@ -270,6 +280,9 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   communityRatingMax: 10,
 }
 
+/** The filter drawer's groups, in the order they appear. */
+type FilterGroup = 'series' | 'tags' | 'ratings' | 'monitoring'
+
 /** Quality profile filter value for series with no pin of their own. */
 const DEFAULT_PROFILE_FILTER = 'default'
 
@@ -343,7 +356,6 @@ export default function LibraryPage() {
   const { i18n, _ } = useLingui()
   const { t } = useLinguiMacro()
   const notificationOptions = useSeriesNotificationOptions()
-  const densityOptions = useDensityOptions()
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error, refetch: refetchSeries, isRefetching: isRefetchingSeries } = useSeries()
@@ -416,6 +428,7 @@ export default function LibraryPage() {
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
   const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
+  const [openGroups, setOpenGroups] = usePageState<FilterGroup[]>(`${MEM}:filter-groups`, ['series'])
   // Local to this device, so it is not part of a saved filter.
   const [onDeviceOnly, setOnDeviceOnly] = usePageState(`${MEM}:on-device`, false)
   const offlineSeries = useOfflineSeriesIds()
@@ -690,27 +703,98 @@ export default function LibraryPage() {
     setActiveFilterId(id)
   }
 
-  /** Everything except the search box: what the "Filters" button badges. */
-  const activeFilterCount =
-    (statusFilter !== 'all' ? 1 : 0) +
-    (typeFilter.length > 0 ? 1 : 0) +
-    (!untaggedOnly && tagFilter.length > 0 ? 1 : 0) +
-    (genreFilter.length > 0 ? 1 : 0) +
-    (!untaggedOnly && excludeTagFilter.length > 0 ? 1 : 0) +
-    (excludeGenreFilter.length > 0 ? 1 : 0) +
-    (untaggedOnly ? 1 : 0) +
-    (metaTagFilter.length > 0 ? 1 : 0) +
-    (monitoredFilter !== 'all' ? 1 : 0) +
-    (completeness !== 'all' ? 1 : 0) +
-    (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0) +
-    (chapterMin != null || chapterMax != null ? 1 : 0) +
-    (contentRatingFilter.length > 0 ? 1 : 0) +
-    (ratingState !== 'all' ? 1 : 0) +
-    (communityRange[0] > 0 || communityRange[1] < 10 ? 1 : 0) +
-    (sourceFilter.length > 0 ? 1 : 0) +
-    (sourceState !== 'all' ? 1 : 0) +
-    (fileSourceFilter.length > 0 ? 1 : 0) +
-    (qualityProfileFilter !== 'all' ? 1 : 0)
+  /** Active filters per drawer group. Their sum, without the search box, is what "Filters" badges. */
+  const groupCounts: Record<FilterGroup, number> = {
+    series:
+      (statusFilter !== 'all' ? 1 : 0) +
+      (typeFilter.length > 0 ? 1 : 0) +
+      (contentRatingFilter.length > 0 ? 1 : 0) +
+      (chapterMin != null || chapterMax != null ? 1 : 0),
+    tags:
+      (!untaggedOnly && tagFilter.length > 0 ? 1 : 0) +
+      (!untaggedOnly && excludeTagFilter.length > 0 ? 1 : 0) +
+      (untaggedOnly ? 1 : 0) +
+      (genreFilter.length > 0 ? 1 : 0) +
+      (excludeGenreFilter.length > 0 ? 1 : 0) +
+      (metaTagFilter.length > 0 ? 1 : 0),
+    ratings:
+      (ratingState !== 'all' ? 1 : 0) +
+      (communityRange[0] > 0 || communityRange[1] < 10 ? 1 : 0) +
+      (readRange[0] > 0 || readRange[1] < 100 ? 1 : 0),
+    monitoring:
+      (monitoredFilter !== 'all' ? 1 : 0) +
+      (completeness !== 'all' ? 1 : 0) +
+      (qualityProfileFilter !== 'all' ? 1 : 0) +
+      (sourceState !== 'all' ? 1 : 0) +
+      (sourceFilter.length > 0 ? 1 : 0) +
+      (fileSourceFilter.length > 0 ? 1 : 0),
+  }
+  const activeFilterCount = Object.values(groupCounts).reduce((a, b) => a + b, 0)
+  const toggleGroup = (group: FilterGroup) =>
+    setOpenGroups((open) => (open.includes(group) ? open.filter((g) => g !== group) : [...open, group]))
+  /** What a closed group is doing: its active values, or failing that, what it holds. */
+  const groupSummary = (group: FilterGroup): ReactNode => {
+    const label = (options: { value: string; label: string }[], values: string[]) =>
+      values.map((v) => options.find((o) => o.value === v)?.label ?? v).join(', ')
+    const tagNames = (ids: string[]) => ids.map((id) => tags?.find((tag) => String(tag.id) === id)?.label ?? id).join(', ')
+    const range = (lo: number, hi: number) => `${formatNumber(lo)}–${formatNumber(hi)}`
+    const parts: string[] = []
+    if (group === 'series') {
+      if (statusFilter !== 'all') parts.push(renderLabel(seriesStatusVisual(statusFilter).label))
+      if (typeFilter.length > 0) parts.push(label(typeOptions, typeFilter))
+      if (contentRatingFilter.length > 0) parts.push(label(contentRatingOptions, contentRatingFilter))
+      const chapters = range(chapterMin ?? 0, chapterMax ?? 0)
+      if (chapterMin != null && chapterMax != null) parts.push(t`${chapters} chapters`)
+      else if (chapterMin != null) parts.push(t`At least ${chapterMin} chapters`)
+      else if (chapterMax != null) parts.push(t`At most ${chapterMax} chapters`)
+    } else if (group === 'tags') {
+      if (untaggedOnly) parts.push(t`Untagged only`)
+      else {
+        if (tagFilter.length > 0) parts.push(tagNames(tagFilter))
+        const excluded = tagNames(excludeTagFilter)
+        if (excludeTagFilter.length > 0) parts.push(t`Not ${excluded}`)
+      }
+      if (genreFilter.length > 0) parts.push(genreFilter.join(', '))
+      const excluded = excludeGenreFilter.join(', ')
+      if (excludeGenreFilter.length > 0) parts.push(t`Not ${excluded}`)
+      if (metaTagFilter.length > 0) parts.push(metaTagFilter.join(', '))
+    } else if (group === 'ratings') {
+      const rated = range(ratingRange[0], ratingRange[1])
+      const score = range(communityRange[0], communityRange[1])
+      const read = range(readRange[0], readRange[1])
+      if (ratingState === 'rated') parts.push(t`Rated ${rated}`)
+      else if (ratingState !== 'all') parts.push(label(ratingStateOptions, [ratingState]))
+      if (communityRange[0] > 0 || communityRange[1] < 10) parts.push(t`Score ${score}`)
+      if (readRange[0] > 0 || readRange[1] < 100) parts.push(t`${read}% read`)
+    } else {
+      if (monitoredFilter !== 'all') parts.push(monitoredFilter === 'monitored' ? t`Monitored` : t`Unmonitored`)
+      if (completeness !== 'all') parts.push(completeness === 'behind' ? t`Behind (missing chapters)` : t`Complete`)
+      if (qualityProfileFilter !== 'all')
+        parts.push(
+          qualityProfileFilter === DEFAULT_PROFILE_FILTER
+            ? t`Instance default`
+            : (upgradeProfiles?.find((p) => String(p.id) === qualityProfileFilter)?.name ?? qualityProfileFilter),
+        )
+      if (sourceState !== 'all') parts.push(label(sourceStateOptions, [sourceState]))
+      if (sourceFilter.length > 0) parts.push(label(sourceOptions, sourceFilter))
+      const origins = label(fileSourceOptions, fileSourceFilter)
+      if (fileSourceFilter.length > 0) parts.push(t`From ${origins}`)
+    }
+    if (parts.length > 0) return <span className="disclosure-summary-active">{parts.join(' · ')}</span>
+    return {
+      series: t`Status, type, content rating, chapters`,
+      tags: t`Your tags, genres, provider tags`,
+      ratings: t`Your rating, score, how much you've read`,
+      monitoring: t`Monitoring, quality profile, completeness, sources`,
+    }[group]
+  }
+  const groupProps = (group: FilterGroup) => ({
+    opened: openGroups.includes(group),
+    onToggle: () => toggleGroup(group),
+    count: groupCounts[group],
+    countLabel: plural(groupCounts[group], { one: '# filter active', other: '# filters active' }),
+    summary: groupSummary(group),
+  })
 
   const specActive = query.trim() !== '' || activeFilterCount > 0
   const filtersActive = specActive || onDevice
@@ -874,6 +958,7 @@ export default function LibraryPage() {
       data={data}
       value={value}
       onChange={onChange}
+      className="field-default-value"
       placeholder={value.length === 0 ? t`None` : undefined}
       disabled={disabled || data.length === 0}
       searchable
@@ -921,6 +1006,7 @@ export default function LibraryPage() {
         data={data}
         value={value}
         onChange={onChange}
+        className="field-default-value"
         placeholder={value.length === 0 ? (data.length > 0 ? t`Any` : t`None available`) : undefined}
         disabled={disabled || data.length === 0}
         searchable
@@ -935,19 +1021,85 @@ export default function LibraryPage() {
 
   // `key` is compared against `busy` (see runBulk) and must stay an untranslated identifier;
   // `label` is what actually renders, so it's the only part that gets translated.
-  const bulkBtn = (key: string, label: ReactNode, icon: ReactNode, run: () => void, color?: string) => (
-    <Button
-      size="xs"
-      variant="light"
-      color={color}
-      leftSection={icon}
-      disabled={selected.size === 0 || (busy !== null && busy !== key)}
-      loading={busy === key}
-      onClick={run}
-    >
-      {label}
-    </Button>
-  )
+  // In priority order: the first four the user may run are buttons, the rest sit under More.
+  // Remove is not in here; it stays a button of its own, apart from the rest.
+  const bulkActions: { key: string; label: ReactNode; icon: ReactNode; run: () => void }[] = [
+    can('DownloadChapters') && {
+      key: 'Search missing',
+      label: <Trans>Search missing</Trans>,
+      icon: <IconSearch size={15} />,
+      run: () => runBulk('Search missing', (id) => api(`/series/${id}/searchmissing`, { method: 'POST' })),
+    },
+    can('EditMetadata') && {
+      key: 'Monitoring',
+      label: <Trans>Monitoring</Trans>,
+      icon: <IconEye size={15} />,
+      run: () => setMonitorModalOpen(true),
+    },
+    can('ManageTags') && {
+      key: 'Tags',
+      label: <Trans>Tags</Trans>,
+      icon: <IconTag size={15} />,
+      run: () => {
+        setTagsToAdd([])
+        setTagsToRemove([])
+        setTagModalOpen(true)
+      },
+    },
+    can('EditMetadata') && {
+      key: 'Refresh',
+      label: <Trans>Refresh</Trans>,
+      icon: <IconRefresh size={15} />,
+      run: () => runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
+    },
+    can('EditMetadata') && {
+      key: 'Metadata',
+      label: <Trans>Metadata</Trans>,
+      icon: <IconPhoto size={15} />,
+      run: () => runBulk('Metadata', (id) => api(`/series/${id}/refreshmetadata`, { method: 'POST' })),
+    },
+    can('ManageSources') && {
+      key: 'Auto-match',
+      label: <Trans>Auto-match</Trans>,
+      icon: <IconWand size={15} />,
+      run: () => setAutoMatchModalOpen(true),
+    },
+    can('EditMetadata') && {
+      key: 'Quality profile',
+      label: <Trans>Quality profile</Trans>,
+      icon: <IconStars size={15} />,
+      run: () => {
+        setBulkProfile(DEFAULT_PROFILE_FILTER)
+        setProfileModalOpen(true)
+      },
+    },
+    {
+      key: 'Notifications',
+      label: <Trans>Notifications</Trans>,
+      icon: <IconBell size={15} />,
+      run: () => setNotifyModalOpen(true),
+    },
+    // "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5).
+    can('EditMetadata') && {
+      key: 'ComicInfo',
+      label: 'ComicInfo',
+      icon: <IconFileText size={15} />,
+      run: () => runBulk('ComicInfo', (id) => api(`/series/${id}/updatecomicinfo`, { method: 'POST' })),
+    },
+    can('EditMetadata') && {
+      key: 'Move',
+      label: <Trans>Move</Trans>,
+      icon: <IconFolderSymlink size={15} />,
+      run: () => {
+        setMoveTarget(null)
+        setMoveFiles(true)
+        setMoveModalOpen(true)
+      },
+    },
+  ].filter((a) => a !== false)
+  const primaryActions = bulkActions.slice(0, 4)
+  const moreActions = bulkActions.slice(4)
+  const bulkDisabled = (key: string) => selected.size === 0 || (busy !== null && busy !== key)
 
   // A series that drops out of `visible` (filter change, bulk tag removal, ...) must drop out of
   // `selected` too, or a later bulk action (Delete, optionally with files) still hits it even
@@ -997,69 +1149,20 @@ export default function LibraryPage() {
     return () => observer.disconnect()
   }, [showChrome])
 
-  const densityLabel = densityOptions.find((o) => o.value === density)?.label ?? ''
-  const cycleDensity = () => {
-    const order: Density[] = ['compact', 'default', 'comfortable']
-    const next = order[(order.indexOf(density) + 1) % order.length]
-    setDensity(next)
-    writeStored(LS_DENSITY, next)
+  const reverseSort = () => {
+    const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc'
+    setSortDirOverride(next === SORT_DEFAULT_DIR[sort] ? '' : next)
   }
-
-  const viewControls = (
-    <>
-      <SegmentedControl
-        className="library-view-toggle"
-        size="xs"
-        value={viewMode}
-        onChange={(v) => {
-          setViewMode(v as ViewMode)
-          writeStored(LS_VIEW, v)
-        }}
-        aria-label={t`View`}
-        data={[
-          {
-            value: 'grid',
-            label: (
-              <span className="library-view-option" title={t`Grid view`} aria-label={t`Grid view`}>
-                <IconLayoutGrid size={16} />
-              </span>
-            ),
-          },
-          {
-            value: 'list',
-            label: (
-              <span className="library-view-option" title={t`List view`} aria-label={t`List view`}>
-                <IconLayoutList size={16} />
-              </span>
-            ),
-          },
-        ]}
-      />
-      <Tooltip label={t`Density: ${densityLabel}`} withArrow>
-        <ActionIcon
-          className="library-density-button"
-          variant="default"
-          size={34}
-          onClick={cycleDensity}
-          aria-label={t`Density: ${densityLabel}`}
-        >
-          <IconLineHeight size={16} />
-        </ActionIcon>
-      </Tooltip>
-    </>
-  )
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
+        className="library-page-header"
         title={t`Library`}
         description={t`Every series Maki watches: cover art, download progress and status at a glance.`}
         actions={
           showChrome && !selectMode ? (
             <>
-              <Group gap="xs" wrap="nowrap" hiddenFrom="sm">
-                {viewControls}
-              </Group>
               <Button
                 variant="default"
                 leftSection={<IconListCheck size={16} />}
@@ -1093,7 +1196,7 @@ export default function LibraryPage() {
           {selectMode ? (
             <Group className="library-selection-bar" justify="space-between" wrap="wrap" gap="xs">
               <Group gap="xs">
-                {/* On a phone the action row scrolls sideways, which would bury Done at its far end. */}
+                {/* On a phone Done is this icon beside the count; the text button is desktop only. */}
                 <ActionIcon
                   hiddenFrom="sm"
                   variant="default"
@@ -1133,52 +1236,72 @@ export default function LibraryPage() {
                 </Text>
               </Group>
               <Group gap="xs">
-                {can('DownloadChapters') && bulkBtn('Search missing', <Trans>Search missing</Trans>, <IconSearch size={15} />, () =>
-                  runBulk('Search missing', (id) =>
-                    api(`/series/${id}/searchmissing`, { method: 'POST' }),
-                  ),
+                {primaryActions.map((a) => (
+                  <Button
+                    key={a.key}
+                    visibleFrom="sm"
+                    size="xs"
+                    variant="light"
+                    leftSection={a.icon}
+                    disabled={bulkDisabled(a.key)}
+                    loading={busy === a.key}
+                    onClick={a.run}
+                  >
+                    {a.label}
+                  </Button>
+                ))}
+                {/* On a phone the primary four join the menu too, so the row is one menu and Remove. */}
+                <Menu position="bottom-end" withinPortal>
+                  <Menu.Target>
+                    <Button
+                      size="xs"
+                      variant="default"
+                      rightSection={<IconChevronDown size={14} />}
+                      disabled={selected.size === 0 || (busy !== null && !moreActions.some((a) => a.key === busy))}
+                      loading={moreActions.some((a) => a.key === busy)}
+                      className={moreActions.length === 0 ? 'library-bulk-more-phone' : undefined}
+                    >
+                      <Text span inherit visibleFrom="sm">
+                        <Trans>More</Trans>
+                      </Text>
+                      <Text span inherit hiddenFrom="sm">
+                        <Trans>Actions</Trans>
+                      </Text>
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    {primaryActions.map((a) => (
+                      <Menu.Item key={a.key} hiddenFrom="sm" leftSection={a.icon} onClick={a.run}>
+                        {a.label}
+                      </Menu.Item>
+                    ))}
+                    {primaryActions.length > 0 && moreActions.length > 0 && <Menu.Divider hiddenFrom="sm" />}
+                    {moreActions.map((a) => (
+                      <Menu.Item key={a.key} leftSection={a.icon} onClick={a.run}>
+                        {a.label}
+                      </Menu.Item>
+                    ))}
+                  </Menu.Dropdown>
+                </Menu>
+                {can('DeleteSeries') && (
+                  <>
+                    <Divider orientation="vertical" className="library-bulk-divider" />
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="var(--danger)"
+                      leftSection={<IconTrash size={15} />}
+                      disabled={bulkDisabled('Remove')}
+                      loading={busy === 'Remove'}
+                      onClick={() => {
+                        setDeleteFiles(false)
+                        setDeleteModalOpen(true)
+                      }}
+                    >
+                      <Trans>Remove</Trans>
+                    </Button>
+                  </>
                 )}
-                {can('EditMetadata') && bulkBtn('Refresh', <Trans>Refresh</Trans>, <IconRefresh size={15} />, () =>
-                  runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
-                )}
-                {can('ManageSources') && bulkBtn('Auto-match', <Trans>Auto-match</Trans>, <IconWand size={15} />, () =>
-                  setAutoMatchModalOpen(true),
-                )}
-                {can('EditMetadata') && bulkBtn('Metadata', <Trans>Metadata</Trans>, <IconPhoto size={15} />, () =>
-                  runBulk('Metadata', (id) =>
-                    api(`/series/${id}/refreshmetadata`, { method: 'POST' }),
-                  ),
-                )}
-                {/* "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5). */}
-                {can('EditMetadata') && bulkBtn('ComicInfo', 'ComicInfo', <IconFileText size={15} />, () =>
-                  runBulk('ComicInfo', (id) =>
-                    api(`/series/${id}/updatecomicinfo`, { method: 'POST' }),
-                  ),
-                )}
-                {can('ManageTags') && bulkBtn('Tags', <Trans>Tags</Trans>, <IconTag size={15} />, () => {
-                  setTagsToAdd([])
-                  setTagsToRemove([])
-                  setTagModalOpen(true)
-                })}
-                {can('EditMetadata') && bulkBtn('Monitoring', <Trans>Monitoring</Trans>, <IconEye size={15} />, () =>
-                  setMonitorModalOpen(true),
-                )}
-                {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
-                  setNotifyModalOpen(true),
-                )}
-                {can('EditMetadata') && bulkBtn('Quality profile', <Trans>Quality profile</Trans>, <IconStars size={15} />, () => {
-                  setBulkProfile(DEFAULT_PROFILE_FILTER)
-                  setProfileModalOpen(true)
-                })}
-                {can('EditMetadata') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
-                  setMoveTarget(null)
-                  setMoveFiles(true)
-                  setMoveModalOpen(true)
-                })}
-                {can('DeleteSeries') && bulkBtn('Remove', <Trans>Remove</Trans>, <IconTrash size={15} />, () => {
-                  setDeleteFiles(false)
-                  setDeleteModalOpen(true)
-                }, 'var(--danger)')}
                 <Button
                   visibleFrom="sm"
                   size="xs"
@@ -1234,46 +1357,31 @@ export default function LibraryPage() {
                     <IconFilter size={16} />
                   </ActionIcon>
                 </Indicator>
-                <Tooltip label={t`Manage tags`} withArrow>
-                  <ActionIcon
-                    className="library-tags-button"
-                    variant="default"
-                    size={34}
-                    onClick={() => setTagManagerOpen(true)}
-                    aria-label={t`Manage tags`}
-                  >
-                    <IconSettings size={16} />
-                  </ActionIcon>
-                </Tooltip>
-                <Select
-                  aria-label={t`Sort by`}
-                  className="library-sort"
-                  data={sortOptions}
-                  value={sort}
-                  onChange={(v) => {
-                    setSort(v ?? 'added')
-                    setSortDirOverride('')
-                  }}
-                  comboboxProps={{ withinPortal: true }}
-                />
-                <Tooltip label={sortDir === 'asc' ? t`Ascending` : t`Descending`} withArrow>
-                  <ActionIcon
-                    variant="default"
-                    size="input-sm"
-                    aria-label={t`Reverse sort order`}
-                    onClick={() => {
-                      const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc'
-                      setSortDirOverride(next === SORT_DEFAULT_DIR[sort] ? '' : next)
+                {/* Field and direction as one control: the arrow only means something next to the field. */}
+                <div className="library-sort-control">
+                  <Select
+                    aria-label={t`Sort by`}
+                    className="library-sort"
+                    data={sortOptions}
+                    value={sort}
+                    onChange={(v) => {
+                      setSort(v ?? 'added')
+                      setSortDirOverride('')
                     }}
-                  >
-                    {sortDir === 'asc' ? <IconSortAscending size={16} /> : <IconSortDescending size={16} />}
-                  </ActionIcon>
-                </Tooltip>
-                <LuckyButton
-                  candidates={luckyPool}
-                  onPick={(id) => navigate(`/series/${id}`, { state: { lucky: true } })}
-                />
-                <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm" hidden={isLoading}>
+                    comboboxProps={{ withinPortal: true }}
+                  />
+                  <Tooltip label={sortDir === 'asc' ? t`Ascending` : t`Descending`} withArrow>
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label={t`Reverse sort order`}
+                      onClick={reverseSort}
+                    >
+                      {sortDir === 'asc' ? <IconSortAscending size={16} /> : <IconSortDescending size={16} />}
+                    </ActionIcon>
+                  </Tooltip>
+                </div>
+                <Text size="sm" c="var(--ink-3)" className="tnum library-toolbar-count" hidden={isLoading}>
                   {filtersActive ? (
                     plural(totalCount, {
                       one: `${visibleCount} of # series match`,
@@ -1283,8 +1391,79 @@ export default function LibraryPage() {
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
                 </Text>
-                <Group className="library-view-controls" gap="sm" wrap="nowrap" visibleFrom="sm">
-                  {viewControls}
+                <Group className="library-view-controls" gap="sm" wrap="nowrap">
+                  <Box visibleFrom="sm">
+                    <ViewModeToggle
+                      value={viewMode}
+                      onChange={(v) => {
+                        setViewMode(v)
+                        writeStored(LS_VIEW, v)
+                      }}
+                    />
+                  </Box>
+                  <LuckyButton
+                    candidates={luckyPool}
+                    onPick={(id) => navigate(`/series/${id}`, { state: { lucky: true } })}
+                  />
+                  <Menu position="bottom-end" withinPortal>
+                    <Menu.Target>
+                      <ToolbarMenuButton />
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item leftSection={<IconSettings size={14} />} onClick={() => setTagManagerOpen(true)}>
+                        <Trans>Manage tags</Trans>
+                      </Menu.Item>
+                      {/* A phone keeps search, Filters, the dice and this menu, so view and sort move in here. */}
+                      <Box hiddenFrom="sm">
+                        <Menu.Divider />
+                        <Menu.Label>{t`View`}</Menu.Label>
+                        {(['grid', 'list'] as const).map((mode) => (
+                          <Menu.Item
+                            key={mode}
+                            onClick={() => {
+                              setViewMode(mode)
+                              writeStored(LS_VIEW, mode)
+                            }}
+                            rightSection={viewMode === mode ? <IconCheck size={14} /> : undefined}
+                          >
+                            {mode === 'grid' ? t`Grid view` : t`List view`}
+                          </Menu.Item>
+                        ))}
+                        <Menu.Divider />
+                        <Menu.Label>{t`Sort by`}</Menu.Label>
+                        {sortOptions.map((o) => (
+                          <Menu.Item
+                            key={o.value}
+                            onClick={() => {
+                              setSort(o.value)
+                              setSortDirOverride('')
+                            }}
+                            rightSection={sort === o.value ? <IconCheck size={14} /> : undefined}
+                          >
+                            {o.label}
+                          </Menu.Item>
+                        ))}
+                        <Menu.Item
+                          onClick={reverseSort}
+                          rightSection={
+                            <Text size="xs" c="var(--ink-3)">
+                              {sortDir === 'asc' ? t`Ascending` : t`Descending`}
+                            </Text>
+                          }
+                        >
+                          {t`Reverse sort order`}
+                        </Menu.Item>
+                      </Box>
+                      <Menu.Divider />
+                      <DensityMenuItems
+                        value={density}
+                        onChange={(d) => {
+                          setDensity(d)
+                          writeStored(LS_DENSITY, d)
+                        }}
+                      />
+                    </Menu.Dropdown>
+                  </Menu>
                 </Group>
               </Group>
             </Stack>
@@ -1368,284 +1547,315 @@ export default function LibraryPage() {
         position="right"
         size="sm"
         title={t`Filters`}
+        classNames={{ content: 'library-filter-drawer' }}
       >
-        <Stack gap="sm" pb="xl">
-          <Text size="sm" c="var(--ink-3)">
+        <Stack gap="sm" className="library-filter-drawer-body">
+          {/* On a phone the drawer covers the grid, so the count moves to the footer instead. */}
+          <Text size="sm" c="var(--ink-3)" visibleFrom="sm">
             {plural(totalSeriesShown, {
               one: `${shownCount} of # series shown.`,
               other: `${shownCount} of # series shown.`,
             })}{' '}
             <Trans>Changes apply straight to the grid behind this panel.</Trans>
           </Text>
-          <Select
-            label={t`Status`}
-            data={statusOptions.map((s) => ({
-              value: s,
-              label: s === 'all' ? t`All statuses` : renderLabel(seriesStatusVisual(s).label),
-            }))}
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <MultiSelect
-            label={t`Type`}
-            placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
-            data={typeOptions}
-            value={typeFilter}
-            onChange={setTypeFilter}
-            disabled={typeOptions.length === 0}
-            clearable
-            comboboxProps={{ withinPortal: true }}
-          />
-          {facetFilter({
-            label: t`Your tags`,
-            data: tagOptions,
-            value: tagFilter,
-            onChange: setTagFilter,
-            mode: tagMatch,
-            onModeChange: setTagMatch,
-            disabled: untaggedOnly,
-          })}
-          {excludeFilter({
-            label: t`Exclude your tags`,
-            data: tagOptions,
-            value: excludeTagFilter,
-            onChange: setExcludeTagFilter,
-            disabled: untaggedOnly,
-          })}
-          <Switch
-            label={t`Untagged only`}
-            description={t`Series with none of your tags`}
-            checked={untaggedOnly}
-            onChange={(e) => setUntaggedOnly(e.currentTarget.checked)}
-          />
-          <Button
-            variant="subtle"
-            size="compact-sm"
-            color="var(--neutral)"
-            leftSection={<IconSettings size={14} />}
-            style={{ alignSelf: 'flex-start' }}
-            onClick={() => {
-              setFiltersOpen(false)
-              setTagManagerOpen(true)
-            }}
-          >
-            <Trans>Manage tags</Trans>
-          </Button>
-          {facetFilter({
-            label: t`Genres`,
-            data: genreOptions,
-            value: genreFilter,
-            onChange: setGenreFilter,
-            mode: genreMatch,
-            onModeChange: setGenreMatch,
-          })}
-          {excludeFilter({
-            label: t`Exclude genres`,
-            data: genreOptions,
-            value: excludeGenreFilter,
-            onChange: setExcludeGenreFilter,
-          })}
-          {facetFilter({
-            label: t`Tags`,
-            description: t`From the metadata provider, not your own tags`,
-            data: metaTagOptions,
-            value: metaTagFilter,
-            onChange: setMetaTagFilter,
-            mode: metaTagMatch,
-            onModeChange: setMetaTagMatch,
-          })}
-          <MultiSelect
-            label={t`Content rating`}
-            placeholder={contentRatingFilter.length ? undefined : t`Any`}
-            data={contentRatingOptions}
-            value={contentRatingFilter}
-            onChange={setContentRatingFilter}
-            clearable
-            comboboxProps={{ withinPortal: true }}
-          />
           <div>
-            <Text size="sm" fw={500} mb="xs">
-              <Trans>My rating</Trans>
-            </Text>
-            <SegmentedControl
-              aria-label={t`My rating`}
-              size="xs"
-              fullWidth
-              value={ratingState}
-              onChange={setRatingState}
-              data={ratingStateOptions}
-              mb={ratingState === 'rated' ? 'md' : undefined}
-            />
-            {ratingState === 'rated' && (
-              <RangeSlider
-                thumbFromLabel={t`My rating from`}
-                thumbToLabel={t`My rating to`}
-                min={1}
-                max={10}
-                step={1}
-                minRange={0}
-                value={ratingRange}
-                onChange={setRatingRange}
-                marks={[
-                  { value: 1, label: '1' },
-                  { value: 5, label: '5' },
-                  { value: 10, label: '10' },
-                ]}
-                mb="lg"
+            <Disclosure title={t`Series`} {...groupProps('series')}>
+              <Select
+                label={t`Status`}
+                data={statusOptions.map((s) => ({
+                  value: s,
+                  label: s === 'all' ? t`All statuses` : renderLabel(seriesStatusVisual(s).label),
+                }))}
+                value={statusFilter}
+                onChange={(v) => setStatusFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
               />
-            )}
+              <MultiSelect
+                label={t`Type`}
+                className="field-default-value"
+                placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
+                data={typeOptions}
+                value={typeFilter}
+                onChange={setTypeFilter}
+                disabled={typeOptions.length === 0}
+                clearable
+                comboboxProps={{ withinPortal: true }}
+              />
+              <MultiSelect
+                label={t`Content rating`}
+                className="field-default-value"
+                placeholder={contentRatingFilter.length ? undefined : t`Any`}
+                data={contentRatingOptions}
+                value={contentRatingFilter}
+                onChange={setContentRatingFilter}
+                clearable
+                comboboxProps={{ withinPortal: true }}
+              />
+              <div>
+                <Text size="sm" fw={500} mb={2}>
+                  <Trans>Chapters</Trans>
+                </Text>
+                <Text size="xs" c="var(--ink-3)" mb="xs">
+                  <Trans>Leave both boxes empty to ignore.</Trans>
+                </Text>
+                <SegmentedControl
+                  aria-label={t`Chapters`}
+                  size="xs"
+                  fullWidth
+                  value={chapterMode}
+                  onChange={setChapterMode}
+                  data={chapterModeOptions}
+                  mb="xs"
+                />
+                <Group grow gap="xs" align="flex-start">
+                  <NumberInput
+                    aria-label={t`Minimum chapters`}
+                    className="field-default-value"
+                        placeholder={t`Min`}
+                    min={0}
+                    allowDecimal={false}
+                    value={chapterMin ?? ''}
+                    onChange={(v) => setChapterMin(toBound(v))}
+                  />
+                  <NumberInput
+                    aria-label={t`Maximum chapters`}
+                    className="field-default-value"
+                        placeholder={t`Max`}
+                    min={0}
+                    allowDecimal={false}
+                    value={chapterMax ?? ''}
+                    onChange={(v) => setChapterMax(toBound(v))}
+                  />
+                </Group>
+              </div>
+            </Disclosure>
+            <Disclosure title={t`Tags and genres`} {...groupProps('tags')}>
+              {facetFilter({
+                label: t`Your tags`,
+                data: tagOptions,
+                value: tagFilter,
+                onChange: setTagFilter,
+                mode: tagMatch,
+                onModeChange: setTagMatch,
+                disabled: untaggedOnly,
+              })}
+              {excludeFilter({
+                label: t`Exclude your tags`,
+                data: tagOptions,
+                value: excludeTagFilter,
+                onChange: setExcludeTagFilter,
+                disabled: untaggedOnly,
+              })}
+              <Switch
+                label={t`Untagged only`}
+                description={t`Series with none of your tags`}
+                checked={untaggedOnly}
+                onChange={(e) => setUntaggedOnly(e.currentTarget.checked)}
+              />
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                color="var(--neutral)"
+                leftSection={<IconSettings size={14} />}
+                style={{ alignSelf: 'flex-start' }}
+                onClick={() => {
+                  setFiltersOpen(false)
+                  setTagManagerOpen(true)
+                }}
+              >
+                <Trans>Manage tags</Trans>
+              </Button>
+              {facetFilter({
+                label: t`Genres`,
+                data: genreOptions,
+                value: genreFilter,
+                onChange: setGenreFilter,
+                mode: genreMatch,
+                onModeChange: setGenreMatch,
+              })}
+              {excludeFilter({
+                label: t`Exclude genres`,
+                data: genreOptions,
+                value: excludeGenreFilter,
+                onChange: setExcludeGenreFilter,
+              })}
+              {facetFilter({
+                label: t`Tags`,
+                description: t`From the metadata provider, not your own tags`,
+                data: metaTagOptions,
+                value: metaTagFilter,
+                onChange: setMetaTagFilter,
+                mode: metaTagMatch,
+                onModeChange: setMetaTagMatch,
+              })}
+            </Disclosure>
+            <Disclosure title={t`Ratings and reading`} {...groupProps('ratings')}>
+              <div>
+                <Text size="sm" fw={500} mb="xs">
+                  <Trans>My rating</Trans>
+                </Text>
+                <SegmentedControl
+                  aria-label={t`My rating`}
+                  size="xs"
+                  fullWidth
+                  value={ratingState}
+                  onChange={setRatingState}
+                  data={ratingStateOptions}
+                  mb={ratingState === 'rated' ? 'md' : undefined}
+                />
+                {ratingState === 'rated' && (
+                  <RangeSlider
+                    thumbFromLabel={t`My rating from`}
+                    thumbToLabel={t`My rating to`}
+                    min={1}
+                    max={10}
+                    step={1}
+                    minRange={0}
+                    value={ratingRange}
+                    onChange={setRatingRange}
+                    marks={[
+                      { value: 1, label: '1' },
+                      { value: 5, label: '5' },
+                      { value: 10, label: '10' },
+                    ]}
+                    mb="lg"
+                  />
+                )}
+              </div>
+              {hasCommunityRatings && (
+                <div>
+                  <Text size="sm" fw={500} mb={2}>
+                    <Trans context="MangaBaka score filter">Rating</Trans>
+                  </Text>
+                  <Text size="xs" c="var(--ink-3)" mb="md">
+                    <Trans>Leave at 0–10 to ignore. Narrowing it hides series without a score.</Trans>
+                  </Text>
+                  <RangeSlider
+                    thumbFromLabel={t`Rating from`}
+                    thumbToLabel={t`Rating to`}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    minRange={0}
+                    value={communityRange}
+                    onChange={setCommunityRange}
+                    marks={[
+                      { value: 0, label: '0' },
+                      { value: 5, label: '5' },
+                      { value: 10, label: '10' },
+                    ]}
+                    mb="lg"
+                  />
+                </div>
+              )}
+              {readTracking && (
+                <div>
+                  <Text size="sm" fw={500} mb={2}>
+                    <Trans>Read</Trans>
+                  </Text>
+                  <Text size="xs" c="var(--ink-3)" mb="md">
+                    <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
+                  </Text>
+                  <RangeSlider
+                    thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
+                    min={0}
+                    max={100}
+                    step={5}
+                    minRange={0}
+                    value={readRange}
+                    onChange={setReadRange}
+                    marks={[
+                      { value: 0, label: '0%' },
+                      { value: 50, label: '50%' },
+                      { value: 100, label: '100%' },
+                    ]}
+                    mb="lg"
+                  />
+                </div>
+              )}
+            </Disclosure>
+            <Disclosure title={t`Monitoring and sources`} {...groupProps('monitoring')}>
+              <Select
+                label={t`Monitoring`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: 'monitored', label: t`Monitored` },
+                  { value: 'unmonitored', label: t`Unmonitored` },
+                ]}
+                value={monitoredFilter}
+                onChange={(v) => setMonitoredFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Quality profile`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
+                  ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+                ]}
+                value={qualityProfileFilter}
+                onChange={(v) => setQualityProfileFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Completeness`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: 'behind', label: t`Behind (missing chapters)` },
+                  { value: 'complete', label: t`Complete` },
+                ]}
+                value={completeness}
+                onChange={(v) => setCompleteness(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Source state`}
+                description={t`Counts both switches: the per-series link and the global source toggle`}
+                data={sourceStateOptions}
+                value={sourceState}
+                onChange={(v) => setSourceState(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              {facetFilter({
+                label: t`Sources`,
+                description: t`Linked to the series, enabled or not`,
+                data: sourceOptions,
+                value: sourceFilter,
+                onChange: setSourceFilter,
+                mode: sourceMatch,
+                onModeChange: setSourceMatch,
+              })}
+              {facetFilter({
+                label: t`Downloaded from`,
+                description: t`Where the files on disk came from, which can outlive the link`,
+                data: fileSourceOptions,
+                value: fileSourceFilter,
+                onChange: setFileSourceFilter,
+                mode: fileSourceMatch,
+                onModeChange: setFileSourceMatch,
+              })}
+            </Disclosure>
           </div>
-          {hasCommunityRatings && (
-            <div>
-              <Text size="sm" fw={500} mb={2}>
-                <Trans context="MangaBaka score filter">Rating</Trans>
-              </Text>
-              <Text size="xs" c="var(--ink-3)" mb="md">
-                <Trans>Leave at 0–10 to ignore. Narrowing it hides series without a score.</Trans>
-              </Text>
-              <RangeSlider
-                thumbFromLabel={t`Rating from`}
-                thumbToLabel={t`Rating to`}
-                min={0}
-                max={10}
-                step={0.5}
-                minRange={0}
-                value={communityRange}
-                onChange={setCommunityRange}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 5, label: '5' },
-                  { value: 10, label: '10' },
-                ]}
-                mb="lg"
-              />
-            </div>
-          )}
-          <Select
-            label={t`Monitoring`}
-            data={[
-              { value: 'all', label: t`Any` },
-              { value: 'monitored', label: t`Monitored` },
-              { value: 'unmonitored', label: t`Unmonitored` },
-            ]}
-            value={monitoredFilter}
-            onChange={(v) => setMonitoredFilter(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <Select
-            label={t`Quality profile`}
-            data={[
-              { value: 'all', label: t`Any` },
-              { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
-              ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
-            ]}
-            value={qualityProfileFilter}
-            onChange={(v) => setQualityProfileFilter(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <Select
-            label={t`Completeness`}
-            data={[
-              { value: 'all', label: t`Any` },
-              { value: 'behind', label: t`Behind (missing chapters)` },
-              { value: 'complete', label: t`Complete` },
-            ]}
-            value={completeness}
-            onChange={(v) => setCompleteness(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          <div>
-            <Text size="sm" fw={500} mb={2}>
-              <Trans>Chapters</Trans>
-            </Text>
-            <Text size="xs" c="var(--ink-3)" mb="xs">
-              <Trans>Leave both boxes empty to ignore.</Trans>
-            </Text>
-            <SegmentedControl
-              aria-label={t`Chapters`}
-              size="xs"
-              fullWidth
-              value={chapterMode}
-              onChange={setChapterMode}
-              data={chapterModeOptions}
-              mb="xs"
-            />
-            <Group grow gap="xs" align="flex-start">
-              <NumberInput
-                aria-label={t`Minimum chapters`}
-                placeholder={t`Min`}
-                min={0}
-                allowDecimal={false}
-                value={chapterMin ?? ''}
-                onChange={(v) => setChapterMin(toBound(v))}
-              />
-              <NumberInput
-                aria-label={t`Maximum chapters`}
-                placeholder={t`Max`}
-                min={0}
-                allowDecimal={false}
-                value={chapterMax ?? ''}
-                onChange={(v) => setChapterMax(toBound(v))}
-              />
-            </Group>
-          </div>
-          <Select
-            label={t`Source state`}
-            description={t`Counts both switches: the per-series link and the global source toggle`}
-            data={sourceStateOptions}
-            value={sourceState}
-            onChange={(v) => setSourceState(v ?? 'all')}
-            comboboxProps={{ withinPortal: true }}
-          />
-          {facetFilter({
-            label: t`Sources`,
-            description: t`Linked to the series, enabled or not`,
-            data: sourceOptions,
-            value: sourceFilter,
-            onChange: setSourceFilter,
-            mode: sourceMatch,
-            onModeChange: setSourceMatch,
-          })}
-          {facetFilter({
-            label: t`Downloaded from`,
-            description: t`Where the files on disk came from, which can outlive the link`,
-            data: fileSourceOptions,
-            value: fileSourceFilter,
-            onChange: setFileSourceFilter,
-            mode: fileSourceMatch,
-            onModeChange: setFileSourceMatch,
-          })}
-          {readTracking && (
-            <div>
-              <Text size="sm" fw={500} mb={2}>
-                <Trans>Read</Trans>
-              </Text>
-              <Text size="xs" c="var(--ink-3)" mb="md">
-                <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
-              </Text>
-              <RangeSlider
-                thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
-                min={0}
-                max={100}
-                step={5}
-                minRange={0}
-                value={readRange}
-                onChange={setReadRange}
-                marks={[
-                  { value: 0, label: '0%' },
-                  { value: 50, label: '50%' },
-                  { value: 100, label: '100%' },
-                ]}
-                mb="lg"
-              />
-            </div>
-          )}
           {activeFilterCount > 0 && (
-            <Button variant="default" leftSection={<IconX size={15} />} onClick={() => applySpec(DEFAULT_SPEC, null)}>
+            <Button
+              visibleFrom="sm"
+              variant="default"
+              leftSection={<IconX size={15} />}
+              onClick={() => applySpec(DEFAULT_SPEC, null)}
+            >
               <Trans>Clear all filters</Trans>
             </Button>
           )}
+          <Group className="library-filter-footer" hiddenFrom="sm" gap="sm" wrap="nowrap">
+            {activeFilterCount > 0 && (
+              <Button variant="default" onClick={() => applySpec(DEFAULT_SPEC, null)}>
+                <Trans>Clear all</Trans>
+              </Button>
+            )}
+            <Button className="library-filter-show" onClick={() => setFiltersOpen(false)}>
+              <Plural value={shownCount} one="Show # series" other="Show # series" />
+            </Button>
+          </Group>
         </Stack>
       </Drawer>
 

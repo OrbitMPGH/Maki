@@ -2,6 +2,7 @@ import {
   Badge,
   Button,
   Card,
+  type CSSVariablesResolver,
   Drawer,
   type MantineColorScheme,
   type MantineColorsTuple,
@@ -196,8 +197,21 @@ const variantColorResolver: VariantColorsResolver = (input) => {
   const resolved = defaultVariantColorsResolver(input)
   const isBrand = !input.color || input.color === 'brand' || input.color === input.theme.primaryColor
   if (input.variant === 'filled' && isBrand) return { ...resolved, color: 'var(--brand-on)' }
+  // Danger text on its own 10% tint falls just under 4.5:1 in dark.
+  if (input.variant === 'light' && input.color === 'var(--danger)') return { ...resolved, color: 'var(--danger-fg)' }
   return resolved
 }
+
+/**
+ * Anchors take `--brand-fg`. Mantine colours them with the primary shade, a fill colour that
+ * emerald and amber cannot carry as text in Light. Set here because Mantine injects its own value
+ * after theme.css.
+ */
+export const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {},
+  light: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
+  dark: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
+})
 
 /**
  * Builds the Mantine theme for a given accent palette (defaults to indigo) and the active scheme.
@@ -233,7 +247,7 @@ const modalDefaults = {
   padding: 'lg',
   centered: true,
   scrollAreaComponent: ModalPassthrough,
-  overlayProps: { blur: 3, backgroundOpacity: 0.55 },
+  overlayProps: { backgroundOpacity: 0.6 },
   classNames: {
     content: 'utility-modal-content',
     header: 'utility-modal-header',
@@ -251,10 +265,20 @@ const themeBase: MantineThemeOverride = {
   colors: { brand, dark },
   defaultRadius: 'md',
   fontFamily:
-    '"Inter Variable", InterVariable, Inter, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    '"Onest Variable", Onest, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   fontFamilyMonospace:
     'ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo, monospace',
+  // One step per role: xs is meta, sm is body, matching --type-meta and --type-body in theme.css.
+  fontSizes: {
+    xs: '0.8125rem',
+    sm: '0.9375rem',
+    md: '1rem',
+    lg: '1.125rem',
+    xl: '1.25rem',
+  },
   headings: {
+    fontFamily:
+      '"Bricolage Grotesque Variable", "Onest Variable", ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif',
     fontWeight: '700',
     sizes: {
       h1: { fontSize: '1.9rem', lineHeight: '1.2', fontWeight: '800' },

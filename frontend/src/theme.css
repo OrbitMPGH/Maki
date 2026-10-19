@@ -14,7 +14,7 @@
   --ink-hi: #f1f3f5;
   --ink: #dee2e6;
   --ink-2: #c7cad4;
-  --ink-3: #a6adbb;
+  --ink-3: #b1b7c3;
   --ink-4: #9098a8;
   --hairline: var(--border);
   --mantine-color-dimmed: var(--ink-3);
@@ -48,6 +48,7 @@
   --info-on: #06142b;
   --danger: #f2554c;
   --danger-on: #2a0a08;
+  --danger-fg: #ff8b84;
   /* Filled danger buttons carry white text, which --danger is too light for in the dark themes. */
   --danger-fill: #c0322b;
   --watched: #b197fc;
@@ -90,11 +91,12 @@
   --type-figure: 1.3125rem;
   --type-section: 1.125rem;
   --type-subhead: 1rem;
-  --type-body: 0.875rem;
+  --type-body: 0.9375rem;
   --type-meta: 0.8125rem;
+  /* The floor for anything read. Only badges go under it. */
   --type-micro: 0.75rem;
-  --type-label: 0.6875rem;
-  --type-badge: 0.625rem;
+  --type-label: 0.8125rem;
+  --type-badge: 0.6875rem;
 
   /* Weight scale. Same rule as the type scale: a weight between two steps belongs on one of them. */
   --fw-regular: 400;
@@ -120,12 +122,13 @@
   --dur-medium: 0.18s;
   --dur-slow: 0.35s;
 
-  --font-display: 'Bricolage Grotesque Variable', 'Inter Variable', ui-sans-serif, -apple-system,
+  --font-display: 'Bricolage Grotesque Variable', 'Onest Variable', ui-sans-serif, -apple-system,
     'Segoe UI', Roboto, sans-serif;
 }
 
-/* Titles only: a series, a page or the product names itself in the display face. Everything read
-   or operated stays in Inter. No Cyrillic or CJK in Bricolage, so those titles fall through to Inter. */
+/* The display face carries names and headline numbers: page, section, modal and series titles, card
+   and row titles, and figures (.figure below). Body copy, tables, inputs and buttons stay in Onest.
+   No Cyrillic or CJK in Bricolage, so those titles fall through to Onest. */
 .series-hero-title,
 .page-header .mantine-Title-root,
 .auth-panel-title,
@@ -134,6 +137,12 @@
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.025em;
+}
+
+.cover-title,
+.row-title,
+.utility-modal-title {
+  font-family: var(--font-display);
 }
 
 /* Mantine centres each slider mark label on its mark, so the end labels hang past the track and
@@ -166,7 +175,7 @@
   --brand: #c4476e;
   --brand-hover: #b8436a;
   --brand-on: #ffffff;
-  --brand-fg: #b8496b;
+  --brand-fg: #ad4064;
   --brand-fg-on-art: #f5b6c8;
 }
 :root[data-theme='light'][data-accent='rose'] {
@@ -217,12 +226,9 @@
   --ink-hi: #f4f2ee;
   --ink: #e3e1dc;
   --ink-2: #c6c4bf;
-  --ink-3: #a3a19c;
-  --ink-4: #888681;
+  --ink-3: #b0aea9;
+  --ink-4: #8d8b86;
   --neutral: #a3a19c;
-}
-[data-ground='charcoal'] .app-header {
-  background: rgba(15, 15, 15, 0.72);
 }
 :root[data-ground='moss'] {
   --app-bg: #0e100e;
@@ -232,13 +238,10 @@
   --border: #2e332e;
   --border-strong: #3e453e;
 }
-[data-ground='moss'] .app-header {
-  background: rgba(14, 16, 14, 0.72);
-}
 /* Every surface is charcoal mixed 4% toward the accent, so the black belongs to whichever accent
    is active. The neutral ramp under the mix is wider than charcoal's (16 units from body to card
    against 9): the mix lifts the body more than the cards in relative terms, so an equal ramp reads
-   flat. The wash is a touch under the default strength for the same reason. */
+   flat. */
 :root[data-ground='tinted'] {
   --app-bg: color-mix(in srgb, #0b0b0b 96%, var(--brand));
   --surface: color-mix(in srgb, #1b1b1b 96%, var(--brand));
@@ -246,14 +249,6 @@
   --surface-hover: color-mix(in srgb, #282828 96%, var(--brand));
   --border: color-mix(in srgb, #303030 96%, var(--brand));
   --border-strong: color-mix(in srgb, #3e3e3e 96%, var(--brand));
-}
-[data-ground='tinted'] body {
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
-}
-[data-ground='tinted'] .app-header {
-  background: color-mix(in srgb, rgba(11, 11, 11, 0.72) 96%, var(--brand));
 }
 
 /* --- Light theme --------------------------------------------------------- */
@@ -267,7 +262,7 @@
   --ink-hi: #111420;
   --ink: #252a38;
   --ink-2: #3d4454;
-  --ink-3: #4a5162;
+  --ink-3: #454c5d;
   --ink-4: #606879;
   --brand-fg: #4553e6;
   --brand-fg-on-art: #b8c1ff;
@@ -279,6 +274,7 @@
   --info-on: #ffffff;
   --danger: #c0322b;
   --danger-on: #ffffff;
+  --danger-fg: var(--danger);
   --watched: #7040bd;
   --watched-on: #ffffff;
   --suggestive: #657018;
@@ -300,18 +296,6 @@
     0 6px 20px -8px rgba(20, 24, 40, 0.18),
     0 2px 5px -2px rgba(20, 24, 40, 0.1);
 }
-[data-theme='light'] body {
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
-}
-[data-theme='light'] body::before {
-  opacity: 0.03;
-}
-[data-theme='light'] .app-header {
-  background: rgba(255, 255, 255, 0.78);
-  border-bottom: 1px solid var(--border);
-}
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {
   color: var(--ink-3);
@@ -331,46 +315,32 @@
   background-color: var(--surface);
 }
 
-/* Deep, subtly-lit app background sitting behind the Mantine shell. */
 html,
 body,
 #root {
   height: 100%;
 }
 
-/* The ambient wash follows the accent on every background, so the page keeps a temperature
-   whatever ground sits under it. */
 body {
-  isolation: isolate;
   background-color: var(--app-bg);
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 8%, transparent), transparent 55%);
-  background-attachment: fixed;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-/* Paper grain: fixed and under the app (body is isolated), never on a scrolling element. No blend
-   mode, which would push the whole page into an offscreen blend group for no visible change. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.045;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-@media (prefers-reduced-transparency: reduce) {
-  body::before {
-    display: none;
-  }
 }
 
 :root[data-mantine-color-scheme='dark'],
 :root[data-mantine-color-scheme='light'] {
   --mantine-color-dimmed: var(--ink-3);
+  --mantine-color-placeholder: var(--ink-3);
+}
+.mantine-Slider-markLabel,
+.mantine-RangeSlider-markLabel {
+  color: var(--ink-3);
+}
+/* For fields whose empty state is a real answer ("Any", "Min"): the word is the value, so it reads
+   at value strength rather than as a hint. A disabled field keeps the quieter placeholder. */
+.field-default-value input:not(:disabled)::placeholder {
+  color: var(--mantine-color-text);
+  opacity: 1;
 }
 
 /* Elevate surfaces above the app body so cards/modals read as layers. */
@@ -385,7 +355,7 @@ body::before {
       .mantine-Popover-dropdown,
       .mantine-Modal-content,
       .mantine-Drawer-content,
-      .series-hero-glass-panel
+      .series-hero-panel
     )
   ) {
   background-color: var(--surface);
@@ -442,7 +412,11 @@ body::before {
   font-feature-settings: 'tnum';
 }
 /* Headline numbers: figure strips, stat tiles, the hero figures, the level. Sizes stay per call site. */
-.figure {
+.figure,
+.figure-strip-n,
+.hero-stat-n,
+.stats-figure-n,
+.stats-fact-value {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.02em;
@@ -554,15 +528,14 @@ body::before {
 }
 
 /* --- App shell ----------------------------------------------------------- */
-/* The sidebar has no ground of its own on desktop: the body (ground, wash and grain) shows through,
-   and only the hairline separates it from the page. No backdrop-filter: nothing scrolls under it. */
+/* The sidebar has no ground of its own on desktop: the body shows through and only the hairline
+   separates it from the page. */
 .app-navbar {
   background: transparent;
   border-right: 1px solid var(--border);
 }
 .app-header {
-  background: rgba(11, 13, 19, 0.72);
-  backdrop-filter: blur(12px);
+  background: var(--app-bg);
   border-bottom: 1px solid var(--border);
 }
 .app-header-title {
@@ -601,6 +574,23 @@ body::before {
   [data-theme='light'] .app-navbar {
     background: var(--surface);
   }
+  /* Thumb-sized targets: the desktop sizes are mouse sizes. */
+  .app-header .mantine-Burger-root {
+    width: 44px;
+    height: 44px;
+    padding: 13px;
+  }
+  .app-header-actions .mantine-ActionIcon-root {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .app-header-actions .command-palette-trigger {
+    width: 40px;
+    height: 40px;
+    margin-inline: 2px;
+  }
 }
 
 /* Popovers carry a fixed pixel width (the inbox bell is 380, health is 340), which Mantine writes
@@ -614,14 +604,35 @@ body::before {
   }
 }
 
+/* First tab stop on every page, out of sight until it has focus. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 300;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  transform: translateY(calc(-100% - 16px));
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+#main:focus {
+  outline: none;
+}
+
 /* Sits under the drawer and over the page; tapping it closes the drawer. Below the header (100)
    as well as the navbar (101), so the burger that opened the drawer still closes it. */
 .nav-scrim {
   position: fixed;
   inset: 0;
   z-index: 99;
-  background: rgba(6, 7, 11, 0.55);
-  backdrop-filter: blur(2px);
+  background: rgba(6, 7, 11, 0.6);
 }
 
 .brand-mark {
@@ -729,8 +740,8 @@ body::before {
   flex-shrink: 0;
 }
 .nav-user-avatar .mantine-Avatar-placeholder {
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
 }
@@ -754,7 +765,7 @@ body::before {
   align-items: center;
   gap: 8px;
   color: var(--ink-4);
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   line-height: 1.3;
   white-space: nowrap;
 }
@@ -818,6 +829,22 @@ body::before {
   color: var(--ink-hi);
   background: var(--surface-hover);
 }
+/* The phone drawer is tapped, not clicked. */
+@media (max-width: 47.9375em) {
+  .nav-link,
+  .nav-footer-link {
+    height: 44px;
+  }
+  .nav-footer-link {
+    padding-right: 44px;
+  }
+  .nav-footer .nav-footer-dismiss {
+    right: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-control);
+  }
+}
 .nav-footer-row {
   display: flex;
   align-items: center;
@@ -829,18 +856,16 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--type-meta);
   font-weight: 600;
-  color: var(--ink-4);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--ink-3);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
 .nav-footer .nav-footer-version-button {
   margin-left: -4px;
   padding: 2px 4px;
-  font-size: 10px;
+  font-size: var(--type-micro);
   font-weight: 600;
   border-radius: 4px;
   transition:
@@ -982,7 +1007,7 @@ body::before {
   }
 }
 .nav-section-label {
-  font-size: 10.5px;
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -996,8 +1021,8 @@ body::before {
   margin-left: auto;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   line-height: 18px;
@@ -1009,8 +1034,27 @@ body::before {
   font-variant-numeric: tabular-nums;
 }
 .count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+}
+/* Mantine's xs and sm badges and its xs pills set 9 and 10px type, under the floor every other label keeps. */
+.mantine-Badge-root {
+  --badge-fz-xs: var(--type-badge);
+  --badge-fz-sm: var(--type-badge);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.mantine-Pill-root {
+  --pill-fz-xs: var(--type-badge);
+}
+/* Mantine puts white on any colour it was handed as a CSS variable; on warn that is 2.3:1. */
+.count-indicator[data-tone='warn'] > .mantine-Indicator-indicator {
+  background: var(--warn);
+  color: var(--warn-on);
+}
+.count-indicator[data-tone='danger'] > .mantine-Indicator-indicator {
+  background: var(--danger);
+  color: var(--danger-on);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
@@ -1110,7 +1154,7 @@ body::before {
 }
 
 /* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
-   Mantine Badge/Tooltip/RingProgress, and why the chips skip backdrop-filter.
+   Mantine Badge/Tooltip/RingProgress.
    The two corners share one flex row so they can never overlap on a narrow card. */
 .cover-corners {
   position: absolute;
@@ -1143,8 +1187,6 @@ body::before {
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
   line-height: 1;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   white-space: nowrap;
   color: #fff;
   background: color-mix(in srgb, black 55%, transparent);
@@ -1217,23 +1259,17 @@ body::before {
     flex-shrink: 0;
   }
 }
-/* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
-   The blur lives on the disc and the ring is masked onto a pseudo-element above it: masking the
-   two together would cut the hole out of the blur as well, and it's the blurred cover art showing
-   through the hollow centre and the translucent track that makes the ring read as glass.
-   This is the only backdrop-filter left on a card, and it's affordable where the badges weren't:
-   it appears only when Kavita has reported progress, so it's a few layers per screen rather than
-   three on every poster. */
+/* Read progress: a conic-gradient ring masked onto a pseudo-element over a dark disc, so it costs
+   one element instead of an SVG per card. */
 .cover-ring {
   position: relative;
   flex: none;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  /* A dark disc under the blur, so the ring reads the same over a pale cover as a dark one. */
-  background: rgba(6, 7, 11, 0.62);
+  /* Dark enough that the ring reads the same over a pale cover as a dark one. */
+  background: rgba(6, 7, 11, 0.78);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(4px);
 }
 .cover-ring::before {
   content: '';
@@ -1362,12 +1398,10 @@ body::before {
   height: 16px;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
-  font-size: var(--type-badge);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 /* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
 .cover-new-quiet {
@@ -1385,12 +1419,10 @@ body::before {
   margin-bottom: 7px;
   padding: 0 8px 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 .cover-corner-left > .cover-chapter {
@@ -1494,7 +1526,10 @@ body::before {
    containment on the cards it was switched off (the old rule here) and every one of the ~240
    posters stayed laid out, painted and image-decoded for as long as the tab was open.
    No scroll-snap: WebKit re-snaps after layout, and a contained rail coming on screen (or posters
-   replacing skeletons) left iOS Safari's rails parked mid-row on first load. */
+   replacing skeletons) left iOS Safari's rails parked mid-row on first load.
+   The 6px gutter, cancelled by the negative margin, keeps the cards where they were but gives the
+   focus ring and Trending's rank badge room inside the scroller, which clips both. Scroll padding
+   lands a focused card clear of the edge fade. */
 .discover-rail {
   --rail-fade-start: 0px;
   --rail-fade-end: 0px;
@@ -1502,14 +1537,16 @@ body::before {
   gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 8px;
+  margin: -6px -6px 0;
+  padding: 6px 6px 8px;
+  scroll-padding-inline: 30px;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   content-visibility: auto;
-  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the scrollbar
-     gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
-     first guess, so Discover's wider steps cost nothing more than a slightly stale one. */
-  contain-intrinsic-size: auto 233px;
+  /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the gutters.
+     `auto` keeps the real measurement once a rail has been on screen; this is only the first
+     guess, so Discover's wider steps cost nothing more than a slightly stale one. */
+  contain-intrinsic-size: auto 239px;
 }
 .discover-rail-item {
   flex: 0 0 auto;
@@ -1567,6 +1604,109 @@ body::before {
   flex-wrap: wrap;
   gap: var(--mantine-spacing-md);
 }
+.home-glance-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 16px;
+}
+/* One step down from the series band's figures: the glance is a summary, not the page's subject. */
+.home-glance .hero-stat-n {
+  font-size: var(--type-section);
+}
+.home-glance .hero-stat-l {
+  font-size: var(--type-micro);
+}
+
+/* A page header with something between the title and the actions (Home's glance). Narrow, the middle
+   drops to its own full-width row; wide enough for all three, they share one row so the content
+   below starts higher. The wrapper is the container because a grid cannot query its own width. */
+.page-header-wrap {
+  container: page-header / inline-size;
+  margin-bottom: var(--mantine-spacing-lg);
+}
+.page-header-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'title actions'
+    'center center';
+  align-items: end;
+  column-gap: var(--mantine-spacing-lg);
+  row-gap: var(--mantine-spacing-xl);
+}
+.page-header-split > .page-header-title {
+  grid-area: title;
+}
+.page-header-split > .page-header-center {
+  grid-area: center;
+  min-width: 0;
+}
+.page-header-split > .page-header-actions {
+  grid-area: actions;
+}
+@container page-header (min-width: 100rem) {
+  .page-header-split {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'title center actions';
+    align-items: center;
+  }
+  /* The description would double the title's width for one line of flavour; the row needs it more. */
+  .page-header-split {
+    column-gap: var(--mantine-spacing-md);
+  }
+  .page-header-split > .page-header-title .mantine-Text-root {
+    display: none;
+  }
+  /* Edit layout keeps its icon and tooltip and gives its label's width to the glance. */
+  .page-header-actions .home-edit-layout {
+    padding-inline: 0;
+    width: var(--button-height);
+  }
+  .page-header-actions .home-edit-layout .mantine-Button-label {
+    display: none;
+  }
+  .page-header-actions .home-edit-layout .mantine-Button-section {
+    margin: 0;
+  }
+  /* The glance at title height: tighter panels, smaller figures, and every panel one row wide.
+     Labels ellipsise rather than clip if a longer translation still runs out of room. */
+  .page-header-center .home-glance {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .page-header-center .home-glance > .home-glance-panel {
+    flex: 1 1 auto;
+    container-type: normal;
+  }
+  .page-header-center .home-glance-panel {
+    padding: 6px 12px;
+  }
+  .page-header-center .home-glance-progress,
+  .page-header-center .home-glance .hero-stats {
+    flex-wrap: nowrap;
+  }
+  .page-header-center .home-glance .hero-stats {
+    --hero-stat-pad: 10px;
+  }
+  .page-header-center .home-glance-progress .mantine-Text-root {
+    white-space: nowrap;
+  }
+  .page-header-center .home-figure {
+    padding-right: 10px;
+  }
+  .page-header-center .home-figure + .home-figure {
+    padding-left: 10px;
+  }
+  .page-header-center .home-glance .hero-stat-n {
+    font-size: var(--type-body);
+  }
+  .page-header-center .home-glance .hero-stat-l {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
 .home-glance > * {
   flex: 1 1 250px;
   min-width: 0;
@@ -1605,7 +1745,7 @@ body::before {
 
 /* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
    up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
-   instead, which the short uppercase labels take without complaint. */
+   instead, which the short labels take without complaint. */
 .home-figures {
   display: grid;
   grid-auto-flow: column;
@@ -1624,7 +1764,7 @@ body::before {
   padding-left: 14px;
   border-left: 1px solid var(--border-strong);
 }
-/* Too narrow for one row, the shrinking columns ran the uppercase labels into each other. Two
+/* Too narrow for one row, the shrinking columns ran the labels into each other. Two
    columns instead, with the hairline only between the pair on each line. Four figures need more
    room than three, hence the two thresholds. */
 .home-glance > :not(.home-glance-wide) {
@@ -1721,6 +1861,12 @@ body::before {
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--brand);
+}
+/* A rail card whose cover lends a colour (`--series-accent`, set inline by ReadingRail) fills its
+   bar with it, matching the lead tiles above. The chapter chip stays on the theme accent: a row of
+   nine differently coloured chips would read as nine states. */
+.reading-card.has-accent .home-resume-fill {
+  background: var(--series-accent);
 }
 /* Recently added's jump-to-reader button, top-right. A sibling of the card link inside a
    .reading-card wrapper, which owns the hover lift. */
@@ -1884,7 +2030,7 @@ body::before {
    clipped line: these rows are claims about the reader, so the grounds have to be readable. */
 .discover-rail[data-engine] {
   /* Poster at the wider item (2/3) plus the footer and the scrollbar gutter. */
-  contain-intrinsic-size: auto 330px;
+  contain-intrinsic-size: auto 336px;
 }
 .discover-rail[data-engine] .discover-rail-item {
   width: var(--rail-item-engine-w, 180px);
@@ -1938,7 +2084,7 @@ body::before {
   border-radius: var(--radius-control);
   background: var(--surface-2);
   color: var(--ink-3);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-medium);
   white-space: nowrap;
   overflow: hidden;
@@ -2043,11 +2189,9 @@ body::before {
   }
 }
 .discover-hero-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
   margin-bottom: 8px;
 }
 /* Poster and title are the click target, so they are buttons, but they must not look like one. */
@@ -2111,18 +2255,29 @@ body::before {
   padding: 13px;
 }
 .discover-hero-strip,
-.series-hero-glass-panel {
-  border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
+.series-hero-panel {
+  border: 1px solid var(--border);
   border-radius: var(--radius-hero);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(18px) saturate(0.85);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-card);
+}
+/* The quiet stand-in for the download button once every wanted chapter is on disk. Button height,
+   so the action row keeps its line. */
+.series-actions-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding-inline: 4px;
+  color: var(--ink-3);
+}
+.series-actions-done svg {
+  flex-shrink: 0;
+  color: var(--ok);
 }
 .discover-hero-strip-label {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
 .discover-hero-strip-heading {
@@ -2132,10 +2287,8 @@ body::before {
   gap: 12px;
 }
 .discover-hero-strip-mode {
-  font-size: var(--type-badge);
-  font-weight: var(--fw-strong);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
   color: var(--brand-fg, var(--brand));
 }
 .discover-hero-strip-row {
@@ -2224,7 +2377,7 @@ body::before {
 .discover-hero-strip-match {
   overflow: hidden;
   color: var(--brand-fg, var(--brand));
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
   line-height: 1;
   text-overflow: ellipsis;
@@ -2266,11 +2419,9 @@ body::before {
 }
 .discover-seeds-label {
   flex: none;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .discover-seeds-row {
   display: flex;
@@ -2325,7 +2476,7 @@ body::before {
   white-space: nowrap;
 }
 .discover-seed-meta {
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   line-height: 1.1;
   color: var(--ink-4);
   font-variant-numeric: tabular-nums;
@@ -2483,11 +2634,9 @@ body::before {
   background: var(--surface);
 }
 .discover-taste-lead {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .discover-taste-chip {
   display: inline-flex;
@@ -2599,59 +2748,16 @@ body::before {
   user-select: auto;
 }
 
-/* --- Auth band (sign-in, first-run setup) --------------------------------- */
-/* A painted glow instead of a poster. These screens live outside the AppShell, so the band is the
-   whole viewport rather than a full-bleed strip. */
+/* --- Auth frame (sign-in, first-run setup) ----------------------------- */
 .auth-frame {
   position: relative;
   overflow: hidden;
-  isolation: isolate;
   min-height: 100dvh;
   display: flex;
   align-items: flex-end;
   background: var(--app-bg);
 }
-/* Off-centre on purpose, so it reads as light falling across the band rather than as a centred
-   gradient wash. One layer: stacking translucent scrims over it quantises at every step. */
-.auth-backdrop-art {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      95% 85% at 86% 4%,
-      color-mix(in srgb, var(--brand-glow) 55%, transparent) 0%,
-      color-mix(in srgb, var(--brand-glow) 49.7%, transparent) 15%,
-      color-mix(in srgb, var(--brand-glow) 36.5%, transparent) 30%,
-      color-mix(in srgb, var(--brand-glow) 21.7%, transparent) 45%,
-      color-mix(in srgb, var(--brand-glow) 10.4%, transparent) 60%,
-      color-mix(in srgb, var(--brand-glow) 3.8%, transparent) 75%,
-      transparent 100%
-    ),
-    radial-gradient(
-      50% 45% at 66% 80%,
-      color-mix(in srgb, var(--brand) 6%, transparent) 0%,
-      color-mix(in srgb, var(--brand) 5.4%, transparent) 15%,
-      color-mix(in srgb, var(--brand) 4%, transparent) 30%,
-      color-mix(in srgb, var(--brand) 2.4%, transparent) 45%,
-      color-mix(in srgb, var(--brand) 1.1%, transparent) 60%,
-      color-mix(in srgb, var(--brand) 0.4%, transparent) 75%,
-      transparent 100%
-    );
-}
-/* Dither. A faint glow stretched over the whole viewport on near-black only has a handful of
-   8-bit steps to work with, so without grain it bands into visible blocks. */
-.auth-frame::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.045;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='4' intercept='-1.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
 .auth-content {
-  position: relative;
-  z-index: 1;
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) min(420px, 100%);
@@ -2706,8 +2812,7 @@ body::before {
   padding: 14px 16px;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-surface);
-  background: color-mix(in srgb, var(--surface) 62%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--surface-2);
   color: var(--ink-2);
 }
 .auth-error {
@@ -2752,20 +2857,10 @@ body::before {
 }
 .setup-frame {
   position: relative;
-  isolation: isolate;
   display: grid;
   grid-template-columns: 17.5rem minmax(0, 1fr);
   height: 100dvh;
   overflow: hidden;
-}
-.setup-art {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(56% 48% at 94% 0%, color-mix(in srgb, var(--brand) 16%, transparent) 0%, transparent 70%),
-    radial-gradient(40% 44% at 22% 104%, color-mix(in srgb, var(--brand) 8%, transparent) 0%, transparent 70%);
 }
 
 .setup-rail {
@@ -2775,9 +2870,8 @@ body::before {
   min-height: 0;
   overflow-y: auto;
   padding: 28px 18px 20px;
-  border-right: 1px solid var(--hairline);
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
-  backdrop-filter: blur(14px);
+  border-right: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .setup-rail-brand {
   display: flex;
@@ -2803,11 +2897,9 @@ body::before {
 }
 .setup-rail-caption {
   margin-top: 4px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .setup-steps {
   display: grid;
@@ -2926,10 +3018,8 @@ body::before {
   animation: setup-stage-in 0.32s var(--ease) both;
 }
 .setup-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--brand-fg, var(--brand));
 }
 .setup-title {
@@ -3018,7 +3108,7 @@ body::before {
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brand) 16%, transparent);
   color: var(--brand-fg);
-  font-size: 11px;
+  font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
 }
@@ -3126,10 +3216,8 @@ body::before {
   padding: 3px 9px;
   border-radius: var(--radius-pill);
   background: var(--neutral-soft);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--ink-3);
   white-space: nowrap;
 }
@@ -3185,10 +3273,8 @@ body::before {
 }
 .setup-next-heading {
   margin: 36px 0 12px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
 .setup-next {
@@ -3210,9 +3296,8 @@ body::before {
 
 .setup-footer {
   padding: 14px clamp(24px, 5vw, 72px);
-  border-top: 1px solid var(--hairline);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .setup-footer-inner {
   display: flex;
@@ -3257,10 +3342,8 @@ body::before {
     background: color-mix(in srgb, var(--surface) 70%, transparent);
   }
   .setup-mobile-step {
-    font-size: var(--type-label);
-    font-weight: var(--fw-bold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: var(--type-meta);
+    font-weight: var(--fw-semibold);
     color: var(--ink-3);
   }
   .setup-mobile-progress {
@@ -3411,6 +3494,36 @@ body::before {
   display: grid;
   grid-template-columns: minmax(70%, 2fr) 0.6fr
 }
+/* The tabs follow the Progress panel in the markup so a stacked band reads title, progress, tabs.
+   Side by side, the panel spans both rows and the tabs line up under the title, past the poster. */
+.series-hero-tabs {
+  min-width: 0;
+  margin-top: var(--mantine-spacing-md);
+}
+@media (min-width: 68.8125em) {
+  /* The empty first and last rows take whatever the panel is taller by, so the title and tabs stay
+     one block centred against it rather than splitting around the extra height. */
+  .series-hero:not([data-compact]) .series-hero-content {
+    grid-template-rows: 1fr auto auto 1fr;
+    row-gap: 0;
+  }
+  .series-hero:not([data-compact]) .series-hero-row {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .series-hero:not([data-compact]) .series-hero-panel {
+    grid-column: 2;
+    grid-row: 1 / -1;
+  }
+  .series-hero:not([data-compact]) .series-hero-tabs {
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: var(--mantine-spacing-xl);
+  }
+  .series-hero:not([data-compact]) .series-hero-content:has(.series-hero-poster) .series-hero-tabs {
+    padding-left: calc(224px + 32px);
+  }
+}
 
 .series-hero-poster {
   display: block;
@@ -3423,7 +3536,7 @@ body::before {
   flex-shrink: 0;
 }
 /* Anton is the only face that takes the distress. It is a poster face carrying the identity of the
-   thing on screen, and a poster is printed; Inter has to stay legible at 12.5px and gets none of it.
+   thing on screen, and a poster is printed; the text face has to stay legible at 12.5px and gets none of it.
 
    A mask rather than `background-clip: text`: it erodes the edge and speckles the fill in one pass,
    it leaves `color` on the token where the theme can still reach it, and it fails safe. A browser
@@ -3437,7 +3550,7 @@ body::before {
   color: var(--ink-hi);
   font-size: var(--type-display);
   line-height: 0.9;
-
+  hyphens: auto;
   overflow-wrap: anywhere;
 }
 .series-hero-status {
@@ -3565,11 +3678,9 @@ body::before {
   line-height: 1.05;
 }
 .hero-stat-l {
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
@@ -3712,8 +3823,6 @@ body::before {
   color: var(--bucket);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 .tag-bucket-rule {
   flex: 1;
@@ -3796,6 +3905,15 @@ body::before {
   background: var(--danger-soft);
   color: var(--ink-hi);
 }
+/* Hover deepens the tone instead of falling back to the plain chip hover, which outranks the rules above. */
+.term-chip[data-state='include']:hover {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 22%, var(--ok-soft));
+}
+.term-chip[data-state='exclude']:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 22%, var(--danger-soft));
+}
 .term-chip[data-state='exclude'] .tag-chip-body,
 .term-pill[data-state='exclude'] .mantine-Pill-label {
   text-decoration: line-through;
@@ -3865,12 +3983,20 @@ body::before {
 }
 
 /* --- Series tabs ---------------------------------------------------------- */
+/* One row that scrolls sideways. Mantine's list wraps by default, which on a phone stacked
+   Settings' eight tabs into three rows. */
 .series-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 32px;
   border-bottom: none;
   overflow-x: auto;
   scrollbar-width: none;
+}
+@media (max-width: 47.9375em) {
+  .series-tabs {
+    gap: 24px;
+  }
 }
 .series-tabs::-webkit-scrollbar {
   display: none;
@@ -3950,14 +4076,26 @@ body::before {
   margin-bottom: 14px;
   min-width: 0;
 }
+/* Icon, title and count wrap as one unit, so a narrow row never strands the count on a line of its own. */
+.section-header-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.section-header-end {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+}
+.section-header-end:not(:has(> .section-header-action)):has(> .section-header-arrows:empty) {
+  display: none;
+}
 .section-header-icon {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand-fg);
 }
 .section-header-title {
@@ -4060,18 +4198,28 @@ body::before {
   cursor: default;
 }
 
-/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the rule drops out and the row wraps naturally. */
+/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the
+   rule drops out and the action moves under the title, right-aligned, only when both cannot share a
+   line. A phone swipes rails, so it skips the arrows and keeps the header to one row. */
 @media (max-width: 36em) {
   .section-header {
     flex-wrap: wrap;
     row-gap: 6px;
   }
+  .section-header-lead {
+    max-width: 100%;
+  }
   .section-header-rule {
     display: none;
   }
-  .section-header-action,
-  .section-header-rule + .section-header-arrows {
+  .section-header-end {
     margin-left: auto;
+  }
+}
+@media (max-width: 36em) and (hover: none) {
+  .section-header-arrows,
+  .section-header-end:not(:has(> .section-header-action)) {
+    display: none;
   }
 }
 
@@ -4266,9 +4414,11 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
+/* Two columns only when each can hold the 132px label and a name beside it. A fixed pair inside
+   the narrower Metadata panel left a creator link 16px and pushed the page sideways. */
 .series-records {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
   gap: 0 var(--mantine-spacing-xl);
 }
 .series-record {
@@ -4288,18 +4438,35 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 }
 
 @media (max-width: 61.9375em) {
-  .series-split,
-  .series-records {
+  .series-split {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* The Progress panel gets its own line before it starts squeezing the title and actions.
-     `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
-     breakpoint below. */
+}
+/* The Progress panel gets its own line before it starts squeezing the title and actions: beside
+   them under ~1100px it was a 150px column, and the title broke inside its words. Stacked, the two
+   meters sit side by side so the panel stays one short band rather than a tall card.
+   `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
+   breakpoint below. */
+@media (max-width: 68.75em) {
   .series-hero:not([data-compact]) .series-hero-content {
     grid-template-columns: minmax(0, 1fr);
   }
-  .series-hero:not([data-compact]) .series-hero-glass-panel {
+  .series-hero:not([data-compact]) .series-hero-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    column-gap: var(--mantine-spacing-xl);
     margin-top: var(--mantine-spacing-lg);
+  }
+  .series-hero:not([data-compact]) .series-hero-panel > :not(.series-progress-meter),
+  .series-hero-panel:not(:has(.series-progress-meter + .series-progress-meter)) > .series-progress-meter {
+    grid-column: 1 / -1;
+  }
+  .series-hero:not([data-compact]) .series-progress-meter .mantine-Divider-root {
+    display: none;
+  }
+  .series-hero:not([data-compact]) .series-hero-poster {
+    width: 176px;
+    height: 264px;
   }
 }
 
@@ -4844,11 +5011,9 @@ body.column-resizing * {
 }
 /* No rule for `down`: a quieter month is not a failure, and red here read like a broken download. */
 .stats-figure-l {
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 @media (max-width: 61.9375em) {
@@ -5101,10 +5266,8 @@ body.column-resizing * {
 }
 .stats-fact-label {
   color: var(--ink-3);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
 }
 .stats-fact-value {
   color: var(--ink-hi);
@@ -5493,7 +5656,7 @@ body.column-resizing * {
   position: absolute;
   top: 16px;
   left: 16px;
-  right: 64px;
+  right: 104px;
   display: flex;
   gap: 6px;
 }
@@ -5509,11 +5672,25 @@ body.column-resizing * {
   border-radius: var(--radius-pill);
   background: #fff;
 }
+/* A CSS animation rather than a motion one so pausing Rewind can freeze it where it is. */
+.rewind-progress-timed {
+  width: 0;
+  animation-name: rewind-progress-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes rewind-progress-fill {
+  to {
+    width: 100%;
+  }
+}
 
-.rewind-close {
+.rewind-controls {
   position: absolute;
   top: 10px;
   right: 12px;
+  display: flex;
+  gap: 4px;
 }
 
 .rewind-slide {
@@ -5522,9 +5699,8 @@ body.column-resizing * {
 }
 
 .rewind-eyebrow {
-  font-size: 0.8rem;
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.18em;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   opacity: 0.75;
 }
 .rewind-title {
@@ -5568,10 +5744,8 @@ body.column-resizing * {
   line-height: 1.1;
 }
 .rewind-summary-label {
-  font-size: 0.8rem;
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   opacity: 0.7;
 }
 
@@ -5619,7 +5793,7 @@ body.column-resizing * {
 }
 .rewind-slide,
 .rewind-progress,
-.rewind-close {
+.rewind-controls {
   z-index: 1;
 }
 .rewind-slide {
@@ -5825,8 +5999,8 @@ body.reader-open {
   gap: 8px;
   padding: 10px 18px;
   border-radius: var(--radius-pill);
-  background: rgba(10, 10, 11, 0.86);
-  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0a0a0b;
   color: #fff;
   font-size: var(--type-meta);
   pointer-events: none;
@@ -5860,8 +6034,7 @@ body.reader-open {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-base) var(--ease);
-  background: rgba(10, 10, 11, 0.86);
-  backdrop-filter: blur(8px);
+  background: #0a0a0b;
   color: #fff;
 }
 .reader-bar[data-visible='true'] {
@@ -5939,7 +6112,7 @@ body.reader-open {
   bottom: 2px;
   padding: 0 4px;
   border-radius: var(--mantine-radius-xs);
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.85);
   background: rgba(0, 0, 0, 0.65);
@@ -5960,16 +6133,13 @@ body.reader-open {
   padding: 10px 20px;
   border-radius: var(--radius-hero);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(10, 10, 11, 0.86);
-  backdrop-filter: blur(8px);
+  background: #0a0a0b;
   text-align: center;
   pointer-events: none;
   animation: reader-chapter-banner 2400ms var(--ease) both;
 }
 .reader-chapter-banner-series {
-  font-size: var(--type-micro);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
   color: rgba(255, 255, 255, 0.6);
 }
 .reader-chapter-banner-label {
@@ -6031,10 +6201,8 @@ body.reader-open {
   flex: 1;
 }
 .reader-end-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: rgba(255, 255, 255, 0.5);
 }
 .reader-end-title {
@@ -6143,8 +6311,7 @@ body.reader-open {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.7);
 }
 .reader-shortcuts-panel {
   width: min(800px, 100%);
@@ -6178,10 +6345,8 @@ body.reader-open {
 }
 .reader-shortcuts-groups h3 {
   margin: 0 0 8px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   color: rgba(255, 255, 255, 0.5);
 }
 .reader-shortcuts-groups dl {
@@ -6332,7 +6497,7 @@ body.reader-open {
   height: 100%;
   display: grid;
   place-items: center;
-  font-size: var(--type-badge);
+  font-size: var(--type-micro);
   /* Scheme-aware, unlike the grid card's placeholder: that one sits on cover art behind a dark
      scrim and can hard-code a light grey, while this one sits on `--surface-2`, which is #f7f8fc
      in the light theme. */
@@ -6421,12 +6586,10 @@ body.reader-open {
   color: var(--mantine-color-dimmed);
   opacity: 0.7;
 }
-/* And the ring's blur is pure compositor cost here: it exists to let cover art show through the
-   glass, and there is no art under a row. */
+/* No art under a row, so the disc takes the row's surface. */
 .series-row .cover-ring {
   width: 26px;
   height: 26px;
-  backdrop-filter: none;
   background: var(--surface-2);
   box-shadow: none;
 }
@@ -6483,6 +6646,19 @@ body.reader-open {
   gap: 4px;
   align-self: center;
 }
+/* A collapsed type's own rows, opened under its summary: indented to the message column so they
+   read as the group's members, each keeping its Open and Acknowledge. */
+.health-check-group-body {
+  margin-left: calc(104px + 14px);
+  border-left: 1px solid var(--hairline);
+  padding-left: 14px;
+}
+.health-check-group-body .health-check {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+.health-check-group-body .health-check > .status-dot {
+  display: none;
+}
 /* Sixty series behind one outage must not push the rest of the checks off the page. */
 .health-source-series {
   grid-column: 2 / -1;
@@ -6497,20 +6673,22 @@ body.reader-open {
   border-radius: var(--mantine-radius-sm);
 }
 /* An acknowledged check is kept, not hidden: the decision was "stop telling me", not "this is
-   fine", and the row has to stay findable for whoever reverses it. */
-.health-check[data-acknowledged] {
-  opacity: 0.55;
+   fine", and the row has to stay findable for whoever reverses it. The dot and the quieter
+   message carry the state; dimming the whole row took its text and buttons under 4.5:1. */
+.health-check[data-acknowledged] .status-dot {
+  color: var(--ink-3);
+}
+.health-check[data-acknowledged] .status-dot::before {
+  opacity: 0.45;
 }
 
 /* The category heading is a label, not a title: it separates groups inside one panel and must not
    compete with the panel's own heading. */
 .health-group-label {
   margin-top: var(--mantine-spacing-md);
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 .health-group:first-of-type .health-group-label {
   margin-top: 0;
@@ -6585,6 +6763,9 @@ body.reader-open {
   .health-check-actions,
   .health-source-series {
     grid-column: 1 / -1;
+  }
+  .health-check-group-body {
+    margin-left: 0;
   }
 }
 
@@ -6876,11 +7057,9 @@ body.reader-open {
   color: var(--ink-4);
 }
 .figure-strip-l {
-  color: var(--ink-4);
-  font-size: var(--type-label);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .status-dot {
@@ -7121,13 +7300,149 @@ body.reader-open {
   color: var(--ink-hi);
   font-weight: var(--fw-semibold);
 }
+/* Below the width the index fits beside the cards, the same list is a bar pinned under the header
+   that names the card being read. The dirty-card header that also sticks moves down to sit under it. */
+.settings-jump {
+  display: none;
+}
+.settings-entry {
+  scroll-margin-top: 80px;
+}
 @media (max-width: 74.9375em) {
   .settings-layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--mantine-spacing-md);
   }
   .settings-index {
     display: none;
   }
+  .settings-surface {
+    --settings-jump-h: 52px;
+  }
+  .settings-jump {
+    position: sticky;
+    top: var(--app-shell-header-height, 0px);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    height: var(--settings-jump-h);
+    background: var(--app-bg);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .settings-section[data-dirty] .settings-section-head {
+    top: calc(var(--app-shell-header-height, 0px) + var(--settings-jump-h));
+  }
+  .settings-entry {
+    scroll-margin-top: calc(var(--app-shell-header-height, 0px) + var(--settings-jump-h) + 16px);
+  }
+}
+.settings-jump-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 4px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.settings-jump-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.settings-jump-icon {
+  flex-shrink: 0;
+  color: var(--brand-fg);
+}
+.settings-jump-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-jump-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+}
+
+/* --- Disclosure --------------------------------------------------------------
+   A heading row that opens the controls below it. Rows in a run share one hairline between them,
+   so four filter groups read as one list rather than four boxes. */
+.disclosure + .disclosure {
+  border-top: 1px solid var(--border);
+}
+.disclosure-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 2px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+}
+.disclosure-head:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.disclosure-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.disclosure-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.disclosure-title {
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.disclosure-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  color: var(--mantine-primary-color-contrast);
+  background: var(--mantine-primary-color-filled);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+}
+.disclosure-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.disclosure-summary-active {
+  color: var(--ink-2);
+}
+.disclosure-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease), color var(--dur-base) var(--ease);
+}
+.disclosure-head:hover .disclosure-chevron {
+  color: var(--ink-hi);
+}
+.disclosure[data-open] .disclosure-chevron {
+  transform: rotate(180deg);
+}
+.disclosure-body {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+  padding: 4px 2px 18px;
 }
 
 .save-control {
@@ -7189,10 +7504,24 @@ body.reader-open {
 }
 .library-toolbar-row .library-search {
   flex: 1 1 15rem;
-  min-width: min(18rem, 100%);
+  min-width: min(14rem, 100%);
 }
-.library-toolbar-row .library-sort {
-  flex: 0 0 10.625rem;
+/* Sort field and direction as one joined control. */
+.library-sort-control {
+  display: flex;
+  flex: none;
+}
+.library-sort-control .library-sort {
+  width: 10.625rem;
+}
+.library-sort-control .library-sort .mantine-Input-input {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+.library-sort-control > .mantine-ActionIcon-root {
+  margin-inline-start: -1px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }
 .library-toolbar-row > .tnum {
   flex: none;
@@ -7203,41 +7532,37 @@ body.reader-open {
 }
 .library-view-controls {
   flex: none;
+  margin-inline-start: auto;
 }
-.library-view-toggle {
+/* Grid / list, shared by every poster grid. */
+.view-mode-toggle {
   flex: none;
   padding: 2px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: transparent;
 }
-.library-view-toggle .mantine-SegmentedControl-indicator {
+.view-mode-toggle .mantine-SegmentedControl-indicator {
   border-radius: 4px;
   background: color-mix(in srgb, var(--brand) 18%, transparent);
   box-shadow: none;
 }
-.library-view-toggle .mantine-SegmentedControl-label {
+.view-mode-toggle .mantine-SegmentedControl-label {
   padding: 0;
   color: var(--ink-3);
 }
-.library-view-toggle .mantine-SegmentedControl-label:hover {
+.view-mode-toggle .mantine-SegmentedControl-label:hover {
   color: var(--ink-hi);
 }
-.library-view-toggle .mantine-SegmentedControl-label[data-active] {
+.view-mode-toggle .mantine-SegmentedControl-label[data-active] {
   color: var(--brand-fg);
 }
-.library-view-option {
+.view-mode-option {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 30px;
   height: 26px;
-}
-.library-density-button {
-  flex: none;
-  border-color: var(--border-strong);
-  background: transparent;
-  color: var(--ink-2);
 }
 .library-saved-filters {
   min-height: 1.75rem;
@@ -7248,11 +7573,55 @@ body.reader-open {
   align-items: center;
   gap: 0.375rem;
   margin-right: 0.125rem;
-  font-size: 0.75rem;
+  font-size: var(--type-micro);
   color: var(--ink-4);
 }
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
+}
+/* Remove is the one action that cannot be taken back, so a rule keeps it out of the run of the rest. */
+.library-bulk-divider {
+  align-self: stretch;
+  margin-inline: 4px;
+}
+@media (min-width: 48em) {
+  .library-bulk-more-phone {
+    display: none;
+  }
+}
+/* On a phone the drawer covers the grid it filters, so the count and the way back to the grid sit
+   in a footer that stays on screen however far the groups run. */
+.library-filter-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: auto calc(var(--mantine-spacing-md) * -1) 0;
+  padding: 12px var(--mantine-spacing-md) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+.library-filter-show {
+  flex: 1;
+}
+@media (max-width: 47.9375em) {
+  .library-filter-drawer {
+    display: flex;
+    flex-direction: column;
+  }
+  .library-filter-drawer > .mantine-Drawer-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+  .library-filter-drawer-body {
+    flex: 1;
+  }
+}
+@media (min-width: 48em) {
+  .library-filter-drawer-body {
+    padding-bottom: var(--mantine-spacing-xl);
+  }
 }
 @media (max-width: 47.9375em) {
   /* Home carries the same four numbers. On a phone the 2x2 tiles pushed the first cover below the
@@ -7272,10 +7641,6 @@ body.reader-open {
     border-radius: 0;
     box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
   }
-  /* A brand rule along the top of a sticky bar reads as a progress bar. */
-  .mantine-Paper-root.library-index.panel[data-edge] {
-    border-top-width: 0;
-  }
   .library-toolbar,
   .library-selection-bar {
     padding: 0.625rem var(--mantine-spacing-lg);
@@ -7283,6 +7648,27 @@ body.reader-open {
   .library-toolbar {
     gap: 0.5rem;
   }
+  /* The title shares its row with Select and Add series, the sentence runs full width under both,
+     so the first covers start higher on a phone. */
+  .library-page-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    row-gap: 2px;
+  }
+  .library-page-header > .mantine-Stack-root {
+    display: contents;
+  }
+  .library-page-header > .mantine-Stack-root > .mantine-Text-root {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .library-page-header > .mantine-Group-root {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  /* One row: search, the filter button, the dice and the menu. Sort, view and density live in the
+     menu here, so the first cover starts right under the bar. */
   .library-toolbar-row {
     flex-wrap: nowrap;
     gap: 0.5rem;
@@ -7291,8 +7677,9 @@ body.reader-open {
     flex: 1 1 0;
     min-width: 0;
   }
-  .library-toolbar-row .library-sort {
-    flex: 0 0 9.75rem;
+  .library-sort-control,
+  .library-toolbar-row > .tnum {
+    display: none;
   }
   /* One line that scrolls sideways, and gone entirely when it would hold only the tag gear: the
      Filters drawer carries "Manage tags" too. */
@@ -7302,14 +7689,6 @@ body.reader-open {
     scrollbar-width: none;
   }
   .library-saved-filters > * {
-    flex-shrink: 0;
-  }
-  .library-selection-bar > .mantine-Group-root:last-child {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .library-selection-bar > .mantine-Group-root:last-child > * {
     flex-shrink: 0;
   }
 }
@@ -7323,43 +7702,15 @@ body.reader-open {
   border-radius: var(--radius-surface);
   box-shadow: none;
 }
-/* --- Panel: shared accent-edge panel grammar (components/ui/Panel.tsx) --- */
+/* --- Panel (components/ui/Panel.tsx) --- */
 
 .panel {
   box-shadow: var(--shadow-card);
 }
-.panel[data-edge] {
-  --panel-edge: var(--border-strong);
-}
-.panel[data-edge='brand'] {
-  --panel-edge: var(--brand);
-}
-.panel[data-edge='info'] {
-  --panel-edge: var(--info);
-}
-.panel[data-edge='ok'] {
-  --panel-edge: var(--ok);
-}
-.panel[data-edge='warn'] {
-  --panel-edge: var(--warn);
-}
-.panel[data-edge='danger'] {
-  --panel-edge: var(--danger);
-}
-.panel[data-edge][data-edge-side='top'] {
-  border-top: 2px solid var(--panel-edge);
-}
-.panel[data-edge][data-edge-side='left'] {
-  border-left: 2px solid var(--panel-edge);
-  border-right: 0;
-}
 
 /* Scheme prefix out-specifies the blanket Paper surface rule, like the layer-* classes. */
 [data-mantine-color-scheme] .discover-recommended-customize {
-  border-top-color: var(--border-strong);
-  border-bottom-color: var(--border-strong);
-  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  background: var(--surface-2);
 }
 
 .series-detail-chapter-toolbar {
@@ -7454,7 +7805,7 @@ body.reader-open {
   border-radius: 3px;
   border: 1px solid var(--border);
   background: var(--surface-2);
-  font-size: 9px;
+  font-size: var(--type-badge);
   font-weight: 600;
   color: var(--ink-4);
   display: grid;
@@ -7464,9 +7815,9 @@ body.reader-open {
   transition: background-color 0.25s, border-color 0.25s, color 0.25s;
 }
 .relink-cell.is-move {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  border-color: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
 }
 .relink-cell.is-fill {
   background: var(--ok);
@@ -7567,11 +7918,9 @@ body.reader-open {
   margin: 0;
   padding: 0.8rem 1rem 0.45rem;
   color: var(--ink-3);
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.08em;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
   line-height: 1.25;
-  text-transform: uppercase;
 }
 .inbox-record {
   border-bottom: 1px solid var(--line-soft);
@@ -7701,16 +8050,30 @@ body.reader-open {
   flex-direction: column;
   align-items: flex-start;
 }
+/* A cover that lends a colour (`--series-accent`, set inline by ContinueHero) tints the bar and
+   the unread count; Resume stays on the brand so the primary action reads the same everywhere. */
+.continue-hero,
+.continue-queue-row {
+  --tile-accent: var(--brand);
+  --tile-accent-fg: var(--brand-fg);
+}
+.continue-hero.has-accent,
+.continue-queue-row.has-accent {
+  --tile-accent: var(--series-accent);
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 68%, white);
+}
+:root[data-theme='light'] .continue-hero.has-accent,
+:root[data-theme='light'] .continue-queue-row.has-accent {
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
+}
 .continue-hero-eyebrow {
   display: flex;
   align-items: center;
   gap: 9px;
   margin-bottom: 10px;
   color: var(--brand-fg);
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
 }
 .continue-hero-eyebrow::before {
   content: '';
@@ -7767,7 +8130,7 @@ body.reader-open {
 .continue-hero-fill {
   height: 100%;
   border-radius: inherit;
-  background: var(--brand);
+  background: var(--tile-accent);
 }
 .continue-hero-unread {
   display: inline-flex;
@@ -7776,8 +8139,8 @@ body.reader-open {
   margin-top: 14px;
   padding: 0 10px;
   border-radius: var(--radius-control);
-  color: var(--brand-fg);
-  background: color-mix(in srgb, var(--brand) 15%, transparent);
+  color: var(--tile-accent-fg);
+  background: color-mix(in srgb, var(--tile-accent) 15%, transparent);
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
 }
@@ -7960,11 +8323,11 @@ body.reader-open {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--brand);
+  background: var(--tile-accent);
 }
 .continue-queue-unread {
   margin-left: auto;
-  color: var(--brand-fg);
+  color: var(--tile-accent-fg);
   font-size: var(--type-badge);
   font-weight: var(--fw-bold);
   white-space: nowrap;
@@ -8096,8 +8459,7 @@ body.reader-open {
   background-color: var(--surface-hover);
 }
 
-/* Same accent-edge grammar the Panel uses, so a destructive confirm reads the same way a
-   destructive panel does. */
+/* A destructive confirm carries a rule along its top in the state colour. */
 .utility-modal-content[data-edge] {
   --panel-edge: var(--border-strong);
   border-top: 2px solid var(--panel-edge);
@@ -8140,14 +8502,10 @@ body.reader-open {
     left: 16px;
     right: 16px;
   }
-  .rewind-close {
+  .rewind-controls {
     top: auto;
     bottom: 34px;
     right: 8px;
-  }
-  .rewind-eyebrow {
-    font-size: 0.72rem;
-    letter-spacing: 0.13em;
   }
   /* The desktop clamps floor at 2rem / 3.5rem, which is wider than 360px once a
      four-digit count is drawn. */
@@ -8188,8 +8546,46 @@ body.reader-open {
 .scrobble-review-input {
   width: 160px;
 }
-.scrobble-error-text {
-  max-width: 320px;
+/* Recent syncs: one row per series, a line per tracker. A failure keeps the tracker's own reason
+   in full beside the plain "Not updated", wrapping rather than hidden behind a hover. */
+.scrobble-recent-table thead th:nth-child(1) {
+  width: 32%;
+}
+.scrobble-recent-table thead th:nth-child(3) {
+  width: 150px;
+}
+.scrobble-recent-series {
+  font-weight: var(--fw-medium);
+  vertical-align: top;
+}
+.scrobble-recent-table td {
+  vertical-align: top;
+}
+.scrobble-trackers {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.scrobble-tracker {
+  display: grid;
+  grid-template-columns: 7.5rem auto 1fr;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.scrobble-tracker-name {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.scrobble-tracker-error {
+  display: grid;
+  grid-column: 2 / -1;
+  gap: 2px;
+  min-width: 0;
+}
+.scrobble-tracker-reason {
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 47.9375em) {
@@ -8205,8 +8601,12 @@ body.reader-open {
   .scrobble-review-input {
     width: 100%;
   }
-  .scrobble-error-text {
-    max-width: none;
+  .scrobble-tracker {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .scrobble-tracker-name,
+  .scrobble-tracker-error {
+    grid-column: 1 / -1;
   }
   /* Service and timestamp are recoverable from the row itself; series, progress
      and status are what the table is read for. */
@@ -8234,8 +8634,8 @@ body.reader-open {
 }
 
 @media (max-width: 47.9375em) {
-  .activity-queue-table thead th,
-  .activity-history-table thead th {
+  .activity-queue-table thead th:nth-child(n),
+  .activity-history-table thead th:nth-child(n) {
     width: auto;
   }
   .mantine-TableScrollContainer-scrollContainerInner:has(> .activity-queue-table),
@@ -8443,7 +8843,7 @@ body.reader-open {
   color: var(--brand-fg);
 }
 .layout-edit-badge {
-  font-size: 11px;
+  font-size: var(--type-badge);
   line-height: 1;
   padding: 3px 6px;
   border-radius: var(--radius-pill);
@@ -8696,11 +9096,9 @@ body.reader-open {
   display: flex;
   justify-content: space-between;
   padding: 10px 10px 6px;
-  font-size: var(--type-label);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .source-manager-empty {
   padding: 24px 10px;
@@ -8854,8 +9252,6 @@ body.reader-open {
 .source-tag[data-tone='language'] {
   font-family: var(--mantine-font-family-monospace);
   font-size: var(--type-badge);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .source-filter-count {
@@ -8865,8 +9261,8 @@ body.reader-open {
   height: 18px;
   padding: 0 5px;
   border-radius: var(--radius-pill);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
 }
@@ -8877,11 +9273,9 @@ body.reader-open {
 }
 .source-filter-label {
   margin-bottom: 6px;
-  font-size: var(--type-label);
+  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .source-filter-n {
   margin-left: 4px;

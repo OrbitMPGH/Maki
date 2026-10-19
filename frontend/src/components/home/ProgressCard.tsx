@@ -18,7 +18,7 @@ function Figure({
     <div className="hero-stat">
       <span className="hero-stat-n tnum">
         {FigIcon && (
-          <FigIcon size={16} style={{ color: 'var(--brand)', marginRight: 5, verticalAlign: -2 }} />
+          <FigIcon size={14} style={{ color: 'var(--brand)', marginRight: 4, verticalAlign: -1 }} />
         )}
         {value}
       </span>
@@ -46,23 +46,23 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
     // A plain Link rather than a Mantine element with `component`: the polymorphic prop types do
     // not carry react-router's `to` through, and this element only needs to be a flex row.
     <Link to="/stats?section=progress" className="home-glance-progress">
-      <Group gap={11} wrap="nowrap">
+      <Group gap={10} wrap="nowrap">
         <RingProgress
-          size={46}
-          thickness={5}
+          size={38}
+          thickness={4}
           roundCaps
           sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
           label={
-            <Text ta="center" fw={700} fz="var(--type-label)" className="tnum" c="var(--ink-hi)">
+            <Text ta="center" fw={700} fz="var(--type-micro)" className="figure" c="var(--ink-hi)">
               {level.level}
             </Text>
           }
         />
         <Stack gap={0}>
-          <Text fw={700} fz="var(--type-body)" c="var(--ink-hi)">
+          <Text fw={700} fz="var(--type-meta)" c="var(--ink-hi)">
             <Trans>Level {levelNumber}</Trans>
           </Text>
-          <Text fz="var(--type-label)" c="var(--ink-4)" className="tnum">
+          <Text fz="var(--type-micro)" c="var(--ink-4)" className="tnum">
             <Trans>
               {intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}
             </Trans>

@@ -80,6 +80,11 @@ function tierColor(tier: number): string {
   return TIER_COLORS[Math.min(Math.max(tier, 1), TIER_COLORS.length) - 1]
 }
 
+/** Several tier hues miss 4.5:1 as small text; pulling them toward the ink keeps the hue and passes. */
+function tierTextColor(tier: number): string {
+  return `color-mix(in srgb, ${tierColor(tier)} 65%, var(--ink-hi))`
+}
+
 function tierSoftColor(tier: number): string {
   return TIER_SOFT_COLORS[Math.min(Math.max(tier, 1), TIER_SOFT_COLORS.length) - 1]
 }
@@ -155,7 +160,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
       padding="md"
       style={{
         borderColor: earned ? tierColor(achievement.tier) : undefined,
-        opacity: earned ? 1 : 0.72,
+        opacity: earned ? 1 : 0.85,
       }}
     >
       <Stack gap={6}>
@@ -181,7 +186,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               <Badge
                 size="sm"
                 variant="light"
-                style={{ backgroundColor: tierSoftColor(achievement.tier), color: tierColor(achievement.tier) }}
+                style={{ backgroundColor: tierSoftColor(achievement.tier), color: tierTextColor(achievement.tier) }}
               >
                 {achievement.tierName}
               </Badge>
@@ -233,7 +238,7 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
   return (
     <Stack gap="lg">
       <Stack gap="xs">
-        <Title order={4}>
+        <Title order={3} size="h4">
           <Trans>Reading</Trans>
         </Title>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
@@ -245,7 +250,7 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
 
       {library.length > 0 && (
         <Stack gap="xs">
-          <Title order={4}>
+          <Title order={3} size="h4">
             <Trans>The library</Trans>
           </Title>
           {/* Said plainly, because these count what is on disk and the library is shared: on a

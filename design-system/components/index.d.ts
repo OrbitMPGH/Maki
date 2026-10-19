@@ -9,18 +9,14 @@ export declare function PageHeader(props: {
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
+  /** Between title and actions on one row when wide; its own row underneath when not. Home's glance only. */
+  center?: ReactNode
   /** Smaller title for operational pages. */
   compact?: boolean
 }): JSX.Element
 
-export type PanelEdge = 'brand' | 'info' | 'ok' | 'warn' | 'danger' | 'strong'
-
 /** The house panel: bordered Paper, radius lg, padding lg, 1px card shadow. */
 export interface PanelProps extends PaperProps {
-  /** Draws the 2px accent rule. `strong` is the neutral border-strong variant. */
-  edge?: PanelEdge
-  /** Left drops the right border, top keeps all four. Default 'top'. */
-  edgeSide?: 'top' | 'left'
   children?: ReactNode
 }
 export declare const Panel: (props: PanelProps) => JSX.Element
@@ -68,6 +64,20 @@ export declare function FigureStrip(props: {
   /** How many figures come before `middle`. Default: centred. */
   middleAfter?: number
 }): JSX.Element
+
+export interface DisclosureProps {
+  title: ReactNode
+  /** Badges how many things inside are set. Hidden at 0. */
+  count?: number
+  /** What a screen reader hears for `count`, translated. */
+  countLabel?: string
+  /** Up to two lines under the title, shown only while closed. */
+  summary?: ReactNode
+  opened: boolean
+  onToggle: () => void
+  children: ReactNode
+}
+export declare function Disclosure(props: DisclosureProps): JSX.Element
 
 /** A status as a coloured dot and a word. `tone` is a token stem. */
 export declare function StatusDot(
