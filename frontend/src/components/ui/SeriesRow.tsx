@@ -3,12 +3,11 @@ import { IconBellOff, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import {
+  badgeFill,
   seriesDownloadStateVisual,
   seriesProgressVisual,
   seriesStatusVisual,
-  statusToken,
 } from './status'
-import { StatusDot } from './StatusDot'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -83,9 +82,13 @@ export const SeriesRow = memo(function SeriesRow({
             {series.displayTitle}
           </span>
           {series.year && <span className="row-year">{series.year}</span>}
-          <StatusDot tone={statusToken(status.color)} style={{ flexShrink: 0 }}>
+          <span
+            className="cover-badge"
+            style={{ ...badgeFill(status.color), flexShrink: 0 }}
+          >
+            <status.Icon size={11} />
             {renderLabel(status.label)}
-          </StatusDot>
+          </span>
           {/* Monitor state, same as the grid card: a subtle eye when watched, a clear eye-off
               when not. Icon-only, so the tooltip is the only thing that names it. */}
           <span
@@ -119,13 +122,10 @@ export const SeriesRow = memo(function SeriesRow({
 
         <div className="row-progress">
           {download && (
-            <StatusDot
-              tone={statusToken(download.color)}
-              live={series.downloadingCount > 0 || undefined}
-              style={{ flexShrink: 0 }}
-            >
+            <span className="cover-badge" style={{ ...badgeFill(download.color), flexShrink: 0 }}>
+              <download.Icon size={11} />
               {renderLabel(download.label)}
-            </StatusDot>
+            </span>
           )}
           {readPct !== null && (
             <span
