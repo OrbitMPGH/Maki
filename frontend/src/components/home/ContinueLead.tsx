@@ -55,8 +55,8 @@ const ContinueTile = memo(function ContinueTile({
   const { seriesTitle, chapterLabel, unreadChapters, pageCount } = item
   const pageNumber = item.page + 1
 
-  // The cover's own colour, when it has one, drives the bar, the unread count and the button
-  // (`.continue-tile.has-accent`), so each tile belongs to its series rather than to the theme.
+  // The cover's own colour, when it has one, drives the bar and the unread count
+  // (`.continue-tile.has-accent`); Resume keeps the brand accent.
   const accentStyle = item.coverAccent
     ? ({ '--series-accent': item.coverAccent } as CSSProperties)
     : undefined

@@ -7659,7 +7659,8 @@ body.reader-open {
 
 .continue-tile {
   /* The theme accent by default; a tile whose cover lends a colour (`--series-accent`, set inline
-     by ContinueLead) switches both to it. The text tint is the fill lifted toward white so it reads
+     by ContinueLead) switches the bar and unread count to it. Resume stays on the brand so the
+     primary action looks the same on every tile. The text tint is the fill lifted toward white so it reads
      on the tile's dark ground; the light theme pulls it toward black instead. */
   --tile-accent: var(--brand);
   --tile-accent-fg: var(--brand-fg);
@@ -7766,11 +7767,6 @@ body.reader-open {
 }
 :root[data-theme='light'] .continue-tile.has-accent {
   --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
-}
-.continue-tile.has-accent .continue-tile-action {
-  --button-bg: var(--tile-accent);
-  --button-hover: color-mix(in oklab, var(--tile-accent) 86%, black);
-  --button-color: #ffffff;
 }
 .continue-tile-unread {
   color: var(--tile-accent-fg);
