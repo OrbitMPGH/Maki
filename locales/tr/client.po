@@ -190,6 +190,11 @@ msgstr "{0, plural, one {# dakika okundu} other {# dakika okundu}}"
 msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
 msgstr "{0, plural, one {Aynı cilt dosyasındaki # bölüm de dosyasını kaybeder.} other {Aynı cilt dosyalarındaki # bölüm de dosyalarını kaybeder.}}"
 
+#. placeholder {0}: unresolved.length
+#: src/pages/HealthPage.tsx
+msgid "{0, plural, one {# needs attention} other {# need attention}}"
+msgstr ""
+
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -13093,6 +13098,10 @@ msgstr "Sizin gibi okuyucular bunu da bitirdi"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "Sizin gibi okuyucular bunu da önerdi"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx

@@ -190,6 +190,11 @@ msgstr "{0, plural, one {# minuto leído} many {# minutos leídos} other {# minu
 msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
 msgstr "{0, plural, one {# capítulo más está en el mismo archivo de volumen y también lo pierde.} many {# capítulos más están en los mismos archivos de volumen y también los pierden.} other {# capítulos más están en los mismos archivos de volumen y también los pierden.}}"
 
+#. placeholder {0}: unresolved.length
+#: src/pages/HealthPage.tsx
+msgid "{0, plural, one {# needs attention} other {# need attention}}"
+msgstr ""
+
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -13093,6 +13098,10 @@ msgstr "Lectores como tú también terminaron esto"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "Lectores como tú también recomendaron esto"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx

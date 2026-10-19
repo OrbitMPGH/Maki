@@ -13,14 +13,8 @@ export declare function PageHeader(props: {
   compact?: boolean
 }): JSX.Element
 
-export type PanelEdge = 'brand' | 'info' | 'ok' | 'warn' | 'danger' | 'strong'
-
 /** The house panel: bordered Paper, radius lg, padding lg, 1px card shadow. */
 export interface PanelProps extends PaperProps {
-  /** Draws the 2px accent rule. `strong` is the neutral border-strong variant. */
-  edge?: PanelEdge
-  /** Left drops the right border, top keeps all four. Default 'top'. */
-  edgeSide?: 'top' | 'left'
   children?: ReactNode
 }
 export declare const Panel: (props: PanelProps) => JSX.Element

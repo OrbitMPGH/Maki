@@ -190,6 +190,11 @@ msgstr "{0, plural, other {阅读 # 分钟}}"
 msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
 msgstr "{0, plural, other {同一卷文件中另有 # 个章节也会一并失去它。}}"
 
+#. placeholder {0}: unresolved.length
+#: src/pages/HealthPage.tsx
+msgid "{0, plural, one {# needs attention} other {# need attention}}"
+msgstr ""
+
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -13092,6 +13097,10 @@ msgstr "像你一样的读者也读完了此内容"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "像你一样的读者也推荐了此内容"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx

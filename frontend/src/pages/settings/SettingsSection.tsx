@@ -82,7 +82,7 @@ export function SettingsSection({
           <SettingsHelp>{description}</SettingsHelp>
         </div>
       )}
-      <Panel edge={unsaved ? 'brand' : undefined} {...panelProps}>
+      <Panel {...panelProps}>
         {children}
       </Panel>
     </section>

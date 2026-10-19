@@ -160,6 +160,11 @@ msgstr "{0, plural, one {# minute read} other {# minutes read}}"
 msgid "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
 msgstr "{0, plural, one {# more chapter is in the same volume file and loses it too.} other {# more chapters are in the same volume files and lose them too.}}"
 
+#. placeholder {0}: unresolved.length
+#: src/pages/HealthPage.tsx
+msgid "{0, plural, one {# needs attention} other {# need attention}}"
+msgstr "{0, plural, one {# needs attention} other {# need attention}}"
+
 #. placeholder {0}: panel.pageCount
 #: src/components/SourceCompareModal.tsx
 msgid "{0, plural, one {# page} other {# pages}}"
@@ -10617,6 +10622,10 @@ msgstr "Readers like you also finished this"
 #: src/components/ui/DiscoverRail.tsx
 msgid "Readers like you also recommended this"
 msgstr "Readers like you also recommended this"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished this"
+msgstr "Readers who finished {finished} also finished this"
 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx

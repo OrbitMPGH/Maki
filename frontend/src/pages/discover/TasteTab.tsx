@@ -496,7 +496,7 @@ function TagsCard({
   onExplore: (tag: string) => void
 }) {
   return (
-    <Panel edge="strong" p="md">
+    <Panel p="md">
       <Group gap={8} mb="xs" wrap="nowrap">
         <IconTags size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
         <Text fw={650}>
