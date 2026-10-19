@@ -1,0 +1,29 @@
+---
+paths:
+  - "frontend/.storybook/**"
+  - "frontend/**/*.stories.tsx"
+  - "frontend/vitest.config.ts"
+  - "frontend/tsconfig.storybook.json"
+  - "frontend/public/mockServiceWorker.js"
+---
+
+# Storybook
+
+`npm run storybook` (port 6006) for the UI, `npm run test-storybook` to run every story as a Vitest browser test (Playwright Chromium, headless, 1280x800). Each story is a test: it fails if it throws, if its `play` fails, or if it made an API request nothing mocked.
+
+- **Every story renders inside the app's real provider tree** (`.storybook/preview.tsx`: i18n, theme, QueryClient, MemoryRouter, AuthProvider, nav history, shell and document title). Don't add per-story providers; if a component needs a context the app gives it, add it to `StoryProviders` once.
+- **Story parameters:** `router: { path, initialEntries }` (`path` is the route pattern, so `useParams` works), `auth: 'admin' | 'reader' | 'signedOut'`, `msw: [...]` for per-story overrides, `allowUnmocked` to skip the unmocked check. Toolbar globals switch background, accent and language; the provider tree remounts on change because `AppThemeProvider` reads localStorage only on mount.
+- **Mocks live in `.storybook/mocks/`, one file per area** (`home.ts`, `series.ts`, ...), aggregated by `index.ts`, with the shell endpoints and the shared 12-series `catalogue` in `shared.ts`. First match wins in `defaultHandlers`. Fixtures are typed with `satisfies <Dto>` and `tsconfig.storybook.json` checks them in `tsc -b`, so a DTO change that breaks a fixture fails the build rather than a story silently rendering half a page.
+- **Each area's page-level stories pass their handlers explicitly** through a helper (`homePage()`, `discoverPage()`, `seriesMsw()`, `settingsMsw()`, `addSeriesHandlers`, `statsPageBase()`, ...) as `parameters.msw`, putting variants first. Endpoints several areas need (`/series`, `/rootfolder`, `/reader/used`, `/progress/summary`, ...) are registered globally by more than one file, and first match wins, so the later global copies are dead and a page story that relied on them would silently get another area's fixture. Story-level `parameters.msw` replaces a meta-level one rather than merging, so repeat the base list.
+- **A request no handler answers fails the story** (catch-all in `mocks/index.ts`, thrown from `afterEach` in preview). So a new `api(...)` call in a page needs a handler in that area's mock file in the same change, or its stories go red.
+- **Defaults are the worker's initial handlers, not `msw.use` in `beforeEach`.** The csf3 `mswLoader` resets to the initial handlers and then applies `parameters.msw` before `beforeEach` runs; registering defaults in `beforeEach` would put them in front of the story's overrides.
+- **Before each story the preview clears localStorage, sessionStorage and Mantine's toast queue** (keys matching `storybook` are kept, the manager shares the origin). Pages keep filters and view modes in `usePageState` and localStorage, so without it a story starts where the previous one left off. A story that needs stored state seeds it in its own `beforeEach`, which runs after the preview's.
+- **Admin is the default `/auth/me` handler, not a `beforeEach` override**, so `signedInAs(...)` in `parameters.msw` works. `auth: 'reader' | 'signedOut'` is applied in `beforeEach` and beats both.
+- **The clock starts at `NOW` (2026-10-19T12:00Z) and keeps ticking.** `preview.tsx` swaps `Date` for a shifted subclass rather than freezing it (mockdate), because timers, durations and the reader's elapsed time need time to pass. Build fixture dates with `daysAgo()`/`hoursAgo()`.
+- **Under the test runner (`navigator.webdriver`) all CSS animations and transitions are zeroed**, or `toBeVisible` races entrance keyframes like `.auth-panel`'s fade from opacity 0. The interactive Storybook keeps motion.
+- **Mantine's own transitions are skipped under the runner too**: `StoryProviders` layers `respectReducedMotion: true` over the app theme and `vitest.config.ts` emulates `reducedMotion: 'reduce'`, so modals, drawers and menus are entered the moment they mount. Without it a loaded full run fails a different handful of `toBeVisible` checks each time. The app itself does not respect reduced motion, so a story that depends on an exit transition opts out with `parameters: { realMotion: true }` (the reader's profile Select: its portalled options count as an outside click on the settings popover, and only the popover's exit animation keeps the option mounted long enough to receive the click).
+- **Don't gate stories behind sign-in globally.** `AuthProvider` drops the health queries in an effect when `me` resolves, and parent effects run after child ones, so a page mounted with it loses its first health fetches. The app avoids this because `AuthGate` mounts pages later. A preview-wide gate broke every play that queries synchronously, so `HealthPage.stories.tsx` carries its own `AfterSignIn` decorator instead.
+- **`getInitialize()` caches `/initialize.json` per page load**, so a story can't change the SSO or setup flags with `parameters.msw` after another story in the same file loaded it. Vary those per file, not per story.
+- **Images are generated SVGs**: `cover(seed)`, `pageImage(seed, n)`, `banner(seed)` from `mocks/api.ts`, plus the real `/api/v1/mediacover/:id/...` and reader page routes. No binary assets in the repo.
+- **Stories use plain English literals, never Lingui macros**, or story text lands in the translation catalogue. Titles and names in fixtures are invented.
+- **`public/mockServiceWorker.js` ships with the app build** because Storybook serves `public/`. It is inert unless something registers it and is not in the PWA precache (`SHELL_FILES` in `vite/sw-plugin.ts` is an explicit list). Regenerate it with `npx msw init ./public` after an msw upgrade.

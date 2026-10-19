@@ -36,6 +36,14 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # Every story renders under the app's real providers against the MSW mocks in .storybook/mocks,
+      # and a story whose component calls an endpoint nothing mocks fails, so a new API call has to
+      # bring its mock along. Chromium only; the browser binary is not in the npm cache.
+      - name: Storybook stories render and pass their play functions
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test-storybook
+
       # Self-hosters open the app over plain HTTP on a LAN address, where crypto.randomUUID and
       # navigator.clipboard are undefined. It works on localhost, so it only surfaces after release.
       - name: No secure-context-only APIs outside their helpers
