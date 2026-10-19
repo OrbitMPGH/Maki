@@ -53,6 +53,10 @@ public static class CoReadScorer
     /// passing null degrades to unweighted rather than to nothing.
     /// </param>
     /// <param name="tuning">Knobs.</param>
+    /// <param name="strongestSeed">
+    /// When given, filled with the seed that contributed most to each candidate's score, so a card
+    /// can name the title the crowd paired it with rather than only saying a crowd did.
+    /// </param>
     /// <returns>
     /// Candidate id → score. Empty when no seed is in the graph. Callers read a missing key as "no
     /// co-read evidence", which is why the normalization below divides by the maximum rather than
@@ -63,9 +67,11 @@ public static class CoReadScorer
         PairGraphIndex graph,
         IReadOnlyCollection<long> seedIds,
         IReadOnlyDictionary<long, double>? seedWeights,
-        CoReadTuning tuning)
+        CoReadTuning tuning,
+        IDictionary<long, long>? strongestSeed = null)
     {
         var scores = new Dictionary<long, double>();
+        var strongest = strongestSeed is null ? null : new Dictionary<long, double>();
         if (seedIds.Count == 0)
         {
             return scores;
@@ -107,7 +113,14 @@ public static class CoReadScorer
                     continue;
                 }
 
-                scores[id] = scores.GetValueOrDefault(id) + (seedWeight * strengths[i]);
+                var contribution = seedWeight * strengths[i];
+                scores[id] = scores.GetValueOrDefault(id) + contribution;
+
+                if (strongest is not null && contribution > strongest.GetValueOrDefault(id))
+                {
+                    strongest[id] = contribution;
+                    strongestSeed![id] = seedId;
+                }
             }
         }
 
