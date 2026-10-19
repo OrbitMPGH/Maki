@@ -209,8 +209,8 @@ const variantColorResolver: VariantColorsResolver = (input) => {
  */
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {},
-  light: { '--mantine-color-anchor': 'var(--brand-fg)' },
-  dark: { '--mantine-color-anchor': 'var(--brand-fg)' },
+  light: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
+  dark: { '--mantine-color-anchor': 'var(--brand-fg)', '--mantine-color-text': 'var(--ink)' },
 })
 
 /**
@@ -268,7 +268,17 @@ const themeBase: MantineThemeOverride = {
     '"Onest Variable", Onest, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   fontFamilyMonospace:
     'ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo, monospace',
+  // One step per role: xs is meta, sm is body, matching --type-meta and --type-body in theme.css.
+  fontSizes: {
+    xs: '0.8125rem',
+    sm: '0.9375rem',
+    md: '1rem',
+    lg: '1.125rem',
+    xl: '1.25rem',
+  },
   headings: {
+    fontFamily:
+      '"Bricolage Grotesque Variable", "Onest Variable", ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif',
     fontWeight: '700',
     sizes: {
       h1: { fontSize: '1.9rem', lineHeight: '1.2', fontWeight: '800' },

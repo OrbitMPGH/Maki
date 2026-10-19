@@ -53,7 +53,7 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
           roundCaps
           sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
           label={
-            <Text ta="center" fw={700} fz="var(--type-label)" className="tnum" c="var(--ink-hi)">
+            <Text ta="center" fw={700} fz="var(--type-label)" className="figure" c="var(--ink-hi)">
               {level.level}
             </Text>
           }

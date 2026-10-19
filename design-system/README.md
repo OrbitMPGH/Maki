@@ -3,7 +3,7 @@ Maki is a self-hosted manga collection manager: add a series once and it keeps i
 ## Voice and copy
 
 - Write plain, direct sentences, the way a developer explains something to a teammate. Say what happens: "Add series", "Refresh the catalogue", "Browse the catalogue", never "Submit" or "OK".
-- Sentence case everywhere: buttons, titles, menu items. Uppercase only through the `label` style (figure labels, stat labels, cover badges), and let CSS do it.
+- Sentence case everywhere: buttons, titles, menu items. Labels and badges are sentence case too. The sidebar group labels are the one uppercase line in the app.
 - Address the reader as "you" and the product as "Maki": "Maki finds its chapters and keeps it complete." No "we".
 - Empty states are statements, not apologies: "No series yet", "No chapters read in this period.", "Queue is empty". Follow with one line on what would fill it and at most one action.
 - Explain a consequence in a short clause after a colon: "Sliding: a failed sign-in resets the timer." "No change: this title was already in that state."
@@ -28,7 +28,7 @@ Maki is a self-hosted manga collection manager: add a series once and it keeps i
 
 Borders are 1px `border`; hovered or emphasised edges take `border-strong`; row dividers inside tables use `hairline`.
 
-**Ink.** Five steps, each 4.5:1 or better on `surface` in both schemes. `ink-hi` for titles, figures and the active item; `ink` for body copy; `ink-2` for secondary copy (chip labels, status words); `ink-3` for descriptions and meta lines (Mantine's dimmed colour maps here); `ink-4` for the quietest labels and zero counts.
+**Ink.** Five steps, each 4.5:1 or better on `surface` in both schemes. `ink-hi` for titles, figures and the active item; `ink` for body copy; `ink-2` for secondary copy (chip labels, status words); `ink-3` for descriptions, labels and meta lines (Mantine's dimmed colour maps here); `ink-4` for timestamps and zero counts.
 
 **Status.** Semantic hues live in tokens, never in Mantine's stock palette, so "Completed" is the same green on a cover, a badge and a table row and follows the light theme: `ok`, `warn`, `info`, `danger`, `watched` (read state, kept apart from brand so a read row never looks selected), `suggestive` (olive, for the Suggestive rating and the 65 to 79 score band), `neutral` (unknown or idle). Each has a `-soft` partner at 15% for a tinted fill behind it. Every status fill carries its own foreground, near-black in dark and white in Light: `ok-on`, `warn-on`, `info-on`, `danger-on`, `watched-on` and `neutral-on`. Filled danger buttons are the exception: they sit on `danger-fill`, a deeper red, so their white labels hold 5.6:1. Status is always carried by a word or an icon as well as the hue.
 
@@ -42,12 +42,12 @@ Content ratings run green to red on purpose: Safe `ok`, Suggestive `suggestive`,
 
 ## Type
 
-Two families. **Bricolage Grotesque** (`display`) is for titles and figures: a series, a page, the product naming itself, and the headline numbers. **Onest** (`sans`) sets everything that is read or operated, and carries Cyrillic, so the Russian locale sets in the same face. Bricolage has no Cyrillic or CJK, so those titles fall through to Onest by the stack. Antialiasing is on.
+Two families. **Bricolage Grotesque** (`display`) is for names and figures: page, section and modal titles, every series title (hero, cover cards, rows) and the headline numbers. **Onest** (`sans`) sets everything that is read or operated, and carries Cyrillic, so the Russian locale sets in the same face. Bricolage has no Cyrillic or CJK, so those titles fall through to Onest by the stack. Antialiasing is on.
 
 - Display: `display` (series hero, Rewind), `route`, `page-title` (every `PageHeader`), `section-title` (every `SectionHeader`), `wordmark`. All at 700 with -0.025em tracking (-0.02em for section titles).
 - Headings: `h1` to `h4`, Mantine's Title scale (1.9rem 800, 1.5rem 800, 1.2rem 700, 1rem 700).
-- Roles: pick the tier by what the text is, not how big you want it. `body` (0.875rem) is the default. `meta` for chips and status words, `micro` for counts and table headers, `label` for uppercase labels over figures, `badge-text` for the smallest badges. `figure` and `stat-value` for numbers.
-- Figures (strips, stat tiles, the hero figures and the level) set in the display face through the `.figure` class: 700, -0.02em, tabular. Sizes stay per call site. Their labels are uppercase at 0.05em tracking.
+- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.75rem) is the floor for anything read (counts, table headers), `label` for sentence-case labels over figures, `badge-text` for badges only. `figure` and `stat-value` for numbers.
+- Figures (strips, stat tiles, the hero figures and the level) set in the display face through the `.figure` class: 700, -0.02em, tabular. Sizes stay per call site. Their labels are sentence case at `meta` size in `ink-3`.
 - The same scale is exposed as CSS variables (`type-display` through `type-badge`); the three largest are fluid `clamp()` values. If no tier fits, the scale gains a tier; call sites never get an off-scale size.
 - Weights come from six steps: `fw-regular` 400, `fw-medium` 500, `fw-semibold` 600, `fw-strong` 650, `fw-bold` 700, `fw-heavy` 800. A weight between two steps belongs on one of them.
 - Any count, ratio or date shown next to another uses tabular figures (the `.tnum` class).
@@ -99,7 +99,7 @@ Two families. **Bricolage Grotesque** (`display`) is for titles and figures: a s
 
 ## Logo
 
-The mark is a maki roll with a face: a cream body (`mark-cream`), nori bands top and bottom (`mark-nori`), outlined and featured in `mark-ink`, with `mark-blush` cheeks. In the navbar it sits in a 44px `brand-mark` tile (brand at 16% over `surface-2`, a brand-tinted border, `radius-hero`) beside the wordmark "Maki" set in `wordmark` and an uppercase `label` line, "Manga manager", in `ink-3`. The mark has four moods that change only the eyes and mouth: awake (the default, and what the navbar uses), asleep (closed eyes and two small z's in `ink-3`), asking (a raised brow and a small o mouth) and pleased (happy eyes and a wide smile). The mark's colours are fixed in every mood; never recolour it to the accent.
+The mark is a maki roll with a face: a cream body (`mark-cream`), nori bands top and bottom (`mark-nori`), outlined and featured in `mark-ink`, with `mark-blush` cheeks. In the navbar it sits in a 44px `brand-mark` tile (brand at 16% over `surface-2`, a brand-tinted border, `radius-hero`) beside the wordmark "Maki" set in `wordmark` and a `label` line, "Manga manager", in `ink-3`. The mark has four moods that change only the eyes and mouth: awake (the default, and what the navbar uses), asleep (closed eyes and two small z's in `ink-3`), asking (a raised brow and a small o mouth) and pleased (happy eyes and a wide smile). The mark's colours are fixed in every mood; never recolour it to the accent.
 
 ## Not synced
 

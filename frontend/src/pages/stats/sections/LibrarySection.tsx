@@ -203,19 +203,19 @@ export default function LibrarySection(_props: StatsSectionProps) {
             <p className="stats-panel-title">{t`Composition`}</p>
             <Stack gap="md" mt="xs">
               <div>
-                <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb={6} style={{ letterSpacing: '0.05em' }}>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
                   {t`By status`}
                 </Text>
                 <SplitBar items={statusItems} />
               </div>
               <div>
-                <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb={6} style={{ letterSpacing: '0.05em' }}>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
                   {t`By type`}
                 </Text>
                 <SplitBar items={typeItems} />
               </div>
               <div>
-                <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb={6} style={{ letterSpacing: '0.05em' }}>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
                   {t`Content rating`}
                 </Text>
                 <SplitBar items={ratingItems} />
