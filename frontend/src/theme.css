@@ -3978,10 +3978,6 @@ body::before {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand-fg);
 }
 .section-header-title {
