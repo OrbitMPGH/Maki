@@ -7016,6 +7016,83 @@ body.reader-open {
   }
 }
 
+/* --- Disclosure --------------------------------------------------------------
+   A heading row that opens the controls below it. Rows in a run share one hairline between them,
+   so four filter groups read as one list rather than four boxes. */
+.disclosure + .disclosure {
+  border-top: 1px solid var(--border);
+}
+.disclosure-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 2px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+}
+.disclosure-head:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.disclosure-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.disclosure-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.disclosure-title {
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.disclosure-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  color: var(--mantine-primary-color-contrast);
+  background: var(--mantine-primary-color-filled);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+}
+.disclosure-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.disclosure-summary-active {
+  color: var(--ink-2);
+}
+.disclosure-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease), color var(--dur-base) var(--ease);
+}
+.disclosure-head:hover .disclosure-chevron {
+  color: var(--ink-hi);
+}
+.disclosure[data-open] .disclosure-chevron {
+  transform: rotate(180deg);
+}
+.disclosure-body {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+  padding: 4px 2px 18px;
+}
+
 .save-control {
   display: inline-flex;
   align-items: center;
@@ -7139,6 +7216,40 @@ body.reader-open {
 }
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
+}
+/* On a phone the drawer covers the grid it filters, so the count and the way back to the grid sit
+   in a footer that stays on screen however far the groups run. */
+.library-filter-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: auto calc(var(--mantine-spacing-md) * -1) 0;
+  padding: 12px var(--mantine-spacing-md) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+.library-filter-show {
+  flex: 1;
+}
+@media (max-width: 47.9375em) {
+  .library-filter-drawer {
+    display: flex;
+    flex-direction: column;
+  }
+  .library-filter-drawer > .mantine-Drawer-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+  .library-filter-drawer-body {
+    flex: 1;
+  }
+}
+@media (min-width: 48em) {
+  .library-filter-drawer-body {
+    padding-bottom: var(--mantine-spacing-xl);
+  }
 }
 @media (max-width: 47.9375em) {
   /* Home carries the same four numbers. On a phone the 2x2 tiles pushed the first cover below the

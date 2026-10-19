@@ -148,6 +148,11 @@ msgstr "{0, plural, one {# archivo, {totalSize}} many {# archivos, {totalSize}} 
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# archivo} many {# archivos} other {# archivos}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -567,6 +572,10 @@ msgstr "{chapterCount, plural, one {# capítulo} many {# capítulos} other {# ca
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip} cap."
+
+#: src/pages/LibraryPage.tsx
+msgid "{chapters} chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1306,6 +1315,10 @@ msgstr "{rated} valorados"
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
 msgstr "{ratioValue} más de lo que contiene el catálogo de MangaBaka, ponderado hacia los títulos que lee más gente"
 
+#: src/pages/LibraryPage.tsx
+msgid "{read}% read"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -1560,6 +1573,10 @@ msgstr "{seriesWantedCount, plural, one {# en la serie} many {# en la serie} oth
 #, fuzzy
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, one {Se muestra el primer resultado (#). Busca para acotar la búsqueda.} many {Se muestran los primeros # resultados. Busca para acotar la búsqueda.} other {Se muestran los primeros # resultados. Busca para acotar la búsqueda.}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -3364,6 +3381,10 @@ msgstr "Asignar"
 msgid "At a glance"
 msgstr "De un vistazo"
 
+#: src/pages/LibraryPage.tsx
+msgid "At least {chapterMin} chapters"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "At least {MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements."
@@ -3385,6 +3406,10 @@ msgstr "Al menos uno habilitado"
 #, fuzzy
 msgid "At least one language must stay enabled."
 msgstr "Debe quedar al menos un idioma activado."
+
+#: src/pages/LibraryPage.tsx
+msgid "At most {chapterMax} chapters"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -6065,6 +6090,15 @@ msgstr "Descubrir y la búsqueda sin conexión ya están disponibles."
 msgid "Disk used"
 msgstr "Espacio usado en disco"
 
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -7447,6 +7481,10 @@ msgstr "Francés"
 #, fuzzy
 msgid "From"
 msgstr "De"
+
+#: src/pages/LibraryPage.tsx
+msgid "From {origins}"
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -10093,6 +10131,14 @@ msgstr "Supervisado"
 msgid "Monitoring"
 msgstr "Supervisión"
 
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring, quality profile, completeness, sources"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Monitoring: {modeLabel}"
@@ -11121,6 +11167,10 @@ msgstr "Ninguno de estos capítulos tiene un archivo en disco."
 #, fuzzy
 msgid "none yet"
 msgstr "todavía ninguno"
+
+#: src/pages/LibraryPage.tsx
+msgid "Not {excluded}"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12899,6 +12949,10 @@ msgstr "Limitado por velocidad por {source}, esperando antes del próximo intent
 msgid "Rated"
 msgstr "Valorado"
 
+#: src/pages/LibraryPage.tsx
+msgid "Rated {rated}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -12931,6 +12985,10 @@ msgstr "Valoración desde"
 #, fuzzy
 msgid "Rating to"
 msgstr "Valoración hasta"
+
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -14721,6 +14779,7 @@ msgid "score {score}"
 msgstr "puntuación {score}"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Score {score}"
 msgstr "Puntuación {score}"
@@ -16174,6 +16233,10 @@ msgstr "Estado"
 msgid "Status change"
 msgstr "Cambio de estado"
 
+#: src/pages/LibraryPage.tsx
+msgid "Status, type, content rating, chapters"
+msgstr ""
+
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -16431,6 +16494,10 @@ msgstr "Etiqueta que se da a los torrents que añade Maki. Por defecto, maki."
 #, fuzzy
 msgid "Tags"
 msgstr "Etiquetas"
+
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
@@ -17258,6 +17325,10 @@ msgstr "Este año"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "Esas series ya están obteniendo coincidencias."
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -19283,6 +19354,10 @@ msgstr "Tu orden de prioridad"
 msgid "Your progress"
 msgstr "Tu progreso"
 
+#: src/pages/LibraryPage.tsx
+msgid "Your rating, score, how much you've read"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Your reading history is not affected. You can set a new goal at any time."
@@ -19333,6 +19408,10 @@ msgstr "Tus fuentes solo llegan al capítulo <0>{highest}</0>, pero el total que
 #, fuzzy
 msgid "Your tags"
 msgstr "Tus etiquetas"
+
+#: src/pages/LibraryPage.tsx
+msgid "Your tags, genres, provider tags"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/components/discover/DiscoverTasteStrip.tsx

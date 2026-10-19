@@ -148,6 +148,11 @@ msgstr "{0, plural, other {파일 #개, {totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {#개 파일}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -567,6 +572,10 @@ msgstr "{chapterCount, plural, other {챕터 #개}}"
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip}화"
+
+#: src/pages/LibraryPage.tsx
+msgid "{chapters} chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1306,6 +1315,10 @@ msgstr "평가함 {rated}개"
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
 msgstr "MangaBaka 카탈로그에 있는 항목보다 {ratioValue}개 더 많으며, 더 많은 사람이 읽은 제목에 가중치를 둡니다"
 
+#: src/pages/LibraryPage.tsx
+msgid "{read}% read"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -1559,6 +1572,10 @@ msgstr "{seriesWantedCount, plural, other {시리즈 내 #개}}"
 #, fuzzy
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, other {첫 결과 #개를 표시합니다. 검색으로 범위를 좁히세요.}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -3363,6 +3380,10 @@ msgstr "할당"
 msgid "At a glance"
 msgstr "한눈에 보기"
 
+#: src/pages/LibraryPage.tsx
+msgid "At least {chapterMin} chapters"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "At least {MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements."
@@ -3384,6 +3405,10 @@ msgstr "하나 이상 활성화"
 #, fuzzy
 msgid "At least one language must stay enabled."
 msgstr "언어는 최소 하나 이상 켜져 있어야 합니다."
+
+#: src/pages/LibraryPage.tsx
+msgid "At most {chapterMax} chapters"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -6064,6 +6089,15 @@ msgstr "탐색 및 오프라인 검색을 지금 사용할 수 있습니다."
 msgid "Disk used"
 msgstr "디스크 사용량"
 
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -7446,6 +7480,10 @@ msgstr "프랑스어"
 #, fuzzy
 msgid "From"
 msgstr "출처"
+
+#: src/pages/LibraryPage.tsx
+msgid "From {origins}"
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -10092,6 +10130,14 @@ msgstr "모니터링됨"
 msgid "Monitoring"
 msgstr "모니터링"
 
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring, quality profile, completeness, sources"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Monitoring: {modeLabel}"
@@ -11120,6 +11166,10 @@ msgstr "이 챕터들 중 디스크에 파일이 있는 것은 없습니다."
 #, fuzzy
 msgid "none yet"
 msgstr "아직 없음"
+
+#: src/pages/LibraryPage.tsx
+msgid "Not {excluded}"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12898,6 +12948,10 @@ msgstr "{source}의 속도 제한으로 다음 시도 전 대기 중"
 msgid "Rated"
 msgstr "평가함"
 
+#: src/pages/LibraryPage.tsx
+msgid "Rated {rated}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -12930,6 +12984,10 @@ msgstr "평점 최소"
 #, fuzzy
 msgid "Rating to"
 msgstr "평점 최대"
+
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -14720,6 +14778,7 @@ msgid "score {score}"
 msgstr "점수 {score}"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Score {score}"
 msgstr "점수 {score}"
@@ -16173,6 +16232,10 @@ msgstr "상태"
 msgid "Status change"
 msgstr "상태 변경"
 
+#: src/pages/LibraryPage.tsx
+msgid "Status, type, content rating, chapters"
+msgstr ""
+
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -16430,6 +16493,10 @@ msgstr "Maki가 추가하는 토렌트에 붙이는 태그입니다. 기본값�
 #, fuzzy
 msgid "Tags"
 msgstr "태그"
+
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
@@ -17257,6 +17324,10 @@ msgstr "올해"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "해당 시리즈는 이미 일치 작업 중입니다."
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -19282,6 +19353,10 @@ msgstr "내 우선순위 순서"
 msgid "Your progress"
 msgstr "내 진행 상황"
 
+#: src/pages/LibraryPage.tsx
+msgid "Your rating, score, how much you've read"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Your reading history is not affected. You can set a new goal at any time."
@@ -19332,6 +19407,10 @@ msgstr "소스에는 챕터 <0>{highest}</0>까지만 있지만, 설정한 전�
 #, fuzzy
 msgid "Your tags"
 msgstr "내 태그"
+
+#: src/pages/LibraryPage.tsx
+msgid "Your tags, genres, provider tags"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/components/discover/DiscoverTasteStrip.tsx

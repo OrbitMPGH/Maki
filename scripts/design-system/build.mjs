@@ -326,7 +326,7 @@ const CLASSES = new RegExp(
       String.raw`cover-(card|poster|placeholder|scrim|corners?|badge|ring|meta|title|progress-row|bar|count|check)`,
       String.raw`tip\b`, String.raw`discover-(card|card-action|rating|corner|meta|reason|sub|sub-status|rail|rail-item)\b`,
       'engine-', 'series-row', String.raw`row-(check|cover|cover-placeholder|body|header|title|year|description|progress|bar)\b`,
-      'surface-frame', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`tnum\b`, String.raw`figure\b`,
+      'surface-frame', 'disclosure', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`tnum\b`, String.raw`figure\b`,
     ].join('|') +
     ')',
 )

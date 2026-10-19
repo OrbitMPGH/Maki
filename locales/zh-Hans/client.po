@@ -148,6 +148,11 @@ msgstr "{0, plural, other {# 个文件，{totalSize}}}"
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {# 个文件}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -567,6 +572,10 @@ msgstr "{chapterCount, plural, other {# 个章节}}"
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip} 章"
+
+#: src/pages/LibraryPage.tsx
+msgid "{chapters} chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1306,6 +1315,10 @@ msgstr "{rated} 个已评分"
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
 msgstr "比 MangaBaka 目录收录的多 {ratioValue}，偏向更多人阅读的标题"
 
+#: src/pages/LibraryPage.tsx
+msgid "{read}% read"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -1559,6 +1572,10 @@ msgstr "{seriesWantedCount, plural, other {系列中有 # 个}}"
 #, fuzzy
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, other {显示前 # 条结果。搜索以缩小范围。}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -3363,6 +3380,10 @@ msgstr "分配"
 msgid "At a glance"
 msgstr "概览"
 
+#: src/pages/LibraryPage.tsx
+msgid "At least {chapterMin} chapters"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "At least {MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements."
@@ -3384,6 +3405,10 @@ msgstr "至少启用一个"
 #, fuzzy
 msgid "At least one language must stay enabled."
 msgstr "必须至少启用一种语言。"
+
+#: src/pages/LibraryPage.tsx
+msgid "At most {chapterMax} chapters"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -6064,6 +6089,15 @@ msgstr "发现和离线搜索现在可用。"
 msgid "Disk used"
 msgstr "磁盘使用量"
 
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -7446,6 +7480,10 @@ msgstr "法语"
 #, fuzzy
 msgid "From"
 msgstr "从"
+
+#: src/pages/LibraryPage.tsx
+msgid "From {origins}"
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -10092,6 +10130,14 @@ msgstr "已监控"
 msgid "Monitoring"
 msgstr "监控"
 
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring, quality profile, completeness, sources"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Monitoring: {modeLabel}"
@@ -11120,6 +11166,10 @@ msgstr "这些章节中没有任何一个在磁盘上有文件。"
 #, fuzzy
 msgid "none yet"
 msgstr "暂无"
+
+#: src/pages/LibraryPage.tsx
+msgid "Not {excluded}"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12898,6 +12948,10 @@ msgstr "受到 {source} 的速率限制，等待后再试"
 msgid "Rated"
 msgstr "已评分"
 
+#: src/pages/LibraryPage.tsx
+msgid "Rated {rated}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -12930,6 +12984,10 @@ msgstr "评分下限"
 #, fuzzy
 msgid "Rating to"
 msgstr "评分上限"
+
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -14720,6 +14778,7 @@ msgid "score {score}"
 msgstr "分数 {score}"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Score {score}"
 msgstr "分数 {score}"
@@ -16173,6 +16232,10 @@ msgstr "状态"
 msgid "Status change"
 msgstr "状态变更"
 
+#: src/pages/LibraryPage.tsx
+msgid "Status, type, content rating, chapters"
+msgstr ""
+
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -16430,6 +16493,10 @@ msgstr "添加到 Maki 所添加种子上的标签。默认为 maki。"
 #, fuzzy
 msgid "Tags"
 msgstr "标签"
+
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
@@ -17257,6 +17324,10 @@ msgstr "今年"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "这些系列已经在匹配中。"
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -19282,6 +19353,10 @@ msgstr "你的优先级顺序"
 msgid "Your progress"
 msgstr "你的进度"
 
+#: src/pages/LibraryPage.tsx
+msgid "Your rating, score, how much you've read"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Your reading history is not affected. You can set a new goal at any time."
@@ -19332,6 +19407,10 @@ msgstr "你的来源只能覆盖到第 <0>{highest}</0> 章，但你设置的总
 #, fuzzy
 msgid "Your tags"
 msgstr "你的标签"
+
+#: src/pages/LibraryPage.tsx
+msgid "Your tags, genres, provider tags"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/components/discover/DiscoverTasteStrip.tsx

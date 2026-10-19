@@ -148,6 +148,11 @@ msgstr "{0, plural, one {# файл, {totalSize}} few {# файла, {totalSize}
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}"
 
+#. placeholder {0}: groupCounts[group]
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {# filter active} other {# filters active}}"
+msgstr ""
+
 #. placeholder {0}: ignoredFolders?.length ?? 0
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -567,6 +572,10 @@ msgstr "{chapterCount, plural, one {# глава} few {# главы} many {# г�
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
 msgstr "{chapterMinChip}–{chapterMaxChip} гл."
+
+#: src/pages/LibraryPage.tsx
+msgid "{chapters} chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1306,6 +1315,10 @@ msgstr "{rated} оценено"
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
 msgstr "{ratioValue} больше, чем есть в каталоге MangaBaka, с приоритетом названий, которые читают чаще"
 
+#: src/pages/LibraryPage.tsx
+msgid "{read}% read"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -1560,6 +1573,10 @@ msgstr "{seriesWantedCount, plural, one {# в серии} few {# в серии} 
 #, fuzzy
 msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
 msgstr "{shown, plural, one {Показан первый результат из #. Уточните поиск.} few {Показаны первые # результата. Уточните поиск.} many {Показано первых # результатов. Уточните поиск.} other {Показано # результата. Уточните поиск.}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -3364,6 +3381,10 @@ msgstr "Назначить"
 msgid "At a glance"
 msgstr "Вкратце"
 
+#: src/pages/LibraryPage.tsx
+msgid "At least {chapterMin} chapters"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "At least {MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements."
@@ -3385,6 +3406,10 @@ msgstr "Нужно включить хотя бы один"
 #, fuzzy
 msgid "At least one language must stay enabled."
 msgstr "Хотя бы один язык должен оставаться включённым."
+
+#: src/pages/LibraryPage.tsx
+msgid "At most {chapterMax} chapters"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -6065,6 +6090,15 @@ msgstr "Обзор и офлайн-поиск уже доступны."
 msgid "Disk used"
 msgstr "Использовано на диске"
 
+#. placeholder {0}: value.warningPercent
+#. placeholder {1}: value.warningGiB
+#. placeholder {2}: value.errorPercent
+#. placeholder {3}: value.errorGiB
+#. placeholder {4}: value.backupDays
+#: src/pages/HealthPage.tsx
+msgid "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups count as stale after {4} days."
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
@@ -7447,6 +7481,10 @@ msgstr "Французский"
 #, fuzzy
 msgid "From"
 msgstr "От"
+
+#: src/pages/LibraryPage.tsx
+msgid "From {origins}"
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy
@@ -10093,6 +10131,14 @@ msgstr "Отслеживается"
 msgid "Monitoring"
 msgstr "Мониторинг"
 
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring and sources"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Monitoring, quality profile, completeness, sources"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Monitoring: {modeLabel}"
@@ -11121,6 +11167,10 @@ msgstr "Ни у одной из этих глав нет файла на дис�
 #, fuzzy
 msgid "none yet"
 msgstr "пока ничего"
+
+#: src/pages/LibraryPage.tsx
+msgid "Not {excluded}"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -12899,6 +12949,10 @@ msgstr "Источник {source} ограничил частоту запрос
 msgid "Rated"
 msgstr "Оценено"
 
+#: src/pages/LibraryPage.tsx
+msgid "Rated {rated}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -12931,6 +12985,10 @@ msgstr "Рейтинг от"
 #, fuzzy
 msgid "Rating to"
 msgstr "Рейтинг до"
+
+#: src/pages/LibraryPage.tsx
+msgid "Ratings and reading"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -14721,6 +14779,7 @@ msgid "score {score}"
 msgstr "оценка {score}"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Score {score}"
 msgstr "Оценка {score}"
@@ -16174,6 +16233,10 @@ msgstr "Статус"
 msgid "Status change"
 msgstr "Изменение статуса"
 
+#: src/pages/LibraryPage.tsx
+msgid "Status, type, content rating, chapters"
+msgstr ""
+
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -16431,6 +16494,10 @@ msgstr "Метка, которую получают торренты, добав
 #, fuzzy
 msgid "Tags"
 msgstr "Теги"
+
+#: src/pages/LibraryPage.tsx
+msgid "Tags and genres"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #: src/components/TagBrowserModal.tsx
@@ -17258,6 +17325,10 @@ msgstr "В этом году"
 #, fuzzy
 msgid "Those series are already being matched."
 msgstr "Эти серии уже сопоставляются."
+
+#: src/pages/HealthPage.tsx
+msgid "Thresholds"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -19283,6 +19354,10 @@ msgstr "Ваш порядок приоритетов"
 msgid "Your progress"
 msgstr "Ваш прогресс"
 
+#: src/pages/LibraryPage.tsx
+msgid "Your rating, score, how much you've read"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Your reading history is not affected. You can set a new goal at any time."
@@ -19333,6 +19408,10 @@ msgstr "Ваши источники доходят только до главы 
 #, fuzzy
 msgid "Your tags"
 msgstr "Ваши теги"
+
+#: src/pages/LibraryPage.tsx
+msgid "Your tags, genres, provider tags"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/components/discover/DiscoverTasteStrip.tsx
