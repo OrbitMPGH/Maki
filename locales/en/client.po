@@ -3230,9 +3230,17 @@ msgstr "Can't load this import"
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
 msgstr "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Can't reach Kavita with the saved address and API key."
+msgstr "Can't reach Kavita with the saved address and API key."
+
 #: src/components/ImportReviewModal.tsx
 msgid "Can't read this download"
 msgstr "Can't read this download"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Can't sign in with the saved details."
+msgstr "Can't sign in with the saved details."
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/FailedQueueActions.tsx
@@ -3350,17 +3358,28 @@ msgstr "Central only"
 msgid "ch {maxChapter}"
 msgstr "ch {maxChapter}"
 
+#. placeholder {0}: r.chapter
 #: src/pages/ScrobblePage.tsx
-msgid "ch. {chapter}"
-msgstr "ch. {chapter}"
+msgid "ch. {0}"
+msgstr "ch. {0}"
+
+#. placeholder {0}: r.chapter
+#. placeholder {1}: r.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0} · vol. {1}"
+msgstr "ch. {0} · vol. {1}"
+
+#: src/pages/ScrobblePage.tsx
+#~ msgid "ch. {chapter}"
+#~ msgstr "ch. {chapter}"
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Ch. {chapter}"
 msgstr "Ch. {chapter}"
 
 #: src/pages/ScrobblePage.tsx
-msgid "ch. {chapter} · vol. {volume}"
-msgstr "ch. {chapter} · vol. {volume}"
+#~ msgid "ch. {chapter} · vol. {volume}"
+#~ msgstr "ch. {chapter} · vol. {volume}"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Ch. {chapterLabel}"
@@ -3733,6 +3752,10 @@ msgstr "Check for prebuilt now"
 msgid "Check for updates"
 msgstr "Check for updates"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Check in Settings"
+msgstr "Check in Settings"
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Check now"
@@ -4046,8 +4069,8 @@ msgid "Config key"
 msgstr "Config key"
 
 #: src/pages/ScrobblePage.tsx
-msgid "configured, not connected"
-msgstr "configured, not connected"
+#~ msgid "configured, not connected"
+#~ msgstr "configured, not connected"
 
 #: src/pages/ImportPage.tsx
 msgid "Confirm metadata matches"
@@ -4077,6 +4100,10 @@ msgstr "Connect"
 msgid "Connect {label} on the Scrobble page to import from it."
 msgstr "Connect {label} on the Scrobble page to import from it."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker first"
+msgstr "Connect a tracker first"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Connect an AniList or MyAnimeList tracker to use this."
 msgstr "Connect an AniList or MyAnimeList tracker to use this."
@@ -4102,11 +4129,12 @@ msgid "Connect your trackers"
 msgstr "Connect your trackers"
 
 #: src/pages/ScrobblePage.tsx
-msgid "connected"
-msgstr "connected"
+#~ msgid "connected"
+#~ msgstr "connected"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
+#: src/pages/ScrobblePage.tsx
 msgid "Connected"
 msgstr "Connected"
 
@@ -5475,6 +5503,10 @@ msgstr "Estimated"
 #: src/components/NotificationsSection.tsx
 msgid "Events"
 msgstr "Events"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Every chapter"
@@ -9203,13 +9235,17 @@ msgid "Not configured"
 msgstr "Not configured"
 
 #: src/pages/ScrobblePage.tsx
-msgid "not configured (see Settings)"
-msgstr "not configured (see Settings)"
+#~ msgid "not configured (see Settings)"
+#~ msgstr "not configured (see Settings)"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 msgid "Not connected"
 msgstr "Not connected"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not connected yet."
+msgstr "Not connected yet."
 
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Not connected."
@@ -9299,6 +9335,14 @@ msgstr "Not scanned"
 msgid "Not set"
 msgstr "Not set"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet."
+msgstr "Not set up yet."
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet. An admin can add it in Settings."
+msgstr "Not set up yet. An admin can add it in Settings."
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Not synced yet"
 msgstr "Not synced yet"
@@ -9306,6 +9350,10 @@ msgstr "Not synced yet"
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "Not this anime?"
 msgstr "Not this anime?"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not updated"
+msgstr "Not updated"
 
 #: src/components/NotificationsSection.tsx
 msgid "Not used yet"
@@ -10384,7 +10432,6 @@ msgstr "Profile created"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sectionList.ts
 msgid "Progress"
 msgstr "Progress"
@@ -10863,8 +10910,8 @@ msgid "Reads every byte and checks it against the archive's own checksums, which
 msgstr "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 
 #: src/pages/ScrobblePage.tsx
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-msgstr "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
+#~ msgstr "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
 
 #: src/components/FailedQueueActions.tsx
 msgid "Reason"
@@ -12642,8 +12689,8 @@ msgid "Server URL"
 msgstr "Server URL"
 
 #: src/pages/ScrobblePage.tsx
-msgid "Service"
-msgstr "Service"
+#~ msgid "Service"
+#~ msgstr "Service"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Session lifetime (days)"
@@ -12685,6 +12732,10 @@ msgstr "Set to <0>0</0> to disable lockout."
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Set up"
 msgstr "Set up"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Set up in Settings"
+msgstr "Set up in Settings"
 
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Set up the Kavita connection above to pick libraries."
@@ -13306,7 +13357,6 @@ msgstr "Stats sections"
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Status"
 msgstr "Status"
@@ -14452,6 +14502,7 @@ msgstr "Track reading progress from OPDS"
 msgid "Tracker"
 msgstr "Tracker"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Trackers"

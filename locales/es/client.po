@@ -3969,10 +3969,18 @@ msgstr "No se puede cargar esta importación"
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
 msgstr "No se puede conectar con Kavita ahora mismo. Maki sigue reintentándolo y la sincronización de scrobble se pondrá al día."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Can't reach Kavita with the saved address and API key."
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Can't read this download"
 msgstr "No se puede leer esta descarga"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Can't sign in with the saved details."
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/FailedQueueActions.tsx
@@ -4111,10 +4119,21 @@ msgstr "Solo cuando sea el tema central"
 msgid "ch {maxChapter}"
 msgstr "cap. {maxChapter}"
 
+#. placeholder {0}: r.chapter
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0}"
+msgstr ""
+
+#. placeholder {0}: r.chapter
+#. placeholder {1}: r.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0} · vol. {1}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter}"
-msgstr "cap. {chapter}"
+#~ msgid "ch. {chapter}"
+#~ msgstr "cap. {chapter}"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -4123,8 +4142,8 @@ msgstr "Cap. {chapter}"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter} · vol. {volume}"
-msgstr "cap. {chapter} · vol. {volume}"
+#~ msgid "ch. {chapter} · vol. {volume}"
+#~ msgstr "cap. {chapter} · vol. {volume}"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4584,6 +4603,10 @@ msgstr "Buscar uno preconstruido ahora"
 msgid "Check for updates"
 msgstr "Buscar actualizaciones"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Check in Settings"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -4966,8 +4989,8 @@ msgstr "Clave de configuración"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "configured, not connected"
-msgstr "configurado, no conectado"
+#~ msgid "configured, not connected"
+#~ msgstr "configurado, no conectado"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -5004,6 +5027,10 @@ msgstr "Conectar"
 msgid "Connect {label} on the Scrobble page to import from it."
 msgstr "Conecta {label} en la página de Scrobble para importar desde ahí."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker first"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this."
@@ -5036,11 +5063,12 @@ msgstr "Conecta tus trackers"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "connected"
-msgstr "conectado"
+#~ msgid "connected"
+#~ msgstr "conectado"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
+#: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connected"
 msgstr "Conectado"
@@ -6720,6 +6748,10 @@ msgstr "Estimado"
 #, fuzzy
 msgid "Events"
 msgstr "Eventos"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11311,14 +11343,18 @@ msgstr "Sin configurar"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "not configured (see Settings)"
-msgstr "no configurado (consulta Ajustes)"
+#~ msgid "not configured (see Settings)"
+#~ msgstr "no configurado (consulta Ajustes)"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not connected"
 msgstr "No conectado"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not connected yet."
+msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -11429,6 +11465,14 @@ msgstr "No analizado"
 msgid "Not set"
 msgstr "No configurado"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet."
+msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet. An admin can add it in Settings."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Not synced yet"
@@ -11438,6 +11482,10 @@ msgstr "Aún no sincronizado"
 #, fuzzy
 msgid "Not this anime?"
 msgstr "¿No es este anime?"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not updated"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12768,7 +12816,6 @@ msgstr "Perfil creado"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sectionList.ts
 #, fuzzy
 msgid "Progress"
@@ -13354,8 +13401,8 @@ msgstr "Lee todos los bytes y los comprueba con las sumas de comprobación del p
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-msgstr "Lee el progreso de lectura de Kavita y envía actualizaciones que solo avanzan a tus rastreadores cada {intervalMinutes, plural, one {# minuto} many {# minutos} other {# minutos}}. El progreso remoto nunca disminuye y las entradas completadas nunca retroceden. Configura las credenciales en Ajustes."
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
+#~ msgstr "Lee el progreso de lectura de Kavita y envía actualizaciones que solo avanzan a tus rastreadores cada {intervalMinutes, plural, one {# minuto} many {# minutos} other {# minutos}}. El progreso remoto nunca disminuye y las entradas completadas nunca retroceden. Configura las credenciales en Ajustes."
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -15538,8 +15585,8 @@ msgstr "URL del servidor"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Service"
-msgstr "Servicio"
+#~ msgid "Service"
+#~ msgstr "Servicio"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15591,6 +15638,10 @@ msgstr "Establece <0>0</0> para desactivar el bloqueo."
 #, fuzzy
 msgid "Set up"
 msgstr "Configurar"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Set up in Settings"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -16353,7 +16404,6 @@ msgstr "Secciones de estadísticas"
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Status"
@@ -17767,6 +17817,7 @@ msgstr "Seguir el progreso de lectura desde OPDS"
 msgid "Tracker"
 msgstr "Rastreador"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy

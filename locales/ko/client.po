@@ -3968,10 +3968,18 @@ msgstr "이 가져오기를 불러올 수 없습니다"
 msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
 msgstr "지금은 Kavita에 연결할 수 없습니다. Maki가 계속 재시도하며, Scrobble 동기화가 나중에 따라잡습니다."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Can't reach Kavita with the saved address and API key."
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Can't read this download"
 msgstr "이 다운로드를 읽을 수 없음"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Can't sign in with the saved details."
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/FailedQueueActions.tsx
@@ -4110,10 +4118,21 @@ msgstr "주요 소재인 경우만"
 msgid "ch {maxChapter}"
 msgstr "챕터 {maxChapter}"
 
+#. placeholder {0}: r.chapter
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0}"
+msgstr ""
+
+#. placeholder {0}: r.chapter
+#. placeholder {1}: r.volume
+#: src/pages/ScrobblePage.tsx
+msgid "ch. {0} · vol. {1}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter}"
-msgstr "{chapter}화"
+#~ msgid "ch. {chapter}"
+#~ msgstr "{chapter}화"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -4122,8 +4141,8 @@ msgstr "챕터 {chapter}"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "ch. {chapter} · vol. {volume}"
-msgstr "{chapter}화 · {volume}권"
+#~ msgid "ch. {chapter} · vol. {volume}"
+#~ msgstr "{chapter}화 · {volume}권"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4583,6 +4602,10 @@ msgstr "지금 사전 제작본 확인"
 msgid "Check for updates"
 msgstr "업데이트 확인"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Check in Settings"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -4965,8 +4988,8 @@ msgstr "설정 키"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "configured, not connected"
-msgstr "설정됨, 연결되지 않음"
+#~ msgid "configured, not connected"
+#~ msgstr "설정됨, 연결되지 않음"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -5003,6 +5026,10 @@ msgstr "연결"
 msgid "Connect {label} on the Scrobble page to import from it."
 msgstr "Scrobble 페이지에서 {label}을(를) 연결하면 가져올 수 있습니다."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker first"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this."
@@ -5035,11 +5062,12 @@ msgstr "트래커 연결"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "connected"
-msgstr "연결됨"
+#~ msgid "connected"
+#~ msgstr "연결됨"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
+#: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Connected"
 msgstr "연결됨"
@@ -6719,6 +6747,10 @@ msgstr "추정"
 #, fuzzy
 msgid "Events"
 msgstr "이벤트"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}, sends what you have read to your trackers: chapters finished in Maki's reader or an OPDS app, and in Kavita when it is connected. Remote progress is never lowered and completed entries are never demoted. Trackers are set up in <0>Settings</0>."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11310,14 +11342,18 @@ msgstr "설정되지 않음"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "not configured (see Settings)"
-msgstr "설정되지 않음 (설정 참조)"
+#~ msgid "not configured (see Settings)"
+#~ msgstr "설정되지 않음 (설정 참조)"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not connected"
 msgstr "연결되지 않음"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not connected yet."
+msgstr ""
 
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
@@ -11428,6 +11464,14 @@ msgstr "아직 스캔하지 않음"
 msgid "Not set"
 msgstr "설정되지 않음"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet."
+msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not set up yet. An admin can add it in Settings."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Not synced yet"
@@ -11437,6 +11481,10 @@ msgstr "아직 동기화되지 않음"
 #, fuzzy
 msgid "Not this anime?"
 msgstr "이 애니메이션이 아닌가요?"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not updated"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12767,7 +12815,6 @@ msgstr "프로필 생성됨"
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sectionList.ts
 #, fuzzy
 msgid "Progress"
@@ -13353,8 +13400,8 @@ msgstr "모든 바이트를 읽고 보관 파일 자체 체크섬과 비교하�
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-msgstr "Kavita에서 읽기 진행 상황을 읽고 {intervalMinutes, plural, other {#분}}마다 트래커에 앞으로 나아가는 업데이트만 전송합니다. 원격 진행 상황은 절대 낮아지지 않으며 완료된 항목도 이전 상태로 돌아가지 않습니다. 설정에서 자격 증명을 구성하세요."
+#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
+#~ msgstr "Kavita에서 읽기 진행 상황을 읽고 {intervalMinutes, plural, other {#분}}마다 트래커에 앞으로 나아가는 업데이트만 전송합니다. 원격 진행 상황은 절대 낮아지지 않으며 완료된 항목도 이전 상태로 돌아가지 않습니다. 설정에서 자격 증명을 구성하세요."
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -15537,8 +15584,8 @@ msgstr "서버 URL"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
-msgid "Service"
-msgstr "서비스"
+#~ msgid "Service"
+#~ msgstr "서비스"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -15590,6 +15637,10 @@ msgstr "잠금을 비활성화하려면 <0>0</0>으로 설정하세요."
 #, fuzzy
 msgid "Set up"
 msgstr "설정"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Set up in Settings"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -16352,7 +16403,6 @@ msgstr "통계 섹션"
 #: src/pages/ActivityPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Status"
@@ -17766,6 +17816,7 @@ msgstr "OPDS에서 읽기 진행 상황 추적"
 msgid "Tracker"
 msgstr "트래커"
 
+#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
