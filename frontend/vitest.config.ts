@@ -30,6 +30,9 @@ export default defineConfig((env) =>
           ],
           test: {
             name: 'storybook',
+            // A fresh iframe per file reloads the whole app 202 times: 97% of a CI run, and each
+            // closing iframe churns MSW's service worker clients. The preview resets state per story.
+            isolate: false,
             browser: {
               enabled: true,
               // Paired with TestMotion in .storybook/preview.tsx: Mantine skips its transitions.
