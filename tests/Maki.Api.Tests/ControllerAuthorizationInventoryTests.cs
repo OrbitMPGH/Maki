@@ -226,7 +226,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "SettingsController.SetUi",
     ];
 
-    /// <summary>Sign-in, OIDC and OAuth callbacks, and the OPDS feed (its path token authenticates it).</summary>
+    /// <summary>Sign-in, OIDC and OAuth callbacks, the OPDS feed (its path token authenticates it) and KOReader sync (the same token, as the username).</summary>
     private static readonly string[] Anonymous =
     [
         "AuthController.Login",
@@ -234,6 +234,11 @@ public sealed class ControllerAuthorizationInventoryTests
         "AuthController.OidcChallenge",
         "AuthController.Setup",
         "AuthController.TwoFactor",
+        "KoreaderSyncController.Auth",
+        "KoreaderSyncController.Healthcheck",
+        "KoreaderSyncController.Pull",
+        "KoreaderSyncController.Push",
+        "KoreaderSyncController.Register",
         "OpdsController.Cover",
         "OpdsController.Download",
         "OpdsController.OnDeck",

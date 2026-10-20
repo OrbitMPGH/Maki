@@ -3,6 +3,10 @@ paths:
   - "src/Maki.Api/Controllers/Opds*.cs"
   - "src/Maki.Api/Services/Opds*.cs"
   - "src/Maki.Api/Services/Kavita*Push*.cs"
+  - "src/Maki.Api/Controllers/Koreader*.cs"
+  - "src/Maki.Api/Services/Koreader*.cs"
+  - "src/Maki.Api/Jobs/Koreader*.cs"
+  - "src/Maki.Core/Reading/KoreaderDigest.cs"
   - "src/Maki.Core/Opds/**"
 ---
 
@@ -17,3 +21,8 @@ Token scope, the 404-never-401 rule and the `OpdsAccessService.EvictUser` cache 
 - **Kavita push-back** (`reader.pushtokavita`, default off) is gated on `KavitaSeriesId != null`: pushing an un-adopted native row's echo would land in a different row and double-count into Rewind.
 - **Feed text goes through the scoped `ILocalizer`.** Locale order: `?lang=`, then `X-Maki-Language`, then the token user's `ui.language`, then `Accept-Language`. The user's own `ui.language` deliberately outranks `Accept-Language` (whoever pasted the URL into Panels or Chunky owns the preference); `?lang=` pins a reader app that sends no `Accept-Language`. English in a feed means an untranslated `msgstr`, not a missing key.
 - **Some OPDS clients cache feeds**, so a language change will not retro-fix a navigation feed already fetched. Not worth solving.
+
+- **KOReader progress sync (`/api/v1/kosync`, `KoreaderSyncController`) signs in with the OPDS token as the *username*.** KOReader sends the username raw in `x-auth-user` but only an MD5 of the password in `x-auth-key`, and only a SHA-256 of each token is stored, so the password can never be checked and is ignored. It resolves through `OpdsAccessService`, so the catalogue switch, `UseOpds` and the eviction rules all apply. Unlike the feed it answers **401** (KOReader's client only accepts 200/401 there) and the token is a header, so it stays in normal request logging.
+- **Status codes are KOReader's, not REST's.** A push for an unknown document answers **202**, never 404: KOReader queues every non-401 failure and its queue drain stops at the first one, so one non-Maki book would block every later push. A pull with nothing to report is `200 {}`.
+- **A document id resolves through `KoreaderDocument` rows, never by hashing on demand.** Binary ids are KOReader's `util.partialMD5` (`KoreaderDigest.PartialMd5`, first offset 0 because LuaJIT's `lshift(1024, -2)` is 0). Rows are added, never rewritten: the device keeps the digest of the bytes it was served, so a ComicInfo rewrite adds a row and the old one keeps resolving. Recorded on OPDS download and by `KoreaderDocumentIndexJob` (6 h, skipped while nobody has OPDS on, fired early by a miss). A digest naming more than one visible file resolves to nothing; filename ids collide across series ("Ch. 12.cbz").
+- **A push writes through `ReaderService.SaveProgressAsync` per chapter slice of the file** (`KoreaderSyncService.WriteFor`): chapters behind the page complete, the one it falls in gets the position, a chapter sharing the archive with no range of its own completes only on the last page. The last push is echoed back on a pull (memory cache keyed by user and file) while the latest `ChapterProgress` row is unchanged, so a device sees its own position under its own device id instead of a rounded copy under Maki's.

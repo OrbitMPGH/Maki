@@ -4795,6 +4795,10 @@ msgstr ""
 msgid "Choose a root folder"
 msgstr "Выберите корневую папку"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
@@ -5374,6 +5378,10 @@ msgstr "Копировать коды"
 #, fuzzy
 msgid "Copy feed URL"
 msgstr "Копировать URL ленты"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy sync server address"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -9169,6 +9177,20 @@ msgstr "Типы"
 
 #: src/components/import/mihonRows.ts
 msgid "Kitsu"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "KOReader can send back how far you read in chapters it downloaded from Maki, even when you read them offline, and pick up where you stopped here. Those pages count toward your library, Rewind and trackers."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+#: src/pages/settings/registry.ts
+msgid "KOReader progress sync"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "koreader, kosync, progress sync, sync server, offline, ereader, kobo, kindle, read progress"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -16120,6 +16142,10 @@ msgstr "Задано вручную"
 msgid "Set by hand. Metadata refreshes leave it alone."
 msgstr "Задано вручную. Обновления метаданных его не трогают."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Set Document matching method to Binary."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Set goal"
@@ -17139,10 +17165,22 @@ msgstr "Синхронизировать оценки"
 msgid "sync running… · last {lastSync} · next {nextSync}"
 msgstr "синхронизация выполняется… · последнее {lastSync} · следующее {nextSync}"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Sync server"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Sync server address copied"
+msgstr ""
+
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "Sync started, you will get a notification when it finishes"
 msgstr "Синхронизация началась. Когда она завершится, ты получишь уведомление."
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Sync works for chapters downloaded through the OPDS catalogue and for files copied straight from your library folders. Regenerating the OPDS token signs KOReader out too."
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -18484,6 +18522,10 @@ msgstr ""
 msgid "Turn on anime signals on the Taste tab to use this."
 msgstr "Включите сигналы по аниме на вкладке «Вкусы», чтобы использовать это."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Turn on the OPDS catalogue first. KOReader signs in with its token."
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Turn sources on or off on the left. Drag the rail on the right to set which one Maki tries first."
@@ -19797,6 +19839,10 @@ msgstr "Пакет всей серии, нужно ваше решение"
 #, fuzzy
 msgid "Width"
 msgstr "Ширина"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

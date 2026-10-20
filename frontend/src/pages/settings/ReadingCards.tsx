@@ -8,6 +8,7 @@ import {
   Button,
   Code,
   Group,
+  List,
   Modal,
   PasswordInput,
   Stack,
@@ -381,6 +382,86 @@ export function OpdsSection() {
           </Group>
         </Stack>
       </Modal>
+    </SettingsSection>
+  )
+}
+
+/**
+ * KOReader's "Progress sync" plugin talking to Maki's kosync endpoint. It signs in with the OPDS
+ * token, so this only has instructions to give once the catalogue is on.
+ */
+export function KoreaderSyncSection() {
+  const { t } = useLingui()
+  const { data: opds } = useOpdsSettings()
+  const { copy: copyServerUrl } = useCopyText()
+  const serverUrl = `${window.location.origin}/api/v1/kosync`
+  const enabled = opds?.enabled ?? false
+  const feedPath = '/api/v1/opds/'
+
+  const copy = () =>
+    void copyServerUrl(serverUrl).then((ok) => {
+      if (ok) notifications.show({ message: now`Sync server address copied`, color: 'var(--ok)' })
+    })
+
+  return (
+    <SettingsSection
+      id="koreader-sync"
+      title={<Trans>KOReader progress sync</Trans>}
+      description={
+        <Trans>
+          KOReader can send back how far you read in chapters it downloaded from Maki, even when you
+          read them offline, and pick up where you stopped here. Those pages count toward your
+          library, Rewind and trackers.
+        </Trans>
+      }
+    >
+      {!enabled ? (
+        <Text size="sm" c="var(--ink-3)">
+          <Trans>Turn on the OPDS catalogue first. KOReader signs in with its token.</Trans>
+        </Text>
+      ) : (
+        <Stack gap="md">
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              <Trans>Sync server</Trans>
+            </Text>
+            <Group gap="xs" wrap="nowrap">
+              <Code style={{ overflowWrap: 'anywhere' }}>{serverUrl}</Code>
+              <Tooltip label={t`Copy sync server address`}>
+                <ActionIcon variant="light" onClick={copy} aria-label={t`Copy sync server address`}>
+                  <IconCopy size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </div>
+
+          <List type="ordered" size="sm" spacing={6}>
+            <List.Item>
+              <Trans>
+                With a book open in KOReader, go to Tools, then Progress sync, then Custom sync
+                server, and enter the address above.
+              </Trans>
+            </List.Item>
+            <List.Item>
+              <Trans>
+                Choose Register / Login. The username is your OPDS token, the part of the feed URL
+                after <Code>{feedPath}</Code>. Type anything as the password; Maki doesn't use it.
+              </Trans>
+            </List.Item>
+            <List.Item>
+              <Trans>Set Document matching method to Binary.</Trans>
+            </List.Item>
+          </List>
+
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>
+              Sync works for chapters downloaded through the OPDS catalogue and for files copied
+              straight from your library folders. Regenerating the OPDS token signs KOReader out
+              too.
+            </Trans>
+          </Text>
+        </Stack>
+      )}
     </SettingsSection>
   )
 }

@@ -175,6 +175,7 @@ public sealed class OpdsControllerTests : IDisposable
             progressWriter: withReader
                 ? new OpdsProgressWriter(_db.ScopeFactory(), NullLogger<OpdsProgressWriter>.Instance)
                 : null!,
+            koreaderDocuments: null!,
             db: db,
             paths: _paths,
             localizer: new TestLocalizer(),

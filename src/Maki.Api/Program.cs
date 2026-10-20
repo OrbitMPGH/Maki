@@ -966,6 +966,8 @@ try
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
     builder.Services.AddSingleton<OpdsProgressWriter>().AddHostedService(sp => sp.GetRequiredService<OpdsProgressWriter>());
+    builder.Services.AddScoped<KoreaderDocumentIndexer>();
+    builder.Services.AddScoped<KoreaderSyncService>();
 
     // Aggregated searches fan out to every indexer, hence the long timeout. Both are LAN services, so
     // neither gets PublicAddressGuard.
@@ -1311,6 +1313,17 @@ try
             .ForJob(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
             .WithIdentity("chapter-file-measure-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Digests chapter files so KOReader's progress sync can name them. Does nothing while no user
+        // has the OPDS catalogue on; a sync for an unknown document also fires it.
+        q.AddJob<Maki.Api.Jobs.KoreaderDocumentIndexJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
+            .WithIdentity("koreader-document-index-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(18))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured

@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, neverResolve } from '../../../.storybook/mocks/api'
 import { opdsOff, opdsOn, readerSettings } from '../../../.storybook/mocks/settings/data'
-import { KavitaSyncSection, OpdsSection } from './ReadingCards'
+import { KavitaSyncSection, KoreaderSyncSection, OpdsSection } from './ReadingCards'
 
 const meta = {
   component: KavitaSyncSection,
@@ -169,5 +169,23 @@ export const OpdsLoading: Story = {
   parameters: { msw: settingsMsw(http.get(api('/settings/opds'), () => neverResolve())) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('switch', { name: /^Enable the OPDS catalogue/ })).not.toBeChecked()
+  },
+}
+
+export const KoreaderSyncReady: Story = {
+  render: () => <KoreaderSyncSection />,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/\/api\/v1\/kosync$/)).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Copy sync server address' })).toBeVisible()
+    await expect(canvas.getByText(/Set Document matching method to Binary/)).toBeVisible()
+  },
+}
+
+export const KoreaderSyncNeedsOpds: Story = {
+  render: () => <KoreaderSyncSection />,
+  parameters: { msw: settingsMsw(http.get(api('/settings/opds'), () => HttpResponse.json(opdsOff))) },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/Turn on the OPDS catalogue first/)).toBeVisible()
+    await expect(canvas.queryByText('Sync server')).toBeNull()
   },
 }

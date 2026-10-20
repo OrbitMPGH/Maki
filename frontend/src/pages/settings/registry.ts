@@ -225,6 +225,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'koreader-sync',
+    tab: 'reading',
+    title: msg`KOReader progress sync`,
+    permission: 'UseOpds',
+    keywords: msg({
+      message: `koreader, kosync, progress sync, sync server, offline, ereader, kobo, kindle, read progress`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'offline-reading',
     tab: 'reading',
     title: msg`Offline reading`,
