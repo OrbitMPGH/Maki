@@ -283,6 +283,8 @@ public class UpgradeEvaluationService(
                 c.SeriesId,
                 SeriesTitle = c.Series!.Title,
                 c.Series.SortTitle,
+                c.Series.CoverPath,
+                c.Series.LastMetadataRefresh,
                 c.Series.UpgradeProfileId,
                 File = new ChapterFile
                 {
@@ -333,7 +335,8 @@ public class UpgradeEvaluationService(
                 ChapterFileQualityDto.From(first.File, result.Score.Score, result.CutoffMet),
                 evaluator.Profile.Id,
                 evaluator.Profile.Name,
-                QualityNames.Tier(evaluator.Profile.Cutoff))));
+                QualityNames.Tier(evaluator.Profile.Cutoff),
+                SeriesDto.CoverUrlFor(first.SeriesId, first.CoverPath, first.LastMetadataRefresh))));
         }
 
         return rows;

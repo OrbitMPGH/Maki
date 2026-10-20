@@ -331,6 +331,7 @@ const proposal: TorrentProposalDto = {
   createdAtUtc: hoursAgo(20),
   resolvedAtUtc: null,
   queueItemId: null,
+  seriesCoverUrl: '/api/v1/mediacover/2/cover.jpg',
 }
 export const proposals: TorrentProposalDto[] = [
   proposal,
@@ -339,6 +340,7 @@ export const proposals: TorrentProposalDto[] = [
     id: 32,
     seriesId: 8,
     seriesTitle: title(8),
+    seriesCoverUrl: '/api/v1/mediacover/8/cover.jpg',
     title: 'Bluefin Boys Complete Collection',
     span: { volumeStart: null, volumeEnd: null, chapters: [], wholeSeries: true },
     reasons: ['whole_series_pack'],
@@ -394,6 +396,7 @@ const upgradeRow = (id: number, seriesId: number, chapter: number, over: Partial
   revertedAt: null,
   groupId: null,
   groupSize: 1,
+  seriesCoverUrl: `/api/v1/mediacover/${seriesId}/cover.jpg`,
   ...over,
 })
 export const upgradeHistoryRows: UpgradeHistoryRowDto[] = [
@@ -414,6 +417,7 @@ export const upgradeHistoryPage = (rows = upgradeHistoryRows): UpgradeHistoryPag
 const cutoffRow = (seriesId: number, chapter: number, fileId: number): CutoffUnmetRowDto => ({
   seriesId,
   seriesTitle: title(seriesId),
+  seriesCoverUrl: `/api/v1/mediacover/${seriesId}/cover.jpg`,
   chapterId: 6000 + fileId,
   chapterNumber: chapter,
   chapterTitle: null,

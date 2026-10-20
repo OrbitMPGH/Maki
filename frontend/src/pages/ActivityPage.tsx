@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   ActionIcon,
   Anchor,
@@ -14,7 +14,6 @@ import {
   Table,
   Tabs,
   Text,
-  Title,
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
@@ -26,8 +25,11 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconHistory,
+  IconPackage,
   IconRefresh,
   IconSearch,
+  IconSparkles,
+  IconTarget,
   IconX,
 } from '@tabler/icons-react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -186,22 +188,46 @@ function upgradeRejectionText(
 type ActivityTab = 'queue' | 'upgrades' | 'upcoming'
 
 /** What a section shows in place of its skeleton once its first fetch has failed. */
-/** The series a queue row belongs to: its cover, its title and, under it, the chapter or release. */
-function QueueSeriesCell({ item, small }: { item: QueueItemDto; small?: boolean }) {
+/** The series a row belongs to: its cover, its title and, under it, the chapter, release or file. */
+function SeriesCell({
+  seriesId,
+  title,
+  coverUrl,
+  detail,
+  small,
+}: {
+  seriesId: number
+  title: string
+  coverUrl: string | null
+  detail: ReactNode
+  small?: boolean
+}) {
   return (
     <div className="queue-series" data-small={small || undefined}>
-      <Link to={`/series/${item.seriesId}`} className="queue-series-cover" tabIndex={-1} aria-hidden>
-        {item.seriesCoverUrl && <img src={item.seriesCoverUrl} alt="" loading="lazy" decoding="async" />}
+      <Link to={`/series/${seriesId}`} className="queue-series-cover" tabIndex={-1} aria-hidden>
+        {coverUrl && <img src={coverUrl} alt="" loading="lazy" decoding="async" />}
       </Link>
       <div className="queue-series-text">
-        <Text component={Link} to={`/series/${item.seriesId}`} className="queue-series-title" lineClamp={2}>
-          {item.seriesTitle}
+        <Text component={Link} to={`/series/${seriesId}`} className="queue-series-title" lineClamp={2}>
+          {title}
         </Text>
-        <Text size="xs" c="var(--ink-3)" className="tnum" lineClamp={2}>
-          {queueItemLabel(item)}
+        <Text component="div" size="xs" c="var(--ink-3)" className="tnum" lineClamp={2}>
+          {detail}
         </Text>
       </div>
     </div>
+  )
+}
+
+function QueueSeriesCell({ item, small }: { item: QueueItemDto; small?: boolean }) {
+  return (
+    <SeriesCell
+      seriesId={item.seriesId}
+      title={item.seriesTitle}
+      coverUrl={item.seriesCoverUrl}
+      detail={queueItemLabel(item)}
+      small={small}
+    />
   )
 }
 
@@ -933,9 +959,7 @@ export default function ActivityPage() {
 
               {proposals && proposals.length > 0 && (
                 <Stack gap="sm">
-                  <Title order={2} size="h4">
-                    <Trans>Volume releases waiting for you</Trans>
-                  </Title>
+                  <SectionHeader icon={IconPackage} title={t`Volume releases waiting for you`} count={proposals.length} />
                   {proposals.map((proposal) => (
                     <TorrentProposalCard key={proposal.id} proposal={proposal} />
                   ))}
@@ -943,9 +967,7 @@ export default function ActivityPage() {
               )}
 
               <Stack gap="sm">
-                <Title order={2} size="h4">
-                  <Trans>Recent upgrades</Trans>
-                </Title>
+                <SectionHeader icon={IconSparkles} title={t`Recent upgrades`} count={upgradeHistory?.total} />
                 {!upgradeHistory ? (
                   upgradeHistoryQuery.isError ? (
                     <LoadFailed query={upgradeHistoryQuery} />
@@ -966,7 +988,6 @@ export default function ActivityPage() {
                           <Table.Thead>
                             <Table.Tr>
                               <Table.Th><Trans>Series</Trans></Table.Th>
-                              <Table.Th><Trans>Chapter</Trans></Table.Th>
                               <Table.Th><Trans>Change</Trans></Table.Th>
                               <Table.Th data-priority="low"><Trans>When</Trans></Table.Th>
                               <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
@@ -980,21 +1001,12 @@ export default function ActivityPage() {
                                 return (
                                   <Table.Tr key={entry.key}>
                                     <Table.Td>
-                                      <Text
-                                        component={Link}
-                                        to={`/series/${first.seriesId}`}
-                                        size="sm"
-                                        fw={600}
-                                        c="brand.4"
-                                        lineClamp={1}
-                                      >
-                                        {first.seriesTitle}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      <Text size="sm" className="tnum">
-                                        {chapterRowLabel(first)}
-                                      </Text>
+                                      <SeriesCell
+                                        seriesId={first.seriesId}
+                                        title={first.seriesTitle}
+                                        coverUrl={first.seriesCoverUrl}
+                                        detail={chapterRowLabel(first)}
+                                      />
                                     </Table.Td>
                                     <Table.Td>
                                       <Text size="sm" c="var(--ink-3)">
@@ -1042,19 +1054,17 @@ export default function ActivityPage() {
                                 <Fragment key={entry.key}>
                                   <Table.Tr>
                                     <Table.Td>
-                                      <Text
-                                        component={Link}
-                                        to={`/series/${first.seriesId}`}
-                                        size="sm"
-                                        fw={600}
-                                        c="brand.4"
-                                        lineClamp={1}
-                                      >
-                                        {first.seriesTitle}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      <Group gap={4} wrap="nowrap">
+                                      <Group gap={6} wrap="nowrap" justify="space-between">
+                                        <SeriesCell
+                                          seriesId={first.seriesId}
+                                          title={first.seriesTitle}
+                                          coverUrl={first.seriesCoverUrl}
+                                          detail={
+                                            <span style={{ overflowWrap: 'anywhere' }}>
+                                              <Trans>{fileName} replaced {filesText}</Trans>
+                                            </span>
+                                          }
+                                        />
                                         <ActionIcon
                                           variant="subtle"
                                           color="var(--neutral)"
@@ -1065,9 +1075,6 @@ export default function ActivityPage() {
                                         >
                                           {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
                                         </ActionIcon>
-                                        <Text size="sm" style={{ wordBreak: 'break-all' }}>
-                                          <Trans>{fileName} replaced {filesText}</Trans>
-                                        </Text>
                                       </Group>
                                     </Table.Td>
                                     <Table.Td>
@@ -1107,8 +1114,7 @@ export default function ActivityPage() {
                                   {expanded &&
                                     entry.rows.map((row) => (
                                       <Table.Tr key={row.id}>
-                                        <Table.Td />
-                                        <Table.Td colSpan={2}>
+                                        <Table.Td colSpan={2} className="queue-series-indent">
                                           <Text size="xs" c="var(--ink-3)" className="tnum">
                                             {chapterRowLabel(row)}
                                             {' · '}
@@ -1141,9 +1147,11 @@ export default function ActivityPage() {
               </Stack>
 
               <Stack gap="sm">
-                <Title order={2} size="h4">
-                  <Trans>Cutoff unmet</Trans>
-                </Title>
+                <SectionHeader
+                  icon={IconTarget}
+                  title={t`Cutoff unmet`}
+                  count={upgradesSummary.profilesConfigured ? cutoffUnmet?.total : undefined}
+                />
                 {!cutoffUnmet ? (
                   cutoffUnmetQuery.isError ? (
                     <LoadFailed query={cutoffUnmetQuery} />
@@ -1179,7 +1187,6 @@ export default function ActivityPage() {
                           <Table.Thead>
                             <Table.Tr>
                               <Table.Th><Trans>Series</Trans></Table.Th>
-                              <Table.Th><Trans>Chapter</Trans></Table.Th>
                               <Table.Th><Trans>Current file</Trans></Table.Th>
                               <Table.Th data-priority="low"><Trans>Score</Trans></Table.Th>
                               <Table.Th data-priority="low"><Trans>Profile</Trans></Table.Th>
@@ -1192,21 +1199,13 @@ export default function ActivityPage() {
                               return (
                               <Table.Tr key={row.fileId}>
                                 <Table.Td>
-                                  <Text
-                                    component={Link}
-                                    to={`/series/${row.seriesId}`}
-                                    size="sm"
-                                    fw={600}
-                                    c="brand.4"
-                                    lineClamp={1}
-                                  >
-                                    {row.seriesTitle}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text size="sm" className="tnum">
-                                    {chapterRowLabel(row)}
-                                  </Text>
+                                  <SeriesCell
+                                    seriesId={row.seriesId}
+                                    title={row.seriesTitle}
+                                    coverUrl={row.seriesCoverUrl}
+                                    detail={chapterRowLabel(row)}
+                                    small
+                                  />
                                 </Table.Td>
                                 <Table.Td>
                                   <FileQualityBadge quality={row.quality} />

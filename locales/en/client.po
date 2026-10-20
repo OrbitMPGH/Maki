@@ -3786,7 +3786,6 @@ msgstr "Changes retune \"{inForceName}\", so every series using it."
 msgid "Channel"
 msgstr "Channel"
 
-#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapter"
 msgstr "Chapter"

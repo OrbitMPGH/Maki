@@ -4587,7 +4587,6 @@ msgstr "Los cambios reajustan \"{inForceName}\", y afectan a todas las series qu
 msgid "Channel"
 msgstr "Canal"
 
-#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter"

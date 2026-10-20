@@ -4587,7 +4587,6 @@ msgstr "Les modifications réajustent « {inForceName} », et donc toutes les s�
 msgid "Channel"
 msgstr "Canal"
 
-#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter"

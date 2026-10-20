@@ -4586,7 +4586,6 @@ msgstr "更改会重新调整“{inForceName}”，因此也会影响所有使�
 msgid "Channel"
 msgstr "频道"
 
-#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter"

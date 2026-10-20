@@ -147,6 +147,7 @@ export interface CutoffUnmetRowDto {
   profileId: number
   profileName: string
   cutoff: QualityTierName
+  seriesCoverUrl: string | null
 }
 
 export interface CutoffUnmetPageDto {
@@ -257,6 +258,7 @@ export interface UpgradeHistoryRowDto {
   groupId: string | null
   /** Rows in the whole group, which can exceed the rows on this page. */
   groupSize: number
+  seriesCoverUrl: string | null
 }
 
 export interface UpgradeHistoryPageDto {
@@ -414,6 +416,7 @@ export interface TorrentProposalDto {
   createdAtUtc: string
   resolvedAtUtc: string | null
   queueItemId: number | null
+  seriesCoverUrl: string | null
 }
 
 export type SpanVerdictName = 'ignore' | 'proposal' | 'autoGrab'

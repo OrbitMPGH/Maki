@@ -4587,7 +4587,6 @@ msgstr "Değişiklikler \"{inForceName}\"i yeniden ayarlar, dolayısıyla onu ku
 msgid "Channel"
 msgstr "Kanal"
 
-#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter"

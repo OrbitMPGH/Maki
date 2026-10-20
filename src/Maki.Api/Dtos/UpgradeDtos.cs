@@ -94,7 +94,8 @@ public record CutoffUnmetRowDto(
     ChapterFileQualityDto Quality,
     int ProfileId,
     string ProfileName,
-    string Cutoff);
+    string Cutoff,
+    string? SeriesCoverUrl = null);
 
 public record CutoffUnmetPageDto(IReadOnlyList<CutoffUnmetRowDto> Rows, int Total, int Page, int PageSize);
 
@@ -242,7 +243,8 @@ public record UpgradeHistoryRowDto(
     DateTime CreatedAt,
     DateTime? RevertedAt,
     string? GroupId = null,
-    int GroupSize = 1);
+    int GroupSize = 1,
+    string? SeriesCoverUrl = null);
 
 public record UpgradeHistoryPageDto(IReadOnlyList<UpgradeHistoryRowDto> Rows, int Total, int Page, int PageSize);
 
@@ -283,7 +285,7 @@ public record TorrentProposalDto(
     int Id, int SeriesId, string SeriesTitle, string Title, string Indexer, long SizeBytes, ReleaseSpanDto Span,
     IReadOnlyList<string> Reasons, int UpgradeCount, int AlreadyMetCount, int SkippedCount, int MissingCount,
     int UnknownCount, int Score, string Tier, string Status, DateTime CreatedAtUtc, DateTime? ResolvedAtUtc,
-    int? QueueItemId);
+    int? QueueItemId, string? SeriesCoverUrl = null);
 
 /// <param name="Verdict">ignore, proposal or autoGrab.</param>
 /// <param name="Tier">Lowercase <see cref="QualityTier"/> name.</param>

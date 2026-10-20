@@ -7021,6 +7021,12 @@ body.reader-open {
 .page-header[data-compact] .mantine-Text-root {
   font-size: var(--type-meta);
 }
+/* Sections here sit in Stacks that already space them, so the rail-scale margin above a header
+   would double the gap. */
+.surface-frame--operational .section-header {
+  margin-top: 0;
+  margin-bottom: 2px;
+}
 /* Panels take `p="lg"` as a spacing variable, so rescoping the variable tightens every panel on
    these pages, and the gaps inside them, without touching each call site. */
 .surface-frame--operational .panel {
@@ -8759,6 +8765,35 @@ body.reader-open {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+/* A volume release waiting on Activity > Upgrades: the series cover beside the proposal. */
+.proposal-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-md);
+}
+.proposal-card-cover {
+  width: 48px;
+  height: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--radius-thumb);
+  background: var(--surface-2);
+}
+.proposal-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.proposal-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* A replaced file under its volume row, lined up with the row's text rather than its cover. */
+.panel-table td.queue-series-indent {
+  padding-inline-start: calc(var(--table-horizontal-spacing, var(--mantine-spacing-xs)) + 44px);
 }
 .queue-series-text {
   min-width: 0;

@@ -4587,7 +4587,6 @@ msgstr "Изменения перенастроят «{inForceName}», поэт�
 msgid "Channel"
 msgstr "Канал"
 
-#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter"

@@ -4587,7 +4587,6 @@ msgstr "Zmiany dostrajają „{inForceName}”, więc dotyczą każdej serii, kt
 msgid "Channel"
 msgstr "Kanał"
 
-#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter"

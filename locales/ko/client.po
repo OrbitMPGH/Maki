@@ -4586,7 +4586,6 @@ msgstr "변경 사항은 \"{inForceName}\"을 조정하므로 이를 사용하�
 msgid "Channel"
 msgstr "채널"
 
-#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter"

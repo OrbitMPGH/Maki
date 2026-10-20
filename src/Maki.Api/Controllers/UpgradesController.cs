@@ -88,9 +88,15 @@ public class UpgradesController(
 
         var rows = await query
             .OrderByDescending(p => p.CreatedAtUtc).ThenByDescending(p => p.Id)
-            .Select(p => new { Proposal = p, SeriesTitle = db.Series.Where(s => s.Id == p.SeriesId).Select(s => s.Title).FirstOrDefault() })
+            .Select(p => new
+            {
+                Proposal = p,
+                Series = db.Series.Where(s => s.Id == p.SeriesId)
+                    .Select(s => new { s.Title, s.CoverPath, s.LastMetadataRefresh }).FirstOrDefault()
+            })
             .ToListAsync(ct);
-        return Ok(rows.Select(r => ProposalDto(r.Proposal, r.SeriesTitle)).ToList());
+        return Ok(rows.Select(r => ProposalDto(r.Proposal, r.Series?.Title,
+            SeriesDto.CoverUrlFor(r.Proposal.SeriesId, r.Series?.CoverPath, r.Series?.LastMetadataRefresh))).ToList());
     }
 
     [Authorize(Policy = Policies.DownloadChapters)]
@@ -166,7 +172,7 @@ public class UpgradesController(
             result.Reason));
     }
 
-    private static TorrentProposalDto ProposalDto(TorrentProposal p, string? seriesTitle)
+    private static TorrentProposalDto ProposalDto(TorrentProposal p, string? seriesTitle, string? coverUrl)
     {
         var stored = Deserialize<StoredReleaseSpan>(p.SpanJson) ?? new StoredReleaseSpan(null, []);
         var tier = QualityTierResolver.Resolve(null, p.Title, p.Title, stored.Volumes is not null || stored.WholeSeries);
@@ -175,7 +181,7 @@ public class UpgradesController(
             ReleaseSpanDto.From(stored.ToSpan(), stored.WholeSeries),
             Deserialize<List<string>>(p.ReasonsJson) ?? [], p.UpgradeCount, p.AlreadyMetCount, p.SkippedCount,
             p.MissingCount, p.UnknownCount, p.Score, QualityNames.Tier(tier), p.Status.ToString().ToLowerInvariant(),
-            p.CreatedAtUtc, p.ResolvedAtUtc, p.QueueItemId);
+            p.CreatedAtUtc, p.ResolvedAtUtc, p.QueueItemId, coverUrl);
     }
 
     private static T? Deserialize<T>(string json)
@@ -336,7 +342,8 @@ public class UpgradesController(
             .Select(h => new
             {
                 History = h,
-                SeriesTitle = db.Series.Where(s => s.Id == h.SeriesId).Select(s => s.Title).FirstOrDefault(),
+                Series = db.Series.Where(s => s.Id == h.SeriesId)
+                    .Select(s => new { s.Title, s.CoverPath, s.LastMetadataRefresh }).FirstOrDefault(),
                 RootPath = db.Series.Where(s => s.Id == h.SeriesId).Select(s => s.RootFolder!.Path).FirstOrDefault(),
                 Chapter = db.Chapters.Where(c => c.Id == h.ChapterId).Select(c => new { c.Number, c.Title }).FirstOrDefault(),
                 RelativePath = db.ChapterFiles.Where(f => f.Id == h.ChapterFileId).Select(f => f.RelativePath).FirstOrDefault(),
@@ -367,7 +374,7 @@ public class UpgradesController(
             return new UpgradeHistoryRowDto(
                 h.Id,
                 h.SeriesId,
-                r.SeriesTitle ?? string.Empty,
+                r.Series?.Title ?? string.Empty,
                 h.ChapterId,
                 r.Chapter?.Number,
                 r.Chapter?.Title,
@@ -381,7 +388,8 @@ public class UpgradesController(
                 h.CreatedAtUtc,
                 h.RevertedAtUtc,
                 h.GroupId?.ToString(),
-                r.GroupSize);
+                r.GroupSize,
+                SeriesDto.CoverUrlFor(h.SeriesId, r.Series?.CoverPath, r.Series?.LastMetadataRefresh));
         });
     }
 }

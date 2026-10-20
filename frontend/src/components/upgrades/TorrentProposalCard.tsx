@@ -63,7 +63,7 @@ export function TorrentProposalCard({
     <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
       <Stack gap={6} style={{ flex: 1, minWidth: 240 }}>
         {!banner && (
-          <Text component={Link} to={`/series/${seriesId}?tab=chapters`} size="sm" fw={600} c="brand.4" lineClamp={1}>
+          <Text component={Link} to={`/series/${seriesId}?tab=chapters`} className="queue-series-title" lineClamp={1}>
             {seriesTitle}
           </Text>
         )}
@@ -140,7 +140,12 @@ export function TorrentProposalCard({
   }
   return (
     <Panel p="md">
-      {body}
+      <div className="proposal-card">
+        <Link to={`/series/${seriesId}?tab=chapters`} className="proposal-card-cover" tabIndex={-1} aria-hidden>
+          {proposal.seriesCoverUrl && <img src={proposal.seriesCoverUrl} alt="" loading="lazy" decoding="async" />}
+        </Link>
+        <div className="proposal-card-body">{body}</div>
+      </div>
     </Panel>
   )
 }

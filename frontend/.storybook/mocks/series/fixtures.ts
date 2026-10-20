@@ -670,6 +670,7 @@ export function torrentProposal(seriesId: number, overrides: Partial<TorrentProp
     createdAtUtc: hoursAgo(9),
     resolvedAtUtc: null,
     queueItemId: null,
+    seriesCoverUrl: `/api/v1/mediacover/${seriesId}/cover.jpg`,
     ...overrides,
   }
 }
