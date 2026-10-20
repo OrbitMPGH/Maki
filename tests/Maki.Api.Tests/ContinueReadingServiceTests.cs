@@ -111,4 +111,117 @@ public class ContinueReadingServiceTests : IDisposable
 
         Assert.Null(await Next(seriesId));
     }
+
+    private int[] SeedRange(int seriesId, int from, int to) =>
+        Enumerable.Range(from, to - from + 1).Select(n => Seed(seriesId, n, null)).ToArray();
+
+    [Fact]
+    public async Task A_stray_read_far_ahead_does_not_move_the_place()
+    {
+        var seriesId = _db.SeedSeries();
+        foreach (var id in SeedRange(seriesId, 1, 10))
+        {
+            Read(seriesId, id);
+        }
+
+        var eleven = SeedRange(seriesId, 11, 49)[0];
+        Read(seriesId, Seed(seriesId, 50, null));
+        Seed(seriesId, 51, null);
+
+        Assert.Equal(eleven, await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task Reading_on_from_a_jump_ahead_moves_the_place()
+    {
+        var seriesId = _db.SeedSeries();
+        foreach (var id in SeedRange(seriesId, 1, 10))
+        {
+            Read(seriesId, id);
+        }
+
+        SeedRange(seriesId, 11, 49);
+        Read(seriesId, Seed(seriesId, 50, null));
+        Read(seriesId, Seed(seriesId, 51, null));
+        var next = Seed(seriesId, 52, null);
+
+        Assert.Equal(next, await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task A_bonus_chapter_read_does_not_move_the_place()
+    {
+        var seriesId = _db.SeedSeries();
+        foreach (var id in SeedRange(seriesId, 1, 10))
+        {
+            Read(seriesId, id);
+        }
+
+        var eleven = SeedRange(seriesId, 11, 40)[0];
+        Read(seriesId, Seed(seriesId, 37.5m, null));
+
+        Assert.Equal(eleven, await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task A_bonus_chapter_between_reads_does_not_hold_the_place_back()
+    {
+        var seriesId = _db.SeedSeries();
+        Read(seriesId, Seed(seriesId, 1, null));
+        Seed(seriesId, 1.5m, null);
+        Read(seriesId, Seed(seriesId, 2, null));
+        var three = Seed(seriesId, 3, null);
+
+        Assert.Equal(three, await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task Starting_mid_series_offers_the_chapter_after_it()
+    {
+        var seriesId = _db.SeedSeries();
+        SeedRange(seriesId, 1, 99);
+        Read(seriesId, Seed(seriesId, 100, null));
+        var next = Seed(seriesId, 101, null);
+
+        Assert.Equal(next, await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task A_skipped_chapter_is_offered_once_everything_after_it_is_read()
+    {
+        var seriesId = _db.SeedSeries();
+        var chapters = SeedRange(seriesId, 1, 10);
+        foreach (var id in chapters.Where((_, i) => i != 3))
+        {
+            Read(seriesId, id);
+        }
+
+        Assert.Equal(chapters[3], await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task Skipped_early_chapters_are_offered_once_the_rest_is_read()
+    {
+        var seriesId = _db.SeedSeries();
+        var chapters = SeedRange(seriesId, 1, 10);
+        foreach (var id in chapters.Skip(5))
+        {
+            Read(seriesId, id);
+        }
+
+        Assert.Equal(chapters[0], await Next(seriesId));
+    }
+
+    [Fact]
+    public async Task A_skipped_chapter_does_not_pull_the_reader_back_while_more_is_ahead()
+    {
+        var seriesId = _db.SeedSeries();
+        var chapters = SeedRange(seriesId, 1, 11);
+        foreach (var id in chapters.Take(10).Where((_, i) => i != 3))
+        {
+            Read(seriesId, id);
+        }
+
+        Assert.Equal(chapters[10], await Next(seriesId));
+    }
 }
