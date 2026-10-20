@@ -100,7 +100,7 @@ export const EditARestrictedReader: Story = {
     const dialog = await dialogOf(canvasElement)
     await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue('reader')
     await expect(dialog.getByRole('switch', { name: /^Access all root folders/ })).not.toBeChecked()
-    await expect(dialog.getByText('/library/manga')).toBeVisible()
+    await expect(await dialog.findByText('/library/manga')).toBeVisible()
   },
 }
 
