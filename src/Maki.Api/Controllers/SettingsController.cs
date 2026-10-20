@@ -242,7 +242,8 @@ public class SettingsController(
     /// The account password, required only when this request mints the first token (enabling with
     /// none yet), the same as minting an API key.
     /// </param>
-    public record OpdsSettings(bool Enabled, bool TrackProgress, string? Password = null);
+    /// <summary><c>Komga</c> null leaves the Komga API switch as it is.</summary>
+    public record OpdsSettings(bool Enabled, bool TrackProgress, string? Password = null, bool? Komga = null);
 
     public record SecuritySettings(
         bool RequireHttps,
@@ -284,7 +285,7 @@ public class SettingsController(
     /// or reverse proxy the instance is reached through. Non-null <b>only</b> on the response that
     /// generated the token — nothing stores the token itself, so it cannot be shown again.</param>
     public record OpdsSettingsResponse(
-        bool Enabled, bool TrackProgress, bool HasToken, string? TokenPrefix, string? FeedUrl);
+        bool Enabled, bool TrackProgress, bool HasToken, string? TokenPrefix, string? FeedUrl, bool Komga = false);
 
     /// <summary>
     /// Blank clears the setting; anything else must be an absolute http(s) URL. Rejecting garbage
@@ -393,13 +394,14 @@ public class SettingsController(
     {
         var existing = await CurrentOpdsKeyAsync(ct);
         var stored = await userSettings.GetManyAsync(
-            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
+            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress, SettingKeys.KomgaEnabled], ct);
         return Ok(new OpdsSettingsResponse(
             stored.GetValueOrDefault(SettingKeys.OpdsEnabled) == "true",
             stored.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
             existing is not null,
             existing?.Prefix,
-            FeedUrl: null));
+            FeedUrl: null,
+            stored.GetValueOrDefault(SettingKeys.KomgaEnabled) == "true"));
     }
 
     /// <summary>
@@ -430,16 +432,23 @@ public class SettingsController(
         await userSettings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
         await userSettings.SetAsync(
             SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
+        if (request.Komga is { } komga)
+        {
+            await userSettings.SetAsync(SettingKeys.KomgaEnabled, komga ? "true" : "false", ct);
+        }
+
         OpdsAccessService.EvictUser(currentUser.UserId);
+        var komgaEnabled = request.Komga ?? await userSettings.GetAsync(SettingKeys.KomgaEnabled, ct) == "true";
 
         if (mints)
         {
             var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
-            return Ok(new OpdsSettingsResponse(true, request.TrackProgress, true, prefix, feedUrl));
+            return Ok(new OpdsSettingsResponse(true, request.TrackProgress, true, prefix, feedUrl, komgaEnabled));
         }
 
         return Ok(new OpdsSettingsResponse(
-            request.Enabled, request.TrackProgress, existing is not null, existing?.Prefix, FeedUrl: null));
+            request.Enabled, request.TrackProgress, existing is not null, existing?.Prefix, FeedUrl: null,
+            komgaEnabled));
     }
 
     /// <summary>
@@ -464,13 +473,14 @@ public class SettingsController(
         var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
         OpdsAccessService.EvictUser(currentUser.UserId);
         var stored = await userSettings.GetManyAsync(
-            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
+            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress, SettingKeys.KomgaEnabled], ct);
         return Ok(new OpdsSettingsResponse(
             stored.GetValueOrDefault(SettingKeys.OpdsEnabled) == "true",
             stored.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
             true,
             prefix,
-            feedUrl));
+            feedUrl,
+            stored.GetValueOrDefault(SettingKeys.KomgaEnabled) == "true"));
     }
 
     private async Task<IActionResult?> ConfirmOpdsPasswordAsync(

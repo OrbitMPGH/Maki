@@ -12,9 +12,10 @@ namespace Maki.Api.Services;
 
 /// <summary>
 /// A resolved OPDS request: the catalogue is enabled and the token in the path belongs to a usable
-/// account. <see cref="UserId"/> is who the reading is attributed to.
+/// account. <see cref="UserId"/> is who the reading is attributed to. <see cref="Komga"/> is whether
+/// the same token also opens the Komga-compatible API.
 /// </summary>
-public record OpdsAccess(bool TrackProgress, int UserId, bool AllRootFolders);
+public record OpdsAccess(bool TrackProgress, int UserId, bool AllRootFolders, bool Komga = false);
 
 /// <summary>
 /// Resolves the token in an OPDS URL to the user it belongs to.
@@ -125,7 +126,8 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(x => x.UserId == match.Id &&
-                        (x.Key == SettingKeys.OpdsEnabled || x.Key == SettingKeys.OpdsTrackProgress))
+                        (x.Key == SettingKeys.OpdsEnabled || x.Key == SettingKeys.OpdsTrackProgress ||
+                         x.Key == SettingKeys.KomgaEnabled))
             .ToDictionaryAsync(x => x.Key, x => x.Value, ct);
 
         if (settings.GetValueOrDefault(SettingKeys.OpdsEnabled) != "true")
@@ -145,7 +147,8 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
                 .ExecuteUpdateAsync(s => s.SetProperty(k => k.LastUsedAt, now), ct);
         }
 
-        var access = new OpdsAccess(trackProgress, match.Id, match.AllRootFolders);
+        var access = new OpdsAccess(trackProgress, match.Id, match.AllRootFolders,
+            settings.GetValueOrDefault(SettingKeys.KomgaEnabled) == "true");
 
         // An eviction while this was reading may have been about this key, so the answer is not kept.
         // Checked and stored under the lock EvictUser takes, so one cannot land in between.
