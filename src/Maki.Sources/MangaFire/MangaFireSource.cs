@@ -26,6 +26,8 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
 
     public string Name => SourceName;
     public string DisplayName => "MangaFire";
+    /// <summary>Its <c>createdAt</c> is the mirror's upload time and moves when a chapter is re-uploaded.</summary>
+    public bool ReleaseDatesAreReliable => false;
     private const string BaseUrlConst = "https://mangafire.to";
 
     public string BaseUrl => BaseUrlConst;

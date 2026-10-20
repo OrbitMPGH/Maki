@@ -533,6 +533,14 @@ msgstr "{alt} sayfa {page}'e sahip değil"
 msgid "{alt}, page {page}"
 msgstr "{alt}, sayfa {page}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{announcedBy} has it scheduled for {announced}"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "{announcedBy} has it scheduled for {when}"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
@@ -784,6 +792,10 @@ msgstr "{cycles, plural, one {#× yeniden eklendi} other {#× yeniden eklendi}}"
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, one {Silinen dosyalar, kaldırılan bölümler ve dosyalarıyla silinen seriler, kalıcı olarak silinmeden önce burada # gün bekler. Geri yükleme bir dosyayı eski yerine koyar.} other {Silinen dosyalar, kaldırılan bölümler ve dosyalarıyla silinen seriler, kalıcı olarak silinmeden önce burada # gün bekler. Geri yükleme bir dosyayı eski yerine koyar.}}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
@@ -987,6 +999,10 @@ msgstr "{haveCount} / {totalCount, plural, one {# bölüm} other {# bölüm}} li
 
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
 msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
@@ -2553,6 +2569,14 @@ msgstr "Bir tarama zaten çalışıyor"
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "klasördeki başka bir çizgi romanın ikinci kopyası; bu kopya yerine kullanılır"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes."
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "A series shows up here once its chapters come out on a steady enough rhythm, or when its source announces the next one."
+msgstr ""
+
 #: src/components/import/RecentImports.tsx
 #, fuzzy
 msgid "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
@@ -3327,6 +3351,10 @@ msgstr "Anime {0}. bölümde bitiyor"
 #, fuzzy
 msgid "Anime you've watched"
 msgstr "İzlediğiniz animeler"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Announced by the source"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4736,10 +4764,42 @@ msgstr ""
 msgid "Check now"
 msgstr "Şimdi kontrol et"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Check quiet series less often"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
 msgstr "Her gece katalog güncellendikten sonra kontrol edilir. Birini yaratıcı sayfasından takip edin."
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 2 hours while chapters keep coming."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 30 minutes for a few hours after a new chapter."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 30 minutes."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 6 hours after two weeks without a chapter."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 6 hours until it has some release history."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked once a day while it is quiet."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked right after the announced time."
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -5550,6 +5610,7 @@ msgstr "Bu eserin ayrıntıları yüklenemedi."
 msgid "Couldn't load this rail"
 msgstr "Bu bölümü yükleyemedik"
 
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Couldn't load this section"
@@ -6651,6 +6712,10 @@ msgstr "örn. Devam ediyor ve geride"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "Her hesabın kendine ait girişi, izinleri, içerik derecesi ve okuma geçmişi vardır."
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Each bar spans the days a chapter is likely, worked out from the series' own release history, so it is a span and never a promise. The percentage is how often its recent chapters came out inside the span drawn for them. A diamond marks a day the source itself announced."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Each language adds its own chapter rows and files."
@@ -7847,6 +7912,10 @@ msgstr "Tam ekran"
 msgid "Fully read owned"
 msgstr "Sahip olduklarının tamamı okundu"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "Further out"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Gave up after the download time limit"
@@ -8235,6 +8304,10 @@ msgstr "Bunu ve serinin tamamını gizle"
 #, fuzzy
 msgid "Hide this title"
 msgstr "Bu başlığı gizle"
+
+#: src/components/releases/outlookText.ts
+msgid "High confidence"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9253,6 +9326,10 @@ msgstr "Otomatik alma boyut sınırından büyük"
 msgid "last {lastSync} · next {nextSync}"
 msgstr "son {lastSync} · sonraki {nextSync}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Last chapter {last}."
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Last chapter on disk"
@@ -9578,6 +9655,15 @@ msgstr "Kitaplık başlığı"
 msgid "Light"
 msgstr "Açık"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Likely {range}"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -9820,6 +9906,10 @@ msgstr "gevşek"
 #, fuzzy
 msgid "loose page images"
 msgstr "serbest sayfa görselleri"
+
+#: src/components/releases/outlookText.ts
+msgid "Low confidence"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10298,6 +10388,10 @@ msgstr "Ortanca"
 #, fuzzy
 msgid "Median wait"
 msgstr "Ortanca bekleme süresi"
+
+#: src/components/releases/outlookText.ts
+msgid "Medium confidence"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -11020,11 +11114,16 @@ msgstr "Önce en yeni"
 msgid "Newly enabled sources join at the bottom."
 msgstr "Yeni etkinleştirilen kaynaklar listenin sonuna eklenir."
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Next chapter"
 msgstr "Sonraki bölüm"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Next check {next}."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -11048,6 +11147,10 @@ msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 msgid "Next up to jump back in"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Next week"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -11640,6 +11743,10 @@ msgstr "Analiz edilmedi"
 msgid "Not available offline"
 msgstr ""
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
@@ -11669,6 +11776,10 @@ msgstr "Bağlı değil."
 #, fuzzy
 msgid "Not enough genre data yet"
 msgstr "Henüz yeterli tür verisi yok"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not enough release history for an estimate yet."
+msgstr ""
 
 #: src/pwa/offlineChapters.ts
 msgid "Not enough space on this device"
@@ -12018,6 +12129,10 @@ msgstr "İçe aktarılacak bir şey yok, {label} üzerindeki puanlar yerel puanl
 #, fuzzy
 msgid "Nothing to pick up yet"
 msgstr "Henüz devam edilecek bir şey yok"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Nothing to place yet"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13403,6 +13518,10 @@ msgstr "İndirme için kuyruğa alındı"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "{winnerSource} kaynağından yükseltme kuyruğa alındı"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Quiet for longer than its usual rhythm, so there is no estimate."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Quiet period (days)"
@@ -14086,6 +14205,10 @@ msgstr "Sürüm numarası bir bölüm değil, devam kitabı olabilir"
 #, fuzzy
 msgid "Released"
 msgstr "Yayın durumu"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Releases too irregularly to estimate."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14799,6 +14922,7 @@ msgstr "Yeniden denemeler"
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/HomePage.tsx
@@ -15036,6 +15160,15 @@ msgstr "Günlük taramayı çalıştır"
 #, fuzzy
 msgid "Running"
 msgstr "Çalışıyor"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Running late"
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Running late. It was likely {range}."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -17525,6 +17658,10 @@ msgstr "MangaBaka kataloğundaki en popüler başlıklar."
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "Takip ettiğiniz yaratıcı ve stüdyoların en yeni başlıkları. Birini takip edene kadar boş kalır."
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "The next check is due."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The odd one out"
@@ -18050,6 +18187,7 @@ msgstr "yalnızca bu başlık"
 msgid "This upgrade was already reverted"
 msgstr "Bu yükseltme zaten geri alındı"
 
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "This week"
@@ -18863,6 +19001,10 @@ msgstr "B. {end}'e kadar"
 msgid "Up to date, last checked {checkedAtLabel}"
 msgstr "Güncel, son kontrol {checkedAtLabel}"
 
+#: src/pages/ActivityPage.tsx
+msgid "Upcoming"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Update {latestVersion} available"
@@ -19503,6 +19645,10 @@ msgstr "Webhook URL'si"
 #, fuzzy
 msgid "Webtoon"
 msgstr "Webtoon"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Week of {start}"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy

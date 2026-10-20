@@ -29,6 +29,8 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
 
     public string Name => "toonily";
     public string DisplayName => "Toonily";
+    /// <summary>Recent chapters only say "N days ago", which loses precision as they age.</summary>
+    public bool ReleaseDatesAreReliable => false;
     public string BaseUrl => "https://toonily.com";
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
     public SourceContent Content => SourceContent.Manhwa;

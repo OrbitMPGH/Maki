@@ -278,6 +278,7 @@ export const downloadSettings: DownloadSettings = {
   bulkHoldThreshold: 5,
   sourceOrder: 'manual',
   scoutOnMatch: false,
+  adaptiveRefresh: true,
 }
 
 export const readFileCleanup: ReadFileCleanupSettings = { enabled: false, days: 7, keepLast: true }

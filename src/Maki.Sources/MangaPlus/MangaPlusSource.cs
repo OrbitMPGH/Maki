@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Text;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
@@ -24,7 +25,7 @@ namespace Maki.Sources.MangaPlus;
 /// IP (e.g. a home server), not most cloud hosts. There is no search endpoint, so we filter
 /// the (cached) full catalog by normalized title.
 /// </summary>
-public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
+public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource, INextReleaseSource
 {
     public const string HttpClientName = "source-mangaplus";
 
@@ -58,6 +59,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     private const int SuccessTitleDetailView = 8;
     private const int DetailTitle = 1;
     private const int DetailOverview = 3;
+    private const int DetailNextTimestamp = 5;
     private const int DetailChapterListGroups = 28;
 
     // ChapterListGroup splits its chapters across three lists (first / mid / last), the middle
@@ -69,6 +71,12 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     private const int ChapterName = 3;
     private const int ChapterSubTitle = 4;
 
+    /// <summary>
+    /// When the chapter opened on MANGA Plus, unix seconds. The opening chapters of a title all
+    /// carry the day the title joined the service, not their print dates.
+    /// </summary>
+    private const int ChapterStartTimestamp = 6;
+
     // SuccessResult.mangaViewer → MangaViewer.pages → Page.mangaPage.
     private const int SuccessMangaViewer = 10;
     private const int ViewerPages = 1;
@@ -77,6 +85,9 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     private const int MangaPageEncryptionKey = 5;
 
     private readonly SourceCatalog _catalog = new(TimeSpan.FromHours(1));
+
+    /// <summary>The title detail's next-chapter time from the last listing, by title id.</summary>
+    private readonly ConcurrentDictionary<string, DateTime?> _nextRelease = new();
 
     public string Name => "mangaplus";
     public string DisplayName => "MANGA Plus";
@@ -164,14 +175,22 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
                         parsed.Volume,
                         Title: string.IsNullOrWhiteSpace(subTitle) ? null : subTitle,
                         Language: language,
-                        ReleaseDate: null,
+                        ReleaseDate: UnixTime(ch.Number(ChapterStartTimestamp)),
                         Url: $"{BaseUrl}/viewer/{chapterId}"));
                 }
             }
         }
 
+        // Absent for a finished title and during an announced break with no date yet.
+        _nextRelease[sourceSeriesId] = UnixTime(view.Number(DetailNextTimestamp));
         return SourceChapterList.Normalize(chapters);
     }
+
+    public DateTime? AnnouncedNextRelease(string sourceSeriesId) =>
+        _nextRelease.TryGetValue(sourceSeriesId, out var next) ? next : null;
+
+    private static DateTime? UnixTime(ulong? seconds) =>
+        seconds is > 0 and < 4_000_000_000 ? DateTimeOffset.FromUnixTimeSeconds((long)seconds.Value).UtcDateTime : null;
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {

@@ -50,6 +50,12 @@ public class SourceMapping
     /// </summary>
     public DateTime? ChapterSnapshotAt { get; set; }
 
+    /// <summary>
+    /// The next release the source itself announced at the last sync (<c>INextReleaseSource</c>),
+    /// or null when it announces none.
+    /// </summary>
+    public DateTime? AnnouncedNextReleaseAt { get; set; }
+
     [JsonIgnore]
     public List<ChapterSourceLink> ChapterLinks { get; set; } = [];
 

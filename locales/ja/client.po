@@ -533,6 +533,14 @@ msgstr "{alt}にページ{page}はありません"
 msgid "{alt}, page {page}"
 msgstr "{alt}、ページ{page}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{announcedBy} has it scheduled for {announced}"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "{announcedBy} has it scheduled for {when}"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
@@ -784,6 +792,10 @@ msgstr "{cycles, plural, other {#×件を再追加}}"
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, other {削除したファイル、削除した章、ファイルと一緒に削除したシリーズは、完全に削除されるまでここに#日間残ります。復元するとファイルは元の場所に戻ります。}}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
@@ -987,6 +999,10 @@ msgstr "{haveCount} / {totalCount, plural, other {#章}}が一覧にあります
 
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
 msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
@@ -2552,6 +2568,14 @@ msgstr "スキャンはすでに実行中です"
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "フォルダー内の別の漫画の2つ目のコピー（代わりにこちらを使用）"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes."
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "A series shows up here once its chapters come out on a steady enough rhythm, or when its source announces the next one."
+msgstr ""
+
 #: src/components/import/RecentImports.tsx
 #, fuzzy
 msgid "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
@@ -3326,6 +3350,10 @@ msgstr "アニメは第{0}章まで"
 #, fuzzy
 msgid "Anime you've watched"
 msgstr "視聴済みのアニメ"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Announced by the source"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4735,10 +4763,42 @@ msgstr ""
 msgid "Check now"
 msgstr "今すぐ確認"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Check quiet series less often"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
 msgstr "毎晩のカタログ更新のたびに確認されます。クリエイターのページから誰かをフォローしてください。"
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 2 hours while chapters keep coming."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 30 minutes for a few hours after a new chapter."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 30 minutes."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 6 hours after two weeks without a chapter."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 6 hours until it has some release history."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked once a day while it is quiet."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked right after the announced time."
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -5549,6 +5609,7 @@ msgstr "この作品の詳細を読み込めませんでした。"
 msgid "Couldn't load this rail"
 msgstr "このレールを読み込めませんでした"
 
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Couldn't load this section"
@@ -6650,6 +6711,10 @@ msgstr "例：連載中と遅れ"
 #, fuzzy
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "アカウントごとにログイン情報、権限、コンテンツレーティング、読書履歴があります。"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Each bar spans the days a chapter is likely, worked out from the series' own release history, so it is a span and never a promise. The percentage is how often its recent chapters came out inside the span drawn for them. A diamond marks a day the source itself announced."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Each language adds its own chapter rows and files."
@@ -7846,6 +7911,10 @@ msgstr "全画面"
 msgid "Fully read owned"
 msgstr "所蔵分を完読"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "Further out"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Gave up after the download time limit"
@@ -8234,6 +8303,10 @@ msgstr "この作品とシリーズ全体を非表示にする"
 #, fuzzy
 msgid "Hide this title"
 msgstr "このタイトルを非表示にする"
+
+#: src/components/releases/outlookText.ts
+msgid "High confidence"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9252,6 +9325,10 @@ msgstr "自動取得のサイズ上限を超えています"
 msgid "last {lastSync} · next {nextSync}"
 msgstr "前回{lastSync} · 次回{nextSync}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Last chapter {last}."
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Last chapter on disk"
@@ -9577,6 +9654,15 @@ msgstr "ライブラリタイトル"
 msgid "Light"
 msgstr "ライト"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Likely {range}"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -9819,6 +9905,10 @@ msgstr "緩い"
 #, fuzzy
 msgid "loose page images"
 msgstr "単独のページ画像"
+
+#: src/components/releases/outlookText.ts
+msgid "Low confidence"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10297,6 +10387,10 @@ msgstr "中央値"
 #, fuzzy
 msgid "Median wait"
 msgstr "待ち時間の中央値"
+
+#: src/components/releases/outlookText.ts
+msgid "Medium confidence"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -11019,11 +11113,16 @@ msgstr "新しい順"
 msgid "Newly enabled sources join at the bottom."
 msgstr "新たに有効にしたソースはリストの末尾に追加されます。"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Next chapter"
 msgstr "次の章"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Next check {next}."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -11047,6 +11146,10 @@ msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 msgid "Next up to jump back in"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Next week"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -11639,6 +11742,10 @@ msgstr "未分析"
 msgid "Not available offline"
 msgstr ""
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
@@ -11668,6 +11775,10 @@ msgstr "未接続です。"
 #, fuzzy
 msgid "Not enough genre data yet"
 msgstr "ジャンルのデータが足りません"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not enough release history for an estimate yet."
+msgstr ""
 
 #: src/pwa/offlineChapters.ts
 msgid "Not enough space on this device"
@@ -12017,6 +12128,10 @@ msgstr "インポートするものはありません。{label}のスコアは�
 #, fuzzy
 msgid "Nothing to pick up yet"
 msgstr "取り込むものはまだありません"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Nothing to place yet"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13402,6 +13517,10 @@ msgstr "ダウンロードのキューに追加済み"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "{winnerSource}からのアップグレードをキューに追加しました"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Quiet for longer than its usual rhythm, so there is no estimate."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Quiet period (days)"
@@ -14085,6 +14204,10 @@ msgstr "リリース番号は章ではなく続編の可能性があります"
 #, fuzzy
 msgid "Released"
 msgstr "公開済み"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Releases too irregularly to estimate."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14798,6 +14921,7 @@ msgstr "再試行回数"
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/HomePage.tsx
@@ -15035,6 +15159,15 @@ msgstr "毎日のスキャンを実行"
 #, fuzzy
 msgid "Running"
 msgstr "実行中"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Running late"
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Running late. It was likely {range}."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -17524,6 +17657,10 @@ msgstr "MangaBakaカタログで最も人気のある作品です。"
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "フォロー中のクリエイターとスタジオの最新作品です。誰かをフォローするまでは空です。"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "The next check is due."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The odd one out"
@@ -18049,6 +18186,7 @@ msgstr "このタイトルのみ"
 msgid "This upgrade was already reverted"
 msgstr "このアップグレードはすでに元に戻されています"
 
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "This week"
@@ -18862,6 +19000,10 @@ msgstr "第{end}章まで"
 msgid "Up to date, last checked {checkedAtLabel}"
 msgstr "最新です。最終確認：{checkedAtLabel}"
 
+#: src/pages/ActivityPage.tsx
+msgid "Upcoming"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Update {latestVersion} available"
@@ -19502,6 +19644,10 @@ msgstr "Webhook URL"
 #, fuzzy
 msgid "Webtoon"
 msgstr "Webtoon"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Week of {start}"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy

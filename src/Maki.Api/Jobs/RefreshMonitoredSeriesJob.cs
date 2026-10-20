@@ -46,15 +46,17 @@ public class RefreshMonitoredSeriesJob(
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-            seriesIds = await RefreshableSeriesIdsAsync(db, await sourceAvailability.DisabledAsync(ct), ct);
+            seriesIds = await DueSeriesIdsAsync(
+                db, await sourceAvailability.DisabledAsync(ct), DateTime.UtcNow + DueSlack, ct);
         }
 
         var done = 0;
         try
         {
             // Each source has its own rate limiter, so a few series at once only overlap their waits.
+            // Most overdue first, so one slow or broken source can't keep starving the same tail.
             await Parallel.ForEachAsync(
-                seriesIds.OrderBy(_ => Random.Shared.Next()),
+                seriesIds,
                 new ParallelOptions { MaxDegreeOfParallelism = MaxParallelSeries, CancellationToken = ct },
                 async (seriesId, token) =>
                 {
@@ -221,12 +223,36 @@ public class RefreshMonitoredSeriesJob(
     /// </summary>
     internal static Task<List<int>> RefreshableSeriesIdsAsync(
         MakiDbContext db, List<string> disabledSources, CancellationToken ct = default) =>
+        Refreshable(db, disabledSources).Select(s => s.Id).ToListAsync(ct);
+
+    /// <summary>How often the job wakes. It only picks up series that are due, so a tick is cheap.</summary>
+    public static readonly TimeSpan Tick = TimeSpan.FromMinutes(15);
+
+    /// <summary>
+    /// A series due within half a tick goes now, so a 30-minute plan lands on every second tick
+    /// instead of slipping to the third.
+    /// </summary>
+    private static readonly TimeSpan DueSlack = Tick / 2;
+
+    /// <summary>
+    /// <see cref="RefreshableSeriesIdsAsync"/> narrowed to series whose <see cref="Series.NextCheckAt"/>
+    /// has come (or was never set), most overdue first.
+    /// </summary>
+    internal static async Task<List<int>> DueSeriesIdsAsync(
+        MakiDbContext db, List<string> disabledSources, DateTime dueBy, CancellationToken ct = default)
+    {
+        var due = await Refreshable(db, disabledSources)
+            .Where(s => s.NextCheckAt == null || s.NextCheckAt <= dueBy)
+            .Select(s => new { s.Id, s.NextCheckAt })
+            .ToListAsync(ct);
+        return due.OrderBy(s => s.NextCheckAt ?? DateTime.MinValue).Select(s => s.Id).ToList();
+    }
+
+    private static IQueryable<Series> Refreshable(MakiDbContext db, List<string> disabledSources) =>
         db.Series
             .Where(s => s.SourceMappings.Any(m => m.Enabled && !disabledSources.Contains(m.SourceName)))
             .Where(s => s.PendingImportLink == PendingImportLink.None)
             .Where(s => s.Status != SeriesStatus.Completed
                         || s.TotalChapters == null
-                        || !db.Chapters.Where(c => c.SeriesId == s.Id).Any(c => c.Number >= s.TotalChapters))
-            .Select(s => s.Id)
-            .ToListAsync(ct);
+                        || !db.Chapters.Where(c => c.SeriesId == s.Id).Any(c => c.Number >= s.TotalChapters));
 }
