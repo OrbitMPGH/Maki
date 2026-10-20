@@ -113,8 +113,63 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
 
     public async Task<KomgaPage<KomgaSeries>> SeriesAsync(KomgaSeriesQuery query, int page, int? size, CancellationToken ct)
     {
-        var rows = await SeriesRowsAsync(ct);
-        var counts = await ProgressCountsAsync(ct);
+        var filteredIds = NeedsMemoryFilter(query) ? await FilteredSeriesIdsAsync(query, ct) : null;
+        var total = filteredIds?.Count ?? await VisibleSeries(query.LibraryIds).CountAsync(ct);
+        var pageSize = size ?? Math.Max(total, 1);
+        var number = size is null ? 0 : page;
+        var pageIds = filteredIds is not null
+            ? filteredIds.Skip(number * pageSize).Take(pageSize).ToList()
+            : await SortedSeriesIdsAsync(query, number * pageSize, pageSize, ct);
+
+        var rows = (await SeriesRowsAsync(ct, pageIds)).ToDictionary(s => s.Id);
+        var counts = await ProgressCountsAsync(ct, pageIds);
+        return KomgaPage<KomgaSeries>.Slice(
+            pageIds.Where(rows.ContainsKey).Select(id => ToSeries(rows[id], counts)).ToList(),
+            total, number, pageSize, size is null);
+    }
+
+    /// <summary>Filters and sorts that need the rows in memory: JSON list columns, alt titles, read state, random.</summary>
+    private static bool NeedsMemoryFilter(KomgaSeriesQuery query) =>
+        query.Search is { Length: > 0 } || query.ReadStatus is { Count: > 0 } || query.Status is { Count: > 0 } ||
+        query.Genres is { Count: > 0 } || query.Tags is { Count: > 0 } || query.Publishers is { Count: > 0 } ||
+        query.Authors is { Count: > 0 } || ParseSort(query.Sort).Field == "random";
+
+    private IQueryable<Series> VisibleSeries(IReadOnlyCollection<int>? libraryIds)
+    {
+        var source = db.Series.AsNoTracking().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
+        return libraryIds is { Count: > 0 } ? source.Where(s => libraryIds.Contains(s.RootFolderId)) : source;
+    }
+
+    /// <summary>The plain browse, library filter and sort only, paged in SQL.</summary>
+    private Task<List<int>> SortedSeriesIdsAsync(KomgaSeriesQuery query, int skip, int take, CancellationToken ct)
+    {
+        var source = VisibleSeries(query.LibraryIds);
+        var (field, descending) = ParseSort(query.Sort);
+        var ordered = field switch
+        {
+            "createdDate" or "created" => descending
+                ? source.OrderByDescending(s => s.Added)
+                : source.OrderBy(s => s.Added),
+            "lastModifiedDate" or "lastModified" or "fileLastModified" => descending
+                ? source.OrderByDescending(s =>
+                    s.Chapters.Where(c => c.ChapterFileId != null).Max(c => (DateTime?)c.ChapterFile!.DateAdded))
+                : source.OrderBy(s =>
+                    s.Chapters.Where(c => c.ChapterFileId != null).Max(c => (DateTime?)c.ChapterFile!.DateAdded)),
+            "booksCount" => descending
+                ? source.OrderByDescending(s => s.Chapters.Count(c => c.ChapterFileId != null))
+                : source.OrderBy(s => s.Chapters.Count(c => c.ChapterFileId != null)),
+            _ => descending
+                ? source.OrderByDescending(s => s.SortTitle)
+                : source.OrderBy(s => s.SortTitle),
+        };
+
+        return ordered.ThenBy(s => s.Id).Skip(skip).Take(take).Select(s => s.Id).ToListAsync(ct);
+    }
+
+    private async Task<List<int>> FilteredSeriesIdsAsync(KomgaSeriesQuery query, CancellationToken ct)
+    {
+        var rows = await SeriesRowsAsync(ct, overview: false);
+        var counts = query.ReadStatus is { Count: > 0 } ? await ProgressCountsAsync(ct) : [];
         IEnumerable<SeriesRow> filtered = rows;
 
         if (query.LibraryIds is { Count: > 0 } libraries)
@@ -163,22 +218,20 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
             filtered = filtered.Where(s => readStatus.Contains(ReadStatusOf(s, counts), StringComparer.OrdinalIgnoreCase));
         }
 
-        var sorted = SortSeries(filtered, query.Sort).ToList();
-        var result = KomgaPage<SeriesRow>.Of(sorted, page, size);
-        return KomgaPage<KomgaSeries>.Slice(
-            result.Content.Select(s => ToSeries(s, counts)).ToList(),
-            result.TotalElements, result.Number, result.Size, result.Pageable.Unpaged);
+        return SortSeries(filtered, query.Sort).Select(s => s.Id).ToList();
     }
 
     public async Task<KomgaSeries?> OneSeriesAsync(int id, CancellationToken ct)
     {
         var row = (await SeriesRowsAsync(ct, [id])).FirstOrDefault();
-        return row is null ? null : ToSeries(row, await ProgressCountsAsync(ct, id));
+        return row is null ? null : ToSeries(row, await ProgressCountsAsync(ct, [id]));
     }
 
-    private Task<List<SeriesRow>> SeriesRowsAsync(CancellationToken ct, IReadOnlyCollection<int>? onlyIds = null)
+    /// <param name="overview">False leaves the summary out, for lists that only filter and sort.</param>
+    private Task<List<SeriesRow>> SeriesRowsAsync(
+        CancellationToken ct, IReadOnlyCollection<int>? onlyIds = null, bool overview = true)
     {
-        var source = db.Series.AsNoTracking().Where(s => s.Chapters.Any(c => c.ChapterFileId != null));
+        var source = VisibleSeries(null);
         if (onlyIds is not null)
         {
             source = source.Where(s => onlyIds.Contains(s.Id));
@@ -187,7 +240,7 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
         return source
             .Select(s => new SeriesRow(
                 s.Id, s.RootFolderId, s.Title, s.SortTitle, s.OriginalTitle, s.AltTitles, s.Status, s.Type,
-                s.Overview, s.Genres, s.Tags, s.Publisher, s.AuthorStory, s.AuthorArt, s.TotalChapters,
+                overview ? s.Overview : null, s.Genres, s.Tags, s.Publisher, s.AuthorStory, s.AuthorArt, s.TotalChapters,
                 s.FolderName, s.Added,
                 s.Chapters.Where(c => c.ChapterFileId != null).Max(c => (DateTime?)c.ChapterFile!.DateAdded),
                 s.Chapters.Count(c => c.ChapterFileId != null)))
@@ -196,13 +249,13 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
 
     /// <summary>Read and in-progress books per series, for downloaded chapters only.</summary>
     private async Task<Dictionary<int, (int Read, int InProgress)>> ProgressCountsAsync(
-        CancellationToken ct, int? onlySeries = null)
+        CancellationToken ct, IReadOnlyCollection<int>? onlySeries = null)
     {
         var progress = db.ChapterProgress.AsNoTracking().OwnedByScopeUser(db)
             .Where(p => db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null));
-        if (onlySeries is { } seriesId)
+        if (onlySeries is not null)
         {
-            progress = progress.Where(p => p.SeriesId == seriesId);
+            progress = progress.Where(p => onlySeries.Contains(p.SeriesId));
         }
 
         return await progress
@@ -305,18 +358,20 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
             false);
     }
 
-    private static List<KomgaAuthor> AuthorsOf(SeriesRow s)
+    private static List<KomgaAuthor> AuthorsOf(SeriesRow s) => AuthorsOf(s.AuthorStory, s.AuthorArt);
+
+    private static List<KomgaAuthor> AuthorsOf(string? story, string? art)
     {
         // Each credit string stays whole: a comma inside one cannot be told apart from two people.
         var authors = new List<KomgaAuthor>();
-        if (!string.IsNullOrWhiteSpace(s.AuthorStory))
+        if (!string.IsNullOrWhiteSpace(story))
         {
-            authors.Add(new KomgaAuthor(s.AuthorStory, "writer"));
+            authors.Add(new KomgaAuthor(story, "writer"));
         }
 
-        if (!string.IsNullOrWhiteSpace(s.AuthorArt))
+        if (!string.IsNullOrWhiteSpace(art))
         {
-            authors.Add(new KomgaAuthor(s.AuthorArt, "penciller"));
+            authors.Add(new KomgaAuthor(art, "penciller"));
         }
 
         return authors;
@@ -339,23 +394,25 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
     };
 
     public async Task<List<string>> GenresAsync(int? libraryId, CancellationToken ct) =>
-        Distinct((await SeriesRowsAsync(ct)).Where(s => libraryId is null || s.RootFolderId == libraryId)
-            .SelectMany(s => s.Genres));
+        Distinct((await VisibleSeries(InLibrary(libraryId)).Select(s => s.Genres).ToListAsync(ct)).SelectMany(g => g));
 
     public async Task<List<string>> TagsAsync(int? libraryId, CancellationToken ct) =>
-        Distinct((await SeriesRowsAsync(ct)).Where(s => libraryId is null || s.RootFolderId == libraryId)
-            .SelectMany(s => s.Tags));
+        Distinct((await VisibleSeries(InLibrary(libraryId)).Select(s => s.Tags).ToListAsync(ct)).SelectMany(t => t));
 
     public async Task<List<string>> PublishersAsync(int? libraryId, CancellationToken ct) =>
-        Distinct((await SeriesRowsAsync(ct)).Where(s => libraryId is null || s.RootFolderId == libraryId)
-            .Select(s => s.Publisher).OfType<string>().Where(p => p.Length > 0));
+        Distinct(await VisibleSeries(InLibrary(libraryId))
+            .Where(s => s.Publisher != null && s.Publisher != "")
+            .Select(s => s.Publisher!)
+            .ToListAsync(ct));
 
     public async Task<List<KomgaAuthor>> AuthorsAsync(CancellationToken ct) =>
-        (await SeriesRowsAsync(ct))
-            .SelectMany(AuthorsOf)
+        (await VisibleSeries(null).Select(s => new { s.AuthorStory, s.AuthorArt }).ToListAsync(ct))
+            .SelectMany(s => AuthorsOf(s.AuthorStory, s.AuthorArt))
             .DistinctBy(a => (a.Name.ToLowerInvariant(), a.Role))
             .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+    private static int[]? InLibrary(int? libraryId) => libraryId is { } id ? [id] : null;
 
     private static List<string> Distinct(IEnumerable<string> values) =>
         values.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToList();
@@ -503,7 +560,15 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
         var placed = (await PlaceAsync([seriesId.Value], ct)).GetValueOrDefault(seriesId.Value) ?? [];
         var index = placed.FindIndex(p => p.Row.Id == chapterId);
         var neighbour = index < 0 ? -1 : next ? index + 1 : index - 1;
-        return neighbour >= 0 && neighbour < placed.Count ? await BookAsync(placed[neighbour].Row.Id, ct) : null;
+        if (neighbour < 0 || neighbour >= placed.Count)
+        {
+            return null;
+        }
+
+        var target = placed[neighbour];
+        var series = (await SeriesRowsAsync(ct, [seriesId.Value])).ToDictionary(s => s.Id);
+        var progress = await ProgressAsync([target.Row.Id], ct);
+        return (await ToBooksAsync([target], series, progress, ct)).FirstOrDefault();
     }
 
     public async Task<List<KomgaPageInfo>?> PagesAsync(int chapterId, CancellationToken ct)
@@ -536,45 +601,62 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
         return new KomgaUser(Id(userId), name ?? string.Empty, Roles, allRootFolders, shared.Select(Id).ToList(), [], [], null);
     }
 
-    /// <summary>Komga's per-series progress summary, the figure the Mihon tracker syncs on.</summary>
+    /// <summary>
+    /// Komga's per-series progress summary, the figure the Mihon tracker syncs on. Counted per chapter
+    /// (one <c>numberSort</c> group), not per book, so a chapter downloaded in two languages and read in
+    /// one counts as read, and a fully read series reaches its total.
+    /// </summary>
     public async Task<KomgaTachiyomiProgressV2?> TachiyomiProgressAsync(int seriesId, CancellationToken ct)
     {
-        if (await SeriesBookStatesAsync(seriesId, ct) is not { } books)
+        if (await ChapterStatesAsync(seriesId, ct) is not { } chapters)
         {
             return null;
         }
 
-        var read = books.Count(b => b.Status == Read);
-        var inProgress = books.Count(b => b.Status == InProgress);
+        var read = chapters.Count(c => c.Status == Read);
+        var inProgress = chapters.Count(c => c.Status == InProgress);
         return new KomgaTachiyomiProgressV2(
-            books.Count,
+            chapters.Count,
             read,
-            books.Count - read - inProgress,
+            chapters.Count - read - inProgress,
             inProgress,
-            KomgaNumbering.LastContinuousRead(books.Select(b => (b.Placed.NumberSort, b.Status == Read)).ToList()),
-            books.Count == 0 ? 0 : books.Max(b => b.Placed.NumberSort));
+            KomgaNumbering.LastContinuousRead(chapters.Select(c => (c.NumberSort, c.Status == Read)).ToList()),
+            chapters.Count == 0 ? 0 : chapters[^1].NumberSort);
     }
 
-    /// <summary>Komga v1's version of the summary: how many books in a row are read, from the start.</summary>
+    /// <summary>Komga v1's version of the summary: how many chapters in a row are read, from the start.</summary>
     public async Task<KomgaTachiyomiProgress?> TachiyomiProgressV1Async(int seriesId, CancellationToken ct)
     {
-        if (await SeriesBookStatesAsync(seriesId, ct) is not { } books)
+        if (await ChapterStatesAsync(seriesId, ct) is not { } chapters)
         {
             return null;
         }
 
-        var read = books.Count(b => b.Status == Read);
-        var inProgress = books.Count(b => b.Status == InProgress);
-        var continuous = books.TakeWhile(b => b.Status == Read).Count();
-        return new KomgaTachiyomiProgress(books.Count, read, books.Count - read - inProgress, inProgress, continuous);
+        var read = chapters.Count(c => c.Status == Read);
+        var inProgress = chapters.Count(c => c.Status == InProgress);
+        var continuous = chapters.TakeWhile(c => c.Status == Read).Count();
+        return new KomgaTachiyomiProgress(chapters.Count, read, chapters.Count - read - inProgress, inProgress, continuous);
     }
 
-    /// <summary>The <c>numberSort</c> of the <paramref name="count"/>th book, for a v1 tracker update.</summary>
+    /// <summary>The <c>numberSort</c> of the <paramref name="count"/>th chapter, for a v1 tracker update.</summary>
     public async Task<double?> NumberSortOfBookAsync(int seriesId, int count, CancellationToken ct)
     {
-        var placed = (await PlaceAsync([seriesId], ct)).GetValueOrDefault(seriesId) ?? [];
-        return count <= 0 || placed.Count == 0 ? null : placed[Math.Min(count, placed.Count) - 1].NumberSort;
+        var sorts = ((await PlaceAsync([seriesId], ct)).GetValueOrDefault(seriesId) ?? [])
+            .Select(p => p.NumberSort)
+            .Distinct()
+            .ToList();
+        return count <= 0 || sorts.Count == 0 ? null : sorts[Math.Min(count, sorts.Count) - 1];
     }
+
+    /// <summary>One entry per chapter in reading order: read if any copy is, else in progress if any copy is.</summary>
+    private async Task<List<(double NumberSort, string Status)>?> ChapterStatesAsync(int seriesId, CancellationToken ct) =>
+        await SeriesBookStatesAsync(seriesId, ct) is { } books
+            ? books.GroupBy(b => b.Placed.NumberSort)
+                .OrderBy(g => g.Key)
+                .Select(g => (g.Key,
+                    g.Any(b => b.Status == Read) ? Read : g.Any(b => b.Status == InProgress) ? InProgress : Unread))
+                .ToList()
+            : null;
 
     /// <summary>
     /// The chapters a tracker update to <paramref name="upTo"/> newly marks read, grouped by

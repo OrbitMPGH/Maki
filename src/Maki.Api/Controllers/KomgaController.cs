@@ -213,14 +213,20 @@ public class KomgaController(
         if (groups.Count == 1)
         {
             // Several books share a group only when the chapter is downloaded in several languages.
-            // The first is the read; the others are ticked off with it, silently.
-            var group = groups[0];
-            if (await reader.SliceAsync(group[0], ct) is { } slice)
+            // The first readable one is the read; the others are ticked off with it, silently, and so is
+            // every copy when none can be opened, rather than leaving the chapter unread.
+            var rest = groups[0];
+            foreach (var chapterId in groups[0])
             {
-                await reader.SaveProgressAsync(slice, slice.PageCount - 1, true, ReaderService.TimeReport.None, ct);
+                if (await reader.SliceAsync(chapterId, ct) is { } slice)
+                {
+                    await reader.SaveProgressAsync(slice, slice.PageCount - 1, true, ReaderService.TimeReport.None, ct);
+                    rest = rest.Where(id => id != chapterId).ToList();
+                    break;
+                }
             }
 
-            await reader.MarkReadAsync(group.Skip(1).ToList(), ct);
+            await reader.MarkReadAsync(rest, ct);
         }
         else if (groups.Count > 1)
         {
@@ -242,14 +248,14 @@ public class KomgaController(
         CancellationToken ct = default) =>
         Ok(await catalog.BooksAsync(
             new KomgaBookQuery(search, Ids(libraryId), Values(readStatus), sort?.FirstOrDefault()),
-            Math.Max(0, page), PageSize(size, unpaged), ct));
+            Math.Max(0, page), PageSize(size, unpaged) ?? MaxPageSize, ct));
 
     [HttpGet("v1/books/latest")]
     public async Task<IActionResult> LatestBooks(
         [FromQuery(Name = "library_id")] string[]? libraryId, [FromQuery] int page = 0, [FromQuery] int? size = null,
         [FromQuery] bool unpaged = false, CancellationToken ct = default) =>
         Ok(await catalog.BooksAsync(new KomgaBookQuery(LibraryIds: Ids(libraryId), Sort: "createdDate,desc"),
-            Math.Max(0, page), PageSize(size, unpaged), ct));
+            Math.Max(0, page), PageSize(size, unpaged) ?? MaxPageSize, ct));
 
     [HttpGet("v1/books/ondeck")]
     public async Task<IActionResult> OnDeck(

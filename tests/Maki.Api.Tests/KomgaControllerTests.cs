@@ -133,6 +133,13 @@ public sealed class KomgaControllerTests : IDisposable
         var series = Assert.IsType<KomgaPage<KomgaSeries>>(Ok(await controller.Series(
             null, null, null, null, null, null, null, null, null)));
         Assert.Equal([granted.SeriesId.ToString()], series.Content.Select(s => s.Id));
+        foreach (var sort in new[] { "lastModifiedDate,desc", "booksCount,asc", "createdDate,desc" })
+        {
+            var sorted = Assert.IsType<KomgaPage<KomgaSeries>>(Ok(await controller.Series(
+                null, null, null, null, null, null, null, null, [sort])));
+            Assert.Equal(1, sorted.TotalElements);
+        }
+
         var libraries = Assert.IsType<List<KomgaLibrary>>(Ok(await controller.Libraries(default)));
         Assert.Equal([RootFolderOf(granted.SeriesId).ToString()], libraries.Select(l => l.Id));
         Assert.IsType<NotFoundResult>(await controller.OneSeries(hidden.SeriesId.ToString(), default));
@@ -229,6 +236,23 @@ public sealed class KomgaControllerTests : IDisposable
         Assert.Equal(2, progress.LastReadContinuousIndex);
     }
 
+    [Fact]
+    public async Task The_tracker_counts_a_chapter_read_in_one_language_as_read()
+    {
+        var seeded = SeedSeries("Bilingual", ["en", "es"], 1m, 2m, 3m, 4m);
+        var (userId, _) = SeedReader();
+
+        await Controller(userId).SetTachiyomiProgress(seeded.SeriesId.ToString(), new KomgaTachiyomiUpdate(4), default);
+
+        // en copies are the first four ids; lastBookRead counts chapters, not language copies.
+        Assert.True(Progress(seeded.Chapters[3])!.Completed);
+        var v1 = Assert.IsType<KomgaTachiyomiProgress>(Ok(await Controller(userId).TachiyomiProgress(
+            seeded.SeriesId.ToString(), default)));
+        Assert.Equal(4, v1.BooksCount);
+        Assert.Equal(4, v1.BooksReadCount);
+        Assert.Equal(4, v1.LastReadContinuousIndex);
+    }
+
     private static object? Ok(IActionResult result) => Assert.IsType<OkObjectResult>(result).Value;
 
     private (int UserId, string Token) SeedReader(bool opds = true, bool komga = true, bool allRootFolders = true)
@@ -240,7 +264,11 @@ public sealed class KomgaControllerTests : IDisposable
         return (userId, _db.SeedApiKey(userId, UserApiKeyScope.Opds));
     }
 
-    private (int SeriesId, List<int> Chapters) SeedSeries(string title, params decimal[] numbers)
+    private (int SeriesId, List<int> Chapters) SeedSeries(string title, params decimal[] numbers) =>
+        SeedSeries(title, ["en"], numbers);
+
+    /// <summary>A series with a copy of every chapter in each language; chapter ids come language by language.</summary>
+    private (int SeriesId, List<int> Chapters) SeedSeries(string title, string[] languages, params decimal[] numbers)
     {
         var seriesId = _db.SeedSeries(title);
         var folder = Path.Combine(_root, title);
@@ -251,9 +279,9 @@ public sealed class KomgaControllerTests : IDisposable
         series.RootFolder!.Path = folder;
         series.FolderName = "";
         var chapters = new List<int>();
-        foreach (var number in numbers)
+        foreach (var (language, number) in languages.SelectMany(l => numbers.Select(n => (l, n))))
         {
-            var path = Path.Combine(folder, $"{number}.cbz");
+            var path = Path.Combine(folder, $"{number}-{language}.cbz");
             using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
             {
                 for (var i = 1; i <= Pages; i++)
@@ -273,7 +301,7 @@ public sealed class KomgaControllerTests : IDisposable
             };
             db.ChapterFiles.Add(file);
             db.SaveChanges();
-            var chapter = new Chapter { SeriesId = seriesId, Number = number, Language = "en", ChapterFileId = file.Id };
+            var chapter = new Chapter { SeriesId = seriesId, Number = number, Language = language, ChapterFileId = file.Id };
             db.Chapters.Add(chapter);
             db.SaveChanges();
             chapters.Add(chapter.Id);
