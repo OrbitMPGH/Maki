@@ -34,6 +34,7 @@ export function RecommenderDials({
           )}
         </Text>
         <Slider
+          thumbLabel={t`Obscurity`}
           min={-1}
           max={1}
           step={0.25}
@@ -57,6 +58,7 @@ export function RecommenderDials({
           )}
         </Text>
         <Slider
+          thumbLabel={t`Variety`}
           min={0}
           max={1}
           step={0.1}

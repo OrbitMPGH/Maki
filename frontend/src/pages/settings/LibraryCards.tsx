@@ -18,6 +18,7 @@ import {
   Table,
   Text,
   TextInput,
+  VisuallyHidden,
 } from '@mantine/core'
 import { IconRestore, IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
@@ -100,7 +101,7 @@ export function RootFoldersSection() {
               <Table.Tr>
                 <Table.Th><Trans>Path</Trans></Table.Th>
                 <Table.Th><Trans>Free space</Trans></Table.Th>
-                <Table.Th />
+                <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -815,7 +816,7 @@ export function RecycleBinSection() {
                         <Table.Th><Trans>Size</Trans></Table.Th>
                         <Table.Th><Trans>Deleted</Trans></Table.Th>
                         <Table.Th><Trans>Days left</Trans></Table.Th>
-                        <Table.Th />
+                        <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>

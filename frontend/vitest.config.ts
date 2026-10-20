@@ -34,6 +34,9 @@ export default defineConfig((env) =>
             // whichever story was running fails; a different handful each run. A broken story still
             // fails every attempt.
             retry: process.env.CI ? 2 : 0,
+            // A fresh iframe per file reloads the whole app 202 times: 97% of a CI run, and each
+            // closing iframe churns MSW's service worker clients. The preview resets state per story.
+            isolate: false,
             browser: {
               enabled: true,
               // Paired with TestMotion in .storybook/preview.tsx: Mantine skips its transitions.

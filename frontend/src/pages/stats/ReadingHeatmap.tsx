@@ -35,7 +35,7 @@ const SHADES = [
  * grid ending on the current week so today sits in the last column.
  */
 export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
-  const { i18n } = useLingui()
+  const { i18n, t } = useLingui()
   const { columns, monthLabels, todayKey } = useMemo(() => {
     const byDate = new Map(days.map((d) => [d.date.slice(0, 10), d]))
 
@@ -78,7 +78,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
       <Title order={3} size="h4" mb="xs">
         <Trans>Reading days</Trans>
       </Title>
-      <Box style={{ overflowX: 'auto' }}>
+      <Box style={{ overflowX: 'auto' }} role="region" aria-label={t`Reading days`} tabIndex={0}>
         <Box style={{ minWidth: WEEKS * 14 }}>
           <Box style={{ display: 'flex', gap: 3, marginBottom: 4, paddingLeft: 0 }}>
             {columns.map((_, i) => {

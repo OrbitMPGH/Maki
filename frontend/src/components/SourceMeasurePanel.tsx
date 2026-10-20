@@ -50,6 +50,7 @@ export function ScoutCell({ progress, needsFlareSolverr }: { progress: ScoutSour
 
 /** Shown above the source table while a measurement runs. */
 export function MeasureProgress({ order }: { order: SourceOrderDto }) {
+  const { t } = useLingui()
   const scout = order.scout!
   const sources = scout.sources.filter((s) => s.state !== 'skipped').length
   const chapters = scout.chapters.join(', ')
@@ -63,7 +64,7 @@ export function MeasureProgress({ order }: { order: SourceOrderDto }) {
           other: `Measuring # sources on chapters ${chapters}`,
         })}
       </Text>
-      <Progress value={probes > 0 ? (done / probes) * 100 : 0} size="sm" mt={6} mb={4} animated />
+      <Progress value={probes > 0 ? (done / probes) * 100 : 0} size="sm" mt={6} mb={4} animated aria-label={t`Measuring progress`} />
       <Text size="xs" c="var(--ink-3)">
         <Trans>
           {done} of {probes} chapter samples. The order below updates once it finishes.
@@ -95,6 +96,7 @@ export function MeasureResult({
   onReorder: () => void
   onDismiss: () => void
 }) {
+  const { t } = useLingui()
   const problemText = useProblemText()
   const scout = order.scout!
   const tried = scout.sources.filter((s) => s.state !== 'skipped')
@@ -113,6 +115,7 @@ export function MeasureResult({
       variant="light"
       icon={measured > 0 ? <IconCheck size={16} /> : <IconRuler size={16} />}
       withCloseButton
+      closeButtonLabel={t`Dismiss`}
       onClose={onDismiss}
       mb="sm"
     >

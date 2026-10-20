@@ -8,6 +8,8 @@ import {
   type MantineColorsTuple,
   type MantineThemeOverride,
   Modal,
+  Notification,
+  Pagination,
   Paper,
   Table,
   type VariantColorsResolver,
@@ -223,12 +225,18 @@ export function createAppTheme(
   accent: MantineColorsTuple = brand,
   scheme: MantineColorScheme = 'dark',
   ground: MantineColorsTuple = dark,
-  /** Mantine's own close button is English-only, so the caller passes the translated label. */
-  closeLabel?: string,
+  /** Mantine's icon-only controls have no text of their own, so the caller passes translated labels. */
+  labels?: ThemeLabels,
 ) {
   const shades = primaryShades.get(accent) ?? (themeBase.primaryShade as { light: number; dark: number })
   const primaryShade = (scheme === 'light' ? shades.light : shades.dark) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-  const closeButtonProps = closeLabel ? { 'aria-label': closeLabel } : undefined
+  const closeButtonProps = labels ? { 'aria-label': labels.close } : undefined
+  const paginationLabels = labels && {
+    first: labels.firstPage,
+    previous: labels.previousPage,
+    next: labels.nextPage,
+    last: labels.lastPage,
+  }
   return createTheme({
     ...themeBase,
     primaryShade,
@@ -237,12 +245,30 @@ export function createAppTheme(
     components: {
       ...themeBase.components,
       Modal: Modal.extend({ defaultProps: { ...modalDefaults, closeButtonProps } }),
-      Drawer: Drawer.extend({ defaultProps: { closeButtonProps } }),
+      Drawer: Drawer.extend({ defaultProps: { closeButtonProps, attributes: dialogHeaderAttributes } }),
+      Notification: Notification.extend({ defaultProps: { closeButtonProps } }),
+      Pagination: Pagination.extend({
+        defaultProps: paginationLabels && {
+          getControlProps: (control) => ({ 'aria-label': paginationLabels[control] }),
+        },
+      }),
     },
   })
 }
 
+export interface ThemeLabels {
+  close: string
+  firstPage: string
+  previousPage: string
+  nextPage: string
+  lastPage: string
+}
+
+// Mantine renders dialog headers as <header>, a second banner landmark next to the app shell's.
+const dialogHeaderAttributes = { header: { role: 'presentation' } }
+
 const modalDefaults = {
+  attributes: dialogHeaderAttributes,
   radius: 'lg',
   padding: 'lg',
   centered: true,

@@ -19,6 +19,7 @@ import {
   Table,
   Text,
   UnstyledButton,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconAlertTriangle,
@@ -148,7 +149,7 @@ export function BackupSection() {
                   <Table.Th><Trans>Kind</Trans></Table.Th>
                   <Table.Th><Trans>Version</Trans></Table.Th>
                   <Table.Th><Trans>Size</Trans></Table.Th>
-                  <Table.Th />
+                  <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -539,6 +540,7 @@ export function ImageCacheSection() {
           animated={running}
           striped={running}
           color={status?.lastError ? 'var(--danger)' : 'brand'}
+          aria-label={t`Cache progress`}
         />
       )}
 

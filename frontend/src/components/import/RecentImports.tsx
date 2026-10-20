@@ -247,7 +247,7 @@ export function RecentImports({ rootFolderId, onUndone }: { rootFolderId: number
 
   return (
     <Stack gap="sm" mt="xl">
-      <Title order={4}>
+      <Title order={2} size="h4">
         <Trans>Recent imports</Trans>
       </Title>
       <Text size="xs" c="var(--ink-3)">

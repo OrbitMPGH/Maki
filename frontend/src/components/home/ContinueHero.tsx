@@ -55,7 +55,7 @@ export function ContinueHero({ items, rail }: { items: HomeReadingItem[]; rail: 
     <div ref={gridRef} className="continue-hero-grid" data-solo={items.length === 1 || undefined}>
       <ContinueHeroCard key={active.chapterId} item={active} rail={rail} />
       {items.length > 1 && (
-        <NextUpPanel items={items} activeSeriesId={active.seriesId} onPick={pick} stacked={stacked} />
+        <NextUpPanel items={items} activeSeriesId={active.seriesId} onPick={pick} stacked={stacked} rail={rail} />
       )}
     </div>
   )
@@ -160,11 +160,13 @@ function NextUpPanel({
   activeSeriesId,
   onPick,
   stacked,
+  rail,
 }: {
   items: HomeReadingItem[]
   activeSeriesId: number
   onPick: (seriesId: number) => void
   stacked: boolean
+  rail: ReadingRailKind
 }) {
   const { t } = useLingui()
   const listRef = useRef<HTMLDivElement>(null)
@@ -216,7 +218,7 @@ function NextUpPanel({
   const scrollable = !stacked && (reach.up || reach.down)
 
   return (
-    <aside className="continue-queue" aria-label={t`Next up`}>
+    <aside className="continue-queue" aria-label={rail === 'jumpback' ? t`Next up to jump back in` : t`Next up`}>
       <div className="continue-queue-head">
         <h3 className="continue-queue-title">
           <Trans>Next up</Trans>

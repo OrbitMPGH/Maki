@@ -5,7 +5,7 @@ import { queueStatusVisual, statusToken } from '../ui/status'
 import type { QueueItemDto } from '../../api/types'
 import { queueItemLabel } from '../../api/queue'
 import { useLabel } from '../../i18n-context'
-import { Plural, Trans } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 
 const MAX_ROWS = 5
 
@@ -16,6 +16,7 @@ const MAX_ROWS = 5
  */
 export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
   const renderLabel = useLabel()
+  const { t } = useLingui()
   const shown = items.slice(0, MAX_ROWS)
   const remaining = items.length - MAX_ROWS
   const { length: totalQueued } = items
@@ -59,6 +60,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
                   animated={q.status === 'Downloading'}
                   w={120}
                   visibleFrom="sm"
+                  aria-label={t`Download progress`}
                 />
               )}
               <Badge

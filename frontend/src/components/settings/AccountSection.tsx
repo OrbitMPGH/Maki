@@ -15,6 +15,7 @@ import {
   Table,
   Text,
   TextInput,
+  VisuallyHidden,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
@@ -612,7 +613,7 @@ function ApiKeysCard() {
               <Table.Th><Trans>Name</Trans></Table.Th>
               <Table.Th><Trans>Prefix</Trans></Table.Th>
               <Table.Th><Trans>Last used</Trans></Table.Th>
-              <Table.Th />
+              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

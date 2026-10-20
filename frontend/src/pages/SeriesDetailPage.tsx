@@ -31,6 +31,7 @@ import {
   TextInput,
   Title,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconAlertTriangle,
@@ -2730,7 +2731,7 @@ function SeriesDetailBody() {
                                 <Trans>Status</Trans>
                                 <div {...chapterColumnHandle('status', 'start')} aria-label={t`Resize Status column`} />
                               </Table.Th>
-                              <Table.Th w={CHAPTER_ACTIONS_COLUMN_WIDTH} />
+                              <Table.Th w={CHAPTER_ACTIONS_COLUMN_WIDTH}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>

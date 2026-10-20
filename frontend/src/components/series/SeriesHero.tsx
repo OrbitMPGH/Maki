@@ -309,6 +309,7 @@ export function SeriesHero({
                                     value={Math.min(100, (series.readChapterCount / progress.have) * 100)}
                                     color="brand"
                                     radius="xl"
+                                    aria-label={t`Reading progress`}
                                 />
                                 <Group justify="space-between" align="flex-start" wrap="nowrap" mt={9}>
                                     <Text size="sm" c="var(--ink-2)" className="tnum" style={{ flex: 1, minWidth: 0 }}>
@@ -338,6 +339,7 @@ export function SeriesHero({
                                 // Warn wins while a source gap exists, a separate claim the alert below already spells out.
                                 color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--brand)'}
                                 radius="xl"
+                                aria-label={t`Download progress`}
                             />
                             <Group justify="space-between" align="flex-start" wrap="nowrap" mt={9}>
                                 <Text size="sm" c="var(--ink-2)" className="tnum" style={{ flex: 1, minWidth: 0 }}>

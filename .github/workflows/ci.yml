@@ -40,6 +40,8 @@ jobs:
       # and a story whose component calls an endpoint nothing mocks fails, so a new API call has to
       # bring its mock along. Chromium only; the browser binary is not in the npm cache.
       - name: Storybook stories render and pass their play functions
+        # A story that wedges its page never times out inside the browser; fail here, not at the job cap.
+        timeout-minutes: 10
         run: |
           npx playwright install --with-deps chromium
           npm run test-storybook

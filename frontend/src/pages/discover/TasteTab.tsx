@@ -90,7 +90,7 @@ function ratio(value: number): string {
 function TasteSkeleton() {
   const { t } = useLingui()
   return (
-    <Stack gap="md" aria-hidden>
+    <Stack gap="md" aria-hidden inert>
       <SignalsCard />
       <SectionHeader icon={IconClock} title={t`How you read`} />
       <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">

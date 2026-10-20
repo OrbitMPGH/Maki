@@ -15,6 +15,7 @@ import {
   Text,
   TextInput,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconBell,
@@ -490,7 +491,7 @@ export function NotificationsSection() {
               <Table.Th><Trans>Type</Trans></Table.Th>
               <Table.Th><Trans>Scope</Trans></Table.Th>
               <Table.Th><Trans>Status</Trans></Table.Th>
-              <Table.Th />
+              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

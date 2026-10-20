@@ -95,7 +95,7 @@ export const ChangeColour: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogIn(canvasElement)
     await userEvent.click(await within(dialog).findByText('Comfort reads'))
-    const swatches = await within(canvasElement.ownerDocument.body).findAllByRole('button', { name: '' })
+    const swatches = await within(canvasElement.ownerDocument.body).findAllByRole('button', { name: /^Colour / })
     await expect(swatches.length).toBeGreaterThan(5)
     await userEvent.click(swatches[1])
     await waitFor(() => expect(onRecolour).toHaveBeenCalledWith('3', { color: 'grape' }))

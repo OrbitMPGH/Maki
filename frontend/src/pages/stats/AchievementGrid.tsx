@@ -211,6 +211,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               size="sm"
               radius="xl"
               color={earned ? tierColor(achievement.tier) : 'var(--neutral)'}
+              aria-label={achievement.name}
             />
             <Group justify="space-between" gap="xs">
               <Text size="xs" c="var(--ink-3)" className="tnum">

@@ -20,7 +20,7 @@ export const SearchResults: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: /Find a match for/ })
-    const option = await within(dialog).findByRole('button', { name: 'Use Paper Crane Cartel' }, { timeout: 4000 })
+    const option = await within(dialog).findByRole('button', { name: /^Paper Crane Cartel\s?\d{4}$/ }, { timeout: 4000 })
     await userEvent.click(option)
     await expect(args.onPick).toHaveBeenCalledWith(expect.objectContaining({ providerId: 'mb-30020' }))
   },

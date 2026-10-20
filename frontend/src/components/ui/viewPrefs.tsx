@@ -154,7 +154,7 @@ export function ViewModeToggle({
           value: 'grid',
           label: (
             <Tooltip label={t`Grid view`} withArrow>
-              <span className="view-mode-option" aria-label={t`Grid view`}>
+              <span className="view-mode-option" role="img" aria-label={t`Grid view`}>
                 <IconLayoutGrid size={16} />
               </span>
             </Tooltip>
@@ -164,7 +164,7 @@ export function ViewModeToggle({
           value: 'list',
           label: (
             <Tooltip label={t`List view`} withArrow>
-              <span className="view-mode-option" aria-label={t`List view`}>
+              <span className="view-mode-option" role="img" aria-label={t`List view`}>
                 <IconLayoutList size={16} />
               </span>
             </Tooltip>

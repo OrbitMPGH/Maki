@@ -103,7 +103,7 @@ export const FindAMatchByHand: Story = {
     await scan(canvas, body, userEvent)
     await userEvent.click(canvas.getByRole('button', { name: 'Find match' }))
     const dialog = await body.findByRole('dialog', { name: /Find a match for zz_unsorted_scans_2019/ })
-    const option = await within(dialog).findByRole('button', { name: 'Use Paper Crane Cartel' }, { timeout: 4000 })
+    const option = await within(dialog).findByRole('button', { name: /^Paper Crane Cartel\s?\d{4}$/ }, { timeout: 4000 })
     await userEvent.click(option)
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument())
     await expect(canvas.getByRole('button', { name: 'Import 4 selected' })).toBeVisible()

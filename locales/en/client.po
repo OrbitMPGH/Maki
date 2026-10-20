@@ -2249,7 +2249,18 @@ msgstr "Acknowledged"
 msgid "Action"
 msgstr "Action"
 
+#: src/components/NotificationsSection.tsx
+#: src/components/ReleaseSearchModal.tsx
+#: src/components/SeriesFilesSection.tsx
+#: src/components/settings/AccountSection.tsx
+#: src/components/settings/UsersSection.tsx
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Actions"
 msgstr "Actions"
 
@@ -2262,6 +2273,10 @@ msgstr "Actions for {spanLabel}"
 #: src/pages/ActivityPage.tsx
 msgid "Activity"
 msgstr "Activity"
+
+#: src/App.tsx
+msgid "Activity {shown}"
+msgstr "Activity {shown}"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Activity feed"
@@ -2287,8 +2302,8 @@ msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them
 msgstr "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 
 #: src/components/discover/DiscoverHero.tsx
-msgid "Add {title} to library"
-msgstr "Add {title} to library"
+#~ msgid "Add {title} to library"
+#~ msgstr "Add {title} to library"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -2361,6 +2376,10 @@ msgstr "Add the series to your library, or request it, to keep reading."
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Add to library"
 msgstr "Add to library"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Add to library: {title}"
+msgstr "Add to library: {title}"
 
 #: src/pages/SetupAccountPage.tsx
 msgid "Add two-factor authentication under Settings → Account → Sign-in."
@@ -3336,6 +3355,10 @@ msgstr "C:\\Manga (optional)"
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga or /library"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Cache progress"
+msgstr "Cache progress"
+
 #: src/components/ImportReviewModal.tsx
 msgid "Can't load this import"
 msgstr "Can't load this import"
@@ -4107,6 +4130,10 @@ msgstr "Collapse {lineLabel}"
 #: src/nav.ts
 msgid "Collection"
 msgstr "Collection"
+
+#: src/components/TagManagerModal.tsx
+msgid "Colour {c}"
+msgstr "Colour {c}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -5202,7 +5229,9 @@ msgstr "Disk warning below {0}% or {1} GiB, error below {2}% or {3} GiB. Backups
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
@@ -5346,6 +5375,13 @@ msgstr "Download path not accessible from Maki"
 #: src/api/queue.ts
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Download path not accessible from Maki: {path}"
+
+#: src/components/home/DownloadingStrip.tsx
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesHero.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Download progress"
+msgstr "Download progress"
 
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
@@ -6004,6 +6040,7 @@ msgid "Fetching pages…"
 msgstr "Fetching pages…"
 
 #: src/components/CatalogueFilters.tsx
+#: src/pages/DiscoverPage.tsx
 msgid "Fewest chapters"
 msgstr "Fewest chapters"
 
@@ -6222,6 +6259,7 @@ msgid "First folder you can see"
 msgstr "First folder you can see"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/theme-context.tsx
 msgid "First page"
 msgstr "First page"
 
@@ -7629,6 +7667,7 @@ msgid "Last measured {measured}."
 msgstr "Last measured {measured}."
 
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/theme-context.tsx
 msgid "Last page"
 msgstr "Last page"
 
@@ -8430,6 +8469,10 @@ msgstr "Measured quality"
 msgid "Measuring {done}/{planned}"
 msgstr "Measuring {done}/{planned}"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Measuring progress"
+msgstr "Measuring progress"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Measuring…"
 msgstr "Measuring…"
@@ -8535,6 +8578,7 @@ msgid "Minimum pages"
 msgstr "Minimum pages"
 
 #: src/components/CatalogueFilters.tsx
+#: src/pages/DiscoverPage.tsx
 msgid "Minimum rating"
 msgstr "Minimum rating"
 
@@ -8594,6 +8638,10 @@ msgstr "Missing posters"
 #: src/components/series/FileQualityBadge.tsx
 msgid "Mixed"
 msgstr "Mixed"
+
+#: src/components/RecommendationModelSwitch.tsx
+msgid "Model download progress"
+msgstr "Model download progress"
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Model switch: {modelSwitchError}"
@@ -8705,6 +8753,7 @@ msgid "Moss"
 msgstr "Moss"
 
 #: src/components/CatalogueFilters.tsx
+#: src/pages/DiscoverPage.tsx
 msgid "Most chapters"
 msgstr "Most chapters"
 
@@ -9044,6 +9093,7 @@ msgid "Next chapter"
 msgstr "Next chapter"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/theme-context.tsx
 msgid "Next page"
 msgstr "Next page"
 
@@ -9058,6 +9108,10 @@ msgstr "Next tier at {nextValue}"
 #: src/components/home/ContinueHero.tsx
 msgid "Next up"
 msgstr "Next up"
+
+#: src/components/home/ContinueHero.tsx
+msgid "Next up to jump back in"
+msgstr "Next up to jump back in"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Next..."
@@ -9971,6 +10025,10 @@ msgid "obscure"
 msgstr "obscure"
 
 #: src/components/discover/RecommenderDials.tsx
+msgid "Obscurity"
+msgstr "Obscurity"
+
+#: src/components/discover/RecommenderDials.tsx
 msgid "Obscurity: balanced"
 msgstr "Obscurity: balanced"
 
@@ -10382,6 +10440,7 @@ msgid "Packaging"
 msgstr "Packaging"
 
 #: src/components/CommandPalette.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 msgid "Page"
 msgstr "Page"
 
@@ -10778,6 +10837,7 @@ msgid "Previous default"
 msgstr "Previous default"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/theme-context.tsx
 msgid "Previous page"
 msgstr "Previous page"
 
@@ -11264,6 +11324,8 @@ msgid "Reading profile"
 msgstr "Reading profile"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesHero.tsx
 msgid "Reading progress"
 msgstr "Reading progress"
 
@@ -12211,6 +12273,10 @@ msgstr "Review"
 msgid "Review archive"
 msgstr "Review archive"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "Review by {author}"
+msgstr "Review by {author}"
+
 #: src/pages/HealthPage.tsx
 msgid "Review every candidate before applying. Originals remain unchanged until approval."
 msgstr "Review every candidate before applying. Originals remain unchanged until approval."
@@ -12742,8 +12808,8 @@ msgid "Search"
 msgstr "Search"
 
 #: src/components/CommandPalette.tsx
-msgid "Search ({shortcut})"
-msgstr "Search ({shortcut})"
+#~ msgid "Search ({shortcut})"
+#~ msgstr "Search ({shortcut})"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search by chapter number or title"
@@ -12960,6 +13026,7 @@ msgid "Seinen"
 msgstr "Seinen"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Select"
@@ -13095,6 +13162,10 @@ msgstr "Series and chapters you have asked an admin for."
 #: src/pages/settings/DownloadCards.tsx
 msgid "Series checked per daily run. Each series is searched at most once a week."
 msgstr "Series checked per daily run. Each series is searched at most once a week."
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Series details"
+msgstr "Series details"
 
 #: src/components/SetupWizard.tsx
 msgid "Series details come from MangaBaka. Choose how much of it Maki keeps at hand, and what it may show you."
@@ -13953,6 +14024,10 @@ msgstr "Stopping"
 msgid "Storage on this device"
 msgstr "Storage on this device"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Storage used"
+msgstr "Storage used"
+
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -13982,6 +14057,10 @@ msgstr "Success"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Success and wait cover the last 30 days."
 msgstr "Success and wait cover the last 30 days."
+
+#: src/pages/stats/SourceReliability.tsx
+msgid "Success rate"
+msgstr "Success rate"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
@@ -15597,8 +15676,8 @@ msgid "Use"
 msgstr "Use"
 
 #: src/components/import/ImportMatchFinder.tsx
-msgid "Use {title}"
-msgstr "Use {title}"
+#~ msgid "Use {title}"
+#~ msgstr "Use {title}"
 
 #: src/pages/LoginPage.tsx
 msgid "Use a recovery code"
@@ -15747,6 +15826,10 @@ msgid "varied ({diversityChip})"
 msgstr "varied ({diversityChip})"
 
 #: src/components/discover/RecommenderDials.tsx
+msgid "Variety"
+msgstr "Variety"
+
+#: src/components/discover/RecommenderDials.tsx
 msgid "Variety: closest matches"
 msgstr "Variety: closest matches"
 
@@ -15795,8 +15878,8 @@ msgid "View {title}"
 msgstr "View {title}"
 
 #: src/components/discover/DiscoverHero.tsx
-msgid "View {title} in library"
-msgstr "View {title} in library"
+#~ msgid "View {title} in library"
+#~ msgstr "View {title} in library"
 
 #: src/components/home/DownloadingStrip.tsx
 msgid "View activity"
@@ -15816,6 +15899,10 @@ msgstr "View and add {title}"
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View in library"
 msgstr "View in library"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View in library: {title}"
+msgstr "View in library: {title}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Vol. {fileVolume}"

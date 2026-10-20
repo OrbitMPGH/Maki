@@ -320,6 +320,7 @@ export default function ReaderToolbar({
             it still grows from where you started reading rather than from the far end.
           */}
           <Slider
+            thumbLabel={t`Page`}
             className="reader-slider"
             min={1}
             max={Math.max(1, manifest.pageCount)}

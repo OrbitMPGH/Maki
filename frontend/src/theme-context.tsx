@@ -3,7 +3,15 @@ import { MantineProvider } from '@mantine/core'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import type { MessageDescriptor } from '@lingui/core'
-import { accentSwatch, accents, createAppTheme, cssVariablesResolver, groundRamp, grounds } from './theme'
+import {
+  accentSwatch,
+  accents,
+  createAppTheme,
+  cssVariablesResolver,
+  groundRamp,
+  grounds,
+  type ThemeLabels,
+} from './theme'
 
 /**
  * Appearance is two independent choices. A background is a dark surface ramp, the light theme, or
@@ -215,10 +223,19 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   }, [accent.id, background.ground, scheme])
 
   const { _ } = useLingui()
-  const closeLabel = _(msg`Close`)
+  const labels = useMemo<ThemeLabels>(
+    () => ({
+      close: _(msg`Close`),
+      firstPage: _(msg`First page`),
+      previousPage: _(msg`Previous page`),
+      nextPage: _(msg`Next page`),
+      lastPage: _(msg`Last page`),
+    }),
+    [_],
+  )
   const mantineTheme = useMemo(
-    () => createAppTheme(accents[accent.id], scheme, groundRamp(background.ground, accents[accent.id]), closeLabel),
-    [accent.id, background.ground, scheme, closeLabel],
+    () => createAppTheme(accents[accent.id], scheme, groundRamp(background.ground, accents[accent.id]), labels),
+    [accent.id, background.ground, scheme, labels],
   )
   const value = useMemo(
     () => ({

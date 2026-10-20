@@ -7,7 +7,7 @@ import { TagBuckets } from '../TagBuckets'
 export function DiscoverTags({ tags }: { tags: MangaBakaTag[] }) {
   return (
     <Paper withBorder radius="lg" p="lg">
-      <Title order={3} fz="var(--type-section)">
+      <Title order={2} size="h3" fz="var(--type-section)">
         <Trans>Tags</Trans>
       </Title>
       <TagBuckets tags={tags} />

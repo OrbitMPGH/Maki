@@ -220,6 +220,7 @@ function ActivityButton() {
   // own, this does not, and the count is the only thing telling anyone it is there.
   const review = summary?.awaitingImport ?? 0
   const count = review > 0 ? review : active
+  const shown = count > 99 ? '99+' : count
   return (
     <Tooltip
       label={
@@ -239,7 +240,7 @@ function ActivityButton() {
         to="/activity"
         variant="subtle"
         color="var(--neutral)"
-        aria-label={t`Activity`}
+        aria-label={count > 0 ? t`Activity ${shown}` : t`Activity`}
         pos="relative"
         style={{ overflow: 'visible' }}
       >
@@ -262,7 +263,7 @@ function ActivityButton() {
             }}
             className="tnum"
           >
-            {count > 99 ? '99+' : count}
+            {shown}
           </Badge>
         )}
       </ActionIcon>

@@ -2743,7 +2743,18 @@ msgstr "Potwierdzone"
 msgid "Action"
 msgstr "Akcja"
 
+#: src/components/NotificationsSection.tsx
+#: src/components/ReleaseSearchModal.tsx
+#: src/components/SeriesFilesSection.tsx
+#: src/components/settings/AccountSection.tsx
+#: src/components/settings/UsersSection.tsx
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Actions"
 msgstr ""
 
@@ -2758,6 +2769,10 @@ msgstr "Działania dla {spanLabel}"
 #, fuzzy
 msgid "Activity"
 msgstr "Aktywność"
+
+#: src/App.tsx
+msgid "Activity {shown}"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -2789,8 +2804,8 @@ msgstr "Dodaj {chapterLanguageToken} do formatu rozdziału w Ustawieniach, aby j
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
-msgid "Add {title} to library"
-msgstr "Dodaj {title} do biblioteki"
+#~ msgid "Add {title} to library"
+#~ msgstr "Dodaj {title} do biblioteki"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -2879,6 +2894,10 @@ msgstr "Dodaj serię do biblioteki albo poproś o nią, aby czytać dalej."
 #, fuzzy
 msgid "Add to library"
 msgstr "Dodaj do biblioteki"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Add to library: {title}"
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -4071,6 +4090,10 @@ msgstr "C:\\Manga (opcjonalnie)"
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga lub /biblioteka"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "Cache progress"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Can't load this import"
@@ -5000,6 +5023,10 @@ msgstr "Zwiń {lineLabel}"
 #, fuzzy
 msgid "Collection"
 msgstr "Kolekcja"
+
+#: src/components/TagManagerModal.tsx
+msgid "Colour {c}"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -6338,7 +6365,9 @@ msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/components/SourceMeasurePanel.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Dismiss"
@@ -6511,6 +6540,13 @@ msgstr "Ścieżka pobierania jest niedostępna dla Maki"
 #, fuzzy
 msgid "Download path not accessible from Maki: {path}"
 msgstr "Ścieżka pobierania jest niedostępna dla Maki: {path}"
+
+#: src/components/home/DownloadingStrip.tsx
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesHero.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Download progress"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
@@ -7317,6 +7353,7 @@ msgid "Fetching pages…"
 msgstr "Pobieranie stron…"
 
 #: src/components/CatalogueFilters.tsx
+#: src/pages/DiscoverPage.tsx
 msgid "Fewest chapters"
 msgstr ""
 
@@ -7582,6 +7619,7 @@ msgid "First folder you can see"
 msgstr "Pierwszy widoczny folder"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "First page"
 msgstr "Pierwsza strona"
@@ -9299,6 +9337,7 @@ msgid "Last measured {measured}."
 msgstr "Ostatni pomiar: {measured}."
 
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Last page"
 msgstr "Ostatnia strona"
@@ -10274,6 +10313,10 @@ msgstr "Zmierzona jakość"
 msgid "Measuring {done}/{planned}"
 msgstr "Mierzenie {done}/{planned}"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Measuring progress"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Measuring…"
@@ -10402,6 +10445,7 @@ msgid "Minimum pages"
 msgstr "Minimalna liczba stron"
 
 #: src/components/CatalogueFilters.tsx
+#: src/pages/DiscoverPage.tsx
 msgid "Minimum rating"
 msgstr ""
 
@@ -10474,6 +10518,10 @@ msgstr "Brakujące plakaty"
 #, fuzzy
 msgid "Mixed"
 msgstr "Mieszane"
+
+#: src/components/RecommendationModelSwitch.tsx
+msgid "Model download progress"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -10606,6 +10654,7 @@ msgid "Moss"
 msgstr "Mech"
 
 #: src/components/CatalogueFilters.tsx
+#: src/pages/DiscoverPage.tsx
 msgid "Most chapters"
 msgstr ""
 
@@ -11021,6 +11070,7 @@ msgid "Next chapter"
 msgstr "Następny rozdział"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Next page"
 msgstr "Następna strona"
@@ -11037,6 +11087,10 @@ msgstr "Następny poziom przy {nextValue}"
 
 #: src/components/home/ContinueHero.tsx
 msgid "Next up"
+msgstr ""
+
+#: src/components/home/ContinueHero.tsx
+msgid "Next up to jump back in"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -12149,6 +12203,10 @@ msgid "obscure"
 msgstr "mało znane"
 
 #: src/components/discover/RecommenderDials.tsx
+msgid "Obscurity"
+msgstr ""
+
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: balanced"
 msgstr "Niszowość: wyważona"
@@ -12648,6 +12706,7 @@ msgid "Packaging"
 msgstr "Pakowanie"
 
 #: src/components/CommandPalette.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Page"
 msgstr "Strona"
@@ -13135,6 +13194,7 @@ msgid "Previous default"
 msgstr "Poprzednia wartość domyślna"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/theme-context.tsx
 #, fuzzy
 msgid "Previous page"
 msgstr "Poprzednia strona"
@@ -13722,6 +13782,8 @@ msgid "Reading profile"
 msgstr "Profil czytania"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Reading progress"
 msgstr "Postęp czytania"
@@ -14876,6 +14938,10 @@ msgstr "Przejrzyj"
 msgid "Review archive"
 msgstr "Przejrzyj archiwum"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "Review by {author}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Review every candidate before applying. Originals remain unchanged until approval."
@@ -15513,8 +15579,8 @@ msgstr "Szukaj"
 
 #: src/components/CommandPalette.tsx
 #, fuzzy
-msgid "Search ({shortcut})"
-msgstr "Szukaj ({shortcut})"
+#~ msgid "Search ({shortcut})"
+#~ msgstr "Szukaj ({shortcut})"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -15779,6 +15845,7 @@ msgid "Seinen"
 msgstr "Seinen"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -15939,6 +16006,10 @@ msgstr "Serie i rozdziały zgłoszone administratorowi."
 #, fuzzy
 msgid "Series checked per daily run. Each series is searched at most once a week."
 msgstr "Serie sprawdzane przy każdym codziennym uruchomieniu. Każda seria jest przeszukiwana najwyżej raz w tygodniu."
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Series details"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -16987,6 +17058,10 @@ msgstr "Zatrzymywanie"
 msgid "Storage on this device"
 msgstr ""
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Storage used"
+msgstr ""
+
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -17023,6 +17098,10 @@ msgstr "Skuteczność"
 #, fuzzy
 msgid "Success and wait cover the last 30 days."
 msgstr "Skuteczność i czas oczekiwania dotyczą ostatnich 30 dni."
+
+#: src/pages/stats/SourceReliability.tsx
+msgid "Success rate"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
@@ -18996,8 +19075,8 @@ msgstr "Użyj"
 
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
-msgid "Use {title}"
-msgstr "Użyj {title}"
+#~ msgid "Use {title}"
+#~ msgstr "Użyj {title}"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -19181,6 +19260,10 @@ msgid "varied ({diversityChip})"
 msgstr "zróżnicowane ({diversityChip})"
 
 #: src/components/discover/RecommenderDials.tsx
+msgid "Variety"
+msgstr ""
+
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Variety: closest matches"
 msgstr "Różnorodność: najbliższe dopasowania"
@@ -19241,8 +19324,8 @@ msgstr "Zobacz {title}"
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
-msgid "View {title} in library"
-msgstr "Pokaż {title} w bibliotece"
+#~ msgid "View {title} in library"
+#~ msgstr "Pokaż {title} w bibliotece"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
@@ -19266,6 +19349,10 @@ msgstr "Zobacz i dodaj {title}"
 #, fuzzy
 msgid "View in library"
 msgstr "Pokaż w bibliotece"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "View in library: {title}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy

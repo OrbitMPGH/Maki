@@ -88,7 +88,7 @@ export function NotificationBell() {
         </Tooltip>
       </Popover.Target>
 
-      <Popover.Dropdown p={0}>
+      <Popover.Dropdown p={0} aria-labelledby={undefined} aria-label={t`Notifications`}>
         <Group justify="space-between" px="sm" py={8} wrap="nowrap">
           <Text fw={650} size="sm">
             <Trans>Notifications</Trans>

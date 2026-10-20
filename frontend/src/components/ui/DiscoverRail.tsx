@@ -226,7 +226,6 @@ export const RecommendationRow = memo(function RecommendationRow({
       className={`series-row ${density}`}
       role="button"
       tabIndex={0}
-      aria-label={item.title}
       onClick={() => (owned ? navigate(`/series/${inLibrarySeriesId}`) : onOpen(item))}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
