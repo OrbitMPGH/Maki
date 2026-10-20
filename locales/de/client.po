@@ -71,6 +71,11 @@ msgstr "{0, plural, one {# wird lesbar} other {# werden lesbar}}"
 msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgstr "{0, plural, one {# CBZ erstellt} other {# CBZs erstellt}}"
 
+#. placeholder {0}: -diff
+#: src/pages/ScrobblePage.tsx
+#~ msgid "{0, plural, one {# chapter ahead} other {# chapters ahead}}"
+#~ msgstr ""
+
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -471,6 +476,11 @@ msgstr "{0, plural, one {Volumendatei für # Kapitel} other {Volumendatei für #
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {# Kapitel gewünscht} other {# Kapitel gewünscht}}"
 
+#. placeholder {0}: -diff
+#: src/pages/ScrobblePage.tsx
+msgid "{0, plural, other {# ahead}}"
+msgstr ""
+
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -698,6 +708,10 @@ msgstr ""
 msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
 msgstr ""
 
+#: src/pages/ScrobblePage.tsx
+msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
@@ -733,6 +747,10 @@ msgstr "{count, plural, one {# Titel passt} other {# Titel passen}}"
 #, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
 msgstr "{count, plural, one {# Titel} other {# Titel}}"
+
+#: src/pages/ScrobblePage.tsx
+msgid "{count, plural, one {# tracker} other {# trackers}}"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -827,6 +845,14 @@ msgstr "{deletedCount} gelöscht, {failedCount} abgelehnt:"
 #, fuzzy
 msgid "{deletingSeriesCount, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
 msgstr "{deletingSeriesCount, plural, one {Er wird aus # Serie entfernt. Das lässt sich nicht rückgängig machen.} other {Er wird aus # Serien entfernt. Das lässt sich nicht rückgängig machen.}}"
+
+#: src/pages/ScrobblePage.tsx
+#~ msgid "{diff, plural, one {# chapter behind} other {# chapters behind}}"
+#~ msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "{diff, plural, other {# behind}}"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -4312,13 +4338,16 @@ msgstr "Nur zentral"
 msgid "ch {maxChapter}"
 msgstr "Kap. {maxChapter}"
 
-#. placeholder {0}: r.chapter
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
 #: src/pages/ScrobblePage.tsx
 msgid "ch. {0}"
 msgstr ""
 
-#. placeholder {0}: r.chapter
-#. placeholder {1}: r.volume
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
+#. placeholder {1}: o.volume
+#. placeholder {1}: outcome.volume
 #: src/pages/ScrobblePage.tsx
 msgid "ch. {0} · vol. {1}"
 msgstr ""
@@ -15007,6 +15036,10 @@ msgstr "Vom Anbieter wiederhergestellt"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "Suchen nach Veröffentlichungen auf bestimmte Indexer und Kategorien beschränken. Ohne Auswahl werden alle Indexer und Kategorien durchsucht."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Result"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
@@ -18690,7 +18723,6 @@ msgstr "Lesefortschritt über OPDS verfolgen"
 msgid "Tracker"
 msgstr "Tracker"
 
-#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy

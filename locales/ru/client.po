@@ -71,6 +71,11 @@ msgstr "{0, plural, one {# глава становится читаемой} few
 msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgstr "{0, plural, one {Собрано # CBZ} few {Собрано # CBZ} many {Собрано # CBZ} other {Собрано # CBZ}}"
 
+#. placeholder {0}: -diff
+#: src/pages/ScrobblePage.tsx
+#~ msgid "{0, plural, one {# chapter ahead} other {# chapters ahead}}"
+#~ msgstr ""
+
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -471,6 +476,11 @@ msgstr "{0, plural, one {Файл тома для # главы} few {Файлы 
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Нужна # глава} few {Нужны # главы} many {Нужно # глав} other {Нужна # глава}}"
 
+#. placeholder {0}: -diff
+#: src/pages/ScrobblePage.tsx
+msgid "{0, plural, other {# ahead}}"
+msgstr ""
+
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -698,6 +708,10 @@ msgstr ""
 msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
 msgstr ""
 
+#: src/pages/ScrobblePage.tsx
+msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
@@ -733,6 +747,10 @@ msgstr "{count, plural, one {Найдено # совпадение} few {Най�
 #, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
 msgstr "{count, plural, one {# название} few {# названия} many {# названий} other {# названия}}"
+
+#: src/pages/ScrobblePage.tsx
+msgid "{count, plural, one {# tracker} other {# trackers}}"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -827,6 +845,14 @@ msgstr "Удалено: {deletedCount}, отклонено: {failedCount}:"
 #, fuzzy
 msgid "{deletingSeriesCount, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
 msgstr "{deletingSeriesCount, plural, one {Метка удаляется из # серии. Это нельзя отменить.} few {Метка удаляется из # серий. Это нельзя отменить.} many {Метка удаляется из # серий. Это нельзя отменить.} other {Метка удаляется из # серии. Это нельзя отменить.}}"
+
+#: src/pages/ScrobblePage.tsx
+#~ msgid "{diff, plural, one {# chapter behind} other {# chapters behind}}"
+#~ msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "{diff, plural, other {# behind}}"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -4312,13 +4338,16 @@ msgstr "Только Central"
 msgid "ch {maxChapter}"
 msgstr "гл. {maxChapter}"
 
-#. placeholder {0}: r.chapter
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
 #: src/pages/ScrobblePage.tsx
 msgid "ch. {0}"
 msgstr ""
 
-#. placeholder {0}: r.chapter
-#. placeholder {1}: r.volume
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
+#. placeholder {1}: o.volume
+#. placeholder {1}: outcome.volume
 #: src/pages/ScrobblePage.tsx
 msgid "ch. {0} · vol. {1}"
 msgstr ""
@@ -15007,6 +15036,10 @@ msgstr "Восстановлено из данных провайдера"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "Ограничьте поиск релизов определёнными индексаторами и категориями. Если ничего не выбрано, ищутся все индексаторы и категории."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Result"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
@@ -18690,7 +18723,6 @@ msgstr "Отслеживать прогресс чтения из OPDS"
 msgid "Tracker"
 msgstr "Трекер"
 
-#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy

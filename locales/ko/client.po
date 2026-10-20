@@ -71,6 +71,11 @@ msgstr "{0, plural, other {읽을 수 있게 된 챕터 #개}}"
 msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgstr "{0, plural, other {CBZ #개를 만듦}}"
 
+#. placeholder {0}: -diff
+#: src/pages/ScrobblePage.tsx
+#~ msgid "{0, plural, one {# chapter ahead} other {# chapters ahead}}"
+#~ msgstr ""
+
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -471,6 +476,11 @@ msgstr "{0, plural, other {챕터 #개를 담고 있는 볼륨 파일}}"
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {원하는 챕터 #개}}"
 
+#. placeholder {0}: -diff
+#: src/pages/ScrobblePage.tsx
+msgid "{0, plural, other {# ahead}}"
+msgstr ""
+
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -698,6 +708,10 @@ msgstr ""
 msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
 msgstr ""
 
+#: src/pages/ScrobblePage.tsx
+msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
@@ -733,6 +747,10 @@ msgstr "{count, plural, other {#개 제목 일치}}"
 #, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
 msgstr "{count, plural, other {작품 #개}}"
+
+#: src/pages/ScrobblePage.tsx
+msgid "{count, plural, one {# tracker} other {# trackers}}"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -827,6 +845,14 @@ msgstr "{deletedCount}개 삭제됨, {failedCount}개 거부됨:"
 #, fuzzy
 msgid "{deletingSeriesCount, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
 msgstr "{deletingSeriesCount, plural, other {시리즈 #개에서 제거됩니다. 되돌릴 수 없습니다.}}"
+
+#: src/pages/ScrobblePage.tsx
+#~ msgid "{diff, plural, one {# chapter behind} other {# chapters behind}}"
+#~ msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "{diff, plural, other {# behind}}"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -4311,13 +4337,16 @@ msgstr "주요 소재인 경우만"
 msgid "ch {maxChapter}"
 msgstr "챕터 {maxChapter}"
 
-#. placeholder {0}: r.chapter
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
 #: src/pages/ScrobblePage.tsx
 msgid "ch. {0}"
 msgstr ""
 
-#. placeholder {0}: r.chapter
-#. placeholder {1}: r.volume
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
+#. placeholder {1}: o.volume
+#. placeholder {1}: outcome.volume
 #: src/pages/ScrobblePage.tsx
 msgid "ch. {0} · vol. {1}"
 msgstr ""
@@ -15006,6 +15035,10 @@ msgstr "제공자에서 복원됨"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "릴리스 검색을 특정 인덱서와 카테고리로 제한합니다. 아무것도 선택하지 않으면 모든 인덱서와 카테고리를 검색합니다."
 
+#: src/pages/ScrobblePage.tsx
+msgid "Result"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
@@ -18689,7 +18722,6 @@ msgstr "OPDS에서 읽기 진행 상황 추적"
 msgid "Tracker"
 msgstr "트래커"
 
-#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy

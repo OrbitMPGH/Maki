@@ -31,6 +31,29 @@ export const Default: Story = {
   },
 }
 
+/**
+ * Six trackers across five series: the result most trackers share is one line with a count, and a
+ * tracker that lags or failed is listed under it with what differs.
+ */
+export const RecentSyncsGroupedByResult: Story = {
+  play: async ({ canvas }) => {
+    const table = (await canvas.findByRole('columnheader', { name: 'Result' })).closest('table')!
+    await waitFor(() => expect(within(table).getAllByRole('row')).toHaveLength(6))
+    const [lanterns, summer, ironPetal, clockwork, ninth] = within(table).getAllByRole('row').slice(1).map((r) => within(r))
+    await expect(lanterns.getByText('4 trackers')).toBeVisible()
+    await expect(lanterns.getByRole('img', { name: 'MangaUpdates' })).toBeVisible()
+    await expect(lanterns.getByText('Not updated')).toBeVisible()
+    await expect(lanterns.getByText(/Kitsu answered 429: slow down./)).toBeVisible()
+    await expect(summer.getByText('All 5 trackers')).toBeVisible()
+    await expect(summer.queryByRole('listitem')).toBeNull()
+    await expect(ironPetal.getByText('2 trackers')).toBeVisible()
+    await expect(ironPetal.getByText('2 behind')).toBeVisible()
+    await expect(ironPetal.getAllByRole('listitem')).toHaveLength(1)
+    await expect(clockwork.getByText('MyAnimeList')).toBeVisible()
+    await expect(ninth.getByText('Both trackers')).toBeVisible()
+  },
+}
+
 /** One tracker connected, one waiting for sign-in, one rejecting the saved details, two not set up. */
 export const MixedConnections: Story = {
   parameters: { msw: scrobbleHandlers(scrobbleStatusMixed) },

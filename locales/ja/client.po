@@ -71,6 +71,11 @@ msgstr "{0, plural, other {#章が読めるようになります}}"
 msgid "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgstr "{0, plural, other {作成したCBZ #件}}"
 
+#. placeholder {0}: -diff
+#: src/pages/ScrobblePage.tsx
+#~ msgid "{0, plural, one {# chapter ahead} other {# chapters ahead}}"
+#~ msgstr ""
+
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -471,6 +476,11 @@ msgstr "{0, plural, other {#章を含む巻ファイル}}"
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {#章を読みたい}}"
 
+#. placeholder {0}: -diff
+#: src/pages/ScrobblePage.tsx
+msgid "{0, plural, other {# ahead}}"
+msgstr ""
+
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -698,6 +708,10 @@ msgstr ""
 msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
 msgstr ""
 
+#: src/pages/ScrobblePage.tsx
+msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
@@ -733,6 +747,10 @@ msgstr "{count, plural, other {#件のタイトルが一致}}"
 #, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
 msgstr "{count, plural, other {#タイトル}}"
+
+#: src/pages/ScrobblePage.tsx
+msgid "{count, plural, one {# tracker} other {# trackers}}"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -827,6 +845,14 @@ msgstr "{deletedCount}件削除、{failedCount}件拒否："
 #, fuzzy
 msgid "{deletingSeriesCount, plural, one {It is removed from # series. This cannot be undone.} other {It is removed from # series. This cannot be undone.}}"
 msgstr "{deletingSeriesCount, plural, other {#件のシリーズから削除されます。この操作は元に戻せません。}}"
+
+#: src/pages/ScrobblePage.tsx
+#~ msgid "{diff, plural, one {# chapter behind} other {# chapters behind}}"
+#~ msgstr ""
+
+#: src/pages/ScrobblePage.tsx
+msgid "{diff, plural, other {# behind}}"
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -4311,13 +4337,16 @@ msgstr "主要な要素の場合のみ"
 msgid "ch {maxChapter}"
 msgstr "第{maxChapter}章"
 
-#. placeholder {0}: r.chapter
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
 #: src/pages/ScrobblePage.tsx
 msgid "ch. {0}"
 msgstr ""
 
-#. placeholder {0}: r.chapter
-#. placeholder {1}: r.volume
+#. placeholder {0}: o.chapter
+#. placeholder {0}: outcome.chapter
+#. placeholder {1}: o.volume
+#. placeholder {1}: outcome.volume
 #: src/pages/ScrobblePage.tsx
 msgid "ch. {0} · vol. {1}"
 msgstr ""
@@ -15006,6 +15035,10 @@ msgstr "プロバイダーから復元"
 msgid "Restrict release searches to specific indexers and categories. With nothing selected, every indexer and category is searched."
 msgstr "リリース検索を特定のインデクサーとカテゴリーに制限します。何も選択しない場合、すべてのインデクサーとカテゴリーを検索します。"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Result"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
@@ -18689,7 +18722,6 @@ msgstr "OPDSから読書進捗を追跡"
 msgid "Tracker"
 msgstr "トラッカー"
 
-#: src/pages/ScrobblePage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy

@@ -26,6 +26,7 @@ export const connectedConnections: ScrobbleConnection[] = [
   conn({ service: 'mal', label: 'MyAnimeList', username: 'makireads', animeList: true, syncRatings: false }),
   conn({ service: 'kitsu', label: 'Kitsu', oAuth: false, username: 'maki@example.com', animeList: true, animeSignals: false }),
   conn({ service: 'mangabaka', label: 'MangaBaka', oAuth: false, username: 'maki' }),
+  conn({ service: 'mangaupdates', label: 'MangaUpdates', oAuth: false, username: 'makireads', syncRatings: false }),
   conn({ service: 'kavita', label: 'Kavita', oAuth: false, username: 'maki' }),
 ]
 
@@ -35,6 +36,7 @@ export const mixedConnections: ScrobbleConnection[] = [
   conn({ service: 'mal', label: 'MyAnimeList', connected: false, animeList: true }),
   conn({ service: 'kitsu', label: 'Kitsu', connected: false, oAuth: false, animeList: true }),
   conn({ service: 'mangabaka', label: 'MangaBaka', configured: false, connected: false, oAuth: false }),
+  connectedConnections[4],
   conn({ service: 'kavita', label: 'Kavita', configured: false, connected: false, oAuth: false }),
 ]
 
@@ -48,11 +50,19 @@ export const recentSyncs: ScrobbleSyncRow[] = [
   { title: title(1), service: 'anilist', chapter: 131, volume: 14, status: 'reading', at: minutesAgo(12), error: null },
   { title: title(1), service: 'mal', chapter: 131, volume: 14, status: 'reading', at: minutesAgo(12), error: null },
   { title: title(1), service: 'kitsu', chapter: 0, volume: 0, status: null, at: minutesAgo(12), error: 'Kitsu answered 429: slow down.' },
+  { title: title(1), service: 'mangabaka', chapter: 131, volume: 14, status: 'reading', at: minutesAgo(12), error: null },
+  { title: title(1), service: 'mangaupdates', chapter: 131, volume: 14, status: 'reading', at: minutesAgo(12), error: null },
   { title: title(5), service: 'anilist', chapter: 34, volume: 0, status: 'completed', at: hoursAgo(5), error: null },
+  { title: title(5), service: 'mal', chapter: 34, volume: 0, status: 'completed', at: hoursAgo(5), error: null },
+  { title: title(5), service: 'kitsu', chapter: 34, volume: 0, status: 'completed', at: hoursAgo(5), error: null },
   { title: title(5), service: 'mangabaka', chapter: 34, volume: 0, status: 'completed', at: hoursAgo(5), error: null },
+  { title: title(5), service: 'mangaupdates', chapter: 34, volume: 0, status: 'completed', at: hoursAgo(5), error: null },
   { title: title(3), service: 'anilist', chapter: 40, volume: 0, status: 'reading', at: hoursAgo(20), error: null },
+  { title: title(3), service: 'mangaupdates', chapter: 40, volume: 0, status: 'reading', at: hoursAgo(20), error: null },
+  { title: title(3), service: 'mal', chapter: 38, volume: 0, status: 'reading', at: daysAgo(1), error: null },
   { title: title(7), service: 'mal', chapter: 12, volume: 0, status: 'plan_to_read', at: daysAgo(2), error: null },
   { title: title(2), service: 'anilist', chapter: 96, volume: 11, status: 'completed', at: daysAgo(3), error: null },
+  { title: title(2), service: 'mangaupdates', chapter: 96, volume: 11, status: 'completed', at: daysAgo(3), error: null },
 ]
 
 export const unmatched: ScrobbleUnmatchedItem[] = [
@@ -77,6 +87,7 @@ export const unmatched: ScrobbleUnmatchedItem[] = [
 
 export const activityLog: ScrobbleLogRow[] = [
   { timestamp: minutesAgo(12), level: 'info', service: 'anilist', title: title(1), message: 'Progress set to chapter 131.' },
+  { timestamp: minutesAgo(12), level: 'info', service: 'mangaupdates', title: title(1), message: 'Progress set to chapter 131.' },
   { timestamp: minutesAgo(12), level: 'error', service: 'kitsu', title: title(1), message: 'HTTP 429 from Kitsu.' },
   { timestamp: minutesAgo(13), level: 'info', service: '', title: '', message: 'Sync started.' },
   { timestamp: hoursAgo(5), level: 'warning', service: 'mal', title: title(12), message: 'No match found, queued for review.' },

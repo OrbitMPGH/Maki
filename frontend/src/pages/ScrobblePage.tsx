@@ -44,6 +44,7 @@ import {
 } from '../api/hooks'
 import { formatDateTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { MetadataSiteIcon } from '../components/MetadataSiteIcon'
 
 const TRACKER_SETTINGS = '/settings?tab=integrations&s=scrobbling'
 const KAVITA_SETTINGS = '/settings?tab=integrations&s=kavita'
@@ -62,21 +63,207 @@ function dedupeKeys(keys: string[]): string[] {
   })
 }
 
+type SyncOutcome = { chapter: number; volume: number; status: string | null; services: string[] }
+
 /**
- * One entry per series, newest first, with each tracker's latest result under it. The rows are
+ * One entry per series, newest first. The result most trackers share is the series' main line; any
+ * tracker that landed somewhere else, or failed, is listed under it as an exception. The rows are
  * already one per series and tracker (sync state, not history), so nothing older is dropped.
  */
 function groupBySeries(rows: ScrobbleSyncRow[], connections: ScrobbleConnection[]) {
-  const groups = new Map<string, { title: string; at: string; rows: ScrobbleSyncRow[] }>()
-  for (const r of rows) {
-    const group = groups.get(r.title)
-    if (!group) groups.set(r.title, { title: r.title, at: r.at, rows: [r] })
-    else if (!group.rows.some((x) => x.service === r.service)) group.rows.push(r)
-  }
-  // Trackers in the Connections order on every row, so a column of names lines up down the table.
   const order = (service: string) => connections.findIndex((c) => c.service === service)
-  for (const group of groups.values()) group.rows.sort((a, b) => order(a.service) - order(b.service))
-  return [...groups.values()]
+  const byOrder = (a: string, b: string) => order(a) - order(b)
+  const groups = new Map<
+    string,
+    { title: string; at: string; seen: Set<string>; outcomes: Map<string, SyncOutcome>; failures: ScrobbleSyncRow[] }
+  >()
+  for (const r of rows) {
+    let group = groups.get(r.title)
+    if (!group) {
+      group = { title: r.title, at: r.at, seen: new Set(), outcomes: new Map(), failures: [] }
+      groups.set(r.title, group)
+    }
+    if (group.seen.has(r.service)) continue
+    group.seen.add(r.service)
+    if (r.error) {
+      group.failures.push(r)
+      continue
+    }
+    const key = `${r.chapter}|${r.volume}|${r.status ?? ''}`
+    const outcome = group.outcomes.get(key)
+    if (outcome) outcome.services.push(r.service)
+    else group.outcomes.set(key, { chapter: r.chapter, volume: r.volume, status: r.status, services: [r.service] })
+  }
+  // Trackers in the Connections order everywhere, so the same icons sit in the same place row to row.
+  return [...groups.values()].map(({ title, at, outcomes, failures }) => {
+    const lines = [...outcomes.values()]
+    for (const line of lines) line.services.sort(byOrder)
+    lines.sort((a, b) => b.chapter - a.chapter || byOrder(a.services[0], b.services[0]))
+    const main = lines.reduce<SyncOutcome | null>(
+      (best, line) => (!best || line.services.length > best.services.length ? line : best),
+      null,
+    )
+    failures.sort((a, b) => byOrder(a.service, b.service))
+    return { title, at, main, others: lines.filter((line) => line !== main), failures }
+  })
+}
+
+/** Brand glyph and colour per tracker, keyed by the scrobble service name. */
+const TRACKER_ICONS: Record<string, { site: string; monogram: string; color: string }> = {
+  anilist: { site: 'anilist', monogram: 'AL', color: 'var(--mantine-color-blue-5)' },
+  mal: { site: 'myanimelist', monogram: 'MAL', color: 'var(--mantine-color-indigo-4)' },
+  kitsu: { site: 'kitsu', monogram: 'KI', color: 'var(--mantine-color-orange-5)' },
+  mangabaka: { site: 'mangabaka', monogram: 'MB', color: 'var(--mantine-color-orange-5)' },
+  mangaupdates: { site: 'mangaupdates', monogram: 'MU', color: 'var(--mantine-color-grape-5)' },
+  kavita: { site: 'kavita', monogram: 'K', color: 'var(--mantine-color-teal-5)' },
+}
+
+function TrackerIcon({ service, size = 14 }: { service: string; size?: number }) {
+  const icon = TRACKER_ICONS[service] ?? {
+    site: service,
+    monogram: service.slice(0, 2).toUpperCase(),
+    color: 'var(--ink-3)',
+  }
+  return (
+    <span className="scrobble-tracker-icon" style={{ color: icon.color }} aria-hidden>
+      <MetadataSiteIcon site={icon.site} monogram={icon.monogram} size={size} />
+    </span>
+  )
+}
+
+/** A row of tracker icons, each named on hover and to a screen reader. */
+function TrackerMarks({ services, connections }: { services: string[]; connections: ScrobbleConnection[] }) {
+  return (
+    <span className="scrobble-marks">
+      {services.map((service) => {
+        const label = serviceLabel(connections, service)
+        return (
+          <Tooltip key={service} label={label} withArrow openDelay={150}>
+            <span className="scrobble-mark" role="img" aria-label={label}>
+              <TrackerIcon service={service} size={13} />
+            </span>
+          </Tooltip>
+        )
+      })}
+    </span>
+  )
+}
+
+function Progress({ outcome }: { outcome: SyncOutcome }) {
+  return (
+    <Text span size="sm" fw={600} className="tnum">
+      {outcome.volume ? (
+        <Trans>
+          ch. {outcome.chapter} · vol. {outcome.volume}
+        </Trans>
+      ) : (
+        <Trans>ch. {outcome.chapter}</Trans>
+      )}
+    </Text>
+  )
+}
+
+function TrackerStatus({ status }: { status: string }) {
+  const renderLabel = useLabel()
+  const visual = trackerStatusVisual(status)
+  return <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
+}
+
+/**
+ * Every line shares two columns, what (chapter and status) and who (trackers), so an exception's
+ * chapter sits right under the main one and reads as a comparison rather than more text.
+ */
+function RecentSyncResult({
+  group,
+  connections,
+}: {
+  group: ReturnType<typeof groupBySeries>[number]
+  connections: ScrobbleConnection[]
+}) {
+  const { main, others, failures } = group
+  const names = (services: string[]) => services.map((s) => serviceLabel(connections, s)).join(', ')
+  const count = main?.services.length ?? 0
+  const everyone = others.length === 0 && failures.length === 0
+
+  return (
+    <div className="scrobble-result">
+      {main && (
+        <div className="scrobble-result-line">
+          <span className="scrobble-result-what">
+            <Progress outcome={main} />
+            {main.status && <TrackerStatus status={main.status} />}
+          </span>
+          <span className="scrobble-result-who">
+            <TrackerMarks services={main.services} connections={connections} />
+            <Text span size="sm" c="var(--ink-3)">
+              {count === 1 ? (
+                names(main.services)
+              ) : everyone ? (
+                <Plural value={count} _2="Both trackers" other="All # trackers" />
+              ) : (
+                <Plural value={count} one="# tracker" other="# trackers" />
+              )}
+            </Text>
+          </span>
+        </div>
+      )}
+      {(others.length > 0 || failures.length > 0) && (
+        <ul className="scrobble-exceptions" data-flat={main ? undefined : true}>
+          {others.map((o) => {
+            const diff = main ? Math.round((main.chapter - o.chapter) * 10) / 10 : 0
+            return (
+              <li key={o.services.join()} className="scrobble-result-line" data-exception>
+                <span className="scrobble-result-what">
+                  <Text span size="sm" c="var(--ink-2)" className="tnum">
+                    {o.volume ? (
+                      <Trans>
+                        ch. {o.chapter} · vol. {o.volume}
+                      </Trans>
+                    ) : (
+                      <Trans>ch. {o.chapter}</Trans>
+                    )}
+                  </Text>
+                  {diff !== 0 && (
+                    <Text span size="xs" c="var(--ink-3)" className="tnum">
+                      {diff > 0 ? (
+                        <Plural value={diff} other="# behind" />
+                      ) : (
+                        <Plural value={-diff} other="# ahead" />
+                      )}
+                    </Text>
+                  )}
+                  {o.status && o.status !== main?.status && <TrackerStatus status={o.status} />}
+                </span>
+                <span className="scrobble-result-who">
+                  <TrackerMarks services={o.services} connections={connections} />
+                  <Text span size="sm" c="var(--ink-3)">
+                    {names(o.services)}
+                  </Text>
+                </span>
+              </li>
+            )
+          })}
+          {failures.map((r) => (
+            <li key={r.service} className="scrobble-result-line" data-exception>
+              <span className="scrobble-result-what">
+                <Text span size="sm" fw={600} c="var(--danger)">
+                  <Trans>Not updated</Trans>
+                </Text>
+              </span>
+              <span className="scrobble-result-who">
+                <TrackerMarks services={[r.service]} connections={connections} />
+                {/* The tracker's own words: English and technical, so they follow the plain
+                    statement rather than replace it. */}
+                <Text span size="sm" c="var(--ink-3)" className="scrobble-result-reason">
+                  {serviceLabel(connections, r.service)}: {r.error}
+                </Text>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 /** A tracker's display name from its connection card, falling back to the raw service key. */
@@ -128,13 +315,16 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   // does not drop its button below the others in the row.
   return (
     <Panel p="md" style={{ display: 'flex', flexDirection: 'column' }}>
-      <Group gap="xs">
+      <Group gap="xs" wrap="nowrap">
+        <TrackerIcon service={connection.service} size={16} />
+        <Text fw={700} style={{ flex: 1, minWidth: 0 }}>
+          {connection.label}
+        </Text>
         <Box
           w={10}
           h={10}
-          style={{ borderRadius: '50%', background: `var(--${statusToken(dot.color)})` }}
+          style={{ flex: 'none', borderRadius: '50%', background: `var(--${statusToken(dot.color)})` }}
         />
-        <Text fw={700}>{connection.label}</Text>
       </Group>
       <Text size="sm" c="var(--ink-3)" mt={4} style={{ overflowWrap: 'anywhere' }}>
         {state}
@@ -242,7 +432,6 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
 
 export default function ScrobblePage() {
   const { t } = useLingui()
-  const renderLabel = useLabel()
   const { data, error, isRefetching, refetch } = useScrobbleStatus()
   const syncNow = useScrobbleSyncNow()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -346,10 +535,10 @@ export default function ScrobblePage() {
       <Title order={2} size="h4" mb="sm">
         <Trans>Connections</Trans>
       </Title>
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} mb="lg">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} mb="lg">
         {data
           ? data.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)
-          : Array.from({ length: 5 }, (_, i) => <Skeleton key={i} h={96} aria-hidden />)}
+          : Array.from({ length: 6 }, (_, i) => <Skeleton key={i} h={96} aria-hidden />)}
       </SimpleGrid>
 
       <Group gap="xs" mb="sm">
@@ -393,7 +582,7 @@ export default function ScrobblePage() {
                     <Trans>Series</Trans>
                   </Table.Th>
                   <Table.Th>
-                    <Trans>Trackers</Trans>
+                    <Trans>Result</Trans>
                   </Table.Th>
                   <Table.Th data-priority="low">
                     <Trans>When</Trans>
@@ -405,42 +594,7 @@ export default function ScrobblePage() {
                   <Table.Tr key={group.title}>
                     <Table.Td className="scrobble-recent-series">{group.title || '#'}</Table.Td>
                     <Table.Td>
-                      <ul className="scrobble-trackers">
-                        {group.rows.map((r) => (
-                          <li key={r.service} className="scrobble-tracker" data-failed={r.error ? true : undefined}>
-                            <span className="scrobble-tracker-name">{serviceLabel(data.connections, r.service)}</span>
-                            {r.error ? (
-                              // The tracker's own words: English and technical, so they follow the
-                              // plain statement rather than replace it.
-                              <span className="scrobble-tracker-error">
-                                <Text span size="sm" fw={600} c="var(--danger)">
-                                  <Trans>Not updated</Trans>
-                                </Text>
-                                <Text span size="sm" c="var(--ink-3)" className="scrobble-tracker-reason">
-                                  {r.error}
-                                </Text>
-                              </span>
-                            ) : (
-                              <>
-                                <Text span size="sm" className="tnum">
-                                  {r.volume ? (
-                                    <Trans>
-                                      ch. {r.chapter} · vol. {r.volume}
-                                    </Trans>
-                                  ) : (
-                                    <Trans>ch. {r.chapter}</Trans>
-                                  )}
-                                </Text>
-                                {r.status &&
-                                  (() => {
-                                    const visual = trackerStatusVisual(r.status)
-                                    return <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
-                                  })()}
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
+                      <RecentSyncResult group={group} connections={data.connections} />
                     </Table.Td>
                     <Table.Td data-priority="low">
                       <Text size="sm" c="var(--ink-3)">
