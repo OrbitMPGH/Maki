@@ -394,6 +394,16 @@ msgstr "An import list run is already in progress"
 msgid "error.inbox.unknownSeriesDefault"
 msgstr "seriesDefault must be one of: {allowed}"
 
+#. Shown by KOReader under "Progress sync" when it logs in with something that is not a usable OPDS token.
+#: src/Maki.Api/Controllers/KoreaderSyncController.cs
+msgid "error.koreaderSync.unauthorized"
+msgstr "Maki did not accept this username. Enter your OPDS token, and check that the OPDS catalogue is on."
+
+#. Shown by KOReader when someone taps Register. Maki has no separate KOReader accounts.
+#: src/Maki.Api/Controllers/KoreaderSyncController.cs
+msgid "error.koreaderSync.registerWithToken"
+msgstr "There is nothing to register. Enter your OPDS token as the username and tap Login."
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"

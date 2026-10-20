@@ -4,6 +4,7 @@ paths:
   - "src/Maki.Api/Controllers/Account*.cs"
   - "src/Maki.Api/Controllers/Users*.cs"
   - "src/Maki.Api/Controllers/Opds*.cs"
+  - "src/Maki.Api/Controllers/Koreader*.cs"
   - "src/Maki.Api/Controllers/Search*.cs"
   - "src/Maki.Api/Controllers/Suwayomi*.cs"
   - "src/Maki.Api/Auth/**"

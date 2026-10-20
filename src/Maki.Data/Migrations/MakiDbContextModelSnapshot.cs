@@ -917,6 +917,40 @@ namespace Maki.Data.Migrations
                     b.ToTable("ImportListSkips");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.KoreaderDocument", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChapterFileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Digest")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileVersion")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Digest");
+
+                    b.HasIndex("ChapterFileId", "Kind", "Digest")
+                        .IsUnique();
+
+                    b.ToTable("KoreaderDocuments");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.Notification", b =>
                 {
                     b.Property<int>("Id")
@@ -3088,6 +3122,15 @@ namespace Maki.Data.Migrations
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.KoreaderDocument", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.ChapterFile", null)
+                        .WithMany()
+                        .HasForeignKey("ChapterFileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

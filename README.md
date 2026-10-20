@@ -179,6 +179,7 @@ Notes on languages, FlareSolverr and mirror overrides are also in
 | [Sources](docs/sources.md) | The built-in sources and Suwayomi |
 | [Multiple readers](docs/multiple-readers.md) | Per-user data, library access, Kavita |
 | [Offline reading](docs/offline-reading.md) | Installing as an app, saving chapters, push |
+| [KOReader](docs/koreader.md) | OPDS downloads and progress sync |
 | [Exposing Maki to the internet](docs/exposing-to-the-internet.md) | HTTPS, trusted proxies, two-factor |
 | [Single sign-on](docs/single-sign-on.md) | OpenID Connect setup and claim mapping |
 | [Backup and restore](docs/backup-restore.md) | Snapshots, migrations, restoring |

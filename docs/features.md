@@ -6,7 +6,8 @@
   source that carries it, and downloads new chapters from your preferred one on the next check.
 - **Reader with progress sync.** Paged, double-page, or continuous scroll. Progress is merged
   with Kavita and sent to AniList, MyAnimeList, Kitsu, MangaBaka, and MangaUpdates. Pages read
-  over OPDS in Panels, Chunky, KOReader, or Mihon count as read too.
+  over OPDS in Panels, Chunky, KOReader, or Mihon count as read too, and KOReader's progress
+  sync brings back chapters read offline on the device.
 - **Recommendations.** Local ONNX embeddings over the MangaBaka catalog find titles similar to
   what is already in your library, using more than shared genre tags. The Browse tab adds genre
   rails, blind spots, **Readers like you**, and a **Your Taste** view of how your reading has
@@ -32,7 +33,7 @@
 - **Home.** **Continue reading**, **Recently added**, **Downloading now**, **Progress**, and other
   rails, drag-reorderable and switchable per user.
 - **Scrobbling.** Sends read progress to AniList, MyAnimeList, Kitsu, MangaBaka, and
-  MangaUpdates, whether the reading happened in Maki, over OPDS, or in Kavita. Your lists on those trackers can also be
+  MangaUpdates, whether the reading happened in Maki, over OPDS, in KOReader, or in Kavita. Your lists on those trackers can also be
   imported into the library from Settings.
 - **Mihon backup import.** Upload a Mihon backup on the Import page to add its library, with
   categories as tags and read chapters marked read. Needs the local MangaBaka database.
@@ -41,6 +42,9 @@
 - **OPDS server.** OPDS 1.2 with page streaming (OPDS-PSE), so Panels, Chunky, KOReader, and
   Mihon read straight from Maki. Off by default. Each user's feed URL carries its own rotatable
   token, and pages streamed this way count as read.
+- **KOReader progress sync.** Maki is a KOReader sync server: chapters downloaded to KOReader
+  report the page you reached, even when read offline, and KOReader picks up where you stopped in
+  Maki. Signs in with the OPDS token. See [KOReader](koreader.md).
 - **Komga-compatible API.** Apps that only connect to a Komga server, like the Mihon Komga
   extension and Tachimanga, can use Maki instead. Point them at `http://your-host:8990/komga` and
   use your OPDS token as the API key (or as the password, with any username). Reading progress

@@ -31,7 +31,7 @@ import {
   SeriesPageSection,
   TitleLanguageSection,
 } from './settings/PreferenceCards'
-import { KavitaSyncSection, OpdsSection } from './settings/ReadingCards'
+import { KavitaSyncSection, KoreaderSyncSection, OpdsSection } from './settings/ReadingCards'
 import {
   LibraryFilesSection,
   MetadataSection,
@@ -86,6 +86,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       reader: <ReadingProfilesSection />,
       progress: <ProgressSection />,
       opds: <OpdsSection />,
+      'koreader-sync': <KoreaderSyncSection />,
       'offline-reading': <OfflineReadingSection />,
       'kavita-sync': <KavitaSyncSection />,
 

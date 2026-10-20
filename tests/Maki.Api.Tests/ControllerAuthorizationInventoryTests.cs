@@ -227,8 +227,9 @@ public sealed class ControllerAuthorizationInventoryTests
     ];
 
     /// <summary>
-    /// Sign-in, OIDC and OAuth callbacks, the OPDS feed (its path token authenticates it) and the
-    /// Komga API (KomgaAuthFilter authenticates every action with the same token).
+    /// Sign-in, OIDC and OAuth callbacks, the OPDS feed (its path token authenticates it), the Komga
+    /// API (KomgaAuthFilter authenticates every action with the same token) and KOReader sync (the
+    /// same token, as the username).
     /// </summary>
     private static readonly string[] Anonymous =
     [
@@ -272,6 +273,11 @@ public sealed class ControllerAuthorizationInventoryTests
         "KomgaController.Tags",
         "KomgaController.Unsupported",
         "KomgaController.UpdatedSeries",
+        "KoreaderSyncController.Auth",
+        "KoreaderSyncController.Healthcheck",
+        "KoreaderSyncController.Pull",
+        "KoreaderSyncController.Push",
+        "KoreaderSyncController.Register",
         "OpdsController.Cover",
         "OpdsController.Download",
         "OpdsController.OnDeck",

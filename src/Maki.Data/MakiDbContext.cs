@@ -44,6 +44,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<Series> Series => Set<Series>();
     public DbSet<Chapter> Chapters => Set<Chapter>();
     public DbSet<ChapterFile> ChapterFiles => Set<ChapterFile>();
+    public DbSet<KoreaderDocument> KoreaderDocuments => Set<KoreaderDocument>();
     public DbSet<HealthCheckRecord> HealthChecks => Set<HealthCheckRecord>();
     public DbSet<HealthFile> HealthFiles => Set<HealthFile>();
     public DbSet<HealthFinding> HealthFindings => Set<HealthFinding>();
@@ -516,6 +517,16 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(f => f.MeasuredAtUtc).HasFilter("MeasuredAtUtc IS NULL");
 
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<KoreaderDocument>(e =>
+        {
+            e.HasQueryFilter(d => _scope.Unrestricted || ChapterFiles.Any(f => f.Id == d.ChapterFileId));
+            e.Property(d => d.Digest).HasMaxLength(32);
+            e.Property(d => d.FileVersion).HasMaxLength(64);
+            e.HasIndex(d => d.Digest);
+            e.HasIndex(d => new { d.ChapterFileId, d.Kind, d.Digest }).IsUnique();
+            e.HasOne<ChapterFile>().WithMany().HasForeignKey(d => d.ChapterFileId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<SourceMapping>(e =>

@@ -43,6 +43,7 @@ public class OpdsController(
     OpdsAccessService access,
     ReaderService reader,
     OpdsProgressWriter progressWriter,
+    KoreaderDocumentIndexer koreaderDocuments,
     Maki.Data.MakiDbContext db,
     Maki.Api.Configuration.AppPaths paths,
     ILocalizer localizer,
@@ -231,9 +232,21 @@ public class OpdsController(
             return NotFound();
         }
 
-        var name = $"{slice.Series.Title} - {ChapterLabel.For(slice.Chapter)}{Path.GetExtension(slice.ArchivePath)}";
+        var name = SanitizeFileName(
+            $"{slice.Series.Title} - {ChapterLabel.For(slice.Chapter)}{Path.GetExtension(slice.ArchivePath)}");
+
+        // So KOReader's progress sync can name this file by the bytes it is about to receive.
+        try
+        {
+            await koreaderDocuments.RecordServedAsync(slice.ChapterFileId, slice.ArchivePath, name, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Recording KOReader document ids for chapter {ChapterId} failed", chapterId);
+        }
+
         return PhysicalFile(
-            slice.ArchivePath, OpdsXml.MimeType(slice.ArchivePath), SanitizeFileName(name),
+            slice.ArchivePath, OpdsXml.MimeType(slice.ArchivePath), name,
             enableRangeProcessing: true);
     }
 

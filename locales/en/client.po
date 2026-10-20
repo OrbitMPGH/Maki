@@ -3990,6 +3990,10 @@ msgstr "Choose a match"
 msgid "Choose a root folder"
 msgstr "Choose a root folder"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
+msgstr "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 msgstr "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
@@ -4473,6 +4477,10 @@ msgstr "Copy feed URL"
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy server address"
 msgstr "Copy server address"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy sync server address"
+msgstr "Copy sync server address"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Copy this now. It can't be shown again; if you lose it, regenerate."
@@ -7607,6 +7615,20 @@ msgstr "Kitsu"
 #: src/pages/settings/ReadingCards.tsx
 msgid "Komga-compatible API"
 msgstr "Komga-compatible API"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "KOReader can send back how far you read in chapters it downloaded from Maki, even when you read them offline, and pick up where you stopped here. Those pages count toward your library, Rewind and trackers."
+msgstr "KOReader can send back how far you read in chapters it downloaded from Maki, even when you read them offline, and pick up where you stopped here. Those pages count toward your library, Rewind and trackers."
+
+#: src/pages/settings/ReadingCards.tsx
+#: src/pages/settings/registry.ts
+msgid "KOReader progress sync"
+msgstr "KOReader progress sync"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "koreader, kosync, progress sync, sync server, offline, ereader, kobo, kindle, read progress"
+msgstr "koreader, kosync, progress sync, sync server, offline, ereader, kobo, kindle, read progress"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -13400,6 +13422,10 @@ msgstr "Set by hand"
 msgid "Set by hand. Metadata refreshes leave it alone."
 msgstr "Set by hand. Metadata refreshes leave it alone."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Set Document matching method to Binary."
+msgstr "Set Document matching method to Binary."
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Set goal"
 msgstr "Set goal"
@@ -14251,9 +14277,21 @@ msgstr "Sync ratings"
 msgid "sync running… · last {lastSync} · next {nextSync}"
 msgstr "sync running… · last {lastSync} · next {nextSync}"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Sync server"
+msgstr "Sync server"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Sync server address copied"
+msgstr "Sync server address copied"
+
 #: src/components/ImportListsSection.tsx
 msgid "Sync started, you will get a notification when it finishes"
 msgstr "Sync started, you will get a notification when it finishes"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Sync works for chapters downloaded through the OPDS catalogue and for files copied straight from your library folders. Regenerating the OPDS token signs KOReader out too."
+msgstr "Sync works for chapters downloaded through the OPDS catalogue and for files copied straight from your library folders. Regenerating the OPDS token signs KOReader out too."
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Synced"
@@ -15368,6 +15406,10 @@ msgstr "Turn on"
 msgid "Turn on anime signals on the Taste tab to use this."
 msgstr "Turn on anime signals on the Taste tab to use this."
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Turn on the OPDS catalogue first. KOReader signs in with its token."
+msgstr "Turn on the OPDS catalogue first. KOReader signs in with its token."
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Turn sources on or off on the left. Drag the rail on the right to set which one Maki tries first."
 msgstr "Turn sources on or off on the left. Drag the rail on the right to set which one Maki tries first."
@@ -16446,6 +16488,10 @@ msgstr "Wide pages"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Width"
 msgstr "Width"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
+msgstr "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
 
 #: src/components/settings/SecuritySection.tsx
 msgid "With either claim set, your provider is the authority on permissions: they are recomputed on every sign-in, so changes made on the Users page are overwritten the next time that person signs in. Leave both empty to keep permissions here."
