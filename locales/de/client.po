@@ -682,6 +682,14 @@ msgstr "{connected} verbunden"
 msgid "{connectedCount, plural, one {# connected} other {# connected}}"
 msgstr "{connectedCount, plural, one {# verbunden} other {# verbunden}}"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{converted} converted ({saved} saved), {unchanged} left as they were, {hardlinked} hardlinked, {failed} passed over for now."
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
@@ -783,6 +791,10 @@ msgstr "{cycles, plural, one {#× erneut hinzugefügt} other {#× erneut hinzuge
 #, fuzzy
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, one {Gelöschte Dateien, entfernte Kapitel und Serien, die mit ihren Dateien gelöscht wurden, warten hier # Tag, bevor sie endgültig gelöscht werden. Wiederherstellen legt eine Datei dorthin zurück, wo sie war.} other {Gelöschte Dateien, entfernte Kapitel und Serien, die mit ihren Dateien gelöscht wurden, warten hier # Tage, bevor sie endgültig gelöscht werden. Wiederherstellen legt eine Datei dorthin zurück, wo sie war.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -974,11 +986,6 @@ msgstr ""
 #: src/components/ui/CoverCard.tsx
 msgid "{have} of {total}"
 msgstr ""
-
-#: src/components/ui/CoverCard.tsx
-#, fuzzy
-#~ msgid "{have} of {totalLabel}"
-#~ msgstr "{have} von {totalLabel}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -1372,6 +1379,22 @@ msgstr "{panelsOn} von {panelsTotal} Bereichen"
 #, fuzzy
 msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
 msgstr "{pending, plural, one {Noch # Kapitel gewünscht. Es erscheint nach dem Download hier.} other {Noch # Kapitel gewünscht. Sie erscheinen nach dem Download hier.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pending, plural, one {Paused, # file left to check.} other {Paused, # files left to check.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {# file has not been checked yet.} other {# files have not been checked yet.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {# file has not been checked. Choose a format to convert it.} other {# files have not been checked. Choose a format to convert them.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {Converting, # file left to check.} other {Converting, # files left to check.}}"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -2306,6 +2329,10 @@ msgstr "Bei 0 Tagen löscht die nächste Wartung sie endgültig."
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (niedrigste) bis 5 (höchste)."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "1 to 100, higher keeps more detail. Default {fallback}."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "1:1"
@@ -2801,11 +2828,6 @@ msgstr "Hinzufügen"
 #, fuzzy
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "Füge {chapterLanguageToken} zum Kapitel-Format in den Einstellungen hinzu, um sie unterscheiden zu können."
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "Add {title} to library"
-#~ msgstr "{title} zur Bibliothek hinzufügen"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -3680,6 +3702,14 @@ msgstr "Automatische Upgrades sind aus, du musst entscheiden"
 msgid "Automation"
 msgstr "Automatisierung"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "AVIF"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "AVIF quality"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Avoided"
@@ -4260,20 +4290,10 @@ msgstr ""
 msgid "ch. {0} · vol. {1}"
 msgstr ""
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter}"
-#~ msgstr "Kap. {chapter}"
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Ch. {chapter}"
 msgstr "Kap. {chapter}"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter} · vol. {volume}"
-#~ msgstr "Kap. {chapter} · Bd. {volume}"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -5146,11 +5166,6 @@ msgstr "Bedingungen"
 msgid "Config key"
 msgstr "Konfigurationsschlüssel"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "configured, not connected"
-#~ msgstr "konfiguriert, nicht verbunden"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Confirm metadata matches"
@@ -5218,11 +5233,6 @@ msgstr ""
 #, fuzzy
 msgid "Connect your trackers"
 msgstr "Tracker verbinden"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "connected"
-#~ msgstr "verbunden"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -5352,6 +5362,10 @@ msgstr "Nur für kontinuierliches Layout, in Pixeln."
 #, fuzzy
 msgid "Continuous vertical (webtoon)"
 msgstr "Kontinuierlich vertikal (Webtoon)"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Convert library"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -6195,11 +6209,6 @@ msgstr "Dichte"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-#~ msgid "Density: {densityLabel}"
-#~ msgstr "Dichte: {densityLabel}"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
 msgid "Descending"
 msgstr "Absteigend"
 
@@ -6971,6 +6980,10 @@ msgstr "Jede aktivierte Quelle ist bereits verknüpft."
 msgid "Every file already meets the cutoff"
 msgstr "Jede Datei erfüllt den Cutoff bereits"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Every file has been checked."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Every file meets its cutoff"
@@ -6996,6 +7009,10 @@ msgstr "Jeden Monat"
 #, fuzzy
 msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "Alle Benachrichtigungen werden gelöscht, gelesen und ungelesen. Das lässt sich nicht rückgängig machen."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Every reader Maki works with opens it: browsers, Kavita, Komga, KOReader, Mihon and Panels. Saves most on PNG pages and on JPEG pages a source saved at high quality."
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -7137,6 +7154,10 @@ msgstr "Vom Geschmack ausgeschlossen"
 #, fuzzy
 msgid "Existing folders on import"
 msgstr "Vorhandene Ordner beim Import"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Existing library"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -7739,6 +7760,10 @@ msgstr "Für Reader wie Komga und Kavita, die ein Poster aus dem Ordner laden."
 #, fuzzy
 msgid "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
 msgstr "Für Reader wie Komga und Kavita, die ein Poster aus dem Ordner laden. Wird sofort ausgeführt, sobald die Option aktiviert ist."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Format"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -8980,6 +9005,10 @@ msgstr "Job"
 msgid "Josei"
 msgstr "Josei"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "JPEG pages become the chosen format and PNG pages become lossless WebP, so line art keeps every pixel. WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels on a side stay as they are, and so does any page or file that would not come out at least 5% smaller. Files hardlinked to a torrent client's copy are skipped, since converting them would use more disk, not less. Upgrades and quality scores still see the size and format each chapter was downloaded in."
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -9316,6 +9345,10 @@ msgstr "Letzte Seite"
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
 msgstr "Letzter partieller Scan: {partialScanError}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Last pass, finished {finished}:"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 msgid "Last read {lastRead}"
@@ -11663,11 +11696,6 @@ msgstr "Noch nicht geprüft"
 msgid "Not configured"
 msgstr "Nicht konfiguriert"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "not configured (see Settings)"
-#~ msgstr "nicht konfiguriert (siehe Einstellungen)"
-
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -12205,6 +12233,7 @@ msgstr "der Lesezeit"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "Aus"
@@ -12693,6 +12722,16 @@ msgstr "Seite {pageIndex}/{pageCount}"
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Seite {pageNumber} von {pageCount}"
 
+#: src/pages/settings/PageConversionSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Page conversion"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Page fit"
@@ -12739,6 +12778,10 @@ msgstr "Seiten"
 #, fuzzy
 msgid "Pages a streaming app fetches count as read, so OPDS reading reaches your library, Rewind and trackers. Turn it off if an app reports progress you didn't make; some fetch pages ahead."
 msgstr "Seiten, die eine Streaming-App abruft, zählen als gelesen. So fließt das Lesen über OPDS in deine Bibliothek, Rewind und Tracker ein. Deaktiviere die Option, wenn eine App Fortschritt meldet, den du nicht gemacht hast. Manche Apps rufen Seiten im Voraus ab."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages are kept exactly as the source served them."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12848,6 +12891,7 @@ msgid "Path mapping - Maki side"
 msgstr "Pfadzuordnung - Maki-Seite"
 
 #: src/components/QueuePause.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Pause"
 msgstr "Pausieren"
@@ -12866,6 +12910,14 @@ msgstr ""
 #, fuzzy
 msgid "Paused"
 msgstr "Pausiert"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused because page conversion was switched off."
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused: converting the next file would leave less than 1 GB free on the library drive."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -13787,11 +13839,6 @@ msgstr "Liest das Inhaltsverzeichnis jedes Archivs, nicht dessen Inhalt. Für ei
 #, fuzzy
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "Liest jedes Byte und prüft es gegen die eigenen Prüfsummen des Archivs. Dadurch werden Dateien erkannt, die auf der Festplatte beschädigt wurden. Ein vollständiges Lesen der Bibliothek dauert auf einer Festplatte etwa eine halbe Stunde pro 100 GB. Dateien werden beim Eintreffen geprüft, daher dient dies zur erneuten Kontrolle bereits vorhandener Dateien."
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-#~ msgstr "Liest den Lesefortschritt aus Kavita und überträgt alle {intervalMinutes, plural, one {# Minute} other {# Minuten}} nur Fortschritte nach vorn an deine Tracker. Externer Fortschritt wird nie zurückgesetzt und abgeschlossene Einträge werden nie zurückgestuft. Zugangsdaten werden in den Einstellungen konfiguriert."
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -14777,6 +14824,7 @@ msgstr "Suchen nach Veröffentlichungen auf bestimmte Indexer und Kategorien bes
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Resume"
@@ -15216,6 +15264,7 @@ msgstr "Deine Wiederherstellungscodes speichern"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
@@ -15546,11 +15595,6 @@ msgstr "Scrollen-Tempo · {chaptersLeft} · {basis}"
 #, fuzzy
 msgid "Search"
 msgstr "Suchen"
-
-#: src/components/CommandPalette.tsx
-#, fuzzy
-#~ msgid "Search ({shortcut})"
-#~ msgstr "Suche ({shortcut})"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16085,11 +16129,6 @@ msgstr "Lokale Serverzeit, 0 bis 23."
 msgid "Server URL"
 msgstr "Server-URL"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Service"
-#~ msgstr "Dienst"
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Session lifetime (days)"
@@ -16575,6 +16614,10 @@ msgstr "Slice of Life"
 msgid "Sliding: activity extends it."
 msgstr "Gleitend: Aktivität verlängert ihn."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Smaller than WebP, and slower to convert. KOReader cannot open AVIF pages, and neither can iPhones and iPads older than iOS 16."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "smart"
@@ -17022,6 +17065,10 @@ msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Storage used"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Stores chapter pages in a smaller image format. New downloads are converted as they arrive, and the library pass below converts what is already on disk."
 msgstr ""
 
 #: src/components/CreditPicker.tsx
@@ -17947,6 +17994,10 @@ msgstr "Diese Seite konnte nicht geladen werden."
 #, fuzzy
 msgid "This page hit an error"
 msgstr "Auf dieser Seite ist ein Fehler aufgetreten"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "This pass:"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -19031,11 +19082,6 @@ msgstr "URL"
 msgid "Use"
 msgstr "Verwenden"
 
-#: src/components/import/ImportMatchFinder.tsx
-#, fuzzy
-#~ msgid "Use {title}"
-#~ msgstr "{title} verwenden"
-
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Use a recovery code"
@@ -19280,11 +19326,6 @@ msgstr "Ansehen"
 msgid "View {title}"
 msgstr "{title} anzeigen"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "View {title} in library"
-#~ msgstr "{title} in der Bibliothek anzeigen"
-
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
 msgid "View activity"
@@ -19521,6 +19562,14 @@ msgstr "Webhook"
 #, fuzzy
 msgid "Webhook URL"
 msgstr "Webhook-URL"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "WebP"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "WebP quality"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy

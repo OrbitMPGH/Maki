@@ -42,6 +42,7 @@ import {
   RecycleBinSection,
   RootFoldersSection,
 } from './settings/LibraryCards'
+import { PageConversionSection } from './settings/PageConversionSection'
 import {
   DownloadQueueSection,
   FlareSolverrCard,
@@ -93,6 +94,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       naming: <NamingSection />,
       'name-parsing': <NameParsingSection />,
       'library-files': <LibraryFilesSection />,
+      'page-conversion': <PageConversionSection />,
       'recycle-bin': <RecycleBinSection />,
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,

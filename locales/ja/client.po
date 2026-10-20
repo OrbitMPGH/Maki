@@ -682,6 +682,14 @@ msgstr "{connected}件接続中"
 msgid "{connectedCount, plural, one {# connected} other {# connected}}"
 msgstr "{connectedCount, plural, other {#件接続中}}"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{converted} converted ({saved} saved), {unchanged} left as they were, {hardlinked} hardlinked, {failed} passed over for now."
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
@@ -783,6 +791,10 @@ msgstr "{cycles, plural, other {#×件を再追加}}"
 #, fuzzy
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, other {削除したファイル、削除した章、ファイルと一緒に削除したシリーズは、完全に削除されるまでここに#日間残ります。復元するとファイルは元の場所に戻ります。}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -974,11 +986,6 @@ msgstr ""
 #: src/components/ui/CoverCard.tsx
 msgid "{have} of {total}"
 msgstr ""
-
-#: src/components/ui/CoverCard.tsx
-#, fuzzy
-#~ msgid "{have} of {totalLabel}"
-#~ msgstr "{totalLabel}中{have}"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -1372,6 +1379,22 @@ msgstr "{panelsTotal}個中{panelsOn}個のパネル"
 #, fuzzy
 msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
 msgstr "{pending, plural, other {あと # 章がリクエストされています。ダウンロードされるとここに表示されます。}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pending, plural, one {Paused, # file left to check.} other {Paused, # files left to check.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {# file has not been checked yet.} other {# files have not been checked yet.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {# file has not been checked. Choose a format to convert it.} other {# files have not been checked. Choose a format to convert them.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {Converting, # file left to check.} other {Converting, # files left to check.}}"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -2305,6 +2328,10 @@ msgstr "0にすると、次回の定期整理でそれらを完全に削除し�
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1（最低）から 5（最高）。"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "1 to 100, higher keeps more detail. Default {fallback}."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "1:1"
@@ -2800,11 +2827,6 @@ msgstr "追加"
 #, fuzzy
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "区別するには、Settingsの章フォーマットに{chapterLanguageToken}を追加してください。"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "Add {title} to library"
-#~ msgstr "{title}をライブラリに追加"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -3679,6 +3701,14 @@ msgstr "自動アップグレードがオフのため、判断が必要です"
 msgid "Automation"
 msgstr "自動化"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "AVIF"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "AVIF quality"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Avoided"
@@ -4259,20 +4289,10 @@ msgstr ""
 msgid "ch. {0} · vol. {1}"
 msgstr ""
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter}"
-#~ msgstr "{chapter}章"
-
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Ch. {chapter}"
 msgstr "第{chapter}章"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "ch. {chapter} · vol. {volume}"
-#~ msgstr "{chapter}章 · {volume}巻"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -5145,11 +5165,6 @@ msgstr "条件"
 msgid "Config key"
 msgstr "設定キー"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "configured, not connected"
-#~ msgstr "設定済み、未接続"
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Confirm metadata matches"
@@ -5217,11 +5232,6 @@ msgstr ""
 #, fuzzy
 msgid "Connect your trackers"
 msgstr "トラッカーを接続"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "connected"
-#~ msgstr "接続済み"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -5351,6 +5361,10 @@ msgstr "連続レイアウトのみ、ピクセル単位です。"
 #, fuzzy
 msgid "Continuous vertical (webtoon)"
 msgstr "連続縦スクロール（webtoon）"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Convert library"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -6194,11 +6208,6 @@ msgstr "密度"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
-#~ msgid "Density: {densityLabel}"
-#~ msgstr "密度：{densityLabel}"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
 msgid "Descending"
 msgstr "降順"
 
@@ -6970,6 +6979,10 @@ msgstr "有効なソースはすべてリンク済みです。"
 msgid "Every file already meets the cutoff"
 msgstr "すべてのファイルがすでにカットオフを満たしています"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Every file has been checked."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Every file meets its cutoff"
@@ -6995,6 +7008,10 @@ msgstr "毎月"
 #, fuzzy
 msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "既読、未読を問わず、すべての通知が削除されます。この操作は取り消せません。"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Every reader Maki works with opens it: browsers, Kavita, Komga, KOReader, Mihon and Panels. Saves most on PNG pages and on JPEG pages a source saved at high quality."
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -7136,6 +7153,10 @@ msgstr "好みから除外済み"
 #, fuzzy
 msgid "Existing folders on import"
 msgstr "インポート時の既存フォルダー"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Existing library"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -7738,6 +7759,10 @@ msgstr "フォルダーからポスターを取得するKomgaやKavitaなどの�
 #, fuzzy
 msgid "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
 msgstr "フォルダーからポスターを取得するKomgaやKavitaなどのリーダー向けです。有効にするとすぐ実行されます。"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Format"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -8979,6 +9004,10 @@ msgstr "ジョブ"
 msgid "Josei"
 msgstr "女性向け"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "JPEG pages become the chosen format and PNG pages become lossless WebP, so line art keeps every pixel. WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels on a side stay as they are, and so does any page or file that would not come out at least 5% smaller. Files hardlinked to a torrent client's copy are skipped, since converting them would use more disk, not less. Upgrades and quality scores still see the size and format each chapter was downloaded in."
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -9315,6 +9344,10 @@ msgstr "最後のページ"
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
 msgstr "前回の部分スキャン：{partialScanError}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Last pass, finished {finished}:"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 msgid "Last read {lastRead}"
@@ -11662,11 +11695,6 @@ msgstr "未確認"
 msgid "Not configured"
 msgstr "未設定"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "not configured (see Settings)"
-#~ msgstr "未設定（Settingsを確認）"
-
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -12204,6 +12232,7 @@ msgstr "読書時間の"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "オフ"
@@ -12692,6 +12721,16 @@ msgstr "ページ{pageIndex}/{pageCount}"
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "{pageCount}ページ中{pageNumber}ページ"
 
+#: src/pages/settings/PageConversionSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Page conversion"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Page fit"
@@ -12738,6 +12777,10 @@ msgstr "ページ"
 #, fuzzy
 msgid "Pages a streaming app fetches count as read, so OPDS reading reaches your library, Rewind and trackers. Turn it off if an app reports progress you didn't make; some fetch pages ahead."
 msgstr "ストリーミングアプリが取得したページは既読として扱われます。OPDSでの読書がライブラリ、Rewind、トラッカーに反映されます。アプリが実際より先の進捗を報告する場合はオフにしてください。先のページまで取得するアプリもあります。"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages are kept exactly as the source served them."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12847,6 +12890,7 @@ msgid "Path mapping - Maki side"
 msgstr "パスマッピング - Maki側"
 
 #: src/components/QueuePause.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Pause"
 msgstr "一時停止"
@@ -12865,6 +12909,14 @@ msgstr ""
 #, fuzzy
 msgid "Paused"
 msgstr "一時停止"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused because page conversion was switched off."
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused: converting the next file would leave less than 1 GB free on the library drive."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -13786,11 +13838,6 @@ msgstr "各アーカイブの内容ではなく目次を読み取ります。ラ
 #, fuzzy
 msgid "Reads every byte and checks it against the archive's own checksums, which is what catches a file that has rotted on disk. A full read of the library: around half an hour per 100 GB on a hard disk. Files are verified as they arrive, so this is for re-checking what is already there."
 msgstr "すべてのバイトを読み取り、アーカイブ自身のチェックサムと照合します。これによりディスク上で劣化したファイルを検出できます。ライブラリ全体を読み取る場合、ハードディスクでは100GBあたり約30分かかります。ファイルは到着時に検証されるため、これは既存ファイルの再確認用です。"
-
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Reads reading progress from Kavita and pushes forward-only updates to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings."
-#~ msgstr "Kavitaから読書進捗を読み取り、{intervalMinutes, plural, other {#分}}ごとにトラッカーへ前進する更新だけを送信します。リモートの進捗が下がることはなく、完了したエントリーが降格されることもありません。認証情報はSettingsで設定してください。"
 
 #: src/components/FailedQueueActions.tsx
 #, fuzzy
@@ -14776,6 +14823,7 @@ msgstr "リリース検索を特定のインデクサーとカテゴリーに制
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Resume"
@@ -15215,6 +15263,7 @@ msgstr "復旧コードを保存"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
@@ -15545,11 +15594,6 @@ msgstr "スクロールのペース · {chaptersLeft} · {basis}"
 #, fuzzy
 msgid "Search"
 msgstr "検索"
-
-#: src/components/CommandPalette.tsx
-#, fuzzy
-#~ msgid "Search ({shortcut})"
-#~ msgstr "検索（{shortcut}）"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16084,11 +16128,6 @@ msgstr "サーバーのローカル時刻（0～23）。"
 msgid "Server URL"
 msgstr "サーバー URL"
 
-#: src/pages/ScrobblePage.tsx
-#, fuzzy
-#~ msgid "Service"
-#~ msgstr "サービス"
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Session lifetime (days)"
@@ -16574,6 +16613,10 @@ msgstr "日常系"
 msgid "Sliding: activity extends it."
 msgstr "スライド式：アクティビティが期間を延長します。"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Smaller than WebP, and slower to convert. KOReader cannot open AVIF pages, and neither can iPhones and iPads older than iOS 16."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "smart"
@@ -17021,6 +17064,10 @@ msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Storage used"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Stores chapter pages in a smaller image format. New downloads are converted as they arrive, and the library pass below converts what is already on disk."
 msgstr ""
 
 #: src/components/CreditPicker.tsx
@@ -17946,6 +17993,10 @@ msgstr "このページを読み込めませんでした。"
 #, fuzzy
 msgid "This page hit an error"
 msgstr "このページでエラーが発生しました"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "This pass:"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -19030,11 +19081,6 @@ msgstr "URL"
 msgid "Use"
 msgstr "使用"
 
-#: src/components/import/ImportMatchFinder.tsx
-#, fuzzy
-#~ msgid "Use {title}"
-#~ msgstr "{title}を使う"
-
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Use a recovery code"
@@ -19279,11 +19325,6 @@ msgstr "表示"
 msgid "View {title}"
 msgstr "{title}を表示"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-#~ msgid "View {title} in library"
-#~ msgstr "ライブラリで{title}を表示"
-
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
 msgid "View activity"
@@ -19520,6 +19561,14 @@ msgstr "Webhook"
 #, fuzzy
 msgid "Webhook URL"
 msgstr "Webhook URL"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "WebP"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "WebP quality"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
