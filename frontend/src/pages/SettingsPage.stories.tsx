@@ -61,7 +61,7 @@ export const ReadingTab: Story = {
   parameters: { router: { path: '/settings', initialEntries: ['/settings?tab=reading'] } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Kavita read sync' })).toBeVisible()
-    await expect(canvas.getByRole('heading', { name: 'OPDS catalogue' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'OPDS catalogue' })).toBeVisible()
   },
 }
 

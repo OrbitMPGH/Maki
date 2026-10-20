@@ -82,7 +82,7 @@ export const EmptyLibrary: Story = {
   parameters: { msw: [http.get(api('/series'), () => HttpResponse.json([])), ...libraryHandlers] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Your library is empty')).toBeVisible()
-    await expect(canvas.getByRole('link', { name: /Import a folder/ })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: /Import a folder/ })).toBeVisible()
   },
 }
 
