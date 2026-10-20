@@ -79,6 +79,12 @@ public class Series
     /// <summary>When the torrent volume search last queried the indexer for this series.</summary>
     public DateTime? LastVolumeSearchUtc { get; set; }
 
+    /// <summary>When a full chapter sync last ran, from any entry point. See <c>RefreshSchedule</c>.</summary>
+    public DateTime? LastCheckAt { get; set; }
+
+    /// <summary>When the monitored refresh next syncs this series. Null means due now.</summary>
+    public DateTime? NextCheckAt { get; set; }
+
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }
     public string FolderName { get; set; } = string.Empty;

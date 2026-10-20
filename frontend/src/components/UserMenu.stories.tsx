@@ -52,8 +52,8 @@ export const MenuOpen: Story = {
     // Mantine renders the menu in a portal on document.body.
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(async () => expect(await body.findByRole('menuitem', { name: 'My account' })).toBeVisible())
-    await expect(body.getByText('Administrator')).toBeVisible()
-    await expect(body.getByRole('menuitem', { name: 'Sign out' })).toBeVisible()
+    await expect(await body.findByText('Administrator')).toBeVisible()
+    await expect(await body.findByRole('menuitem', { name: 'Sign out' })).toBeVisible()
   },
 }
 

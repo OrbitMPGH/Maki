@@ -14,6 +14,12 @@ public enum ImageFormat
     Bmp,
 }
 
+public enum TranscodeFormat
+{
+    Jpeg,
+    Png
+}
+
 /// <summary>What a header says, read without decoding any pixels.</summary>
 public readonly record struct ImageHeader(int Width, int Height, ImageFormat? Format);
 
@@ -143,6 +149,23 @@ public static class ImageCodec
             size: enlarge ? Enums.Size.Both : Enums.Size.Down, outputProfile: "srgb");
         return SaveJpeg(thumb, quality);
     }
+
+    /// <summary>
+    /// The whole image re-encoded for a client that cannot decode its format: same size, first frame
+    /// of an animation, orientation applied, sRGB. A PNG keeps transparency; a JPEG puts it on white.
+    /// Throws <see cref="VipsException"/> when no permitted loader reads the bytes.
+    /// </summary>
+    public static byte[] Transcode(byte[] source, TranscodeFormat format)
+    {
+        using var image = VipsImage.ThumbnailBuffer(source, MaxTranscodeEdge, height: MaxTranscodeEdge,
+            size: Enums.Size.Down, outputProfile: "srgb");
+        return format == TranscodeFormat.Png
+            ? image.PngsaveBuffer(keep: Enums.ForeignKeep.None)
+            : SaveJpeg(image, 90);
+    }
+
+    /// <summary>Large enough that <see cref="Transcode"/> never shrinks a page, even a long strip.</summary>
+    private const int MaxTranscodeEdge = 1 << 20;
 
     /// <summary>
     /// Saves 4:2:0 regardless of quality. libvips' own default drops chroma subsampling at 90 and

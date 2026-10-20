@@ -34,7 +34,7 @@ const bodyOf = (canvasElement: HTMLElement): Body => within(canvasElement.ownerD
 async function openStep(body: Body, userEvent: { click: (el: Element) => Promise<void> }, step: number) {
   await body.findByRole('heading', { name: TITLES[0] })
   for (let i = 1; i <= step; i++) {
-    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Continue' }))
     await body.findByRole('heading', { name: TITLES[i] })
   }
 }
@@ -44,9 +44,9 @@ export const Welcome: Story = {
     const body = bodyOf(canvasElement)
     await expect(await body.findByRole('dialog')).toBeVisible()
     await expect(await body.findByRole('heading', { name: 'Welcome to Maki' })).toBeVisible()
-    await expect(body.getAllByText('Step 1 of 6').length).toBeGreaterThan(0)
-    await expect(body.getByRole('button', { name: 'Continue' })).toBeVisible()
-    await expect(body.getByRole('radiogroup', { name: 'Background' })).toBeInTheDocument()
+    await waitFor(() => expect(body.getAllByText('Step 1 of 6').length).toBeGreaterThan(0))
+    await expect(await body.findByRole('button', { name: 'Continue' })).toBeVisible()
+    await expect(await body.findByRole('radiogroup', { name: 'Background' })).toBeInTheDocument()
   },
 }
 
@@ -62,8 +62,8 @@ export const LibraryWithoutFolders: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 1)
-    await expect(body.getByRole('textbox', { name: 'Folder path' })).toBeVisible()
-    await expect(body.getByRole('button', { name: 'Add folder' })).toBeDisabled()
+    await expect(await body.findByRole('textbox', { name: 'Folder path' })).toBeVisible()
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add folder' })).toBeDisabled())
     // The rail flags the missing folder in its hint.
     await expect(await body.findByText('No folder yet')).toBeVisible()
   },
@@ -75,10 +75,10 @@ export const LibraryAddFolder: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 1)
     await expect(await body.findByText('/library/manga')).toBeVisible()
-    await userEvent.type(body.getByRole('textbox', { name: 'Folder path' }), '/mnt/new-shelf')
-    await userEvent.click(body.getByRole('button', { name: 'Add folder' }))
+    await userEvent.type(await body.findByRole('textbox', { name: 'Folder path' }), '/mnt/new-shelf')
+    await userEvent.click(await body.findByRole('button', { name: 'Add folder' }))
     await expect(await body.findByText('/mnt/new-shelf')).toBeVisible()
-    await expect(body.getByRole('textbox', { name: 'Folder path' })).toHaveValue('')
+    await waitFor(() => expect(body.getByRole('textbox', { name: 'Folder path' })).toHaveValue(''))
   },
 }
 
@@ -88,11 +88,11 @@ export const LibraryRemoveFolder: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 1)
     await body.findByText('/mnt/archive/manhwa')
-    await userEvent.click(body.getAllByRole('button', { name: 'Remove root folder' })[1])
+    await userEvent.click((await body.findAllByRole('button', { name: 'Remove root folder' }))[1])
     const dialog = await body.findByRole('dialog', { name: 'Remove this root folder?' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove folder' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Remove folder' }))
     await waitFor(() => expect(body.queryByText('/mnt/archive/manhwa')).toBeNull())
-    await expect(body.getByText('/library/manga')).toBeVisible()
+    await expect(await body.findByText('/library/manga')).toBeVisible()
   },
 }
 
@@ -113,10 +113,10 @@ export const DiscoveryStep: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 2)
     const local = await body.findByRole('switch', { name: 'Keep a local copy of MangaBaka' })
-    await expect(local).toBeChecked()
+    await waitFor(() => expect(local).toBeChecked())
     await userEvent.click(local)
     await waitFor(() => expect(body.getByRole('switch', { name: 'Keep a local copy of MangaBaka' })).not.toBeChecked())
-    await expect(body.getByText('API only')).toBeVisible()
+    await expect(await body.findByText('API only')).toBeVisible()
   },
 }
 
@@ -135,7 +135,7 @@ export const DiscoveryRecommendationsOff: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 2)
     const toggle = await body.findByRole('switch', { name: /Semantic search and recommendations/ })
-    await expect(toggle).not.toBeChecked()
+    await waitFor(() => expect(toggle).not.toBeChecked())
     await userEvent.click(toggle)
     await waitFor(() =>
       expect(body.getByRole('switch', { name: /Semantic search and recommendations/ })).toBeChecked(),
@@ -148,7 +148,7 @@ export const DownloadsStep: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 3)
     await expect(await body.findByText('Languages to download')).toBeVisible()
-    const specials = body.getByRole('switch', { name: 'Skip specials on new series' })
+    const specials = await body.findByRole('switch', { name: 'Skip specials on new series' })
     await userEvent.click(specials)
     await waitFor(() => expect(body.getByRole('switch', { name: 'Skip specials on new series' })).toBeChecked())
   },
@@ -159,10 +159,10 @@ export const ConnectionsStep: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 4)
     const flare = await body.findByRole('button', { name: /FlareSolverr/ })
-    await expect(flare).toHaveAttribute('aria-expanded', 'false')
+    await waitFor(() => expect(flare).toHaveAttribute('aria-expanded', 'false'))
     await userEvent.click(flare)
-    await expect(flare).toHaveAttribute('aria-expanded', 'true')
-    await expect(body.getAllByText('Not set')).toHaveLength(4)
+    await waitFor(() => expect(flare).toHaveAttribute('aria-expanded', 'true'))
+    await waitFor(() => expect(body.getAllByText('Not set')).toHaveLength(4))
   },
 }
 
@@ -177,7 +177,7 @@ export const ConnectionsSaved: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 4)
     await waitFor(() => expect(body.getAllByText('Saved')).toHaveLength(2))
-    await expect(body.getByText('2 connected')).toBeVisible()
+    await expect(await body.findByText('2 connected')).toBeVisible()
   },
 }
 
@@ -191,9 +191,9 @@ export const UnsavedConnectionWarning: Story = {
     if (!panel) throw new Error('FlareSolverr panel not found')
     await userEvent.type(await within(panel).findByLabelText('URL'), 'http://localhost:8191')
     // The first Continue only asks; the second goes through and drops the typed value.
-    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Continue' }))
     await waitFor(() => expect(body.getByRole('status')).toHaveTextContent('A connection has unsaved changes.'))
-    await userEvent.click(body.getByRole('button', { name: 'Continue without saving' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Continue without saving' }))
     await expect(await body.findByRole('heading', { name: "You're set" })).toBeVisible()
   },
 }
@@ -203,7 +203,7 @@ export const FinishWithoutFolders: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 5)
     await expect(await body.findByText('No library folder yet. Series need one to download into.')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Add one' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Add one' }))
     await expect(await body.findByRole('heading', { name: 'Where your manga lives' })).toBeVisible()
   },
 }
@@ -218,9 +218,9 @@ export const FinishAllSet: Story = {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 5)
     await expect(await body.findByText('2 library folders')).toBeVisible()
-    await expect(body.getByText('Local MangaBaka database ready')).toBeVisible()
-    await expect(body.getByText('Connected: FlareSolverr')).toBeVisible()
-    await expect(body.getByText('Where to go next')).toBeVisible()
+    await expect(await body.findByText('Local MangaBaka database ready')).toBeVisible()
+    await expect(await body.findByText('Connected: FlareSolverr')).toBeVisible()
+    await expect(await body.findByText('Where to go next')).toBeVisible()
   },
 }
 
@@ -229,7 +229,7 @@ export const FinishSetup: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = bodyOf(canvasElement)
     await openStep(body, userEvent, 5)
-    await userEvent.click(body.getByRole('button', { name: 'Finish setup' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Finish setup' }))
     // Completing the setup closes the guide.
     await waitFor(() => expect(body.queryByRole('dialog')).toBeNull())
   },
@@ -239,7 +239,7 @@ export const SkipSetup: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = bodyOf(canvasElement)
     await body.findByRole('heading', { name: 'Welcome to Maki' })
-    await userEvent.click(body.getAllByRole('button', { name: 'Skip setup' })[0])
+    await userEvent.click((await body.findAllByRole('button', { name: 'Skip setup' }))[0])
     await waitFor(() => expect(body.queryByRole('dialog')).toBeNull())
   },
 }
@@ -248,10 +248,10 @@ export const JumpFromTheRail: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = bodyOf(canvasElement)
     await body.findByRole('heading', { name: 'Welcome to Maki' })
-    const rail = within(body.getByRole('navigation', { name: 'Setup steps' }))
-    await userEvent.click(rail.getByRole('button', { name: /Downloads/ }))
+    const rail = within(await body.findByRole('navigation', { name: 'Setup steps' }))
+    await userEvent.click(await rail.findByRole('button', { name: /Downloads/ }))
     await expect(await body.findByRole('heading', { name: 'What to download' })).toBeVisible()
-    await expect(rail.getByRole('button', { name: /Downloads/ })).toHaveAttribute('aria-current', 'step')
+    await waitFor(() => expect(rail.getByRole('button', { name: /Downloads/ })).toHaveAttribute('aria-current', 'step'))
   },
 }
 

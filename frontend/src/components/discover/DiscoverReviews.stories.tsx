@@ -28,7 +28,7 @@ const serve = (body: object | null) =>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('quietpageturner')).toBeVisible()
-    await expect(canvas.getByText('From MyAnimeList')).toBeVisible()
+    await expect(await canvas.findByText('From MyAnimeList')).toBeVisible()
   },
 }
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { Panel } from './ui/Panel'
 import { discoverPage, resetTabState } from '../../.storybook/mocks/discover'
 import type { RecommendationFilters } from '../api/hooks'
@@ -40,7 +40,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Genres and tags')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /Genres and tags/ })).toHaveAttribute('aria-expanded', 'true')
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Genres and tags/ })).toHaveAttribute('aria-expanded', 'true'))
   },
 }
 
@@ -48,9 +48,9 @@ export const Collapsed: Story = {
   args: { collapsed: true },
   play: async ({ canvas, userEvent }) => {
     const series = await canvas.findByRole('button', { name: /^Series/ })
-    await expect(series).toHaveAttribute('aria-expanded', 'false')
+    await waitFor(() => expect(series).toHaveAttribute('aria-expanded', 'false'))
     await userEvent.click(series)
-    await expect(series).toHaveAttribute('aria-expanded', 'true')
+    await waitFor(() => expect(series).toHaveAttribute('aria-expanded', 'true'))
     await expect(await canvas.findByText('Creators and studios')).toBeVisible()
   },
 }
@@ -74,14 +74,14 @@ export const WithActiveFilters: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/^Studio Lark · /)).toBeVisible()
-    await expect(canvas.getByText(/Rated ★ 7\.0 or more/)).toBeVisible()
+    await expect(await canvas.findByText(/Rated ★ 7\.0 or more/)).toBeVisible()
   },
 }
 
 export const ActionsIdle: StoryObj = {
   render: () => <CatalogueFilterActions isCustomized={false} onReset={() => {}} onApply={() => {}} onSaveAsDefault={() => {}} />,
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: 'Reset' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Reset' })).toBeDisabled())
   },
 }
 

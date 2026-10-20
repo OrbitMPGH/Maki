@@ -54,10 +54,10 @@ type Story = StoryObj<typeof meta>
 
 export const ResultSuggestsReorder: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await expect(canvas.getByText(/By measured quality, downloads would try MangaDex first/)).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Use best quality first' }))
+    await expect(await canvas.findByText(/By measured quality, downloads would try MangaDex first/)).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Use best quality first' }))
     await expect(args.onUseQuality).toHaveBeenCalledOnce()
-    await userEvent.click(canvas.getByRole('button', { name: 'Reorder priority to match' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reorder priority to match' }))
     await expect(args.onReorder).toHaveBeenCalledOnce()
   },
 }
@@ -65,7 +65,7 @@ export const ResultSuggestsReorder: Story = {
 export const ResultAlreadyBest: Story = {
   args: { order: orderWith({ mode: 'manual', order: [first, second], qualityOrder: [first, second], scout: scout({}) }) },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/already tried first/)).toBeVisible()
+    await expect(await canvas.findByText(/already tried first/)).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Use best quality first' })).toBeNull()
   },
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { librarySeries } from '../../../.storybook/mocks/library'
 import { SeriesRow } from './SeriesRow'
 
@@ -24,32 +24,32 @@ type Story = StoryObj<typeof meta>
 
 export const BehindAndQueued: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link')).toHaveAttribute('href', '/series/1')
-    await expect(canvas.getByText('140/142')).toBeVisible()
-    await expect(canvas.getByText('Queued 2')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('href', '/series/1'))
+    await expect(await canvas.findByText('140/142')).toBeVisible()
+    await expect(await canvas.findByText('Queued 2')).toBeVisible()
   },
 }
 
 export const Completed: Story = {
   args: { series: byId(10) },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('48/48')).toBeVisible()
-    await expect(canvas.getByText('Read')).toBeVisible()
+    await expect(await canvas.findByText('48/48')).toBeVisible()
+    await expect(await canvas.findByText('Read')).toBeVisible()
   },
 }
 
 export const Downloading: Story = {
   args: { series: byId(3) },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Downloading 3')).toBeVisible()
+    await expect(await canvas.findByText('Downloading 3')).toBeVisible()
   },
 }
 
 export const MutedAndUnmonitored: Story = {
   args: { series: { ...byId(6), monitored: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: 'Notifications muted' })).toBeVisible()
-    await expect(canvas.getByRole('img', { name: 'Not monitored' })).toBeVisible()
+    await expect(await canvas.findByRole('img', { name: 'Notifications muted' })).toBeVisible()
+    await expect(await canvas.findByRole('img', { name: 'Not monitored' })).toBeVisible()
   },
 }
 
@@ -67,7 +67,7 @@ export const NoReadTracking: Story = {
 export const ImportWithoutMetadata: Story = {
   args: { series: byId(13) },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('9/9')).toBeVisible()
+    await expect(await canvas.findByText('9/9')).toBeVisible()
   },
 }
 
@@ -86,8 +86,8 @@ export const Comfortable: Story = {
 export const SelectMode: Story = {
   args: { selectMode: true },
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('link'))
-    await expect(args.onToggle).toHaveBeenCalledWith(1)
+    await userEvent.click(await canvas.findByRole('link'))
+    await waitFor(() => expect(args.onToggle).toHaveBeenCalledWith(1))
   },
 }
 

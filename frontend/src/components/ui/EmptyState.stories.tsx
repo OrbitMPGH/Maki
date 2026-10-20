@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { IconArrowLeft, IconPlus } from '@tabler/icons-react'
 import { EmptyState } from './EmptyState'
 
@@ -45,9 +45,9 @@ export const EmptyLibrary: Story = {
     secondaryActionTo: '/import',
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 1, name: /library is empty/i })).toBeVisible()
-    await expect(canvas.getByRole('link', { name: /add series/i })).toHaveAttribute('href', '/add')
-    await expect(canvas.getByRole('link', { name: /import a folder/i })).toHaveAttribute('href', '/import')
+    await expect(await canvas.findByRole('heading', { level: 1, name: /library is empty/i })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('link', { name: /add series/i })).toHaveAttribute('href', '/add'))
+    await waitFor(() => expect(canvas.getByRole('link', { name: /import a folder/i })).toHaveAttribute('href', '/import'))
   },
 }
 

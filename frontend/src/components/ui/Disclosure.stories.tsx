@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { Checkbox, Stack } from '@mantine/core'
 import { Disclosure } from './Disclosure'
 
@@ -32,11 +32,11 @@ type Story = StoryObj<typeof meta>
 export const Closed: Story = {
   args: { count: 1, countLabel: '1 filter set', summary: 'Ongoing' },
   play: async ({ canvas, userEvent }) => {
-    const head = canvas.getByRole('button', { name: /status/i })
-    await expect(head).toHaveAttribute('aria-expanded', 'false')
-    await expect(canvas.getByText('Ongoing', { selector: '.disclosure-summary' })).toBeVisible()
+    const head = await canvas.findByRole('button', { name: /status/i })
+    await waitFor(() => expect(head).toHaveAttribute('aria-expanded', 'false'))
+    await expect(await canvas.findByText('Ongoing', { selector: '.disclosure-summary' })).toBeVisible()
     await userEvent.click(head)
-    await expect(head).toHaveAttribute('aria-expanded', 'true')
+    await waitFor(() => expect(head).toHaveAttribute('aria-expanded', 'true'))
     // Collapse keeps the body aria-hidden until its open transition ends.
     await expect(await canvas.findByRole('checkbox', { name: 'Completed' })).toBeVisible()
   },

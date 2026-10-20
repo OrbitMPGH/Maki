@@ -45,4 +45,35 @@ public class ReaderPrefsTests
         Assert.Equal("sepia", spec.Filter);
         Assert.False(spec.KeepAwake);
     }
+
+    [Fact]
+    public void Sanitized_falls_back_on_an_unknown_split_mode()
+    {
+        Assert.Equal(ReaderPrefsSpec.SplitOff, new ReaderPrefsSpec(SplitWide: "quarter").Sanitized().SplitWide);
+        Assert.Equal("rotate", new ReaderPrefsSpec(SplitWide: "rotate").Sanitized().SplitWide);
+    }
+
+    [Fact]
+    public void Parse_of_an_older_blob_leaves_auto_webtoon_unset_for_the_layer_to_decide()
+    {
+        var spec = ReaderPrefsSpec.Parse("""{"mode":"paged"}""");
+
+        Assert.Null(spec.AutoWebtoon);
+        Assert.False(spec.CropBorders);
+        Assert.Equal(ReaderPrefsSpec.SplitOff, spec.SplitWide);
+        Assert.True(spec.WithAutoWebtoon(true).AutoWebtoon);
+        Assert.False(spec.WithAutoWebtoon(false).AutoWebtoon);
+        Assert.False((spec with { AutoWebtoon = false }).WithAutoWebtoon(true).AutoWebtoon);
+    }
+
+    [Fact]
+    public void Serialize_round_trips_the_page_shape_fields()
+    {
+        var json = ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(SplitWide: "split", CropBorders: true, AutoWebtoon: false));
+        var spec = ReaderPrefsSpec.Parse(json);
+
+        Assert.Equal("split", spec.SplitWide);
+        Assert.True(spec.CropBorders);
+        Assert.False(spec.AutoWebtoon);
+    }
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { animeResumeItems } from '../../../.storybook/mocks/home'
@@ -17,15 +17,15 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: /Clockwork Tea House/ })).toHaveAttribute('href', '/series/7')
+    await waitFor(() => expect(canvas.getByRole('link', { name: /Clockwork Tea House/ })).toHaveAttribute('href', '/series/7'))
   },
 }
 
 export const OpensCatalogueEntry: Story = {
   play: async ({ args, canvas, userEvent }) => {
     // A manga that is not in the library opens the detail modal through onOpen instead of linking.
-    await userEvent.click(canvas.getByRole('button', { name: /View and add The Salt Cartographer/ }))
-    await expect(args.onOpen).toHaveBeenCalledWith(animeResumeItems[3].catalogue)
+    await userEvent.click(await canvas.findByRole('button', { name: /View and add The Salt Cartographer/ }))
+    await waitFor(() => expect(args.onOpen).toHaveBeenCalledWith(animeResumeItems[3].catalogue))
   },
 }
 
@@ -38,7 +38,7 @@ export const ExpandedModal: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('9 titles')).toBeVisible()
-    await expect(body.getByRole('dialog')).toBeVisible()
+    await expect(await body.findByRole('dialog')).toBeVisible()
   },
 }
 

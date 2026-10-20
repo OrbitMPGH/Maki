@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { Group, Menu } from '@mantine/core'
 import {
   DensityControl,
@@ -37,10 +37,10 @@ type Story = StoryObj<typeof meta>
 
 export const GridToList: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await expect(canvas.getByRole('radio', { name: 'Grid view' })).toBeChecked()
-    await userEvent.click(canvas.getByRole('radio', { name: 'List view' }))
-    await expect(args.onChange).toHaveBeenCalledWith('list')
-    await expect(canvas.getByRole('radio', { name: 'List view' })).toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Grid view' })).toBeChecked())
+    await userEvent.click(await canvas.findByRole('radio', { name: 'List view' }))
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith('list'))
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'List view' })).toBeChecked())
   },
 }
 
@@ -54,8 +54,8 @@ export const DensitySegments: Story = {
     return <DensityControl value={value} onChange={setValue} />
   },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByText('Comfortable'))
-    await expect(canvas.getByRole('radio', { name: 'Comfortable' })).toBeChecked()
+    await userEvent.click(await canvas.findByText('Comfortable'))
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Comfortable' })).toBeChecked())
   },
 }
 
@@ -74,12 +74,12 @@ export const OverflowMenu: Story = {
     )
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'More options' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
     const menu = within(canvasElement.ownerDocument.body)
-    await expect(await menu.findByRole('menuitem', { name: 'Compact' })).toHaveAttribute('aria-current', 'true')
-    await userEvent.click(menu.getByRole('menuitem', { name: 'Comfortable' }))
-    await userEvent.click(canvas.getByRole('button', { name: 'More options' }))
-    await expect(await menu.findByRole('menuitem', { name: 'Comfortable' })).toHaveAttribute('aria-current', 'true')
+    await waitFor(() => expect(menu.getByRole('menuitem', { name: 'Compact' })).toHaveAttribute('aria-current', 'true'))
+    await userEvent.click(await menu.findByRole('menuitem', { name: 'Comfortable' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
+    await waitFor(() => expect(menu.getByRole('menuitem', { name: 'Comfortable' })).toHaveAttribute('aria-current', 'true'))
   },
 }
 
@@ -104,7 +104,7 @@ export const WithStoredPrefs: Story = {
     )
   },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('radio', { name: 'List view' }))
-    await expect(canvas.getByText(/^list \//)).toBeVisible()
+    await userEvent.click(await canvas.findByRole('radio', { name: 'List view' }))
+    await expect(await canvas.findByText(/^list \//)).toBeVisible()
   },
 }

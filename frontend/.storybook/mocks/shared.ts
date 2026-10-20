@@ -347,6 +347,27 @@ function pageSvg(seed: string, n: string) {
   )
 }
 
+function spreadSvg(seed: string, n: string) {
+  const h = hue(seed)
+  const half = (x: number, label: string, i: number) =>
+    `<rect x="${x + 30}" y="30" width="740" height="1140" fill="hsl(${(h + i * 40) % 360},30%,82%)" stroke="#111" stroke-width="4"/>` +
+    `<text x="${x + 400}" y="620" font-family="sans-serif" font-size="64" text-anchor="middle" fill="#222">${label}</text>`
+  return svg(
+    `<rect width="1600" height="1200" fill="#fafafa"/>${half(800, 'Read first', 0)}${half(0, 'Read second', 1)}<text x="800" y="1185" font-family="sans-serif" font-size="22" text-anchor="middle" fill="#555">${escapeXml(titleFor(seed))} - ${escapeXml(n)}</text>`,
+    1600,
+    1200,
+  )
+}
+
+function stripSvg(seed: string, n: string) {
+  const h = hue(seed)
+  return svg(
+    `<rect width="800" height="2400" fill="hsl(${h},20%,92%)"/><rect x="60" y="200" width="680" height="900" fill="hsl(${h},35%,70%)"/><rect x="60" y="1300" width="680" height="900" fill="hsl(${(h + 30) % 360},35%,60%)"/><text x="400" y="2360" font-family="sans-serif" font-size="28" text-anchor="middle" fill="#333">${escapeXml(titleFor(seed))} - ${escapeXml(n)}</text>`,
+    800,
+    2400,
+  )
+}
+
 function bannerSvg(seed: string) {
   const h = hue(seed)
   return svg(
@@ -376,6 +397,8 @@ export const sharedHandlers = [
   http.get(api('/mediacover/:id/:file'), ({ params }) => coverSvg(String(params.id))),
   http.get('/mock/cover/:seed', ({ params }) => coverSvg(String(params.seed).replace(/\.svg$/, ''))),
   http.get('/mock/page/:seed/:n', ({ params }) => pageSvg(String(params.seed), String(params.n).replace(/\.svg$/, ''))),
+  http.get('/mock/spread/:seed/:n', ({ params }) => spreadSvg(String(params.seed), String(params.n).replace(/\.svg$/, ''))),
+  http.get('/mock/strip/:seed/:n', ({ params }) => stripSvg(String(params.seed), String(params.n).replace(/\.svg$/, ''))),
   http.get('/mock/banner/:seed', ({ params }) => bannerSvg(String(params.seed).replace(/\.svg$/, ''))),
   http.get(api('/reader/chapter/:id/page/:n'), ({ params }) => pageSvg(String(params.id), String(params.n))),
   http.get(api('/reader/chapter/:id/thumb/:n'), ({ params }) => pageSvg(String(params.id), String(params.n))),

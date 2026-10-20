@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { ContentRatingCards } from './ContentRatingCards'
 
 const meta = {
@@ -18,10 +18,10 @@ type Story = StoryObj<typeof meta>
 
 export const Suggestive: Story = {
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: /Suggestive/ })).toHaveAttribute('aria-pressed', 'true')
-    await userEvent.click(canvas.getByRole('button', { name: /Erotica/ }))
-    await expect(canvas.getByRole('button', { name: /Erotica/ })).toHaveAttribute('aria-pressed', 'true')
-    await expect(canvas.getByRole('button', { name: /Suggestive/ })).toHaveAttribute('aria-pressed', 'false')
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Suggestive/ })).toHaveAttribute('aria-pressed', 'true'))
+    await userEvent.click(await canvas.findByRole('button', { name: /Erotica/ }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Erotica/ })).toHaveAttribute('aria-pressed', 'true'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Suggestive/ })).toHaveAttribute('aria-pressed', 'false'))
   },
 }
 

@@ -46,8 +46,8 @@ type Story = StoryObj<typeof meta>
 export const Overflowing: Story = {
   play: async ({ canvas, userEvent }) => {
     const forward = await canvas.findByRole('button', { name: 'Scroll forward' })
-    await expect(forward).toBeEnabled()
-    await expect(canvas.getByRole('button', { name: 'Scroll back' })).toBeDisabled()
+    await waitFor(() => expect(forward).toBeEnabled())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Scroll back' })).toBeDisabled())
     await userEvent.click(forward)
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Scroll back' })).toBeEnabled())
   },
@@ -56,7 +56,7 @@ export const Overflowing: Story = {
 export const FitsWithoutScrolling: Story = {
   args: { children: swatches(3) },
   play: async ({ canvas, canvasElement }) => {
-    await expect(canvasElement.querySelectorAll('.discover-rail-item')).toHaveLength(3)
+    await waitFor(() => expect(canvasElement.querySelectorAll('.discover-rail-item')).toHaveLength(3))
     await expect(canvas.queryByRole('button', { name: 'Scroll forward' })).toBeNull()
   },
 }
@@ -64,6 +64,6 @@ export const FitsWithoutScrolling: Story = {
 export const Engine: Story = {
   args: { engine: true },
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelector('.discover-rail')).toHaveAttribute('data-engine', 'true')
+    await waitFor(() => expect(canvasElement.querySelector('.discover-rail')).toHaveAttribute('data-engine', 'true'))
   },
 }

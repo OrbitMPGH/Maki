@@ -28,7 +28,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('region', { name: 'Reading' })).toBeVisible()
+    await expect(await canvas.findByRole('region', { name: 'Reading' })).toBeVisible()
   },
 }
 
@@ -47,6 +47,6 @@ export const WithInsight: Story = {
 export const WithScope: Story = {
   args: { sectionKey: 'library', icon: IconBooks, title: 'Library', scope: 'Whole library' },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Whole library')).toBeVisible()
+    await expect(await canvas.findByText('Whole library')).toBeVisible()
   },
 }

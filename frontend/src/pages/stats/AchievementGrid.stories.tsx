@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { achievements } from '../../../.storybook/mocks/insights'
 import { AchievementGrid } from './AchievementGrid'
 
@@ -15,9 +15,9 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { name: 'Reading' })).toBeVisible()
-    await expect(canvas.getByRole('heading', { name: 'The library' })).toBeVisible()
-    await expect(canvas.getAllByText('Gold').length).toBe(2)
+    await expect(await canvas.findByRole('heading', { name: 'Reading' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'The library' })).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByText('Gold').length).toBe(2))
   },
 }
 

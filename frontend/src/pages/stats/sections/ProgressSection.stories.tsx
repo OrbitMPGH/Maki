@@ -35,7 +35,7 @@ export const Default: Story = {
     await expect(await canvas.findByText('Goals')).toBeVisible()
     await expect(await canvas.findByText('Leaderboard')).toBeVisible()
     await expect(await canvas.findByText('Badges')).toBeVisible()
-    await expect(canvas.getByText(/Closest badge/)).toBeVisible()
+    await expect(await canvas.findByText(/Closest badge/)).toBeVisible()
   },
 }
 

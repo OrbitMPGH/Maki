@@ -113,6 +113,12 @@ public static class SettingKeys
     public const string MonitoringBulkHoldThreshold = "monitoring.bulkholdthreshold";
 
     /// <summary>
+    /// "false" → refresh every series every 30 minutes, as before. On unless set: each series is
+    /// checked on a tier picked from how recently it last had a new chapter (<c>RefreshSchedule</c>).
+    /// </summary>
+    public const string MonitoringAdaptiveRefresh = "monitoring.adaptiverefresh";
+
+    /// <summary>
     /// "false" → don't rewrite ComicInfo.xml inside files Maki adopts from disk (torrent grabs,
     /// manual imports). Chapters Maki downloads itself from a source always get a fresh ComicInfo —
     /// that CBZ is built by Maki, not an existing file being modified. Default on.
@@ -834,6 +840,13 @@ public static class SettingKeys
     /// front to size the view), which would otherwise report progress the user never made.
     /// </summary>
     public const string OpdsTrackProgress = "opds.trackprogress";
+
+    /// <summary>
+    /// "true" → serve the Komga-compatible API under <c>/komga</c> for this user's OPDS token. Default
+    /// off, and only answers while <see cref="OpdsEnabled"/> is on too: it is a second protocol over
+    /// the same credential, not a separate one.
+    /// </summary>
+    public const string KomgaEnabled = "komga.enabled";
 
     /// <summary>
     /// "true" → redirect HTTP to HTTPS, send HSTS, and mark the session cookie <c>Secure</c>

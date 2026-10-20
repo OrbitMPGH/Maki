@@ -156,10 +156,12 @@ public class SettingsController(
     /// "manual" or "quality"; see <see cref="SettingKeys.DownloadSourceOrder"/>. Null on a write leaves it alone.
     /// </param>
     /// <param name="ScoutOnMatch">See <see cref="SettingKeys.SourcesScoutOnMatch"/>. Null on a write leaves it alone.</param>
+    /// <param name="AdaptiveRefresh">See <see cref="SettingKeys.MonitoringAdaptiveRefresh"/>. Null on a write leaves it alone.</param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
-        bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null);
+        bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null,
+        bool? AdaptiveRefresh = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
@@ -240,7 +242,8 @@ public class SettingsController(
     /// The account password, required only when this request mints the first token (enabling with
     /// none yet), the same as minting an API key.
     /// </param>
-    public record OpdsSettings(bool Enabled, bool TrackProgress, string? Password = null);
+    /// <summary><c>Komga</c> null leaves the Komga API switch as it is.</summary>
+    public record OpdsSettings(bool Enabled, bool TrackProgress, string? Password = null, bool? Komga = null);
 
     public record SecuritySettings(
         bool RequireHttps,
@@ -282,7 +285,7 @@ public class SettingsController(
     /// or reverse proxy the instance is reached through. Non-null <b>only</b> on the response that
     /// generated the token — nothing stores the token itself, so it cannot be shown again.</param>
     public record OpdsSettingsResponse(
-        bool Enabled, bool TrackProgress, bool HasToken, string? TokenPrefix, string? FeedUrl);
+        bool Enabled, bool TrackProgress, bool HasToken, string? TokenPrefix, string? FeedUrl, bool Komga = false);
 
     /// <summary>
     /// Blank clears the setting; anything else must be an absolute http(s) URL. Rejecting garbage
@@ -341,7 +344,7 @@ public class SettingsController(
         var stored = await userSettings.GetManyAsync(
             [SettingKeys.ReaderPrefs, SettingKeys.ReaderPushToKavita, SettingKeys.ReaderPullFromKavita], ct);
         return Ok(new ReaderSettings(
-            Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)),
+            Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)).WithAutoWebtoon(true),
             stored.GetValueOrDefault(SettingKeys.ReaderPushToKavita) == "true",
             KavitaUserId: await kavitaUser.ResolveAsync(ct),
             PullFromKavita: stored.GetValueOrDefault(SettingKeys.ReaderPullFromKavita) == "true",
@@ -391,13 +394,14 @@ public class SettingsController(
     {
         var existing = await CurrentOpdsKeyAsync(ct);
         var stored = await userSettings.GetManyAsync(
-            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
+            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress, SettingKeys.KomgaEnabled], ct);
         return Ok(new OpdsSettingsResponse(
             stored.GetValueOrDefault(SettingKeys.OpdsEnabled) == "true",
             stored.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
             existing is not null,
             existing?.Prefix,
-            FeedUrl: null));
+            FeedUrl: null,
+            stored.GetValueOrDefault(SettingKeys.KomgaEnabled) == "true"));
     }
 
     /// <summary>
@@ -428,16 +432,23 @@ public class SettingsController(
         await userSettings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
         await userSettings.SetAsync(
             SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
+        if (request.Komga is { } komga)
+        {
+            await userSettings.SetAsync(SettingKeys.KomgaEnabled, komga ? "true" : "false", ct);
+        }
+
         OpdsAccessService.EvictUser(currentUser.UserId);
+        var komgaEnabled = request.Komga ?? await userSettings.GetAsync(SettingKeys.KomgaEnabled, ct) == "true";
 
         if (mints)
         {
             var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
-            return Ok(new OpdsSettingsResponse(true, request.TrackProgress, true, prefix, feedUrl));
+            return Ok(new OpdsSettingsResponse(true, request.TrackProgress, true, prefix, feedUrl, komgaEnabled));
         }
 
         return Ok(new OpdsSettingsResponse(
-            request.Enabled, request.TrackProgress, existing is not null, existing?.Prefix, FeedUrl: null));
+            request.Enabled, request.TrackProgress, existing is not null, existing?.Prefix, FeedUrl: null,
+            komgaEnabled));
     }
 
     /// <summary>
@@ -462,13 +473,14 @@ public class SettingsController(
         var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
         OpdsAccessService.EvictUser(currentUser.UserId);
         var stored = await userSettings.GetManyAsync(
-            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
+            [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress, SettingKeys.KomgaEnabled], ct);
         return Ok(new OpdsSettingsResponse(
             stored.GetValueOrDefault(SettingKeys.OpdsEnabled) == "true",
             stored.GetValueOrDefault(SettingKeys.OpdsTrackProgress) != "false",
             true,
             prefix,
-            feedUrl));
+            feedUrl,
+            stored.GetValueOrDefault(SettingKeys.KomgaEnabled) == "true"));
     }
 
     private async Task<IActionResult?> ConfirmOpdsPasswordAsync(
@@ -983,7 +995,11 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
         await SourceOrderNameAsync(ct),
-        await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"));
+        await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
+        await AdaptiveRefreshAsync(ct)));
+
+    private async Task<bool> AdaptiveRefreshAsync(CancellationToken ct) =>
+        await settings.GetAsync(SettingKeys.MonitoringAdaptiveRefresh, ct) != "false";
 
     private async Task<string> SourceOrderNameAsync(CancellationToken ct) => SourceOrderService.Name(
         SourceOrderService.Parse(await settings.GetAsync(SettingKeys.DownloadSourceOrder, ct)) ?? SourceOrderMode.Manual);
@@ -1063,11 +1079,20 @@ public class SettingsController(
             await settings.SetAsync(SettingKeys.SourcesScoutOnMatch, scoutOnMatch ? "true" : "false", ct);
         }
 
+        if (request.AdaptiveRefresh is { } adaptive && adaptive != await AdaptiveRefreshAsync(ct))
+        {
+            await settings.SetAsync(SettingKeys.MonitoringAdaptiveRefresh, adaptive ? "true" : "false", ct);
+            // Plans made under the old mode could be a day out; the next tick replans every series.
+            await db.Series.Where(s => s.NextCheckAt != null)
+                .ExecuteUpdateAsync(u => u.SetProperty(s => s.NextCheckAt, (DateTime?)null), ct);
+        }
+
         return Ok(request with
         {
             BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
             SourceOrder = await SourceOrderNameAsync(ct),
-            ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"
+            ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
+            AdaptiveRefresh = await AdaptiveRefreshAsync(ct)
         });
     }
 

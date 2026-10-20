@@ -533,6 +533,14 @@ msgstr "{alt}にページ{page}はありません"
 msgid "{alt}, page {page}"
 msgstr "{alt}、ページ{page}"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{announcedBy} has it scheduled for {announced}"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "{announcedBy} has it scheduled for {when}"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
@@ -796,6 +804,10 @@ msgstr "{days, plural, other {削除したファイル、削除した章、フ�
 msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
 msgstr ""
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "{daysLeft, plural, one {File removed in # day} other {File removed in # days}}"
@@ -999,6 +1011,10 @@ msgstr "{haveCount} / {totalCount, plural, other {#章}}が一覧にあります
 
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
 msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
@@ -2584,6 +2600,14 @@ msgstr "スキャンはすでに実行中です"
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "フォルダー内の別の漫画の2つ目のコピー（代わりにこちらを使用）"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "A series is checked every 30 minutes for a few hours after a new chapter, every 2 hours while chapters keep coming, every 6 hours after two quiet weeks and once a day after two quiet months. A new chapter puts it straight back on the fast checks. Off checks every series every 30 minutes."
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "A series shows up here once its chapters come out on a steady enough rhythm, or when its source announces the next one."
+msgstr ""
+
 #: src/components/import/RecentImports.tsx
 #, fuzzy
 msgid "A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes Maki wrote inside your own CBZs are not reverted."
@@ -3359,6 +3383,10 @@ msgstr "アニメは第{0}章まで"
 msgid "Anime you've watched"
 msgstr "視聴済みのアニメ"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "Announced by the source"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
@@ -3407,9 +3435,14 @@ msgstr "管理者に知らせること"
 #: src/components/settings/IndexerForm.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/IntegrationCards.tsx
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "API key"
 msgstr "APIキー"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "API key copied"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -4775,10 +4808,42 @@ msgstr ""
 msgid "Check now"
 msgstr "今すぐ確認"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Check quiet series less often"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
 msgstr "毎晩のカタログ更新のたびに確認されます。クリエイターのページから誰かをフォローしてください。"
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 2 hours while chapters keep coming."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 30 minutes for a few hours after a new chapter."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 30 minutes."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 6 hours after two weeks without a chapter."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked every 6 hours until it has some release history."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked once a day while it is quiet."
+msgstr ""
+
+#: src/components/releases/outlookText.ts
+msgid "Checked right after the announced time."
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -5362,6 +5427,10 @@ msgstr "連続レイアウトのみ、ピクセル単位です。"
 msgid "Continuous vertical (webtoon)"
 msgstr "連続縦スクロール（webtoon）"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Continuous, because this chapter's pages are very tall."
+msgstr ""
+
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Convert library"
 msgstr ""
@@ -5378,6 +5447,10 @@ msgstr "コピー済み"
 msgid "Copy"
 msgstr "コピー"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy API key"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Copy codes"
@@ -5387,6 +5460,10 @@ msgstr "コードをコピー"
 #, fuzzy
 msgid "Copy feed URL"
 msgstr "フィードURLをコピー"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Copy server address"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -5585,6 +5662,7 @@ msgstr "この作品の詳細を読み込めませんでした。"
 msgid "Couldn't load this rail"
 msgstr "このレールを読み込めませんでした"
 
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Couldn't load this section"
@@ -5786,6 +5864,15 @@ msgstr ""
 #, fuzzy
 msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr "クレジットページと次の章の最初のページは似ていることが多いため、ここでページの区切りを指定します。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Crop borders"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Crop borders on or off"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6687,6 +6774,10 @@ msgstr "例：連載中と遅れ"
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr "アカウントごとにログイン情報、権限、コンテンツレーティング、読書履歴があります。"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "Each bar spans the days a chapter is likely, worked out from the series' own release history, so it is a span and never a promise. The percentage is how often its recent chapters came out inside the span drawn for them. A diamond marks a day the source itself announced."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Each language adds its own chapter rows and files."
 msgstr ""
@@ -6890,6 +6981,10 @@ msgstr "英語（MangaBakaの既定）"
 #, fuzzy
 msgid "Enter one of your recovery codes"
 msgstr "リカバリーコードを1つ入力してください"
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Enter the API key in the app, or any username with the API key as the password."
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -7296,9 +7391,8 @@ msgstr "フィードURLをコピーしました"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
-msgstr "フィードURL、カタログ、catalog、panels、chunky、koreader、tachiyomi、mihon、ストリーミング、トークン、進捗追跡"
+msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key"
+msgstr ""
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -7746,6 +7840,10 @@ msgstr "通知設定の既定値に従います。"
 msgid "For 1 hour"
 msgstr "1時間"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "For apps that only connect to a Komga server, like the Mihon Komga extension and Tachimanga. Reading progress syncs both ways; in Mihon, turn on the Komga tracker."
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "For each series you are reading, saves the next unread chapters while online and removes them once read. Chapters you save yourself stay until you remove them."
 msgstr ""
@@ -7897,6 +7995,10 @@ msgstr "全画面"
 #, fuzzy
 msgid "Fully read owned"
 msgstr "所蔵分を完読"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Further out"
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -8286,6 +8388,10 @@ msgstr "この作品とシリーズ全体を非表示にする"
 #, fuzzy
 msgid "Hide this title"
 msgstr "このタイトルを非表示にする"
+
+#: src/components/releases/outlookText.ts
+msgid "High confidence"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9199,6 +9305,10 @@ msgstr "種類"
 msgid "Kitsu"
 msgstr ""
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Komga-compatible API"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -9293,6 +9403,10 @@ msgstr "自動取得のサイズ上限を超えています"
 #, fuzzy
 msgid "last {lastSync} · next {nextSync}"
 msgstr "前回{lastSync} · 次回{nextSync}"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Last chapter {last}."
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -9623,6 +9737,15 @@ msgstr "ライブラリタイトル"
 msgid "Light"
 msgstr "ライト"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Likely {range}"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Likely {range}. {confidence}: {hits} of the last {checked} came out inside their window."
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -9865,6 +9988,10 @@ msgstr "緩い"
 #, fuzzy
 msgid "loose page images"
 msgstr "単独のページ画像"
+
+#: src/components/releases/outlookText.ts
+msgid "Low confidence"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10343,6 +10470,10 @@ msgstr "中央値"
 #, fuzzy
 msgid "Median wait"
 msgstr "待ち時間の中央値"
+
+#: src/components/releases/outlookText.ts
+msgid "Medium confidence"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -11065,11 +11196,16 @@ msgstr "新しい順"
 msgid "Newly enabled sources join at the bottom."
 msgstr "新たに有効にしたソースはリストの末尾に追加されます。"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Next chapter"
 msgstr "次の章"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Next check {next}."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -11093,6 +11229,10 @@ msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 msgid "Next up to jump back in"
+msgstr ""
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Next week"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
@@ -11685,6 +11825,10 @@ msgstr "未分析"
 msgid "Not available offline"
 msgstr ""
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
@@ -11714,6 +11858,10 @@ msgstr "未接続です。"
 #, fuzzy
 msgid "Not enough genre data yet"
 msgstr "ジャンルのデータが足りません"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not enough release history for an estimate yet."
+msgstr ""
 
 #: src/pwa/offlineChapters.ts
 msgid "Not enough space on this device"
@@ -12063,6 +12211,10 @@ msgstr "インポートするものはありません。{label}のスコアは�
 #, fuzzy
 msgid "Nothing to pick up yet"
 msgstr "取り込むものはまだありません"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Nothing to place yet"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -12599,6 +12751,10 @@ msgstr "ページを開いて正しいシリーズか確認"
 #, fuzzy
 msgid "Open the search with these filters from now on"
 msgstr "今後はこのフィルターを適用した状態で検索を開く"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Open webtoon chapters in Continuous layout"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -13472,6 +13628,10 @@ msgstr "ダウンロードのキューに追加済み"
 msgid "Queued upgrade from {winnerSource}"
 msgstr "{winnerSource}からのアップグレードをキューに追加しました"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Quiet for longer than its usual rhythm, so there is no estimate."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Quiet period (days)"
@@ -14155,6 +14315,10 @@ msgstr "リリース番号は章ではなく続編の可能性があります"
 #, fuzzy
 msgid "Released"
 msgstr "公開済み"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Releases too irregularly to estimate."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -14869,6 +15033,7 @@ msgstr "再試行回数"
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/HomePage.tsx
@@ -15067,6 +15232,14 @@ msgstr "ルートフォルダー"
 msgid "Rose"
 msgstr "ローズ"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Rotate"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Rotate to fit"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
@@ -15106,6 +15279,15 @@ msgstr "毎日のスキャンを実行"
 #, fuzzy
 msgid "Running"
 msgstr "実行中"
+
+#: src/components/releases/UpcomingView.tsx
+msgid "Running late"
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+#: src/components/releases/UpcomingView.tsx
+msgid "Running late. It was likely {range}."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -15582,6 +15764,10 @@ msgstr "次へスクロール"
 #, fuzzy
 msgid "Scroll to finish the preview"
 msgstr "スクロールしてプレビューを終える"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll webtoon chapters"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16118,6 +16304,14 @@ msgstr "フィルターに一致するライブラリ内のシリーズです。
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "章を読み終えた後も、まだ読む章が残っているシリーズです。"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address"
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
+msgid "Server address copied"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Server local time, 0 to 23."
@@ -16363,6 +16557,10 @@ msgstr "最新作品を「ホーム」と「見つける」のレールに表示
 msgid "Show this section"
 msgstr "このセクションを表示"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show whole"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
@@ -16495,6 +16693,10 @@ msgstr "単一"
 #, fuzzy
 msgid "Single page"
 msgstr "単一ページ"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Single page layout only."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
@@ -16836,10 +17038,18 @@ msgstr "特別編, おまけ, 小数の章, 新しい項目を監視, 監視, �
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo}のスピンオフ"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Split"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "上のティアから分離"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Split into two pages"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -17381,6 +17591,10 @@ msgstr "ディスク上にある章はこれですべてです。"
 msgid "The anime covers through ch. {covered}."
 msgstr "アニメ化は第{covered}章までです。"
 
+#: src/pages/settings/ReadingCards.tsx
+msgid "The API key is the last part of your feed URL, after /opds/. Enter it in the app, or use any username with the API key as the password."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "The API token of your Pushover application."
@@ -17587,6 +17801,10 @@ msgstr "MangaBakaカタログで最も人気のある作品です。"
 #, fuzzy
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "フォロー中のクリエイターとスタジオの最新作品です。誰かをフォローするまでは空です。"
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "The next check is due."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -18117,6 +18335,7 @@ msgstr "このタイトルのみ"
 msgid "This upgrade was already reverted"
 msgstr "このアップグレードはすでに元に戻されています"
 
+#: src/components/releases/UpcomingView.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "This week"
@@ -18473,6 +18692,10 @@ msgstr "話題の作品"
 #, fuzzy
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
 msgstr "{sourceNames}を優先順に試し、章がある最初のソースを使います。ソース名を指定するとそのソースに固定されます。フォールバックはなく、選んだ場所からのみ候補を取得します。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Trims white or black margins. Not applied in the Continuous layout."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -18925,6 +19148,10 @@ msgstr "第{end}章まで"
 #, fuzzy
 msgid "Up to date, last checked {checkedAtLabel}"
 msgstr "最新です。最終確認：{checkedAtLabel}"
+
+#: src/pages/ActivityPage.tsx
+msgid "Upcoming"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -19575,6 +19802,10 @@ msgstr ""
 msgid "Webtoon"
 msgstr "Webtoon"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "Week of {start}"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Weekend share"
@@ -19710,6 +19941,10 @@ msgstr "更新でシリーズの新しい章がこの数を超えて見つかっ
 msgid "When importing an existing series from disk: rename its folder to the series folder format, or keep it as found."
 msgstr "既存のシリーズをディスクからインポートするとき：そのフォルダーをシリーズフォルダー形式に名前変更するか、見つかったままの名前で残すかを選びます。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "When most pages are very tall. A layout picked in the reader still wins."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
@@ -19815,6 +20050,10 @@ msgstr "読書中"
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "読書中は、シリーズの途中にいる間だけ新しい章を知らせます。"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Whole"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Whole franchise"
@@ -19840,6 +20079,11 @@ msgstr "年間全体"
 #, fuzzy
 msgid "Whole-series pack, needs your call"
 msgstr "シリーズ全体のパックのため、判断が必要です"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Wide pages"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

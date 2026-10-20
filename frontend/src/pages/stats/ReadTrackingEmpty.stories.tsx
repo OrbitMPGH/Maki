@@ -13,6 +13,6 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('No reading tracked yet')).toBeVisible()
+    await expect(await canvas.findByText('No reading tracked yet')).toBeVisible()
   },
 }

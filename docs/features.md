@@ -41,6 +41,12 @@
 - **OPDS server.** OPDS 1.2 with page streaming (OPDS-PSE), so Panels, Chunky, KOReader, and
   Mihon read straight from Maki. Off by default. Each user's feed URL carries its own rotatable
   token, and pages streamed this way count as read.
+- **Komga-compatible API.** Apps that only connect to a Komga server, like the Mihon Komga
+  extension and Tachimanga, can use Maki instead. Point them at `http://your-host:8990/komga` and
+  use your OPDS token as the API key (or as the password, with any username). Reading progress
+  syncs both ways, including through Mihon's Komga tracker. A client that cannot decode a page's
+  format (an AVIF or WebP page) can ask for it as JPEG or PNG, as it would from Komga. Off by
+  default, switched on in the OPDS settings.
 - **Install as an app and read offline.** Maki installs to a phone or desktop home screen. Save
   chapters or whole series to the device, or let it keep the next few unread chapters of what
   you're reading. Library and series pages you have visited still open offline, and progress read

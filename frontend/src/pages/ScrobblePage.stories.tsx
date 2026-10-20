@@ -27,7 +27,7 @@ export const Default: Story = {
     await expect(await canvas.findByRole('heading', { name: 'Needs review' })).toBeVisible()
     await expect(await canvas.findByRole('heading', { name: 'Recent syncs' })).toBeVisible()
     await expect(await canvas.findByRole('heading', { name: 'Activity log' })).toBeVisible()
-    await expect(canvas.getByText('Not updated')).toBeVisible()
+    await expect(await canvas.findByText('Not updated')).toBeVisible()
   },
 }
 
@@ -36,10 +36,10 @@ export const MixedConnections: Story = {
   parameters: { msw: scrobbleHandlers(scrobbleStatusMixed) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Not connected yet.')).toBeVisible()
-    await expect(canvas.getByText("Can't sign in with the saved details.")).toBeVisible()
-    await expect((await canvas.findAllByText('Not set up yet.')).length).toBe(2)
-    await expect(canvas.getByRole('button', { name: 'Connect' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Disconnect' })).toBeVisible()
+    await expect(await canvas.findByText("Can't sign in with the saved details.")).toBeVisible()
+    await waitFor(() => expect((canvas.getAllByText('Not set up yet.')).length).toBe(2))
+    await expect(await canvas.findByRole('button', { name: 'Connect' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Disconnect' })).toBeVisible()
   },
 }
 
@@ -48,10 +48,10 @@ export const NothingConnected: Story = {
   parameters: { msw: scrobbleHandlers(scrobbleStatusDisconnected) },
   play: async ({ canvas }) => {
     const sync = await canvas.findByRole('button', { name: 'Sync now' })
-    await expect(sync).toHaveAttribute('aria-disabled', 'true')
+    await waitFor(() => expect(sync).toHaveAttribute('aria-disabled', 'true'))
     await expect(await canvas.findByText('Nothing needs review.')).toBeVisible()
-    await expect(canvas.getByText('No syncs yet.')).toBeVisible()
-    await expect(canvas.getByText('No activity yet.')).toBeVisible()
+    await expect(await canvas.findByText('No syncs yet.')).toBeVisible()
+    await expect(await canvas.findByText('No activity yet.')).toBeVisible()
   },
 }
 
@@ -59,7 +59,7 @@ export const Quiet: Story = {
   parameters: { msw: scrobbleHandlers(scrobbleStatusQuiet) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Nothing needs review.')).toBeVisible()
-    await expect(canvas.getByText('No syncs yet.')).toBeVisible()
+    await expect(await canvas.findByText('No syncs yet.')).toBeVisible()
   },
 }
 
@@ -75,7 +75,7 @@ export const SyncRunning: Story = {
 export const SyncNow: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Sync now' }))
-    await expect((await within(canvasElement.ownerDocument.body).findAllByText('Sync started.')).length).toBeGreaterThan(0)
+    await waitFor(() => expect((within(canvasElement.ownerDocument.body).getAllByText('Sync started.')).length).toBeGreaterThan(0))
   },
 }
 
@@ -84,20 +84,20 @@ export const AssigningAMatch: Story = {
     const [firstUse] = await canvas.findAllByRole('button', { name: 'Use' })
     await userEvent.click(firstUse)
     // Notifications outlive a story, so an earlier run's toast can still be on screen.
-    await expect(
-      (await within(canvasElement.ownerDocument.body).findAllByText('Matched and queued for the next sync.')).length,
-    ).toBeGreaterThan(0)
+    await waitFor(() => expect(
+      (within(canvasElement.ownerDocument.body).getAllByText('Matched and queued for the next sync.')).length,
+    ).toBeGreaterThan(0))
   },
 }
 
 export const AssigningByPastedId: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const [field] = await canvas.findAllByRole('textbox', { name: 'Paste series URL or numeric id…' })
+    const [field] = await canvas.findAllByRole('textbox', { name: 'Paste series URL or id…' })
     await userEvent.type(field, '118201{Enter}')
     // Notifications outlive a story, so an earlier run's toast can still be on screen.
-    await expect(
-      (await within(canvasElement.ownerDocument.body).findAllByText('Matched and queued for the next sync.')).length,
-    ).toBeGreaterThan(0)
+    await waitFor(() => expect(
+      (within(canvasElement.ownerDocument.body).getAllByText('Matched and queued for the next sync.')).length,
+    ).toBeGreaterThan(0))
     await waitFor(() => expect(field).toHaveValue(''))
   },
 }
@@ -129,7 +129,7 @@ export const OAuthFailed: Story = {
 export const ReaderView: Story = {
   parameters: { auth: 'reader', msw: scrobbleHandlers(scrobbleStatusMixed) },
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText('Not set up yet. An admin can add it in Settings.')).length).toBe(2)
+    await waitFor(() => expect((canvas.getAllByText('Not set up yet. An admin can add it in Settings.')).length).toBe(2))
     await expect(canvas.queryByRole('link', { name: 'Set up in Settings' })).toBeNull()
   },
 }
@@ -137,7 +137,7 @@ export const ReaderView: Story = {
 export const AdminSeesSetupLinks: Story = {
   parameters: { msw: scrobbleHandlers(scrobbleStatusMixed) },
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByRole('link', { name: 'Set up in Settings' })).length).toBe(2)
+    await waitFor(() => expect((canvas.getAllByRole('link', { name: 'Set up in Settings' })).length).toBe(2))
   },
 }
 
@@ -149,6 +149,6 @@ export const LoadFailed: Story = {
   parameters: { msw: [http.get(api('/scrobble/status'), () => failWith(500, 'The scrobble service did not answer.'))] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Couldn't load scrobbling")).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }

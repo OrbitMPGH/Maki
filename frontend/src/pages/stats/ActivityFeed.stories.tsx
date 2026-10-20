@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { activityFor, feedAdded, longFeed } from '../../../.storybook/mocks/insights'
 import { ActivityFeed } from './ActivityFeed'
 
@@ -25,8 +25,8 @@ type Story = StoryObj<typeof meta>
 /** Finished, added, removed and stalled in one newest-first list; a series removed and re-added shows once. */
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByRole('link', { name: 'Iron Petal Academy' })).toHaveLength(1)
-    await expect(canvas.getByText(/re-added 1×/)).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByRole('link', { name: 'Iron Petal Academy' })).toHaveLength(1))
+    await expect(await canvas.findByText(/re-added 1×/)).toBeVisible()
     await expect(canvas.queryByRole('button', { name: /Show all/ })).toBeNull()
   },
 }
@@ -34,9 +34,9 @@ export const Default: Story = {
 export const LongFeed: Story = {
   args: { stats: longFeed },
   play: async ({ canvas, userEvent }) => {
-    const more = canvas.getByRole('button', { name: 'Show all 30' })
+    const more = await canvas.findByRole('button', { name: 'Show all 30' })
     await userEvent.click(more)
-    await expect(canvas.getByRole('button', { name: 'Show less' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Show less' })).toBeVisible()
   },
 }
 

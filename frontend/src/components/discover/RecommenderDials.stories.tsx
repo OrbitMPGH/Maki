@@ -31,7 +31,7 @@ type Story = StoryObj<typeof meta>
 export const Balanced: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Obscurity: balanced')).toBeVisible()
-    await expect(canvas.getByText('Variety: closest matches')).toBeVisible()
+    await expect(await canvas.findByText('Variety: closest matches')).toBeVisible()
   },
 }
 
@@ -39,7 +39,7 @@ export const HiddenGemsAndVaried: Story = {
   args: { obscurity: 0.75, diversity: 0.6 },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Obscurity: hidden gems (+0.75)')).toBeVisible()
-    await expect(canvas.getByText('Variety: spread out (0.60)')).toBeVisible()
+    await expect(await canvas.findByText('Variety: spread out (0.60)')).toBeVisible()
   },
 }
 

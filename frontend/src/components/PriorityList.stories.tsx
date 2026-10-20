@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Badge } from '@mantine/core'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { PriorityList } from './PriorityList'
 
 const names: Record<string, string> = {
@@ -45,10 +45,10 @@ export const Default: Story = {}
 export const ToggleARowOff: Story = {
   play: async ({ canvas, userEvent }) => {
     const toggle = await canvas.findByRole('switch', { name: 'Use Comick' })
-    await expect(toggle).toBeChecked()
+    await waitFor(() => expect(toggle).toBeChecked())
     await userEvent.click(toggle)
-    await expect(toggle).not.toBeChecked()
-    await expect(canvas.getByRole('switch', { name: 'Use Weeb Central' })).not.toBeChecked()
+    await waitFor(() => expect(toggle).not.toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Use Weeb Central' })).not.toBeChecked())
   },
 }
 

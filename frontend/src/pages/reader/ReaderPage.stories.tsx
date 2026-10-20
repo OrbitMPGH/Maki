@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { chapters } from '../../../.storybook/mocks/entry/fixtures'
@@ -41,7 +41,7 @@ export const PagedManga: Story = {
   parameters: open(1132),
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
-    await expect(canvas.getByText('Page 6 of 18')).toBeInTheDocument()
+    await expect(await canvas.findByText('Page 6 of 18')).toBeInTheDocument()
   },
 }
 
@@ -51,8 +51,8 @@ export const ToolbarOpen: Story = {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
     await summonChrome({ canvasElement, userEvent })
     await expect(await canvas.findByRole('link', { name: 'Back to series' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Toggle bookmark' })).toBeVisible()
-    await expect(canvas.getByText('6 / 18')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Toggle bookmark' })).toBeVisible()
+    await expect(await canvas.findByText('6 / 18')).toBeVisible()
   },
 }
 
@@ -64,7 +64,7 @@ export const SettingsOpen: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Reading profile')).toBeVisible()
-    await expect(await body.findByText(/^Changes /)).toHaveTextContent('Changes retune')
+    await waitFor(() => expect(body.getByText(/^Changes /)).toHaveTextContent('Changes retune'))
   },
 }
 
@@ -88,7 +88,7 @@ export const ThumbnailStrip: Story = {
     await userEvent.keyboard('t')
     // Bookmarks come from the server; page 4 is one of the two in the fixture.
     await expect(await canvas.findByRole('button', { name: 'Go to page 4 (bookmarked)' })).toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: 'Go to page 6' })).toHaveAttribute('aria-current', 'true')
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Go to page 6' })).toHaveAttribute('aria-current', 'true'))
   },
 }
 
@@ -98,7 +98,7 @@ export const KeyboardShortcuts: Story = {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
     await userEvent.keyboard('?')
     const dialog = await canvas.findByRole('dialog', { name: 'Keyboard shortcuts' })
-    await expect(dialog).toBeVisible()
+    await waitFor(() => expect(dialog).toBeVisible())
     await userEvent.keyboard('{Escape}')
     await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument()
   },
@@ -121,6 +121,160 @@ export const ContinuousWebtoon: Story = {
   },
 }
 
+// Chapter ids of their own: with isolate off, page URLs of a chapter other stories open are already
+// in the image cache as portrait pages, and these handlers would never be asked.
+const stripPages = (chapterId: number) =>
+  http.get(api(`/reader/chapter/${chapterId}/page/:n`), ({ params }) =>
+    HttpResponse.redirect(`/mock/strip/${chapterId}/${Number(params.n) + 1}.svg`),
+  )
+const spreadPages = (chapterId: number) =>
+  http.get(api(`/reader/chapter/${chapterId}/page/:n`), ({ params }) =>
+    HttpResponse.redirect(`/mock/spread/${chapterId}/${Number(params.n) + 1}.svg`),
+  )
+
+/** Paged by default, but every page is a tall strip slice, so the chapter opens scrolling. */
+export const WebtoonChapterOpensContinuous: Story = {
+  parameters: {
+    ...open(7701),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        chapterId: 7701,
+        prefsSource: 'Global',
+        prefs: { ...chapters[1132].prefs, autoWebtoon: true },
+      }),
+      stripPages(7701),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await expect(canvasElement.querySelector('.reader-continuous')).not.toBeNull()
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const popover = within(canvasElement.ownerDocument.body)
+    await expect(await popover.findByText("Continuous, because this chapter's pages are very tall.")).toBeVisible()
+  },
+}
+
+/** A profile's layout is a choice, so tall pages leave it alone. */
+export const ProfileLayoutBeatsWebtoonDetection: Story = {
+  parameters: { ...open(7702), msw: [withManifest({ ...chapters[1132], chapterId: 7702 }), stripPages(7702)] },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await expect(canvasElement.querySelector('.reader-continuous')).toBeNull()
+  },
+}
+
+/** Each half of a spread is a turn of its own, but both are page 6 as far as progress goes. */
+export const SplitSpreadRightToLeft: Story = {
+  parameters: {
+    ...open(7703),
+    msw: [
+      withManifest({ ...chapters[1132], chapterId: 7703, prefs: { ...chapters[1132].prefs, splitWide: 'split' } }),
+      spreadPages(7703),
+    ],
+  },
+  play: async ({ canvas, userEvent }) => {
+    const first = await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await expect(first.style.left).toBe('-100%')
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).style.left).toBe('0%')
+    await expect(await canvas.findByText('Page 6 of 18')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 7' })).style.left).toBe('-100%')
+    // Back again lands on the half read last.
+    await userEvent.keyboard('{ArrowRight}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).style.left).toBe('0%')
+  },
+}
+
+const seriesPrefsSaves: ReaderManifest['prefs'][] = []
+
+/** Picking a layout over a detected webtoon is kept for the series with detection off, so it sticks. */
+export const HandPickedLayoutStaysWithTheSeries: Story = {
+  parameters: {
+    ...open(7704),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        chapterId: 7704,
+        prefsSource: 'Global',
+        prefs: { ...chapters[1132].prefs, autoWebtoon: true },
+      }),
+      stripPages(7704),
+      http.put(api('/reader/series/:id/prefs'), async ({ request }) => {
+        const { prefs } = (await request.json()) as { prefs: ReaderManifest['prefs'] }
+        seriesPrefsSaves.push(prefs)
+        return HttpResponse.json({ prefs, source: 'Series', profileId: null, pinnedProfileId: null, autoProfileId: 1 })
+      }),
+    ],
+  },
+  beforeEach: () => {
+    seriesPrefsSaves.length = 0
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(canvasElement.querySelector('.reader-continuous')).not.toBeNull())
+    await userEvent.keyboard('1')
+    await waitFor(() => expect(seriesPrefsSaves.at(-1)).toMatchObject({ mode: 'paged', autoWebtoon: false }))
+    await waitFor(() => expect(canvasElement.querySelector('.reader-continuous')).toBeNull())
+  },
+}
+
+const progressWrites: { pageIndex: number; completed?: boolean }[] = []
+
+/** The first half of a wide last page is not the end: the chapter completes on the second half. */
+export const SplitLastPageCompletesOnItsSecondHalf: Story = {
+  parameters: {
+    ...open(7705),
+    msw: [
+      withManifest({
+        ...chapters[1132],
+        chapterId: 7705,
+        resumePage: 15,
+        prefs: { ...chapters[1132].prefs, splitWide: 'split' },
+      }),
+      spreadPages(7705),
+      http.put(api('/reader/chapter/:id/progress'), async ({ request }) => {
+        progressWrites.push((await request.json()) as { pageIndex: number; completed?: boolean })
+        return new HttpResponse(null, { status: 204 })
+      }),
+    ],
+  },
+  beforeEach: () => {
+    progressWrites.length = 0
+  },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })
+    for (let turn = 0; turn < 4; turn++) await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 18' })).style.left).toBe('-100%')
+    await waitFor(() => expect(progressWrites.some((write) => write.pageIndex === 16)).toBe(true))
+    await expect(progressWrites.every((write) => write.pageIndex < 17 && !write.completed)).toBe(true)
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 18' })).style.left).toBe('0%')
+    await waitFor(() => expect(progressWrites.some((write) => write.pageIndex === 17)).toBe(true))
+  },
+}
+
+/** A page reached while scrolling starts on its first half once the layout is paged again. */
+export const PageFromTheStripStartsOnTheFirstHalf: Story = {
+  parameters: {
+    ...open(7706),
+    msw: [
+      withManifest({ ...chapters[1132], chapterId: 7706, prefs: { ...chapters[1132].prefs, splitWide: 'split' } }),
+      spreadPages(7706),
+    ],
+  },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).style.left).toBe('0%')
+    await userEvent.keyboard('3')
+    await userEvent.keyboard('1')
+    await expect((await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).style.left).toBe('-100%')
+  },
+}
+
 export const DoublePage: Story = {
   parameters: open(1201),
   play: async ({ canvas, userEvent }) => {
@@ -128,7 +282,7 @@ export const DoublePage: Story = {
     // The cover stands alone; the next turn shows pages 2 and 3 side by side.
     await userEvent.keyboard('{ArrowLeft}')
     await expect(await canvas.findByRole('img', { name: 'Chapter 1: The first letter - page 2' })).toBeVisible()
-    await expect(canvas.getByRole('img', { name: 'Chapter 1: The first letter - page 3' })).toBeVisible()
+    await expect(await canvas.findByRole('img', { name: 'Chapter 1: The first letter - page 3' })).toBeVisible()
   },
 }
 
@@ -139,8 +293,8 @@ export const EndOfChapter: Story = {
     await canvas.findByRole('img', { name: 'Chapter 19 - page 14' })
     await userEvent.keyboard('{ArrowLeft}')
     await expect(await canvas.findByRole('heading', { name: 'Chapter 19' })).toBeVisible()
-    await expect(canvas.getByText("Chapters 20 to 21 aren't downloaded, so this skips them.", { exact: false })).toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
+    await expect(await canvas.findByText("Chapters 20 to 21 aren't downloaded, so this skips them.", { exact: false })).toBeInTheDocument()
+    await expect(await canvas.findByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
   },
 }
 
@@ -151,8 +305,8 @@ export const DoublePressStopsAtTheEnd: Story = {
     await canvas.findByRole('img', { name: 'Chapter 19 - page 14' })
     await userEvent.keyboard('{ArrowLeft}{ArrowLeft}')
     await new Promise((resolve) => setTimeout(resolve, 500))
-    await expect(canvas.getByRole('heading', { name: 'Chapter 19' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Chapter 19' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /Read Chapter 22/ })).toBeVisible()
   },
 }
 
@@ -173,7 +327,7 @@ export const EndOfFinishedSeries: Story = {
     await userEvent.keyboard('{ArrowLeft}')
     await expect(await canvas.findByText("You're caught up")).toBeVisible()
     const end = within(canvasElement.querySelector<HTMLElement>('.reader-end')!)
-    await expect(end.getByRole('link', { name: 'Back to series' })).toBeVisible()
+    await expect(await end.findByRole('link', { name: 'Back to series' })).toBeVisible()
   },
 }
 
@@ -219,7 +373,7 @@ export const LeftToRightWithPageBadge: Story = {
   },
   play: async ({ canvas, canvasElement }) => {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })
-    await expect(canvasElement.querySelector('.reader-page-badge')).toHaveTextContent('1 / 18')
+    await waitFor(() => expect(canvasElement.querySelector('.reader-page-badge')).toHaveTextContent('1 / 18'))
   },
 }
 
@@ -244,7 +398,7 @@ export const NoReadableFile: Story = {
   parameters: open(9999),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('This chapter has no readable file.')).toBeVisible()
-    await expect(canvas.getByRole('link', { name: 'Back to library' })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Back to library' })).toBeVisible()
   },
 }
 
@@ -255,7 +409,7 @@ export const LoadFailed: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Could not load this chapter.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }
 
@@ -266,6 +420,6 @@ export const PageFailsToLoad: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('This page failed to load.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }

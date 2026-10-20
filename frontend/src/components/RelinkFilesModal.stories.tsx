@@ -22,7 +22,7 @@ const dialogOf = (canvasElement: HTMLElement) => within(canvasElement.ownerDocum
 export const Plan: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
-    await expect(await within(dialog).findByRole('checkbox', { name: /Trust .*v01/ })).toBeChecked()
+    await waitFor(() => expect(within(dialog).getByRole('checkbox', { name: /Trust .*v01/ })).toBeChecked())
   },
 }
 

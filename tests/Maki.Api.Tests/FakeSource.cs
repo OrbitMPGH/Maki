@@ -3,13 +3,19 @@
 namespace Maki.Api.Tests;
 
 /// <summary>A canned <see cref="ISource"/> — search hits and chapter lists are injected per test.</summary>
-internal sealed class FakeSource : ISource
+internal sealed class FakeSource : ISource, INextReleaseSource
 {
     public required string Name { get; init; }
     public string DisplayName => Name;
     public string BaseUrl => $"https://{Name}.test";
     public SourceCapabilities Capabilities { get; init; } = SourceCapabilities.None;
     public SourceKind Kind { get; init; } = SourceKind.Aggregator;
+    public bool ReleaseDatesAreReliable { get; init; } = true;
+
+    /// <summary>What the source announces as its next release; null announces none.</summary>
+    public DateTime? NextRelease { get; set; }
+
+    public DateTime? AnnouncedNextRelease(string sourceSeriesId) => NextRelease;
 
     public IReadOnlyList<string> SupportedLanguages { get; init; } = ["en"];
 

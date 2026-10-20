@@ -16,21 +16,21 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Pause downloads' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Pause downloads' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Pause downloads' })
     await waitFor(() => expect(within(dialog).getByRole('combobox', { name: 'What to pause' })).toBeVisible())
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Pause' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Pause' }))
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument())
   },
 }
 
 export const ChooseResumeTime: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Pause downloads' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Pause downloads' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Pause downloads' })
-    await userEvent.click(within(dialog).getByRole('combobox', { name: 'Resume' }))
+    await userEvent.click(await within(dialog).findByRole('combobox', { name: 'Resume' }))
     await userEvent.click(await body.findByRole('option', { name: 'Until a time I choose' }))
     await waitFor(() => expect(within(dialog).getByLabelText('Resume at')).toBeVisible())
   },
@@ -41,10 +41,10 @@ export const PauseFails: Story = {
     msw: [http.put(api('/queue/pause'), () => HttpResponse.json({ error: 'nope' }, { status: 500 }))],
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Pause downloads' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Pause downloads' }))
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Pause downloads' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Pause' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Pause' }))
     await waitFor(async () => expect(await body.findByText("Couldn't pause the downloads")).toBeVisible())
   },
 }
@@ -54,7 +54,7 @@ export const BannerEverythingPaused: Story = {
   parameters: { msw: [http.get(api('/queue/pause'), () => HttpResponse.json(pausedAll))] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Downloads paused')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Resume' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Resume' })).toBeVisible()
   },
 }
 
@@ -63,8 +63,8 @@ export const BannerSourcesPaused: Story = {
   parameters: { msw: [http.get(api('/queue/pause'), () => HttpResponse.json(pausedSources))] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Weeb Central paused until/)).toBeVisible()
-    await expect(canvas.getByText('Asura Scans paused')).toBeVisible()
-    await expect(canvas.getAllByRole('button', { name: 'Resume' })).toHaveLength(2)
+    await expect(await canvas.findByText('Asura Scans paused')).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Resume' })).toHaveLength(2))
   },
 }
 

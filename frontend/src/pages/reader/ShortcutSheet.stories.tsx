@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import ShortcutSheet from './ShortcutSheet'
 
 const meta = {
@@ -22,16 +22,16 @@ type Story = StoryObj<typeof meta>
 export const RightToLeft: Story = {
   play: async ({ canvas }) => {
     const dialog = await canvas.findByRole('dialog', { name: 'Keyboard shortcuts' })
-    await expect(dialog).toBeVisible()
+    await waitFor(() => expect(dialog).toBeVisible())
     // Reading right to left, the left arrow turns the page forward.
-    await expect(canvas.getByText('Next page').closest('div')).toHaveTextContent('←')
+    await waitFor(() => expect(canvas.getByText('Next page').closest('div')).toHaveTextContent('←'))
   },
 }
 
 export const LeftToRight: Story = {
   args: { rtl: false },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Next page').closest('div')).toHaveTextContent('→')
+    await waitFor(() => expect(canvas.getByText('Next page').closest('div')).toHaveTextContent('→'))
   },
 }
 

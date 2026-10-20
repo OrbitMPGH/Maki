@@ -30,19 +30,19 @@ async function dialogOf(canvasElement: HTMLElement) {
 export const Connections: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Reading room Discord')).toBeVisible()
-    await expect(canvas.getByText('Phone alerts')).toBeVisible()
-    await expect(canvas.getByText('Home Assistant')).toBeVisible()
-    await expect(canvas.getByText('Healthy')).toBeVisible()
-    await expect(canvas.getByText('Not used yet')).toBeVisible()
-    await expect(canvas.getByText('Disabled')).toBeVisible()
+    await expect(await canvas.findByText('Phone alerts')).toBeVisible()
+    await expect(await canvas.findByText('Home Assistant')).toBeVisible()
+    await expect(await canvas.findByText('Healthy')).toBeVisible()
+    await expect(await canvas.findByText('Not used yet')).toBeVisible()
+    await expect(await canvas.findByText('Disabled')).toBeVisible()
   },
 }
 
 export const FailingConnectionShowsItsError: Story = {
   play: async ({ canvas }) => {
     await canvas.findByText('Phone alerts')
-    const row = canvas.getByText('Phone alerts').closest('tr')!
-    await expect(within(row).getByText(/Failing: 4 misses in a row/)).toBeVisible()
+    const row = (await canvas.findByText('Phone alerts')).closest('tr')!
+    await expect(await within(row).findByText(/Failing: 4 misses in a row/)).toBeVisible()
     await expect(await within(row).findByText('Favourites')).toBeVisible()
   },
 }
@@ -71,37 +71,37 @@ export const LoadFailed: Story = {
 export const EditConnection: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Reading room Discord')
-    await userEvent.click(canvas.getAllByRole('button', { name: 'Edit connection' })[0])
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Edit connection' }))[0])
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('textbox', { name: 'Name' })).toHaveValue('Reading room Discord')
-    await expect(dialog.getByRole('switch', { name: /^Chapter downloaded/ })).toBeChecked()
-    await expect(dialog.getByRole('switch', { name: /^Series added/ })).not.toBeChecked()
+    await waitFor(() => expect(dialog.getByRole('textbox', { name: 'Name' })).toHaveValue('Reading room Discord'))
+    await waitFor(() => expect(dialog.getByRole('switch', { name: /^Chapter downloaded/ })).toBeChecked())
+    await waitFor(() => expect(dialog.getByRole('switch', { name: /^Series added/ })).not.toBeChecked())
   },
 }
 
 export const AddConnectionNeedsRequiredFields: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Reading room Discord')
-    await userEvent.click(canvas.getByRole('button', { name: 'Add connection' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add connection' }))
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled()
-    await expect(dialog.getByRole('button', { name: 'Test' })).toBeDisabled()
-    await userEvent.type(dialog.getByRole('textbox', { name: 'Name' }), 'Weekend digest')
-    await userEvent.type(dialog.getByRole('textbox', { name: 'Webhook URL' }), 'https://discord.com/api/webhooks/1/abc')
-    await expect(dialog.getByRole('button', { name: 'Save' })).toBeEnabled()
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled())
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Test' })).toBeDisabled())
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Name' }), 'Weekend digest')
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Webhook URL' }), 'https://discord.com/api/webhooks/1/abc')
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Save' })).toBeEnabled())
   },
 }
 
 export const AddConnectionTestAndSave: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Reading room Discord')
-    await userEvent.click(canvas.getByRole('button', { name: 'Add connection' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add connection' }))
     const dialog = await dialogOf(canvasElement)
-    await userEvent.type(dialog.getByRole('textbox', { name: 'Name' }), 'Weekend digest')
-    await userEvent.type(dialog.getByRole('textbox', { name: 'Webhook URL' }), 'https://discord.com/api/webhooks/1/abc')
-    await userEvent.click(dialog.getByRole('button', { name: 'Test' }))
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Name' }), 'Weekend digest')
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Webhook URL' }), 'https://discord.com/api/webhooks/1/abc')
+    await userEvent.click(await dialog.findByRole('button', { name: 'Test' }))
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Test' })).toBeEnabled())
-    await userEvent.click(dialog.getByRole('button', { name: 'Save' }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'Save' }))
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).queryByRole('dialog')).toBeNull())
   },
 }
@@ -112,9 +112,9 @@ export const TestFails: Story = {
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Reading room Discord')
-    await userEvent.click(canvas.getAllByRole('button', { name: 'Edit connection' })[0])
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Edit connection' }))[0])
     const dialog = await dialogOf(canvasElement)
-    await userEvent.click(dialog.getByRole('button', { name: 'Test' }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'Test' }))
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Test' })).toBeEnabled())
   },
 }
@@ -122,9 +122,9 @@ export const TestFails: Story = {
 export const DeleteConnectionConfirm: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Home Assistant')
-    await userEvent.click(canvas.getAllByRole('button', { name: 'Delete connection' })[2])
+    await userEvent.click((await canvas.findAllByRole('button', { name: 'Delete connection' }))[2])
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByText('Delete Home Assistant?')).toBeVisible()
-    await expect(dialog.getByText("Nothing is sent to it any more. This can't be undone.")).toBeVisible()
+    await expect(await dialog.findByText('Delete Home Assistant?')).toBeVisible()
+    await expect(await dialog.findByText("Nothing is sent to it any more. This can't be undone.")).toBeVisible()
   },
 }

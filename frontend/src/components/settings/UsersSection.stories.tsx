@@ -32,10 +32,10 @@ export const UserList: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Noa')).toBeVisible()
     await expect(await canvas.findByText('you')).toBeVisible()
-    await expect(canvas.getByText('disabled')).toBeVisible()
-    await expect(canvas.getByText('guest')).toBeVisible()
+    await expect(await canvas.findByText('disabled')).toBeVisible()
+    await expect(await canvas.findByText('guest')).toBeVisible()
     // Your own row has no Delete: the server refuses it anyway.
-    await expect(canvas.getAllByRole('button', { name: 'Delete' })).toHaveLength(users.length - 1)
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Delete' })).toHaveLength(users.length - 1))
   },
 }
 
@@ -58,10 +58,10 @@ export const AddUser: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Add user' }))
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue('')
-    await userEvent.type(dialog.getByRole('textbox', { name: /^Username/ }), 'sora')
-    await userEvent.type(dialog.getByLabelText(/^Password/), 'a-long-enough-password')
-    await userEvent.click(dialog.getByRole('button', { name: 'Create' }))
+    await waitFor(() => expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue(''))
+    await userEvent.type(await dialog.findByRole('textbox', { name: /^Username/ }), 'sora')
+    await userEvent.type(await dialog.findByLabelText(/^Password/), 'a-long-enough-password')
+    await userEvent.click(await dialog.findByRole('button', { name: 'Create' }))
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).queryByRole('dialog')).toBeNull())
   },
 }
@@ -73,34 +73,34 @@ export const AddUserRejected: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Add user' }))
     const dialog = await dialogOf(canvasElement)
-    await userEvent.type(dialog.getByRole('textbox', { name: /^Username/ }), 'rin')
-    await userEvent.type(dialog.getByLabelText(/^Password/), 'a-long-enough-password')
-    await userEvent.click(dialog.getByRole('button', { name: 'Create' }))
+    await userEvent.type(await dialog.findByRole('textbox', { name: /^Username/ }), 'rin')
+    await userEvent.type(await dialog.findByLabelText(/^Password/), 'a-long-enough-password')
+    await userEvent.click(await dialog.findByRole('button', { name: 'Create' }))
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Create' })).toBeEnabled())
-    await expect(within(canvasElement.ownerDocument.body).getByRole('dialog')).toBeVisible()
+    await expect(await within(canvasElement.ownerDocument.body).findByRole('dialog')).toBeVisible()
   },
 }
 
 export const EditYourself: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Noa')
-    const [edit] = canvas.getAllByRole('button', { name: 'Edit' })
+    const [edit] = await canvas.findAllByRole('button', { name: 'Edit' })
     await userEvent.click(edit)
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('switch', { name: /^Administrator/ })).toBeDisabled()
-    await expect(dialog.getByRole('switch', { name: /^Disabled/ })).toBeDisabled()
+    await waitFor(() => expect(dialog.getByRole('switch', { name: /^Administrator/ })).toBeDisabled())
+    await waitFor(() => expect(dialog.getByRole('switch', { name: /^Disabled/ })).toBeDisabled())
   },
 }
 
 export const EditARestrictedReader: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Noa')
-    const edit = within(canvas.getByText('Rin').closest('tr')!).getByRole('button', { name: 'Edit' })
+    const edit = await within((await canvas.findByText('Rin')).closest('tr')!).findByRole('button', { name: 'Edit' })
     await userEvent.click(edit)
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue('reader')
-    await expect(dialog.getByRole('switch', { name: /^Access all root folders/ })).not.toBeChecked()
-    await expect(dialog.getByText('/library/manga')).toBeVisible()
+    await waitFor(() => expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue('reader'))
+    await waitFor(() => expect(dialog.getByRole('switch', { name: /^Access all root folders/ })).not.toBeChecked())
+    await expect(await dialog.findByText('/library/manga')).toBeVisible()
   },
 }
 
@@ -114,23 +114,23 @@ export const EditUserWithTwoFactorAndSso: Story = {
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Noa')
-    await userEvent.click(within(canvas.getByText('Noa').closest('tr')!).getByRole('button', { name: 'Edit' }))
+    await userEvent.click(await within((await canvas.findByText('Noa')).closest('tr')!).findByRole('button', { name: 'Edit' }))
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('button', { name: 'Reset two-factor' })).toBeVisible()
-    await userEvent.click(dialog.getByRole('button', { name: 'Remove single sign-on' }))
+    await expect(await dialog.findByRole('button', { name: 'Reset two-factor' })).toBeVisible()
+    await userEvent.click(await dialog.findByRole('button', { name: 'Remove single sign-on' }))
     const confirm = await within(canvasElement.ownerDocument.body).findByText(/Remove single sign-on for/)
-    await expect(confirm).toBeVisible()
+    await waitFor(() => expect(confirm).toBeVisible())
   },
 }
 
 export const DeleteConfirm: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Noa')
-    await userEvent.click(within(canvas.getByText('Noa').closest('tr')!).getByRole('button', { name: 'Delete' }))
+    await userEvent.click(await within((await canvas.findByText('Noa')).closest('tr')!).findByRole('button', { name: 'Delete' }))
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByText('Delete Noa?')).toBeVisible()
-    await expect(dialog.getByText("They will no longer be able to sign in. This can't be undone.")).toBeVisible()
-    await userEvent.click(dialog.getByRole('button', { name: 'Delete user' }))
+    await expect(await dialog.findByText('Delete Noa?')).toBeVisible()
+    await expect(await dialog.findByText("They will no longer be able to sign in. This can't be undone.")).toBeVisible()
+    await userEvent.click(await dialog.findByRole('button', { name: 'Delete user' }))
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).queryByRole('dialog')).toBeNull())
   },
 }

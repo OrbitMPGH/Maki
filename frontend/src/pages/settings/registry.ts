@@ -220,7 +220,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`OPDS catalogue`,
     permission: 'UseOpds',
     keywords: msg({
-      message: `feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress`,
+      message: `feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress, komga, tachimanga, api key`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, neverResolve } from '../../.storybook/mocks/api'
 import { libraryHandlers, recommendationTags } from '../../.storybook/mocks/library'
@@ -50,8 +50,8 @@ export const IncludeTags: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const dialog = await modal(canvasElement, 'Browse tags to include')
     await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'Include Cooking' }))
-    await expect(args.onChange).toHaveBeenCalledWith([{ kind: 'tag', name: 'Cooking' }])
-    await expect(within(dialog).getByText('1 selected')).toBeVisible()
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith([{ kind: 'tag', name: 'Cooking' }]))
+    await expect(await within(dialog).findByText('1 selected')).toBeVisible()
   },
 }
 
@@ -59,7 +59,7 @@ export const ExcludeTags: Story = {
   args: { tone: 'exclude', value: [{ kind: 'tag', name: 'Cooking' }] },
   play: async ({ canvasElement }) => {
     const dialog = await modal(canvasElement, 'Browse tags to exclude')
-    await expect(await within(dialog).findByRole('checkbox', { name: 'Remove Cooking' })).toBeChecked()
+    await waitFor(() => expect(within(dialog).getByRole('checkbox', { name: 'Remove Cooking' })).toBeChecked())
   },
 }
 
@@ -79,14 +79,14 @@ export const BrowseIntoGroup: Story = {
     const open = await within(dialog).findAllByRole('button', { name: 'Open Character Traits' })
     await userEvent.click(open[0])
     await expect(await within(dialog).findByRole('checkbox', { name: 'Include Stoic' })).toBeVisible()
-    await expect(within(dialog).getByRole('button', { name: 'All tags' })).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'All tags' })).toBeVisible()
   },
 }
 
 export const SearchResults: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await modal(canvasElement, 'Browse tags to include')
-    await userEvent.type(within(dialog).getByRole('textbox'), 'school')
+    await userEvent.type(await within(dialog).findByRole('textbox'), 'school')
     await expect(await within(dialog).findByRole('checkbox', { name: 'Include College' })).toBeVisible()
   },
 }
@@ -94,7 +94,7 @@ export const SearchResults: Story = {
 export const SearchNoMatches: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await modal(canvasElement, 'Browse tags to include')
-    await userEvent.type(within(dialog).getByRole('textbox'), 'qqqqq')
+    await userEvent.type(await within(dialog).findByRole('textbox'), 'qqqqq')
     await expect(await within(dialog).findByText('No matches')).toBeVisible()
   },
 }

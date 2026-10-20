@@ -24,9 +24,9 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Manga, right to left')).toBeVisible()
-    await expect(canvas.getByText('Webtoon scroll')).toBeVisible()
-    await expect(canvas.getByText('Night reading')).toBeVisible()
-    await expect(canvas.getByText('Everything else')).toBeVisible()
+    await expect(await canvas.findByText('Webtoon scroll')).toBeVisible()
+    await expect(await canvas.findByText('Night reading')).toBeVisible()
+    await expect(await canvas.findByText('Everything else')).toBeVisible()
   },
 }
 
@@ -34,10 +34,10 @@ export const EditAProfile: Story = {
   play: async ({ canvas, userEvent }) => {
     // The first row is the fixed default, which has no name to edit.
     await canvas.findByText('Manga, right to left')
-    const [, edit] = canvas.getAllByRole('button', { name: 'Edit profile' })
+    const [, edit] = await canvas.findAllByRole('button', { name: 'Edit profile' })
     await userEvent.click(edit)
-    await expect(await canvas.findByRole('textbox', { name: 'Name' })).toHaveValue('Manga, right to left')
-    await expect(canvas.getByRole('button', { name: 'Cancel' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Name' })).toHaveValue('Manga, right to left'))
+    await expect(await canvas.findByRole('button', { name: 'Cancel' })).toBeVisible()
   },
 }
 
@@ -45,20 +45,20 @@ export const NewProfile: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'New profile' }))
     const name = await canvas.findByRole('textbox', { name: 'Name' })
-    await expect(name).toHaveValue('')
+    await waitFor(() => expect(name).toHaveValue(''))
     await userEvent.type(name, 'Tablet landscape')
-    await expect(name).toHaveValue('Tablet landscape')
+    await waitFor(() => expect(name).toHaveValue('Tablet landscape'))
   },
 }
 
 export const DeleteAProfile: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Manga, right to left')
-    const [remove] = canvas.getAllByRole('button', { name: 'Delete profile' })
+    const [remove] = await canvas.findAllByRole('button', { name: 'Delete profile' })
     await userEvent.click(remove)
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await waitFor(() => expect(dialog).toBeVisible())
-    await expect(within(dialog).getByText("The profile and its reader settings are removed. This can't be undone.")).toBeVisible()
+    await expect(await within(dialog).findByText("The profile and its reader settings are removed. This can't be undone.")).toBeVisible()
   },
 }
 
@@ -66,7 +66,7 @@ export const NoProfiles: Story = {
   parameters: { msw: settingsMsw(http.get(api('/readingprofiles'), () => HttpResponse.json([]))) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'New profile' })).toBeVisible()
-    await expect(canvas.getAllByRole('button', { name: 'Edit profile' })).toHaveLength(1)
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Edit profile' })).toHaveLength(1))
   },
 }
 

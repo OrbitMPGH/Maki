@@ -26,7 +26,7 @@ export const TrackersAdmin: Story = {
   play: async ({ canvas }) => {
     const clientId = await canvas.findAllByRole('textbox', { name: 'Client ID' })
     await waitFor(() => expect(clientId[0]).toHaveValue('48211'))
-    await expect(canvas.getByRole('textbox', { name: 'Sync interval (minutes)' })).toHaveValue('30')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Sync interval (minutes)' })).toHaveValue('30'))
   },
 }
 
@@ -66,8 +66,8 @@ export const KavitaConnected: Story = {
   play: async ({ canvas }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:5000'))
-    await expect(canvas.getByRole('textbox', { name: 'Path as Maki sees it' })).toHaveValue('/library')
-    await expect(await canvas.findByLabelText("Attribute Kavita's reading to")).toHaveValue('Maki')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Path as Maki sees it' })).toHaveValue('/library'))
+    await waitFor(() => expect(canvas.getByLabelText("Attribute Kavita's reading to")).toHaveValue('Maki'))
   },
 }
 
@@ -107,7 +107,7 @@ export const KavitaTestConnection: Story = {
   play: async ({ canvas, userEvent }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://192.168.1.20:5000'))
-    await userEvent.click(canvas.getByRole('button', { name: 'Test' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
     await expect(await within(document.body).findByText('Kavita is reachable')).toBeVisible()
   },
 }

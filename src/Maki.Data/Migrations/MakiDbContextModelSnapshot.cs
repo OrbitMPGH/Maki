@@ -314,6 +314,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("SourceMappingId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("FirstSeenAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Group")
                         .HasColumnType("TEXT");
 
@@ -1841,6 +1844,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("KitsuId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastCheckAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("LastMetadataRefresh")
                         .HasColumnType("TEXT");
 
@@ -1879,6 +1885,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("MonitorNewItems")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("NextCheckAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("NumberingClash")
                         .HasColumnType("TEXT");
@@ -1940,6 +1949,8 @@ namespace Maki.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MangaBakaId");
+
+                    b.HasIndex("NextCheckAt");
 
                     b.HasIndex("RootFolderId");
 
@@ -2132,6 +2143,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("AnnouncedNextReleaseAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("ChapterSnapshotAt")
                         .HasColumnType("TEXT");

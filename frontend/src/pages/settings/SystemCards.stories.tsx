@@ -36,9 +36,9 @@ async function dialogOf(canvasElement: HTMLElement) {
 
 export const Backups: Story = {
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByRole('button', { name: 'Restore' })).length).toBe(3)
-    await expect(canvas.getAllByText('Scheduled')).toHaveLength(2)
-    await expect(canvas.getByText('Manual')).toBeVisible()
+    await waitFor(() => expect((canvas.getAllByRole('button', { name: 'Restore' })).length).toBe(3))
+    await waitFor(() => expect(canvas.getAllByText('Scheduled')).toHaveLength(2))
+    await expect(await canvas.findByText('Manual')).toBeVisible()
     // The schedule switch reads a different request than the backup list, which can land first.
     await waitFor(() => expect(canvas.getByRole('switch', { name: /^Back up on a schedule/ })).toBeChecked())
   },
@@ -64,8 +64,8 @@ export const RestoreConfirm: Story = {
     const [first] = await canvas.findAllByRole('button', { name: 'Restore' })
     await userEvent.click(first)
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('button', { name: 'Restore & restart' })).toBeVisible()
-    await userEvent.click(dialog.getByRole('button', { name: 'Restore & restart' }))
+    await expect(await dialog.findByRole('button', { name: 'Restore & restart' })).toBeVisible()
+    await userEvent.click(await dialog.findByRole('button', { name: 'Restore & restart' }))
     await expect(await within(document.body).findByText('Restore staged')).toBeVisible()
   },
 }
@@ -76,7 +76,7 @@ export const RestoreFromUploadedFile: Story = {
     const input = canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!
     await userEvent.upload(input, new File(['zip'], 'maki-from-laptop.zip', { type: 'application/zip' }))
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByText('maki-from-laptop.zip')).toBeVisible()
+    await expect(await dialog.findByText('maki-from-laptop.zip')).toBeVisible()
   },
 }
 
@@ -88,7 +88,7 @@ export const RestoreRefused: Story = {
     const [first] = await canvas.findAllByRole('button', { name: 'Restore' })
     await userEvent.click(first)
     const dialog = await dialogOf(canvasElement)
-    await userEvent.click(dialog.getByRole('button', { name: 'Restore & restart' }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'Restore & restart' }))
     await expect(await within(document.body).findByText('This backup was made by a newer version of Maki.')).toBeVisible()
   },
 }
@@ -98,7 +98,7 @@ export const DeleteBackupConfirm: Story = {
     const [first] = await canvas.findAllByRole('button', { name: 'Delete backup' })
     await userEvent.click(first)
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('button', { name: 'Delete backup' })).toBeVisible()
+    await expect(await dialog.findByRole('button', { name: 'Delete backup' })).toBeVisible()
   },
 }
 
@@ -109,7 +109,7 @@ export const ScheduleOff: Story = {
   play: async ({ canvas, userEvent }) => {
     const toggle = await canvas.findByRole('switch', { name: /^Back up on a schedule/ })
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Backups to keep' })).toHaveValue('7'))
-    await expect(toggle).not.toBeChecked()
+    await waitFor(() => expect(toggle).not.toBeChecked())
     await userEvent.click(toggle)
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
   },
@@ -119,7 +119,7 @@ export const UpToDate: Story = {
   render: () => <UpdatesSection />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Up to date, last checked/)).toBeVisible()
-    await expect(canvas.getByRole('switch', { name: /^Check for updates/ })).toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Check for updates/ })).toBeChecked())
   },
 }
 
@@ -128,10 +128,10 @@ export const UpdateAvailableWithNotes: Story = {
   parameters: { msw: settingsMsw(http.get(api('/system/update'), () => HttpResponse.json(updateStatusAvailable))) },
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByText('Update available: 0.33.0')).toBeVisible()
-    const notes = canvas.getByRole('button', { name: /What's new/ })
-    await expect(notes).toHaveAttribute('aria-expanded', 'false')
+    const notes = await canvas.findByRole('button', { name: /What's new/ })
+    await waitFor(() => expect(notes).toHaveAttribute('aria-expanded', 'false'))
     await userEvent.click(notes)
-    await expect(notes).toHaveAttribute('aria-expanded', 'true')
+    await waitFor(() => expect(notes).toHaveAttribute('aria-expanded', 'true'))
     const bullet = await canvas.findByText('Offline reading keeps your place')
     await waitFor(() => expect(bullet).toBeVisible())
   },
@@ -146,7 +146,7 @@ export const DevBuild: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Unofficial build, update checks are skipped.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Check now' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Check now' })).toBeDisabled())
   },
 }
 
@@ -160,7 +160,7 @@ export const NeverChecked: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Not checked yet')).toBeVisible()
-    const toggle = canvas.getByRole('switch', { name: /^Check for updates/ })
+    const toggle = await canvas.findByRole('switch', { name: /^Check for updates/ })
     await waitFor(() => expect(toggle).not.toBeChecked())
   },
 }
@@ -188,8 +188,8 @@ export const ImageCacheIdle: Story = {
   render: () => <ImageCacheSection />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Posters: 96 files/)).toBeVisible()
-    await expect(canvas.getByText(/2 of 98 series have no usable poster/)).toBeVisible()
-    await expect(canvas.getByText(/Last run .*: 0 posters downloaded/)).toBeVisible()
+    await expect(await canvas.findByText(/2 of 98 series have no usable poster/)).toBeVisible()
+    await expect(await canvas.findByText(/Last run .*: 0 posters downloaded/)).toBeVisible()
   },
 }
 
@@ -204,7 +204,7 @@ export const ImageCacheEverythingPresent: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Every series has a poster.')).toBeVisible()
-    await expect(canvas.getByText('Not run yet')).toBeVisible()
+    await expect(await canvas.findByText('Not run yet')).toBeVisible()
   },
 }
 
@@ -222,8 +222,8 @@ export const ImageCacheRunning: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Rebuilding posters, 31 of 98')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Rebuild missing' })).toBeDisabled()
-    await expect(canvas.getByRole('progressbar')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Rebuild missing' })).toBeDisabled())
+    await expect(await canvas.findByRole('progressbar')).toBeVisible()
   },
 }
 
@@ -246,8 +246,8 @@ export const ImageCacheRebuildAllConfirm: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Rebuild all' }))
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByText(/This re-downloads the poster for all 98 series/)).toBeVisible()
-    await userEvent.click(dialog.getByRole('button', { name: 'Rebuild all' }))
+    await expect(await dialog.findByText(/This re-downloads the poster for all 98 series/)).toBeVisible()
+    await userEvent.click(await dialog.findByRole('button', { name: 'Rebuild all' }))
     await expect(await within(document.body).findByText('Rebuilding image cache')).toBeVisible()
   },
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import {
@@ -84,6 +84,6 @@ export const Row: StoryObj = {
     </div>
   ),
   play: async ({ canvas }) => {
-    await expect(await canvas.findAllByText('Iron Petal Academy')).not.toHaveLength(0)
+    await waitFor(() => expect(canvas.getAllByText('Iron Petal Academy')).not.toHaveLength(0))
   },
 }

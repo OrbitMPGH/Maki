@@ -31,30 +31,30 @@ const drawer = (canvasElement: HTMLElement) =>
 export const HeroSection: Story = {
   play: async ({ canvasElement }) => {
     const panel = await drawer(canvasElement)
-    await expect(within(panel).getByRole('switch', { name: /Lead with a hero/ })).toBeChecked()
-    await expect(within(panel).getByText('Series with a chapter part-way through.')).toBeVisible()
+    await waitFor(() => expect(within(panel).getByRole('switch', { name: /Lead with a hero/ })).toBeChecked())
+    await expect(await within(panel).findByText('Series with a chapter part-way through.')).toBeVisible()
   },
 }
 
 export const ToggleHeroAndVisibility: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const panel = await drawer(canvasElement)
-    await userEvent.click(within(panel).getByRole('switch', { name: /Lead with a hero/ }))
-    await expect(args.onChange).toHaveBeenCalledWith({ hero: false })
-    await userEvent.click(within(panel).getByRole('switch', { name: 'Show this section' }))
-    await expect(args.onChange).toHaveBeenCalledWith({ enabled: false })
+    await userEvent.click(await within(panel).findByRole('switch', { name: /Lead with a hero/ }))
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith({ hero: false }))
+    await userEvent.click(await within(panel).findByRole('switch', { name: 'Show this section' }))
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith({ enabled: false }))
   },
 }
 
 export const Moving: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const panel = await drawer(canvasElement)
-    await userEvent.click(within(panel).getByRole('button', { name: 'Top' }))
-    await expect(args.onMove).toHaveBeenCalledWith(0)
-    await userEvent.click(within(panel).getByRole('button', { name: 'Down' }))
-    await expect(args.onMove).toHaveBeenCalledWith(3)
-    await userEvent.click(within(panel).getByRole('button', { name: 'Bottom' }))
-    await expect(args.onMove).toHaveBeenCalledWith(8)
+    await userEvent.click(await within(panel).findByRole('button', { name: 'Top' }))
+    await waitFor(() => expect(args.onMove).toHaveBeenCalledWith(0))
+    await userEvent.click(await within(panel).findByRole('button', { name: 'Down' }))
+    await waitFor(() => expect(args.onMove).toHaveBeenCalledWith(3))
+    await userEvent.click(await within(panel).findByRole('button', { name: 'Bottom' }))
+    await waitFor(() => expect(args.onMove).toHaveBeenCalledWith(8))
   },
 }
 
@@ -62,9 +62,9 @@ export const FirstSection: Story = {
   args: { index: 0 },
   play: async ({ canvasElement }) => {
     const panel = await drawer(canvasElement)
-    await expect(within(panel).getByRole('button', { name: 'Top' })).toBeDisabled()
-    await expect(within(panel).getByRole('button', { name: 'Up' })).toBeDisabled()
-    await expect(within(panel).getByRole('button', { name: 'Down' })).toBeEnabled()
+    await waitFor(() => expect(within(panel).getByRole('button', { name: 'Top' })).toBeDisabled())
+    await waitFor(() => expect(within(panel).getByRole('button', { name: 'Up' })).toBeDisabled())
+    await waitFor(() => expect(within(panel).getByRole('button', { name: 'Down' })).toBeEnabled())
   },
 }
 
@@ -72,8 +72,8 @@ export const LastSection: Story = {
   args: { index: 8 },
   play: async ({ canvasElement }) => {
     const panel = await drawer(canvasElement)
-    await expect(within(panel).getByRole('button', { name: 'Bottom' })).toBeDisabled()
-    await expect(within(panel).getByRole('button', { name: 'Down' })).toBeDisabled()
+    await waitFor(() => expect(within(panel).getByRole('button', { name: 'Bottom' })).toBeDisabled())
+    await waitFor(() => expect(within(panel).getByRole('button', { name: 'Down' })).toBeDisabled())
   },
 }
 
@@ -81,7 +81,7 @@ export const HiddenSection: Story = {
   args: { section: { key: 'continue', enabled: false, hero: false, panels: null } },
   play: async ({ canvasElement }) => {
     const panel = await drawer(canvasElement)
-    await expect(within(panel).getByRole('switch', { name: 'Show this section' })).not.toBeChecked()
+    await waitFor(() => expect(within(panel).getByRole('switch', { name: 'Show this section' })).not.toBeChecked())
   },
 }
 
@@ -99,15 +99,15 @@ export const GlancePanels: Story = {
   },
   play: async ({ args, canvasElement, userEvent }) => {
     const panel = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'At a glance' })
-    await expect(within(panel).getByText(/Needs read tracking/)).toBeVisible()
-    await userEvent.click(within(panel).getByRole('switch', { name: 'Library counts' }))
-    await expect(args.onChange).toHaveBeenCalledWith({
+    await expect(await within(panel).findByText(/Needs read tracking/)).toBeVisible()
+    await userEvent.click(await within(panel).findByRole('switch', { name: 'Library counts' }))
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith({
       panels: [
         { key: 'stats', enabled: false },
         { key: 'progress', enabled: true },
         { key: 'toread', enabled: false },
       ],
-    })
+    }))
   },
 }
 
@@ -119,7 +119,7 @@ export const AllPanelsOff: Story = {
   },
   play: async ({ canvasElement }) => {
     const panel = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'At a glance' })
-    await expect(within(panel).getByText('With every panel off, this section stays empty.')).toBeVisible()
+    await expect(await within(panel).findByText('With every panel off, this section stays empty.')).toBeVisible()
   },
 }
 
@@ -132,9 +132,9 @@ export const CustomRailSection: Story = {
   },
   play: async ({ canvasElement, userEvent }) => {
     const panel = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Top rated romance' })
-    await expect(within(panel).getByText('Rail changes save straight away. Done saves the layout.')).toBeVisible()
-    await expect(within(panel).getByRole('textbox', { name: 'Name' })).toHaveValue('Top rated romance')
-    await userEvent.click(within(panel).getByRole('button', { name: 'Delete rail' }))
+    await expect(await within(panel).findByText('Rail changes save straight away. Done saves the layout.')).toBeVisible()
+    await waitFor(() => expect(within(panel).getByRole('textbox', { name: 'Name' })).toHaveValue('Top rated romance'))
+    await userEvent.click(await within(panel).findByRole('button', { name: 'Delete rail' }))
     await waitFor(async () => expect(await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Delete rail' })).toBeVisible())
   },
 }

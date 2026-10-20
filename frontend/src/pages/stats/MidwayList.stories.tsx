@@ -45,6 +45,6 @@ export const NoEstimate: Story = {
 export const Empty: Story = {
   args: { items: [] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Nothing sits half read right now.')).toBeVisible()
+    await expect(await canvas.findByText('Nothing sits half read right now.')).toBeVisible()
   },
 }

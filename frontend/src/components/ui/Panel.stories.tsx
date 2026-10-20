@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Disk usage').closest('.panel')).not.toBeNull()
+    await expect((await canvas.findByText('Disk usage')).closest('.panel')).not.toBeNull()
   },
 }
 

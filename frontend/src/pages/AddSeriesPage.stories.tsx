@@ -44,7 +44,7 @@ export const BrowsingTheCatalogue: Story = {
     await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' })).toBeVisible()
     // Titles already in the library read "View" and link through instead of offering an add.
-    await expect(canvas.getByRole('button', { name: 'View Lanterns Over Kasumi' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'View Lanterns Over Kasumi' })).toBeVisible()
   },
 }
 
@@ -52,16 +52,16 @@ export const SearchResults: Story = {
   parameters: at('/add?q=Lanterns'),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('1 match', {}, { timeout: 5000 })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'View Lanterns Over Kasumi' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'View Lanterns Over Kasumi' })).toBeVisible()
   },
 }
 
 export const SearchByTyping: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('Browsing the catalogue')
-    await userEvent.type(canvas.getByPlaceholderText('Search by title, description, or by feel'), 'tea')
+    await userEvent.type(await canvas.findByPlaceholderText('Search by title, description, or by feel'), 'tea')
     await expect(await canvas.findByRole('button', { name: 'View and add Clockwork Tea House' }, { timeout: 5000 })).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Clear search' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Clear search' }))
     await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
   },
 }
@@ -175,7 +175,7 @@ export const MeaningSearchUnavailableForReader: Story = {
 export const FiltersOpen: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('Browsing the catalogue')
-    await userEvent.click(canvas.getByRole('button', { name: 'Filters' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Filters' }))
     await expect(await canvas.findByRole('button', { name: /Reset/i })).toBeVisible()
   },
 }
@@ -216,8 +216,8 @@ export const DetailWithAddForm: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
     await expect(await body.findByRole('dialog')).toBeVisible()
-    await expect(await body.findByRole('button', { name: 'Add' })).toBeEnabled()
-    await expect(body.getByLabelText('Root folder', { selector: 'input' })).toHaveValue('/library/manga')
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add' })).toBeEnabled())
+    await waitFor(() => expect(body.getByLabelText('Root folder', { selector: 'input' })).toHaveValue('/library/manga'))
   },
 }
 
@@ -257,7 +257,7 @@ export const DetailForOwnedSeries: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'View Lanterns Over Kasumi' }))
     const body = modalOf(canvasElement)
     await expect(await body.findByText('In your library')).toBeVisible()
-    await expect(body.getByRole('button', { name: 'View in library' })).toBeVisible()
+    await expect(await body.findByRole('button', { name: 'View in library' })).toBeVisible()
   },
 }
 
@@ -268,7 +268,7 @@ export const DetailWithoutRootFolders: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
-    await expect(await body.findByRole('button', { name: 'Add' })).toBeDisabled()
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add' })).toBeDisabled())
   },
 }
 
@@ -326,7 +326,7 @@ export const AddFormForAnimeAdaptedTitle: Story = {
 export const ListView: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' })
-    await userEvent.click(canvas.getByLabelText('List view'))
+    await userEvent.click(await canvas.findByLabelText('List view'))
     await expect(await canvas.findByRole('button', { name: /^Iron Petal Academy/ })).toBeVisible()
   },
 }
@@ -346,7 +346,7 @@ export const RequestInsteadOfAdd: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Request series' })).toBeVisible()
     await expect(
-      canvas.getByText('Browse or search MangaBaka and ask an admin for a title. You can ask for a chapter range too.'),
+      await canvas.findByText('Browse or search MangaBaka and ask an admin for a title. You can ask for a chapter range too.'),
     ).toBeVisible()
   },
 }
@@ -357,9 +357,9 @@ export const RequestingATitle: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
     await expect(await body.findByText('Ask for this')).toBeVisible()
-    await userEvent.type(body.getByLabelText('From'), '1')
-    await userEvent.type(body.getByLabelText('To'), '20')
-    await userEvent.click(body.getByRole('button', { name: 'Request series' }))
+    await userEvent.type(await body.findByLabelText('From'), '1')
+    await userEvent.type(await body.findByLabelText('To'), '20')
+    await userEvent.click(await body.findByRole('button', { name: 'Request series' }))
     await expect(await body.findByText('Requested Iron Petal Academy')).toBeVisible()
     await expect(await body.findByText('An admin decides where it lands and what gets downloaded.')).toBeVisible()
   },
@@ -381,7 +381,7 @@ export const RequestWasRejected: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Neon Shrine Maiden' }))
     const body = modalOf(canvasElement)
     await expect(await body.findByText('Your last request was rejected: Already coming through another title.')).toBeVisible()
-    await expect(body.getByRole('button', { name: 'Request series' })).toBeVisible()
+    await expect(await body.findByRole('button', { name: 'Request series' })).toBeVisible()
   },
 }
 

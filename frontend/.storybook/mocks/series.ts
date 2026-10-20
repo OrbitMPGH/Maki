@@ -26,6 +26,7 @@ import {
 } from './series/fixtures'
 import { api, failWith, hoursAgo } from './api'
 import { catalogue } from './shared'
+import { outlookFor } from './operations/upcoming'
 
 export * from './series/fixtures'
 
@@ -188,6 +189,7 @@ export const seriesHandlers: HttpHandler[] = [
   http.get(api('/series/:id/similar'), ({ params }) => HttpResponse.json(similarItems(idOf(params)))),
   http.get(api('/series/:id/scrobble'), () => HttpResponse.json(scrobble)),
   http.get(api('/series/:id/anime-resume'), () => noContent()),
+  http.get(api('/series/:id/outlook'), ({ params }) => HttpResponse.json(outlookFor(idOf(params)))),
   http.get(api('/series/:id/metadata/history'), () => HttpResponse.json([])),
   http.get(api('/series/:id/rename/preview'), ({ params }) => HttpResponse.json(renamePlan(idOf(params)))),
   http.post(api('/series/:id/rename'), ({ params }) =>

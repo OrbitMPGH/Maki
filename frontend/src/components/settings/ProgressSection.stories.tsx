@@ -25,8 +25,8 @@ type Story = StoryObj<typeof meta>
 export const WithGoals: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Every week: 40 chapters/)).toBeVisible()
-    await expect(canvas.getByText(/Every month: 2 series finished/)).toBeVisible()
-    await expect(canvas.getByRole('switch', { name: /^Track progress and achievements/ })).toBeChecked()
+    await expect(await canvas.findByText(/Every month: 2 series finished/)).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Track progress and achievements/ })).toBeChecked())
   },
 }
 
@@ -36,8 +36,8 @@ export const TrackingOff: Story = {
   },
   play: async ({ canvas }) => {
     const streaks = await canvas.findByRole('switch', { name: /^Show reading streaks/ })
-    await expect(streaks).toBeDisabled()
-    await expect(canvas.getByRole('button', { name: 'Set goal' })).toBeDisabled()
+    await waitFor(() => expect(streaks).toBeDisabled())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Set goal' })).toBeDisabled())
   },
 }
 
@@ -58,8 +58,8 @@ export const RemoveAGoal: Story = {
     await userEvent.click(first)
     const dialog = await body.findByRole('dialog')
     await waitFor(() => expect(dialog).toBeVisible())
-    await expect(within(dialog).getByText('Your reading history is not affected. You can set a new goal at any time.')).toBeVisible()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove goal' }))
+    await expect(await within(dialog).findByText('Your reading history is not affected. You can set a new goal at any time.')).toBeVisible()
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Remove goal' }))
     await waitFor(() => expect(body.queryByRole('dialog')).toBeNull())
   },
 }

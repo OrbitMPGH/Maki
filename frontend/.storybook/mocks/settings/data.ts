@@ -71,6 +71,9 @@ export const readerPrefs: ReaderPrefs = {
   dim: 0,
   filter: 'none',
   keepAwake: true,
+  splitWide: 'off',
+  cropBorders: false,
+  autoWebtoon: true,
 }
 
 export const readerSettings: ReaderSettings = {
@@ -279,6 +282,7 @@ export const downloadSettings: DownloadSettings = {
   bulkHoldThreshold: 5,
   sourceOrder: 'manual',
   scoutOnMatch: false,
+  adaptiveRefresh: true,
 }
 
 export const readFileCleanup: ReadFileCleanupSettings = { enabled: false, days: 7, keepLast: true }
@@ -585,8 +589,8 @@ export const twoFactorOff = {
 
 export const twoFactorOn = { ...twoFactorOff, enabled: true, hasAuthenticator: true, recoveryCodesLeft: 8 }
 
-export const opdsOff: OpdsSettings = { enabled: false, trackProgress: true, hasToken: false, tokenPrefix: null, feedUrl: null }
-export const opdsOn: OpdsSettings = { enabled: true, trackProgress: true, hasToken: true, tokenPrefix: 'a91f3c', feedUrl: null }
+export const opdsOff: OpdsSettings = { enabled: false, trackProgress: true, hasToken: false, tokenPrefix: null, feedUrl: null, komga: false }
+export const opdsOn: OpdsSettings = { enabled: true, trackProgress: true, hasToken: true, tokenPrefix: 'a91f3c', feedUrl: null, komga: false }
 
 export const inboxPrefs: InboxPrefs = {
   types: {

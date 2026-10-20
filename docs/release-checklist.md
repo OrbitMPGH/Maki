@@ -189,6 +189,10 @@ Use a scratch series here: reaching a chapter's last page marks it read and adds
 - [ ] **7.3** Notifications: add a webhook connection (any request bin) and **Test** delivers.
 - [ ] **7.4** OPDS: enable it, **Copy** the feed URL, and fetch the URL with `curl`. The feed lists
       the library. The OPDS token is refused on `/api/v1`.
+- [ ] **7.4a** Komga API: switch it on in the OPDS card and run
+      `curl -H "X-API-Key: <token>" http://<host>/komga/api/v1/series`. It lists the library; without
+      the header it answers 401. In Mihon, add the Komga extension with that address and key, read a
+      chapter with the Komga tracker on, and the chapter shows as read in Maki.
 - [ ] **7.5** Backup: create one and download it. The zip has `maki.db`, `config.json` and
       `manifest.json`, and no `dataprotection-keys`.
 - [ ] **7.6** Health page: run a scan. It completes and lists the library files.

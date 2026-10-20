@@ -889,6 +889,7 @@ try
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
     builder.Services.AddScoped<ChapterSyncService>();
+    builder.Services.AddScoped<ReleaseOutlookService>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
     builder.Services.AddScoped<SourceMatchService>();
     builder.Services.AddSingleton<SourceMatchQueue>();
@@ -968,6 +969,9 @@ try
     builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaAuthenticator>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaAuthFilter>();
+    builder.Services.AddScoped<Maki.Api.Komga.KomgaCatalogService>();
     builder.Services.AddSingleton<OpdsProgressWriter>().AddHostedService(sp => sp.GetRequiredService<OpdsProgressWriter>());
 
     // Aggregated searches fan out to every indexer, hence the long timeout. Both are LAN services, so
@@ -1077,11 +1081,12 @@ try
         // Twenty minutes rather than five, to keep the first source sync out of the window where
         // every index is being built. It is the one startup job that launches a headless browser
         // (MangaFire), so it used to add ~120 MB of native memory at exactly the minute the builds
-        // were at their peak. Nothing needs it sooner: it repeats every half hour regardless.
+        // were at their peak. Nothing needs it sooner: it repeats every quarter hour regardless, and
+        // each tick syncs only the series whose NextCheckAt has come.
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
             .WithIdentity("refresh-monitored")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithInterval(Maki.Api.Jobs.RefreshMonitoredSeriesJob.Tick).RepeatForever()));
 
         q.ScheduleJob<Maki.Api.Jobs.MetadataRefreshJob>(t => t
             .WithIdentity("metadata-refresh")

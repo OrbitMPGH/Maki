@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { RangeControl } from './RangeControl'
 import type { RangePreset } from './StatsRange'
 
@@ -41,8 +41,8 @@ type Story = StoryObj<typeof meta>
 
 export const Presets: Story = {
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByText('90 days'))
-    await expect(canvas.getByRole('radio', { name: '90 days' })).toBeChecked()
+    await userEvent.click(await canvas.findByText('90 days'))
+    await waitFor(() => expect(canvas.getByRole('radio', { name: '90 days' })).toBeChecked())
     await expect(canvas.queryByRole('combobox', { name: 'Year' })).toBeNull()
   },
 }
@@ -50,11 +50,11 @@ export const Presets: Story = {
 export const YearDrillDown: Story = {
   args: { preset: 'year' },
   play: async ({ canvas, userEvent, canvasElement }) => {
-    await expect(canvas.getByRole('combobox', { name: 'Year' })).toHaveValue('2026')
-    await userEvent.click(canvas.getByRole('combobox', { name: 'Month' }))
+    await waitFor(() => expect(canvas.getByRole('combobox', { name: 'Year' })).toHaveValue('2026'))
+    await userEvent.click(await canvas.findByRole('combobox', { name: 'Month' }))
     // The month list renders in a portal.
     await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('option', { name: 'March' }))
-    await expect(canvas.getByRole('combobox', { name: 'Month' })).toHaveValue('March')
+    await waitFor(() => expect(canvas.getByRole('combobox', { name: 'Month' })).toHaveValue('March'))
   },
 }
 

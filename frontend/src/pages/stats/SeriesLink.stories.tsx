@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { Group } from '@mantine/core'
 import { cover } from '../../../.storybook/mocks/api'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
@@ -15,7 +15,7 @@ type Story = StoryObj<typeof meta>
 
 export const Linked: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: 'Lanterns Over Kasumi' })).toHaveAttribute('href', '/series/1')
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Lanterns Over Kasumi' })).toHaveAttribute('href', '/series/1'))
   },
 }
 
@@ -24,14 +24,14 @@ export const Removed: Story = {
   args: { id: null, title: 'Under the Willow Gate' },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole('link')).toBeNull()
-    await expect(canvas.getByText('Under the Willow Gate')).toBeVisible()
+    await expect(await canvas.findByText('Under the Willow Gate')).toBeVisible()
   },
 }
 
 export const OpensInDiscover: Story = {
   args: { id: null, title: 'Under the Willow Gate', onOpen: fn() },
   play: async ({ canvas, userEvent, args }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Open Under the Willow Gate in Discover' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Open Under the Willow Gate in Discover' }))
     await expect(args.onOpen).toHaveBeenCalledOnce()
   },
 }
