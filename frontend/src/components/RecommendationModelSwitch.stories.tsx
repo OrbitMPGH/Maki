@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../.storybook/mocks/api'
 import {
@@ -30,15 +30,15 @@ type Story = StoryObj<typeof meta>
 
 export const Ready: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('switch', { name: /Semantic search and recommendations/ })).toBeChecked()
-    await expect(canvas.getByText(/series embedded/)).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Semantic search and recommendations/ })).toBeChecked())
+    await expect(await canvas.findByText(/series embedded/)).toBeVisible()
   },
 }
 
 export const SwitchOff: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('switch'))
-    await expect(args.onSelect).toHaveBeenCalledWith('off')
+    await waitFor(() => expect(args.onSelect).toHaveBeenCalledWith('off'))
   },
 }
 
@@ -46,10 +46,10 @@ export const Off: Story = {
   args: { status: indexStatusOff },
   play: async ({ args, canvas, userEvent }) => {
     const toggle = await canvas.findByRole('switch')
-    await expect(toggle).not.toBeChecked()
-    await expect(canvas.getByRole('button', { name: 'Check for prebuilt now' })).toBeDisabled()
+    await waitFor(() => expect(toggle).not.toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Check for prebuilt now' })).toBeDisabled())
     await userEvent.click(toggle)
-    await expect(args.onSelect).toHaveBeenCalledWith('base')
+    await waitFor(() => expect(args.onSelect).toHaveBeenCalledWith('base'))
   },
 }
 
@@ -57,7 +57,7 @@ export const Indexing: Story = {
   args: { status: indexStatusBuilding },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Indexing/)).toBeVisible()
-    await expect(canvas.getByRole('progressbar')).toBeVisible()
+    await expect(await canvas.findByRole('progressbar')).toBeVisible()
   },
 }
 
@@ -68,7 +68,7 @@ export const SwitchingModel: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Switching model/)).toBeVisible()
-    await expect(canvas.getByRole('switch')).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('switch')).toBeDisabled())
   },
 }
 
@@ -92,7 +92,7 @@ export const WithErrors: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Model switch: No prebuilt index/)).toBeVisible()
-    await expect(canvas.getByText(/Last error: The prebuilt index was built for a different model/)).toBeVisible()
+    await expect(await canvas.findByText(/Last error: The prebuilt index was built for a different model/)).toBeVisible()
   },
 }
 
@@ -131,6 +131,6 @@ export const PrebuiltDownloadFails: Story = {
   },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Check for prebuilt now' }))
-    await expect(await canvas.findByRole('button', { name: 'Check for prebuilt now' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Check for prebuilt now' })).toBeEnabled())
   },
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { sourceReliability, sourceUsage } from '../../../.storybook/mocks/insights'
 import { Panel } from '../../components/ui/Panel'
 import { SourceReliability } from './SourceReliability'
@@ -24,9 +24,9 @@ type Story = StoryObj<typeof meta>
 /** Asura Scans sits under 80% success, so its rate is drawn in the warning colour. */
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('columnheader', { name: 'Median wait' })).toBeVisible()
-    await expect(canvas.getByText('MangaDex')).toBeVisible()
-    await expect(canvas.getByText('Torrent')).toBeVisible()
+    await expect(await canvas.findByRole('columnheader', { name: 'Median wait' })).toBeVisible()
+    await expect(await canvas.findByText('MangaDex')).toBeVisible()
+    await expect(await canvas.findByText('Torrent')).toBeVisible()
   },
 }
 
@@ -34,13 +34,13 @@ export const Default: Story = {
 export const NoRecentDownloads: Story = {
   args: { reliability: [] },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText('n/a').length).toBeGreaterThan(0)
+    await waitFor(() => expect(canvas.getAllByText('n/a').length).toBeGreaterThan(0))
   },
 }
 
 export const NothingDownloaded: Story = {
   args: { sources: [], reliability: [] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Nothing downloaded yet.')).toBeVisible()
+    await expect(await canvas.findByText('Nothing downloaded yet.')).toBeVisible()
   },
 }

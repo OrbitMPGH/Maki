@@ -28,7 +28,7 @@ const reader = (patch: Partial<typeof readerSettings>) =>
 export const KavitaSyncConnected: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Connected to Kavita.')).toBeVisible()
-    await expect(canvas.getByRole('switch', { name: /^Mark chapters read in Kavita too/ })).toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Mark chapters read in Kavita too/ })).toBeChecked())
     await expect(await canvas.findByText(/912 chapters marked read across 38 series/)).toBeVisible()
   },
 }
@@ -37,7 +37,7 @@ export const KavitaSyncBelongsToAnotherAccount: Story = {
   parameters: { msw: settingsMsw(reader({ kavitaUserId: 7 })) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/belongs to another Maki account/)).toBeVisible()
-    await expect(canvas.getByRole('switch', { name: /^Mark chapters read in Kavita too/ })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Mark chapters read in Kavita too/ })).toBeDisabled())
     await expect(canvas.queryByRole('button', { name: 'Import read status' })).toBeNull()
   },
 }
@@ -97,7 +97,7 @@ export const KavitaImportFailed: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Could not read progress for/)).toBeVisible()
-    await expect(canvas.getByText(/\+2 more/)).toBeVisible()
+    await expect(await canvas.findByText(/\+2 more/)).toBeVisible()
   },
 }
 
@@ -114,8 +114,8 @@ export const OpdsEnabled: Story = {
   render: () => <OpdsSection />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('a91f3c…')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Regenerate' })).toBeVisible()
-    await expect(canvas.getByRole('switch', { name: /^Track reading progress from OPDS/ })).toBeChecked()
+    await expect(await canvas.findByRole('button', { name: 'Regenerate' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Track reading progress from OPDS/ })).toBeChecked())
   },
 }
 
@@ -123,7 +123,7 @@ export const OpdsDisabled: Story = {
   render: () => <OpdsSection />,
   parameters: { msw: settingsMsw(http.get(api('/settings/opds'), () => HttpResponse.json(opdsOff))) },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('switch', { name: /^Enable the OPDS catalogue/ })).not.toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Enable the OPDS catalogue/ })).not.toBeChecked())
     await expect(canvas.queryByText('Feed URL')).toBeNull()
   },
 }
@@ -143,10 +143,10 @@ export const OpdsFirstEnableShowsFeedUrlOnce: Story = {
     await userEvent.click(await canvas.findByRole('switch', { name: /^Enable the OPDS catalogue/ }))
     const dialog = await body.findByRole('dialog')
     await waitFor(() => expect(dialog).toBeVisible())
-    await userEvent.type(within(dialog).getByLabelText('Your password'), 'correct horse')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Enable' }))
+    await userEvent.type(await within(dialog).findByLabelText('Your password'), 'correct horse')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Enable' }))
     await expect(await canvas.findByText(/Copy this now/)).toBeVisible()
-    await expect(canvas.getByText(/\/api\/v1\/opds\/d4e8b1aa90c25f73e6b0/)).toBeVisible()
+    await expect(await canvas.findByText(/\/api\/v1\/opds\/d4e8b1aa90c25f73e6b0/)).toBeVisible()
   },
 }
 
@@ -157,9 +157,9 @@ export const OpdsRegenerate: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Regenerate' }))
     const dialog = await body.findByRole('dialog')
     await waitFor(() => expect(dialog).toBeVisible())
-    await expect(within(dialog).getByRole('button', { name: 'Regenerate' })).toBeDisabled()
-    await userEvent.type(within(dialog).getByLabelText('Your password'), 'correct horse')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Regenerate' }))
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Regenerate' })).toBeDisabled())
+    await userEvent.type(await within(dialog).findByLabelText('Your password'), 'correct horse')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Regenerate' }))
     await expect(await canvas.findByText(/f07be2c19a44d85e7a30/)).toBeVisible()
   },
 }
@@ -168,6 +168,6 @@ export const OpdsLoading: Story = {
   render: () => <OpdsSection />,
   parameters: { msw: settingsMsw(http.get(api('/settings/opds'), () => neverResolve())) },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('switch', { name: /^Enable the OPDS catalogue/ })).not.toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Enable the OPDS catalogue/ })).not.toBeChecked())
   },
 }

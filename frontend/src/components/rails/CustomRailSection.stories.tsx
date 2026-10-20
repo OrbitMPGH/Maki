@@ -26,7 +26,7 @@ export const RecommendationsSource: Story = {
   args: { rail: customRails[1] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { level: 2, name: 'Cozy picks' })).toBeVisible()
-    await expect(await canvas.findAllByRole('button', { name: /View and add/ })).not.toHaveLength(0)
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /View and add/ })).not.toHaveLength(0))
   },
 }
 
@@ -78,7 +78,7 @@ export const LoadFailed: Story = {
   parameters: { msw: homePage(http.get(api('/rails/:id/items'), () => failWith(500))) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/couldn't load this rail/i)).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }
 
@@ -87,7 +87,7 @@ export const OptionsMenu: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Rail options' }))
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(() => expect(body.getByRole('menuitem', { name: 'Edit' })).toBeVisible())
-    await expect(body.getByRole('menuitem', { name: 'Duplicate' })).toBeVisible()
+    await expect(await body.findByRole('menuitem', { name: 'Duplicate' })).toBeVisible()
     // A Home library rail can't be copied to Discover, which has no library source.
     await expect(body.queryByRole('menuitem', { name: 'Copy to Discover' })).toBeNull()
   },
@@ -132,7 +132,7 @@ export const ShowMoreOpensLibraryGrid: Story = {
 export const AddRail: Story = {
   render: () => <AddRailButton placement="home" />,
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Add a rail' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add a rail' }))
     await waitFor(async () => expect(await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'New rail' })).toBeVisible())
   },
 }

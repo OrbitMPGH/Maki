@@ -84,7 +84,7 @@ export const ServerError: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Failed to load this creator')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }
 

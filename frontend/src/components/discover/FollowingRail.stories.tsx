@@ -28,10 +28,10 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await expect(await canvas.findByRole('heading', { name: 'New from creators you follow' })).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Show more' }))
-    await expect(args.onShowMore).toHaveBeenCalledWith(
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show more' }))
+    await waitFor(() => expect(args.onShowMore).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'following', sort: 'newest', excludeOwned: true }),
-    )
+    ))
   },
 }
 
@@ -40,7 +40,7 @@ export const ManageCreators: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Manage' }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await expect(await within(dialog).findByRole('link', { name: /Aoi Mizuhara/ })).toBeVisible()
-    await expect(within(dialog).getAllByRole('button', { name: /^Unfollow / })).toHaveLength(3)
+    await waitFor(() => expect(within(dialog).getAllByRole('button', { name: /^Unfollow / })).toHaveLength(3))
   },
 }
 

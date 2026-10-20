@@ -42,8 +42,8 @@ export const Open: Story = {
     // The popover renders in a portal on document.body.
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(async () => expect(await body.findByText('New chapters: Lanterns Over Kasumi')).toBeVisible())
-    await expect(body.getByText('Download failed: Iron Petal Academy')).toBeVisible()
-    await expect(body.getByRole('button', { name: 'See all notifications' })).toBeVisible()
+    await expect(await body.findByText('Download failed: Iron Petal Academy')).toBeVisible()
+    await expect(await body.findByRole('button', { name: 'See all notifications' })).toBeVisible()
   },
 }
 

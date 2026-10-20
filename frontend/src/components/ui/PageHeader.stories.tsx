@@ -19,8 +19,8 @@ export const Default: Story = {
     actions: <Button leftSection={<IconPlus size={16} />}>Add series</Button>,
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { level: 1, name: 'Library' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /add series/i })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { level: 1, name: 'Library' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /add series/i })).toBeVisible()
   },
 }
 

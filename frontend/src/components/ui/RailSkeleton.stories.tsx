@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { RailSkeleton } from './RailSkeleton'
 
 const meta = {
@@ -13,7 +13,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelectorAll('.discover-rail-item')).toHaveLength(12)
+    await waitFor(() => expect(canvasElement.querySelectorAll('.discover-rail-item')).toHaveLength(12))
   },
 }
 
@@ -28,6 +28,6 @@ export const Engine: Story = {
 export const FewCards: Story = {
   args: { count: 3 },
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelectorAll('.discover-rail-item')).toHaveLength(3)
+    await waitFor(() => expect(canvasElement.querySelectorAll('.discover-rail-item')).toHaveLength(3))
   },
 }

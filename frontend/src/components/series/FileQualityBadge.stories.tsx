@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>
 
 export const Scanlator: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/Scanlator/)).toBeVisible()
+    await expect(await canvas.findByText(/Scanlator/)).toBeVisible()
   },
 }
 

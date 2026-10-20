@@ -15,7 +15,7 @@ export const Default: Story = {
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Delete rail' })
-    await expect(within(dialog).getByText(/Delete the rail "Top rated romance"/)).toBeVisible()
+    await expect(await within(dialog).findByText(/Delete the rail "Top rated romance"/)).toBeVisible()
   },
 }
 
@@ -23,9 +23,9 @@ export const ConfirmDeletes: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Delete rail' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(args.onDeleted).toHaveBeenCalledOnce())
-    await expect(args.onClose).toHaveBeenCalled()
+    await waitFor(() => expect(args.onClose).toHaveBeenCalled())
     await expect(await body.findByText('Rail deleted')).toBeVisible()
   },
 }
@@ -34,9 +34,9 @@ export const Cancel: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Delete rail' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Cancel' }))
     await expect(args.onClose).toHaveBeenCalledOnce()
-    await expect(args.onDeleted).not.toHaveBeenCalled()
+    await waitFor(() => expect(args.onDeleted).not.toHaveBeenCalled())
   },
 }
 

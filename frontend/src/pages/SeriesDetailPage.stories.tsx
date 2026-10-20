@@ -20,7 +20,7 @@ export const Ongoing: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: /Lanterns Over Kasumi/ })).toBeVisible()
     await expect(await canvas.findByText('Synopsis')).toBeVisible()
-    await expect(canvas.getByRole('tab', { name: /details/i })).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(canvas.getByRole('tab', { name: /details/i })).toHaveAttribute('aria-selected', 'true'))
     await expect(await canvas.findByRole('heading', { name: 'Sources' })).toBeVisible()
   },
 }
@@ -52,7 +52,7 @@ export const ChaptersTab: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByRole('heading', { name: 'Chapters' })).toBeVisible()
-    await userEvent.type(canvas.getByRole('textbox', { name: 'Search chapters' }), '52')
+    await userEvent.type(await canvas.findByRole('textbox', { name: 'Search chapters' }), '52')
     await waitFor(() => expect(canvas.getAllByText(/52/).length).toBeGreaterThan(0))
   },
 }
@@ -169,7 +169,7 @@ export const NotFound: Story = {
   parameters: at(999),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Series not found')).toBeVisible()
-    await expect(canvas.getByRole('link', { name: /back to library/i })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: /back to library/i })).toBeVisible()
   },
 }
 
@@ -234,7 +234,7 @@ export const EditMetadataDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Edit metadata' }))
-    await expect(await body(canvasElement).findByRole('textbox', { name: /title/i })).toHaveValue('Lanterns Over Kasumi')
+    await waitFor(() => expect(body(canvasElement).getByRole('textbox', { name: /title/i })).toHaveValue('Lanterns Over Kasumi'))
   },
 }
 

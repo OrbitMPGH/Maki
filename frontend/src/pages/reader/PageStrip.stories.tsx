@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { pageUrlsFor } from '../../../.storybook/mocks/entry/fixtures'
 import PageStrip from './PageStrip'
 
@@ -30,10 +30,10 @@ type Story = StoryObj<typeof meta>
 
 export const RightToLeft: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await expect(canvas.getByRole('button', { name: 'Go to page 6' })).toHaveAttribute('aria-current', 'true')
-    await expect(canvas.getByRole('button', { name: 'Go to page 4 (bookmarked)' })).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Go to page 8' }))
-    await expect(args.onSelect).toHaveBeenCalledWith(7)
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Go to page 6' })).toHaveAttribute('aria-current', 'true'))
+    await expect(await canvas.findByRole('button', { name: 'Go to page 4 (bookmarked)' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Go to page 8' }))
+    await waitFor(() => expect(args.onSelect).toHaveBeenCalledWith(7))
   },
 }
 

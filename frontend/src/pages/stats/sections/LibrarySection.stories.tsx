@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import '@mantine/charts/styles.css'
 import { api, failWith, neverResolve } from '../../../../.storybook/mocks/api'
@@ -29,7 +29,7 @@ export const Default: Story = {
     await expect(await canvas.findByText('Composition')).toBeVisible()
     await expect(await canvas.findByText('Biggest on disk')).toBeVisible()
     await expect(await canvas.findByText('Genres in the library')).toBeVisible()
-    await expect(canvas.getByText(/delivered/)).toBeVisible()
+    await expect(await canvas.findByText(/delivered/)).toBeVisible()
   },
 }
 
@@ -51,7 +51,7 @@ export const EmptyLibrary: Story = {
   parameters: { msw: [libraryHandler('empty')] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Nothing to show yet.')).toBeVisible()
-    await expect(canvas.getAllByText('Nothing downloaded yet.').length).toBeGreaterThan(0)
+    await waitFor(() => expect(canvas.getAllByText('Nothing downloaded yet.').length).toBeGreaterThan(0))
   },
 }
 
@@ -63,6 +63,6 @@ export const LoadFailed: Story = {
   parameters: { msw: [http.get(api('/stats/library'), () => failWith(500))] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Could not load library stats')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Try again' })).toBeVisible()
   },
 }

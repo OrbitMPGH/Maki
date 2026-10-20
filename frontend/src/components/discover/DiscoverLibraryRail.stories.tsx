@@ -82,7 +82,7 @@ export const ReaderRequest: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(await canvas.findByText('Ask for this')).toBeVisible()
     await userEvent.type(await canvas.findByLabelText('Note (optional)'), 'Would love this one')
-    await userEvent.click(canvas.getByRole('button', { name: 'Request series' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Request series' }))
     await expect(await within(canvasElement.ownerDocument.body).findByText(/Requested The Salt Cartographer/)).toBeVisible()
   },
 }

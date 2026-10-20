@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { downloadingItems } from '../../../.storybook/mocks/home'
 import { DownloadingStrip } from './DownloadingStrip'
 
@@ -15,22 +15,22 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('3 in the queue')).toBeVisible()
-    await expect(canvas.getByRole('link', { name: 'View activity' })).toHaveAttribute('href', '/activity')
+    await expect(await canvas.findByText('3 in the queue')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'View activity' })).toHaveAttribute('href', '/activity'))
   },
 }
 
 export const SingleItem: Story = {
   args: { items: downloadingItems.slice(0, 1) },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('1 in the queue')).toBeVisible()
+    await expect(await canvas.findByText('1 in the queue')).toBeVisible()
   },
 }
 
 export const MoreThanFiveRows: Story = {
   args: { items: downloadingItems },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('3 more in the queue')).toBeVisible()
+    await expect(await canvas.findByText('3 more in the queue')).toBeVisible()
   },
 }
 

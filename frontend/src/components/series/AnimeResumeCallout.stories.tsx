@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { animeResume } from '../../../.storybook/mocks/series'
 import { AnimeResumeCallout } from './AnimeResumeCallout'
 
@@ -20,19 +20,19 @@ type Story = StoryObj<typeof meta>
 
 export const Library: Story = {
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: /read ch\. 39/i }))
+    await userEvent.click(await canvas.findByRole('button', { name: /read ch\. 39/i }))
     await expect(args.onRead).toHaveBeenCalledOnce()
-    await userEvent.click(canvas.getByRole('button', { name: /not this anime/i }))
+    await userEvent.click(await canvas.findByRole('button', { name: /not this anime/i }))
     await expect(args.onDismiss).toHaveBeenCalledOnce()
   },
 }
 
 export const MarkWatchedAsksFirst: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: /mark ch\. 1 to 38 watched/i }))
+    await userEvent.click(await canvas.findByRole('button', { name: /mark ch\. 1 to 38 watched/i }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: /mark chapters watched/i })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Mark watched' }))
-    await expect(args.onMarkWatched).toHaveBeenCalledWith(38)
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Mark watched' }))
+    await waitFor(() => expect(args.onMarkWatched).toHaveBeenCalledWith(38))
   },
 }
 
@@ -56,7 +56,7 @@ export const ActionRunning: Story = {
 export const Catalogue: Story = {
   args: { variant: 'catalogue', inLibrarySeriesId: 1 },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: /open series/i })).toHaveAttribute('href', '/series/1')
+    await waitFor(() => expect(canvas.getByRole('link', { name: /open series/i })).toHaveAttribute('href', '/series/1'))
   },
 }
 

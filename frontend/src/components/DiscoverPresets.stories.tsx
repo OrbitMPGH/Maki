@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../.storybook/mocks/api'
 import { discoverPage } from '../../.storybook/mocks/discover'
@@ -23,7 +23,7 @@ export const MenuOpen: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Saved filters' }))
     await expect(await body(canvasElement).findByText('Short and finished')).toBeInTheDocument()
-    await expect(body(canvasElement).getByText('Cozy slice of life')).toBeInTheDocument()
+    await expect(await body(canvasElement).findByText('Cozy slice of life')).toBeInTheDocument()
   },
 }
 
@@ -31,7 +31,7 @@ export const LoadPreset: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Saved filters' }))
     await userEvent.click(await body(canvasElement).findByText('Short and finished'))
-    await expect(args.onLoad).toHaveBeenCalledWith(expect.objectContaining({ statuses: ['completed'], maxChapters: 60 }))
+    await waitFor(() => expect(args.onLoad).toHaveBeenCalledWith(expect.objectContaining({ statuses: ['completed'], maxChapters: 60 })))
   },
 }
 
@@ -48,10 +48,10 @@ export const SaveCurrentFilters: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Saved filters' }))
     await userEvent.click(await body(canvasElement).findByText('Save these filters…'))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Save filters' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
     await expect(await within(dialog).findByText('Give it a name')).toBeVisible()
-    await userEvent.type(within(dialog).getByLabelText('Name'), 'Long running manhwa')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.type(await within(dialog).findByLabelText('Name'), 'Long running manhwa')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
     await expect(await body(canvasElement).findByText('Filter saved')).toBeVisible()
   },
 }
@@ -62,8 +62,8 @@ export const SaveFails: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Saved filters' }))
     await userEvent.click(await body(canvasElement).findByText('Save these filters…'))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Save filters' })
-    await userEvent.type(within(dialog).getByLabelText('Name'), 'Duplicate')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.type(await within(dialog).findByLabelText('Name'), 'Duplicate')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
     await expect(await within(dialog).findByText('A filter with that name exists')).toBeVisible()
   },
 }
@@ -74,7 +74,7 @@ export const DeleteWithUndo: Story = {
     const [remove] = await body(canvasElement).findAllByRole('button', { name: 'Delete saved filter' })
     await userEvent.click(remove)
     await expect(await body(canvasElement).findByText('Deleted saved filter Short and finished.')).toBeVisible()
-    await expect(body(canvasElement).getByRole('button', { name: 'Undo' })).toBeVisible()
+    await expect(await body(canvasElement).findByRole('button', { name: 'Undo' })).toBeVisible()
   },
 }
 
@@ -101,7 +101,7 @@ export const HiddenListModal: StoryObj = {
     await userEvent.click(await canvas.findByRole('button', { name: /Hidden everywhere/ }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Hidden everywhere' })
     await expect(await within(dialog).findByText('Gore')).toBeVisible()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
     await expect(await body(canvasElement).findByText('Hidden list saved')).toBeVisible()
   },
 }

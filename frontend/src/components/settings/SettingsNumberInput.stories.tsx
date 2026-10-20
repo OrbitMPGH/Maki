@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { SettingsNumberInput } from './SettingsNumberInput'
 
 const meta = {
@@ -33,10 +33,10 @@ export const ClampsOnBlur: Story = {
     await userEvent.clear(field)
     await userEvent.type(field, '99')
     // 99 is out of range, so the parent is not told until blur settles it to the maximum.
-    await expect(args.onChange).not.toHaveBeenCalledWith(99)
+    await waitFor(() => expect(args.onChange).not.toHaveBeenCalledWith(99))
     await userEvent.tab()
-    await expect(args.onChange).toHaveBeenLastCalledWith(20)
-    await expect(field).toHaveValue('20')
+    await waitFor(() => expect(args.onChange).toHaveBeenLastCalledWith(20))
+    await waitFor(() => expect(field).toHaveValue('20'))
   },
 }
 
@@ -45,7 +45,7 @@ export const EmptySnapsBack: Story = {
     const field = await canvas.findByRole('textbox')
     await userEvent.clear(field)
     await userEvent.tab()
-    await expect(field).toHaveValue('5')
+    await waitFor(() => expect(field).toHaveValue('5'))
   },
 }
 

@@ -31,9 +31,9 @@ async function dialogOf(canvasElement: HTMLElement) {
 export const SignInPolicy: Story = {
   play: async ({ canvas }) => {
     const attempts = await canvas.findByRole('textbox', { name: /Failed sign-ins before lockout/ })
-    await expect(attempts).toHaveValue('5')
-    await expect(canvas.getByRole('textbox', { name: 'Lockout duration (minutes)' })).toHaveValue('15')
-    await expect(canvas.getByRole('textbox', { name: 'Session lifetime (days)' })).toHaveValue('30')
+    await waitFor(() => expect(attempts).toHaveValue('5'))
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Lockout duration (minutes)' })).toHaveValue('15'))
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Session lifetime (days)' })).toHaveValue('30'))
   },
 }
 
@@ -44,7 +44,7 @@ export const SignInPolicyEditSaveDiscard: Story = {
     await userEvent.clear(attempts)
     await userEvent.type(attempts, '8')
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Discard' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Discard' }))
     await waitFor(() => expect(attempts).toHaveValue('5'))
   },
 }
@@ -69,8 +69,8 @@ export const SignInPolicyLoadFailed: Story = {
 export const Network: Story = {
   render: () => <NetworkSection />,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('switch', { name: /^Require HTTPS/ })).not.toBeChecked()
-    await expect(canvas.getByRole('textbox', { name: /^Trusted proxies/ })).toHaveValue('172.18.0.0/16')
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Require HTTPS/ })).not.toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: /^Trusted proxies/ })).toHaveValue('172.18.0.0/16'))
   },
 }
 
@@ -98,9 +98,9 @@ export const NetworkEditShowsSave: Story = {
 export const SingleSignOn: Story = {
   render: () => <OidcSection />,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('textbox', { name: 'Issuer URL' })).toHaveValue('https://sso.example.test/application/o/maki/')
-    await expect(canvas.getByRole('switch', { name: /^Enable single sign-on/ })).toBeChecked()
-    await expect(canvas.getByText(/\/signin-oidc$/)).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Issuer URL' })).toHaveValue('https://sso.example.test/application/o/maki/'))
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Enable single sign-on/ })).toBeChecked())
+    await expect(await canvas.findByText(/\/signin-oidc$/)).toBeVisible()
   },
 }
 
@@ -136,7 +136,7 @@ export const SingleSignOnNotConfigured: Story = {
   play: async ({ canvas }) => {
     const toggle = await canvas.findByRole('switch', { name: /^Enable single sign-on/ })
     await waitFor(() => expect(toggle).not.toBeChecked())
-    await expect(canvas.getByRole('textbox', { name: 'Issuer URL' })).toHaveValue('')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Issuer URL' })).toHaveValue(''))
   },
 }
 
@@ -149,8 +149,8 @@ export const SingleSignOnIssuerChangeAsksFirst: Story = {
     await userEvent.type(issuer, 'https://login.other.test/')
     await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     const dialog = await dialogOf(canvasElement)
-    await expect(dialog.getByRole('button', { name: 'Save anyway' })).toBeVisible()
-    await userEvent.click(dialog.getByRole('button', { name: 'Save anyway' }))
+    await expect(await dialog.findByRole('button', { name: 'Save anyway' })).toBeVisible()
+    await userEvent.click(await dialog.findByRole('button', { name: 'Save anyway' }))
     await expect(await within(document.body).findByText('Single sign-on saved. Restart Maki to apply it.')).toBeVisible()
   },
 }

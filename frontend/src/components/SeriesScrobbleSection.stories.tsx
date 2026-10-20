@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../.storybook/mocks/api'
 import { scrobble, seriesMsw } from '../../.storybook/mocks/series'
@@ -21,7 +21,7 @@ type Story = StoryObj<typeof meta>
 export const Mixed: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('AniList')).toBeVisible()
-    await expect(canvas.getByText('MyAnimeList')).toBeVisible()
+    await expect(await canvas.findByText('MyAnimeList')).toBeVisible()
   },
 }
 
@@ -42,7 +42,7 @@ export const ReviewIgnore: Story = {
 export const ReviewManualLink: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole('textbox', { name: 'Paste id or URL' }), '5521')
-    await expect(canvas.getByRole('button', { name: 'Link' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Link' })).toBeEnabled())
   },
 }
 

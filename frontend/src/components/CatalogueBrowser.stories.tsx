@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { Text } from '@mantine/core'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
@@ -24,7 +24,7 @@ const searchWith = (body: object) =>
 export const Browsing: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
-    await expect((await canvas.findAllByRole('button', { name: /^View and add / })).length).toBeGreaterThan(5)
+    await waitFor(() => expect((canvas.getAllByRole('button', { name: /^View and add / })).length).toBeGreaterThan(5))
   },
 }
 
@@ -103,7 +103,7 @@ export const FiltersPanel: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Filters' }))
     await expect(await canvas.findByText('Genres and tags')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Save as default' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Save as default' })).toBeVisible()
   },
 }
 

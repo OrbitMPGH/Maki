@@ -46,7 +46,7 @@ export const CommitsOnBlur: Story = {
     const field = await canvas.findByRole('textbox', { name: 'Series folder format' })
     await userEvent.type(field, ' x')
     await userEvent.tab()
-    await expect(args.onCommit).toHaveBeenCalled()
+    await waitFor(() => expect(args.onCommit).toHaveBeenCalled())
   },
 }
 
@@ -58,8 +58,8 @@ export const TokenPickerInsertsTokens: Story = {
     await waitFor(() => expect(dialog).toBeVisible())
     await userEvent.click(await body.findByText('Aoi Mizuhara'))
     await userEvent.keyboard('{Escape}')
-    await expect(args.onCommit).toHaveBeenCalled()
-    const field = canvas.getByRole('textbox', { name: 'Series folder format' }) as HTMLInputElement
+    await waitFor(() => expect(args.onCommit).toHaveBeenCalled())
+    const field = (await canvas.findByRole('textbox', { name: 'Series folder format' })) as HTMLInputElement
     await expect(field.value).toContain('{Series Author}')
   },
 }

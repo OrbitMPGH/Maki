@@ -51,7 +51,7 @@ export const StarDismissed: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Dismiss' }))
     await expect(canvas.queryByText('Star on GitHub')).toBeNull()
-    await expect(canvas.getByText('Help & feedback')).toBeVisible()
+    await expect(await canvas.findByText('Help & feedback')).toBeVisible()
   },
 }
 
@@ -95,7 +95,7 @@ export const HelpMenuOpen: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: /Help & feedback/ }))
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(async () => expect(await body.findByRole('menuitem', { name: /Report a bug/ })).toBeVisible())
-    await expect(body.getByRole('menuitem', { name: /Documentation/ })).toBeVisible()
-    await expect(body.getByRole('menuitem', { name: /What's new in v0.32.0/ })).toBeVisible()
+    await expect(await body.findByRole('menuitem', { name: /Documentation/ })).toBeVisible()
+    await expect(await body.findByRole('menuitem', { name: /What's new in v0.32.0/ })).toBeVisible()
   },
 }

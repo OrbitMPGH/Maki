@@ -28,7 +28,7 @@ export const Default: Story = {
     await expect(await canvas.findByText('Where you stop')).toBeVisible()
     await expect(await canvas.findByText('Savoured')).toBeVisible()
     await expect(await canvas.findByText('Backlog')).toBeVisible()
-    await expect(canvas.getByText('Median')).toBeVisible()
+    await expect(await canvas.findByText('Median')).toBeVisible()
   },
 }
 

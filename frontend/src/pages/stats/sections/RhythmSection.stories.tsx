@@ -35,7 +35,7 @@ export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Hour of day and weekday')).toBeVisible()
     await expect(await canvas.findByText('Reading days')).toBeVisible()
-    await expect(canvas.getByText('Saturday')).toBeVisible()
+    await expect(await canvas.findByText('Saturday')).toBeVisible()
   },
 }
 

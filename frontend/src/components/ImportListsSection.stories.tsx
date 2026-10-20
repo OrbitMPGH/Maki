@@ -25,15 +25,15 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Cloudless Archipelago')).toBeVisible()
-    await expect(canvas.getByText('Connect MyAnimeList on the Scrobble page to import from it.')).toBeVisible()
+    await expect(await canvas.findByText('Connect MyAnimeList on the Scrobble page to import from it.')).toBeVisible()
   },
 }
 
 export const ConnectedTrackerControls: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('textbox', { name: 'Max per run' })).toHaveValue('25')
-    await expect(canvas.getByRole('button', { name: 'Run now' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Sync everything' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Max per run' })).toHaveValue('25'))
+    await expect(await canvas.findByRole('button', { name: 'Run now' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Sync everything' })).toBeVisible()
   },
 }
 
@@ -42,7 +42,7 @@ export const SyncEverythingConfirm: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Sync everything' }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await waitFor(() => expect(dialog).toBeVisible())
-    await expect(within(dialog).getByText('Sync everything from AniList?')).toBeVisible()
+    await expect(await within(dialog).findByText('Sync everything from AniList?')).toBeVisible()
   },
 }
 

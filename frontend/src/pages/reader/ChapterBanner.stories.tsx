@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import ChapterBanner from './ChapterBanner'
 
 const meta = {
@@ -26,15 +26,15 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     // It removes itself after a couple of seconds, so this has to look straight away.
-    await expect(canvas.getByRole('status')).toHaveTextContent('Chapter 133')
-    await expect(canvas.getByText('18 pages')).toBeInTheDocument()
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Chapter 133'))
+    await expect(await canvas.findByText('18 pages')).toBeInTheDocument()
   },
 }
 
 export const SinglePage: Story = {
   args: { label: 'Special: Midnight edition', pageCount: 1 },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('1 page')).toBeInTheDocument()
+    await expect(await canvas.findByText('1 page')).toBeInTheDocument()
   },
 }
 

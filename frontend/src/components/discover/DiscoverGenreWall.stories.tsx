@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { genreRails } from '../../../.storybook/mocks/discover'
 import { DiscoverGenreWall } from './DiscoverGenreWall'
 
@@ -16,7 +16,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: /Fantasy/ }))
-    await expect(args.onOpen).toHaveBeenCalledWith(expect.objectContaining({ genre: 'Fantasy' }))
+    await waitFor(() => expect(args.onOpen).toHaveBeenCalledWith(expect.objectContaining({ genre: 'Fantasy' })))
   },
 }
 

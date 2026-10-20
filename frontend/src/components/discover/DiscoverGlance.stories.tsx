@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { detailFor } from '../../../.storybook/mocks/discover'
 import { DiscoverGlance } from './DiscoverGlance'
 
@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('link', { name: 'Mio Tachibana' }))
-    await expect(args.onNavigate).toHaveBeenCalled()
+    await waitFor(() => expect(args.onNavigate).toHaveBeenCalled())
   },
 }
 

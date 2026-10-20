@@ -31,7 +31,7 @@ export const RenameApplies: Story = {
   args: { onClose: fn() },
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
-    const rename = within(dialog).getByRole('button', { name: 'Rename' })
+    const rename = await within(dialog).findByRole('button', { name: 'Rename' })
     await waitFor(() => expect(rename).toBeEnabled())
     await userEvent.click(rename)
   },
@@ -52,7 +52,7 @@ export const Conflicts: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByText('Two chapters want one name')).toBeVisible()
-    await expect(within(dialog).getByRole('button', { name: 'Rename' })).toBeDisabled()
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Rename' })).toBeDisabled())
   },
 }
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api } from '../../../.storybook/mocks/api'
 import { pageUrlsFor } from '../../../.storybook/mocks/entry/fixtures'
@@ -71,7 +71,7 @@ export const PageFailsToLoad: Story = {
     msw: [http.get(api('/reader/chapter/4404/page/:n'), () => new HttpResponse(null, { status: 500 }))],
   },
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText('This page failed to load.')).length).toBeGreaterThan(0)
+    await waitFor(() => expect((canvas.getAllByText('This page failed to load.')).length).toBeGreaterThan(0))
   },
 }
 
@@ -80,7 +80,7 @@ export const CroppedSides: Story = {
   args: { cropBorders: true, fit: 'original' },
   play: async ({ canvas }) => {
     const page = await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
-    await expect(page).toHaveAttribute('data-loaded', 'true')
+    await waitFor(() => expect(page).toHaveAttribute('data-loaded', 'true'))
     await expect(page.style.objectFit).toBe('cover')
     await expect(Number.parseFloat(page.style.width)).toBeLessThan(800)
   },
