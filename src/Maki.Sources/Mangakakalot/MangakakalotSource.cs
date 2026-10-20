@@ -23,6 +23,8 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
 
     public string Name => "mangakakalot";
     public string DisplayName => "MangaKakalot";
+    /// <summary>The date is the chapter's <c>updated_at</c>, not when it came out.</summary>
+    public bool ReleaseDatesAreReliable => false;
     public string BaseUrl => "https://www.mangakakalot.gg";
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
     public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;

@@ -3640,6 +3640,8 @@ export interface DownloadSettings {
   sourceOrder: SourceOrderMode
   /** Measure every linked source of a newly matched series before anything downloads. */
   scoutOnMatch: boolean
+  /** Check each series on a tier picked from how recently it had a new chapter, instead of every 30 minutes. */
+  adaptiveRefresh: boolean
 }
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */

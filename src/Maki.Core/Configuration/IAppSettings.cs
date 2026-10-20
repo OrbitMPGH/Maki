@@ -113,6 +113,12 @@ public static class SettingKeys
     public const string MonitoringBulkHoldThreshold = "monitoring.bulkholdthreshold";
 
     /// <summary>
+    /// "false" → refresh every series every 30 minutes, as before. On unless set: each series is
+    /// checked on a tier picked from how recently it last had a new chapter (<c>RefreshSchedule</c>).
+    /// </summary>
+    public const string MonitoringAdaptiveRefresh = "monitoring.adaptiverefresh";
+
+    /// <summary>
     /// "false" → don't rewrite ComicInfo.xml inside files Maki adopts from disk (torrent grabs,
     /// manual imports). Chapters Maki downloads itself from a source always get a fresh ComicInfo —
     /// that CBZ is built by Maki, not an existing file being modified. Default on.

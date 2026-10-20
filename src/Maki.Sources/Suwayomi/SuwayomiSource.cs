@@ -32,6 +32,9 @@ public sealed partial class SuwayomiSource(
     public string DisplayName { get; } =
         string.IsNullOrWhiteSpace(stored.DisplayName) ? stored.Name : stored.DisplayName;
 
+    /// <summary>An extension that cannot read a date falls back to the fetch time, so a whole list can share one.</summary>
+    public bool ReleaseDatesAreReliable => false;
+
     /// <summary>
     /// The site without its language, "MangaDex" for "MangaDex (EN)". Mihon extensions register one
     /// source per language, so this is what ties a site's language variants together.

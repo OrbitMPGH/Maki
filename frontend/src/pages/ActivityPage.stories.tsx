@@ -180,6 +180,21 @@ export const UpgradesTab: Story = {
   },
 }
 
+export const UpcomingTab: Story = {
+  parameters: { router: { path: '/activity', initialEntries: ['/activity?tab=upcoming'] } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Running late')).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: 'Upcoming', selected: true })).toBeVisible()
+  },
+}
+
+export const SwitchToUpcoming: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('tab', { name: 'Upcoming' }))
+    await expect(await canvas.findByText('Further out')).toBeVisible()
+  },
+}
+
 export const SwitchToUpgrades: Story = {
   parameters: { msw: upgradesData },
   play: async ({ canvas, userEvent }) => {
