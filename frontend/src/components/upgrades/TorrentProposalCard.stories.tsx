@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith } from '../../../.storybook/mocks/api'
 import { seriesMsw, torrentProposal } from '../../../.storybook/mocks/series'
@@ -17,11 +17,11 @@ type Story = StoryObj<typeof meta>
 
 export const Panel: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('link', { name: 'Lanterns Over Kasumi' })).toHaveAttribute(
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Lanterns Over Kasumi' })).toHaveAttribute(
       'href',
       '/series/1?tab=chapters',
-    )
-    await expect(await canvas.findByRole('button', { name: 'Grab' })).toBeEnabled()
+    ))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Grab' })).toBeEnabled())
   },
 }
 
@@ -48,7 +48,7 @@ export const WithWarnings: Story = {
 export const AlreadyDownloading: Story = {
   args: { proposal: torrentProposal(1, { queueItemId: 9100 }) },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Grab' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Grab' })).toBeDisabled())
   },
 }
 

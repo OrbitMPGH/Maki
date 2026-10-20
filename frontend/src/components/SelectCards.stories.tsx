@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { SelectCards } from './SelectCards'
 
 const options = [
@@ -24,10 +24,10 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByRole('button', { name: /Base/ })).toHaveAttribute('aria-pressed', 'true')
-    await userEvent.click(canvas.getByRole('button', { name: /Large/ }))
-    await expect(canvas.getByRole('button', { name: /Large/ })).toHaveAttribute('aria-pressed', 'true')
-    await expect(canvas.getByRole('button', { name: /Base/ })).toHaveAttribute('aria-pressed', 'false')
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Base/ })).toHaveAttribute('aria-pressed', 'true'))
+    await userEvent.click(await canvas.findByRole('button', { name: /Large/ }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Large/ })).toHaveAttribute('aria-pressed', 'true'))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Base/ })).toHaveAttribute('aria-pressed', 'false'))
   },
 }
 
@@ -38,6 +38,6 @@ export const FillLeft: Story = {
 export const Disabled: Story = {
   args: { disabled: true },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: /Off/ })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: /Off/ })).toBeDisabled())
   },
 }

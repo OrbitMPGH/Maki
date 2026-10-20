@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { discoverPage } from '../../.storybook/mocks/discover'
 import type { CatalogueCredit } from '../api/hooks'
 import { CreditPicker } from './CreditPicker'
@@ -36,7 +36,7 @@ export const SearchAndPick: Story = {
     await userEvent.type(await canvas.findByLabelText('Creators and studios'), 'Aoi')
     const option = await within(canvasElement.ownerDocument.body).findByRole('option', { name: /Aoi/ }, { timeout: 4000 })
     await userEvent.click(option)
-    await expect(args.onChange).toHaveBeenCalledWith([expect.objectContaining({ name: expect.stringContaining('Aoi') })])
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith([expect.objectContaining({ name: expect.stringContaining('Aoi') })]))
   },
 }
 
@@ -50,7 +50,7 @@ export const WithPickedCredits: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Studio Lark (Studio)')).toBeVisible()
-    await expect(canvas.getByText('Mio Tachibana')).toBeVisible()
-    await expect(canvas.getByText('Aoi Mizuhara (Story)')).toBeVisible()
+    await expect(await canvas.findByText('Mio Tachibana')).toBeVisible()
+    await expect(await canvas.findByText('Aoi Mizuhara (Story)')).toBeVisible()
   },
 }

@@ -22,8 +22,8 @@ export const Pending: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Maki speaks your language' })
     await waitFor(() => expect(dialog).toBeVisible())
-    await expect(within(dialog).getByText(/translated into \d+ languages/)).toBeVisible()
-    await expect(within(dialog).getByLabelText('Language')).toBeVisible()
+    await expect(await within(dialog).findByText(/translated into \d+ languages/)).toBeVisible()
+    await expect(await within(dialog).findByLabelText('Language')).toBeVisible()
   },
 }
 
@@ -31,7 +31,7 @@ export const DoneMarksItSeen: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Maki speaks your language' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Done' }))
     await waitFor(() => expect(body.queryByRole('dialog', { name: 'Maki speaks your language' })).toBeNull())
   },
 }

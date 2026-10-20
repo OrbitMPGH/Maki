@@ -26,9 +26,9 @@ export const Connected: Story = {
   play: async ({ canvas }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://suwayomi:4567'))
-    await expect(canvas.getByRole('textbox', { name: 'Username' })).toHaveValue('maki')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Username' })).toHaveValue('maki'))
     await expect(await canvas.findByText('3 Suwayomi sources, 1 switched on.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeEnabled())
   },
 }
 
@@ -41,8 +41,8 @@ export const NotConnected: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Not connected.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Test' })).toBeDisabled()
-    await expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeDisabled())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeDisabled())
     await expect(canvas.queryByRole('textbox', { name: 'Username' })).toBeNull()
   },
 }
@@ -75,7 +75,7 @@ export const TestConnection: Story = {
   play: async ({ canvas, userEvent }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://suwayomi:4567'))
-    await userEvent.click(canvas.getByRole('button', { name: 'Test' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
     await expect(await within(document.body).findByText('Suwayomi v2.1.1 answered with 12 sources installed.')).toBeVisible()
   },
 }
@@ -87,7 +87,7 @@ export const TestConnectionFails: Story = {
   play: async ({ canvas, userEvent }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://suwayomi:4567'))
-    await userEvent.click(canvas.getByRole('button', { name: 'Test' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeEnabled())
   },
 }
@@ -98,7 +98,7 @@ export const ChangingTheUrlWarnsAboutThePassword: Story = {
     await waitFor(() => expect(url).toHaveValue('http://suwayomi:4567'))
     await userEvent.type(url, '/suwayomi')
     await expect(await canvas.findByText('A new URL clears the saved password, so enter it again.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeDisabled())
   },
 }
 

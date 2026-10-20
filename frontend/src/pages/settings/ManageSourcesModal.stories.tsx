@@ -26,10 +26,10 @@ async function openDialog(canvasElement: HTMLElement) {
 export const Catalogue: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await openDialog(canvasElement)
-    await expect(await dialog.findByRole('switch', { name: 'Enable MangaDex' })).toBeChecked()
-    await expect(dialog.getByRole('switch', { name: 'Enable Weeb Central' })).not.toBeChecked()
-    await expect(dialog.getByText('No changes yet')).toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled()
+    await waitFor(() => expect(dialog.getByRole('switch', { name: 'Enable MangaDex' })).toBeChecked())
+    await waitFor(() => expect(dialog.getByRole('switch', { name: 'Enable Weeb Central' })).not.toBeChecked())
+    await expect(await dialog.findByText('No changes yet')).toBeVisible()
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled())
   },
 }
 
@@ -39,7 +39,7 @@ export const SuwayomiProvider: Story = {
     const dialog = await openDialog(canvasElement)
     await expect(await dialog.findByText('Multi Archive')).toBeVisible()
     await expect(dialog.queryByRole('switch', { name: 'Enable MangaDex' })).toBeNull()
-    await expect(dialog.getByText('Several languages, pick one')).toBeVisible()
+    await expect(await dialog.findByText('Several languages, pick one')).toBeVisible()
   },
 }
 
@@ -47,9 +47,9 @@ export const SearchNarrowsTheList: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.type(dialog.getByRole('searchbox', { name: 'Search sources' }), 'comick')
+    await userEvent.type(await dialog.findByRole('searchbox', { name: 'Search sources' }), 'comick')
     await waitFor(() => expect(dialog.queryByRole('switch', { name: 'Enable MangaDex' })).toBeNull())
-    await expect(dialog.getByRole('switch', { name: 'Enable Comick' })).toBeInTheDocument()
+    await expect(await dialog.findByRole('switch', { name: 'Enable Comick' })).toBeInTheDocument()
   },
 }
 
@@ -57,7 +57,7 @@ export const SearchWithNoMatches: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.type(dialog.getByRole('searchbox', { name: 'Search sources' }), 'zzzz')
+    await userEvent.type(await dialog.findByRole('searchbox', { name: 'Search sources' }), 'zzzz')
     await expect(await dialog.findByText('No sources match. Clear a filter or try another name.')).toBeVisible()
   },
 }
@@ -67,7 +67,7 @@ export const TurnASourceOn: Story = {
     const dialog = await openDialog(canvasElement)
     await userEvent.click(await dialog.findByRole('switch', { name: 'Enable Weeb Central' }))
     await expect(await dialog.findByText(/1 turned on/)).toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'Save changes' })).toBeEnabled()
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Save changes' })).toBeEnabled())
   },
 }
 
@@ -83,7 +83,7 @@ export const SaveChanges: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await userEvent.click(await dialog.findByRole('switch', { name: 'Enable Weeb Central' }))
-    await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'Save changes' }))
     await waitFor(() => expect(args.onClose).toHaveBeenCalled())
   },
 }
@@ -92,7 +92,7 @@ export const DiscardPromptOnCancel: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await userEvent.click(await dialog.findByRole('switch', { name: 'Enable Weeb Central' }))
-    await userEvent.click(dialog.getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'Cancel' }))
     await expect(await within(canvasElement.ownerDocument.body).findByText('Discard changes?')).toBeVisible()
   },
 }
@@ -109,7 +109,7 @@ export const ResetToDefaults: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.click(dialog.getByRole('button', { name: 'Reset to defaults' }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'Reset to defaults' }))
     await expect(await dialog.findByText(/turned (on|off)|Order changed/)).toBeVisible()
   },
 }
@@ -118,9 +118,9 @@ export const FilterByState: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.click(dialog.getByRole('radio', { name: 'Disabled' }))
+    await userEvent.click(await dialog.findByRole('radio', { name: 'Disabled' }))
     await waitFor(() => expect(dialog.queryByRole('switch', { name: 'Enable MangaDex' })).toBeNull())
-    await expect(dialog.getByRole('switch', { name: 'Enable Weeb Central' })).toBeInTheDocument()
+    await expect(await dialog.findByRole('switch', { name: 'Enable Weeb Central' })).toBeInTheDocument()
   },
 }
 
@@ -139,7 +139,7 @@ export const PhoneLayoutSwitchesPane: Story = {
     const dialog = await openDialog(canvasElement)
     // The pane resets to the catalogue once the lists seed, so wait for them before switching.
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.click(dialog.getByRole('tab', { name: 'Priority' }))
+    await userEvent.click(await dialog.findByRole('tab', { name: 'Priority' }))
     await expect(await dialog.findByRole('button', { name: 'Move MangaDex down' })).toBeInTheDocument()
   },
 }
@@ -163,7 +163,7 @@ export const Loading: Story = {
   parameters: { msw: settingsMsw(http.get(api('/search/sources'), () => neverResolve())) },
   play: async ({ canvasElement }) => {
     const dialog = await openDialog(canvasElement)
-    await expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled()
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled())
   },
 }
 
@@ -171,7 +171,7 @@ export const SourcesFailedToLoad: Story = {
   parameters: { msw: settingsMsw(http.get(api('/search/sources'), () => failWith(500))) },
   play: async ({ canvasElement }) => {
     const dialog = await openDialog(canvasElement)
-    await expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled()
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled())
   },
 }
 

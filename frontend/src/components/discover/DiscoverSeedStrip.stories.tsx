@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { catalogue } from '../../../.storybook/mocks/shared'
 import { discoverPage } from '../../../.storybook/mocks/discover'
 import { DiscoverSeedStrip } from './DiscoverSeedStrip'
@@ -19,8 +19,8 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     const links = await canvas.findAllByRole('link')
-    await expect(links).toHaveLength(4)
-    await expect(links[0]).toHaveAttribute('href', '/series/1')
+    await waitFor(() => expect(links).toHaveLength(4))
+    await waitFor(() => expect(links[0]).toHaveAttribute('href', '/series/1'))
   },
 }
 
@@ -34,7 +34,7 @@ export const CustomLabel: Story = {
 export const UnknownSeedsDropped: Story = {
   args: { seedIds: [id(8), 999999] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findAllByRole('link')).toHaveLength(1)
+    await waitFor(() => expect(canvas.getAllByRole('link')).toHaveLength(1))
   },
 }
 

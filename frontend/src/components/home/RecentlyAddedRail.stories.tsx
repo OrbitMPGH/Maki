@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { recentlyAdded } from '../../../.storybook/mocks/home'
 import { RecentlyAddedRail } from './RecentlyAddedRail'
 
@@ -17,7 +17,7 @@ export const Default: Story = {
   play: async ({ canvas }) => {
     // A series with everything read has no Read button.
     const withRead = recentlyAdded.filter((i) => i.readChapterId != null).length
-    await expect(canvas.getAllByRole('button', { name: 'Read next chapter' })).toHaveLength(withRead)
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Read next chapter' })).toHaveLength(withRead))
   },
 }
 

@@ -96,17 +96,17 @@ export const NothingSaved: Story = {
   beforeEach: seed([]),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Nothing is saved on this device yet/)).toBeVisible()
-    await expect(canvas.getByText('Storage on this device')).toBeVisible()
+    await expect(await canvas.findByText('Storage on this device')).toBeVisible()
   },
 }
 
 export const WithSavedChapters: Story = {
   beforeEach: seed(records),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('link', { name: 'Lanterns Over Kasumi' })).toHaveAttribute('href', '/series/1')
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Lanterns Over Kasumi' })).toHaveAttribute('href', '/series/1'))
     await expect(await canvas.findByText('Automatic')).toBeVisible()
-    await expect(canvas.getByText('Not saved')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Remove Lanterns Over Kasumi from this device' })).toBeVisible()
+    await expect(await canvas.findByText('Not saved')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Remove Lanterns Over Kasumi from this device' })).toBeVisible()
   },
 }
 
@@ -114,12 +114,12 @@ export const RemoveEverythingConfirm: Story = {
   beforeEach: seed(records),
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('link', { name: 'Lanterns Over Kasumi' })
-    await userEvent.click(canvas.getByRole('button', { name: 'Remove everything from this device' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Remove everything from this device' }))
     const dialogElement = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await waitFor(() => expect(dialogElement).toBeVisible())
     const dialog = within(dialogElement)
-    await expect(dialog.getByText('Remove everything from this device?')).toBeVisible()
-    await userEvent.click(dialog.getByRole('button', { name: 'Remove everything' }))
+    await expect(await dialog.findByText('Remove everything from this device?')).toBeVisible()
+    await userEvent.click(await dialog.findByRole('button', { name: 'Remove everything' }))
     await expect(await canvas.findByText(/Nothing is saved on this device yet/)).toBeVisible()
   },
 }
@@ -129,7 +129,7 @@ export const RemoveOneSeries: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Remove Lanterns Over Kasumi from this device' }))
     await waitFor(() => expect(canvas.queryByRole('link', { name: 'Lanterns Over Kasumi' })).toBeNull())
-    await expect(canvas.getByRole('link', { name: 'Iron Petal Academy' })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Iron Petal Academy' })).toBeVisible()
   },
 }
 

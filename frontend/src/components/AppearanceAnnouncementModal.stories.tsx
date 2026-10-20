@@ -21,8 +21,8 @@ export const Pending: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'More ways to make Maki yours' })
     await waitFor(() => expect(dialog).toBeVisible())
-    await expect(within(dialog).getByText('New default')).toBeVisible()
-    await expect(within(dialog).getByText('Previous default')).toBeVisible()
+    await expect(await within(dialog).findByText('New default')).toBeVisible()
+    await expect(await within(dialog).findByText('Previous default')).toBeVisible()
   },
 }
 
@@ -30,9 +30,9 @@ export const PickBackground: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'More ways to make Maki yours' })
-    const night = within(dialog).getByRole('radio', { name: /Night/ })
+    const night = await within(dialog).findByRole('radio', { name: /Night/ })
     await userEvent.click(night)
-    await expect(night).toHaveAttribute('aria-checked', 'true')
+    await waitFor(() => expect(night).toHaveAttribute('aria-checked', 'true'))
   },
 }
 
@@ -40,7 +40,7 @@ export const DoneMarksItSeen: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'More ways to make Maki yours' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Done' }))
     await waitFor(() => expect(body.queryByRole('dialog')).toBeNull())
   },
 }

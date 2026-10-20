@@ -43,7 +43,7 @@ type Story = StoryObj<typeof meta>
 export const DownloadQueue: Story = {
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Concurrent chapter downloads' })).toHaveValue('2'))
-    await expect(canvas.getByRole('textbox', { name: 'Give up on a chapter after (minutes)' })).toHaveValue('120')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Give up on a chapter after (minutes)' })).toHaveValue('120'))
     await expect(canvas.queryByText('Unsaved')).toBeNull()
   },
 }
@@ -55,7 +55,7 @@ export const DownloadQueueEditShowsSave: Story = {
     await userEvent.clear(field)
     await userEvent.type(field, '4')
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Discard' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Discard' }))
     await waitFor(() => expect(field).toHaveValue('2'))
     await expect(canvas.queryByText('Unsaved')).toBeNull()
   },
@@ -82,7 +82,7 @@ export const DownloadQueueSaveRejected: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     // The edit stays unsaved when the server refuses it.
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled())
-    await expect(canvas.getByText('Unsaved')).toBeVisible()
+    await expect(await canvas.findByText('Unsaved')).toBeVisible()
     await expect(within(document.body).queryByText('Saved')).toBeNull()
   },
 }
@@ -102,7 +102,7 @@ export const SmartDownload: Story = {
   play: async ({ canvas }) => {
     const left = await canvas.findByRole('textbox', { name: 'Fetch more when unread chapters drop to' })
     await waitFor(() => expect(left).toHaveValue('5'))
-    await expect(canvas.getByRole('textbox', { name: 'Chapters to fetch each time' })).toHaveValue('10')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Chapters to fetch each time' })).toHaveValue('10'))
   },
 }
 
@@ -110,7 +110,7 @@ export const ReadFileCleanupOff: Story = {
   render: () => <ReadFileCleanupSection />,
   play: async ({ canvas }) => {
     const toggle = await canvas.findByRole('switch', { name: /^Delete read chapters for every series/ })
-    await expect(toggle).not.toBeChecked()
+    await waitFor(() => expect(toggle).not.toBeChecked())
   },
 }
 
@@ -122,15 +122,15 @@ export const ReadFileCleanupOn: Story = {
   play: async ({ canvas }) => {
     const toggle = await canvas.findByRole('switch', { name: /^Delete read chapters for every series/ })
     await waitFor(() => expect(toggle).toBeChecked())
-    await expect(canvas.getByRole('textbox', { name: 'Days after reading' })).toHaveValue('14')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Days after reading' })).toHaveValue('14'))
   },
 }
 
 export const Languages: Story = {
   render: () => <SourceLanguageSection />,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('switch', { name: 'Enable English' })).toBeChecked()
-    await expect(canvas.getByRole('switch', { name: 'Enable French' })).not.toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Enable English' })).toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Enable French' })).not.toBeChecked())
   },
 }
 
@@ -152,7 +152,7 @@ export const LanguagesNoneEnabledBlocksSave: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('switch', { name: 'Enable English' }))
     await expect(await canvas.findByText('At least one language must stay enabled.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Save' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeDisabled())
   },
 }
 
@@ -160,7 +160,7 @@ export const Sources: Story = {
   render: () => <SourcePrioritySection />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/of 8 sources enabled/)).toBeVisible()
-    await expect(canvas.getByText(/Covers \d+ languages/)).toBeVisible()
+    await expect(await canvas.findByText(/Covers \d+ languages/)).toBeVisible()
   },
 }
 
@@ -195,7 +195,7 @@ export const FlareSolverrTest: Story = {
   play: async ({ canvas, userEvent }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://192.168.1.10:8191'))
-    await userEvent.click(canvas.getByRole('button', { name: 'Test' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
     await expect(await within(document.body).findByText('FlareSolverr is reachable')).toBeVisible()
   },
 }
@@ -208,7 +208,7 @@ export const FlareSolverrUnreachable: Story = {
   play: async ({ canvas, userEvent }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://192.168.1.10:8191'))
-    await userEvent.click(canvas.getByRole('button', { name: 'Test' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeEnabled())
     await expect(within(document.body).queryByText('FlareSolverr is reachable')).toBeNull()
   },
@@ -219,7 +219,7 @@ export const DownloadClient: Story = {
   play: async ({ canvas }) => {
     const client = await canvas.findByLabelText('Client')
     await waitFor(() => expect(client).toHaveValue('qBittorrent'))
-    await expect(canvas.getByRole('textbox', { name: 'Username' })).toHaveValue('maki')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Username' })).toHaveValue('maki'))
   },
 }
 
@@ -233,7 +233,7 @@ export const DownloadClientNotConfigured: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByLabelText('Client')).toHaveValue('')
+    await waitFor(() => expect(canvas.getByLabelText('Client')).toHaveValue(''))
   },
 }
 
@@ -286,7 +286,7 @@ export const VolumeReleases: Story = {
   play: async ({ canvas }) => {
     const search = await canvas.findByRole('switch', { name: /^Search torrents for volume releases/ })
     await waitFor(() => expect(search).toBeChecked())
-    await expect(canvas.getByRole('textbox', { name: 'Auto-grab size limit (MB)' })).toHaveValue('500')
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Auto-grab size limit (MB)' })).toHaveValue('500'))
   },
 }
 
@@ -304,9 +304,9 @@ export const VolumeReleasesOff: Story = {
 export const Indexer: Story = {
   render: () => <IndexerSection />,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('checkbox', { name: 'Nyaa Mirror' })).toBeChecked()
-    await expect(canvas.getByRole('checkbox', { name: 'Tokyo Archive (disabled in Prowlarr)' })).not.toBeChecked()
-    await expect(canvas.getByRole('checkbox', { name: 'Fakebay' })).toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('checkbox', { name: 'Nyaa Mirror' })).toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('checkbox', { name: 'Tokyo Archive (disabled in Prowlarr)' })).not.toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('checkbox', { name: 'Fakebay' })).toBeChecked())
   },
 }
 

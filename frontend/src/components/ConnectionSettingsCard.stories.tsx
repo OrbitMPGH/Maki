@@ -41,10 +41,10 @@ export const EditDiscardAndSave: Story = {
     await waitFor(() => expect(url).toHaveValue('http://192.168.1.10:8191'))
     await userEvent.type(url, '/v1')
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Discard' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Discard' }))
     await waitFor(() => expect(url).toHaveValue('http://192.168.1.10:8191'))
     await userEvent.type(url, '/v1')
-    await userEvent.click(canvas.getByRole('button', { name: 'Save' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     await expect(await within(document.body).findByText('Saved')).toBeVisible()
   },
 }
@@ -53,7 +53,7 @@ export const TestSucceeds: Story = {
   play: async ({ canvas, userEvent }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://192.168.1.10:8191'))
-    await userEvent.click(canvas.getByRole('button', { name: 'Test' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
     await expect(await within(document.body).findByText('FlareSolverr is reachable')).toBeVisible()
   },
 }
@@ -65,7 +65,7 @@ export const TestFails: Story = {
   play: async ({ canvas, userEvent }) => {
     const url = await canvas.findByRole('textbox', { name: 'URL' })
     await waitFor(() => expect(url).toHaveValue('http://192.168.1.10:8191'))
-    await userEvent.click(canvas.getByRole('button', { name: 'Test' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Test' }))
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeEnabled())
     await expect(within(document.body).queryByText('FlareSolverr is reachable')).toBeNull()
   },
@@ -92,7 +92,7 @@ export const SecretAndSelectFields: Story = {
   },
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByLabelText('Client')).toHaveValue('qBittorrent'))
-    await expect(canvas.getByLabelText('Password')).toHaveAttribute('type', 'password')
+    await waitFor(() => expect(canvas.getByLabelText('Password')).toHaveAttribute('type', 'password'))
   },
 }
 
@@ -123,6 +123,6 @@ export const BareForm: Story = {
   render: (args) => <ConnectionForm name={args.name} title={args.title} fields={args.fields} />,
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'Test' })).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Save' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeDisabled())
   },
 }

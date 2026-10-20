@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Button, Switch, Text } from '@mantine/core'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { SettingsSection } from './SettingsSection'
 
 const meta = {
@@ -46,9 +46,9 @@ export const Dirty: Story = {
   args: { dirty: true, onSave: fn(), onDiscard: fn() },
   play: async ({ args, canvas, userEvent }) => {
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Save' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
     await expect(args.onSave).toHaveBeenCalledOnce()
-    await userEvent.click(canvas.getByRole('button', { name: 'Discard' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Discard' }))
     await expect(args.onDiscard).toHaveBeenCalledOnce()
   },
 }
@@ -56,14 +56,14 @@ export const Dirty: Story = {
 export const Saving: Story = {
   args: { dirty: true, saving: true, onSave: fn(), onDiscard: fn() },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Discard' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Discard' })).toBeDisabled())
   },
 }
 
 export const SaveDisabled: Story = {
   args: { dirty: true, saveDisabled: true, onSave: fn() },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Save' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeDisabled())
   },
 }
 

@@ -21,7 +21,7 @@ export const Results: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByText(/Northwind\] Lanterns Over Kasumi v01-v05/)).toBeVisible()
-    await expect(within(dialog).getAllByRole('button', { name: 'Grab' }).length).toBe(releases.length)
+    await waitFor(() => expect(within(dialog).getAllByRole('button', { name: 'Grab' }).length).toBe(releases.length))
   },
 }
 

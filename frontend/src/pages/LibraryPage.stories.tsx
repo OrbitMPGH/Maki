@@ -27,7 +27,7 @@ const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.
 
 async function enterSelectMode(canvas: Canvas, userEvent: UserEvent, waitFor = /Lanterns Over Kasumi/) {
   await canvas.findByRole('link', { name: waitFor })
-  await userEvent.click(canvas.getByRole('button', { name: /^select$/i }))
+  await userEvent.click(await canvas.findByRole('button', { name: /^select$/i }))
 }
 
 async function pick(canvas: Canvas, userEvent: UserEvent, ...titles: string[]) {
@@ -39,7 +39,7 @@ async function pick(canvas: Canvas, userEvent: UserEvent, ...titles: string[]) {
 export const Grid: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })).toBeVisible()
-    await expect(canvas.getByText('14 series')).toBeVisible()
+    await expect(await canvas.findByText('14 series')).toBeVisible()
   },
 }
 
@@ -74,7 +74,7 @@ export const LoadError: Story = {
   parameters: { msw: [http.get(api('/series'), () => failWith(500, 'The database is locked')), ...libraryHandlers] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Failed to load library')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }
 
@@ -94,7 +94,7 @@ export const ReaderView: Story = {
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
     await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
-    await expect(canvas.getByRole('link', { name: 'Request series' })).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Request series' })).toBeVisible()
     await expect(canvas.queryByRole('link', { name: 'Add series' })).not.toBeInTheDocument()
   },
 }
@@ -119,7 +119,7 @@ export const NoMatches: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { query: 'zzzz nothing like this' } }),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('No matches')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Clear all filters' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Clear all filters' })).toBeVisible()
   },
 }
 
@@ -127,8 +127,8 @@ export const OngoingAndBehind: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { status: 'Ongoing', completeness: 'behind', sort: 'incomplete' } }),
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByText('5 of 14 series match')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Save filter' })).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Clear' }))
+    await expect(await canvas.findByRole('button', { name: 'Save filter' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Clear' }))
     await expect(await canvas.findByText('14 series')).toBeVisible()
   },
 }
@@ -144,7 +144,7 @@ export const ReverseSortOrder: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     // Newest first by default: the freshly imported series leads.
     await waitFor(() => expect(canvasElement.querySelector('.cover-title')).toHaveTextContent('untitled_import_0042'))
-    await userEvent.click(canvas.getByRole('button', { name: 'Reverse sort order' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reverse sort order' }))
     await waitFor(() => expect(canvasElement.querySelector('.cover-title')).toHaveTextContent('Under the Willow Gate'))
   },
 }
@@ -152,17 +152,17 @@ export const ReverseSortOrder: Story = {
 export const OverflowMenu: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
-    await userEvent.click(canvas.getByRole('button', { name: 'More options' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
     const menu = body(canvasElement)
     await expect(await menu.findByRole('menuitem', { name: 'Manage tags' })).toBeInTheDocument()
-    await expect(menu.getByRole('menuitem', { name: 'Comfortable' })).toBeInTheDocument()
+    await expect(await menu.findByRole('menuitem', { name: 'Comfortable' })).toBeInTheDocument()
   },
 }
 
 export const ManageTagsFromMenu: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
-    await userEvent.click(canvas.getByRole('button', { name: 'More options' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'More options' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Manage tags' }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Manage tags' })
     await expect(await within(dialog).findByText('Favourites')).toBeVisible()
@@ -175,8 +175,8 @@ export const FilterDrawer: Story = {
   play: async ({ canvasElement }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
     await expect(await within(drawer).findByText(/14 of 14 series shown/)).toBeVisible()
-    await expect(within(drawer).getByRole('textbox', { name: 'Minimum chapters' })).toBeVisible()
-    await expect(within(drawer).getByRole('switch', { name: /Untagged only/ })).toBeInTheDocument()
+    await expect(await within(drawer).findByRole('textbox', { name: 'Minimum chapters' })).toBeVisible()
+    await expect(await within(drawer).findByRole('switch', { name: /Untagged only/ })).toBeInTheDocument()
   },
 }
 
@@ -195,7 +195,7 @@ export const FilterDrawerWithActiveFilters: Story = {
   play: async ({ canvasElement }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
     await expect(await within(drawer).findByText(/1 of 14 series shown/)).toBeVisible()
-    await expect(within(drawer).getByRole('button', { name: 'Clear all filters' })).toBeVisible()
+    await expect(await within(drawer).findByRole('button', { name: 'Clear all filters' })).toBeVisible()
   },
 }
 
@@ -204,7 +204,7 @@ export const FilterDrawerClearAll: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
     await expect(await within(drawer).findByText(/^[0-9] of 14 series shown/)).toBeVisible()
-    await userEvent.click(within(drawer).getByRole('button', { name: 'Clear all filters' }))
+    await userEvent.click(await within(drawer).findByRole('button', { name: 'Clear all filters' }))
     await expect(await within(drawer).findByText(/14 of 14 series shown/)).toBeVisible()
   },
 }
@@ -214,7 +214,7 @@ export const SavedFilterChips: Story = {
     const chip = await canvas.findByRole('button', { name: 'Ongoing and behind' })
     await userEvent.click(chip)
     await expect(await canvas.findByText('5 of 14 series match')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Clear' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Clear' })).toBeVisible()
   },
 }
 
@@ -235,8 +235,8 @@ export const SaveFilterDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Save filter' }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Save this filter' })
-    await userEvent.type(within(dialog).getByLabelText('Name'), 'On hiatus')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.type(await within(dialog).findByLabelText('Name'), 'On hiatus')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
     await waitFor(() => expect(onSaveFilter).toHaveBeenCalledWith(expect.objectContaining({ name: 'On hiatus' })))
   },
 }
@@ -246,7 +246,7 @@ export const DeleteSavedFilter: Story = {
     const buttons = await canvas.findAllByRole('button', { name: 'Delete saved filter' })
     await userEvent.click(buttons[0])
     await expect(await body(canvasElement).findByText(/Deleted saved filter Ongoing and behind/)).toBeVisible()
-    await expect(body(canvasElement).getByRole('button', { name: 'Undo' })).toBeVisible()
+    await expect(await body(canvasElement).findByRole('button', { name: 'Undo' })).toBeVisible()
   },
 }
 
@@ -262,14 +262,14 @@ export const SelectMode: Story = {
   play: async ({ canvas, userEvent }) => {
     await enterSelectMode(canvas, userEvent)
     await expect(await canvas.findByText('0 selected')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Tags' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Tags' })).toBeDisabled())
     await pick(canvas, userEvent, 'Lanterns Over Kasumi', 'Snowfield Letters')
-    await expect(canvas.getByText('2 selected')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Tags' })).toBeEnabled()
-    await userEvent.click(canvas.getByRole('button', { name: 'Select all' }))
-    await expect(canvas.getByText('14 selected')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Clear all' }))
-    await expect(canvas.getByText('0 selected')).toBeVisible()
+    await expect(await canvas.findByText('2 selected')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Tags' })).toBeEnabled())
+    await userEvent.click(await canvas.findByRole('button', { name: 'Select all' }))
+    await expect(await canvas.findByText('14 selected')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Clear all' }))
+    await expect(await canvas.findByText('0 selected')).toBeVisible()
   },
 }
 
@@ -299,7 +299,7 @@ export const ReaderSelectMode: Story = {
     // A reader holds none of the library permissions, so no Tags, Monitoring or Remove buttons.
     await expect(canvas.queryByRole('button', { name: 'Tags' })).not.toBeInTheDocument()
     await expect(canvas.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument()
-    await expect(canvas.getByRole('button', { name: 'Notifications' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Notifications' })).toBeEnabled())
   },
 }
 
@@ -318,11 +318,11 @@ export const BulkTagDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await enterSelectMode(canvas, userEvent)
     await pick(canvas, userEvent, 'Lanterns Over Kasumi', 'The Ninth Kitchen')
-    await userEvent.click(canvas.getByRole('button', { name: 'Tags' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Tags' }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Tag 2 series' })
-    await userEvent.click(within(dialog).getByLabelText('Add'))
+    await userEvent.click(await within(dialog).findByLabelText('Add'))
     await userEvent.click(await body(canvasElement).findByRole('option', { name: /^To re-read/ }))
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Apply' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Apply' }))
     await waitFor(() => expect(onBulkTag).toHaveBeenCalledWith({ seriesIds: [1, 2], add: [2], remove: [] }))
     await expect(await body(canvasElement).findByText('Tagged 2 series')).toBeVisible()
   },
@@ -332,9 +332,9 @@ export const BulkRemoveDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await enterSelectMode(canvas, userEvent)
     await pick(canvas, userEvent, 'Bluefin Boys')
-    await userEvent.click(canvas.getByRole('button', { name: 'Remove' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Remove' }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Remove 1 series?' })
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Also delete files on disk' }))
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'Also delete files on disk' }))
     await expect(await within(dialog).findByText(/recycle bin for 14 days/)).toBeVisible()
   },
 }
@@ -343,9 +343,9 @@ export const BulkRemoveRuns: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await enterSelectMode(canvas, userEvent)
     await pick(canvas, userEvent, 'Bluefin Boys', 'Under the Willow Gate')
-    await userEvent.click(canvas.getByRole('button', { name: 'Remove' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Remove' }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Remove 2 series?' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Remove' }))
     await expect(await body(canvasElement).findByText(/Remove: 2\/2 succeeded/)).toBeVisible()
   },
 }
@@ -354,10 +354,10 @@ export const BulkMonitoringDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await enterSelectMode(canvas, userEvent)
     await pick(canvas, userEvent, 'Clockwork Tea House')
-    await userEvent.click(canvas.getByRole('button', { name: 'Monitoring' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Monitoring' }))
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Set monitoring for 1 series' })
-    await userEvent.click(within(dialog).getByText('Smart'))
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Apply' }))
+    await userEvent.click(await within(dialog).findByText('Smart'))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Apply' }))
     await expect(await body(canvasElement).findByText(/Set monitoring: 1\/1 succeeded/)).toBeVisible()
   },
 }
@@ -366,7 +366,7 @@ export const BulkSearchMissing: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await enterSelectMode(canvas, userEvent)
     await pick(canvas, userEvent, 'Iron Petal Academy', 'Ashen Crown Regression')
-    await userEvent.click(canvas.getByRole('button', { name: 'Search missing' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Search missing' }))
     await expect(await body(canvasElement).findByText(/Search missing: 2\/2 succeeded/)).toBeVisible()
   },
 }
@@ -383,13 +383,13 @@ export const BulkSearchMissingPartlyFails: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await enterSelectMode(canvas, userEvent)
     await pick(canvas, userEvent, 'Iron Petal Academy', 'Ashen Crown Regression')
-    await userEvent.click(canvas.getByRole('button', { name: 'Search missing' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Search missing' }))
     await expect(await body(canvasElement).findByText(/Search missing: 1\/2 succeeded, first error/)).toBeVisible()
   },
 }
 
 async function openMoreAction(canvas: Canvas, canvasElement: HTMLElement, userEvent: UserEvent, item: string) {
-  await userEvent.click(canvas.getByRole('button', { name: /^more$/i }))
+  await userEvent.click(await canvas.findByRole('button', { name: /^more$/i }))
   await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: item }))
 }
 
@@ -399,7 +399,7 @@ export const BulkAutoMatchDialog: Story = {
     await pick(canvas, userEvent, 'Bluefin Boys', 'Grave Robber of the Seventh Hall', 'Neon Shrine Maiden')
     await openMoreAction(canvas, canvasElement, userEvent, 'Auto-match')
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Auto-match sources for 3 series' })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Auto-match' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Auto-match' }))
     await expect(await body(canvasElement).findByText('Auto-matching 3 series in the background.')).toBeVisible()
   },
 }
@@ -410,10 +410,10 @@ export const BulkQualityProfileDialog: Story = {
     await pick(canvas, userEvent, 'Snowfield Letters')
     await openMoreAction(canvas, canvasElement, userEvent, 'Quality profile')
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Set quality profile for 1 series' })
-    await userEvent.click(within(dialog).getByRole('combobox', { name: 'Quality profile' }))
+    await userEvent.click(await within(dialog).findByRole('combobox', { name: 'Quality profile' }))
     await userEvent.click(await body(canvasElement).findByRole('option', { name: 'Official first' }))
     await expect(await within(dialog).findByText(/Prefers official and volume releases/)).toBeVisible()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Apply' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Apply' }))
     await expect(await body(canvasElement).findByText('Quality profile set for 1 series')).toBeVisible()
   },
 }
@@ -424,7 +424,7 @@ export const BulkNotificationsDialog: Story = {
     await pick(canvas, userEvent, 'Snowfield Letters', 'Summer at Shiokaze Station')
     await openMoreAction(canvas, canvasElement, userEvent, 'Notifications')
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Set notifications for 2 series' })
-    await expect(within(dialog).getByRole('radiogroup', { name: 'Notifications' })).toBeVisible()
+    await expect(await within(dialog).findByRole('radiogroup', { name: 'Notifications' })).toBeVisible()
   },
 }
 
@@ -434,10 +434,10 @@ export const BulkMoveDialog: Story = {
     await pick(canvas, userEvent, 'Iron Petal Academy')
     await openMoreAction(canvas, canvasElement, userEvent, 'Move')
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Move 1 series' })
-    const move = within(dialog).getByRole('button', { name: 'Move' })
-    await expect(move).toBeDisabled()
-    await userEvent.click(within(dialog).getByRole('combobox', { name: 'Destination root folder' }))
+    const move = await within(dialog).findByRole('button', { name: 'Move' })
+    await waitFor(() => expect(move).toBeDisabled())
+    await userEvent.click(await within(dialog).findByRole('combobox', { name: 'Destination root folder' }))
     await userEvent.click(await body(canvasElement).findByRole('option', { name: '/library/manhwa' }))
-    await expect(move).toBeEnabled()
+    await waitFor(() => expect(move).toBeEnabled())
   },
 }

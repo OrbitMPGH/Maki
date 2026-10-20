@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { links } from '../../.storybook/mocks/series'
 import { catalogue } from '../../.storybook/mocks/shared'
 import { MetadataLinks } from './MetadataLinks'
@@ -15,8 +15,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByRole('link')).toHaveLength(3)
-    await expect(canvas.getByRole('link', { name: /open on anilist/i })).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByRole('link')).toHaveLength(3))
+    await expect(await canvas.findByRole('link', { name: /open on anilist/i })).toBeVisible()
   },
 }
 
@@ -27,6 +27,6 @@ export const Compact: Story = {
 export const Empty: Story = {
   args: { links: [] },
   play: async ({ canvas }) => {
-    await expect(canvas.queryAllByRole('link')).toHaveLength(0)
+    await waitFor(() => expect(canvas.queryAllByRole('link')).toHaveLength(0))
   },
 }

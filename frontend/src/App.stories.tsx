@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api } from '../.storybook/mocks/api'
 import { setupStatus, uiSettings } from '../.storybook/mocks/shared'
@@ -85,7 +85,7 @@ export const MobileNavOpen: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const burger = await canvas.findByRole('button', { name: /menu/i })
     await userEvent.click(burger)
-    await expect(burger).toHaveAttribute('aria-expanded', 'true')
-    await expect(within(canvasElement).getAllByRole('link', { name: /settings/i })[0]).toBeVisible()
+    await waitFor(() => expect(burger).toHaveAttribute('aria-expanded', 'true'))
+    await expect((await within(canvasElement).findAllByRole('link', { name: /settings/i }))[0]).toBeVisible()
   },
 }

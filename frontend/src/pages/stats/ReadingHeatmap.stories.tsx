@@ -16,8 +16,8 @@ type Story = StoryObj<typeof meta>
 
 export const Year: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('heading', { name: 'Reading days' })).toBeVisible()
-    await expect(canvas.getByText('Less')).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Reading days' })).toBeVisible()
+    await expect(await canvas.findByText('Less')).toBeVisible()
   },
 }
 

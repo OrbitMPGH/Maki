@@ -31,16 +31,16 @@ const body = (el: HTMLElement) => within(el.ownerDocument.body)
 export const Ready: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const close = await body(canvasElement).findByRole('button', { name: 'Close preview' })
-    await expect(body(canvasElement).getByRole('radio', { name: 'Paged' })).toBeChecked()
+    await waitFor(() => expect(body(canvasElement).getByRole('radio', { name: 'Paged' })).toBeChecked())
     await userEvent.click(close)
-    await expect(args.onClose).toHaveBeenCalled()
+    await waitFor(() => expect(args.onClose).toHaveBeenCalled())
   },
 }
 
 export const ScrollMode: Story = {
   play: async ({ canvasElement, userEvent }) => {
     await userEvent.click(await body(canvasElement).findByText('Scroll'))
-    await expect(body(canvasElement).getByRole('radio', { name: 'Scroll' })).toBeChecked()
+    await waitFor(() => expect(body(canvasElement).getByRole('radio', { name: 'Scroll' })).toBeChecked())
   },
 }
 

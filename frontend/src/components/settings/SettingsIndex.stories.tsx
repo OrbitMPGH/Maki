@@ -35,8 +35,8 @@ type Story = StoryObj<typeof meta>
 export const Rail: Story = {
   play: async ({ canvas }) => {
     const nav = within(await canvas.findByRole('navigation', { name: 'Sections on this tab' }))
-    await expect(nav.getByRole('button', { name: 'Root folders' })).toBeVisible()
-    await expect(nav.getByRole('button', { name: 'Recycle bin' })).toBeVisible()
+    await expect(await nav.findByRole('button', { name: 'Root folders' })).toBeVisible()
+    await expect(await nav.findByRole('button', { name: 'Recycle bin' })).toBeVisible()
   },
 }
 

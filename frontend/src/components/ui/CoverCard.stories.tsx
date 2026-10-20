@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import { librarySeries } from '../../../.storybook/mocks/home'
 import { CoverCard } from './CoverCard'
 
@@ -24,8 +24,8 @@ type Story = StoryObj<typeof meta>
 
 export const PartlyRead: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link')).toHaveAttribute('href', '/series/1')
-    await expect(canvas.getByText('11 new')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('href', '/series/1'))
+    await expect(await canvas.findByText('11 new')).toBeVisible()
   },
 }
 
@@ -33,7 +33,7 @@ export const FullyRead: Story = {
   args: { series: shiokaze },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/new$/)).toBeNull()
-    await expect(canvas.getByRole('img', { name: 'All downloaded chapters read' })).toBeInTheDocument()
+    await expect(await canvas.findByRole('img', { name: 'All downloaded chapters read' })).toBeInTheDocument()
   },
 }
 
@@ -44,21 +44,21 @@ export const Completed: Story = {
 export const DownloadingAndBehind: Story = {
   args: { series: ironPetal },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('60 of 88')).toBeVisible()
+    await expect(await canvas.findByText('60 of 88')).toBeVisible()
   },
 }
 
 export const NotMonitored: Story = {
   args: { series: neon },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: 'Not monitored' })).toBeInTheDocument()
+    await expect(await canvas.findByRole('img', { name: 'Not monitored' })).toBeInTheDocument()
   },
 }
 
 export const Muted: Story = {
   args: { series: { ...ashen, notificationMode: 'Muted' } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: 'Notifications muted' })).toBeInTheDocument()
+    await expect(await canvas.findByRole('img', { name: 'Notifications muted' })).toBeInTheDocument()
   },
 }
 
@@ -86,15 +86,15 @@ export const NoChaptersListed: Story = {
     series: { ...graveRobber, totalChapters: null, wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('No chapters listed')).toBeVisible()
+    await expect(await canvas.findByText('No chapters listed')).toBeVisible()
   },
 }
 
 export const SelectMode: Story = {
   args: { selectMode: true },
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('link'))
-    await expect(args.onToggle).toHaveBeenCalledWith(1)
+    await userEvent.click(await canvas.findByRole('link'))
+    await waitFor(() => expect(args.onToggle).toHaveBeenCalledWith(1))
   },
 }
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
@@ -24,8 +24,8 @@ type Story = StoryObj<typeof meta>
 export const Admin: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('switch', { name: 'Health issue' })).toBeInTheDocument()
-    await expect(canvas.getByRole('switch', { name: 'New chapters available' })).toBeChecked()
-    await expect(canvas.getByRole('switch', { name: 'Chapters downloaded automatically' })).not.toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'New chapters available' })).toBeChecked())
+    await waitFor(() => expect(canvas.getByRole('switch', { name: 'Chapters downloaded automatically' })).not.toBeChecked())
   },
 }
 
@@ -41,9 +41,9 @@ export const Reader: Story = {
 export const ToggleASwitch: Story = {
   play: async ({ canvas, userEvent }) => {
     const toggle = await canvas.findByRole('switch', { name: 'Level up' })
-    await expect(toggle).toBeChecked()
+    await waitFor(() => expect(toggle).toBeChecked())
     await userEvent.click(toggle)
-    await expect(toggle).not.toBeChecked()
+    await waitFor(() => expect(toggle).not.toBeChecked())
   },
 }
 
@@ -56,7 +56,7 @@ export const SeriesDefaultReading: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('switch', { name: /^Show a popup when a notification arrives/ })).not.toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /^Show a popup when a notification arrives/ })).not.toBeChecked())
   },
 }
 

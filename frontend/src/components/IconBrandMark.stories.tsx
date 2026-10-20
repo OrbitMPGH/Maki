@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { IconBrandMark, type BrandMood } from './IconBrandMark'
 
 const MOODS: BrandMood[] = ['awake', 'asleep', 'asking', 'pleased']
@@ -34,7 +34,7 @@ export const AllMoods: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelectorAll('svg')).toHaveLength(MOODS.length)
+    await waitFor(() => expect(canvasElement.querySelectorAll('svg')).toHaveLength(MOODS.length))
   },
 }
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 import type { RecommendationItem } from '../../api/hooks'
 import { discoverPage, recentRail } from '../../../.storybook/mocks/discover'
 import { catalogue } from '../../../.storybook/mocks/shared'
@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More like this' }))
-    await expect(args.onRecommend).toHaveBeenCalledWith(args.items[0])
+    await waitFor(() => expect(args.onRecommend).toHaveBeenCalledWith(args.items[0]))
   },
 }
 
@@ -31,7 +31,7 @@ export const PickAnother: Story = {
   play: async ({ canvas, userEvent }) => {
     const tabs = await canvas.findAllByRole('tab')
     await userEvent.click(tabs[1])
-    await expect(tabs[1]).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(tabs[1]).toHaveAttribute('aria-selected', 'true'))
   },
 }
 

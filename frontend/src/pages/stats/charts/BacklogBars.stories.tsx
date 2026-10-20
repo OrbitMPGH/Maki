@@ -25,8 +25,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('210 left')).toBeVisible()
-    await expect(canvas.getByText('11 left')).toBeVisible()
+    await expect(await canvas.findByText('210 left')).toBeVisible()
+    await expect(await canvas.findByText('11 left')).toBeVisible()
   },
 }
 

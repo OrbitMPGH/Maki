@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import type { MetadataChange } from '../../api/seriesMetadata'
 import { api, daysAgo, failWith, hoursAgo, neverResolve } from '../../../.storybook/mocks/api'
@@ -27,8 +27,8 @@ type Story = StoryObj<typeof meta>
 export const WithChanges: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Metadata history' })
-    await expect((await within(dialog).findAllByText(/Metadata refresh/)).length).toBeGreaterThanOrEqual(2)
-    await expect(dialog).toHaveTextContent('Set by maki')
+    await waitFor(() => expect((within(dialog).getAllByText(/Metadata refresh/)).length).toBeGreaterThanOrEqual(2))
+    await waitFor(() => expect(dialog).toHaveTextContent('Set by maki'))
   },
 }
 

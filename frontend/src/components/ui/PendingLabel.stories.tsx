@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { Button, Group } from '@mantine/core'
 import { PendingLabel } from './PendingLabel'
 
@@ -24,10 +24,10 @@ type Story = StoryObj<typeof meta>
 
 export const IdleAndLoading: Story = {
   play: async ({ canvas }) => {
-    const buttons = canvas.getAllByRole('button')
-    await expect(buttons).toHaveLength(2)
-    await expect(buttons[1]).toHaveAttribute('data-loading', 'true')
-    await expect(buttons[0]).not.toHaveAttribute('data-loading')
+    const buttons = await canvas.findAllByRole('button')
+    await waitFor(() => expect(buttons).toHaveLength(2))
+    await waitFor(() => expect(buttons[1]).toHaveAttribute('data-loading', 'true'))
+    await waitFor(() => expect(buttons[0]).not.toHaveAttribute('data-loading'))
   },
 }
 

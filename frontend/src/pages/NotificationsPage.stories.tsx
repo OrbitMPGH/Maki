@@ -24,8 +24,8 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('New chapters: Lanterns Over Kasumi')).toBeVisible()
-    await expect(canvas.getByText('Download failed: Iron Petal Academy')).toBeVisible()
-    await expect(canvas.getByRole('heading', { name: 'Today' })).toBeVisible()
+    await expect(await canvas.findByText('Download failed: Iron Petal Academy')).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Today' })).toBeVisible()
   },
 }
 
@@ -33,7 +33,7 @@ export const LoadMore: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
     await expect(canvas.queryByText('Import list finished')).toBeNull()
-    await userEvent.click(canvas.getByRole('button', { name: 'Load more' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Load more' }))
     await expect(await canvas.findByText('Import list finished')).toBeVisible()
     await waitFor(() => expect(canvas.queryByRole('button', { name: 'Load more' })).toBeNull())
   },
@@ -42,7 +42,7 @@ export const LoadMore: Story = {
 export const UnreadOnly: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('You reached level 12')
-    await userEvent.click(canvas.getByRole('switch', { name: 'Unread only' }))
+    await userEvent.click(await canvas.findByRole('switch', { name: 'Unread only' }))
     // The new filter is a new query, so the list is a skeleton for a moment before the unread rows arrive.
     await expect(await canvas.findByText('Download failed: Iron Petal Academy')).toBeVisible()
     await expect(canvas.queryByText('You reached level 12')).toBeNull()
@@ -52,10 +52,10 @@ export const UnreadOnly: Story = {
 export const DownloadsFilter: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
-    await userEvent.click(canvas.getByRole('tab', { name: 'Downloads' }))
+    await userEvent.click(await canvas.findByRole('tab', { name: 'Downloads' }))
     await waitFor(() => expect(canvas.queryByText('New chapters: Lanterns Over Kasumi')).toBeNull())
-    await expect(canvas.getByText('Download failed: Iron Petal Academy')).toBeVisible()
-    await expect(canvas.getByText('Downloaded: Summer at Shiokaze Station')).toBeVisible()
+    await expect(await canvas.findByText('Download failed: Iron Petal Academy')).toBeVisible()
+    await expect(await canvas.findByText('Downloaded: Summer at Shiokaze Station')).toBeVisible()
     await expect(canvas.queryByText('New chapters: Lanterns Over Kasumi')).toBeNull()
   },
 }
@@ -64,7 +64,7 @@ export const FilterWithNoMatches: Story = {
   beforeEach: withInbox(inboxItems.slice(0, 3)),
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
-    await userEvent.click(canvas.getByRole('tab', { name: 'Requests' }))
+    await userEvent.click(await canvas.findByRole('tab', { name: 'Requests' }))
     await expect(await canvas.findByText('Nothing matches')).toBeVisible()
   },
 }
@@ -76,9 +76,9 @@ export const OlderMayMatch: Story = {
   }),
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
-    await userEvent.click(canvas.getByRole('tab', { name: 'Requests' }))
+    await userEvent.click(await canvas.findByRole('tab', { name: 'Requests' }))
     await expect(await canvas.findByText('None in the latest notifications')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Load more' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Load more' }))
     await expect(await canvas.findByText('New request from Rin')).toBeVisible()
   },
 }
@@ -87,7 +87,7 @@ export const Empty: Story = {
   beforeEach: withInbox([]),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('No notifications yet')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Mark all read' })).toBeDisabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Mark all read' })).toBeDisabled())
   },
 }
 
@@ -95,8 +95,8 @@ export const AllRead: Story = {
   beforeEach: withInbox(inboxItems.map((i) => ({ ...i, read: true }))),
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
-    await expect(canvas.getByRole('button', { name: 'Mark all read' })).toBeDisabled()
-    await userEvent.click(canvas.getByRole('switch', { name: 'Unread only' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Mark all read' })).toBeDisabled())
+    await userEvent.click(await canvas.findByRole('switch', { name: 'Unread only' }))
     await expect(await canvas.findByText('Nothing matches')).toBeVisible()
   },
 }
@@ -125,7 +125,7 @@ export const LoadError: Story = {
   beforeEach: layerHandlers(() => [http.get(api('/inbox'), () => failWith(500))]),
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("Couldn't load your notifications")).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Retry' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Retry' })).toBeVisible()
   },
 }
 
@@ -134,7 +134,7 @@ export const Reader: Story = {
   beforeEach: withInbox(readerInboxItems),
   play: async ({ canvas }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
-    await expect(canvas.getByRole('tab', { name: 'Downloads' })).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: 'Downloads' })).toBeVisible()
     await expect(canvas.queryByRole('tab', { name: 'System' })).toBeNull()
   },
 }
@@ -142,8 +142,8 @@ export const Reader: Story = {
 export const MarkAllRead: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
-    const button = canvas.getByRole('button', { name: 'Mark all read' })
-    await expect(button).toBeEnabled()
+    const button = await canvas.findByRole('button', { name: 'Mark all read' })
+    await waitFor(() => expect(button).toBeEnabled())
     await userEvent.click(button)
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Mark all read' })).toBeDisabled())
   },
@@ -152,21 +152,21 @@ export const MarkAllRead: Story = {
 export const DismissOne: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
-    const [first] = canvas.getAllByRole('button', { name: 'Dismiss notification' })
+    const [first] = await canvas.findAllByRole('button', { name: 'Dismiss notification' })
     await userEvent.click(first)
     await waitFor(() => expect(canvas.queryByText('New chapters: Lanterns Over Kasumi')).toBeNull())
-    await expect(canvas.getByText('Downloaded: Summer at Shiokaze Station')).toBeVisible()
+    await expect(await canvas.findByText('Downloaded: Summer at Shiokaze Station')).toBeVisible()
   },
 }
 
 export const ClearAll: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('New chapters: Lanterns Over Kasumi')
-    await userEvent.click(canvas.getByRole('button', { name: 'Clear all' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Clear all' }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', {
       name: 'Clear all notifications?',
     })
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Clear all' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Clear all' }))
     await expect(await canvas.findByText('No notifications yet')).toBeVisible()
   },
 }

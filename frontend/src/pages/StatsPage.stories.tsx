@@ -56,7 +56,7 @@ export const Reader: Story = {
 export const AllTime: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('radio', { name: 'All time' }))
-    await expect(canvas.getByRole('radio', { name: 'All time' })).toBeChecked()
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'All time' })).toBeChecked())
     await expect(await canvas.findByText('Day by day')).toBeVisible()
   },
 }
@@ -64,8 +64,8 @@ export const AllTime: Story = {
 export const YearDrillDown: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('radio', { name: 'Year' }))
-    await expect(await canvas.findByRole('combobox', { name: 'Year' })).toHaveValue('2026')
-    await expect(canvas.getByRole('combobox', { name: 'Month' })).toHaveValue('Whole year')
+    await waitFor(() => expect(canvas.getByRole('combobox', { name: 'Year' })).toHaveValue('2026'))
+    await waitFor(() => expect(canvas.getByRole('combobox', { name: 'Month' })).toHaveValue('Whole year'))
   },
 }
 
@@ -84,7 +84,7 @@ export const RewindOpens: Story = {
     await userEvent.click(play)
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByRole('dialog', { name: '2026 Rewind' })).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Close Rewind' }))
+    await userEvent.click(await body.findByRole('button', { name: 'Close Rewind' }))
   },
 }
 
@@ -98,8 +98,8 @@ export const ReadTrackingOff: Story = {
     ],
   },
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText('No reading tracked yet')).length).toBeGreaterThan(0)
-    await expect(canvas.getByRole('button', { name: 'Play Rewind' })).toBeDisabled()
+    await waitFor(() => expect((canvas.getAllByText('No reading tracked yet')).length).toBeGreaterThan(0))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Play Rewind' })).toBeDisabled())
   },
 }
 

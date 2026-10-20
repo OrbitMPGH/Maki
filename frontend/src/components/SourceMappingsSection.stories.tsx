@@ -36,7 +36,7 @@ type Story = StoryObj<typeof meta>
 export const Linked: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('MangaDex')).toBeVisible()
-    await expect(canvas.getByText('Comick')).toBeVisible()
+    await expect(await canvas.findByText('Comick')).toBeVisible()
   },
 }
 
@@ -76,7 +76,7 @@ export const MeasurementRunning: Story = {
     }),
   },
   play: async ({ canvas }) => {
-    await expect((await canvas.findAllByText(/Measuring/)).length).toBeGreaterThan(0)
+    await waitFor(() => expect((canvas.getAllByText(/Measuring/)).length).toBeGreaterThan(0))
   },
 }
 
@@ -125,8 +125,8 @@ export const RemoveAsksForCleanup: Story = {
     const buttons = await canvas.findAllByRole('button', { name: 'Remove mapping' })
     await userEvent.click(buttons[0])
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await expect(dialog).toHaveTextContent(/Remove/)
-    await expect(within(dialog).getByRole('button', { name: 'Remove and clean up' })).toBeVisible()
+    await waitFor(() => expect(dialog).toHaveTextContent(/Remove/))
+    await expect(await within(dialog).findByRole('button', { name: 'Remove and clean up' })).toBeVisible()
   },
 }
 
@@ -138,7 +138,7 @@ export const LinkSourceSearch: Story = {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Link a source' })
     // Opens seeded with the series title, so the first search runs without typing.
     await expect(await within(dialog).findByText('Lanterns Over Kasumi: Side Stories')).toBeVisible()
-    await expect(within(dialog).getAllByRole('link', { name: 'Open source page' })).toHaveLength(2)
+    await waitFor(() => expect(within(dialog).getAllByRole('link', { name: 'Open source page' })).toHaveLength(2))
   },
 }
 

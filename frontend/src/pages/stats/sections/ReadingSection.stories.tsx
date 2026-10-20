@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { http } from 'msw'
 import '@mantine/charts/styles.css'
 import { api, neverResolve } from '../../../../.storybook/mocks/api'
@@ -28,8 +28,8 @@ export const Default: Story = {
     await expect(await canvas.findByText('Day by day')).toBeVisible()
     await expect(await canvas.findByText('Most read')).toBeVisible()
     await expect(await canvas.findByText('Activity feed')).toBeVisible()
-    await userEvent.click(canvas.getByRole('radio', { name: 'Time' }))
-    await expect(canvas.getByRole('radio', { name: 'Time' })).toBeChecked()
+    await userEvent.click(await canvas.findByRole('radio', { name: 'Time' }))
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Time' })).toBeChecked())
   },
 }
 

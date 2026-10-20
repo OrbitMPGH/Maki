@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, within } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
 import { ConfirmDialog } from './ConfirmDialog'
 
 const meta = {
@@ -23,10 +23,10 @@ export const Default: Story = {
     // Mantine renders the modal in a portal on document.body, outside the story canvas.
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Delete tag' })
-    await expect(dialog).toBeVisible()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
-    await expect(args.onClose).toHaveBeenCalled()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete tag' }))
+    await waitFor(() => expect(dialog).toBeVisible())
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(args.onClose).toHaveBeenCalled())
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Delete tag' }))
     await expect(args.onConfirm).toHaveBeenCalledOnce()
   },
 }

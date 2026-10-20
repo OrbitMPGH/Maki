@@ -30,7 +30,7 @@ export const RollsAndPicks: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Feeling lucky' }))
     await waitFor(() => expect(args.onPick).toHaveBeenCalledOnce(), { timeout: 6000 })
-    await expect(args.onPick).toHaveBeenCalledWith(expect.stringMatching(/^3000[0-7]$/))
+    await waitFor(() => expect(args.onPick).toHaveBeenCalledWith(expect.stringMatching(/^3000[0-7]$/)))
   },
 }
 
@@ -38,9 +38,9 @@ export const NothingToRoll: Story = {
   args: { candidates: [] },
   play: async ({ args, canvas, userEvent }) => {
     const button = await canvas.findByRole('button', { name: 'Nothing to roll' })
-    await expect(button).toHaveAttribute('aria-disabled', 'true')
+    await waitFor(() => expect(button).toHaveAttribute('aria-disabled', 'true'))
     await userEvent.click(button)
-    await expect(args.onPick).not.toHaveBeenCalled()
+    await waitFor(() => expect(args.onPick).not.toHaveBeenCalled())
   },
 }
 
@@ -48,7 +48,7 @@ export const Pill: Story = {
   args: { variant: 'pill', onDismiss: fn() },
   play: async ({ args, canvas, userEvent }) => {
     await expect(await canvas.findByRole('button', { name: 'Roll again' })).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Close' }))
-    await expect(args.onDismiss).toHaveBeenCalled()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(args.onDismiss).toHaveBeenCalled())
   },
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { SecureContextNote } from './SecureContextNote'
 
 const meta = {
@@ -19,6 +19,6 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('link', { name: 'Reverse proxy setup' })).toHaveAttribute('target', '_blank')
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Reverse proxy setup' })).toHaveAttribute('target', '_blank'))
   },
 }

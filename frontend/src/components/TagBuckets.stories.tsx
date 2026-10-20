@@ -49,15 +49,15 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Core')).toBeVisible()
-    await expect(canvas.getByText('Incidental')).toBeVisible()
-    await expect(canvas.getByText('Found Family')).toBeVisible()
+    await expect(await canvas.findByText('Core')).toBeVisible()
+    await expect(await canvas.findByText('Incidental')).toBeVisible()
+    await expect(await canvas.findByText('Found Family')).toBeVisible()
   },
 }
 
 export const SpoilerTooltip: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.hover(canvas.getByText('Unreliable Memory'))
+    await userEvent.hover(await canvas.findByText('Unreliable Memory'))
     const tip = await within(canvasElement.ownerDocument.body).findByText(
       'Spoiler · The narrator has been wrong about the first winter.',
     )
@@ -69,9 +69,9 @@ export const ManyTagsCollapsed: Story = {
   args: { tags: crowded },
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.queryByText('Incidental Detail 30')).toBeNull()
-    await userEvent.click(canvas.getByRole('button', { name: '+12 more' }))
-    await expect(canvas.getByText('Incidental Detail 30')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Show fewer' }))
+    await userEvent.click(await canvas.findByRole('button', { name: '+12 more' }))
+    await expect(await canvas.findByText('Incidental Detail 30')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show fewer' }))
     await expect(canvas.queryByText('Incidental Detail 30')).toBeNull()
   },
 }
@@ -79,7 +79,7 @@ export const ManyTagsCollapsed: Story = {
 export const UnknownWeight: Story = {
   args: { tags: [...sample.slice(0, 3), tag('Uncategorised Oddity', 'mystery')] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('Other')).toBeVisible()
+    await expect(await canvas.findByText('Other')).toBeVisible()
   },
 }
 
