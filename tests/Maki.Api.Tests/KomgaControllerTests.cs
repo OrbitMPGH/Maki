@@ -176,6 +176,59 @@ public sealed class KomgaControllerTests : IDisposable
         Assert.Null(Progress(seeded.Chapters[0]));
     }
 
+    private static byte[] Avif() => Solid().HeifsaveBuffer(q: 60, compression: NetVips.Enums.ForeignHeifCompression.Av1);
+
+    private static byte[] Webp() => Solid().WebpsaveBuffer(q: 80);
+
+    private static NetVips.Image Solid() => (NetVips.Image.Black(64, 48, bands: 3) + new[] { 40.0, 120.0, 200.0 }).Cast(NetVips.Enums.BandFormat.Uchar);
+
+    private static (int Width, int Height, Maki.Core.Images.ImageFormat? Format) Header(byte[] bytes)
+    {
+        var header = Maki.Core.Images.ImageCodec.Identify(bytes);
+        return (header.Width, header.Height, header.Format);
+    }
+
+    [Fact]
+    public async Task A_page_a_client_cannot_decode_is_converted_on_request()
+    {
+        var jpeg = new Maki.Core.Images.Raster(64, 48, bands: 3).EncodeJpeg(80);
+        var seeded = SeedImageSeries("Converted", ("001.avif", Avif()), ("002.webp", Webp()), ("003.jpg", jpeg));
+        var (userId, _) = SeedReader();
+        var controller = Controller(userId);
+        var book = seeded.ChapterId.ToString();
+
+        var pages = Assert.IsType<List<KomgaPageInfo>>(Ok(await controller.Pages(book, default)));
+        Assert.Equal(["image/avif", "image/webp", "image/jpeg"], pages.Select(p => p.MediaType));
+
+        var asIs = Assert.IsType<FileStreamResult>(await controller.Page(book, 1, null, default));
+        Assert.Equal("image/avif", asIs.ContentType);
+
+        var avifAsJpeg = Assert.IsType<FileContentResult>(await controller.Page(book, 1, "jpeg", default));
+        Assert.Equal("image/jpeg", avifAsJpeg.ContentType);
+        Assert.Equal((64, 48, Maki.Core.Images.ImageFormat.Jpeg), Header(avifAsJpeg.FileContents));
+        Assert.EndsWith("-jpeg\"", avifAsJpeg.EntityTag!.Tag.ToString());
+
+        var webpAsPng = Assert.IsType<FileContentResult>(await controller.Page(book, 2, "PNG", default));
+        Assert.Equal("image/png", webpAsPng.ContentType);
+        Assert.Equal((64, 48, Maki.Core.Images.ImageFormat.Png), Header(webpAsPng.FileContents));
+
+        var jpegAsJpeg = Assert.IsType<FileContentResult>(await controller.Page(book, 3, "jpeg", default));
+        Assert.Equal(jpeg, jpegAsJpeg.FileContents);
+    }
+
+    [Fact]
+    public async Task An_unknown_conversion_is_refused_and_one_maki_cannot_decode_is_a_415()
+    {
+        var seeded = SeedSeries("Unconvertible", 1m);
+        var (userId, _) = SeedReader();
+        var controller = Controller(userId);
+        var book = seeded.Chapters[0].ToString();
+
+        Assert.IsType<BadRequestResult>(await controller.Page(book, 1, "gif", default));
+        var refused = Assert.IsType<StatusCodeResult>(await controller.Page(book, 1, "png", default));
+        Assert.Equal(StatusCodes.Status415UnsupportedMediaType, refused.StatusCode);
+    }
+
     [Fact]
     public async Task A_book_progress_patch_is_saved_through_the_reader()
     {
@@ -308,6 +361,39 @@ public sealed class KomgaControllerTests : IDisposable
         }
 
         return (seriesId, chapters);
+    }
+
+    /// <summary>One chapter whose archive holds exactly these pages.</summary>
+    private (int SeriesId, int ChapterId) SeedImageSeries(string title, params (string Name, byte[] Bytes)[] pages)
+    {
+        var seriesId = _db.SeedSeries(title);
+        var folder = Path.Combine(_root, title);
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, "1.cbz");
+        using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            foreach (var (name, bytes) in pages)
+            {
+                using var stream = archive.CreateEntry(name).Open();
+                stream.Write(bytes);
+            }
+        }
+
+        using var db = _db.NewContext();
+        var series = db.Series.Include(s => s.RootFolder).Single(s => s.Id == seriesId);
+        series.RootFolder!.Path = folder;
+        series.FolderName = "";
+        var file = new ChapterFile
+        {
+            SeriesId = seriesId, RelativePath = "1.cbz", Size = new FileInfo(path).Length, SourceName = "Test",
+            DateAdded = DateTime.UtcNow,
+        };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+        var chapter = new Chapter { SeriesId = seriesId, Number = 1, Language = "en", ChapterFileId = file.Id };
+        db.Chapters.Add(chapter);
+        db.SaveChanges();
+        return (seriesId, chapter.Id);
     }
 
     private int RootFolderOf(int seriesId)

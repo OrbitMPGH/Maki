@@ -1,6 +1,8 @@
 using Maki.Api.Configuration;
 using Maki.Api.Komga;
 using Maki.Api.Services;
+using Maki.Core.Download;
+using Maki.Core.Images;
 using Maki.Core.Opds;
 using Maki.Core.Reading;
 using Maki.Data;
@@ -299,7 +301,7 @@ public class KomgaController(
             return NotFound();
         }
 
-        return (IActionResult?)Cover(seriesId.Value) ?? await PageAsync(chapterId, 1, ct);
+        return (IActionResult?)Cover(seriesId.Value) ?? await PageAsync(chapterId, 1, TranscodeFormat.Jpeg, ct);
     }
 
     /// <summary>The chapter's archive. A volume archive backing several chapters is served whole, as over OPDS.</summary>
@@ -324,13 +326,39 @@ public class KomgaController(
             : NotFound();
 
     /// <summary>
-    /// One page, 1-based as Komga numbers them. <c>?convert=</c> is accepted and ignored: Maki serves
-    /// pages in the formats Komga clients read natively, and PDF pages are already rendered to JPEG.
+    /// One page, 1-based as Komga numbers them. <c>?convert=jpeg</c> or <c>png</c> is what a Komga
+    /// client sends for a page whose media type it cannot decode (an AVIF page on an older device, a
+    /// WebP page in the Komga web reader on an old browser); the page is re-encoded unless its bytes
+    /// already are that format. Any other value is a 400, as on Komga.
     /// </summary>
     [HttpGet("v1/books/{id}/pages/{number:int}")]
     [HttpGet("v1/books/{id}/pages/{number:int}/thumbnail")]
-    public async Task<IActionResult> Page(string id, int number, CancellationToken ct) =>
-        int.TryParse(id, out var chapterId) ? await PageAsync(chapterId, number, ct) : NotFound();
+    public async Task<IActionResult> Page(string id, int number, [FromQuery] string? convert = null,
+        CancellationToken ct = default)
+    {
+        if (!int.TryParse(id, out var chapterId))
+        {
+            return NotFound();
+        }
+
+        TranscodeFormat? target;
+        switch (convert?.Trim().ToLowerInvariant())
+        {
+            case null or "":
+                target = null;
+                break;
+            case "jpeg" or "jpg":
+                target = TranscodeFormat.Jpeg;
+                break;
+            case "png":
+                target = TranscodeFormat.Png;
+                break;
+            default:
+                return BadRequest();
+        }
+
+        return await PageAsync(chapterId, number, target, ct);
+    }
 
     [HttpPatch("v1/books/{id}/read-progress")]
     public async Task<IActionResult> SetBookProgress(
@@ -416,7 +444,7 @@ public class KomgaController(
     [HttpGet("{**rest}", Order = int.MaxValue)]
     public IActionResult Unsupported() => NotFound();
 
-    private async Task<IActionResult> PageAsync(int chapterId, int number, CancellationToken ct)
+    private async Task<IActionResult> PageAsync(int chapterId, int number, TranscodeFormat? target, CancellationToken ct)
     {
         var slice = await reader.PageSliceAsync(chapterId, ct);
         var index = number - 1;
@@ -426,23 +454,75 @@ public class KomgaController(
         }
 
         var entry = slice.Pages[slice.StartPage + index];
-        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + index}\"");
+        var suffix = target switch { TranscodeFormat.Jpeg => "-jpeg", TranscodeFormat.Png => "-png", _ => "" };
+        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + index}{suffix}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
         Response.Headers.CacheControl = "private, no-cache";
+        string? rendered = null;
         if (ComicFile.IsPdf(slice.ArchivePath))
         {
-            var rendered = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, slice.StartPage + index, entry, ct);
-            return rendered is null
-                ? NotFound()
-                : PhysicalFile(rendered, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+            rendered = await ReaderPageCache.GetOrRenderFullPageAsync(paths, slice, slice.StartPage + index, entry, ct);
+            if (rendered is null)
+            {
+                return NotFound();
+            }
+
+            if (target is null)
+            {
+                return PhysicalFile(rendered, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+            }
         }
 
-        var stream = await reader.OpenPageAsync(slice, entry, ct);
-        return stream is null ? NotFound() : File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+        var stream = rendered is null ? await reader.OpenPageAsync(slice, entry, ct) : System.IO.File.OpenRead(rendered);
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        if (target is not { } format)
+        {
+            return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+        }
+
+        return await ConvertedAsync(stream, format, etag, ct);
+    }
+
+    /// <summary>
+    /// The page as <paramref name="format"/>. Judged by its bytes, not its name: a page already in that
+    /// format goes out untouched. 415 when no decoder Maki allows can read it (a BMP page), which is
+    /// what Komga answers a conversion it cannot do with too, rather than bytes the client just said
+    /// it cannot show.
+    /// </summary>
+    private async Task<IActionResult> ConvertedAsync(Stream stream, TranscodeFormat format, EntityTagHeaderValue etag,
+        CancellationToken ct)
+    {
+        byte[] bytes;
+        await using (stream)
+        {
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            bytes = buffer.ToArray();
+        }
+
+        var wanted = format == TranscodeFormat.Png ? "image/png" : "image/jpeg";
+        if (ImageValidator.SniffMediaType(bytes) == wanted)
+        {
+            return File(bytes, wanted, lastModified: null, entityTag: etag);
+        }
+
+        try
+        {
+            var converted = await ImageWorkGate.RunAsync(() => Task.FromResult(ImageCodec.Transcode(bytes, format)), ct);
+            return File(converted, wanted, lastModified: null, entityTag: etag);
+        }
+        catch (NetVips.VipsException)
+        {
+            return StatusCode(StatusCodes.Status415UnsupportedMediaType);
+        }
     }
 
     private PhysicalFileResult? Cover(int seriesId)
