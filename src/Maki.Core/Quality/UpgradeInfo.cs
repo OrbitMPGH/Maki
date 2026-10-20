@@ -59,9 +59,32 @@ public sealed class QualitySnapshot
     public int? PageCount { get; set; }
     public int? MedianWidth { get; set; }
     public int? MedianHeight { get; set; }
+    /// <summary>The format and size the copy was acquired in, before any page conversion.</summary>
     public string? ImageFormat { get; set; }
+
+    /// <inheritdoc cref="ImageFormat"/>
     public long? SizeBytes { get; set; }
+
     public int Score { get; set; }
+
+    /// <summary>Set when Maki converted the pages: the format on disk and the bytes that saved, so a revert can restore both.</summary>
+    public string? StoredImageFormat { get; set; }
+
+    /// <inheritdoc cref="StoredImageFormat"/>
+    public long? ConversionSavedBytes { get; set; }
+
+    /// <summary>Puts the snapshot's format and conversion record back on a file whose bytes it describes again.</summary>
+    public void RestoreFormatOnto(Entities.ChapterFile file, DateTime now)
+    {
+        file.ResetConversion();
+        file.ImageFormat = StoredImageFormat ?? ImageFormat;
+        if (StoredImageFormat is not null)
+        {
+            file.OriginalImageFormat = ImageFormat;
+            file.ConversionSavedBytes = ConversionSavedBytes ?? 0;
+            file.ConversionCheckedAtUtc = now;
+        }
+    }
 
     /// <summary>The torrent release a file came from, kept so a revert can give it back.</summary>
     public string? ReleaseName { get; set; }

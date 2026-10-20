@@ -60,4 +60,34 @@ public class ChapterFile
     /// that restamps <see cref="DateAdded"/> sets this to the same value (see <see cref="IsNewContent"/>).
     /// </summary>
     public DateTime? ReplacedAtUtc { get; set; }
+
+    /// <summary>
+    /// When page conversion last looked at these bytes, whether it converted them or left them as
+    /// they were. Null means never, or new bytes arrived since (<see cref="ResetConversion"/>).
+    /// </summary>
+    public DateTime? ConversionCheckedAtUtc { get; set; }
+
+    /// <summary>How much smaller conversion made the file. 0 when it was left as it was.</summary>
+    public long ConversionSavedBytes { get; set; }
+
+    /// <summary>The page format before conversion. Null when the file was not converted.</summary>
+    public string? OriginalImageFormat { get; set; }
+
+    /// <summary>
+    /// The size the file had when it was acquired. Upgrade scoring, source quality samples and quality
+    /// snapshots read this and <see cref="QualityImageFormat"/>, so converting pages never makes a
+    /// copy look like a worse release than the one that was downloaded.
+    /// </summary>
+    public long QualitySize => Size + ConversionSavedBytes;
+
+    /// <inheritdoc cref="QualitySize"/>
+    public string? QualityImageFormat => OriginalImageFormat ?? ImageFormat;
+
+    /// <summary>For new bytes at this row: whatever conversion said about the old ones no longer holds.</summary>
+    public void ResetConversion()
+    {
+        ConversionCheckedAtUtc = null;
+        ConversionSavedBytes = 0;
+        OriginalImageFormat = null;
+    }
 }

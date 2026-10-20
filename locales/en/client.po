@@ -583,6 +583,14 @@ msgstr "{connected} connected"
 msgid "{connectedCount, plural, one {# connected} other {# connected}}"
 msgstr "{connectedCount, plural, one {# connected} other {# connected}}"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{converted} converted ({saved} saved), {unchanged} left as they were, {hardlinked} hardlinked, {failed} passed over for now."
+msgstr "{converted} converted ({saved} saved), {unchanged} left as they were, {hardlinked} hardlinked, {failed} passed over for now."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
+msgstr "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# ch.} other {# ch.}}"
@@ -670,6 +678,10 @@ msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
 #: src/pages/settings/LibraryCards.tsx
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
+msgstr "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
@@ -1154,6 +1166,22 @@ msgstr "{panelsOn} of {panelsTotal} panels"
 #: src/pages/reader/ChapterEnd.tsx
 msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
 msgstr "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pending, plural, one {Paused, # file left to check.} other {Paused, # files left to check.}}"
+msgstr "{pending, plural, one {Paused, # file left to check.} other {Paused, # files left to check.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {# file has not been checked yet.} other {# files have not been checked yet.}}"
+msgstr "{pendingFiles, plural, one {# file has not been checked yet.} other {# files have not been checked yet.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {# file has not been checked. Choose a format to convert it.} other {# files have not been checked. Choose a format to convert them.}}"
+msgstr "{pendingFiles, plural, one {# file has not been checked. Choose a format to convert it.} other {# files have not been checked. Choose a format to convert them.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {Converting, # file left to check.} other {Converting, # files left to check.}}"
+msgstr "{pendingFiles, plural, one {Converting, # file left to check.} other {Converting, # files left to check.}}"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "{perSitting} ch. per sitting"
@@ -1908,6 +1936,10 @@ msgstr "0 deletes them for good on the next housekeeping pass."
 #: src/components/NotificationsSection.tsx
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (lowest) to 5 (highest)."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "1 to 100, higher keeps more detail. Default {fallback}."
+msgstr "1 to 100, higher keeps more detail. Default {fallback}."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "1:1"
@@ -3045,6 +3077,14 @@ msgstr "Automatic upgrades are off, needs your call"
 #: src/nav.ts
 msgid "Automation"
 msgstr "Automation"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "AVIF"
+msgstr "AVIF"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "AVIF quality"
+msgstr "AVIF quality"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Avoided"
@@ -4452,6 +4492,10 @@ msgstr "Continuous vertical (webtoon)"
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "Continuous, because this chapter's pages are very tall."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Convert library"
+msgstr "Convert library"
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 msgid "Copied"
@@ -5802,6 +5846,10 @@ msgstr "Every enabled source is already linked."
 msgid "Every file already meets the cutoff"
 msgstr "Every file already meets the cutoff"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Every file has been checked."
+msgstr "Every file has been checked."
+
 #: src/pages/ActivityPage.tsx
 msgid "Every file meets its cutoff"
 msgstr "Every file meets its cutoff"
@@ -5822,6 +5870,10 @@ msgstr "Every month"
 #: src/pages/NotificationsPage.tsx
 msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "Every notification goes, read and unread. This can't be undone."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Every reader Maki works with opens it: browsers, Kavita, Komga, KOReader, Mihon and Panels. Saves most on PNG pages and on JPEG pages a source saved at high quality."
+msgstr "Every reader Maki works with opens it: browsers, Kavita, Komga, KOReader, Mihon and Panels. Saves most on PNG pages and on JPEG pages a source saved at high quality."
 
 #: src/pages/HomePage.tsx
 msgid "Every section is switched off"
@@ -5936,6 +5988,10 @@ msgstr "Excluded from taste"
 #: src/components/SetupWizard.tsx
 msgid "Existing folders on import"
 msgstr "Existing folders on import"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Existing library"
+msgstr "Existing library"
 
 #: src/components/import/RecentImports.tsx
 msgid "Existing series"
@@ -6432,6 +6488,10 @@ msgstr "For readers like Komga and Kavita that pick up a poster from the folder.
 #: src/pages/settings/LibraryCards.tsx
 msgid "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
 msgstr "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Format"
+msgstr "Format"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Format created"
@@ -7456,6 +7516,10 @@ msgstr "Job"
 msgid "Josei"
 msgstr "Josei"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "JPEG pages become the chosen format and PNG pages become lossless WebP, so line art keeps every pixel. WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels on a side stay as they are, and so does any page or file that would not come out at least 5% smaller. Files hardlinked to a torrent client's copy are skipped, since converting them would use more disk, not less. Upgrades and quality scores still see the size and format each chapter was downloaded in."
+msgstr "JPEG pages become the chosen format and PNG pages become lossless WebP, so line art keeps every pixel. WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels on a side stay as they are, and so does any page or file that would not come out at least 5% smaller. Files hardlinked to a torrent client's copy are skipped, since converting them would use more disk, not less. Upgrades and quality scores still see the size and format each chapter was downloaded in."
+
 #: src/components/series/EditMetadataModal.tsx
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
 msgstr "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -7753,6 +7817,10 @@ msgstr "Last page"
 #: src/pages/HealthPage.tsx
 msgid "Last partial scan: {partialScanError}"
 msgstr "Last partial scan: {partialScanError}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Last pass, finished {finished}:"
+msgstr "Last pass, finished {finished}:"
 
 #: src/components/home/ContinueHero.tsx
 msgid "Last read {lastRead}"
@@ -10165,6 +10233,7 @@ msgstr "of reading time"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/settings/PageConversionSection.tsx
 msgid "Off"
 msgstr "Off"
 
@@ -10571,6 +10640,16 @@ msgstr "Page {pageIndex}/{pageCount}"
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Page {pageNumber} of {pageCount}"
 
+#: src/pages/settings/PageConversionSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Page conversion"
+msgstr "Page conversion"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
+msgstr "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Page fit"
 msgstr "Page fit"
@@ -10608,6 +10687,10 @@ msgstr "Pages"
 #: src/pages/settings/ReadingCards.tsx
 msgid "Pages a streaming app fetches count as read, so OPDS reading reaches your library, Rewind and trackers. Turn it off if an app reports progress you didn't make; some fetch pages ahead."
 msgstr "Pages a streaming app fetches count as read, so OPDS reading reaches your library, Rewind and trackers. Turn it off if an app reports progress you didn't make; some fetch pages ahead."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages are kept exactly as the source served them."
+msgstr "Pages are kept exactly as the source served them."
 
 #: src/pages/HealthPage.tsx
 msgid "Pages decoded at once (0 = automatic)"
@@ -10699,6 +10782,7 @@ msgid "Path mapping - Maki side"
 msgstr "Path mapping - Maki side"
 
 #: src/components/QueuePause.tsx
+#: src/pages/settings/PageConversionSection.tsx
 msgid "Pause"
 msgstr "Pause"
 
@@ -10714,6 +10798,14 @@ msgstr "Pause Rewind"
 #: src/pages/ActivityPage.tsx
 msgid "Paused"
 msgstr "Paused"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused because page conversion was switched off."
+msgstr "Paused because page conversion was switched off."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused: converting the next file would leave less than 1 GB free on the library drive."
+msgstr "Paused: converting the next file would leave less than 1 GB free on the library drive."
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -12283,6 +12375,7 @@ msgstr "Restrict release searches to specific indexers and categories. With noth
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Resume"
 msgstr "Resume"
@@ -12669,6 +12762,7 @@ msgstr "Save your recovery codes"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
@@ -13807,6 +13901,10 @@ msgstr "Slice of Life"
 msgid "Sliding: activity extends it."
 msgstr "Sliding: activity extends it."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Smaller than WebP, and slower to convert. KOReader cannot open AVIF pages, and neither can iPhones and iPads older than iOS 16."
+msgstr "Smaller than WebP, and slower to convert. KOReader cannot open AVIF pages, and neither can iPhones and iPads older than iOS 16."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "smart"
 msgstr "smart"
@@ -14182,6 +14280,10 @@ msgstr "Storage on this device"
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Storage used"
 msgstr "Storage used"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Stores chapter pages in a smaller image format. New downloads are converted as they arrive, and the library pass below converts what is already on disk."
+msgstr "Stores chapter pages in a smaller image format. New downloads are converted as they arrive, and the library pass below converts what is already on disk."
 
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -14961,6 +15063,10 @@ msgstr "This page failed to load."
 #: src/components/RouteErrorBoundary.tsx
 msgid "This page hit an error"
 msgstr "This page hit an error"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "This pass:"
+msgstr "This pass:"
 
 #: src/pages/HealthPage.tsx
 msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
@@ -16249,6 +16355,14 @@ msgstr "Webhook"
 #: src/components/NotificationsSection.tsx
 msgid "Webhook URL"
 msgstr "Webhook URL"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "WebP"
+msgstr "WebP"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "WebP quality"
+msgstr "WebP quality"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Webtoon"

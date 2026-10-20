@@ -690,6 +690,14 @@ msgstr "{connected} 연결됨"
 msgid "{connectedCount, plural, one {# connected} other {# connected}}"
 msgstr "{connectedCount, plural, other {#개 연결됨}}"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{converted} converted ({saved} saved), {unchanged} left as they were, {hardlinked} hardlinked, {failed} passed over for now."
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{convertedFiles, plural, one {# file converted so far, {saved} saved.} other {# files converted so far, {saved} saved.}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
@@ -791,6 +799,10 @@ msgstr "{cycles, plural, other {#× 다시 추가됨}}"
 #, fuzzy
 msgid "{days, plural, one {Deleted files, removed chapters and series deleted with their files wait here for # day before they are deleted for good. Restore puts a file back where it was.} other {Deleted files, removed chapters and series deleted with their files wait here for # days before they are deleted for good. Restore puts a file back where it was.}}"
 msgstr "{days, plural, other {삭제된 파일, 제거된 챕터, 파일과 함께 삭제된 시리즈는 여기서 #일 동안 기다린 뒤 영구 삭제됩니다. 복원하면 파일이 원래 위치로 돌아갑니다.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "{days, plural, one {Usually every day.} other {Usually every # days.}}"
@@ -1383,6 +1395,22 @@ msgstr "{panelsTotal}개 패널 중 {panelsOn}개"
 #, fuzzy
 msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
 msgstr "{pending, plural, other {원하는 챕터가 #개 더 있습니다. 다운로드되면 여기에 표시됩니다.}}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pending, plural, one {Paused, # file left to check.} other {Paused, # files left to check.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {# file has not been checked yet.} other {# files have not been checked yet.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {# file has not been checked. Choose a format to convert it.} other {# files have not been checked. Choose a format to convert them.}}"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "{pendingFiles, plural, one {Converting, # file left to check.} other {Converting, # files left to check.}}"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -2315,6 +2343,10 @@ msgstr "0이면 다음 정리 작업에서 바로 영구 삭제합니다."
 #, fuzzy
 msgid "1 (lowest) to 5 (highest)."
 msgstr "1 (최저)부터 5 (최고)까지."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "1 to 100, higher keeps more detail. Default {fallback}."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -3701,6 +3733,14 @@ msgstr "자동 업그레이드가 꺼져 있어 직접 결정해야 합니다"
 #, fuzzy
 msgid "Automation"
 msgstr "자동화"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "AVIF"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "AVIF quality"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -5395,6 +5435,10 @@ msgstr "연속 세로 (웹툰)"
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr ""
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Convert library"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -7038,6 +7082,10 @@ msgstr "이미 모든 활성화된 소스가 연결되었습니다."
 msgid "Every file already meets the cutoff"
 msgstr "모든 파일이 이미 컷오프를 충족합니다"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Every file has been checked."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Every file meets its cutoff"
@@ -7063,6 +7111,10 @@ msgstr "매월"
 #, fuzzy
 msgid "Every notification goes, read and unread. This can't be undone."
 msgstr "읽음 여부와 관계없이 모든 알림이 삭제됩니다. 되돌릴 수 없습니다."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Every reader Maki works with opens it: browsers, Kavita, Komga, KOReader, Mihon and Panels. Saves most on PNG pages and on JPEG pages a source saved at high quality."
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -7204,6 +7256,10 @@ msgstr "취향에서 제외됨"
 #, fuzzy
 msgid "Existing folders on import"
 msgstr "가져올 때 기존 폴더 처리"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Existing library"
+msgstr ""
 
 #: src/components/import/RecentImports.tsx
 #, fuzzy
@@ -7809,6 +7865,10 @@ msgstr "폴더에서 포스터를 가져오는 Komga, Kavita 같은 리더 앱�
 #, fuzzy
 msgid "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
 msgstr "폴더에서 포스터를 가져오는 Komga, Kavita 같은 리더 앱용입니다. 켜면 바로 실행됩니다."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Format"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -9058,6 +9118,10 @@ msgstr "작업"
 msgid "Josei"
 msgstr "여성향"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "JPEG pages become the chosen format and PNG pages become lossless WebP, so line art keeps every pixel. WebP and AVIF pages, animations, pages under 16 KB and pages over 16,383 pixels on a side stay as they are, and so does any page or file that would not come out at least 5% smaller. Files hardlinked to a torrent client's copy are skipped, since converting them would use more disk, not less. Upgrades and quality scores still see the size and format each chapter was downloaded in."
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -9416,6 +9480,10 @@ msgstr "마지막 페이지"
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
 msgstr "마지막 부분 스캔: {partialScanError}"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Last pass, finished {finished}:"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 msgid "Last read {lastRead}"
@@ -12338,6 +12406,7 @@ msgstr "독서 시간 중"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "끔"
@@ -12830,6 +12899,16 @@ msgstr "페이지 {pageIndex}/{pageCount}"
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "{pageCount}개 중 {pageNumber}페이지"
 
+#: src/pages/settings/PageConversionSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Page conversion"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Page fit"
@@ -12876,6 +12955,10 @@ msgstr "페이지"
 #, fuzzy
 msgid "Pages a streaming app fetches count as read, so OPDS reading reaches your library, Rewind and trackers. Turn it off if an app reports progress you didn't make; some fetch pages ahead."
 msgstr "스트리밍 앱이 가져온 페이지를 읽은 것으로 처리하므로 OPDS 읽기 기록이 라이브러리, Rewind, 트래커에 반영됩니다. 일부 앱은 페이지를 미리 가져오므로 실제로 읽지 않은 진행 상황이 표시되면 끄세요."
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages are kept exactly as the source served them."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12985,6 +13068,7 @@ msgid "Path mapping - Maki side"
 msgstr "경로 매핑 - Maki 측"
 
 #: src/components/QueuePause.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Pause"
 msgstr "일시 정지"
@@ -13003,6 +13087,14 @@ msgstr ""
 #, fuzzy
 msgid "Paused"
 msgstr "일시 중지됨"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused because page conversion was switched off."
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Paused: converting the next file would leave less than 1 GB free on the library drive."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -14917,6 +15009,7 @@ msgstr "릴리스 검색을 특정 인덱서와 카테고리로 제한합니다.
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Resume"
@@ -15374,6 +15467,7 @@ msgstr "복구 코드 저장"
 #: src/pages/settings/IntegrationCards.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/sharedRecord.ts
 #: src/pages/settings/SystemCards.tsx
@@ -16747,6 +16841,10 @@ msgstr "일상"
 msgid "Sliding: activity extends it."
 msgstr "슬라이딩: 활동이 타이머를 연장합니다."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Smaller than WebP, and slower to convert. KOReader cannot open AVIF pages, and neither can iPhones and iPads older than iOS 16."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "smart"
@@ -17202,6 +17300,10 @@ msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 msgid "Storage used"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Stores chapter pages in a smaller image format. New downloads are converted as they arrive, and the library pass below converts what is already on disk."
 msgstr ""
 
 #: src/components/CreditPicker.tsx
@@ -18147,6 +18249,10 @@ msgstr "이 페이지를 불러오지 못했습니다."
 #, fuzzy
 msgid "This page hit an error"
 msgstr "이 페이지에서 오류가 발생했습니다"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "This pass:"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -19724,6 +19830,14 @@ msgstr "웹훅"
 #, fuzzy
 msgid "Webhook URL"
 msgstr "웹훅 URL"
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "WebP"
+msgstr ""
+
+#: src/pages/settings/PageConversionSection.tsx
+msgid "WebP quality"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy

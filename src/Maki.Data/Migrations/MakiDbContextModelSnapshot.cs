@@ -156,6 +156,12 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("ConversionCheckedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ConversionSavedBytes")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("DateAdded")
                         .HasColumnType("TEXT");
 
@@ -173,6 +179,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int?>("MedianWidth")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("OriginalImageFormat")
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("PageCount")
                         .HasColumnType("INTEGER");
@@ -210,6 +219,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ConversionCheckedAtUtc")
+                        .HasFilter("ConversionCheckedAtUtc IS NULL");
 
                     b.HasIndex("DateAdded");
 

@@ -516,6 +516,9 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // through this index, so indexing the rest of the table would be pure overhead.
             e.HasIndex(f => f.MeasuredAtUtc).HasFilter("MeasuredAtUtc IS NULL");
 
+            // Same idea for page conversion's pass over the library.
+            e.HasIndex(f => f.ConversionCheckedAtUtc).HasFilter("ConversionCheckedAtUtc IS NULL");
+
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 

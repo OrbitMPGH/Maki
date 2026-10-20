@@ -46,6 +46,7 @@ import type { InboxPrefs } from '../../../src/api/inbox'
 import type { ReaderSettings } from '../../../src/api/reader'
 import type { ReadingProfile } from '../../../src/api/readingProfiles'
 import type { RecycleBin } from '../../../src/api/recycleBin'
+import type { PageConversionStatus } from '../../../src/api/pageConversion'
 import type { SuwayomiConnection } from '../../../src/api/suwayomi'
 import type { FormatScoreDto, QualityFormatDto, UpgradeProfileDto, UpgradeSettings } from '../../../src/api/upgrades'
 import type { ReaderPrefs } from '../../../src/pages/reader/prefs'
@@ -852,6 +853,42 @@ export const updateStatusAvailable: UpdateStatusDto = {
 }
 
 export const updateSettings: UpdateSettingsDto = { checkForUpdates: true }
+
+export const pageConversionIdle: PageConversionStatus = {
+  settings: { format: 'webp', webpQuality: 80, avifQuality: 55 },
+  pass: {
+    state: 'idle',
+    hold: null,
+    currentFile: null,
+    totals: {
+      startedAtUtc: daysAgo(3),
+      finishedAtUtc: daysAgo(2),
+      converted: 412,
+      unchanged: 1288,
+      hardlinked: 37,
+      failed: 2,
+      savedBytes: 9.4 * GB,
+    },
+  },
+  library: { convertedFiles: 412, savedBytes: 9.4 * GB, pendingFiles: 64, trashBytes: 21.7 * GB, trashFiles: 412, trashDays: 14 },
+}
+
+export const pageConversionRunning: PageConversionStatus = {
+  settings: { format: 'avif', webpQuality: 80, avifQuality: 55 },
+  pass: {
+    state: 'running',
+    hold: null,
+    currentFile: 'Lanterns Over Kasumi (2021)/Lanterns Over Kasumi - c040.cbz',
+    totals: { startedAtUtc: minutesAgo(40), finishedAtUtc: null, converted: 118, unchanged: 9, hardlinked: 0, failed: 0, savedBytes: 1.6 * GB },
+  },
+  library: { convertedFiles: 118, savedBytes: 1.6 * GB, pendingFiles: 1530, trashBytes: 6.1 * GB, trashFiles: 118, trashDays: 14 },
+}
+
+export const pageConversionOff: PageConversionStatus = {
+  settings: { format: 'off', webpQuality: 80, avifQuality: 55 },
+  pass: { state: 'idle', hold: null, currentFile: null, totals: null },
+  library: { convertedFiles: 0, savedBytes: 0, pendingFiles: 1739, trashBytes: 0, trashFiles: 0, trashDays: 14 },
+}
 
 export const recycleBin: RecycleBin = {
   retentionDays: 14,

@@ -182,6 +182,43 @@ public static class ImageCodec
         return image.JpegsaveBuffer(q: quality, subsampleMode: Enums.ForeignSubsample.On, keep: Enums.ForeignKeep.None);
     }
 
+    /// <summary>
+    /// Decodes a JPEG or PNG page and encodes it as <paramref name="target"/>, or returns null with
+    /// the reason it was left as it is. Orientation is applied, CMYK is converted to sRGB and an ICC
+    /// profile is carried over; everything else in the metadata is dropped. Throws
+    /// <see cref="VipsException"/> when the bytes do not decode cleanly: libvips would otherwise fill
+    /// a truncated JPEG with grey and the damage would be baked into a page that looks whole.
+    /// </summary>
+    public static byte[]? EncodePage(byte[] source, PageEncoding target, int quality, out PageSkip? skipped)
+    {
+        skipped = null;
+        using var loaded = VipsImage.NewFromBuffer(source, failOn: Enums.FailOn.Error);
+        if (loaded.Format != Enums.BandFormat.Uchar)
+        {
+            skipped = PageSkip.HighBitDepth;
+            return null;
+        }
+
+        if (Math.Max(loaded.Width, loaded.Height) > PageConversion.MaxEdge)
+        {
+            skipped = PageSkip.TooLarge;
+            return null;
+        }
+
+        using var rotated = loaded.Autorot();
+        using var image = rotated.Interpretation == Enums.Interpretation.Cmyk
+            ? rotated.Colourspace(Enums.Interpretation.Srgb)
+            : rotated.Copy();
+        return target switch
+        {
+            PageEncoding.LosslessWebp => image.WebpsaveBuffer(lossless: true, effort: 4, keep: Enums.ForeignKeep.Icc),
+            PageEncoding.Webp => image.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: true, keep: Enums.ForeignKeep.Icc),
+            PageEncoding.Avif => image.HeifsaveBuffer(q: quality, bitdepth: 8, compression: Enums.ForeignHeifCompression.Av1,
+                effort: 4, keep: Enums.ForeignKeep.Icc),
+            _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
+        };
+    }
+
     internal static VipsImage Open(byte[] bytes) => VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
 
     internal static VipsImage ThumbnailFile(string path, int width, int height) =>

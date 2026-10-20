@@ -126,6 +126,14 @@ export const settingsHandlers: HttpHandler[] = [
     HttpResponse.json({ useLocalDb: true, dumpPresent: true, dumpSizeBytes: 1_842_000_000, dumpRefreshedAt: '2026-10-12T03:00:00Z', ...((await request.json()) as object) }),
   ),
   http.post(api('/settings/metadata/refresh'), () => HttpResponse.json({ started: true, alreadyRunning: false })),
+  http.get(api('/pageconversion'), () => HttpResponse.json(d.pageConversionIdle)),
+  http.put(api('/pageconversion/settings'), async ({ request }) =>
+    HttpResponse.json({ ...d.pageConversionIdle, settings: await request.json() }),
+  ),
+  http.post(api('/pageconversion/start'), () => HttpResponse.json(d.pageConversionRunning)),
+  http.post(api('/pageconversion/pause'), () =>
+    HttpResponse.json({ ...d.pageConversionRunning, pass: { ...d.pageConversionRunning.pass, state: 'paused', currentFile: null } }),
+  ),
   http.get(api('/recyclebin'), () => HttpResponse.json(d.recycleBin)),
   http.get(api('/recyclebin/retention'), () => HttpResponse.json({ days: 14 })),
   http.put(api('/recyclebin/retention'), ok),
