@@ -131,6 +131,49 @@ public class HomeControllerTests : IDisposable
         Assert.Empty(response.JumpBackIn);
     }
 
+    private void RemoveFile(int chapterId)
+    {
+        using var db = _db.NewContext();
+        var chapter = db.Chapters.Single(c => c.Id == chapterId);
+        chapter.ChapterFileId = null;
+        chapter.FileRemovedAt = Base;
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task Continue_drops_a_part_read_chapter_whose_file_was_removed()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var removed = SeedChapter(seriesId, 1);
+        var next = SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, removed, pageIndex: 5, completed: false, updatedAt: Base);
+        RemoveFile(removed);
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        Assert.Empty(response.ContinueReading);
+        var item = Assert.Single(response.JumpBackIn);
+        Assert.Equal(next, item.ChapterId);
+    }
+
+    [Fact]
+    public async Task Continue_resumes_the_part_read_chapter_that_still_has_a_file()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var removed = SeedChapter(seriesId, 1);
+        var kept = SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, kept, pageIndex: 3, completed: false, updatedAt: Base);
+        SeedProgress(seriesId, removed, pageIndex: 5, completed: false, updatedAt: Base.AddHours(1));
+        RemoveFile(removed);
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        var item = Assert.Single(response.ContinueReading);
+        Assert.Equal(kept, item.ChapterId);
+        Assert.Equal(3, item.Page);
+        Assert.Empty(response.JumpBackIn);
+    }
+
     [Fact]
     public async Task Continue_skips_unread_tombstones()
     {
