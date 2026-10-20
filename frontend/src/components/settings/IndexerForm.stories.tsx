@@ -45,7 +45,7 @@ export const SwitchToJackett: Story = {
     await userEvent.click(canvas.getByLabelText('Indexer', { selector: 'input' }))
     await userEvent.click(await within(document.body).findByRole('option', { name: 'Jackett' }))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'URL' })).toHaveValue(''))
-    await expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled())
   },
 }
 
